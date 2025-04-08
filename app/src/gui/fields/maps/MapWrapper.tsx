@@ -232,7 +232,7 @@ function MapWrapper(props: MapProps) {
     accuracyFeature.setStyle(
       new Style({
         image: new CircleStyle({
-          radius: 25,
+          radius: 30, // todo ranisa to try dyanmic radius
           fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
           stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
         }),
