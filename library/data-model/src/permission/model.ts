@@ -892,7 +892,6 @@ export const roleActions: Record<
       Action.CREATE_TEAM,
       Action.SEND_TEST_EMAIL,
 
-
       // These are special permissions!
       Action.ADD_ADMIN_TO_TEAM,
       Action.REMOVE_ADMIN_FROM_TEAM,
@@ -942,7 +941,6 @@ export const roleActions: Record<
       Action.DELETE_TEAM,
       Action.ADD_MANAGER_TO_TEAM,
       Action.REMOVE_MANAGER_FROM_TEAM,
-
 
       // These are special permissions!
       // -> moved to general admin only
