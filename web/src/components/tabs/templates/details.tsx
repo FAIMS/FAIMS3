@@ -1,10 +1,9 @@
-import {useAuth} from '@/context/auth-provider';
-import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
-import {Skeleton} from '@/components/ui/skeleton';
-import {List} from '@/components/ui/list';
-import {Card} from '@/components/ui/card';
-import {useGetTemplate} from '@/hooks/queries';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
+import {Card} from '@/components/ui/card';
+import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
+import {Skeleton} from '@/components/ui/skeleton';
+import {useAuth} from '@/context/auth-provider';
+import {useGetTemplate} from '@/hooks/queries';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -46,16 +45,23 @@ const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
   return (
     <Card>
       <List>
-        {detailsFields.map(({field, label}) => (
-          <ListItem key={field}>
-            <ListLabel>{label}</ListLabel>
-            {isPending ? (
-              <Skeleton />
-            ) : (
-              <ListDescription>{data?.metadata[field]}</ListDescription>
-            )}
-          </ListItem>
-        ))}
+        {detailsFields.map(({field, label, render, isMetadata = true}) => {
+          const cellData = isMetadata
+            ? data?.metadata[field]
+            : (data as any | undefined)?.[field];
+          return (
+            <ListItem key={field}>
+              <ListLabel>{label}</ListLabel>
+              {isPending ? (
+                <Skeleton />
+              ) : (
+                <ListDescription>
+                  {render ? render(cellData) : cellData}
+                </ListDescription>
+              )}
+            </ListItem>
+          );
+        })}
       </List>
     </Card>
   );

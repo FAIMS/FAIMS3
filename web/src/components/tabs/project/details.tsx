@@ -70,18 +70,23 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
   return (
     <Card>
       <List>
-        {detailsFields.map(({field, label}) => (
-          <ListItem key={field}>
-            <ListLabel>{label}</ListLabel>
-            {isPending ? (
-              <Skeleton />
-            ) : (
-              <ListDescription>
-                {data?.metadata[field] as string}
-              </ListDescription>
-            )}
-          </ListItem>
-        ))}
+        {detailsFields.map(({field, label, render, isMetadata = true}) => {
+          const cellData = isMetadata
+            ? data?.metadata[field]
+            : (data as any | undefined)?.[field];
+          return (
+            <ListItem key={field}>
+              <ListLabel>{label}</ListLabel>
+              {isPending ? (
+                <Skeleton />
+              ) : (
+                <ListDescription>
+                  {render ? render(cellData) : cellData}
+                </ListDescription>
+              )}
+            </ListItem>
+          );
+        })}
       </List>
     </Card>
   );
