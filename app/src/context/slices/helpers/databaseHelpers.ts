@@ -1,6 +1,6 @@
 import {
+  decodeUiSpec,
   EncodedProjectUIModel,
-  GetNotebookListResponse,
   GetNotebookResponse,
   ProjectUIModel,
 } from '@faims3/data-model';
@@ -12,12 +12,7 @@ import {
   RUNNING_UNDER_TEST,
 } from '../../../buildconfig';
 import {compileUiSpecConditionals} from '../../../uiSpecification';
-import {
-  DatabaseConnectionConfig,
-  ProjectIdentity,
-  ProjectMetadata,
-} from '../projectSlice';
-import {decodeUiSpec} from '@faims3/data-model';
+import {DatabaseConnectionConfig, ProjectIdentity} from '../projectSlice';
 
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions
