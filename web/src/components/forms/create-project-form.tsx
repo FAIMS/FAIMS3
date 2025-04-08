@@ -9,9 +9,8 @@ import {
   createProjectFromTemplate,
 } from '@/hooks/create-project';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {Action, isAuthorized} from '@faims3/data-model';
+import {Action} from '@faims3/data-model';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import TeamDetails from '../tabs/teams/team-details';
 
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;

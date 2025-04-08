@@ -5,13 +5,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {Field} from '@/components/form';
 import {z} from 'zod';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {
-  Action,
-  Resource,
-  Role,
-  roleDetails,
-  RoleScope,
-} from '@faims3/data-model';
+import {Action, Role, roleDetails} from '@faims3/data-model';
 
 interface AddUserToTeamFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
