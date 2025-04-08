@@ -182,12 +182,12 @@ function MapWrapper(props: MapProps) {
 
   // real-time blue dot + accuracy tracking
   const startLocationTracking = (theMap: Map) => {
-    stopTracking();
+    stopTracking(); // Clean up any previous tracking
 
     const view = theMap.getView();
     const projection = view.getProjection();
 
-    // get initial position for zooming
+    // zooming to initial location on start
     navigator.geolocation.getCurrentPosition(
       pos => {
         const coords = transform(
