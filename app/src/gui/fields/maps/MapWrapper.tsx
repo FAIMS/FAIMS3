@@ -215,13 +215,16 @@ function MapWrapper(props: MapProps) {
     // background pluse
     const accuracyFeature = new Feature(new Point([0, 0]));
 
-    // css opacity and scale pulse chages
-    dotFeature.setStyle(
+    // initial styles
+    directionFeature.setStyle(
       new Style({
-        image: new CircleStyle({
+        image: new RegularShape({
+          points: 3,
           radius: 10,
+          rotation: 0, //  rotate based on heading
+          angle: Math.PI / 3,
           fill: new Fill({color: '#1a73e8'}),
-          stroke: new Stroke({color: '#fff', width: 3}),
+          stroke: new Stroke({color: '#fff', width: 2}),
         }),
       })
     );
