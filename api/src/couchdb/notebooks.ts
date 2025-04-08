@@ -72,6 +72,7 @@ import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
 import {slugify} from '../utils';
 import ExcelJS from 'exceljs';
+import {CloudFrontCustomizations} from 'aws-sdk/lib/services/cloudfront';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -807,7 +808,7 @@ const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
     throw new Error(`invalid form ${viewID} not found in notebook`);
   }
   const views = uiSpec.viewsets[viewID].views;
-  const fields: any[] = [];
+  const fields: {name: string; type: string}[] = [];
   views.forEach((view: any) => {
     uiSpec.fviews[view].fields.forEach((field: any) => {
       fields.push({
@@ -1110,8 +1111,8 @@ export const streamNotebookRecordsAsXLSX = async (
     'updated_by',
     'updated',
   ];
-  Object.keys(fields).forEach((key: string) => {
-    columns.push(key);
+  fields.forEach(({name}) => {
+    columns.push(name);
   });
 
   // Add headers
@@ -1132,15 +1133,10 @@ export const streamNotebookRecordsAsXLSX = async (
         record.updated_by,
         record.updated.toISOString(),
       ];
-      const outputData = convertDataForOutput(
-        fields,
-        record.data,
-        hrid,
-        filenames
-      );
-      Object.keys(outputData).forEach((property: string) => {
-        row.push(outputData[property]);
-      });
+      const data = convertDataForOutput(fields, record.data, hrid, filenames);
+      for (const field of fields) {
+        row.push(data[field.name]);
+      }
       worksheet.addRow(row);
     }
     const next = await iterator.next();

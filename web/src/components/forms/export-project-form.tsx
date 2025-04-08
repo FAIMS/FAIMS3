@@ -5,15 +5,15 @@ import {z} from 'zod';
 import {Form} from '../form';
 
 interface ExportProjectFormProps {
-  type: 'csv' | 'json' | 'xlsx';
+  type: 'csv' | 'json' | 'xlsx' | 'zip';
 }
 
 /**
  * ExportProjectForm component renders a form for downloading a project's data.
  * It provides a button to download the project's data.
  *
- * @param {'csv' | 'json' | 'xlsx'} type - The type of file to download.
- * @returns {JSX.Element} The rendered ExportProjectForm component.
+ * @param type - The type of file to download.
+ * @returns The rendered ExportProjectForm component.
  */
 const ExportProjectForm = ({type}: ExportProjectFormProps) => {
   const {user} = useAuth();
@@ -74,7 +74,7 @@ const ExportProjectForm = ({type}: ExportProjectFormProps) => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } else {
-      const url = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.${type}`;
+      const url = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/${form}.${type}`;
       window.open(url, '_blank');
     }
     return undefined;

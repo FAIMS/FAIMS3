@@ -438,7 +438,7 @@ api.get(
 
 // export current versions of all records in this notebook as xlsx
 api.get(
-  '/:id/:viewID.xlsx',
+  '/:id/records/:viewID.xlsx',
   processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
