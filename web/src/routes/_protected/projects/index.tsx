@@ -3,7 +3,9 @@ import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/queries';
-import {createFileRoute, useNavigate} from '@tanstack/react-router';
+import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {createFileRoute, useNavigate, useRouter} from '@tanstack/react-router';
+import {useMemo} from 'react';
 
 export const Route = createFileRoute('/_protected/projects/')({
   component: RouteComponent,
@@ -18,7 +20,25 @@ export const Route = createFileRoute('/_protected/projects/')({
 function RouteComponent() {
   const {user} = useAuth();
 
-  const {isPending, data} = useGetProjects(user);
+  const {isLoading, data} = useGetProjects(user);
+  const pathname = useRouter().state.location.pathname;
+
+  // breadcrumbs addition
+  const paths = useMemo(
+    () => [
+      // projects ->
+      {
+        path: '/projects',
+        label: 'Projects',
+      },
+    ],
+    [pathname, isLoading]
+  );
+
+  useBreadcrumbUpdate({
+    isLoading,
+    paths,
+  });
 
   const navigate = useNavigate();
 
@@ -26,7 +46,7 @@ function RouteComponent() {
     <DataTable
       columns={columns}
       data={data || []}
-      loading={isPending}
+      loading={isLoading}
       onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
       button={<CreateProjectDialog />}
     />
