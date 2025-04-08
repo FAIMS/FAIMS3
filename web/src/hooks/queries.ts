@@ -1,5 +1,11 @@
 import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
+import {
+  GetListTeamsResponse,
+  GetListTemplatesResponse,
+  GetTeamByIdResponse,
+  GetTeamMembersResponse,
+} from '@faims3/data-model';
 import QRCode from 'qrcode';
 import type {
   ExpressUser,
@@ -75,6 +81,98 @@ export const useGetTemplate = (user: User | null, templateId: string) =>
   });
 
 /**
+ * useGetProjectsForTeam hook returns a query for fetching projects.
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetProjectsForTeam = ({
+  teamId,
+  user,
+}: {
+  user: User | null;
+  teamId: string;
+}) =>
+  useQuery({
+    queryKey: ['projectsbyteam', teamId],
+    queryFn: () => get(`/api/notebooks?teamId=${teamId}`, user),
+  });
+
+/**
+ * useGetTemplatesForTeam hook returns a query for fetching projects.
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetTemplatesForTeam = ({
+  teamId,
+  user,
+}: {
+  user: User | null;
+  teamId: string;
+}) =>
+  useQuery({
+    queryKey: ['templatesbyteam', teamId],
+    queryFn: async () => {
+      return (await get(
+        `/api/templates?teamId=${teamId}`,
+        user
+      )) as GetListTemplatesResponse;
+    },
+  });
+
+/**
+ * @param {User} user - The user object.
+ */
+export const useGetUsersForTeam = ({
+  teamId,
+  user,
+}: {
+  user: User;
+  teamId: string;
+}) =>
+  useQuery({
+    queryKey: ['teamusers', teamId],
+    queryFn: async () => {
+      return (await get(
+        `/api/teams/${teamId}/members`,
+        user
+      )) as GetTeamMembersResponse;
+    },
+  });
+
+/**
+ * Gets a particular team
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetTeam = (user: User | null, teamId: string | undefined) =>
+  useQuery({
+    queryKey: ['teams', teamId],
+    queryFn: async () => {
+      if (!teamId) {
+        return null;
+      }
+      return (await get(`/api/teams/${teamId}`, user)) as GetTeamByIdResponse;
+    },
+  });
+
+/**
+ * useGetTeams hook returns a query for fetching projects.
+ *
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching projects.
+ */
+export const useGetTeams = (user: User | null) =>
+  useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      return (await get('/api/teams/', user)) as GetListTeamsResponse;
+    },
+  });
+
+/**
  * useGetTemplates hook returns a query for fetching templates.
  *
  * @param {User} user - The user object.
@@ -146,4 +244,15 @@ export const useGetRecords = (user: User | null, projectId: string) =>
         `/api/notebooks/${projectId}/records/`,
         user
       ),
+  });
+
+/**
+ * useGetRoles hook returns a query for fetching roles.
+ * @param {User} user - The user object.
+ * @returns {Query} A query for fetching roles.
+ */
+export const useGetRoles = (user: User | null) =>
+  useQuery({
+    queryKey: ['roles'],
+    queryFn: () => get('/api/users/roles', user),
   });

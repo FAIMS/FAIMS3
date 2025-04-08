@@ -25,19 +25,28 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(SecurityPlugin);
 
 import {
+  Action,
   APINotebookList,
   EncodedProjectUIModel,
+  GetNotebookListResponse,
+  logError,
   notebookRecordIterator,
+  ProjectDBFields,
+  ProjectDocument,
   ProjectID,
-  ProjectObject,
+  PROJECTS_BY_TEAM_ID,
+  Resource,
+  resourceRoles,
+  Role,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
 import {
+  getDataDb,
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
-  getDataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
@@ -58,24 +67,57 @@ import {
   setAttachmentLoaderForType,
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
+import {userCanDo} from '../middleware';
 import {slugify} from '../utils';
-import {userHasPermission} from './users';
+
+/**
+ * Gets project IDs by teamID (who owns it)
+ * @returns an array of template ids
+ */
+export const getProjectIdsByTeamId = async ({
+  teamId,
+}: {
+  teamId: string;
+}): Promise<string[]> => {
+  const projectsDb = localGetProjectsDb();
+  try {
+    const resultList = await projectsDb.query<ProjectDBFields>(
+      PROJECTS_BY_TEAM_ID,
+      {
+        key: teamId,
+        include_docs: false,
+      }
+    );
+    return resultList.rows
+      .filter(res => {
+        return !res.id.startsWith('_');
+      })
+      .map(res => {
+        return res.id;
+      });
+  } catch (error) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while reading projects by team ID from the Project DB.'
+    );
+  }
+};
 
 /**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */
-export const getAllProjects = async (): Promise<ProjectObject[]> => {
+export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
   const projectsDb = localGetProjectsDb();
-  const projects: ProjectObject[] = [];
-  const res = await projectsDb.allDocs({
+  const projects: ProjectDocument[] = [];
+  const res = await projectsDb.allDocs<ProjectDocument>({
     include_docs: true,
   });
   res.rows.forEach(e => {
     if (e.doc !== undefined && !e.id.startsWith('_')) {
-      const doc = e.doc as any;
-      delete doc._rev;
-      const project = doc as unknown as ProjectObject;
+      const doc = e.doc;
+      const project = {...doc, _rev: undefined};
+      // delete rev so that we don't include in the result
+      delete project._rev;
       // add database connection details
       if (project.metadata_db)
         project.metadata_db.base_url = COUCHDB_PUBLIC_URL;
@@ -91,56 +133,87 @@ export const getAllProjects = async (): Promise<ProjectObject[]> => {
  * the project databases that the front end will connnect to
  * @param user - only return projects visible to this user
  */
-export const getUserProjects = async (
+export const getUserProjectsDirectory = async (
   user: Express.User
-): Promise<ProjectObject[]> => {
-  return (await getAllProjects()).filter(p =>
-    userHasPermission(user, p._id, 'read')
+): Promise<ProjectDocument[]> => {
+  return (await getAllProjectsDirectory()).filter(p =>
+    userCanDo({
+      user,
+      action: Action.READ_PROJECT_METADATA,
+      resourceId: p._id,
+    })
   );
 };
 
 /**
  * getNotebooks -- return an array of notebooks from the database
- * @oaram user - only return notebooks that this user can see
- * @returns an array of ProjectObject objects
+ * @param user - only return notebooks that this user can see
+ * @returns an array of ProjectDocument objects
  */
-export const getNotebooks = async (
-  user: Express.User
+export const getUserProjectsDetailed = async (
+  user: Express.User,
+  teamId: string | undefined = undefined
 ): Promise<APINotebookList[]> => {
-  // Respond with notebook list model
-  const output: APINotebookList[] = [];
-  // DB records are project objects
-  const projects: ProjectObject[] = [];
-  const projects_db = localGetProjectsDb();
-  if (projects_db) {
-    // We want to type hint that this will include all values
-    const res = await projects_db.allDocs<ProjectObject>({
+  // Get projects DB
+  const projectsDb = localGetProjectsDb();
+
+  // Get all projects and filter for user access
+
+  let allDocs;
+  if (!teamId) {
+    allDocs = await projectsDb.allDocs<ProjectDocument>({
       include_docs: true,
     });
-    res.rows.forEach(e => {
-      if (e.doc !== undefined && !e.id.startsWith('_')) {
-        projects.push(e.doc);
-      }
+  } else {
+    allDocs = await projectsDb.query<ProjectDocument>(PROJECTS_BY_TEAM_ID, {
+      key: teamId,
+      include_docs: true,
     });
+  }
 
-    for (const project of projects) {
-      const projectId = project._id;
-      const projectMeta = await getNotebookMetadata(projectId);
-      if (userHasPermission(user, projectId, 'read')) {
-        output.push({
-          name: project.name,
-          is_admin: userHasPermission(user, projectId, 'modify'),
-          last_updated: project.last_updated,
-          created: project.created,
-          template_id: project.template_id,
-          status: project.status,
+  const userProjects = allDocs.rows
+    .map(r => r.doc)
+    .filter(d => d !== undefined && !d._id.startsWith('_'))
+    .filter(p =>
+      userCanDo({
+        action: Action.READ_PROJECT_METADATA,
+        resourceId: p!._id,
+        user,
+      })
+    );
+
+  // Process all projects in parallel using Promise.all
+  const output = await Promise.all(
+    userProjects.map(async project => {
+      try {
+        const projectId = project!._id;
+        const projectMeta = await getNotebookMetadata(projectId);
+
+        return {
+          name: project!.name,
+          is_admin: userHasProjectRole({
+            user,
+            projectId,
+            role: Role.PROJECT_ADMIN,
+          }),
+          last_updated: project!.last_updated,
+          created: project!.created,
+          template_id: project!.template_id,
+          status: project!.status,
           project_id: projectId,
           metadata: projectMeta,
-        });
+          ownedByTeamId: project!.ownedByTeamId,
+        } satisfies GetNotebookListResponse[number];
+      } catch (e) {
+        console.error('Error occurred during detailed notebook listing');
+        logError(e);
+        return undefined;
       }
-    }
-  }
-  return output;
+    })
+  );
+
+  // Filter out null values from projects that user couldn't read
+  return output.filter(item => item !== undefined);
 };
 
 /**
@@ -210,7 +283,7 @@ export const validateDatabases = async () => {
       return report;
     }
 
-    const projects = await getAllProjects();
+    const projects = await getAllProjectsDirectory();
 
     for (const project of projects) {
       const projectId = project._id;
@@ -223,7 +296,6 @@ export const validateDatabases = async () => {
       await initialiseDataDb({
         projectId,
         force: true,
-        roles: metadata.accesses,
       });
     }
     return report;
@@ -244,7 +316,8 @@ export const createNotebook = async (
   projectName: string,
   uispec: EncodedProjectUIModel,
   metadata: any,
-  template_id: string | undefined = undefined
+  template_id: string | undefined = undefined,
+  teamId: string | undefined = undefined
 ) => {
   const projectId = generateProjectID(projectName);
 
@@ -252,8 +325,8 @@ export const createNotebook = async (
   const dataDBName = `data-${projectId}`;
   const projectDoc = {
     _id: projectId,
-    template_id: template_id,
     name: projectName.trim(),
+    template_id: template_id,
     metadata_db: {
       db_name: metaDBName,
     },
@@ -261,7 +334,8 @@ export const createNotebook = async (
       db_name: dataDBName,
     },
     status: 'published',
-  } as ProjectObject;
+    ownedByTeamId: teamId,
+  } satisfies ProjectDocument;
 
   try {
     // first add an entry to the projects db about this project
@@ -279,7 +353,6 @@ export const createNotebook = async (
   const metaDB = await initialiseMetadataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
 
   // derive autoincrementers from uispec
@@ -298,7 +371,6 @@ export const createNotebook = async (
   await initialiseDataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
 
   return projectId;
@@ -320,12 +392,10 @@ export const updateNotebook = async (
   const metaDB = await initialiseMetadataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
   await initialiseMetadataDb({
     projectId,
     force: true,
-    roles: metadata.accesses,
   });
 
   // derive autoincrementers from uispec
@@ -432,7 +502,7 @@ export const writeProjectMetadata = async (
 /**
  * getNotebookMetadata -- return metadata for a single notebook from the database
  * @param project_id a project identifier
- * @returns a ProjectObject object or null if it doesn't exist
+ * @returns a ProjectDocument object or null if it doesn't exist
  */
 export const getNotebookMetadata = async (
   project_id: string
@@ -935,36 +1005,8 @@ export const generateFilenameForAttachment = (
  * @param metadata If the project metadata is known, no need to fetch it again
  * @returns A list of roles for this notebook including at least admin and user
  */
-export const getRolesForNotebook = async (
-  project_id: ProjectID,
-  // If metadata is already known, pass it in here
-  metadata: ProjectMetadata | undefined = undefined
-): Promise<string[]> => {
-  // Either use provided metadata or fetch it
-  let meta: ProjectMetadata;
-  if (metadata) {
-    meta = metadata;
-  } else {
-    // Gets the metadata for the notebook
-    const possibleMetadata = await getNotebookMetadata(project_id);
-    if (!possibleMetadata) {
-      throw new Exceptions.InternalSystemError(
-        'Failed to retrieve roles from the metadata DB for the given project ID.'
-      );
-    }
-    meta = possibleMetadata;
-  }
-
-  // Include all of these roles
-  const roles = meta.accesses || [];
-  // But also add admin and user if not included
-  if (roles.indexOf('admin') < 0) {
-    roles.push('admin');
-  }
-  if (roles.indexOf('user') < 0) {
-    roles.push('user');
-  }
-  return roles;
+export const getRolesForNotebook = () => {
+  return resourceRoles[Resource.PROJECT];
 };
 
 export async function countRecordsInNotebook(

@@ -7,9 +7,10 @@ import {
 } from './ui/breadcrumb';
 import {useAuth} from '@/context/auth-provider';
 import {Fragment} from 'react';
-import {useGetProject, useGetTemplate} from '@/hooks/queries';
+import {useGetProject, useGetTeam, useGetTemplate} from '@/hooks/queries';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Skeleton} from './ui/skeleton';
+import {capitalize} from '@/lib/utils';
 
 /**
  * Breadcrumbs component renders a breadcrumb navigation for the current page.
@@ -28,7 +29,23 @@ export default function Breadcrumbs() {
   const {data, isLoading} =
     pathname.at(0) === 'projects'
       ? useGetProject(user, pathname.at(1) || '')
-      : useGetTemplate(user, pathname.at(1) || '');
+      : pathname.at(0) === 'templates'
+        ? useGetTemplate(user, pathname.at(1) || '')
+        : pathname.at(0) === 'teams'
+          ? useGetTeam(user, pathname.at(1) || '')
+          : {data: null, isLoading: false};
+
+  const getDisplayName = () => {
+    if (!data) return pathname.at(1);
+
+    if ('metadata' in data && data.metadata && 'name' in data.metadata) {
+      return data.metadata.name;
+    }
+    if ('name' in data) {
+      return data.name;
+    }
+    return pathname.at(1);
+  };
 
   return (
     <Breadcrumb>
@@ -40,9 +57,8 @@ export default function Breadcrumbs() {
               <BreadcrumbItem>
                 <Link to={pathname.at(0)}>
                   {pathname.at(0) === 'projects'
-                    ? NOTEBOOK_NAME_CAPITALIZED
-                    : 'Template'}
-                  s
+                    ? `${NOTEBOOK_NAME_CAPITALIZED}s`
+                    : capitalize(pathname.at(0) || '')}
                 </Link>
               </BreadcrumbItem>
             )}
@@ -50,9 +66,7 @@ export default function Breadcrumbs() {
               (isLoading ? (
                 <Skeleton className="w-16 h-5 rounded-md" />
               ) : (
-                <BreadcrumbItem>
-                  {data?.metadata?.name || pathname.at(1)}
-                </BreadcrumbItem>
+                <BreadcrumbItem>{getDisplayName()}</BreadcrumbItem>
               ))}
           </Fragment>
         ))}

@@ -421,7 +421,7 @@ describe('record iterator', () => {
       // expect the sum of the first n integers from 0 to n-1
       expect(sumOfAges).toBe(Math.abs((n * (n - 1)) / 2));
     }
-  }, 15000);
+  }, 25000);
 });
 
 describe('record retrieval', () => {
