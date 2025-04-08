@@ -6,6 +6,9 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/get-hooks';
 import {Route} from '@/routes/_protected/projects/$projectId';
+import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {Action} from '@faims3/data-model';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -20,6 +23,12 @@ const ProjectActions = (): JSX.Element => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const {data} = useGetProjects(user, projectId);
+
+  // Permissions
+  const canChangeProjectStatus = useIsAuthorisedTo({
+    action: Action.CHANGE_PROJECT_STATUS,
+    resourceId: projectId,
+  });
 
   return (
     <div className="flex flex-col gap-2 justify-between">
@@ -56,6 +65,11 @@ const ProjectActions = (): JSX.Element => {
           </ListItem>
         </List>
       </Card>
+      {canChangeProjectStatus && (
+        <Card className="flex-1">
+          <ProjectStatusDialog projectId={projectId} />
+        </Card>
+      )}
     </div>
   );
 };

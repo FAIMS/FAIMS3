@@ -10,7 +10,7 @@ import {useGetProjects} from '@/hooks/get-hooks';
  *
  * @returns {JSX.Element} The rendered ExportProjectForm component.
  */
-const ExportProjectForm = () => {
+const ExportProjectForm = ({type} : {type: 'zip' | 'csv'}) => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const {data} = useGetProjects(user, projectId);
@@ -35,7 +35,7 @@ const ExportProjectForm = () => {
    */
   const onSubmit = async ({form}: {form: string}) => {
     window.open(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/${form}.csv`,
+      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/${form}.${type}`,
       '_blank'
     );
     return undefined;

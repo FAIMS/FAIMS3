@@ -34,11 +34,7 @@ export const useIsAuthorisedTo = ({
 }): boolean => {
   const {user} = useAuth();
 
-  console.log('Checking auth with input: ', {action, resourceId});
-  console.log('User: ', {user});
-
   if (!user || !user.decodedToken) {
-    console.log('User or decoded token not defined');
     return false;
   }
 

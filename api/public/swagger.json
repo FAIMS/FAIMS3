@@ -252,7 +252,7 @@
         }
       }
     },
-    "/notebooks/{id}/{viewID}.csv": {
+    "/notebooks/{id}/records/{viewID}.csv": {
       "get": {
         "summary": "Get records as CSV",
         "description": "Export notebook records as CSV for one form",
@@ -287,7 +287,7 @@
         }
       }
     },
-    "/notebooks/{id}/{viewID}.zip": {
+    "/notebooks/{id}/records/{viewID}.zip": {
       "get": {
         "summary": "Get all record attachments as a zip file",
         "description": "Export all attachments (photos, files) for a form as a zip file",

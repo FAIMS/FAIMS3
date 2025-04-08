@@ -36,6 +36,7 @@ import {
   PostRandomRecordsResponse,
   projectRoleToAction,
   ProjectUIModel,
+  PutChangeNotebookStatusInputSchema,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
   removeProjectRole,
@@ -46,14 +47,16 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE} from '../buildconfig';
-import {getDataDb, localGetProjectsDb} from '../couchdb';
+import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
+  changeNotebookStatus,
   createNotebook,
   deleteNotebook,
   generateFilenameForAttachment,
   getEncodedNotebookUISpec,
   getNotebookMetadata,
+  getProjectById,
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
@@ -218,6 +221,7 @@ api.post(
   }
 );
 
+// Get a specific notebook by ID
 api.get(
   '/:id',
   requireAuthenticationAPI,
@@ -234,19 +238,12 @@ api.get(
     }
 
     // get full details of a single notebook
-    const project_id = req.params.id;
-    let project;
-    try {
-      project = await localGetProjectsDb().get(project_id);
-    } catch (e) {
-      // Could not find the project
-      throw new Exceptions.ItemNotFoundException(
-        `Failed to find the project with ID ${project_id}.`
-      );
-    }
+    const projectId = req.params.id;
 
-    const metadata = await getNotebookMetadata(project_id);
-    const uiSpec = await getEncodedNotebookUISpec(project_id);
+    const project = await getProjectById(projectId);
+    const metadata = await getNotebookMetadata(projectId);
+    const uiSpec = await getEncodedNotebookUISpec(projectId);
+
     if (metadata && uiSpec) {
       res.json({
         metadata,
@@ -254,6 +251,7 @@ api.get(
         // in all client apps
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
         ownedByTeamId: project.ownedByTeamId,
+        status: project.status,
       } satisfies GetNotebookResponse);
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found.');
@@ -284,6 +282,27 @@ api.put(
     const projectID = req.params.id;
     await updateNotebook(projectID, uiSpec, metadata);
     res.json({notebook: projectID}).end();
+  }
+);
+
+// PUT change project status
+api.put(
+  '/:projectId/status',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_PROJECT_STATUS,
+    getResourceId(req) {
+      return req.params.projectId;
+    },
+  }),
+  processRequest({
+    params: z.object({projectId: z.string()}),
+    body: PutChangeNotebookStatusInputSchema,
+  }),
+  async ({body: {status}, params: {projectId}}, res) => {
+    await changeNotebookStatus({projectId, status});
+    res.sendStatus(200);
+    return;
   }
 );
 
@@ -356,7 +375,7 @@ api.get(
 
 // export current versions of all records in this notebook as csv
 api.get(
-  '/:id/:viewID.csv',
+  '/:id/records/:viewID.csv',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
@@ -387,7 +406,7 @@ api.get(
 
 // export files for all records in this notebook as zip
 api.get(
-  '/:id/:viewID.zip',
+  '/:id/records/:viewID.zip',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,

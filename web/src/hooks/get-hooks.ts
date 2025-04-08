@@ -1,13 +1,14 @@
-import {useQuery} from '@tanstack/react-query';
 import {User} from '@/context/auth-provider';
 import {
   GetListTeamsResponse,
   GetListTemplatesResponse,
+  GetNotebookResponse,
   GetProjectInvitesResponse,
   GetTeamByIdResponse,
   GetTeamInvitesResponse,
   GetTeamMembersResponse,
 } from '@faims3/data-model';
+import {useQuery} from '@tanstack/react-query';
 import QRCode from 'qrcode';
 
 /**
@@ -43,6 +44,27 @@ export const useGetProjects = (user: User | null, projectId?: string) =>
   useQuery({
     queryKey: ['projects', projectId],
     queryFn: () => get(`/api/notebooks/${projectId || ''}`, user),
+  });
+
+/**
+ * useGetProject hook returns a query for fetching an individual project
+ */
+export const useGetProject = ({
+  user,
+  projectId,
+}: {
+  user: User | null;
+  projectId: string;
+}) =>
+  useQuery({
+    queryKey: ['projects', projectId],
+    queryFn: async () => {
+      return (await get(
+        `/api/notebooks/${projectId}`,
+        user
+      )) as GetNotebookResponse;
+    },
+    enabled: !!user,
   });
 
 /**
