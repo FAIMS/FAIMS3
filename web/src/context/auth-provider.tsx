@@ -11,7 +11,6 @@ export interface User {
     id: string;
     name: string;
     email: string;
-    cluster_admin: boolean;
   };
   token: string;
   refreshToken: string;
@@ -133,7 +132,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         token,
         refreshToken,
         decodedToken,
-      };
+      } satisfies User;
 
       setStoredUser(updatedUser);
       setUser(updatedUser);

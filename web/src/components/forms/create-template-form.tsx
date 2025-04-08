@@ -3,7 +3,7 @@ import {Field, Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetTeams} from '@/hooks/get-hooks';
+import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 

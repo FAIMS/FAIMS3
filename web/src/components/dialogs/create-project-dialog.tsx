@@ -12,7 +12,7 @@ import {CreateProjectForm} from '../forms/create-project-form';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Plus} from 'lucide-react';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTeam} from '@/hooks/get-hooks';
+import {useGetTeam} from '@/hooks/queries';
 import {ErrorComponent} from '@tanstack/react-router';
 
 export const CreateProjectDialog = ({

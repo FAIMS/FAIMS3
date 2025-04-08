@@ -1,17 +1,15 @@
-import {useAuth} from '@/context/auth-provider';
-import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
-import {Skeleton} from '@/components/ui/skeleton';
-import {List} from '@/components/ui/list';
-import {Card} from '@/components/ui/card';
-import {useGetTemplates} from '@/hooks/get-hooks';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
+import {Card} from '@/components/ui/card';
+import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
+import {Skeleton} from '@/components/ui/skeleton';
+import {useAuth} from '@/context/auth-provider';
+import {useGetTemplate} from '@/hooks/queries';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
   {field: 'pre_description', label: 'Description'},
   {field: 'project_lead', label: 'Created by'},
   {field: 'notebook_version', label: 'Version'},
-
   {
     field: 'ownedByTeamId',
     label: 'Team',
@@ -41,13 +39,15 @@ interface TemplateDetailsProps {
 const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetTemplates(user, templateId);
+  const {data, isPending} = useGetTemplate(user, templateId);
 
   return (
     <Card>
       <List>
         {detailsFields.map(({field, label, render, isMetadata = true}) => {
-          const cellData = isMetadata ? data?.metadata[field] : data?.[field];
+          const cellData = isMetadata
+            ? data?.metadata[field]
+            : (data as any | undefined)?.[field];
           return (
             <ListItem key={field}>
               <ListLabel>{label}</ListLabel>
