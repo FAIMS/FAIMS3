@@ -172,6 +172,14 @@ function MapWrapper(props: MapProps) {
     }
   };
 
+  // add this to stoptracking after test works.
+  // if (positionLayer) {
+  //   const source = positionLayer.getSource();
+  //   source?.clear(); // clear any leftover features
+  //   map.removeLayer(positionLayer);
+  //   setPositionLayer(undefined);
+  // }
+
   // real-time blue dot + accuracy tracking
   const startLocationTracking = (theMap: Map) => {
     stopTracking();
