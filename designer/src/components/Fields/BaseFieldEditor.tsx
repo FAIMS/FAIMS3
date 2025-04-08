@@ -57,7 +57,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   // the field label is stored in the notebook
   const getFieldLabel = () => {
     return (
-      field['component-parameters']?.label || field['component-parameters'].name
+      field['component-parameters']?.label ?? field['component-parameters'].name
     );
   };
 
@@ -89,7 +89,11 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
 
   const updateFieldFromState = (newState: StateType) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    if (newState.label) setFieldLabel(newField, newState.label);
+
+    if (newState.label !== undefined) {
+      setFieldLabel(newField, newState.label);
+    }
+
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].required = newState.required;
     if (newField.meta) {
