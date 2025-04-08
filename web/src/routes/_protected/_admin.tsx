@@ -1,3 +1,5 @@
+import {webUserHasGlobalRole} from '@/hooks/auth-hooks';
+import {Role} from '@faims3/data-model';
 import {createFileRoute, Outlet, redirect} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_protected/_admin')({
@@ -7,7 +9,8 @@ export const Route = createFileRoute('/_protected/_admin')({
       auth: {user},
     },
   }) => {
-    if (!user?.user.cluster_admin) throw redirect({to: '/'});
+    if (user && !webUserHasGlobalRole({user, role: Role.GENERAL_ADMIN}))
+      throw redirect({to: '/'});
   },
 });
 

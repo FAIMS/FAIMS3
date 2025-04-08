@@ -1,8 +1,8 @@
+import {useAuth} from '@/context/auth-provider';
+import {useGetProject} from '@/hooks/queries';
+import {Route} from '@/routes/_protected/projects/$projectId';
 import {z} from 'zod';
 import {Form} from '../form';
-import {Route} from '@/routes/_protected/projects/$projectId';
-import {useAuth} from '@/context/auth-provider';
-import {useGetProjects} from '@/hooks/get-hooks';
 
 interface ExportProjectFormProps {
   type: 'csv' | 'json' | 'xlsx';
@@ -18,17 +18,20 @@ interface ExportProjectFormProps {
 const ExportProjectForm = ({type}: ExportProjectFormProps) => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
-  const {data} = useGetProjects(user, projectId);
+  const {data} = useGetProject({user, projectId});
 
   const fields = [
     {
       name: 'form',
       label: 'Form',
       schema: z.string().nonempty(),
-      options: Object.keys(data['ui-specification'].viewsets).map(name => ({
-        label: name,
-        value: name,
-      })),
+      options:
+        data && data['ui-specification']?.viewsets
+          ? Object.keys(data['ui-specification']?.viewsets).map(name => ({
+              label: name,
+              value: name,
+            }))
+          : [],
     },
   ];
 

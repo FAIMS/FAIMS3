@@ -3,7 +3,7 @@ import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {useGetProjectsForTeam} from '@/hooks/get-hooks';
+import {useGetProjectsForTeam} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {useNavigate} from '@tanstack/react-router';
 

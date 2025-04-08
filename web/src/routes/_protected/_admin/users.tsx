@@ -2,9 +2,10 @@ import {useAuth} from '@/context/auth-provider';
 import {getColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {createFileRoute} from '@tanstack/react-router';
-import {useGetUsers} from '@/hooks/get-hooks';
-import {useState} from 'react';
+import {useGetUsers} from '@/hooks/queries';
+import {useMemo, useState} from 'react';
 import {GeneratePasswordReset} from '@/components/dialogs/generate-password-reset';
+import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 
 export const Route = createFileRoute('/_protected/_admin/users')({
   component: RouteComponent,
@@ -20,6 +21,23 @@ function RouteComponent() {
   const {user: authUser} = useAuth();
   const {data, isPending} = useGetUsers(authUser);
 
+  // breadcrumbs addition
+  const paths = useMemo(
+    () => [
+      // projects ->
+      {
+        path: '/users',
+        label: 'Users',
+      },
+    ],
+    []
+  );
+
+  useBreadcrumbUpdate({
+    isLoading: false,
+    paths,
+  });
+
   const [resetDialog, setResetDialog] = useState<boolean>(false);
   const [resetUserId, setResetUserId] = useState<string | undefined>(undefined);
 
@@ -28,7 +46,7 @@ function RouteComponent() {
     setResetDialog(true);
   };
 
-  console.log('data', data);
+  if (!data) return <></>;
 
   return (
     <>

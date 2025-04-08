@@ -20,7 +20,7 @@
 
 import {z} from 'zod';
 import {DecodedTokenPermissions, Role} from './permission';
-import {ExistingProjectDocument} from './data_storage';
+import {ExistingProjectDocument, ProjectStatus} from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -106,20 +106,18 @@ export interface Relationship {
  * Do not use with UI code; sync code only
  */
 
-export type PossibleConnectionInfo =
-  | undefined
-  | {
-      base_url?: string | undefined;
-      proto?: string | undefined;
-      host?: string | undefined;
-      port?: number | undefined;
-      db_name?: string | undefined;
-      auth?: {
-        username: string;
-        password: string;
-      };
-      jwt_token?: string;
-    };
+export type PossibleConnectionInfo = {
+  base_url?: string | undefined;
+  proto?: string | undefined;
+  host?: string | undefined;
+  port?: number | undefined;
+  db_name?: string | undefined;
+  auth?: {
+    username: string;
+    password: string;
+  };
+  jwt_token?: string;
+};
 
 // TODO make this better, currently there is no real explanation for this
 // structure
@@ -131,10 +129,10 @@ export const APINotebookListSchema = z.object({
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),
-  status: z.string().optional(),
   project_id: z.string(),
   metadata: z.record(z.unknown()).optional().nullable(),
   ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
@@ -144,6 +142,7 @@ export const APINotebookGetSchema = z.object({
   metadata: z.record(z.unknown()),
   'ui-specification': z.record(z.unknown()),
   ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 

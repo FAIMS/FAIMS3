@@ -3,8 +3,9 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetProjects} from '@/hooks/get-hooks';
+import {useGetProject} from '@/hooks/queries';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
+import {ProjectStatus} from '@faims3/data-model';
 
 const detailsFields = [
   {field: 'name', label: 'Name'},
@@ -23,6 +24,35 @@ const detailsFields = [
     },
     isMetadata: false,
   },
+  {
+    field: 'status',
+    label: 'Status',
+    render: (status: string | undefined) => {
+      if (status === ProjectStatus.OPEN) {
+        return (
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+            <span className="text-sm text-card-foreground">Open</span>
+          </div>
+        );
+      } else if (status === ProjectStatus.CLOSED) {
+        return (
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-muted-foreground"></div>
+            <span className="text-sm text-muted-foreground">Closed</span>
+          </div>
+        );
+      } else {
+        return (
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-gray-300"></div>
+            <span className="text-sm text-muted-foreground">Unknown</span>
+          </div>
+        );
+      }
+    },
+    isMetadata: false,
+  },
 ];
 
 /**
@@ -35,13 +65,15 @@ const detailsFields = [
 const ProjectDetails = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetProjects(user, projectId);
+  const {data, isPending} = useGetProject({user, projectId});
 
   return (
     <Card>
       <List>
         {detailsFields.map(({field, label, render, isMetadata = true}) => {
-          const cellData = isMetadata ? data?.metadata[field] : data?.[field];
+          const cellData = isMetadata
+            ? data?.metadata[field]
+            : (data as any | undefined)?.[field];
           return (
             <ListItem key={field}>
               <ListLabel>{label}</ListLabel>
