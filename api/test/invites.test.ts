@@ -343,12 +343,12 @@ describe('Invite Tests', () => {
       expect(response.body.usesRemaining).to.equal(5);
     });
 
-    it('GET /api/invites/project/:projectId requires authentication', async () => {
+    it('GET /api/invites/notebook/:projectId requires authentication', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      await request(app).get(`/api/invites/project/${projectId}`).expect(401);
+      await request(app).get(`/api/invites/notebook/${projectId}`).expect(401);
     });
 
-    it('GET /api/invites/project/:projectId returns project invites', async () => {
+    it('GET /api/invites/notebook/:projectId returns project invites', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
 
       await createInvite({
@@ -368,7 +368,7 @@ describe('Invite Tests', () => {
       });
 
       const response = await request(app)
-        .get(`/api/invites/project/${projectId}`)
+        .get(`/api/invites/notebook/${projectId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -424,11 +424,11 @@ describe('Invite Tests', () => {
       ]);
     });
 
-    it('POST /api/invites/project/:projectId creates a project invite', async () => {
+    it('POST /api/invites/notebook/:projectId creates a project invite', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
 
       const response = await request(app)
-        .post(`/api/invites/project/${projectId}`)
+        .post(`/api/invites/notebook/${projectId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           role: Role.PROJECT_CONTRIBUTOR,
@@ -487,7 +487,7 @@ describe('Invite Tests', () => {
       expect(response.body.usesOriginal).to.equal(10);
     });
 
-    it('DELETE /api/invites/project/:projectId/:inviteId deletes a project invite', async () => {
+    it('DELETE /api/invites/notebook/:projectId/:inviteId deletes a project invite', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
       const invite = await createInvite({
         resourceType: Resource.PROJECT,
@@ -498,7 +498,7 @@ describe('Invite Tests', () => {
       });
 
       await request(app)
-        .delete(`/api/invites/project/${projectId}/${invite._id}`)
+        .delete(`/api/invites/notebook/${projectId}/${invite._id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -561,7 +561,7 @@ describe('Invite Tests', () => {
       });
 
       await request(app)
-        .post(`/api/invites/project/${projectId}`)
+        .post(`/api/invites/notebook/${projectId}`)
         .set('Authorization', `Bearer ${localUserToken}`)
         .send({
           role: Role.PROJECT_ADMIN,
