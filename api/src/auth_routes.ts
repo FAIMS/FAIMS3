@@ -19,26 +19,24 @@
  *   which server to use and whether to include test data
  */
 
-import passport from 'passport';
-import {z} from 'zod';
-import {body, validationResult} from 'express-validator';
-import {registerLocalUser} from './auth_providers/local';
-import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
-import {getInvite, useInvite} from './couchdb/invites';
-import {getCouchUserFromEmailOrUsername} from './couchdb/users';
-import {
-  generateUserToken,
-  upgradeCouchUserToExpressUser,
-} from './authkeys/create';
-import {NextFunction, Request, Response, Router} from 'express';
-import {processRequest} from 'zod-express-middleware';
 import {
   GetRegisterByInviteQuerySchema,
   PostLocalAuthInputSchema,
   PostLocalAuthQuerySchema,
   PostRegisterLocalInputSchema,
 } from '@faims3/data-model';
-import {DoneFunction} from './types';
+import {NextFunction, Request, Response, Router} from 'express';
+import {body, validationResult} from 'express-validator';
+import passport from 'passport';
+import {z} from 'zod';
+import {processRequest} from 'zod-express-middleware';
+import {registerLocalUser} from './auth_providers/local';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from './authkeys/create';
+import {CONDUCTOR_AUTH_PROVIDERS, CONDUCTOR_PUBLIC_URL} from './buildconfig';
+import {getInvite, useInvite} from './couchdb/invites';
 
 interface RequestQueryRedirect {
   redirect: string;
@@ -48,25 +46,6 @@ const AVAILABLE_AUTH_PROVIDER_DISPLAY_INFO: {[name: string]: any} = {
     name: 'Google',
   },
 };
-
-passport.serializeUser((user: Express.User, done: DoneFunction) => {
-  done(null, user.user_id);
-});
-
-passport.deserializeUser((id: string, done: DoneFunction) => {
-  getCouchUserFromEmailOrUsername(id)
-    .then(user_data => {
-      if (!user_data) {
-        return Promise.reject('User could not be found!');
-      } else {
-        return upgradeCouchUserToExpressUser({dbUser: user_data});
-      }
-    })
-    .then(user => {
-      done(null, user);
-    })
-    .catch(err => done(err, null));
-});
 
 export function determine_callback_urls(provider_name: string): {
   login_callback: string;
@@ -115,11 +94,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
 
   app.get<{}, {}, {}, RequestQueryRedirect>('/auth/', async (req, res) => {
     const redirect = validateRedirect(req.query?.redirect || '/');
-
-    if (req.user) {
-      await redirect_with_token(res, req.user, redirect);
-    }
-
     const available_provider_info = [];
     for (const handler of handlers) {
       available_provider_info.push({
@@ -132,33 +106,11 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         available_provider_info.length > 0
           ? available_provider_info
           : undefined,
-      localAuth: true, // maybe make this configurable?
-      messages: req.flash(),
+      localAuth: true,
       redirect: redirect,
       layout: 'auth',
     });
   });
-
-  /**
-   * Define the logout route. Optionally redirect to a given URL
-   * after logout to account for logout from the app
-   */
-  app.get<{}, {}, {}, RequestQueryRedirect>(
-    '/logout/',
-    (req, res, next: any) => {
-      if (req.user) {
-        req.logout((err: any) => {
-          if (err) {
-            return next(err);
-          }
-        });
-      }
-
-      const redirect = req.query?.redirect;
-
-      res.redirect(redirect ? `auth?redirect=${redirect}` : '/auth/');
-    }
-  );
 
   /**
    * Generate a function to handle logging in a user and returning
@@ -181,7 +133,6 @@ export function add_auth_routes(app: Router, handlers: string[]) {
         return next(err);
       }
       if (!user) {
-        req.flash('message', 'Invalid email or password');
         return res.redirect('/auth/?redirect=' + redirect);
       }
 
