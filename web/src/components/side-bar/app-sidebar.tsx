@@ -46,12 +46,16 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];
 
+  console.log(pathname, pathname === '/');
+
   if (canSeeProjects) {
     topSectionNavItems.push({
       title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
       url: '/projects',
       icon: LetterText,
-      isActive: pathname.startsWith('/templates'),
+      isActive: true,
+      // homepage OR starts with /projects
+      // pathname.startsWith('/projects') || pathname === '/',
       items:
         projects?.length > 0
           ? projects.map(({name, project_id}: any) => ({

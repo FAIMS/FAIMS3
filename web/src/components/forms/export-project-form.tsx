@@ -10,7 +10,7 @@ import {useGetProjects} from '@/hooks/get-hooks';
  *
  * @returns {JSX.Element} The rendered ExportProjectForm component.
  */
-const ExportProjectForm = ({type} : {type: 'zip' | 'csv'}) => {
+const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const {data} = useGetProjects(user, projectId);

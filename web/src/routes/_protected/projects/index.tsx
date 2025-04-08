@@ -6,7 +6,7 @@ import {useGetProjects} from '@/hooks/get-hooks';
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_protected/projects/')({
-  component: RouteComponent,
+  component: ProjectsRouteComponent,
 });
 
 /**
@@ -15,7 +15,7 @@ export const Route = createFileRoute('/_protected/projects/')({
  *
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
-function RouteComponent() {
+export function ProjectsRouteComponent() {
   const {user} = useAuth();
 
   const {isPending, data} = useGetProjects(user);
