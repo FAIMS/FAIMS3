@@ -66,7 +66,7 @@ export function NavMain({title, items}: NavMainProps) {
                         to={item.url}
                         className={cn(
                           'flex items-center gap-2',
-                          pathname === item.url && 'bg-sidebar-accent'
+                          isActive && 'bg-sidebar-accent'
                         )}
                       >
                         {item.icon && <item.icon />}

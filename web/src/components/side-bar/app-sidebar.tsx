@@ -53,9 +53,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
       url: '/projects',
       icon: LetterText,
-      isActive: true,
-      // homepage OR starts with /projects
-      // pathname.startsWith('/projects') || pathname === '/',
+      isActive: pathname.startsWith('/projects') || pathname === '/',
       items:
         projects?.length > 0
           ? projects.map(({name, project_id}: any) => ({
