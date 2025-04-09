@@ -40,7 +40,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 3000,
     strictPort: true,
-    allowedHosts: true, // ✅ This allows ngrok or any public domain
+    allowedHosts: true, // to be removed later @TODO RG
   },
   preview: {
     port: 3000,
