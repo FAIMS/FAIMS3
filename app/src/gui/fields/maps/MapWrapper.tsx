@@ -164,7 +164,7 @@ function MapWrapper(props: MapProps) {
   // auto-clean tracking
   const stopTracking = () => {
     if (watchIdRef.current) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
+      clearInterval(watchIdRef.current); // Stop simulation test 
       watchIdRef.current = null;
     }
     if (map && positionLayer) {
