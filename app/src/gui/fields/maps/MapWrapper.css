@@ -39,7 +39,7 @@
   }
 }
 
-/* Optional for a true pulse if you decide to switch to DOM overlay later */
+/* Optional for a true pulse if switch to DOM overlay later */
 @keyframes pulse {
   0% {
     transform: scale(0.95);
