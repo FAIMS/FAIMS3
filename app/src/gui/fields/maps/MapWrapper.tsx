@@ -301,11 +301,11 @@ function MapWrapper(props: MapProps) {
     navigator.geolocation.getCurrentPosition(
       pos => {
         alert(
-          `📍 Location:\nLat: ${pos.coords.latitude}\nLon: ${pos.coords.longitude}`
+          `Location:\nLat: ${pos.coords.latitude}\nLon: ${pos.coords.longitude}`
         );
       },
       err => {
-        alert('❌ GPS ERROR:\n' + err.message);
+        alert(' GPS ERROR:\n' + err.message);
       },
       {enableHighAccuracy: true}
     );
