@@ -41,11 +41,6 @@ export const PostLocalAuthInputSchema = z.object({
   username: z.string(),
   password: z.string().min(1),
 });
-// Query
-export const PostLocalAuthQuerySchema = z.object({
-  redirect: z.string().optional(),
-});
-export type PostLocalAuthQuery = z.infer<typeof PostLocalAuthQuerySchema>;
 export type PostLocalAuthInput = z.infer<typeof PostLocalAuthInputSchema>;
 
 // Register by invite ID

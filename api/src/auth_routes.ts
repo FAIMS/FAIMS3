@@ -23,8 +23,8 @@ import {
   GetRegisterByInviteQuerySchema,
   PeopleDBDocument,
   PostLocalAuthInputSchema,
-  PostLocalAuthQuerySchema,
   PostRegisterLocalInputSchema,
+  saveUserMergeResult,
 } from '@faims3/data-model';
 import {NextFunction, Request, Response, Router} from 'express';
 import {body, validationResult} from 'express-validator';
@@ -33,16 +33,23 @@ import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {AUTH_PROVIDER_DETAILS} from './auth_providers';
 import {
-  validateAndApplyInviteToUser,
   registerLocalUser,
+  validateAndApplyInviteToUser,
 } from './auth_providers/helpers';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from './authkeys/create';
-import {AuthProvider, WEBAPP_PUBLIC_URL} from './buildconfig';
+import {
+  AuthProvider,
+  CONDUCTOR_PUBLIC_URL,
+  WEBAPP_PUBLIC_URL,
+} from './buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from './couchdb/invites';
-import {getCouchUserFromEmailOrUsername} from './couchdb/users';
+import {
+  getCouchUserFromEmailOrUsername,
+  saveExpressUser,
+} from './couchdb/users';
 import {CustomSessionData} from './types';
 
 /**
@@ -108,71 +115,32 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
   // This is the base auth handlebars route which is a login form + providers if
   // present
   app.get(
-    '/auth/',
+    '/auth',
     processRequest({
       query: z.object({
-        redirect: z
-          .string()
-          .url('Redirect URL must be a valid HTTP/HTTPS address.')
-          .optional(),
+        redirect: z.string().optional(),
+        inviteId: z.string().optional(),
       }),
     }),
     async (req, res) => {
+      // Pull out the invite ID
+      const inviteId = req.query.inviteId;
+
       const redirect = validateRedirect(
         // TODO desired behaviour in case of no redirect?
         req.query.redirect ?? WEBAPP_PUBLIC_URL
       );
 
-      // TODO remove this
-      if (req.user) {
-        await redirectWithToken({res, user: req.user, redirect});
-      }
-
       const providers = buildRenderProviders(handlers);
       res.render('auth', {
         providers: providers.length > 0 ? providers : undefined,
+        postUrl: `/auth/local?redirect=${redirect}${inviteId ? '&inviteId=' + inviteId : ''}`,
         localAuth: true,
         redirect: redirect,
         layout: 'auth',
       });
     }
   );
-
-  /**
-   * Generate a function to handle logging in a user and returning
-   * a redirect with token
-   *
-   * @param req Express request
-   * @param res Express response
-   * @param next Express next function
-   * @param redirect URL to redirect to
-   * @returns a handler function
-   */
-  const authenticateFunction = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-    redirect: string
-  ) => {
-    // returns a function which logs in a user if the req.user is present, then
-    // redirects with the token
-    return (err: any, user: Express.User) => {
-      if (err) {
-        return next(err);
-      }
-      if (!user) {
-        return res.redirect('/auth/?redirect=' + redirect);
-      }
-
-      req.login(user, async (loginErr: any) => {
-        if (loginErr) {
-          return next(loginErr);
-        }
-        const fullUser = await upgradeCouchUserToExpressUser({dbUser: user});
-        return redirectWithToken({res, user: fullUser, redirect});
-      });
-    };
-  };
 
   /**
    * Generate a redirect response with a token and refresh token for a logged in
@@ -215,10 +183,16 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
     '/auth/local',
     processRequest({
       body: PostLocalAuthInputSchema,
-      query: PostLocalAuthQuerySchema,
+      query: z.object({
+        // redirect when done?
+        redirect: z.string().optional(),
+        // is there an invite to accept too?
+        inviteId: z.string().optional(),
+      }),
     }),
     (req, res, next: NextFunction) => {
       const redirect = validateRedirect(req.query.redirect || '/');
+      const inviteId = req.query.inviteId;
       return passport.authenticate(
         // local strategy (user/pass)
         'local',
@@ -226,8 +200,17 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
         {session: false},
         // custom success function which signs JWT and redirects
         async (err: string | Error | null, user: Express.User) => {
-          console.log('SUCCESS CALLBACK WAS GIVEN ', user);
-          console.log('Err: ', err);
+          // We have logged in - do we also want to consume an invite?
+          if (inviteId) {
+            // We have an invite to consume - go ahead and use it
+            await validateAndApplyInviteToUser({
+              inviteCode: inviteId,
+              dbUser: user,
+            });
+            console.log('Applied invitation successfully');
+            // avoid saving unwanted details here
+            await saveExpressUser(user);
+          }
           if (err) {
             return next(err);
           }
@@ -243,9 +226,9 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
    * Return a redirect response to the given URL
    */
   app.get(
-    '/register/:invite_id/',
+    '/register/:inviteId/',
     processRequest({
-      params: z.object({invite_id: z.string()}),
+      params: z.object({inviteId: z.string()}),
       query: GetRegisterByInviteQuerySchema,
     }),
     async (req, res) => {
@@ -256,7 +239,7 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       const redirect = validateRedirect(req.query.redirect || '/');
 
       // Pull out the invite ID
-      const inviteId = req.params.invite_id;
+      const inviteId = req.params.inviteId;
 
       // Store the invite into the session
       sessionData.invite = inviteId;
@@ -264,38 +247,18 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       // Validate the invite is okay
       const invite = await getInvite({inviteId});
 
-      // If invite is not present
-      if (!invite) {
+      // If invite is not present or invalid
+      if (!invite || isInviteValid({invite}).isValid) {
         return res.render('invite-error', {redirect});
-      }
-
-      // If invite is invalid
-      const {isValid} = isInviteValid({invite});
-
-      if (!isValid) {
-        return res.render('invite-error', {redirect});
-      }
-
-      // This is a case where the user is logged in
-
-      // TODO this will be removed
-      if (req.user) {
-        // Consume the invite
-        await consumeInvite({user: req.user, invite});
-
-        // and redirect
-        return redirectWithToken({res, user: req.user, redirect});
       }
 
       // need to sign up the user, show the registration page
       const providers = buildRenderProviders(handlers);
-      const encodedRedirect = encodeURIComponent(
-        `/register/${inviteId}?redirect=${redirect}`
-      );
+      const encodedRedirect = encodeURIComponent(redirect);
 
       res.render('register', {
         invite: inviteId,
-        loginURL: `/auth?redirect=${encodedRedirect}`,
+        loginURL: `${CONDUCTOR_PUBLIC_URL}/auth?redirect=${encodedRedirect}&inviteId=${inviteId}`,
         providers: providers.length > 0 ? providers : undefined,
         redirect: redirect,
         localAuth: true,

@@ -8,7 +8,7 @@
 </div>
 
 {{#if localAuth}}
-<form method="post" action="/auth/local?redirect={{redirect}}">
+<form method="post" action={{postUrl}}>
     <div class="mb-3">
         <label for="InputIdentifier" class="form-label">Email Address</label>
         <input type="text" name="username" class="form-control" 
