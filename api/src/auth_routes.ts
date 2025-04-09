@@ -92,25 +92,6 @@ function buildRenderProviders({
   return providers;
 }
 
-passport.serializeUser((user, done) => {
-  done(null, user.user_id);
-});
-
-passport.deserializeUser((id, done) => {
-  getCouchUserFromEmailOrUsername(id as string)
-    .then(user_data => {
-      if (!user_data) {
-        return Promise.reject('User could not be found!');
-      } else {
-        return upgradeCouchUserToExpressUser({dbUser: user_data});
-      }
-    })
-    .then(user => {
-      done(null, user);
-    })
-    .catch(err => done(err, null));
-});
-
 /**
  * Add authentication routes for local and federated login
  * The list of handlers are the ids of the configured federated handlers (eg. ['google'])
