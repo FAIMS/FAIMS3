@@ -32,9 +32,15 @@ export default defineConfig({
   build: {
     outDir: 'build',
   },
+  // server: {
+  //   port: 3000,
+  //   host: true,
+  // },
   server: {
+    host: '0.0.0.0',
     port: 3000,
-    host: true,
+    strictPort: true,
+    allowedHosts: true, // ✅ This allows ngrok or any public domain
   },
   preview: {
     port: 3000,

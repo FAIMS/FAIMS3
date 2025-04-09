@@ -164,12 +164,12 @@ function MapWrapper(props: MapProps) {
   // auto-clean tracking
   const stopTracking = () => {
     if (watchIdRef.current) {
-      clearInterval(watchIdRef.current); // Stop simulation test 
+      clearInterval(watchIdRef.current); // Stop simulation test
       watchIdRef.current = null;
     }
     if (map && positionLayer) {
       const source = positionLayer.getSource();
-      source?.clear(); // clear any lingering features
+      source?.clear();
       map.removeLayer(positionLayer);
       setPositionLayer(undefined);
     }
@@ -185,12 +185,75 @@ function MapWrapper(props: MapProps) {
 
   // real-time blue dot + accuracy tracking
   const startLocationTracking = (theMap: Map) => {
-    stopTracking(); // Clean up any previous tracking
+    stopTracking(); // clean previous layers or intervals
 
     const view = theMap.getView();
     const projection = view.getProjection();
 
-    // zooming to initial location on start
+    const positionSource = new VectorSource();
+    const positionLayer = new VectorLayer({
+      source: positionSource,
+      zIndex: 999,
+    });
+    theMap.addLayer(positionLayer);
+    setPositionLayer(positionLayer);
+
+    const directionFeature = new Feature(new Point([0, 0]));
+    const accuracyFeature = new Feature(new Point([0, 0]));
+    positionSource.addFeatures([accuracyFeature, directionFeature]);
+
+    const updateStyles = (
+      coords: number[],
+      headingRadians: number,
+      accuracy: number
+    ) => {
+      directionFeature.setGeometry(new Point(coords));
+      accuracyFeature.setGeometry(new Point(coords));
+
+      // Pulsing effect using scaled circle layers
+      const pulseOuter = new Style({
+        image: new CircleStyle({
+          radius: 18,
+          fill: new Fill({color: 'rgba(26, 115, 232, 0.2)'}),
+        }),
+      });
+
+      const pulseInner = new Style({
+        image: new CircleStyle({
+          radius: 12,
+          fill: new Fill({color: '#1a73e8'}),
+          stroke: new Stroke({color: '#ffffff', width: 3}),
+        }),
+      });
+
+      const directionArrow = new Style({
+        image: new RegularShape({
+          points: 3,
+          radius: 10,
+          radius2: 4,
+          rotation: headingRadians,
+          angle: Math.PI / 3,
+          fill: new Fill({color: '#1a73e8'}),
+          stroke: new Stroke({color: '#ffffff', width: 2}),
+        }),
+        geometry: feature => feature.getGeometry(),
+      });
+
+      directionFeature.setStyle([pulseOuter, pulseInner, directionArrow]);
+
+      // Accuracy circle (pulsing-style scale not supported, but visual size helps)
+      accuracyFeature.setStyle(
+        new Style({
+          image: new CircleStyle({
+            radius: Math.max(25, accuracy / 2),
+            fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
+            stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
+          }),
+        })
+      );
+    };
+
+    // doing current location for initial zoom
     navigator.geolocation.getCurrentPosition(
       pos => {
         const coords = transform(
@@ -201,78 +264,14 @@ function MapWrapper(props: MapProps) {
         view.setCenter(coords);
         view.setZoom(17);
       },
-      err => console.error('Initial location error', err),
+      err => {
+        console.error('Initial GPS fetch failed', err);
+        props.setNoPermission(true);
+      },
       {enableHighAccuracy: true}
     );
 
-    // set up new position layer
-    const positionSource = new VectorSource();
-    const positionLayer = new VectorLayer({
-      source: positionSource,
-      zIndex: 999, // keeping it above layers
-    });
-    theMap.addLayer(positionLayer);
-    setPositionLayer(positionLayer);
-
-    // blue directional arrow + accuracy circle
-    const directionFeature = new Feature(new Point([0, 0]));
-    const accuracyFeature = new Feature(new Point([0, 0]));
-
-    const getDirectionDotStyle = (headingRadians: number) => {
-      return [
-        // core dot
-        new Style({
-          image: new CircleStyle({
-            radius: 12,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: '#ffffff', width: 3}),
-          }),
-        }),
-        // Pointer triangle (direction)
-        new Style({
-          image: new RegularShape({
-            points: 3,
-            radius: 10,
-            radius2: 4, // creates sharper tip
-            angle: 0, // base angle
-            rotation: headingRadians,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: '#ffffff', width: 2}),
-          }),
-          geometry: function (feature) {
-            const geometry = feature.getGeometry() as Point;
-            const coord = geometry?.getCoordinates();
-            if (!coord) return geometry;
-
-            // move the triangle slightly above the center
-            const offset = 11;
-            const dx = Math.sin(headingRadians) * offset;
-            const dy = -Math.cos(headingRadians) * offset;
-
-            const newCoord = [coord[0] + dx, coord[1] + dy];
-            return new Point(newCoord);
-          },
-        }),
-      ];
-    };
-
-    // Initial style with dummy heading
-    directionFeature.setStyle(getDirectionDotStyle(0));
-
-    // Accuracy circle
-    accuracyFeature.setStyle(
-      new Style({
-        image: new CircleStyle({
-          radius: 30,
-          fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
-          stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
-        }),
-      })
-    );
-
-    // Add both to layer source
-    positionSource.addFeatures([accuracyFeature, directionFeature]);
-
+    // Real-time tracking
     watchIdRef.current = navigator.geolocation.watchPosition(
       pos => {
         const coords = transform(
@@ -280,30 +279,37 @@ function MapWrapper(props: MapProps) {
           'EPSG:4326',
           projection
         );
-
         const heading = pos.coords.heading ?? 0;
         const accuracy = pos.coords.accuracy ?? 30;
 
-        directionFeature.getGeometry()?.setCoordinates(coords);
-        accuracyFeature.getGeometry()?.setCoordinates(coords);
-
-        accuracyFeature.setStyle(
-          new Style({
-            image: new CircleStyle({
-              radius: Math.max(25, accuracy / 2),
-              fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
-              stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
-            }),
-          })
-        );
-
-        // 🆕 Apply rotated arrow + blue dot
-        directionFeature.setStyle(getDirectionDotStyle(heading));
+        updateStyles(coords, heading, accuracy);
       },
-      err => console.error('Live tracking error', err),
-      {enableHighAccuracy: true, maximumAge: 0, timeout: 10000}
+      err => {
+        console.error('Live tracking error:', err);
+        props.setNoPermission(true);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 10000,
+      }
     );
   };
+
+  // temporarilty adding for debugging
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        alert(
+          `📍 Location:\nLat: ${pos.coords.latitude}\nLon: ${pos.coords.longitude}`
+        );
+      },
+      err => {
+        alert('❌ GPS ERROR:\n' + err.message);
+      },
+      {enableHighAccuracy: true}
+    );
+  }, []);
 
   useEffect(() => {
     if (mapOpen && map) {
