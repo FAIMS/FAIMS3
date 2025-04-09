@@ -226,22 +226,30 @@ function MapWrapper(props: MapProps) {
         }),
       });
 
-      const directionArrow = new Style({
-        image: new RegularShape({
-          points: 3,
-          radius: 10,
-          radius2: 4,
-          rotation: headingRadians,
-          angle: Math.PI / 3,
-          fill: new Fill({color: '#1a73e8'}),
-          stroke: new Stroke({color: '#ffffff', width: 2}),
-        }),
-        geometry: feature => feature.getGeometry(),
-      });
+      // directional triangle
+      triangleFeature.setStyle(
+        new Style({
+          image: new RegularShape({
+            points: 3,
+            radius: 12, // distance from center to each point
+            rotation: heading + Math.PI, // flip to base the (dot)
+            angle: Math.PI, // vertex up
+            fill: new Fill({color: '#1a73e8'}),
+            stroke: new Stroke({color: 'white', width: 2}),
+          }),
+          geometry: () => {
+            const px = theMap.getPixelFromCoordinate(coords);
+            const offset = 22;
+            const dx = offset * Math.sin(heading);
+            const dy = -offset * Math.cos(heading);
+            const offsetPx = [px[0] + dx, px[1] + dy];
+            return new Point(theMap.getCoordinateFromPixel(offsetPx));
+          },
+          zIndex: 1001,
+        })
+      );
 
-      directionFeature.setStyle([pulseOuter, pulseInner, directionArrow]);
-
-      // Accuracy circle (pulsing-style scale not supported, but visual size helps)
+      // aaccuracy circle
       accuracyFeature.setStyle(
         new Style({
           image: new CircleStyle({
