@@ -218,11 +218,21 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       query: PostLocalAuthQuerySchema,
     }),
     (req, res, next: NextFunction) => {
-      console.log('Getting /auth/local post!');
       const redirect = validateRedirect(req.query.redirect || '/');
       return passport.authenticate(
+        // local strategy (user/pass)
         'local',
-        authenticateFunction(req, res, next, redirect)
+        // do not use session (JWT only - no persistence)
+        {session: false},
+        // custom success function which signs JWT and redirects
+        async (err: string | Error | null, user: Express.User) => {
+          console.log('SUCCESS CALLBACK WAS GIVEN ', user);
+          console.log('Err: ', err);
+          if (err) {
+            return next(err);
+          }
+          return redirectWithToken({res, user, redirect});
+        }
       )(req, res, next);
     }
   );
@@ -304,7 +314,7 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       .isLength({min: 10})
       .withMessage('Must be at least 10 characters'),
     body('email').isEmail().withMessage('Must be a valid email address'),
-    async (req: any, res: any, next: NextFunction) => {
+    async (req, res) => {
       // decode session data and ensure invite is present
       const sessionData = req.session as CustomSessionData;
       const inviteId = sessionData.invite;
@@ -317,7 +327,6 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
         return;
       }
 
-      // In the form, the username is =
       let username = req.body.username;
       const password = req.body.password;
       const repeat = req.body.repeat;
@@ -350,9 +359,7 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);
-        res.redirect(
-          '/register/' + req.session.invite + `?redirect=${redirect}`
-        );
+        res.redirect('/register/' + inviteId + `?redirect=${redirect}`);
         return;
       }
 
@@ -370,9 +377,7 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
           req.flash('email', email);
           req.flash('name', name);
           res.status(400);
-          res.redirect(
-            '/register/' + req.session.invite + `?redirect=${redirect}`
-          );
+          res.redirect('/register/' + inviteId + `?redirect=${redirect}`);
           throw Error(
             'User could not be created due to an issue writing to the database!'
           );
@@ -398,16 +403,14 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       }
 
       req.flash('message', 'Registration successful');
-      req.login(createdDbUser, async (err: any) => {
-        if (err) {
-          return next(err);
-        }
-        // Upgrade by drilling permissions/associations
-        const expressUser = await upgradeCouchUserToExpressUser({
-          dbUser: createdDbUser,
-        });
-        return redirectWithToken({res, user: expressUser, redirect});
+
+      // Upgrade to express.User by drilling permissions/associations
+      const expressUser = await upgradeCouchUserToExpressUser({
+        dbUser: createdDbUser,
       });
+
+      // No longer req.login - instead redirect directly with token!
+      return redirectWithToken({res, user: expressUser, redirect});
     }
   );
 

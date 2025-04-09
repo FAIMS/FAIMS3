@@ -29,29 +29,48 @@ type LocalProfile = {
 };
 
 export const validateLocalUser: VerifyFunction = async (
-  username,
+  email,
   password,
   done
 ) => {
-  const dbUser = await getCouchUserFromEmailOrUsername(username);
-  if (dbUser) {
-    // check the password...
-    const profile = dbUser.profiles['local'] as LocalProfile;
-    if (profile.salt) {
-      const hashedPassword = pbkdf2Sync(
-        password,
-        profile.salt,
-        100000,
-        64,
-        'sha256'
-      );
-      if (hashedPassword.toString('hex') === profile.password) {
-        return done(null, await upgradeCouchUserToExpressUser({dbUser}));
-      }
-    }
+  const dbUser = await getCouchUserFromEmailOrUsername(email);
+
+  // User cannot be found
+  if (!dbUser) {
+    return done(
+      `User with email ${email} does not exist. Are you sure the email is correct?`,
+      false
+    );
   }
-  // fallback to failure
-  return done(null, undefined);
+  // check the password...
+  const profile = dbUser.profiles['local'] as LocalProfile;
+
+  if (!profile) {
+    return done(
+      `You are trying to login to an account which has been created using a social provider. Please login using the social provider instead.`,
+      false
+    );
+  }
+
+  if (!profile.salt) {
+    return done(
+      `Please contact a system administrator. Your user exists but is corrupted or cannot be ues.`,
+      false
+    );
+  }
+
+  const hashedPassword = pbkdf2Sync(
+    password,
+    profile.salt,
+    100000,
+    64,
+    'sha256'
+  );
+  if (hashedPassword.toString('hex') === profile.password) {
+    return done(null, await upgradeCouchUserToExpressUser({dbUser}));
+  } else {
+    return done('Your password is incorrect.', false);
+  }
 };
 
 export const getLocalAuthStrategy = () => {
@@ -60,6 +79,8 @@ export const getLocalAuthStrategy = () => {
     {
       passwordField: 'password',
       usernameField: 'username',
+      // Do not persist the user into the session
+      session: false,
     },
     validateLocalUser
   );
