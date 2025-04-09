@@ -554,45 +554,49 @@ function MapWrapper(props: MapProps) {
         </Grid>
       </Dialog>
 
-      <Dialog open={showConfirmSave} onClose={() => setShowConfirmSave(false)}>
-        <Alert severity="warning">
-          <AlertTitle>No location selected</AlertTitle>
-          Are you sure you want to save an empty location selection?
-        </Alert>
-        <DialogActions>
-          <Button
-            onClick={() => setShowConfirmSave(false)}
-            sx={{
-              backgroundColor: theme.palette.dialogButton.cancel,
-              color: theme.palette.background.default,
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            sx={{
-              backgroundColor: theme.palette.alert.successBackground,
-              color: theme.palette.dialogButton.dialogText,
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-                transform: 'scale(1.05)',
-              },
-            }}
-            onClick={() => {
-              setShowConfirmSave(false);
-              props.setFeatures({}, 'save');
-              setMapOpen(false);
-            }}
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+        <Dialog
+          open={showConfirmSave}
+          onClose={() => setShowConfirmSave(false)}
+        >
+          <Alert severity="warning">
+            <AlertTitle>No location selected</AlertTitle>
+            Are you sure you want to save an empty location selection?
+          </Alert>
+          <DialogActions>
+            <Button
+              onClick={() => setShowConfirmSave(false)}
+              sx={{
+                backgroundColor: theme.palette.dialogButton.cancel,
+                color: theme.palette.background.default,
+                '&:hover': {
+                  backgroundColor: theme.palette.text.primary,
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              sx={{
+                backgroundColor: theme.palette.alert.successBackground,
+                color: theme.palette.dialogButton.dialogText,
+                '&:hover': {
+                  backgroundColor: theme.palette.text.primary,
+                  transform: 'scale(1.05)',
+                },
+              }}
+              onClick={() => {
+                setShowConfirmSave(false);
+                props.setFeatures({}, 'save');
+                setMapOpen(false);
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    </>
   );
 }
 // added forward rendering..
