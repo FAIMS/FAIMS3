@@ -32,7 +32,10 @@ import passport from 'passport';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {AUTH_PROVIDER_DETAILS} from './auth_providers';
-import {handleAuthInvite, registerLocalUser} from './auth_providers/helpers';
+import {
+  validateAndApplyInviteToUser,
+  registerLocalUser,
+} from './auth_providers/helpers';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
@@ -379,7 +382,7 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
 
       let createdDbUser: PeopleDBDocument;
       try {
-        createdDbUser = await handleAuthInvite({
+        createdDbUser = await validateAndApplyInviteToUser({
           // We don't have this yet
           dbUser: undefined,
           // instead we generate it once invite is OK

@@ -34,7 +34,7 @@ import {createUser, saveCouchUser} from '../couchdb/users';
  * @throws {Error} If the invitation cannot be consumed or associated with the
  * user
  */
-export async function handleAuthInvite({
+export async function validateAndApplyInviteToUser({
   dbUser,
   inviteCode,
   createUser,

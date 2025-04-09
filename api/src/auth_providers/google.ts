@@ -39,7 +39,7 @@ import {
   saveCouchUser,
 } from '../couchdb/users';
 import {CustomSessionData} from '../types';
-import {handleAuthInvite} from './helpers';
+import {validateAndApplyInviteToUser} from './helpers';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -157,7 +157,7 @@ async function oauthVerify(
     // Now handle invite auth
     let newDbUser: PeopleDBDocument;
     try {
-      newDbUser = await handleAuthInvite({
+      newDbUser = await validateAndApplyInviteToUser({
         dbUser: undefined,
         inviteCode: possibleInvite,
         createUser: newUser,
@@ -198,7 +198,7 @@ async function oauthVerify(
   if (sessionData?.invite) {
     requiresSave = true;
     // handle invite on existing user
-    await handleAuthInvite({
+    await validateAndApplyInviteToUser({
       dbUser: matchedSingleUser,
       inviteCode: sessionData.invite,
     });
