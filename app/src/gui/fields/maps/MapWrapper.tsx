@@ -200,14 +200,17 @@ function MapWrapper(props: MapProps) {
 
     const directionFeature = new Feature(new Point([0, 0]));
     const accuracyFeature = new Feature(new Point([0, 0]));
-    positionSource.addFeatures([accuracyFeature, directionFeature]);
-
+    positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
     const updateStyles = (
       coords: number[],
-      headingRadians: number,
+      heading: number,
       accuracy: number
     ) => {
-      directionFeature.setGeometry(new Point(coords));
+      const view = theMap.getView();
+
+      // geometry
+      dotFeature.setGeometry(new Point(coords));
+      triangleFeature.setGeometry(new Point(coords));
       accuracyFeature.setGeometry(new Point(coords));
 
       // Pulsing effect using scaled circle layers
