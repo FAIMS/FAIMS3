@@ -496,63 +496,63 @@ function MapWrapper(props: MapProps) {
               </IconButton>
             </Box>
 
-            <Box
-              sx={{
-                display: 'flex',
-                gap: 1,
-              }}
-            >
-              <Button
-                color="inherit"
-                onClick={() => handleClose('clear')}
+              <Box
                 sx={{
-                  backgroundColor: theme.palette.highlightColor.main,
-                  color: theme.palette.dialogButton.dialogText,
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  transition:
-                    'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: theme.palette.text.primary,
-                    transform: 'scale(1.05)',
-                  },
+                  display: 'flex',
+                  gap: 1,
                 }}
               >
-                Clear
-              </Button>
+                <Button
+                  color="inherit"
+                  onClick={() => handleClose('clear')}
+                  sx={{
+                    backgroundColor: theme.palette.highlightColor.main,
+                    color: theme.palette.dialogButton.dialogText,
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    transition:
+                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: theme.palette.text.primary,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  Clear
+                </Button>
 
-              <Button
-                color="inherit"
-                onClick={() => handleClose('save')}
-                sx={{
-                  backgroundColor: theme.palette.alert.successBackground,
-                  color: theme.palette.dialogButton.dialogText,
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  transition:
-                    'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: theme.palette.text.primary,
-                    transform: 'scale(1.05)',
-                  },
-                }}
-              >
-                Save
-              </Button>
-            </Box>
-          </Toolbar>
-        </AppBar>
+                <Button
+                  color="inherit"
+                  onClick={() => handleClose('save')}
+                  sx={{
+                    backgroundColor: theme.palette.alert.successBackground,
+                    color: theme.palette.dialogButton.dialogText,
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    transition:
+                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: theme.palette.text.primary,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  Save
+                </Button>
+              </Box>
+            </Toolbar>
+          </AppBar>
 
-        {/* <div ref={refCallback} style={styles.mapContainer} /> */}
-        <Grid container spacing={2} sx={{height: '100%'}}>
-          <MapComponent
-            parentSetMap={setMap}
-            center={props.center}
-            extent={featuresExtent}
-            zoom={props.zoom}
-          />
-        </Grid>
-      </Dialog>
+          {/* <div ref={refCallback} style={styles.mapContainer} /> */}
+          <Grid container spacing={2} sx={{height: '100%'}}>
+            <MapComponent
+              parentSetMap={setMap}
+              center={props.center}
+              extent={featuresExtent}
+              zoom={props.zoom}
+            />
+          </Grid>
+        </Dialog>
 
         <Dialog
           open={showConfirmSave}
