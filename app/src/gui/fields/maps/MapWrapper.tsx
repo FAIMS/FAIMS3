@@ -271,7 +271,6 @@ function MapWrapper(props: MapProps) {
       {enableHighAccuracy: true}
     );
 
-    // Real-time tracking
     watchIdRef.current = navigator.geolocation.watchPosition(
       pos => {
         const coords = transform(
@@ -281,11 +280,10 @@ function MapWrapper(props: MapProps) {
         );
         const heading = pos.coords.heading ?? 0;
         const accuracy = pos.coords.accuracy ?? 30;
-
         updateStyles(coords, heading, accuracy);
       },
       err => {
-        console.error('Live tracking error:', err);
+        console.error('Live GPS error', err);
         props.setNoPermission(true);
       },
       {
@@ -296,21 +294,7 @@ function MapWrapper(props: MapProps) {
     );
   };
 
-  // temporarilty adding for debugging
-  useEffect(() => {
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        alert(
-          `Location:\nLat: ${pos.coords.latitude}\nLon: ${pos.coords.longitude}`
-        );
-      },
-      err => {
-        alert(' GPS ERROR:\n' + err.message);
-      },
-      {enableHighAccuracy: true}
-    );
-  }, []);
-
+  //  ini.  load & cleanup
   useEffect(() => {
     if (mapOpen && map) {
       addDrawInteraction(map, props);
