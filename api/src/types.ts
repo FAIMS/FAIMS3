@@ -21,7 +21,7 @@
 import {PeopleDBDocument, ResourceRole} from '@faims3/data-model';
 
 export interface CustomSessionData {
-  invite?: string;
+  inviteId?: string;
   redirect?: string;
 }
 

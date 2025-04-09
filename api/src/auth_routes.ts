@@ -24,9 +24,8 @@ import {
   PeopleDBDocument,
   PostLocalAuthInputSchema,
   PostRegisterLocalInputSchema,
-  saveUserMergeResult,
 } from '@faims3/data-model';
-import {NextFunction, Request, Response, Router} from 'express';
+import {NextFunction, Response, Router} from 'express';
 import {body, validationResult} from 'express-validator';
 import passport from 'passport';
 import {z} from 'zod';
@@ -45,7 +44,7 @@ import {
   CONDUCTOR_PUBLIC_URL,
   WEBAPP_PUBLIC_URL,
 } from './buildconfig';
-import {consumeInvite, getInvite, isInviteValid} from './couchdb/invites';
+import {getInvite, isInviteValid} from './couchdb/invites';
 import {
   getCouchUserFromEmailOrUsername,
   saveExpressUser,
@@ -71,13 +70,23 @@ function validateRedirect(redirect: string) {
 /**
  * Builds render details for providers
  */
-function buildRenderProviders(handlers: AuthProvider[]) {
+function buildRenderProviders({
+  handlers,
+  redirectUrl,
+  inviteId,
+}: {
+  handlers: AuthProvider[];
+  redirectUrl: string;
+  inviteId?: string;
+}) {
   const providers = [];
   for (const handler of handlers) {
+    const details = AUTH_PROVIDER_DETAILS[handler];
     providers.push({
       // Validate label vs name?
-      label: AUTH_PROVIDER_DETAILS[handler].id,
-      name: AUTH_PROVIDER_DETAILS[handler].id,
+      label: details.id,
+      name: details.id,
+      targetUrl: `/auth/${details.id}?redirect=${redirectUrl}${inviteId ? '&inviteId=' + inviteId : ''}`,
     });
   }
   return providers;
@@ -131,7 +140,11 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
         req.query.redirect ?? WEBAPP_PUBLIC_URL
       );
 
-      const providers = buildRenderProviders(handlers);
+      const providers = buildRenderProviders({
+        handlers,
+        redirectUrl: redirect,
+        inviteId,
+      });
       res.render('auth', {
         providers: providers.length > 0 ? providers : undefined,
         postUrl: `/auth/local?redirect=${redirect}${inviteId ? '&inviteId=' + inviteId : ''}`,
@@ -232,35 +245,37 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       query: GetRegisterByInviteQuerySchema,
     }),
     async (req, res) => {
-      // This is assuming the session plugin is functioning
-      const sessionData = req.session as CustomSessionData;
-
       // Check the redirect is valid
       const redirect = validateRedirect(req.query.redirect || '/');
 
       // Pull out the invite ID
       const inviteId = req.params.inviteId;
 
-      // Store the invite into the session
-      sessionData.invite = inviteId;
-
       // Validate the invite is okay
       const invite = await getInvite({inviteId});
 
       // If invite is not present or invalid
-      if (!invite || isInviteValid({invite}).isValid) {
+      if (!invite || !isInviteValid({invite}).isValid) {
         return res.render('invite-error', {redirect});
       }
 
       // need to sign up the user, show the registration page
-      const providers = buildRenderProviders(handlers);
+      const providers = buildRenderProviders({
+        handlers,
+        inviteId,
+        redirectUrl: redirect,
+      });
       const encodedRedirect = encodeURIComponent(redirect);
 
       res.render('register', {
         invite: inviteId,
+        // pass through on POST -> note that inviteId and redirect are hidden
+        // form elements injected below
+        postUrl: `/register/local`,
         loginURL: `${CONDUCTOR_PUBLIC_URL}/auth?redirect=${encodedRedirect}&inviteId=${inviteId}`,
         providers: providers.length > 0 ? providers : undefined,
         redirect: redirect,
+        inviteId: inviteId,
         localAuth: true,
         messages: req.flash(),
         layout: 'auth',
@@ -278,9 +293,9 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       .withMessage('Must be at least 10 characters'),
     body('email').isEmail().withMessage('Must be a valid email address'),
     async (req, res) => {
-      // decode session data and ensure invite is present
-      const sessionData = req.session as CustomSessionData;
-      const inviteId = sessionData.invite;
+      const inviteId = req.body.inviteId;
+      const redirect = validateRedirect(req.body.redirect || '/');
+
       if (!inviteId) {
         res.status(400);
         req.flash('error', {
@@ -295,7 +310,6 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
       const repeat = req.body.repeat;
       const name = req.body.name;
       const email = req.body.email;
-      const redirect = validateRedirect(req.body.redirect || '/');
 
       // If the username was not provided, use the email
       if (username === undefined || username === null) {
@@ -310,9 +324,7 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
         req.flash('email', email);
         req.flash('name', name);
         res.status(400);
-        res.redirect(
-          '/register/' + sessionData.invite + `?redirect=${redirect}`
-        );
+        res.redirect('/register/' + inviteId + `?redirect=${redirect}`);
         return;
       }
 
@@ -381,56 +393,60 @@ export function addAuthRoutes(app: Router, handlers: AuthProvider[]) {
   for (const handler of handlers) {
     const handlerDetails = AUTH_PROVIDER_DETAILS[handler];
 
+    // **Login** method for this handler - this will result in a redirection to
+    // the configured providers URL, then called back to the configured callback
+    // (see below)
     app.get(
       `/auth/${handler}/`,
       processRequest({
-        query: z.object({redirect: z.string().optional()}),
+        query: z.object({
+          redirect: z.string().optional(),
+          inviteId: z.string().optional(),
+        }),
       }),
       (req, res, next) => {
         // pull out session data
         const sessionData = req.session as CustomSessionData;
 
         // check redirect and store in session
-        const redirect = validateRedirect(req.query?.redirect || '/send-token');
-        sessionData.redirect = redirect;
+        const redirect = validateRedirect(
+          // confirm default behaviour here?
+          req.query?.redirect || WEBAPP_PUBLIC_URL
+        );
+        const inviteId = req.query.inviteId;
 
-        // passport authenticate route for this handler
-        passport.authenticate(
-          handlerDetails.id,
-          authenticateFunction(req, res, next, redirect)
-        )(req, res, next);
+        // Store into session (we are about to be redirected! Bye bye)
+        sessionData.redirect = redirect;
+        if (inviteId) sessionData.inviteId = inviteId;
+
+        // passport authenticate route for this handler (bye bye)
+        passport.authenticate(handlerDetails.id, {scope: handlerDetails.scope})(
+          req,
+          res,
+          next
+        );
       }
     );
 
-    // the callback URL for this provider
+    // the callback URL for this provider - all we need to do is call the
+    // validate function again since we will have come back with enough info now
     app.get(handlerDetails.relativeLoginCallbackUrl, (req, res, next) => {
-      // pull out session data
-      const sessionData = req.session as CustomSessionData;
-
-      // check redirect
-      const redirect = validateRedirect(sessionData.redirect || '/send-token');
-
       // authenticate using the associated validate function
       passport.authenticate(
         handlerDetails.id,
-        authenticateFunction(req, res, next, redirect)
+        // custom success function which signs JWT and redirects
+        async (err: string | Error | null, user: Express.User) => {
+          // Everything has already been processed - just check for errors etc here
+          if (err) {
+            return next(err);
+          }
+          const redirect = validateRedirect(
+            (req.session as CustomSessionData)?.redirect || WEBAPP_PUBLIC_URL
+          );
+
+          return redirectWithToken({res, user, redirect});
+        }
       )(req, res, next);
     });
-
-    app.get(
-      `/register/:id/${handlerDetails.id}/`,
-      processRequest({
-        query: z.object({redirect: z.string().optional()}),
-        params: z.object({id: z.string()}),
-      }),
-      (req, res, next) => {
-        // pull out session data
-        const sessionData = req.session as CustomSessionData;
-        // save the invite and redirect in the session so we can refer to them later
-        sessionData['invite'] = req.params.id;
-        sessionData['redirect'] = req.query.redirect;
-        return passport.authenticate(handlerDetails.id)(req, res, next);
-      }
-    );
   }
 }

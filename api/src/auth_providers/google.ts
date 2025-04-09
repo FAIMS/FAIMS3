@@ -119,7 +119,7 @@ async function oauthVerify(
   // create a new account
   if (matchingEmails.length === 0) {
     // Does the session include an invite?
-    const possibleInvite = sessionData?.invite;
+    const possibleInvite = sessionData?.inviteId;
 
     // If no invite - cannot register new account
     if (!possibleInvite) {
@@ -195,12 +195,12 @@ async function oauthVerify(
 
   // Now - we could still have an invite code here (since we may have accessed
   // this after clicking "already have an account")
-  if (sessionData?.invite) {
+  if (sessionData?.inviteId) {
     requiresSave = true;
     // handle invite on existing user
     await validateAndApplyInviteToUser({
       dbUser: matchedSingleUser,
-      inviteCode: sessionData.invite,
+      inviteCode: sessionData.inviteId,
     });
   }
 

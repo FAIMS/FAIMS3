@@ -13,9 +13,10 @@ export type StrategyGeneratorFunction = (params: {
 export type ProviderDetails = {
   id: string;
   displayName: string;
-  relativeLoginCallbackUrl: string,
+  relativeLoginCallbackUrl: string;
   fullLoginCallbackUrl: string;
   strategyGenerator: StrategyGeneratorFunction;
+  scope: string[];
 };
 
 // This maps the provider name/enum -> details about it
@@ -26,6 +27,7 @@ export const AUTH_PROVIDER_DETAILS: Record<AuthProvider, ProviderDetails> = {
     relativeLoginCallbackUrl: '/auth-return/google',
     fullLoginCallbackUrl: `${CONDUCTOR_PUBLIC_URL}/auth-return/google`,
     strategyGenerator: getGoogleOAuthStrategy,
+    scope: ['profile', 'email'],
   },
 };
 
@@ -42,8 +44,11 @@ export function applyPassportAuthProviders(providersToUse: AuthProvider[]) {
   // For each provider
   for (const providerName of providersToUse) {
     // Get the function which generates the strategy
-    const {strategyGenerator, fullLoginCallbackUrl: loginCallbackUrl, id} =
-      AUTH_PROVIDER_DETAILS[providerName];
+    const {
+      strategyGenerator,
+      fullLoginCallbackUrl: loginCallbackUrl,
+      id,
+    } = AUTH_PROVIDER_DETAILS[providerName];
 
     // Build the strategy, providing the login callback URL
     const strategy = strategyGenerator({
