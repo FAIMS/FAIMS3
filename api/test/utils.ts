@@ -24,7 +24,6 @@ PouchDB.plugin(PouchDBFind);
 
 import {expect} from 'chai';
 import request from 'supertest';
-import {addLocalPasswordForUser} from '../src/auth_providers/local';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
@@ -37,6 +36,7 @@ import {
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
 import {addGlobalRole, Role} from '@faims3/data-model';
+import {addLocalPasswordForUser} from '../src/auth_providers/helpers';
 
 export let adminToken = '';
 export let localUserToken = '';

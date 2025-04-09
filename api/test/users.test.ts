@@ -36,7 +36,6 @@ import {
 import {assert, expect} from 'chai';
 import * as fs from 'fs';
 import {
-  addLocalPasswordForUser,
   validateLocalUser,
 } from '../src/auth_providers/local';
 import {upgradeCouchUserToExpressUser} from '../src/authkeys/create';
@@ -49,6 +48,7 @@ import {
   saveCouchUser,
 } from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
+import { addLocalPasswordForUser } from '../src/auth_providers/helpers';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();
@@ -352,26 +352,18 @@ describe('user creation', () => {
       expect(profile.salt).not.to.be.null;
       expect(profile.password).not.to.be.null;
 
-      await validateLocalUser(
-        username,
-        password,
-        (error: string, validUser: Express.User | false) => {
-          expect(validUser).not.to.be.false;
-          if (validUser) {
-            expect(validUser.user_id).to.equal(username);
-            expect(error).to.be.null;
-          }
-        }
-      );
-
-      await validateLocalUser(
-        username,
-        'not the password',
-        (error: string, validUser: Express.User | false) => {
-          expect(validUser).to.be.false;
+      await validateLocalUser(username, password, (error, validUser) => {
+        expect(validUser).not.to.be.undefined;
+        if (validUser) {
+          expect(validUser.user_id).to.equal(username);
           expect(error).to.be.null;
         }
-      );
+      });
+
+      await validateLocalUser(username, 'wrong', (error, validUser) => {
+        expect(validUser).to.be.undefined;
+        expect(error).to.be.null;
+      });
     } else {
       assert.fail('user is null after createUser with valid username');
     }

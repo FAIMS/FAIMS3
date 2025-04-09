@@ -189,13 +189,16 @@ export async function getInvite({
 /**
  * Record usage of an invite by a user.
  *
+ * Also checks for validity (though you should do this prior to calling this
+ * function)
+ *
  * @param {Object} params - The parameters for recording invite usage
  * @param {ExistingInvitesDBDocument} params.invite - The invite document
  * @param {string} params.userId - ID of the user using the invite
  * @returns {Promise<ExistingInvitesDBDocument>} The updated invite document
  * @throws {Error} If the invite has expired or exceeded usage limits
  */
-export async function useInvite({
+export async function consumeInvite({
   invite,
   user,
 }: {
@@ -239,8 +242,9 @@ export async function useInvite({
     );
   }
 
-  // Save the user
-  saveCouchUser(user);
+  // TODO remove this save - this should be done explicitly outside - just including for
+  // compatibility while testing
+  await saveCouchUser(user);
 
   return {
     ...updatedInvite,

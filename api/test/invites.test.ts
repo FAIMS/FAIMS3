@@ -40,7 +40,7 @@ import {
   getInvite,
   getInvitesForResource,
   isInviteValid,
-  useInvite,
+  consumeInvite,
 } from '../src/couchdb/invites';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
@@ -242,13 +242,13 @@ describe('Invite Tests', () => {
       const localUser = await getExpressUserFromEmailOrUsername(localUserName);
       expect(localUser).to.not.be.null;
 
-      await useInvite({
+      await consumeInvite({
         invite: limitedInvite,
         user: localUser!,
       });
 
       const updatedInvite = await getInvite({inviteId: limitedInvite._id});
-      await useInvite({
+      await consumeInvite({
         invite: updatedInvite!,
         user: localUser!,
       });
@@ -295,7 +295,7 @@ describe('Invite Tests', () => {
       });
 
       // Use the invite
-      const updatedInvite = await useInvite({
+      const updatedInvite = await consumeInvite({
         invite,
         user: localUser!,
       });

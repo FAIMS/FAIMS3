@@ -18,8 +18,8 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
-import {add_auth_providers} from './auth_providers';
-import {add_auth_routes} from './auth_routes';
+import {applyPassportAuthProviders} from './auth_providers';
+import {addAuthRoutes} from './auth_routes';
 import {CONDUCTOR_AUTH_PROVIDERS, COUCHDB_INTERNAL_URL} from './buildconfig';
 import {app} from './core';
 import {
@@ -30,8 +30,8 @@ import {
 
 export {app};
 
-add_auth_providers(CONDUCTOR_AUTH_PROVIDERS);
-add_auth_routes(app, CONDUCTOR_AUTH_PROVIDERS);
+applyPassportAuthProviders(CONDUCTOR_AUTH_PROVIDERS);
+addAuthRoutes(app, CONDUCTOR_AUTH_PROVIDERS);
 
 /**
  * Home Page

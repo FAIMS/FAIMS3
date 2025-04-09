@@ -254,13 +254,37 @@ function google_client_secret(): string {
   }
 }
 
-function get_providers_to_use(): string[] {
+// What providers are available?
+export enum AuthProvider {
+  GOOGLE = 'GOOGLE',
+}
+
+/**
+ * Determines which authentication providers to use based on environment configuration.
+ *
+ * Parses the CONDUCTOR_AUTH_PROVIDERS environment variable, which should contain
+ * a semicolon-separated list of provider IDs that match the AuthProvider enum values.
+ *
+ * @returns {AuthProvider[]} Array of enabled authentication providers
+ */
+function getConfiguredProviders(): AuthProvider[] {
+  // expects ; separated list of provider IDs as above
   const providers = process.env.CONDUCTOR_AUTH_PROVIDERS;
   if (providers === '' || providers === undefined) {
     console.log('CONDUCTOR_AUTH_PROVIDERS not set, defaulting to empty');
     return [];
   }
-  return providers.split(';');
+
+  // Get all valid enum keys (e.g., ["GOOGLE"])
+  const validKeys = Object.keys(AuthProvider);
+
+  // split, trim, filter and coerce
+  return providers
+    .split(';')
+    .map(v => v.trim().toUpperCase())
+    .filter(v => v.length !== 0)
+    .filter(v => validKeys.includes(v))
+    .map(v => AuthProvider[v as keyof typeof AuthProvider]);
 }
 
 function conductor_internal_port(): number {
@@ -440,7 +464,7 @@ export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
 export const GOOGLE_CLIENT_ID = google_client_id();
 export const GOOGLE_CLIENT_SECRET = google_client_secret();
-export const CONDUCTOR_AUTH_PROVIDERS = get_providers_to_use();
+export const CONDUCTOR_AUTH_PROVIDERS = getConfiguredProviders();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();

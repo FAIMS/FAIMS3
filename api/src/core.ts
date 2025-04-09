@@ -105,9 +105,26 @@ app.use(
   cookieSession({
     name: 'session',
     secret: COOKIE_SECRET,
+    // TODO ascertain appropriate max age
     maxAge: 24 * 60 * 60 * 1000 * 365, // BBS 20220831 changed to 1 year
   })
 );
+
+app.use((request, response, next) => {
+  if (request.session && !request.session.regenerate) {
+    request.session.regenerate = (cb: any) => {
+      if (cb) cb('');
+      return request.session;
+    };
+  }
+  if (request.session && !request.session.save) {
+    request.session.save = (cb: any) => {
+      if (cb) cb('');
+      return request.session;
+    };
+  }
+  next();
+});
 
 const handlebarsConfig = {
   helpers: {
@@ -132,6 +149,10 @@ app.use(express.json({limit: '200mb'}));
 app.use(cors());
 
 app.use(passport.initialize());
+
+app.use(passport.session());
+app.use(flash());
+
 app.engine('handlebars', hbs.engine);
 app.set('view engine', 'handlebars');
 app.use(express.static('public'));
