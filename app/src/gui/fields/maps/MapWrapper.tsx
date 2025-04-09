@@ -325,34 +325,40 @@ function MapWrapper(props: MapProps) {
     }
   }, [map]);
 
-  const handleClose = (action: 'save' | 'clear' | 'close') => {
+  // save cleanr and close
+  const handleClose = (action: MapAction | 'clear') => {
+    if (!map) return;
+
     if (featuresLayer) {
-      const source = featuresLayer.getSource();
+      map.removeLayer(featuresLayer); // Remove previous layer
+      setFeaturesLayer(undefined);
+    }
 
-      if (source) {
-        const features = source.getFeatures();
+    const source = featuresLayer?.getSource();
+    const features = source?.getFeatures() ?? [];
 
-        if (map) {
-          const geoJsonFeatures = geoJson.writeFeaturesObject(features, {
-            featureProjection: map.getView().getProjection(),
-            dataProjection: 'EPSG:4326',
-            rightHanded: true,
-          });
-          if (action === 'clear') {
-            // if clearing - just remove locally don't callback so we don't save this change
-            source.clear();
-          } else if (action === 'save') {
-            if (!features.length) {
-              setShowConfirmSave(true); // show confirmation dialog if no location is selected while saving.
-              return;
-            }
-            props.setFeatures(geoJsonFeatures, 'save');
-            setMapOpen(false);
-          } else if (action === 'close') {
-            setMapOpen(false);
-          }
-        }
+    if (action === 'clear') {
+      console.log('Inside clear');
+      props.setFeatures({}, 'save'); // Clear pin from state
+      addDrawInteraction(map, props); // re-ad draw layer
+      return;
+    }
+    // action save
+    if (action === 'save') {
+      if (!features.length) {
+        setShowConfirmSave(true);
+        return;
       }
+
+      const geoJsonFeatures = geoJson.writeFeaturesObject(features, {
+        featureProjection: map.getView().getProjection(),
+        dataProjection: 'EPSG:4326',
+      });
+
+      props.setFeatures(geoJsonFeatures, 'save');
+      setMapOpen(false);
+    } else if (action === 'close') {
+      setMapOpen(false);
     }
   };
 
@@ -403,98 +409,98 @@ function MapWrapper(props: MapProps) {
               }}
             />
 
-            <Typography
-              variant="h6"
-              sx={{fontWeight: 'bold', fontSize: '18px'}}
-            >
-              {props.label}
-            </Typography>
-          </Box>
-        </Button>
-      ) : (
-        <Box>
-          <Tooltip title="Edit location">
-            <Box
-              id="edit-location-container"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 80,
-                height: 80,
-                backgroundColor: '#dfdfdf',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease-in-out',
-                '&:hover': {
-                  backgroundColor: '#e0e0e0',
-                  transform: 'scale(1.1)',
-                  boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
-                },
-              }}
-              onClick={handleClickOpen}
-            >
-              <EditIcon
-                sx={{
-                  fontSize: 26,
-                  color: theme.palette.primary.main,
-                }}
-              />
+              <Typography
+                variant="h6"
+                sx={{fontWeight: 'bold', fontSize: '18px'}}
+              >
+                {props.label}
+              </Typography>
             </Box>
-          </Tooltip>
-        </Box>
-      )}
-
-      <Dialog fullScreen open={mapOpen} onClose={() => setMapOpen(false)}>
-        <AppBar
-          sx={{
-            position: 'relative',
-            backgroundColor: theme.palette.background.default,
-          }}
-        >
-          <Toolbar
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: theme.palette.background.default,
-              width: '100%',
-              paddingX: {xs: '8px', sm: '12px'},
-            }}
-          >
-            <Box
-              sx={{display: 'flex', alignItems: 'center', marginLeft: '10px'}}
-            >
-              <IconButton
-                edge="start"
-                color="inherit"
-                onClick={() => setMapOpen(false)}
-                aria-label="close"
+          </Button>
+        ) : (
+          <Box>
+            <Tooltip title="Edit location">
+              <Box
+                id="edit-location-container"
                 sx={{
-                  backgroundColor: theme.palette.primary.dark,
-                  color: theme.palette.background.default,
-                  fontSize: '16px',
-                  gap: '4px',
-                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 80,
+                  height: 80,
+                  backgroundColor: '#dfdfdf',
                   borderRadius: '6px',
-                  padding: '6px 12px',
-                  transition:
-                    'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease-in-out',
                   '&:hover': {
-                    backgroundColor: theme.palette.text.primary,
-                    transform: 'scale(1.05)',
+                    backgroundColor: '#e0e0e0',
+                    transform: 'scale(1.1)',
+                    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
                   },
                 }}
+                onClick={handleClickOpen}
               >
-                <CloseIcon
+                <EditIcon
                   sx={{
-                    stroke: theme.palette.background.default,
-                    strokeWidth: '1.5',
+                    fontSize: 26,
+                    color: theme.palette.primary.main,
                   }}
                 />
-                Close
-              </IconButton>
-            </Box>
+              </Box>
+            </Tooltip>
+          </Box>
+        )}
+
+        <Dialog fullScreen open={mapOpen} onClose={() => setMapOpen(false)}>
+          <AppBar
+            sx={{
+              position: 'relative',
+              backgroundColor: theme.palette.background.default,
+            }}
+          >
+            <Toolbar
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: theme.palette.background.default,
+                width: '100%',
+                paddingX: {xs: '8px', sm: '12px'},
+              }}
+            >
+              <Box
+                sx={{display: 'flex', alignItems: 'center', marginLeft: '10px'}}
+              >
+                <IconButton
+                  edge="start"
+                  color="inherit"
+                  onClick={() => setMapOpen(false)}
+                  aria-label="close"
+                  sx={{
+                    backgroundColor: theme.palette.primary.dark,
+                    color: theme.palette.background.default,
+                    fontSize: '16px',
+                    gap: '4px',
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    transition:
+                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: theme.palette.text.primary,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  <CloseIcon
+                    sx={{
+                      stroke: theme.palette.background.default,
+                      strokeWidth: '1.5',
+                    }}
+                  />
+                  Close
+                </IconButton>
+              </Box>
 
               <Box
                 sx={{
