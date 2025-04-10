@@ -3,7 +3,7 @@ import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
 import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
-import {useGetTeam} from '@/hooks/get-hooks';
+import {useGetTeam} from '@/hooks/queries';
 import {useMemo} from 'react';
 import {displayUnixTimestampMs} from '@/lib/utils';
 

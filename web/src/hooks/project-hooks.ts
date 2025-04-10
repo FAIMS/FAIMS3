@@ -61,3 +61,23 @@ export const createProjectFromFile = async ({
     body: JSON.stringify({name, teamId, ...JSON.parse(jsonString)}),
   });
 };
+
+export const removeInviteForProject = async ({
+  inviteId,
+  projectId,
+  user,
+}: {
+  inviteId: string;
+  projectId: string;
+  user: User;
+}) =>
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/invites/notebook/${projectId}/${inviteId}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+    }
+  );
