@@ -119,12 +119,13 @@ platform :ios do
       workspace: "App.xcworkspace",
       scheme: "App",
       export_method: "app-store",
-      export_options: {
-        provisioningProfiles: {
-            DEVELOPER_APP_ID => "match AppStore #{APPLE_BUNDLE_IDENTIFIER}"
-            # AppStore needs app-store. Browserstack needs development
-        }
-      }
+      # see if gym can work out the provisioning profile from the match
+      # export_options: {
+      #   provisioningProfiles: {
+      #       DEVELOPER_APP_ID => "match AppStore #{APPLE_BUNDLE_IDENTIFIER}"
+      #       # AppStore needs app-store. Browserstack needs development
+      #   }
+      # }
     )
     changelog = changelog_from_git_commits(
       match_lightweight_tag: false,
