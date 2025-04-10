@@ -1,17 +1,10 @@
-import {Form} from '@/components/form';
+import {Field, Form} from '@/components/form';
 import {useAuth} from '@/context/auth-provider';
-import {modifyMemberForTeam} from '@/hooks/teams-hooks';
-import {useQueryClient} from '@tanstack/react-query';
-import {Field} from '@/components/form';
-import {z} from 'zod';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {
-  Action,
-  Resource,
-  Role,
-  roleDetails,
-  RoleScope,
-} from '@faims3/data-model';
+import {modifyMemberForTeam} from '@/hooks/teams-hooks';
+import {Action, Role, roleDetails} from '@faims3/data-model';
+import {useQueryClient} from '@tanstack/react-query';
+import {z} from 'zod';
 
 interface AddUserToTeamFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;

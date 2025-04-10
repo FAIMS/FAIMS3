@@ -3,7 +3,7 @@ import {CreateTemplateDialog} from '@/components/dialogs/create-template-dialog'
 import {columns} from '@/components/tables/templates';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {useGetTemplatesForTeam} from '@/hooks/get-hooks';
+import {useGetTemplatesForTeam} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {useNavigate} from '@tanstack/react-router';
 
@@ -28,11 +28,7 @@ const TeamTemplates = ({teamId}: {teamId: string}) => {
       loading={isPending}
       onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
       button={
-        canAddTemplateInTeam && (
-          <CreateTemplateDialog
-            specifiedTeam={teamId}
-          />
-        )
+        canAddTemplateInTeam && <CreateTemplateDialog specifiedTeam={teamId} />
       }
     />
   );

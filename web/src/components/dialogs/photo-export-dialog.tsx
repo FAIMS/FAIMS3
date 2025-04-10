@@ -27,7 +27,7 @@ export const PhotoExportDialog = () => (
           Export all photos for this project to a ZIP file.
         </DialogDescription>
       </DialogHeader>
-      <ExportProjectForm type="zip" />
+      <ExportProjectForm type={'zip'} />
     </DialogContent>
   </Dialog>
 );

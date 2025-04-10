@@ -46,6 +46,7 @@ import {useIsOnline} from '../../../utils/customHooks';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
+import {ProjectStatus} from '@faims3/data-model';
 
 // Survey status naming conventions
 
@@ -83,6 +84,10 @@ export default function NoteBooks() {
   const activeServerId = activeUser.serverId;
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
+  ).filter(
+    // don't show de-activated closed surveys
+    project =>
+      !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );
 
   // Refresh mutation
@@ -100,7 +105,7 @@ export default function NoteBooks() {
   });
   const showRefreshButton = isOnline.isOnline;
 
-  const activeUserActivatedProjects = projects.filter(nb => nb.isActivated);
+  const activatedProjects = projects.filter(nb => nb.isActivated);
 
   const [tabID, setTabID] = useState('1');
 
@@ -174,9 +179,9 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activeUserActivatedProjects.length} {NOTEBOOK_NAME}
-      {activeUserActivatedProjects.length !== 1 ? 's' : ''} currently{' '}
-      {ACTIVATED_LABEL} on this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      You have {activatedProjects.length} {NOTEBOOK_NAME}
+      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
+      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (

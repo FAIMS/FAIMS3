@@ -1,9 +1,13 @@
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, useRouter} from '@tanstack/react-router';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import TemplateDetails from '@/components/tabs/templates/details';
 import TemplateProjects from '@/components/tabs/templates/projects';
 import TemplateActions from '@/components/tabs/templates/actions';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useGetTemplate} from '@/hooks/queries';
+import {useAuth} from '@/context/auth-provider';
+import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {useMemo} from 'react';
 
 const tabs = [
   {
@@ -32,6 +36,31 @@ export const Route = createFileRoute('/_protected/templates/$templateId')({
 
 function RouteComponent() {
   const {templateId} = Route.useParams();
+  const {user} = useAuth();
+  const {data: template, isLoading} = useGetTemplate(user, templateId);
+  const pathname = useRouter().state.location.pathname;
+
+  // breadcrumbs addition
+  const paths = useMemo(
+    () => [
+      // projects ->
+      {
+        path: '/templates',
+        label: 'Templates',
+      },
+      // project name
+      {
+        path: pathname,
+        label: (template?.metadata.name as string | undefined) ?? templateId,
+      },
+    ],
+    [pathname, template]
+  );
+
+  useBreadcrumbUpdate({
+    isLoading,
+    paths,
+  });
 
   return (
     <Tabs defaultValue={tabs[0].name}>
