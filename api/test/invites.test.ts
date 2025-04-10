@@ -584,7 +584,7 @@ describe('Registration', () => {
       password: 'bobbyTables',
       repeat: 'bobbyTables',
       name: 'Bob Bobalooba',
-      redirect: 'http://redirect.org/',
+      redirect: '/test-target',
       action: 'register',
     };
 
@@ -617,7 +617,7 @@ describe('Registration', () => {
           expect(response.header.location[0]).not.to.equal('/');
           // check correct redirect
           const location = new URL(response.header.location);
-          expect(location.hostname).to.equal('redirect.org');
+          expect(location.hostname).to.equal('localhost');
           expect(location.search).to.match(/token/);
         });
     }

@@ -48,6 +48,12 @@ import {
 } from './helpers';
 import {AUTH_PROVIDER_DETAILS} from './strategies/socialProviders';
 
+import patch from '../utils/patchExpressAsync';
+
+// This must occur before express app is used
+patch();
+
+
 // This is the place to go if all else fails - it will have a token!
 export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
 

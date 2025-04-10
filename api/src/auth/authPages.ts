@@ -33,6 +33,11 @@ import {
   validateRedirect,
 } from './helpers';
 
+import patch from '../utils/patchExpressAsync';
+
+// This must occur before express app is used
+patch();
+
 /**
  * Add authentication routes for local and federated login
  * The list of handlers are the ids of the configured federated handlers (eg. ['google'])

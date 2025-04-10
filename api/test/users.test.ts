@@ -350,16 +350,16 @@ describe('user creation', () => {
       expect(profile.salt).not.to.be.null;
       expect(profile.password).not.to.be.null;
 
-      await validateLocalUser(username, password, (error, validUser) => {
-        expect(validUser).not.to.be.undefined;
+      validateLocalUser(username, password, (error, validUser) => {
+        expect(validUser).not.to.be.false;
         if (validUser) {
           expect(validUser.user_id).to.equal(username);
           expect(error).to.be.null;
         }
       });
 
-      await validateLocalUser(username, 'wrong', (error, validUser) => {
-        expect(validUser).to.be.undefined;
+      validateLocalUser(username, 'wrong', (error, validUser) => {
+        expect(validUser).to.be.false;
         expect(error).to.be.null;
       });
     } else {

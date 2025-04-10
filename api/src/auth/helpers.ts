@@ -50,14 +50,11 @@ export const handleZodErrors = ({
       formattedErrors[field] = {msg: err.message};
     });
 
-    // Flash the error messages
-    console.log('FLASHING: ', formattedErrors);
     (req as unknown as CustomRequest).flash('error', formattedErrors);
 
     // Flash back the form data to repopulate the form
     Object.entries(formData).forEach(([key, value]) => {
       if (value) {
-        console.log('FLASHING KV: ', key, value);
         (req as unknown as CustomRequest).flash(key, value);
       }
     });
@@ -73,14 +70,16 @@ export const handleZodErrors = ({
 };
 
 /**
- * Check that a redirect URL is one that we allow based on our whitelist configuration.
- * Verifies that the redirect URL's origin (protocol + hostname + port) matches
- * one of the whitelisted domains.
+ * Check that a redirect URL is one that we allow based on our whitelist
+ * configuration. Verifies that the redirect URL's origin (protocol + hostname +
+ * port) matches one of the whitelisted domains.
  *
- * This is a security-critical function that prevents open redirect vulnerabilities.
+ * This is a security-critical function that prevents open redirect
+ * vulnerabilities.
  *
  * @param redirect URL to redirect to
- * @returns a valid URL to redirect to that matches our whitelist, default to '/' if invalid
+ * @returns a valid URL to redirect to that matches our whitelist, default to
+ * '/' if invalid
  */
 export function validateRedirect(
   redirect: string,
