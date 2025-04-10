@@ -321,6 +321,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_WEB_URL: `https://${props.webDomainName}`,
       VITE_API_URL: props.conductorUrl,
       VITE_DESIGNER_URL: this.designerUrl,
+      VITE_NOTEBOOK_NAME: props.notebookName,
     };
 
     // Setup a deployment into this bucket with static files

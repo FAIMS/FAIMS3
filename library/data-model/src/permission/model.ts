@@ -136,7 +136,7 @@ export enum Action {
   VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
   VIEW_TEAM_MEMBERS = 'VIEW_TEAM_MEMBERS',
 
-  // Team invites (resource specific)
+  // Direct management
   ADD_ADMIN_TO_TEAM = 'ADD_ADMIN_TO_TEAM',
   ADD_MANAGER_TO_TEAM = 'ADD_MANAGER_TO_TEAM',
   ADD_MEMBER_TO_TEAM = 'ADD_MEMBER_TO_TEAM',
@@ -144,6 +144,22 @@ export enum Action {
   REMOVE_ADMIN_FROM_TEAM = 'REMOVE_ADMIN_FROM_TEAM',
   REMOVE_MANAGER_FROM_TEAM = 'REMOVE_MANAGER_FROM_TEAM',
   REMOVE_MEMBER_FROM_TEAM = 'REMOVE_MEMBER_FROM_TEAM',
+
+  // Invitations and sharing - note there is create, edit and delete for each
+  // role level
+  VIEW_TEAM_INVITES = 'VIEW_TEAM_INVITES',
+
+  CREATE_MEMBER_TEAM_INVITE = 'CREATE_MEMBER_TEAM_INVITE',
+  EDIT_MEMBER_TEAM_INVITE = 'EDIT_MEMBER_TEAM_INVITE',
+  DELETE_MEMBER_TEAM_INVITE = 'DELETE_MEMBER_TEAM_INVITE',
+
+  CREATE_MANAGER_TEAM_INVITE = 'CREATE_MANAGER_TEAM_INVITE',
+  EDIT_MANAGER_TEAM_INVITE = 'EDIT_MANAGER_TEAM_INVITE',
+  DELETE_MANAGER_TEAM_INVITE = 'DELETE_MANAGER_TEAM_INVITE',
+
+  CREATE_ADMIN_TEAM_INVITE = 'CREATE_ADMIN_TEAM_INVITE',
+  EDIT_ADMIN_TEAM_INVITE = 'EDIT_ADMIN_TEAM_INVITE',
+  DELETE_ADMIN_TEAM_INVITE = 'DELETE_ADMIN_TEAM_INVITE',
 
   // ============================================================
   // USER ACTIONS
@@ -508,6 +524,67 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resource: Resource.TEAM,
   },
 
+  [Action.VIEW_TEAM_INVITES]: {
+    name: 'View Team invitiations',
+    description: 'View the list of existing invitations and their details',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.CREATE_MEMBER_TEAM_INVITE]: {
+    name: 'Create Member Team Invite',
+    description: 'Generate an invitation with member access to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.EDIT_MEMBER_TEAM_INVITE]: {
+    name: 'Edit Member Team Invite',
+    description: 'Modify an existing member invitation to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.DELETE_MEMBER_TEAM_INVITE]: {
+    name: 'Delete Member Team Invite',
+    description: 'Remove an existing member invitation to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.CREATE_MANAGER_TEAM_INVITE]: {
+    name: 'Create Manager Team Invite',
+    description: 'Generate an invitation with manager access to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.EDIT_MANAGER_TEAM_INVITE]: {
+    name: 'Edit Manager Team Invite',
+    description: 'Modify an existing manager invitation to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.DELETE_MANAGER_TEAM_INVITE]: {
+    name: 'Delete Manager Team Invite',
+    description: 'Remove an existing manager invitation to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.CREATE_ADMIN_TEAM_INVITE]: {
+    name: 'Create Admin Team Invite',
+    description: 'Generate an invitation with admin access to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.EDIT_ADMIN_TEAM_INVITE]: {
+    name: 'Edit Admin Team Invite',
+    description: 'Modify an existing admin invitation to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+  [Action.DELETE_ADMIN_TEAM_INVITE]: {
+    name: 'Delete Admin Team Invite',
+    description: 'Remove an existing admin invitation to a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
+
   // ============================================================
   // TEMPLATE ACTIONS
   // ============================================================
@@ -826,6 +903,7 @@ export const roleActions: Record<
       Action.UPDATE_PROJECT_UISPEC,
       Action.CHANGE_PROJECT_STATUS,
       Action.EXPORT_PROJECT_DATA,
+
       Action.VIEW_PROJECT_INVITES,
       Action.CREATE_GUEST_PROJECT_INVITE,
       Action.EDIT_GUEST_PROJECT_INVITE,
@@ -891,6 +969,15 @@ export const roleActions: Record<
       Action.VALIDATE_DBS,
       Action.CREATE_TEAM,
       Action.SEND_TEST_EMAIL,
+
+      // These are special permissions!
+      Action.ADD_ADMIN_TO_TEAM,
+      Action.REMOVE_ADMIN_FROM_TEAM,
+
+      // admin team invites CRUD
+      Action.CREATE_ADMIN_TEAM_INVITE,
+      Action.EDIT_ADMIN_TEAM_INVITE,
+      Action.DELETE_ADMIN_TEAM_INVITE,
     ],
     inheritedRoles: [
       // God role
@@ -923,6 +1010,18 @@ export const roleActions: Record<
       // resources in that team
       Action.CREATE_PROJECT_IN_TEAM, // resource
       Action.CREATE_TEMPLATE_IN_TEAM, // resource
+
+      // invites
+      Action.VIEW_TEAM_INVITES,
+      // member invites CRUD
+      Action.CREATE_MEMBER_TEAM_INVITE,
+      Action.EDIT_MEMBER_TEAM_INVITE,
+      Action.DELETE_MEMBER_TEAM_INVITE,
+
+      // manager invites CRUD
+      Action.CREATE_MANAGER_TEAM_INVITE,
+      Action.EDIT_MANAGER_TEAM_INVITE,
+      Action.DELETE_MANAGER_TEAM_INVITE,
     ],
     // TODO make templates managed with their own roles/ownership model so that
     // we can do virtualRoles over templates owned by the team
@@ -935,10 +1034,13 @@ export const roleActions: Record<
   [Role.TEAM_ADMIN]: {
     actions: [
       Action.DELETE_TEAM,
-      Action.ADD_ADMIN_TO_TEAM,
-      Action.REMOVE_ADMIN_FROM_TEAM,
       Action.ADD_MANAGER_TO_TEAM,
       Action.REMOVE_MANAGER_FROM_TEAM,
+
+      // These are special permissions!
+      // -> moved to general admin only
+      // Action.ADD_ADMIN_TO_TEAM,
+      // Action.REMOVE_ADMIN_FROM_TEAM,
     ],
     inheritedRoles: [Role.TEAM_MANAGER],
     virtualRoles: new Map([

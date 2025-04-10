@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {Role} from './permission';
+import {Resource, Role} from './permission';
 import {
   APINotebookGetSchema,
   APINotebookListSchema,
@@ -8,6 +8,7 @@ import {
   TemplateEditableDetailsSchema,
   UiSpecificationSchema,
 } from './types';
+import {ProjectStatus} from './data_storage';
 
 // ==================
 // WIP USERS
@@ -19,6 +20,14 @@ export const PostUpdateUserInputSchema = z.object({
   role: z.nativeEnum(Role),
 });
 export type PostUpdateUserInput = z.infer<typeof PostUpdateUserInputSchema>;
+
+export const UpdateUserProjectRoleInputSchema = z.object({
+  action: z.enum(['add', 'remove']),
+  role: z.enum(['user', 'team', 'moderator', 'admin']),
+});
+export type UpdateUserProjectRoleInput = z.infer<
+  typeof UpdateUserProjectRoleInputSchema
+>;
 
 // Optional redirect
 
@@ -136,6 +145,15 @@ export const PostCreateNotebookInputSchema = z.union([
 ]);
 export type PostCreateNotebookInput = z.infer<
   typeof PostCreateNotebookInputSchema
+>;
+
+// PUT :/id change project status
+export const PutChangeNotebookStatusInputSchema = z.object({
+  status: z.nativeEnum(ProjectStatus),
+});
+
+export type PutChangeNotebookStatusInput = z.infer<
+  typeof PutChangeNotebookStatusInputSchema
 >;
 
 // POST create new notebook from template response
@@ -346,13 +364,33 @@ export type PutUpdateTeamResponse = z.infer<typeof PutUpdateTeamResponseSchema>;
 /**
  * Schema for managing team membership
  */
-export const TeamMembershipInputSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
-  role: z.nativeEnum(Role, {
-    errorMap: () => ({message: 'Must be a valid role'}),
-  }),
-  add: z.boolean(),
-});
+export const TeamMembershipInputSchema = z
+  .object({
+    username: z.string().min(1, 'Username is required'),
+    role: z
+      .nativeEnum(Role, {
+        errorMap: () => ({message: 'Must be a valid role'}),
+      })
+      .optional(),
+    action: z.enum(['ADD_ROLE', 'REMOVE_ROLE', 'REMOVE_USER']),
+  })
+  .refine(
+    // Cannot remove and include role
+    ({action, role}) => !(action === 'REMOVE_USER' && !!role),
+    {
+      message:
+        'Invalid payload. You cannot specify a role when removing a user.',
+      path: ['role', 'action'],
+    }
+  )
+  .refine(
+    ({action, role}) =>
+      !((action === 'ADD_ROLE' || action === 'REMOVE_ROLE') && !role),
+    {
+      message: 'Must specify a role if removing or adding a role to the user.',
+      path: ['role', 'action'],
+    }
+  );
 
 /**
  * Team member role schema
@@ -395,3 +433,109 @@ export type AvailableRoleInfo = z.infer<typeof AvailableRoleInfoSchema>;
 export type GetTeamMembersResponse = z.infer<
   typeof GetTeamMembersResponseSchema
 >;
+
+// INVITES
+// =======
+
+/**
+ * Schema for creating a project invite
+ */
+export const PostCreateInviteInputSchema = z.object({
+  role: z.nativeEnum(Role),
+  name: z.string().min(1, 'Invite name is required'),
+  uses: z.number().min(1, 'Uses must be at least 1').optional(),
+  expiry: z.number().optional(),
+});
+
+/**
+ * Basic invite response schema
+ */
+export const InviteInfoResponseSchema = z.object({
+  id: z.string(),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
+  resourceId: z.string(),
+  name: z.string(),
+  role: z.nativeEnum(Role),
+  createdAt: z.number(),
+  expiry: z.number().optional(),
+  isValid: z.boolean(),
+  invalidReason: z.string().optional(),
+  usesRemaining: z.number().optional(),
+});
+
+/**
+ * Full invite document schema (internal)
+ */
+export const InviteDocumentSchema = z.object({
+  _id: z.string(),
+  _rev: z.string(),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
+  resourceId: z.string(),
+  name: z.string(),
+  role: z.nativeEnum(Role),
+  createdBy: z.string(),
+  createdAt: z.number(),
+  expiry: z.number(),
+  usesOriginal: z.number().optional(),
+  usesConsumed: z.number(),
+  uses: z.array(
+    z.object({
+      userId: z.string(),
+      usedAt: z.number(),
+    })
+  ),
+});
+
+/**
+ * GET /api/invites/:inviteId response
+ */
+export const GetInviteByIdResponseSchema = InviteInfoResponseSchema;
+
+/**
+ * GET /api/invites/project/:projectId response
+ */
+export const GetProjectInvitesResponseSchema = z.array(InviteDocumentSchema);
+
+/**
+ * GET /api/invites/team/:teamId response
+ */
+export const GetTeamInvitesResponseSchema = z.array(InviteDocumentSchema);
+
+/**
+ * POST /api/invites/project/:projectId response
+ */
+export const PostCreateProjectInviteResponseSchema = InviteDocumentSchema;
+
+/**
+ * POST /api/invites/team/:teamId response
+ */
+export const PostCreateTeamInviteResponseSchema = InviteDocumentSchema;
+
+/**
+ * POST /api/invites/:inviteId/use response
+ */
+export const PostUseInviteResponseSchema = z.object({
+  success: z.boolean(),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
+  resourceId: z.string(),
+  role: z.nativeEnum(Role),
+});
+
+// inferred types
+export type PostCreateInviteInput = z.infer<typeof PostCreateInviteInputSchema>;
+export type InviteInfoResponse = z.infer<typeof InviteInfoResponseSchema>;
+export type InviteDocument = z.infer<typeof InviteDocumentSchema>;
+export type GetInviteByIdResponse = z.infer<typeof GetInviteByIdResponseSchema>;
+export type GetProjectInvitesResponse = z.infer<
+  typeof GetProjectInvitesResponseSchema
+>;
+export type GetTeamInvitesResponse = z.infer<
+  typeof GetTeamInvitesResponseSchema
+>;
+export type PostCreateProjectInviteResponse = z.infer<
+  typeof PostCreateProjectInviteResponseSchema
+>;
+export type PostCreateTeamInviteResponse = z.infer<
+  typeof PostCreateTeamInviteResponseSchema
+>;
+export type PostUseInviteResponse = z.infer<typeof PostUseInviteResponseSchema>;

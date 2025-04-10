@@ -1,10 +1,10 @@
-import {Popover, PopoverContent, PopoverTrigger} from '../ui/popover';
+import {Popover, PopoverContent, PopoverTrigger} from '@/components/ui/popover';
 import {useAuth} from '@/context/auth-provider';
-import {RoleCard} from '../ui/role-card';
+import {RoleCard} from '@/components/ui/role-card';
 import {useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
-import {Button} from '../ui/button';
 import {toast} from 'sonner';
+import {Button} from '../ui/button';
 import {
   Tooltip,
   TooltipContent,

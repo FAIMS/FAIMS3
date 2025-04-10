@@ -51,7 +51,7 @@ import {
   verifyCouchDBConnection,
 } from './couchdb';
 import {validateProjectDatabase} from './couchdb/devtools';
-import {createInvite, getInvitesForNotebook} from './couchdb/invites';
+import {createInvite, getInvitesForResource} from './couchdb/invites';
 import {
   countRecordsInNotebook,
   getEncodedNotebookUISpec,
@@ -185,7 +185,13 @@ app.post(
       });
       return;
     }
-    await createInvite(projectId, role);
+    await createInvite({
+      createdBy: user._id,
+      name: 'Project invite for role ' + role,
+      resourceId: projectId,
+      resourceType: Resource.PROJECT,
+      role,
+    });
     res.redirect('/notebooks/' + projectId);
   }
 );
@@ -241,7 +247,10 @@ app.get(
         role: Role.PROJECT_ADMIN,
       });
       if (isAdmin) {
-        const invites = await getInvitesForNotebook(project_id);
+        const invites = await getInvitesForResource({
+          resourceId: project_id,
+          resourceType: Resource.PROJECT,
+        });
         for (let index = 0; index < invites.length; index++) {
           const invite = invites[index];
           const url = CONDUCTOR_PUBLIC_URL + '/register/' + invite._id;
@@ -282,7 +291,7 @@ app.get(
     const user = req.user!;
     // permission visibility filter (TODO optimise lookup by filtering based on
     // user visibility pre-query?)
-    const templates = (await getTemplates()).filter(t =>
+    const templates = (await getTemplates({})).filter(t =>
       userCanDo({action: Action.READ_TEMPLATE_DETAILS, user, resourceId: t._id})
     );
     res.render('templates', {
