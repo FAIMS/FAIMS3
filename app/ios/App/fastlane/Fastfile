@@ -103,24 +103,6 @@ platform :ios do
       clean_install: true
     )
 
-    # debugging - get our profile info
-    api_key = app_store_connect_api_key(
-      key_id: APPLE_KEY_ID,
-      issuer_id: APPLE_ISSUER_ID,
-      key_content: APPLE_KEY_CONTENT,
-      duration: 1200,
-      in_house: false
-    )
-    
-    profiles = get_provisioning_profile(
-      app_identifier: "Match AppStore #{APPLE_BUNDLE_IDENTIFIER}",
-      api_key: api_key,
-      readonly: true
-    )
-    
-    puts "Profile information: #{profiles}"
-
-
     match(
       type: 'appstore',
       storage_mode: "git",
