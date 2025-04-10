@@ -44,6 +44,9 @@ import {
 } from './helpers';
 import {AUTH_PROVIDER_DETAILS} from './strategies/socialProviders';
 
+// This is the place to go if all else fails - it will have a token!
+export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
+
 /**
  * Add authentication routes for local and federated login
  * The list of handlers are the ids of the configured federated handlers (eg. ['google'])
@@ -101,7 +104,9 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       // Now we have a validated login payload - proceed
 
       // Are we redirecting?
-      const redirect = validateRedirect(loginPayload.redirect || '/');
+      const redirect = validateRedirect(
+        loginPayload.redirect || DEFAULT_REDIRECT_URL
+      );
       // Is there an invite present?
       const inviteId = loginPayload.inviteId;
 
@@ -171,7 +176,9 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       // Now we have a validated register payload - proceed
 
       // Are we redirecting?
-      const redirect = validateRedirect(registerPayload.redirect || '/');
+      const redirect = validateRedirect(
+        registerPayload.redirect || DEFAULT_REDIRECT_URL
+      );
       // Is there an invite present?
       const inviteId = registerPayload.inviteId;
 
@@ -283,8 +290,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
         // check redirect and store in session
         const redirect = validateRedirect(
-          // confirm default behaviour here?
-          req.query.redirect ?? WEBAPP_PUBLIC_URL
+          req.query.redirect || DEFAULT_REDIRECT_URL
         );
         const inviteId = req.query.inviteId;
         const action = req.query.action;
@@ -334,7 +340,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           }
 
           const redirect = validateRedirect(
-            (req.session as CustomSessionData)?.redirect || WEBAPP_PUBLIC_URL
+            (req.session as CustomSessionData)?.redirect || DEFAULT_REDIRECT_URL
           );
 
           return redirectWithToken({res, user, redirect});

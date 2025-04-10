@@ -8,7 +8,7 @@ import {
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { WEB_URL } from '@/constants';
+import {SIGNIN_PATH, WEB_URL} from '@/constants';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 
 interface TokenParams {
@@ -39,9 +39,8 @@ export const Route = createFileRoute('/_protected')({
 
     if (status === 'success') return;
 
-    window.location.href = `${
-      import.meta.env.VITE_API_URL
-    }/auth?redirect=${WEB_URL}`;
+    // redirect to login
+    window.location.href = SIGNIN_PATH;
   },
   component: RouteComponent,
 });

@@ -36,6 +36,9 @@
                id="NameInput" 
                value="{{messages.name}}"
                required>
+        {{#if messages.error.name}}
+        <div class="alert alert-danger">{{messages.error.name.msg}}</div>
+        {{/if}}
     </div>
 
     <div class="mb-3">

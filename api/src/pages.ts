@@ -45,7 +45,7 @@ addAuthRoutes(app, CONDUCTOR_AUTH_PROVIDERS);
  */
 app.get('/', async (req, res) => {
   if (databaseValidityReport.valid) {
-    res.redirect('/auth/');
+    res.redirect('/login');
   } else {
     res.render('fallback', {
       report: databaseValidityReport,

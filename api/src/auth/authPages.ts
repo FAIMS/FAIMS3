@@ -31,6 +31,7 @@ import {
   providersToRenderDetails,
   validateRedirect,
 } from './helpers';
+import {DEFAULT_REDIRECT_URL} from './authRoutes';
 
 /**
  * Add authentication routes for local and federated login
@@ -60,8 +61,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
       const inviteId = req.query.inviteId;
 
       const redirect = validateRedirect(
-        // TODO desired behaviour in case of no redirect?
-        req.query.redirect ?? WEBAPP_PUBLIC_URL
+        req.query.redirect || DEFAULT_REDIRECT_URL
       );
 
       const action: AuthAction = 'login';
@@ -84,7 +84,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
           },
         })}`,
         localAuth: true,
-        redirect: redirect,
+        redirect,
         layout: 'auth',
       });
     }
@@ -105,7 +105,9 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
     }),
     async (req, res) => {
       // Check the redirect is valid
-      const redirect = validateRedirect(req.query.redirect || '/');
+      const redirect = validateRedirect(
+        req.query.redirect || DEFAULT_REDIRECT_URL
+      );
 
       // Pull out the invite ID
       const inviteId = req.query.inviteId;

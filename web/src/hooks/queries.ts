@@ -1,4 +1,4 @@
-import {WEB_URL} from '@/constants';
+import {buildRegisterUrl, WEB_URL} from '@/constants';
 import {User} from '@/context/auth-provider';
 import type {
   GetNotebookListResponse,
@@ -208,7 +208,15 @@ export const useGetUsers = (user: User | null) =>
  * @param {string} projectId - The ID of the notebook.
  * @returns {Query} A query for fetching invites.
  */
-export const useGetProjectInvites = (user: User | null, projectId: string) =>
+export const useGetProjectInvites = ({
+  user,
+  redirect,
+  projectId,
+}: {
+  user: User | null;
+  projectId: string;
+  redirect: string;
+}) =>
   useQuery({
     queryKey: ['projectinvites', projectId],
     queryFn: async () => {
@@ -217,7 +225,7 @@ export const useGetProjectInvites = (user: User | null, projectId: string) =>
         user
       );
       const promises = invites.map(async invite => {
-        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}?redirect=${WEB_URL}/projects/${projectId}`;
+        const url = buildRegisterUrl({inviteId: invite._id, redirect});
         return {
           ...invite,
           url: url,
@@ -245,7 +253,7 @@ export const useGetTeamInvites = ({
 }: {
   user: User | null;
   teamId: string;
-  redirect?: string;
+  redirect: string;
 }) =>
   useQuery({
     queryKey: ['teaminvites', teamId],
@@ -255,7 +263,7 @@ export const useGetTeamInvites = ({
         user
       );
       const promises = invites.map(async invite => {
-        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}${redirect ? '?redirect=' + redirect : ''}`;
+        const url = buildRegisterUrl({inviteId: invite._id, redirect});
         return {
           ...invite,
           url: url,

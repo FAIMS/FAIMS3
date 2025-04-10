@@ -47,11 +47,13 @@ export const handleZodErrors = ({
     });
 
     // Flash the error messages
+    console.log("FLASHING: ", formattedErrors);
     (req as unknown as CustomRequest).flash('error', formattedErrors);
 
     // Flash back the form data to repopulate the form
     Object.entries(formData).forEach(([key, value]) => {
       if (value) {
+        console.log("FLASHING KV: ", key, value);
         (req as unknown as CustomRequest).flash(key, value);
       }
     });

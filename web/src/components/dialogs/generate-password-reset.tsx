@@ -13,6 +13,7 @@ import {Button} from '../ui/button';
 import {Spinner} from '../ui/spinner';
 import {CopyButton} from '../ui/copy-button';
 import QRCode from 'qrcode';
+import { WEB_URL } from '@/constants';
 
 /**
  * Displays a QR code in a clickable format that opens a larger view in a dialog.
