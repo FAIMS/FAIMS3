@@ -11,15 +11,12 @@ import {generateUserToken} from './keySigning/create';
 import {
     ANDROID_APP_URL,
   AuthProvider,
-  CONDUCTOR_PUBLIC_URL,
   IOS_APP_URL,
   REDIRECT_WHITELIST,
 } from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
-
-const SAFE_PROTOCOLS = ['http:', 'https:', IOS_APP_URL, ANDROID_APP_URL];
 
 /**
  * Handles Zod validation errors and flashes them back to the user

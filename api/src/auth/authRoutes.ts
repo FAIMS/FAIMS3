@@ -53,7 +53,6 @@ import patch from '../utils/patchExpressAsync';
 // This must occur before express app is used
 patch();
 
-
 // This is the place to go if all else fails - it will have a token!
 export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
 
@@ -81,16 +80,17 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       // parse the body as the login schema
       let loginPayload: PostLoginInput;
 
+      const errorRedirect = `/login${buildQueryString({
+        values: {
+          inviteId: req.body.inviteId,
+          redirect: req.body.redirect,
+        },
+      })}`;
+
       // If anything goes wrong - flash back to form fields
       try {
         loginPayload = PostLoginInputSchema.parse(req.body);
       } catch (validationError) {
-        const errorRedirect = `/login${buildQueryString({
-          values: {
-            inviteId: req.body.inviteId,
-            redirect: req.body.redirect,
-          },
-        })}`;
         const handled = handleZodErrors({
           error: validationError,
           // type hacking here due to override not being picked up
@@ -128,7 +128,8 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         // custom success function which signs JWT and redirects
         async (err: string | Error | null, user: Express.User) => {
           if (err) {
-            return next(err);
+            req.flash('error', {'loginError' : {msg: err}});
+            return res.redirect(errorRedirect);
           }
           // We have logged in - do we also want to consume an invite?
           if (inviteId) {
@@ -172,7 +173,6 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           redirect: errorRedirect,
         });
         if (!handled) {
-          console.error('Auth error:', validationError);
           req.flash('error', 'An unexpected error occurred');
           res.status(500).redirect(errorRedirect);
           return;
@@ -300,7 +300,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
       // No longer req.login - instead redirect directly with token!
       return redirectWithToken({res, user: expressUser, redirect});
-    } 
+    }
   });
 
   // For each handler, deploy an auth route + auth return route

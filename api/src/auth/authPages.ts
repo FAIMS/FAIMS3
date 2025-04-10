@@ -81,13 +81,12 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
       return res.render('login', {
         providers: providers.length > 0 ? providers : undefined,
         // Where should the POST endpoint be for the local login form?
-        postUrl: `/auth/local${buildQueryString({
-          values: {
-            redirect,
-            inviteId,
-            action,
-          },
-        })}`,
+        postUrl: `/auth/local`,
+        localLoginPostPayload: {
+          action: 'login',
+          inviteId: inviteId,
+          redirect: redirect,
+        } satisfies AuthContext,
         localAuth: true,
         redirect,
         layout: 'auth',

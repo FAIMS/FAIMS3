@@ -89,10 +89,10 @@ const OnboardingComponent = ({
               if (isWeb()) {
                 const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
                 window.location.href =
-                  server.serverUrl + '/auth?redirect=' + redirect;
+                  server.serverUrl + '/login?redirect=' + redirect;
               } else {
                 await Browser.open({
-                  url: `${server.serverUrl}/auth?redirect=${APP_ID}://auth-return`,
+                  url: `${server.serverUrl}/login?redirect=${APP_ID}://auth-return`,
                 });
               }
             }}

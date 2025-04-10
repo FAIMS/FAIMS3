@@ -1,42 +1,78 @@
 {{#if messages.message}}
-<div class="alert alert-warning">{{messages.message}}</div>
+  <div class='alert alert-warning'>{{messages.message}}</div>
 {{/if}}
 
-<div class="auth-header">
-    <h2>Welcome</h2>
-    <p>Sign in to continue</p>
+<div class='auth-header'>
+  <h2>Welcome</h2>
+  <p>Sign in to continue</p>
 </div>
 
 {{#if localAuth}}
-<form method="post" action="{{postUrl}}">
-    <div class="mb-3">
-        <label for="InputIdentifier" class="form-label">Email Address</label>
-        <input type="text" name="username" class="form-control" 
-               id="InputIdentifier" autocomplete="email" required>
+  <form method='post' action='{{postUrl}}'>
+    <input
+      type='hidden'
+      name='redirect'
+      value='{{localLoginPostPayload.redirect}}'
+    />
+    <input
+      type='hidden'
+      name='inviteId'
+      value='{{localLoginPostPayload.inviteId}}'
+    />
+    <input
+      type='hidden'
+      name='action'
+      value='{{localLoginPostPayload.action}}'
+    />
+    <div class='mb-3'>
+      <label for='InputIdentifier' class='form-label'>Email Address</label>
+      <input
+        type='text'
+        name='email'
+        class='form-control'
+        id='InputIdentifier'
+        autocomplete='email'
+        required
+      />
+      {{#if messages.error.email}}
+        <div class='alert alert-danger'>{{messages.error.email.msg}}</div>
+      {{/if}}
     </div>
-    <div class="mb-3">
-        <label for="InputPassword" class="form-label">Password</label>
-        <input type="password" name="password" class="form-control" 
-               id="InputPassword" autocomplete="current-password" required>
+    <div class='mb-3'>
+      <label for='InputPassword' class='form-label'>Password</label>
+      <input
+        type='password'
+        name='password'
+        class='form-control'
+        id='InputPassword'
+        autocomplete='current-password'
+        required
+      />
+      {{#if messages.error.password}}
+        <div class='alert alert-danger'>{{messages.error.password.msg}}</div>
+      {{/if}}
     </div>
-    <button type="submit" class="auth-button">Sign in</button>
-</form>
+    <button type='submit' class='auth-button'>Sign in</button>
+    {{#if messages.error.loginError}}
+      <div class='alert alert-danger'>{{messages.error.loginError.msg}}</div>
+    {{/if}}
+  </form>
 {{/if}}
 
 {{#if (and localAuth providers)}}
-<div class="divider">
+  <div class='divider'>
     <span>or</span>
-</div>
+  </div>
 {{/if}}
 
 {{#if providers}}
-<div class="sso-options">
+  <div class='sso-options'>
     {{#each providers}}
-    <a href="{{this.targetUrl}}"
-       class="auth-button-outline">
-        <i class="bi bi-{{this.id}}" style="margin-right: 8px;"></i>
-        Continue with {{ this.name }}
-    </a>
+      <a href='{{this.targetUrl}}' class='auth-button-outline'>
+        <i class='bi bi-{{this.id}}' style='margin-right: 8px;'></i>
+        Continue with
+        {{this.name}}
+      </a>
     {{/each}}
-</div>
+  </div>
 {{/if}}

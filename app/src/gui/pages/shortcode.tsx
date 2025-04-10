@@ -233,7 +233,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
     // valid urls look like:
     // http://192.168.1.2:8154/register/DEV-TMKZSM
     const valid_hosts = props.servers.map(server => server.serverUrl);
-    const valid_re = valid_hosts.join('|') + '/register';
+    const valid_re = valid_hosts.join('|') + '/register.*';
 
     if (url.match(valid_re)) {
       // Use the capacitor browser plugin in apps
