@@ -28,7 +28,7 @@ import fs from 'fs';
 import request from 'supertest';
 import {CONDUCTOR_AUTH_PROVIDERS, LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
 import {createNotebook} from '../src/couchdb/notebooks';
-import {app} from '../src/routes';
+import {app} from '../src/pages';
 import {beforeApiTests} from './utils';
 
 it('check is up', async () => {

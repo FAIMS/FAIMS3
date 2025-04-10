@@ -38,7 +38,7 @@ import {
 import {expect} from 'chai';
 import {Express} from 'express';
 import request from 'supertest';
-import {app} from '../src/routes';
+import {app} from '../src/pages';
 import {
   adminToken,
   beforeApiTests,

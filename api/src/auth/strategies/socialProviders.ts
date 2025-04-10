@@ -1,8 +1,8 @@
 import passport from 'passport';
 import {Strategy} from 'passport-oauth2';
-import {AuthProvider, CONDUCTOR_PUBLIC_URL} from '../buildconfig';
-import {getGoogleOAuthStrategy} from './google';
-import {getLocalAuthStrategy} from './local';
+import {AuthProvider, CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {getGoogleOAuthStrategy} from './googleStrategy';
+import {getLocalAuthStrategy} from './localStrategy';
 
 // This function takes the callback URL and generates the passport strategy
 export type StrategyGeneratorFunction = (params: {

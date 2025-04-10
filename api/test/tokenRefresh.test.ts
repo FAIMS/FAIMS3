@@ -25,7 +25,7 @@ PouchDB.plugin(PouchDBFind);
 
 import {expect} from 'chai';
 import request from 'supertest';
-import {generateUserToken} from '../src/authkeys/create';
+import {generateUserToken} from '../src/auth/keySigning/create';
 import {
   createNewRefreshToken,
   deleteRefreshToken,
@@ -37,7 +37,7 @@ import {
   validateRefreshToken,
 } from '../src/couchdb/refreshTokens';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/routes';
+import {app} from '../src/pages';
 import {
   adminToken,
   adminUserName,

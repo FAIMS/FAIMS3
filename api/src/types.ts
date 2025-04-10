@@ -20,12 +20,14 @@
  */
 import {PeopleDBDocument, ResourceRole} from '@faims3/data-model';
 
+export type AuthAction = 'register' | 'login';
 export interface CustomSessionData {
   inviteId?: string;
   redirect?: string;
+  action?: AuthAction;
 }
 
-interface CustomRequest {
+export interface CustomRequest {
   flash(type: string, message?: any): any;
   flash(type: string): any[];
   flash(): {[key: string]: any[]};

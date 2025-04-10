@@ -45,7 +45,7 @@ import {
 import {createNotebook} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/routes';
+import {app} from '../src/pages';
 import {callbackObject} from './mocks';
 import {
   adminToken,

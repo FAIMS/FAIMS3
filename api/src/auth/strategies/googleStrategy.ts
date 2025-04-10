@@ -25,21 +25,17 @@ import {
   VerifyCallback,
 } from 'passport-google-oauth20';
 
-import {
-  addEmails,
-  ExistingPeopleDBDocument,
-  PeopleDBDocument,
-} from '@faims3/data-model';
-import {StrategyGeneratorFunction} from '.';
-import {upgradeCouchUserToExpressUser} from '../authkeys/create';
-import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../buildconfig';
+import {addEmails, ExistingPeopleDBDocument} from '@faims3/data-model';
+import {upgradeCouchUserToExpressUser} from '../keySigning/create';
+import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../../buildconfig';
 import {
   createUser,
   getCouchUserFromEmailOrUsername,
   saveCouchUser,
-} from '../couchdb/users';
-import {CustomSessionData} from '../types';
-import {validateAndApplyInviteToUser} from './helpers';
+} from '../../couchdb/users';
+import {CustomSessionData} from '../../types';
+import {lookupAndValidateInvite} from '../helpers';
+import {StrategyGeneratorFunction} from './socialProviders';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -73,7 +69,24 @@ async function oauthVerify(
 ): Promise<void> {
   // pull out session info (and type it - this route really doesn't want to
   // accept our typing overrides in types.ts)
-  const sessionData = req.session as CustomSessionData | undefined;
+  const {action, inviteId} = req.session as CustomSessionData;
+
+  // Action should always be defined
+  if (!action) {
+    return done(
+      'No action provided during identity provider redirection - cannot proceed. Contact system administrator.',
+      undefined
+    );
+  }
+
+  // Registration requires an invite ID - but handling of the invite is not the
+  // responsibility of this module - see the success callback in authRoutes
+  if (action === 'register' && !inviteId) {
+    return done(
+      'Trying to register a new account with any invite - this is not authorised.',
+      undefined
+    );
+  }
 
   // See what emails this google user has - filter for verified and then map
   // into actual email values NOTE: This is actually typed wrong - it is a
@@ -114,23 +127,54 @@ async function oauthVerify(
     );
   }
 
-  // This is a situation where they do have a verified email address, but none
-  // match, so let's see if the user has set things up in order to be able to
-  // create a new account
-  if (matchingEmails.length === 0) {
-    // Does the session include an invite?
-    const possibleInvite = sessionData?.inviteId;
+  if (action === 'login') {
+    // LOGIN
+    // =====
 
-    // If no invite - cannot register new account
-    if (!possibleInvite) {
+    // This is a situation where they do have a verified email address but none
+    // match
+    if (matchingEmails.length === 0) {
+      // We abort here - this is an error
       return done(
-        'You cannot register a new account as no invite code was provided.',
+        'This google account has no existing account - you need to register a new account before logging in.',
         undefined
       );
     }
 
-    // How do we create this user
-    const newUser = async () => {
+    // We have precisely one matching email address, let's ensure that this
+    // account has the linked google profile, then return it (We can safely assert
+    // non-null here due to our previous filtering)
+    const matchedSingleUser = userLookups[matchingEmails[0]]!;
+
+    // Firstly - ensure they have the google profile linked
+    if (!('google' in matchedSingleUser.profiles)) {
+      matchedSingleUser.profiles['google'] = profile;
+      await saveCouchUser(matchedSingleUser);
+    }
+
+    // upgrade user and return login success - invite to be processed later if
+    // at all
+    return done(
+      null,
+      await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
+    );
+  } else {
+    // REGISTER
+    // ========
+
+    // Validate invite - always needed
+    try {
+      await lookupAndValidateInvite({inviteCode: inviteId!});
+    } catch (e) {
+      return done(
+        'Invalid invite provided. Cannot register an account.',
+        undefined
+      );
+    }
+
+    // This is scenario where this user does not yet exist - so let's create
+    // them (checking invite is okay)
+    if (matchingEmails.length === 0) {
       // So the invite is valid we should now start to setup the user
       const [newDbUser, errorMsg] = await createUser({
         email: verifiedEmails[0],
@@ -151,69 +195,25 @@ async function oauthVerify(
       // add the other emails to the user emails array if necessary
       addEmails({user: newDbUser, emails: verifiedEmails});
 
-      return newDbUser;
-    };
+      // save the user
+      await saveCouchUser(newDbUser);
 
-    // Now handle invite auth
-    let newDbUser: PeopleDBDocument;
-    try {
-      newDbUser = await validateAndApplyInviteToUser({
-        dbUser: undefined,
-        inviteCode: possibleInvite,
-        createUser: newUser,
-      });
-    } catch (e) {
+      // return express user
       return done(
-        `Invite was present, but seems incorrect, or other error occurred. Error: ${e}`,
-        undefined
+        null,
+        await upgradeCouchUserToExpressUser({dbUser: newDbUser})
       );
     }
 
-    // We have now consumed the invite and updated the user - save
-    await saveCouchUser(newDbUser);
-
-    // Upgrade this user
-    const user = await upgradeCouchUserToExpressUser({dbUser: newDbUser});
-
-    // Return the freshly minted user :)
-    return done(null, user);
+    // NOTE: This is the situation where you are trying to 'register' a new
+    // account but one already exists with google with matching email - for now
+    // we error but we could instead upgrade the existing account and proceed to
+    // apply invite
+    return done(
+      'An account with this email address already exists - please login instead.',
+      undefined
+    );
   }
-
-  // We have precisely one matching email address, let's ensure that this
-  // account has the linked google profile, then return it (We can safely assert
-  // non-null here due to our previous filtering)
-  const matchedSingleUser = userLookups[matchingEmails[0]]!;
-
-  // Do we need to save - be performance conscious here
-  let requiresSave = false;
-
-  // Firstly - ensure they have the google profile linked
-  if (!('google' in matchedSingleUser.profiles)) {
-    matchedSingleUser.profiles['google'] = profile;
-    requiresSave = true;
-  }
-
-  // Now - we could still have an invite code here (since we may have accessed
-  // this after clicking "already have an account")
-  if (sessionData?.inviteId) {
-    requiresSave = true;
-    // handle invite on existing user
-    await validateAndApplyInviteToUser({
-      dbUser: matchedSingleUser,
-      inviteCode: sessionData.inviteId,
-    });
-  }
-
-  // Save user (if necessary)
-  if (requiresSave) {
-    await saveCouchUser(matchedSingleUser);
-  }
-
-  // upgrade user
-  return done(
-    null,
-    await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
-  );
 }
 
 export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({

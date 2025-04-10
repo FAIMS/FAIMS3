@@ -4,7 +4,7 @@ import {
   KEY_SERVICE,
   LOCAL_COUCHDB_AUTH,
   RUNNING_UNDER_TEST,
-} from '../buildconfig';
+} from '../../buildconfig';
 
 export async function initialiseJWTKey(): Promise<void> {
   // don't try to do this if we're testing

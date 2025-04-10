@@ -5,8 +5,10 @@
 
 {{#if localAuth}}
 <form method="post" action="{{postUrl}}">
-    <input type="hidden" name="redirect" value="{{redirect}}">
-    <input type="hidden" name="inviteId" value="{{inviteId}}">
+    <input type="hidden" name="redirect" value="{{localRegisterPostPayload.redirect}}">
+    <input type="hidden" name="inviteId" value="{{localRegisterPostPayload.inviteId}}">
+    <input type="hidden" name="action" value="{{localRegisterPostPayload.action}}">
+
     {{#if messages.error.registration}}
     <div class="alert alert-danger">{{messages.error.registration}}</div>
     {{/if}}

@@ -18,8 +18,8 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
-import {applyPassportAuthProviders} from './auth_providers';
-import {addAuthRoutes} from './auth_routes';
+import {applyPassportAuthProviders} from './auth/strategies/socialProviders';
+import {addAuthPages} from './auth/authPages';
 import {CONDUCTOR_AUTH_PROVIDERS, COUCHDB_INTERNAL_URL} from './buildconfig';
 import {app} from './core';
 import {
@@ -27,15 +27,21 @@ import {
   initialiseDbAndKeys,
   verifyCouchDBConnection,
 } from './couchdb';
+import {addAuthRoutes} from './auth/authRoutes';
 
 export {app};
 
+// This sets up passport to use the social strategies
 applyPassportAuthProviders(CONDUCTOR_AUTH_PROVIDERS);
+
+// This adds the views/pages related to auth (/login, /register)
+addAuthPages(app, CONDUCTOR_AUTH_PROVIDERS);
+
+// This adds the endpoints for auth (/auth/local, [/auth/<handler>])
 addAuthRoutes(app, CONDUCTOR_AUTH_PROVIDERS);
 
 /**
  * Home Page
- *
  */
 app.get('/', async (req, res) => {
   if (databaseValidityReport.valid) {

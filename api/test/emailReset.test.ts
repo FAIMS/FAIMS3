@@ -6,7 +6,7 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 
 import request from 'supertest';
-import {app} from '../src/routes';
+import {app} from '../src/pages';
 import {
   adminToken,
   adminUserName,

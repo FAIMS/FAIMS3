@@ -29,54 +29,38 @@ export type UpdateUserProjectRoleInput = z.infer<
   typeof UpdateUserProjectRoleInputSchema
 >;
 
-// Optional redirect
-
-export const OptionalRedirectQuery = z.object({
-  redirect: z.string().optional(),
-});
-
 // Local login POST
 // Body
-export const PostLocalAuthInputSchema = z.object({
-  username: z.string(),
-  password: z.string().min(1),
-});
-export type PostLocalAuthInput = z.infer<typeof PostLocalAuthInputSchema>;
-
-// Register by invite ID
-// Body
-export const GetRegisterByInviteQuerySchema = OptionalRedirectQuery;
-export type GetRegisterByInviteQuery = z.infer<
-  typeof GetRegisterByInviteQuerySchema
->;
-
-// Local register
-export const PostRegisterLocalInputSchema = z.object({
-  // Username optional - email used if not provided
-  username: z
-    .string()
-    .trim()
-    .min(5, 'Must provide a username of at least length 5.')
-    .optional(),
-  password: z.string().trim(),
-  email: z
-    .string()
-    .trim()
-    .email(
-      'Email provided during user registration is not a valid email address.'
-    ),
-  repeat: z.string(),
-  name: z.string(),
+// This is used in many places to 'contextualise' the auth action
+export const AuthContextSchema = z.object({
+  // what action are we taking?
+  action: z.enum(['register', 'login']),
+  // Do we we want to redirect back somewhere once finished?
   redirect: z.string().trim().optional(),
-  inviteId: z.string().trim(),
+  // What is the invite ID (required if action is register)
+  inviteId: z.string().trim().optional(),
 });
-export const PostRegisterLocalQuerySchema = OptionalRedirectQuery;
-export type PostRegisterLocalInput = z.infer<
-  typeof PostRegisterLocalInputSchema
->;
-export type PostRegisterLocalQuery = z.infer<
-  typeof PostRegisterLocalQuerySchema
->;
+export type AuthContext = z.infer<typeof AuthContextSchema>;
+
+export const PostLoginInputSchema = AuthContextSchema.extend({
+  email: z.string().trim(),
+  password: z.string().trim().min(1),
+});
+export type PostLoginInput = z.infer<typeof PostLoginInputSchema>;
+export const PostRegisterInputSchema = AuthContextSchema.extend({
+  // Baseline email and password (always required)
+  email: z.string().trim().email('Email address must be a valid email.'),
+  password: z
+    .string()
+    .trim()
+    .min(10, 'Password must be of at least 10 characters in length.'),
+  repeat: z.string(),
+  name: z
+    .string()
+    .trim()
+    .min(5, 'Name must be of at least 5 characters in length.'),
+});
+export type PostRegisterInput = z.infer<typeof PostRegisterInputSchema>;
 
 export const PostRefreshTokenInputSchema = z.object({
   refreshToken: z.string(),

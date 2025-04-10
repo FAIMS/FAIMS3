@@ -35,10 +35,8 @@ import {
 } from '@faims3/data-model';
 import {assert, expect} from 'chai';
 import * as fs from 'fs';
-import {
-  validateLocalUser,
-} from '../src/auth_providers/local';
-import {upgradeCouchUserToExpressUser} from '../src/authkeys/create';
+import {validateLocalUser} from '../src/auth/strategies/localStrategy';
+import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {getUsersDB, initialiseDbAndKeys} from '../src/couchdb';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {
@@ -48,7 +46,7 @@ import {
   saveCouchUser,
 } from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
-import { addLocalPasswordForUser } from '../src/auth_providers/helpers';
+import {addLocalPasswordForUser} from '../src/auth/helpers';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();

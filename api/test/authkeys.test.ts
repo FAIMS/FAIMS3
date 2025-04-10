@@ -28,8 +28,8 @@ import {expect} from 'chai';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
-} from '../src/authkeys/create';
-import {validateToken} from '../src/authkeys/read';
+} from '../src/auth/keySigning/create';
+import {validateToken} from '../src/auth/keySigning/read';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {createUser, saveExpressUser} from '../src/couchdb/users';
 

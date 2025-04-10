@@ -20,8 +20,8 @@
 
 import {pbkdf2Sync} from 'crypto';
 import {Strategy, VerifyFunction} from 'passport-local';
-import {upgradeCouchUserToExpressUser} from '../authkeys/create';
-import {getCouchUserFromEmailOrUsername} from '../couchdb/users';
+import {upgradeCouchUserToExpressUser} from '../keySigning/create';
+import {getCouchUserFromEmailOrUsername} from '../../couchdb/users';
 
 type LocalProfile = {
   password: string;

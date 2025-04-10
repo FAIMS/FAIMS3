@@ -26,7 +26,7 @@ import {
   ResourceRole,
 } from '@faims3/data-model';
 import Express from 'express';
-import {validateToken} from './authkeys/read';
+import {validateToken} from './auth/keySigning/read';
 import * as Exceptions from './exceptions';
 
 export const userCanDo = ({
