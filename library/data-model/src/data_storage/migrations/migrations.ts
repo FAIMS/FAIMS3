@@ -1,9 +1,19 @@
-import {ResourceRole, Role} from '../../permission';
-import {V1InviteDBFields, V2InviteDBFields} from '../invitesDB';
-import {UserV1Document, UserV2Document} from '../peopleDB';
+import {Resource, ResourceRole, Role} from '../../permission';
 import {
-  DATABASE_TYPE,
+  V1InviteDBFields,
+  V2InviteDBFields,
+  V3InviteDBFields,
+} from '../invitesDB';
+import {
+  PeopleV1Document,
+  PeopleV2Document,
+  PeopleV3Document,
+} from '../peopleDB';
+import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
+import {
   DatabaseType,
+  DBTargetVersions,
+  IS_TESTING,
   MigrationDetails,
   MigrationFunc,
 } from './migrationService';
@@ -15,7 +25,7 @@ import {
  */
 export const peopleV1toV2Migration: MigrationFunc = doc => {
   // Take input as v1 then output as v2
-  const inputDoc = doc as unknown as UserV1Document;
+  const inputDoc = doc as unknown as PeopleV1Document;
 
   // Need to convert existing roles -> resource and global roles
   const globalRoles: Role[] = [];
@@ -46,16 +56,18 @@ export const peopleV1toV2Migration: MigrationFunc = doc => {
           resourceId: projectId,
         });
       } else {
-        console.warn(
-          'The project role ' +
-            projectRole +
-            ' could not be mapped to a new role - ignoring...'
-        );
+        if (!IS_TESTING) {
+          console.warn(
+            'The project role ' +
+              projectRole +
+              ' could not be mapped to a new role - ignoring...'
+          );
+        }
       }
     }
   }
 
-  const outputDoc: UserV2Document = {
+  const outputDoc: PeopleV2Document = {
     _id: inputDoc._id,
     _rev: inputDoc._rev,
     emails: inputDoc.emails,
@@ -64,6 +76,37 @@ export const peopleV1toV2Migration: MigrationFunc = doc => {
     profiles: inputDoc.profiles,
     globalRoles,
     resourceRoles,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Takes a v1 person and maps the global and resource roles into new permission
+ * model
+ * @returns Updated doc
+ */
+export const peopleV2toV3Migration: MigrationFunc = doc => {
+  // Take input as v1 then output as v2
+  const inputDoc = doc as unknown as PeopleV2Document;
+
+  // Add empty team roles
+  const outputDoc: PeopleV3Document = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    emails: inputDoc.emails,
+    name: inputDoc.name,
+    profiles: inputDoc.profiles,
+    user_id: inputDoc.user_id,
+
+    // Global roles the same
+    globalRoles: inputDoc.globalRoles,
+    // Setup empty team roles
+    teamRoles: [],
+    // Setup empty template roles (previously ownership was not established)
+    templateRoles: [],
+    // convert resource roles -> project Roles
+    projectRoles: inputDoc.resourceRoles,
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -87,17 +130,21 @@ export const invitesV1toV2Migration: MigrationFunc = doc => {
   } else if (['moderator', 'team', 'user'].includes(oldRole)) {
     newRole = Role.PROJECT_CONTRIBUTOR;
   } else {
-    console.warn(
-      'The project role ' +
-        oldRole +
-        ' could not be mapped to a new role - ignoring...'
-    );
+    if (!IS_TESTING) {
+      console.warn(
+        'The project role ' +
+          oldRole +
+          ' could not be mapped to a new role - ignoring...'
+      );
+    }
   }
 
   if (newRole === null) {
-    console.warn(
-      'The invite contained a role that is not understood. Deleting.'
-    );
+    if (!IS_TESTING) {
+      console.warn(
+        'The invite contained a role that is not understood. Deleting.'
+      );
+    }
     return {action: 'delete'};
   }
 
@@ -112,21 +159,102 @@ export const invitesV1toV2Migration: MigrationFunc = doc => {
   return {action: 'update', updatedRecord: outputDoc};
 };
 
+/**
+ * Adds the status field, renames/removes other fields which were never
+ * populated anyway
+ */
+export const projectsV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<ProjectV1Fields>;
+
+  if (!inputDoc.data_db) {
+    console.error(
+      `The project document with ID: ${inputDoc._id} did not have a data_db entry. This project is broken! Recommend deletion but will mark record as migrated and leave this entry undefined.`
+    );
+  }
+  if (!inputDoc.metadata_db) {
+    console.error(
+      `The project document with ID: ${inputDoc._id} did not have a metadata_db entry. This project is broken! Recommend deletion but will mark record as migrated and leave this entry undefined.`
+    );
+  }
+
+  // Create the new V2 document structure
+  const outputDoc: PouchDB.Core.ExistingDocument<ProjectV2Fields> = {
+    // Basic couch db fields
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+
+    // basic name changes
+    name: inputDoc.name,
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    templateId: inputDoc.template_id,
+
+    // default to open
+    status: ProjectStatus.OPEN,
+
+    // we check these to be defined above (just force the migration here - it is
+    // probably the best option as deleting a project could result in data loss)
+    dataDb: inputDoc.data_db!,
+    metadataDb: inputDoc.metadata_db!,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+export const invitesV2toV3Migration: MigrationFunc = doc => {
+  // Cast input document to V2 type
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>;
+
+  // Check for required fields
+  if (!inputDoc.projectId || !inputDoc.role) {
+    // If any required field is missing, abort and delete the document
+    return {action: 'delete'};
+  }
+
+  // Create the new V3 document structure
+  const outputDoc: PouchDB.Core.ExistingDocument<V3InviteDBFields> = {
+    // retain ID and rev
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    // Create a descriptive name
+    name: `${inputDoc.role} invite for ${inputDoc.projectId}`,
+    // Make them expire in one day from when this migration is applied
+    expiry: Date.now() + 24 * 60 * 60 * 1000,
+    // Project ID matches
+    resourceId: inputDoc.projectId,
+    // Invite for project
+    resourceType: Resource.PROJECT,
+    // Role remains the same
+    role: inputDoc.role,
+    // Assume created now
+    createdAt: Date.now(),
+    // Set as admin by default
+    createdBy: 'admin',
+    // Mark as having used none
+    usesConsumed: 0,
+    // No uses in the log
+    uses: [],
+  };
+  return {action: 'update', outputDoc};
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
-export const DB_TARGET_VERSIONS: {
-  [key in DATABASE_TYPE]: {defaultVersion: number; targetVersion: number};
-} = {
+export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
-  // invites v2
-  [DatabaseType.INVITES]: {defaultVersion: 2, targetVersion: 2},
+  // invites v3
+  [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 3},
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
-  // people v2
-  [DatabaseType.PEOPLE]: {defaultVersion: 2, targetVersion: 2},
-  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 1},
+  // people v3
+  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 3},
+  // projects v2
+  [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
 export const DB_MIGRATIONS: MigrationDetails[] = [
@@ -138,11 +266,34 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     migrationFunction: peopleV1toV2Migration,
   },
   {
+    dbType: DatabaseType.PEOPLE,
+    from: 2,
+    to: 3,
+    description: 'Adds empty teams field',
+    migrationFunction: peopleV2toV3Migration,
+  },
+  {
     dbType: DatabaseType.INVITES,
     from: 1,
     to: 2,
     description:
       "Refactors the invites database to use a typed Role enum for new permissions system, removes records it can't understand",
     migrationFunction: invitesV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    description:
+      'Renames and cleans up the projects DB and adds the status enum field.',
+    migrationFunction: projectsV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    description:
+      'Overhauls migrations to be more generic and allow for team vs project invites. Includes logging information, expiry and uses.',
+    migrationFunction: invitesV2toV3Migration,
   },
 ];

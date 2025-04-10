@@ -36,6 +36,7 @@ import {
   initMigrationsDB,
   initPeopleDB,
   initProjectsDB,
+  initTeamsDB,
   initTemplatesDB,
   InvitesDB,
   migrateDbs,
@@ -45,7 +46,8 @@ import {
   ProjectDataObject,
   ProjectID,
   ProjectMetaObject,
-  ProjectObject,
+  ProjectDocument,
+  TeamsDB,
   TemplateDetails,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
@@ -67,13 +69,15 @@ const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
 const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
+const TEAMS_DB_NAME = 'teams';
 
 let _directoryDB: PouchDB.Database | undefined;
-let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
+let _projectsDB: PouchDB.Database<ProjectDocument> | undefined;
 let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
 let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
+let _teamsDB: TeamsDB | undefined;
 let _migrationsDB: MigrationsDB | undefined;
 
 const pouchOptions = () => {
@@ -203,7 +207,7 @@ export const getUsersDB = (): PeopleDB => {
   return _usersDB;
 };
 
-export const localGetProjectsDb = (): PouchDB.Database<ProjectObject> => {
+export const localGetProjectsDb = (): PouchDB.Database<ProjectDocument> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
@@ -263,6 +267,20 @@ export const getInvitesDB = (): PouchDB.Database => {
   return _invitesDB;
 };
 
+export const getTeamsDB = (): TeamsDB => {
+  if (!_teamsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + TEAMS_DB_NAME;
+    try {
+      _teamsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting teams database.'
+      );
+    }
+  }
+  return _teamsDB;
+};
 /**
  * Returns the metadata DB for a given project - involves fetching the project
  * doc and then fetching the corresponding metadata db
@@ -291,14 +309,14 @@ export const getMetadataDb = async (
   }
 
   // Now get the metadata DB from the project document
-  if (!projectDoc.metadata_db) {
+  if (!projectDoc.metadataDb) {
     throw new Exceptions.InternalSystemError(
       "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
     );
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadataDb.db_name;
   const pouch_options = pouchOptions();
 
   // Authorise against this DB
@@ -337,14 +355,14 @@ export const getDataDb = async (
   }
 
   // Now get the data DB for this project
-  if (!projectDoc.data_db) {
+  if (!projectDoc.dataDb) {
     throw new Exceptions.InternalSystemError(
       "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
     );
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.dataDb.db_name;
   const pouch_options = pouchOptions();
   // Authorize against this DB
   if (LOCAL_COUCHDB_AUTH !== undefined) {
@@ -451,6 +469,9 @@ export const initialiseDbAndKeys = async ({
   // Invites
   const invitesDB = getInvitesDB();
 
+  // Teams
+  const teamsDB = getTeamsDB();
+
   // Templates
   const templatesDb = getTemplatesDb();
 
@@ -549,6 +570,19 @@ export const initialiseDbAndKeys = async ({
     );
   }
 
+  // Teams DB
+  try {
+    await couchInitialiser({
+      db: teamsDB,
+      content: initTeamsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the teams database!...' + e
+    );
+  }
+
   // Migrations DB
   try {
     await couchInitialiser({
@@ -561,9 +595,6 @@ export const initialiseDbAndKeys = async ({
       'An error occurred while initialising the migrations database!...' + e
     );
   }
-
-  // For users, we also establish an admin user, if not already present
-  await registerAdminUser(peopleDb);
 
   // For each project, ensure the metadata and data DBs are also
   // initialised/synced
@@ -648,4 +679,8 @@ export const initialiseAndMigrateDBs = async ({
     ]);
   }
   await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+
+  // For users, we also establish an admin user, if not already present
+  // do this after all migrations so we know the db is up to date
+  await registerAdminUser();
 };

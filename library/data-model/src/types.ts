@@ -20,6 +20,7 @@
 
 import {z} from 'zod';
 import {DecodedTokenPermissions, Role} from './permission';
+import {ExistingProjectDocument, ProjectStatus} from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -85,18 +86,6 @@ export interface SyncStatusCallbacks {
   sync_denied: () => void;
 }
 
-export type LocationState = {
-  parent_record_id?: string; // parent or linked record id, set from parent or linked record
-  field_id?: string; // parent or linked field id, set from parent or linked record
-  type?: string; // type of relationship: Child or Linked
-  parent_link?: string; // link of parent/linked record, so when child/link record saved, this is the redirect link
-  parent?: any; // parent to save upper level information for nest related, for example, grandparent
-  record_id?: RecordID; // child/linked record ID, set in child/linked record, should be pass back to parent
-  hrid?: string; // child/linked record HRID, this is the value displayed in field, set in child/linked record, should be pass back to parent
-  relation_type_vocabPair?: string[] | null; //pass the parent information to child
-  child_record_id?: RecordID; //child/linked record ID created from parent
-  parent_hrid?: string;
-};
 export interface LinkedRelation {
   record_id: RecordID;
   field_id: string;
@@ -117,32 +106,18 @@ export interface Relationship {
  * Do not use with UI code; sync code only
  */
 
-export type PossibleConnectionInfo =
-  | undefined
-  | {
-      base_url?: string | undefined;
-      proto?: string | undefined;
-      host?: string | undefined;
-      port?: number | undefined;
-      db_name?: string | undefined;
-      auth?: {
-        username: string;
-        password: string;
-      };
-      jwt_token?: string;
-    };
-export interface ProjectObject {
-  _id: NonUniqueProjectID;
-  name: string;
-  description?: string;
-  // Was the project created from a template?
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-}
+export type PossibleConnectionInfo = {
+  base_url?: string | undefined;
+  proto?: string | undefined;
+  host?: string | undefined;
+  port?: number | undefined;
+  db_name?: string | undefined;
+  auth?: {
+    username: string;
+    password: string;
+  };
+  jwt_token?: string;
+};
 
 // TODO make this better, currently there is no real explanation for this
 // structure
@@ -154,9 +129,10 @@ export const APINotebookListSchema = z.object({
   last_updated: z.string().optional(),
   created: z.string().optional(),
   template_id: z.string().optional(),
-  status: z.string().optional(),
   project_id: z.string(),
   metadata: z.record(z.unknown()).optional().nullable(),
+  ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
@@ -165,11 +141,13 @@ export const APINotebookGetSchema = z.object({
   // metadata and spec to match notebook json schema
   metadata: z.record(z.unknown()),
   'ui-specification': z.record(z.unknown()),
+  ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
 export type ProjectsList = {
-  [key: string]: ProjectObject;
+  [key: string]: ExistingProjectDocument;
 };
 
 export interface ProjectSchema {
@@ -816,6 +794,9 @@ export type TemplateEditableDetails = z.infer<
 export const TemplateDerivedDetailsSchema = z.object({
   // Version identifier for the template
   version: z.number().default(1),
+
+  // Is this owned by a team?
+  ownedByTeamId: z.string().min(1).optional(),
 });
 export type TemplateDerivedDetails = z.infer<
   typeof TemplateDerivedDetailsSchema

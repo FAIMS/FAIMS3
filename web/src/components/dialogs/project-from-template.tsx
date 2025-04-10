@@ -12,13 +12,14 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useState} from 'react';
 import {useAuth} from '@/context/auth-provider';
 import {Route} from '@/routes/_protected/templates/$templateId';
-import {useGetTemplates} from '@/hooks/get-hooks';
+import {useGetTemplate} from '@/hooks/queries';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import {Plus} from 'lucide-react';
 
 /**
  * Component for rendering a dialog to create a new project from a template.
@@ -27,7 +28,7 @@ import {
 export const ProjectFromTemplateDialog = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplates(user, templateId);
+  const {data} = useGetTemplate(user, templateId);
   const [open, setOpen] = useState(false);
   const archived = data?.metadata.project_status === 'archived';
 
@@ -37,8 +38,10 @@ export const ProjectFromTemplateDialog = () => {
         <TooltipTrigger>
           <Button
             variant="outline"
-            disabled={data?.metadata.project_status === 'archived'}
+            className="bg-primary text-primary-foreground"
+            disabled={true}
           >
+            <Plus />
             Create {NOTEBOOK_NAME_CAPITALIZED}
           </Button>
         </TooltipTrigger>
@@ -52,8 +55,9 @@ export const ProjectFromTemplateDialog = () => {
       <DialogTrigger asChild className="w-fit">
         <Button
           variant="outline"
-          disabled={data?.metadata.project_status === 'archived'}
+          className="bg-primary text-primary-foreground"
         >
+          <Plus />
           Create {NOTEBOOK_NAME_CAPITALIZED}
         </Button>
       </DialogTrigger>

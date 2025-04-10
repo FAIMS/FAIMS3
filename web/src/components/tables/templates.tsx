@@ -1,15 +1,32 @@
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
+import {TeamCellComponent} from './cells/team-cell';
 
 export type Column = any;
 
 export const columns: ColumnDef<Column>[] = [
   {
-    accessorKey: 'template_name',
+    accessorKey: 'metadata.name',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Name" />
     ),
+  },
+  {
+    id: 'team',
+    accessorKey: 'ownedByTeamId',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Team" />
+    ),
+    cell: ({
+      row: {
+        original: {ownedByTeamId},
+      },
+    }) => {
+      return ownedByTeamId ? (
+        <TeamCellComponent teamId={ownedByTeamId} />
+      ) : null;
+    },
   },
   {
     accessorKey: 'metadata.project_status',

@@ -1,6 +1,5 @@
 import {z} from 'zod';
-import {PeopleDBDocument} from '../data_storage';
-import {Action, actionRoles, Role, roleDetails, RoleScope} from './model';
+import {Role} from './model';
 
 // ==============
 // TOKEN ENCODING
@@ -54,7 +53,8 @@ const tokenPermissionsSchema = z.object({
   // functions. Here we include roles that CouchDB needs for authorization.
   [COUCHDB_ROLES_PATH]: z.array(z.string()),
   // These are roles which apply to specific resources (encoded as above) - NOT
-  // visible in couch
+  // visible in couch. NOTE: TEAMS and other associative roles are drilled into
+  // this resource roles list
   resourceRoles: z.array(z.string()),
   // These are roles that apply generally - not resource specific - they may
   // imply resources specific actions but for all resources of that type -
@@ -69,6 +69,8 @@ const tokenPayloadSchema = z
     name: z.string(),
     // The server which generated this token - this is the URL
     server: z.string(),
+    // username
+    username: z.string(),
   })
   .merge(tokenPermissionsSchema);
 export type TokenPayload = z.infer<typeof tokenPayloadSchema>;
@@ -185,68 +187,4 @@ export function encodeToken(
     resourceRoles,
     globalRoles,
   };
-}
-
-/**
- * Takes a couch user and builds an encoded token.
- *
- * This is achieved by first building a decoded token object from the couch
- * user, then using the encode token function to encode it.
- *
- * @returns encoded token object (to be signed/added other details)
- */
-export function couchUserToTokenPermissions({
-  globalRoles,
-  resourceRoles,
-}: PeopleDBDocument): TokenPermissions {
-  // Flatten the resource mapped roles into a big list
-  let allResourceRoles: ResourceRole[] = [];
-  for (const specificResourceRoles of Object.values(resourceRoles)) {
-    if (specificResourceRoles) {
-      allResourceRoles = allResourceRoles.concat(specificResourceRoles);
-    }
-  }
-  return encodeToken({globalRoles, resourceRoles: allResourceRoles});
-}
-
-/**
- * From a given ACTION, reverse looks up roles which grant that action,
- * and then encodes both the resource specific version i.e. <resource Id> ||
- * <role> and the global version <role> implying that either is
- * suitable for CouchDB authorization
- *
- * @returns list of roles to be used in couch db security documents
- */
-export function necessaryActionToCouchRoleList({
-  action,
-  resourceId,
-}: {
-  action: Action;
-  resourceId: string;
-}): string[] {
-  const roles: string[] = [];
-
-  // Get all roles that can perform this action
-  const rolesForAction = actionRoles[action];
-
-  rolesForAction.forEach(role => {
-    const details = roleDetails[role];
-
-    // For global roles, just use the role name
-    if (details.scope === RoleScope.GLOBAL) {
-      roles.push(role);
-    }
-
-    // For resource-specific roles, encode with resourceId
-    else {
-      roles.push(
-        encodeClaim({
-          resourceId,
-          claim: role,
-        })
-      );
-    }
-  });
-
-  return roles;
 }

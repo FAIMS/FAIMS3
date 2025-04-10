@@ -1,3 +1,4 @@
+/* eslint-disable n/no-process-exit */
 import {initialiseAndMigrateDBs} from '../couchdb';
 
 const main = async () => {

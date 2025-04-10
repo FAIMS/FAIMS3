@@ -10,24 +10,54 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {Plus} from 'lucide-react';
+import {useAuth} from '@/context/auth-provider';
+import {useGetTeam} from '@/hooks/queries';
+import {ErrorComponent} from '@tanstack/react-router';
 
-export const CreateProjectDialog = () => {
+export const CreateProjectDialog = ({
+  defaultValues,
+  specifiedTeam = undefined,
+}: {
+  defaultValues?: {teamId?: string};
+  specifiedTeam?: string;
+}) => {
   const [open, setOpen] = useState(false);
+
+  const {user} = useAuth();
+  if (!user) {
+    return <ErrorComponent error="Unauthenticated" />;
+  }
+
+  const {data: team} = useGetTeam(user, specifiedTeam);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
-        <Button variant={'outline'}>Create {NOTEBOOK_NAME_CAPITALIZED}</Button>
+        <Button
+          variant="outline"
+          className="bg-primary text-primary-foreground"
+        >
+          <Plus />
+          Create {NOTEBOOK_NAME_CAPITALIZED}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
+          <DialogTitle>
+            Create {NOTEBOOK_NAME_CAPITALIZED}
+            {specifiedTeam && <> in '{team?.name ?? 'Team'}'</>}
+          </DialogTitle>
           <DialogDescription>
             Create a new {NOTEBOOK_NAME_CAPITALIZED} by selecting an existing
             template or uploading a JSON notebook specification file.
           </DialogDescription>
         </DialogHeader>
-        <CreateProjectForm setDialogOpen={setOpen} />
+        <CreateProjectForm
+          setDialogOpen={setOpen}
+          defaultValues={defaultValues}
+          specifiedTeam={specifiedTeam}
+        />
       </DialogContent>
     </Dialog>
   );

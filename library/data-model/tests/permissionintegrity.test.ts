@@ -136,7 +136,7 @@ describe('Permission Model Validation', () => {
 
       // Better failure message showing exactly which actions are unmapped
       if (unmappedActions.length > 0) {
-        fail(
+        console.error(
           `The following actions are not mapped to any role: ${unmappedActions.join(', ')}`
         );
       }

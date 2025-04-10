@@ -4,12 +4,17 @@ import {
   DB_MIGRATIONS,
   DatabaseType,
   MigrationFuncReturn,
-  UserV1Document,
-  UserV2Document,
+  PeopleV1Document,
+  PeopleV2Document,
+  PeopleV3Document,
+  ProjectStatus,
+  ProjectV1Fields,
+  ProjectV2Fields,
   V1InviteDBFields,
   V2InviteDBFields,
+  V3InviteDBFields,
 } from '../src/data_storage';
-import {Role} from '../src';
+import {Resource, Role} from '../src';
 import {areDocsEqual} from './utils';
 
 // Register memory adapter
@@ -39,6 +44,504 @@ type MigrationTestCase = {
     expectedOutputDoc: PouchDB.Core.ExistingDocument<any>
   ) => boolean;
 };
+
+// New test cases for projectsV1toV2Migration
+const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Basic migration with all fields
+  {
+    name: 'projectsV1toV2Migration - complete project document',
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'project_123',
+      _rev: '1-abc123',
+      name: 'Research Project Alpha',
+      description: 'A research project for testing migrations',
+      template_id: 'template_xyz',
+      data_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_123',
+        port: 443,
+      },
+      metadata_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_123',
+        port: 443,
+      },
+      last_updated: '2023-05-15T10:30:00Z',
+      created: '2023-01-10T08:45:00Z',
+      status: 'active',
+      ownedByTeamId: 'team_456',
+    } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
+    expectedOutputDoc: {
+      _id: 'project_123',
+      _rev: '1-abc123',
+      name: 'Research Project Alpha',
+      status: ProjectStatus.OPEN,
+      dataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_123',
+        port: 443,
+      },
+      metadataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_123',
+        port: 443,
+      },
+      templateId: 'template_xyz',
+      ownedByTeamId: 'team_456',
+    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test with minimal fields
+  {
+    name: 'projectsV1toV2Migration - minimal fields',
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'project_456',
+      _rev: '1-def456',
+      name: 'Minimal Project',
+      data_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_456',
+        port: 443,
+      },
+      metadata_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_456',
+        port: 443,
+      },
+    } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
+    expectedOutputDoc: {
+      _id: 'project_456',
+      _rev: '1-def456',
+      name: 'Minimal Project',
+      status: ProjectStatus.OPEN,
+      dataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_456',
+        port: 443,
+      },
+      metadataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_456',
+        port: 443,
+      },
+    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test with individually owned project (no team)
+  {
+    name: 'projectsV1toV2Migration - individually owned project',
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'project_789',
+      _rev: '1-ghi789',
+      name: 'Personal Project',
+      data_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_789',
+        port: 443,
+      },
+      metadata_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_789',
+        port: 443,
+      },
+      template_id: 'template_abc',
+      // No ownedByTeamId field
+    } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
+    expectedOutputDoc: {
+      _id: 'project_789',
+      _rev: '1-ghi789',
+      name: 'Personal Project',
+      status: ProjectStatus.OPEN,
+      dataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_789',
+        port: 443,
+      },
+      metadataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_789',
+        port: 443,
+      },
+      templateId: 'template_abc',
+      // No ownedByTeamId field expected
+    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test with complex connection info
+  {
+    name: 'projectsV1toV2Migration - complex connection info',
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'project_complex',
+      _rev: '1-complex',
+      name: 'Complex Connection Project',
+      data_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_complex',
+        port: 443,
+        auth: {
+          username: 'datauser',
+          password: 'datapass',
+        },
+      },
+      metadata_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_complex',
+        port: 443,
+        jwt_token: 'abc123xyz',
+      },
+    } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
+    expectedOutputDoc: {
+      _id: 'project_complex',
+      _rev: '1-complex',
+      name: 'Complex Connection Project',
+      status: ProjectStatus.OPEN,
+      dataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_complex',
+        port: 443,
+        auth: {
+          username: 'datauser',
+          password: 'datapass',
+        },
+      },
+      metadataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_complex',
+        port: 443,
+        jwt_token: 'abc123xyz',
+      },
+    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test with previous status field that gets overridden
+  {
+    name: 'projectsV1toV2Migration - override existing status',
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'project_status',
+      _rev: '1-status',
+      name: 'Status Override Project',
+      data_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_status',
+        port: 443,
+      },
+      metadata_db: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_status',
+        port: 443,
+      },
+      status: 'archived', // This should be replaced by ProjectStatus.OPEN
+    } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
+    expectedOutputDoc: {
+      _id: 'project_status',
+      _rev: '1-status',
+      name: 'Status Override Project',
+      status: ProjectStatus.OPEN, // The status should always be set to OPEN regardless of previous value
+      dataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'data_status',
+        port: 443,
+      },
+      metadataDb: {
+        host: 'example.com',
+        proto: 'https',
+        db_name: 'meta_status',
+        port: 443,
+      },
+    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for handling missing database connections
+  // Note: Based on the migration code, it should still proceed even with missing DB connections
+  {
+    name: 'projectsV1toV2Migration - missing database connections',
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'project_missing_dbs',
+      _rev: '1-missing',
+      name: 'Project With Missing DBs',
+      // Missing data_db and metadata_db fields
+    } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
+    expectedOutputDoc: {
+      _id: 'project_missing_dbs',
+      _rev: '1-missing',
+      name: 'Project With Missing DBs',
+      status: ProjectStatus.OPEN,
+      dataDb: undefined, // Migration preserves undefined values
+      metadataDb: undefined,
+    } as unknown as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test with additional fields that should be dropped
+  {
+    name: 'projectsV1toV2Migration - extra fields get dropped',
+    dbType: DatabaseType.PROJECTS,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'project_extra',
+      _rev: '1-extra',
+      name: 'Project With Extra Fields',
+      data_db: {url: 'https://example.com/db/data_extra'},
+      metadata_db: {url: 'https://example.com/db/meta_extra'},
+      description: 'This field should be dropped',
+      created: '2023-03-10T12:00:00Z', // Should be dropped
+      last_updated: '2023-03-15T14:30:00Z', // Should be dropped
+      extra_field1: 'Should be dropped',
+      extra_field2: 42, // Should be dropped
+    } as PouchDB.Core.ExistingDocument<ProjectV1Fields> & Record<string, any>,
+    expectedOutputDoc: {
+      _id: 'project_extra',
+      _rev: '1-extra',
+      name: 'Project With Extra Fields',
+      status: ProjectStatus.OPEN,
+      dataDb: {url: 'https://example.com/db/data_extra'},
+      metadataDb: {url: 'https://example.com/db/meta_extra'},
+      // All extra fields should be dropped
+    } as PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {action: 'update'},
+    // Custom equality function to ensure extra fields are dropped
+    equalityFunction: (actual, expected) => {
+      // Check that all expected keys are present with correct values
+      for (const key of Object.keys(expected)) {
+        if (JSON.stringify(actual[key]) !== JSON.stringify(expected[key])) {
+          return false;
+        }
+      }
+      // Check that no extra keys are present
+      const expectedKeys = new Set(Object.keys(expected));
+      for (const key of Object.keys(actual)) {
+        if (!expectedKeys.has(key)) {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+];
+
+// Test cases for invitesV2toV3Migration
+const INVITES_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Basic migration test - Admin role
+  {
+    name: 'invitesV2toV3Migration - admin role',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_123',
+      _rev: '1-abc123',
+      projectId: 'project_xyz',
+      role: Role.PROJECT_ADMIN,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_123',
+      _rev: '1-abc123',
+      name: `${Role.PROJECT_ADMIN} invite for project_xyz`,
+      resourceId: 'project_xyz',
+      resourceType: Resource.PROJECT,
+      role: Role.PROJECT_ADMIN,
+      expiry: expect.any(Number), // Test will use a matcher for timestamp
+      createdAt: expect.any(Number),
+      createdBy: 'admin',
+      usesConsumed: 0,
+      uses: [],
+    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (actual, expected) => {
+      // Custom equality function to handle timestamps
+      return (
+        actual._id === expected._id &&
+        actual._rev === expected._rev &&
+        actual.name === expected.name &&
+        actual.resourceId === expected.resourceId &&
+        actual.resourceType === expected.resourceType &&
+        actual.role === expected.role &&
+        typeof actual.expiry === 'number' &&
+        typeof actual.createdAt === 'number' &&
+        actual.createdBy === expected.createdBy &&
+        actual.usesConsumed === expected.usesConsumed &&
+        Array.isArray(actual.uses) &&
+        actual.uses.length === 0
+      );
+    },
+  },
+
+  // Contributor role test
+  {
+    name: 'invitesV2toV3Migration - contributor role',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_456',
+      _rev: '1-def456',
+      projectId: 'project_abc',
+      role: Role.PROJECT_CONTRIBUTOR,
+    } satisfies PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_456',
+      _rev: '1-def456',
+      name: `${Role.PROJECT_CONTRIBUTOR} invite for project_abc`,
+      resourceId: 'project_abc',
+      resourceType: Resource.PROJECT,
+      role: Role.PROJECT_CONTRIBUTOR,
+      expiry: expect.any(Number),
+      createdAt: expect.any(Number),
+      createdBy: 'admin',
+      usesConsumed: 0,
+      uses: [],
+    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (actual, expected) => {
+      return (
+        actual._id === expected._id &&
+        actual._rev === expected._rev &&
+        actual.name === expected.name &&
+        actual.resourceId === expected.resourceId &&
+        actual.resourceType === expected.resourceType &&
+        actual.role === expected.role &&
+        typeof actual.expiry === 'number' &&
+        typeof actual.createdAt === 'number' &&
+        actual.createdBy === expected.createdBy &&
+        actual.usesConsumed === expected.usesConsumed &&
+        Array.isArray(actual.uses) &&
+        actual.uses.length === 0
+      );
+    },
+  },
+
+  // Test with additional fields in input (should be ignored)
+  {
+    name: 'invitesV2toV3Migration - with extra fields',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_789',
+      _rev: '1-ghi789',
+      projectId: 'project_def',
+      role: Role.PROJECT_ADMIN,
+      extraField1: 'should be ignored',
+      extraField2: 123,
+    } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: {
+      _id: 'invite_789',
+      _rev: '1-ghi789',
+      name: `${Role.PROJECT_ADMIN} invite for project_def`,
+      resourceId: 'project_def',
+      resourceType: Resource.PROJECT,
+      role: Role.PROJECT_ADMIN,
+      expiry: expect.any(Number),
+      createdAt: expect.any(Number),
+      createdBy: 'admin',
+      usesConsumed: 0,
+      uses: [],
+    } satisfies PouchDB.Core.ExistingDocument<V3InviteDBFields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (actual, expected) => {
+      // Ensure extra fields are not carried over
+      return (
+        actual._id === expected._id &&
+        actual._rev === expected._rev &&
+        actual.name === expected.name &&
+        actual.resourceId === expected.resourceId &&
+        actual.resourceType === expected.resourceType &&
+        actual.role === expected.role &&
+        typeof actual.expiry === 'number' &&
+        typeof actual.createdAt === 'number' &&
+        actual.createdBy === expected.createdBy &&
+        actual.usesConsumed === expected.usesConsumed &&
+        Array.isArray(actual.uses) &&
+        actual.uses.length === 0 &&
+        !('extraField1' in actual) &&
+        !('extraField2' in actual)
+      );
+    },
+  },
+
+  // Edge case - Missing projectId
+  {
+    name: 'invitesV2toV3Migration - missing projectId',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_012',
+      _rev: '1-jkl012',
+      role: Role.PROJECT_CONTRIBUTOR,
+      // projectId is missing
+    } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: null, // No output expected for deletion
+    expectedResult: {action: 'delete'},
+    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
+  },
+
+  // Edge case - Missing role
+  {
+    name: 'invitesV2toV3Migration - missing role',
+    dbType: DatabaseType.INVITES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'invite_345',
+      _rev: '1-mno345',
+      projectId: 'project_ghi',
+      // role is missing
+    } as unknown as PouchDB.Core.ExistingDocument<V2InviteDBFields>,
+    expectedOutputDoc: null, // No output expected for deletion
+    expectedResult: {action: 'delete'},
+    equalityFunction: (actual, expected) => actual === expected, // Simple equality for null check
+  },
+];
 
 /**
  * Collection of test cases for all migration functions
@@ -73,7 +576,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
           salt: '123456',
         },
       },
-    } satisfies UserV1Document,
+    } satisfies PeopleV1Document,
     expectedOutputDoc: {
       _id: 'abcd123456',
       _rev: '1234',
@@ -95,7 +598,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
           salt: '123456',
         },
       },
-    } satisfies UserV2Document,
+    } satisfies PeopleV2Document,
     expectedResult: {action: 'update'},
     equalityFunction: areDocsEqual,
   },
@@ -258,7 +761,66 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
       ); // Only the 4 expected fields
     },
   },
+
+  {
+    name: 'peopleV2toV3Migration - add team roles',
+    dbType: DatabaseType.PEOPLE,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'abcd123456',
+      _rev: '1234',
+      user_id: 'abcd123456',
+      name: 'George Costanza',
+      emails: ['george.costanza@gmail.com'],
+      resourceRoles: [
+        {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
+        {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
+      ],
+      globalRoles: [
+        Role.GENERAL_ADMIN,
+        Role.GENERAL_CREATOR,
+        Role.GENERAL_USER,
+      ],
+      profiles: {
+        local: {
+          password: '1234',
+          salt: '123456',
+        },
+      },
+    } satisfies PeopleV2Document,
+    expectedOutputDoc: {
+      _id: 'abcd123456',
+      _rev: '1234',
+      user_id: 'abcd123456',
+      name: 'George Costanza',
+      emails: ['george.costanza@gmail.com'],
+      projectRoles: [
+        {resourceId: 'survey1', role: Role.PROJECT_ADMIN},
+        {resourceId: 'survey2', role: Role.PROJECT_CONTRIBUTOR},
+      ],
+      globalRoles: [
+        Role.GENERAL_ADMIN,
+        Role.GENERAL_CREATOR,
+        Role.GENERAL_USER,
+      ],
+      // added empty team roles
+      teamRoles: [],
+      templateRoles: [],
+      profiles: {
+        local: {
+          password: '1234',
+          salt: '123456',
+        },
+      },
+    } satisfies PeopleV3Document,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
 ];
+
+MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**

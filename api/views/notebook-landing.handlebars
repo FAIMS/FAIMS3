@@ -46,10 +46,10 @@
           <tr>
             <td>{{this.label}}</td>
             <td>
-              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this.id}}.csv">CSV</a>
+              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/records/{{this.id}}.csv">CSV</a>
             </td>
             <td>
-              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/{{this.id}}.zip">Zip</a>
+              <a class="btn btn-primary" href="/api/notebooks/{{../notebook.project_id}}/records/{{this.id}}.zip">Zip</a>
             </td>
           </tr>
           {{/each}}
@@ -145,7 +145,6 @@
   const addRecords = (e) => {
     e.preventDefault();
     const count = parseInt(document.querySelector('input[name="number"]').value);
-    console.log('count', count);
     fetch('/api/notebooks/{{notebook.project_id}}/generate', {
       method: 'POST',
       headers: {
@@ -342,8 +341,6 @@ const copyToClipboard = (text) => {
     fetch(url)
     .then(response => response.json())
     .then(data => {
-      console.log(data);
-
       const target = document.querySelector('#validateTarget');
       if(data.errors.length > 0)
         target.innerHTML = `<ul>${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`;

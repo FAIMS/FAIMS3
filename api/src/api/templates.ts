@@ -20,12 +20,15 @@
 
 import {
   Action,
+  addTemplateRole,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
+  PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
+  Role,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -38,8 +41,14 @@ import {
   getTemplates,
   updateExistingTemplate,
 } from '../couchdb/templates';
-import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import * as Exceptions from '../exceptions';
+import {
+  isAllowedToMiddleware,
+  requireAuthenticationAPI,
+  userCanDo,
+} from '../middleware';
 
+import {saveExpressUser} from '../couchdb/users';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -48,15 +57,30 @@ patch();
 export const api = express.Router();
 
 /**
- * GET list templates
- * Gets a list of templates from the templates DB.
+ * GET list templates Gets a list of templates from the templates DB.
+ *
+ * Can filter by team if desired -  uses an efficient index to do so.
+ *
  */
 api.get(
   '/',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.VIEW_TEMPLATES}),
+  isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
+  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
   async (req, res: Response<GetListTemplatesResponse>) => {
-    res.json({templates: await getTemplates()});
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    res.json({
+      templates: (await getTemplates({teamId: req.query.teamId})).filter(t =>
+        userCanDo({
+          action: Action.READ_TEMPLATE_DETAILS,
+          user: req.user!,
+          resourceId: t._id,
+        })
+      ),
+    });
   }
 );
 
@@ -67,7 +91,12 @@ api.get(
 api.get(
   '/:id',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.VIEW_TEMPLATES}),
+  isAllowedToMiddleware({
+    action: Action.READ_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
   processRequest({
     params: z.object({id: z.string()}),
   }),
@@ -82,17 +111,53 @@ api.get(
  *
  * Creates a new template. The payload is validated by Zod before reaching this
  * function. Expects a document as the response JSON.
+ *
+ * Permissions respect team context.
  */
 api.post(
   '/',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({action: Action.CREATE_TEMPLATE}),
   processRequest({
     body: PostCreateTemplateInputSchema,
   }),
+  isAllowedToMiddleware({
+    getAction(req) {
+      const body = req.body as PostCreateTemplateInput;
+      if (body.teamId) {
+        return Action.CREATE_TEMPLATE_IN_TEAM;
+      } else {
+        return Action.CREATE_TEMPLATE;
+      }
+    },
+    getResourceId(req) {
+      const body = req.body as PostCreateTemplateInput;
+      if (body.teamId) {
+        // If creating a template in a team, the resource ID is the team!
+        return body.teamId;
+      } else {
+        // If creating a template globally - there is no resource ID!
+        return undefined;
+      }
+    },
+  }),
   async (req, res: Response<PostCreateTemplateResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
     // Now we can create the new template and return it
-    const newTemplate = await createTemplate(req.body);
+    const newTemplate = await createTemplate({
+      payload: req.body,
+    });
+
+    // Make the creator the admin
+    addTemplateRole({
+      user: req.user,
+      role: Role.TEMPLATE_ADMIN,
+      templateId: newTemplate._id,
+    });
+    await saveExpressUser(req.user);
+
     res.json(newTemplate);
   }
 );
@@ -109,8 +174,8 @@ api.put(
   '/:id',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update
-    action: Action.UPDATE_TEMPLATE_CONTENT,
+    // TODO be more specific about the kind of update (i.e. ui spec or not)
+    action: Action.UPDATE_TEMPLATE_DETAILS,
     getResourceId(req) {
       return req.params.id;
     },
@@ -138,7 +203,6 @@ api.post(
   '/:id/delete',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update
     action: Action.DELETE_TEMPLATE,
     getResourceId(req) {
       return req.params.id;
@@ -164,7 +228,6 @@ api.put(
   '/:id/archive',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    // TODO be more specific about the kind of update
     action: Action.CHANGE_TEMPLATE_STATUS,
     getResourceId(req) {
       return req.params.id;
