@@ -79,7 +79,11 @@ jobs:
           cd app
           npx cap update ios
           npx cap sync --deployment ios
-          cd ios/App; pod install
+          cd ios/App; pod install     
+      - name: Set up XCode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
       - name: Deploy iOS app to production with Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:

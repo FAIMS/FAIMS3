@@ -76,7 +76,7 @@ Fastlane certificates repository.
 
 `APPLE_KEY_ID` - The key id from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
 `APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
-`APPLE_KEY_CONTENT` - base64 encoded content of the key file. You can only download this on creation of the key.
+`APPLE_KEY_CONTENT` - Content of the key file (not encoded). You can only download this on creation of the key.
 
 `BROWSERSTACK_USERNAME` - username on BrowserStack (for app testing);
 'BROWSERSTACK_ACCESS_KEY` - api access key for BrowserStack.

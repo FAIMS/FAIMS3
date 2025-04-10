@@ -129,7 +129,6 @@ platform :ios do
       configuration: "Release", #make sure this key matches xcode signing and capabilities.
       workspace: "App.xcworkspace",
       scheme: "App",
-     # sdk: "iOS 18.4",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
