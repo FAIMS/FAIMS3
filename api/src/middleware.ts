@@ -29,13 +29,17 @@ import Express from 'express';
 import {validateToken} from './auth/keySigning/read';
 import * as Exceptions from './exceptions';
 
+/**
+ * Middleware helper which maps the express user object -> the isAuthorised
+ * permission model function - answering the question of "Can the user do X"
+ */
 export const userCanDo = ({
   user,
   action,
   resourceId,
 }: {
-  // NOTE: cannot use Express.User here for some reason :/
-  user: PeopleDBDocument & {resourceRoles: ResourceRole[]};
+  // NOTE: cannot use Express.User here for some reason - globalThis works??
+  user: globalThis.Express.User;
   action: Action;
   resourceId?: string;
 }) => {
@@ -100,6 +104,16 @@ export async function requireAuthenticationAPI(
   next();
 }
 
+/**
+ * A middleware which checks if the user (use the requireAuthenticationAPI above
+ * first) can perform an action
+ *
+ *
+ * @param action The action to do (or provide a generator function)
+ * @param getAction the function which generates the action (or known action above)
+ * @param getResourceId the function which generates the resource ID
+ * @returns
+ */
 export const isAllowedToMiddleware = ({
   action,
   getAction,
@@ -200,28 +214,5 @@ export async function optionalAuthenticationJWT(
     // insert user into the request
     req.user = user;
     next();
-  }
-}
-
-export function requireNotebookMembership(
-  req: Express.Request,
-  res: Express.Response,
-  next: Express.NextFunction
-) {
-  if (req.user) {
-    const project_id = req.params.notebook_id;
-    if (
-      userCanDo({
-        user: req.user,
-        resourceId: project_id,
-        action: Action.READ_PROJECT_METADATA,
-      })
-    ) {
-      next();
-    } else {
-      res.status(404).end();
-    }
-  } else {
-    res.redirect('/auth/');
   }
 }

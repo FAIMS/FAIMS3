@@ -8,7 +8,7 @@ import {ZodError} from 'zod';
 import {Response} from 'express';
 import {AUTH_PROVIDER_DETAILS} from './strategies/socialProviders';
 import {generateUserToken} from './keySigning/create';
-import {AuthProvider} from '../buildconfig';
+import {AuthProvider, REDIRECT_WHITELIST} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
@@ -47,13 +47,13 @@ export const handleZodErrors = ({
     });
 
     // Flash the error messages
-    console.log("FLASHING: ", formattedErrors);
+    console.log('FLASHING: ', formattedErrors);
     (req as unknown as CustomRequest).flash('error', formattedErrors);
 
     // Flash back the form data to repopulate the form
     Object.entries(formData).forEach(([key, value]) => {
       if (value) {
-        console.log("FLASHING KV: ", key, value);
+        console.log('FLASHING KV: ', key, value);
         (req as unknown as CustomRequest).flash(key, value);
       }
     });
@@ -69,19 +69,52 @@ export const handleZodErrors = ({
 };
 
 /**
- * Check that a redirect URL is one that we allow
- * Mainly want to avoid a non-url redirect so just check
- * that we can parse it as a URL.
- * Could have a whitelist here but hard to manage in config
- * and might restrict how we use auth in the project.
+ * Check that a redirect URL is one that we allow based on our whitelist configuration.
+ * Verifies that the redirect URL's origin (protocol + hostname + port) matches
+ * one of the whitelisted domains.
+ *
+ * This is a security-critical function that prevents open redirect vulnerabilities.
  *
  * @param redirect URL to redirect to
- * @returns a valid URl to redirect to, default to '/' if
- *   the one passed in is bad
+ * @returns a valid URL to redirect to that matches our whitelist, default to '/' if invalid
  */
-export function validateRedirect(redirect: string) {
-  if (URL.canParse(redirect)) return redirect;
-  else return '/';
+export function validateRedirect(redirect: string, whitelist: string[] = REDIRECT_WHITELIST): string {
+  try {
+    // First check if we can parse the URL
+    if (!URL.canParse(redirect)) {
+      return '/';
+    }
+
+    const redirectUrl = new URL(redirect);
+
+    // If it's a relative URL (no hostname), it's acceptable as it stays on our domain
+    if (!redirectUrl.hostname) {
+      return redirect;
+    }
+
+    // Absolute URLs must match one of our whitelisted domains
+    for (const whitelistedDomain of whitelist) {
+      try {
+        const whitelistedUrl = new URL(whitelistedDomain);
+
+        // Compare origins (protocol + hostname + port)
+        if (redirectUrl.origin === whitelistedUrl.origin) {
+          return redirect;
+        }
+      } catch (error) {
+        // Skip invalid whitelist entries
+        console.error(`Invalid whitelist entry: ${whitelistedDomain}`, error);
+        continue;
+      }
+    }
+
+    // No match found, return the default redirect
+    return '/';
+  } catch (error) {
+    // Any parsing errors or other issues, return the default redirect
+    console.error('Error validating redirect URL:', error);
+    return '/';
+  }
 }
 
 /**

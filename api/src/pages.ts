@@ -18,10 +18,10 @@
  *   This module exports the configuration of the build, including things like
  *   which server to use and whether to include test data
  */
-import {applyPassportAuthProviders} from './auth/strategies/socialProviders';
+import {applyPassportStrategies} from './auth/strategies/socialProviders';
 import {addAuthPages} from './auth/authPages';
 import {CONDUCTOR_AUTH_PROVIDERS, COUCHDB_INTERNAL_URL} from './buildconfig';
-import {app} from './core';
+import {app} from './expressSetup';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -32,7 +32,7 @@ import {addAuthRoutes} from './auth/authRoutes';
 export {app};
 
 // This sets up passport to use the social strategies
-applyPassportAuthProviders(CONDUCTOR_AUTH_PROVIDERS);
+applyPassportStrategies(CONDUCTOR_AUTH_PROVIDERS);
 
 // This adds the views/pages related to auth (/login, /register)
 addAuthPages(app, CONDUCTOR_AUTH_PROVIDERS);

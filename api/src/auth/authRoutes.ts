@@ -32,7 +32,11 @@ import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
-import {saveCouchUser, saveExpressUser} from '../couchdb/users';
+import {
+  getCouchUserFromEmailOrUsername,
+  saveCouchUser,
+  saveExpressUser,
+} from '../couchdb/users';
 import {AuthAction, CustomSessionData} from '../types';
 import {
   buildQueryString,
@@ -57,9 +61,6 @@ export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
  * @param socialProviders an array of login provider identifiers
  */
 export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
-  // ACTIONS
-  // =======
-
   /**
    * Handle local login OR register request with username and password
    */
@@ -120,6 +121,9 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         {session: false},
         // custom success function which signs JWT and redirects
         async (err: string | Error | null, user: Express.User) => {
+          if (err) {
+            return next(err);
+          }
           // We have logged in - do we also want to consume an invite?
           if (inviteId) {
             // We have an invite to consume - go ahead and use it
@@ -129,9 +133,6 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             });
             // avoid saving unwanted details here
             await saveExpressUser(user);
-          }
-          if (err) {
-            return next(err);
           }
           // No longer login user with session - now redirect straight back with
           // token
@@ -233,6 +234,36 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         }
         return user;
       };
+
+      // Do we have an existing user if so - reuse our login behaviour instead!
+      // (This checks the password is correct)
+      if (await getCouchUserFromEmailOrUsername(email)) {
+        return passport.authenticate(
+          // local strategy (user/pass)
+          'local',
+          // do not use session (JWT only - no persistence)
+          {session: false},
+          // custom success function which signs JWT and redirects
+          async (err: string | Error | null, user: Express.User) => {
+            if (err) {
+              return next(err);
+            }
+            // We have logged in - do we also want to consume an invite?
+            if (inviteId) {
+              // We have an invite to consume - go ahead and use it
+              await validateAndApplyInviteToUser({
+                inviteCode: inviteId,
+                dbUser: user,
+              });
+              // avoid saving unwanted details here
+              await saveExpressUser(user);
+            }
+            // No longer login user with session - now redirect straight back with
+            // token
+            return redirectWithToken({res, user, redirect});
+          }
+        )(req, res, next);
+      }
 
       let createdDbUser: PeopleDBDocument;
       try {

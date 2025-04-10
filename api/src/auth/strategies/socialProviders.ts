@@ -32,12 +32,12 @@ export const AUTH_PROVIDER_DETAILS: Record<AuthProvider, ProviderDetails> = {
 };
 
 /**
- * Register auth providers using `passport.use`,
- * provider identifiers must appear in the AVAILABLE_AUTH_PROVIDERS above
+ * Register strategies using `passport.use`,
+ * Social provider identifiers must appear in the AVAILABLE_AUTH_PROVIDERS
  *
  * @param providersToUse array of provider identifiers
  */
-export function applyPassportAuthProviders(providersToUse: AuthProvider[]) {
+export function applyPassportStrategies(providersToUse: AuthProvider[]) {
   // Local is always enabled
   passport.use('local', getLocalAuthStrategy());
 

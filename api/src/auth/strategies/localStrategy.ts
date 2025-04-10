@@ -54,7 +54,7 @@ export const validateLocalUser: VerifyFunction = async (
 
   if (!profile.salt) {
     return done(
-      `Please contact a system administrator. Your user exists but is corrupted or cannot be ues.`,
+      `Please contact a system administrator. Your user information exists but is corrupted or cannot be used.`,
       false
     );
   }

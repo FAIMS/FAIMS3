@@ -206,12 +206,26 @@ async function oauthVerify(
     }
 
     // NOTE: This is the situation where you are trying to 'register' a new
-    // account but one already exists with google with matching email - for now
-    // we error but we could instead upgrade the existing account and proceed to
-    // apply invite
+    // account but one already exists with google with matching email - we
+    // decide here to instead log them in - upgrading the potentially
+    // unconnected account
+
+    // We have precisely one matching email address, let's ensure that this
+    // account has the linked google profile, then return it (We can safely assert
+    // non-null here due to our previous filtering)
+    const matchedSingleUser = userLookups[matchingEmails[0]]!;
+
+    // Firstly - ensure they have the google profile linked
+    if (!('google' in matchedSingleUser.profiles)) {
+      matchedSingleUser.profiles['google'] = profile;
+      await saveCouchUser(matchedSingleUser);
+    }
+
+    // upgrade user and return login success - invite to be processed later if
+    // at all
     return done(
-      'An account with this email address already exists - please login instead.',
-      undefined
+      null,
+      await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
     );
   }
 }
