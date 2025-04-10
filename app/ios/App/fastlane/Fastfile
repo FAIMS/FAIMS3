@@ -125,11 +125,13 @@ platform :ios do
       teamid: ENV["APP_STORE_CONNECT_TEAM_ID"]
     )
 
+    xcodes(version: "16.3")
+
     gym(
       configuration: "Release", #make sure this key matches xcode signing and capabilities.
       workspace: "App.xcworkspace",
       scheme: "App",
-      sdk: "iOS 18.0",
+      sdk: "iOS 18.4",
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
