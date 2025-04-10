@@ -67,8 +67,3 @@ if test -f /usr/libexec/PlistBuddy; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $VITE_APP_ID" ./ios/App/App/Info.plist
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $VITE_APP_ID" ./ios/App/App/Info.plist
 fi
-
-# update project file for local build
-#sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./ios/App/App.xcodeproj/project.pbxproj.dist |\
-#  sed -e "s/APP_STORE_CONNECT_TEAM_ID/${APP_STORE_CONNECT_TEAM_ID}/g" > ./ios/App/App.xcodeproj/project.pbxproj
-

@@ -62,6 +62,11 @@ platform :ios do
       api_key: api_key
     )
 
+    update_project_team(
+      path: "App.xcodeproj",
+      teamid: ENV["APP_STORE_CONNECT_TEAM_ID"]
+    )
+
     gym(
       configuration: "Debug",
       workspace: "App.xcworkspace",
@@ -179,6 +184,11 @@ platform :ios do
       keychain_name: KEYCHAIN_NAME,
       keychain_password: KEYCHAIN_PASSWORD,
       api_key: api_key
+    )
+
+    update_project_team(
+      path: "App.xcodeproj",
+      teamid: ENV["APP_STORE_CONNECT_TEAM_ID"]
     )
 
     gym(
