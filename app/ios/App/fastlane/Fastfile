@@ -113,7 +113,7 @@ platform :ios do
     )
     
     profiles = get_provisioning_profile(
-      app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
+      app_identifier: "Match AppStore #{APPLE_BUNDLE_IDENTIFIER}",
       api_key: api_key,
       readonly: true
     )
