@@ -157,21 +157,15 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
       return;
     }
 
-    const url =
-      serverInfo.serverUrl +
-      '/register/' +
-      serverInfo.shortCodePrefix +
-      '-' +
-      shortCode;
-
-    showSuccess('Initiating registration...');
+    const inviteCode = serverInfo.shortCodePrefix + '-' + shortCode;
+    const url = `${serverInfo.serverUrl}/register?inviteId=${inviteCode}`;
 
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href = url + '?redirect=' + redirect;
+      window.location.href = url + '&redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${url}?redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${APP_ID}://auth-return`,
       });
     }
   };

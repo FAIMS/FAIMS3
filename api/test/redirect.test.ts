@@ -11,22 +11,22 @@ describe('validateRedirect tests', () => {
     CONDUCTOR_PUBLIC_URL,
   ];
 
-  it('should accept relative URLs', () => {
+  it('should not accept relative URLs', () => {
     const result = validateRedirect('/dashboard', testWhitelist);
-    expect(result).to.equal(CONDUCTOR_PUBLIC_URL + '/dashboard');
+    expect(result).to.equal('/');
   });
 
-  it('should accept relative URLs with query parameters', () => {
+  it('should not accept relative URLs with query parameters', () => {
     const result = validateRedirect(
       '/dashboard?user=123&action=view',
       testWhitelist
     );
-    expect(result).to.equal(CONDUCTOR_PUBLIC_URL + '/dashboard?user=123&action=view');
+    expect(result).to.equal('/');
   });
 
-  it('should accept relative URLs with hash fragments', () => {
+  it('should not accept relative URLs with hash fragments', () => {
     const result = validateRedirect('/dashboard#section1', testWhitelist);
-    expect(result).to.equal(CONDUCTOR_PUBLIC_URL + '/dashboard#section1');
+    expect(result).to.equal('/');
   });
 
   it('should accept URLs from the whitelist', () => {
@@ -148,5 +148,13 @@ describe('validateRedirect tests', () => {
   it('should reject null input by returning default path', () => {
     const result = validateRedirect(null as unknown as string, testWhitelist);
     expect(result).to.equal('/');
+  });
+
+  it('should allow non http/https mobile app protocol which is whitelisted', () => {
+    const result = validateRedirect(
+      'org.fedarch.faims3://auth-return',
+      testWhitelist.concat('org.fedarch.faims3://')
+    );
+    expect(result).to.equal('org.fedarch.faims3://auth-return');
   });
 });

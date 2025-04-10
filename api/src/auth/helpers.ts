@@ -9,13 +9,17 @@ import {Response} from 'express';
 import {AUTH_PROVIDER_DETAILS} from './strategies/socialProviders';
 import {generateUserToken} from './keySigning/create';
 import {
+    ANDROID_APP_URL,
   AuthProvider,
   CONDUCTOR_PUBLIC_URL,
+  IOS_APP_URL,
   REDIRECT_WHITELIST,
 } from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
+
+const SAFE_PROTOCOLS = ['http:', 'https:', IOS_APP_URL, ANDROID_APP_URL];
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -91,31 +95,12 @@ export function validateRedirect(
       return '/';
     }
 
-    // If the URL starts with / - then prepend our base domain
-    if (redirect.startsWith('/')) {
-      redirect = `${CONDUCTOR_PUBLIC_URL}${redirect}`;
-    }
-
     // First check if we can parse the URL
     if (!URL.canParse(redirect)) {
       return '/';
     }
 
     const redirectUrl = new URL(redirect);
-
-    // Only allow http and https protocols - if the protocol is empty we presume that there was none provided so can't check this
-    const safeProtocols = ['http:', 'https:'];
-    if (
-      redirectUrl.protocol &&
-      !safeProtocols.includes(redirectUrl.protocol.toLowerCase())
-    ) {
-      return '/';
-    }
-
-    // If it's a relative URL (no hostname), it's acceptable as it stays on our domain
-    if (!redirectUrl.hostname) {
-      return redirect;
-    }
 
     // Absolute URLs must match one of our whitelisted domains
     for (const whitelistedDomain of whitelist) {

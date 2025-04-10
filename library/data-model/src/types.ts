@@ -733,7 +733,6 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 // UI SCHEMA AND METADATA
 // ========================
 // TODO use zod more effectively here to enhance validation
-export const PROJECT_METADATA_PREFIX = 'project-metadata';
 export type ProjectMetadata = {[key: string]: any};
 
 // The UI specification

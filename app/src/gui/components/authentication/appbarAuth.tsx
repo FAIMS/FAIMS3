@@ -167,23 +167,6 @@ const AuthenticatedDisplayComponent = () => {
 
     // remove the server connection on logout
     dispatch(removeServerConnection({serverId, username}));
-
-    // TODO is this really necessary?
-    // initialise everything again
-    dispatch(initialiseAllProjects());
-
-    if (conductorUrl) {
-      if (isWeb()) {
-        // Web redirect
-        const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-        window.location.href = conductorUrl + '/logout?redirect=' + redirect;
-      } else {
-        // Use the capacitor browser plugin in apps
-        await Browser.open({
-          url: `${conductorUrl}/logout?redirect=${APP_ID}://auth-return`,
-        });
-      }
-    }
   };
 
   return (
