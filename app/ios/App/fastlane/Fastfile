@@ -125,8 +125,6 @@ platform :ios do
       teamid: ENV["APP_STORE_CONNECT_TEAM_ID"]
     )
 
-    xcodes(version: "16.3")
-
     gym(
       configuration: "Release", #make sure this key matches xcode signing and capabilities.
       workspace: "App.xcworkspace",
