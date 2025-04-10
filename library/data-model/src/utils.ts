@@ -1,3 +1,4 @@
+import {IS_TESTING} from './data_storage';
 import {HRID_STRING} from './datamodel/core';
 import {ProjectUIModel, ProjectUIViewset} from './types';
 

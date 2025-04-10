@@ -27,6 +27,7 @@ import {
   addProjectRole,
   addTeamRole,
   EncodedProjectUIModel,
+  PostRegisterInput,
   registerClient,
   Resource,
   Role,
@@ -45,7 +46,7 @@ import {
 import {createNotebook} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/pages';
+import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {
   adminToken,
@@ -578,12 +579,13 @@ describe('Registration', () => {
   });
 
   it('redirects with a token on registration', async () => {
-    const payload = {
+    let payload: PostRegisterInput = {
       email: 'bob@here.com',
       password: 'bobbyTables',
       repeat: 'bobbyTables',
       name: 'Bob Bobalooba',
       redirect: 'http://redirect.org/',
+      action: 'register',
     };
 
     const project_id = await createNotebook('Test Notebook', uispec, {});
@@ -598,15 +600,16 @@ describe('Registration', () => {
         role: role,
       });
       const code = invite._id;
+      payload.inviteId = code;
 
       const agent = request.agent(app);
 
       await agent
-        .get(`/register/${code}?redirect=${payload.redirect}`)
+        .get(`/register`)
         .expect(200);
 
       return agent
-        .post('/register/local/')
+        .post('/auth/local')
         .send(payload)
         .expect(302)
         .then(response => {

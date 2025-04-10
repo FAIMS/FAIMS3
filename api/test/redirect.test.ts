@@ -1,5 +1,6 @@
 import {expect} from 'chai';
 import {validateRedirect} from '../src/auth/helpers';
+import {CONDUCTOR_PUBLIC_URL} from '../src/buildconfig';
 
 describe('validateRedirect tests', () => {
   // Define a test whitelist that we'll use throughout the tests
@@ -7,11 +8,12 @@ describe('validateRedirect tests', () => {
     'http://example.com',
     'https://trusted.domain.org',
     'http://localhost:3000',
+    CONDUCTOR_PUBLIC_URL,
   ];
 
   it('should accept relative URLs', () => {
     const result = validateRedirect('/dashboard', testWhitelist);
-    expect(result).to.equal('/dashboard');
+    expect(result).to.equal(CONDUCTOR_PUBLIC_URL + '/dashboard');
   });
 
   it('should accept relative URLs with query parameters', () => {
@@ -19,12 +21,12 @@ describe('validateRedirect tests', () => {
       '/dashboard?user=123&action=view',
       testWhitelist
     );
-    expect(result).to.equal('/dashboard?user=123&action=view');
+    expect(result).to.equal(CONDUCTOR_PUBLIC_URL + '/dashboard?user=123&action=view');
   });
 
   it('should accept relative URLs with hash fragments', () => {
     const result = validateRedirect('/dashboard#section1', testWhitelist);
-    expect(result).to.equal('/dashboard#section1');
+    expect(result).to.equal(CONDUCTOR_PUBLIC_URL + '/dashboard#section1');
   });
 
   it('should accept URLs from the whitelist', () => {
@@ -62,7 +64,7 @@ describe('validateRedirect tests', () => {
   });
 
   it('should reject URLs not in the whitelist that have same domain but different port', () => {
-    const result = validateRedirect('http://localhost:8080', testWhitelist);
+    const result = validateRedirect('http://localhost:2525', testWhitelist);
     expect(result).to.equal('/');
   });
 

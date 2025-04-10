@@ -78,7 +78,7 @@ export const getLocalAuthStrategy = () => {
   return new Strategy(
     {
       passwordField: 'password',
-      usernameField: 'username',
+      usernameField: 'email',
       // Do not persist the user into the session
       session: false,
     },

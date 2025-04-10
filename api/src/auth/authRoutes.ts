@@ -294,7 +294,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
       // No longer req.login - instead redirect directly with token!
       return redirectWithToken({res, user: expressUser, redirect});
-    }
+    } 
   });
 
   // For each handler, deploy an auth route + auth return route

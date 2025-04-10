@@ -33,6 +33,15 @@ import handlebars from 'handlebars';
 import morgan from 'morgan';
 import passport from 'passport';
 import flash from 'req-flash';
+import {addAuthPages} from './auth/authPages';
+import {addAuthRoutes} from './auth/authRoutes';
+import {applyPassportStrategies} from './auth/strategies/socialProviders';
+import {CONDUCTOR_AUTH_PROVIDERS, COUCHDB_INTERNAL_URL} from './buildconfig';
+import {
+  databaseValidityReport,
+  initialiseDbAndKeys,
+  verifyCouchDBConnection,
+} from './couchdb';
 
 // use swaggerUI to display the UI documentation
 // need this workaround to have the swagger-ui-dist package
@@ -52,13 +61,13 @@ const indexContent = readFileSync(
 // Workaround done
 
 import markdownit from 'markdown-it';
-import {api as notebookApi} from './api/notebooks';
-import {api as templatesApi} from './api/templates';
-import {api as teamsApi} from './api/teams';
 import {api as resetPasswordApi} from './api/emailReset';
+import {api as invitesApi} from './api/invites';
+import {api as notebookApi} from './api/notebooks';
+import {api as teamsApi} from './api/teams';
+import {api as templatesApi} from './api/templates';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
-import {api as invitesApi} from './api/invites';
 import {
   COOKIE_SECRET,
   RATE_LIMITER_ENABLED,
@@ -190,3 +199,56 @@ app.use(errorHandler);
 // Swagger-UI Routes
 app.get('/apidoc/swagger-initializer.js', (req, res) => res.send(indexContent));
 app.use('/apidoc/', express.static(pathToSwaggerUi));
+
+// Health check
+app.get('/up/', (req, res) => {
+  res.status(200).json({up: 'true'});
+});
+
+// AUTH
+// ====
+
+// This sets up passport to use the social strategies
+applyPassportStrategies(CONDUCTOR_AUTH_PROVIDERS);
+
+// This adds the views/pages related to auth (/login, /register)
+addAuthPages(app, CONDUCTOR_AUTH_PROVIDERS);
+
+// This adds the endpoints for auth (/auth/local, [/auth/<handler>])
+addAuthRoutes(app, CONDUCTOR_AUTH_PROVIDERS);
+
+// HANDLEBARS ROUTES
+// =================
+
+/**
+ * Home Page (-> /login)
+ */
+app.get('/', async (req, res) => {
+  if (databaseValidityReport.valid) {
+    res.redirect('/login');
+  } else {
+    res.render('fallback', {
+      report: databaseValidityReport,
+      couchdb_url: COUCHDB_INTERNAL_URL,
+      layout: 'fallback',
+    });
+  }
+});
+
+/**
+ * POST to /fallback-initialise does initialisation on the databases
+ * - this does not have any auth requirement because it should be used
+ *   to set up the users database and create the admin user
+ *   if databases exist, this is a no-op
+ *   Extra guard, if the db report says everything is ok we don't
+ *   even call initialiseDatabases, just redirect home
+ */
+app.post('/fallback-initialise', async (req, res) => {
+  if (!databaseValidityReport.valid) {
+    console.log('running initialise');
+    await initialiseDbAndKeys({});
+    const vv = await verifyCouchDBConnection();
+    console.log('updated valid', databaseValidityReport, vv);
+  }
+  res.redirect('/');
+});

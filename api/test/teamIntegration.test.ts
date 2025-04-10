@@ -61,7 +61,7 @@ import {
 } from '../src/couchdb/templates';
 import {createUser, saveCouchUser} from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
-import {app} from '../src/pages';
+import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {adminToken, beforeApiTests, requestAuthAndType} from './utils';
 import {addLocalPasswordForUser} from '../src/auth/helpers';

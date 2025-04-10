@@ -37,7 +37,7 @@ import {
   validateRefreshToken,
 } from '../src/couchdb/refreshTokens';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/pages';
+import {app} from '../src/expressSetup';
 import {
   adminToken,
   adminUserName,

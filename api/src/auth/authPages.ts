@@ -23,15 +23,15 @@ import {AuthContext} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
+import {AuthProvider} from '../buildconfig';
 import {getInvite, isInviteValid} from '../couchdb/invites';
 import {AuthAction} from '../types';
+import {DEFAULT_REDIRECT_URL} from './authRoutes';
 import {
   buildQueryString,
   providersToRenderDetails,
   validateRedirect,
 } from './helpers';
-import {DEFAULT_REDIRECT_URL} from './authRoutes';
 
 /**
  * Add authentication routes for local and federated login
@@ -56,7 +56,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         inviteId: z.string().optional(),
       }),
     }),
-    async (req, res) => {
+    (req, res) => {
       // Pull out the invite ID
       const inviteId = req.query.inviteId;
 
@@ -73,7 +73,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         action,
       });
 
-      res.render('login', {
+      return res.render('login', {
         providers: providers.length > 0 ? providers : undefined,
         // Where should the POST endpoint be for the local login form?
         postUrl: `/auth/local${buildQueryString({
@@ -133,7 +133,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         action: 'register',
       });
 
-      res.render('register', {
+      return res.render('register', {
         invite: inviteId,
         // pass through on POST -> note that inviteId and redirect are hidden
         // form elements injected below

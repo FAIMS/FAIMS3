@@ -55,7 +55,7 @@ import {
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/pages';
+import {app} from '../src/expressSetup';
 import {callbackObject, databaseList} from './mocks';
 import {
   adminToken,

@@ -8,7 +8,11 @@ import {ZodError} from 'zod';
 import {Response} from 'express';
 import {AUTH_PROVIDER_DETAILS} from './strategies/socialProviders';
 import {generateUserToken} from './keySigning/create';
-import {AuthProvider, REDIRECT_WHITELIST} from '../buildconfig';
+import {
+  AuthProvider,
+  CONDUCTOR_PUBLIC_URL,
+  REDIRECT_WHITELIST,
+} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
@@ -78,14 +82,36 @@ export const handleZodErrors = ({
  * @param redirect URL to redirect to
  * @returns a valid URL to redirect to that matches our whitelist, default to '/' if invalid
  */
-export function validateRedirect(redirect: string, whitelist: string[] = REDIRECT_WHITELIST): string {
+export function validateRedirect(
+  redirect: string,
+  whitelist: string[] = REDIRECT_WHITELIST
+): string {
   try {
+    // If redirect is undefined, null, or empty string, return default
+    if (!redirect) {
+      return '/';
+    }
+
+    // If the URL starts with / - then prepend our base domain
+    if (redirect.startsWith('/')) {
+      redirect = `${CONDUCTOR_PUBLIC_URL}${redirect}`;
+    }
+
     // First check if we can parse the URL
     if (!URL.canParse(redirect)) {
       return '/';
     }
 
     const redirectUrl = new URL(redirect);
+
+    // Only allow http and https protocols - if the protocol is empty we presume that there was none provided so can't check this
+    const safeProtocols = ['http:', 'https:'];
+    if (
+      redirectUrl.protocol &&
+      !safeProtocols.includes(redirectUrl.protocol.toLowerCase())
+    ) {
+      return '/';
+    }
 
     // If it's a relative URL (no hostname), it's acceptable as it stays on our domain
     if (!redirectUrl.hostname) {
@@ -97,8 +123,19 @@ export function validateRedirect(redirect: string, whitelist: string[] = REDIREC
       try {
         const whitelistedUrl = new URL(whitelistedDomain);
 
-        // Compare origins (protocol + hostname + port)
+        if (redirectUrl.protocol !== whitelistedUrl.protocol) {
+          // Protocols not matching! Abort!
+          continue;
+        }
+
+        if (redirectUrl.port !== whitelistedUrl.port) {
+          // Ports not matching! Abort!
+          continue;
+        }
+
+        // Final check - slightly redundant
         if (redirectUrl.origin === whitelistedUrl.origin) {
+          // Compare origins (protocol + hostname + port)
           return redirect;
         }
       } catch (error) {
@@ -202,9 +239,8 @@ export function providersToRenderDetails({
   for (const handler of handlers) {
     const details = AUTH_PROVIDER_DETAILS[handler];
     providers.push({
-      // Validate label vs name?
-      label: details.id,
-      name: details.id,
+      id: details.id,
+      name: details.displayName,
       targetUrl: `/auth/${details.id}${buildQueryString({
         values: {
           redirect: redirectUrl,
