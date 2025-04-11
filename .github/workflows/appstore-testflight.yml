@@ -113,6 +113,7 @@ jobs:
           export VITE_APP_NAME="${{vars.APP_NAME}}"
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
           npm ci --python=python3.10
+          npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
           npm run build
       - name: Update IOS Build
         run: |
