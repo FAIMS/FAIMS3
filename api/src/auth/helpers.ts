@@ -148,12 +148,6 @@ export const redirectWithToken = async ({
   user: Express.User;
   redirect: string;
 }) => {
-  // there is a case where the redirect url will already
-  // have a token (register >> login >>  register)
-  if (redirect.indexOf('?token=') >= 0) {
-    return res.redirect(redirect);
-  }
-
   // Generate a token (include refresh)
   const token = await generateUserToken(user, true);
 
