@@ -14,48 +14,62 @@
 //
 
 import {TextField, TextFieldProps} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef, ChangeEvent} from 'react';
+import { debounce } from 'lodash';
 
 export interface DebouncedTextFieldProps
   extends Omit<TextFieldProps, 'onChange'> {
-  /** The debounce delay in milliseconds (default is 300ms) */
+
+  /** The debounce delay in milliseconds (default is 200ms) */
   debounceTime?: number;
+
   /**
    * onChange callback that will be fired after the delay.
    */
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  
 }
 
-const DebouncedTextField: React.FC<DebouncedTextFieldProps> = props => {
-  const {debounceTime = 300, onChange, value, ...other} = props;
+const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
+  name,
+  value,
+  onChange,
+  debounceTime = 200,
+  ...other
+}) => {
+
   const [innerValue, setInnerValue] = useState<unknown>(value ?? '');
 
-  // Update inner value when the parent's value changes.
+  // Create ONE debounced function and store it in a ref
+  const debouncedOnChange = useRef(
+    debounce((newValue: string | number) => {
+      const event = {
+        target: { name, value: newValue },
+      } as ChangeEvent<HTMLInputElement>;
+      console.log('FIRING');
+      onChange(event);
+    }, debounceTime)
+  ).current;
+
   useEffect(() => {
-    setInnerValue(value ?? '');
+    return () => {
+      debouncedOnChange.cancel();
+    };
+  }, [debouncedOnChange]);
+
+  // Update local state if external `value` changes
+  useEffect(() => {
+    setInnerValue(value);
   }, [value]);
 
-  // Debounce onChange calls.
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      if (onChange) {
-        console.log('FIRING');
-        onChange({
-          target: {value: innerValue},
-        } as React.ChangeEvent<HTMLInputElement>);
-      }
-    }, debounceTime);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [innerValue, debounceTime, onChange]);
-
+  // Fire debounced onChange whenever local input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInnerValue(e.target.value);
+    debouncedOnChange(e.target.value);
   };
 
   return <TextField {...other} value={innerValue} onChange={handleChange} />;
+
 };
 
 export default DebouncedTextField;
