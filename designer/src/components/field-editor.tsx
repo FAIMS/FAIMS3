@@ -317,6 +317,9 @@ export const FieldEditor = ({
     });
   };
 
+  const requiredBlocksHiding =
+    isRequired && fieldComponent !== 'TemplatedStringField';
+
   return (
     <Accordion
       key={fieldName}
@@ -448,7 +451,7 @@ export const FieldEditor = ({
                   title={
                     protection === 'protected'
                       ? 'Fully protected fields cannot be hidden'
-                      : isRequired
+                      : requiredBlocksHiding
                         ? 'Required fields cannot be hidden'
                         : 'Unhide Field'
                   }
@@ -458,7 +461,9 @@ export const FieldEditor = ({
                       onClick={toggleHiddenState}
                       aria-label="unhide field"
                       size="small"
-                      disabled={protection === 'protected' || isRequired}
+                      disabled={
+                        protection === 'protected' || requiredBlocksHiding
+                      }
                     >
                       <VisibilityIcon />
                     </IconButton>
@@ -470,7 +475,7 @@ export const FieldEditor = ({
                     title={
                       protection === 'protected'
                         ? 'Fully protected fields cannot be hidden'
-                        : isRequired
+                        : requiredBlocksHiding
                           ? 'Required fields cannot be hidden'
                           : 'Hide Field'
                     }
@@ -480,7 +485,9 @@ export const FieldEditor = ({
                         onClick={toggleHiddenState}
                         aria-label="hide field"
                         size="small"
-                        disabled={protection === 'protected' || isRequired}
+                        disabled={
+                          protection === 'protected' || requiredBlocksHiding
+                        }
                       >
                         <VisibilityOffIcon />
                       </IconButton>

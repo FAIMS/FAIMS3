@@ -44,14 +44,6 @@ export const DesignPanel = () => {
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
   );
 
-  console.log('DesignPanel');
-  console.log(
-    'visible forms ',
-    visibleTypes,
-    '& unticked forms ',
-    untickedForms
-  );
-
   const maxKeys = Object.keys(viewSets).length;
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
