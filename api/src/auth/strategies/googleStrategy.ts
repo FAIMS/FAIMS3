@@ -231,8 +231,8 @@ async function oauthVerify(
 }
 
 export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({
-  loginCallbackUrl: loginCallback,
-  scope: string[]
+  loginCallbackUrl,
+  scope,
 }) => {
   if (GOOGLE_CLIENT_ID === '') {
     throw Error('GOOGLE_CLIENT_ID must be set to use Google');
@@ -247,7 +247,7 @@ export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: loginCallback,
+      callbackURL: loginCallbackUrl,
       passReqToCallback: true,
       scope,
       state: true,

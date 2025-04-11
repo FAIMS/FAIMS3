@@ -7,6 +7,7 @@ import {getLocalAuthStrategy} from './localStrategy';
 // This function takes the callback URL and generates the passport strategy
 export type StrategyGeneratorFunction = (params: {
   loginCallbackUrl: string;
+  scope: string[];
 }) => Strategy;
 
 // This is a set of configuration details for a provider
