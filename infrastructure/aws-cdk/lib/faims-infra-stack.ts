@@ -269,7 +269,7 @@ export const ConfigSchema = z.object({
   /** Email service configuration */
   smtp: SMTPConfigSchema,
   /** Social sign in providers */
-  socialProviders: SocialProvidersConfigSchema,
+  socialProviders: SocialProvidersConfigSchema.optional(),
 });
 
 // Infer the types from the schemas
