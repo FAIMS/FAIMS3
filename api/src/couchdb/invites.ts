@@ -192,6 +192,9 @@ export async function getInvite({
  * Also checks for validity (though you should do this prior to calling this
  * function)
  *
+ * NOTE: DOES NOT save the user - that is the responsibility of the caller - so as to
+ * enable efficiently managing this save point/transaction
+ *
  * @param {Object} params - The parameters for recording invite usage
  * @param {ExistingInvitesDBDocument} params.invite - The invite document
  * @param {string} params.userId - ID of the user using the invite
