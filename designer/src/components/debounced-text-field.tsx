@@ -13,26 +13,22 @@
 // limitations under the License.
 //
 
-import React, {useState, useEffect, useRef} from 'react';
 import {TextField, TextFieldProps} from '@mui/material';
+import React, {useEffect, useState} from 'react';
 
 export interface DebouncedTextFieldProps
-  extends Omit<TextFieldProps, 'onChange'| 'value'> {
+  extends Omit<TextFieldProps, 'onChange'> {
   /** The debounce delay in milliseconds (default is 300ms) */
   debounceTime?: number;
   /**
    * onChange callback that will be fired after the delay.
    */
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  // String value
-  value: string | null | undefined;
 }
 
 const DebouncedTextField: React.FC<DebouncedTextFieldProps> = props => {
   const {debounceTime = 300, onChange, value, ...other} = props;
-  const [innerValue, setInnerValue] = useState<string | null | undefined>(
-    value ?? ''
-  );
+  const [innerValue, setInnerValue] = useState<unknown>(value ?? '');
 
   // Update inner value when the parent's value changes.
   useEffect(() => {
