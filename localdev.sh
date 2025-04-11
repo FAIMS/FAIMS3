@@ -30,7 +30,7 @@ wait_for_service() {
             return 1
         fi
 
-        if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080/auth); then
+        if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080/login); then
             if [ "$response" -eq 200 ]; then
                 echo "Service is now available!"
                 return 0

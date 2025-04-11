@@ -141,9 +141,14 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             // avoid saving unwanted details here
             await saveExpressUser(user);
           }
-          // No longer login user with session - now redirect straight back with
+          // Always upgrade prior to returning token to ensure we have latest!
+
           // token
-          return redirectWithToken({res, user, redirect});
+          return redirectWithToken({
+            res,
+            user: await upgradeCouchUserToExpressUser({dbUser: user}),
+            redirect,
+          });
         }
       )(req, res, next);
     } else if (action === 'register') {
@@ -267,7 +272,11 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             }
             // No longer login user with session - now redirect straight back with
             // token
-            return redirectWithToken({res, user, redirect});
+            return redirectWithToken({
+              res,
+              user: await upgradeCouchUserToExpressUser({dbUser: user}),
+              redirect,
+            });
           }
         )(req, res, next);
       }
@@ -301,8 +310,11 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         dbUser: createdDbUser,
       });
 
-      // No longer req.login - instead redirect directly with token!
-      return redirectWithToken({res, user: expressUser, redirect});
+      return redirectWithToken({
+        res,
+        user: expressUser,
+        redirect,
+      });
     }
   });
 
@@ -387,6 +399,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           }
 
           const inviteId = (req.session as CustomSessionData).inviteId;
+          let updatedUser = user;
           if (inviteId) {
             // apply invite
             const updatedUser = await validateAndApplyInviteToUser({
@@ -401,7 +414,11 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             (req.session as CustomSessionData)?.redirect || DEFAULT_REDIRECT_URL
           );
 
-          return redirectWithToken({res, user, redirect});
+          return redirectWithToken({
+            res,
+            user: await upgradeCouchUserToExpressUser({dbUser: updatedUser}),
+            redirect,
+          });
         }
       )(req, res, next);
     });

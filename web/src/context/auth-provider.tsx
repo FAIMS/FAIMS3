@@ -24,7 +24,7 @@ export interface AuthContext {
     token?: string,
     refreshToken?: string
   ) => Promise<{
-    status: string;
+    status: 'success' | 'error';
     message: string;
   }>;
   logout: () => void;
@@ -44,6 +44,13 @@ function decodeToken(token: string): TokenContents | null {
   try {
     // TODO clarify the typing for payload vs contents -this is confusing!
     const payload = jwtDecode<TokenPayload & {exp: number}>(token);
+
+    // Minute buffer is considered expired
+    if (payload.exp * 1000 < Date.now() - 60 * 1000) {
+      console.log('Access token has expired.');
+      return null;
+    }
+
     // Combine the permissions part with the base payload to construct a complete version
     return {...payload, ...decodeAndValidateToken(payload)};
   } catch (e) {
@@ -93,7 +100,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     if (isAuthenticated) {
       refreshToken();
 
-      const intervalId = setInterval(refreshToken, 5 * 60 * 1000);
+      const intervalId = setInterval(refreshToken, 3 * 60 * 1000);
       return () => clearInterval(intervalId);
     }
   }, [isAuthenticated]);
@@ -113,7 +120,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
    * @param {string} refreshToken - The refresh token to use for authentication.
    * @returns {Promise<{status: string, message: string}>} A promise that resolves to an object containing the status and message.
    */
-  const getUserDetails = async (token?: string, refreshToken = '') => {
+  const getUserDetails = async (
+    token?: string,
+    refreshToken = ''
+  ): Promise<{status: 'error' | 'success'; message: string}> => {
     if (!token) return {status: 'error', message: 'No token provided'};
 
     try {

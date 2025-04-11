@@ -23,7 +23,8 @@ interface TokenParams {
  * @returns {JSX.Element} The rendered Route component.
  */
 export const Route = createFileRoute('/_protected')({
-  validateSearch: (search: Record<string, string>): TokenParams => ({
+  // We may not always have these - could be stored instead
+  validateSearch: (search: Record<string, string>): Partial<TokenParams> => ({
     token: search.token,
     refreshToken: search.refreshToken,
   }),
@@ -33,14 +34,25 @@ export const Route = createFileRoute('/_protected')({
     },
     search: {token, refreshToken},
   }) => {
-    if (isAuthenticated) return;
+    // Is there a token? If so we should update
+    if (token) {
+      const {status} = await getUserDetails(token, refreshToken);
+      if (status === 'success') {
+        // After consuming the token, clean up the URL. Remove the query
+        // parameters from the URL without causing a navigation
+        const currentPath = window.location.pathname;
+        window.history.replaceState(null, '', currentPath);
+      } else {
+        // redirect to login
+        window.location.href = SIGNIN_PATH;
+      }
+      return;
+    } else {
+      if (isAuthenticated) return;
 
-    const {status} = await getUserDetails(token, refreshToken);
-
-    if (status === 'success') return;
-
-    // redirect to login
-    window.location.href = SIGNIN_PATH;
+      // redirect to login
+      window.location.href = SIGNIN_PATH;
+    }
   },
   component: RouteComponent,
 });
