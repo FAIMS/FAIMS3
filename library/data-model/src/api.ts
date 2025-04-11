@@ -220,7 +220,10 @@ export type PostRandomRecordsResponse = z.infer<
 
 // POST create new template input
 export const PostCreateTemplateInputSchema =
-  TemplateEditableDetailsSchema.extend({teamId: z.string().min(1).optional()});
+  TemplateEditableDetailsSchema.extend({
+    teamId: z.string().min(1).optional(),
+    name: z.string().min(1),
+  });
 
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema

@@ -64,6 +64,7 @@ export function CreateTemplateForm({
   const onSubmit = async ({
     file,
     team,
+    name,
   }: {
     // Doesn't currently do anything!
     name: string;
@@ -91,7 +92,7 @@ export function CreateTemplateForm({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
           },
-          body: JSON.stringify({teamId: team ?? specifiedTeam, ...json}),
+          body: JSON.stringify({teamId: team ?? specifiedTeam, ...json, name}),
         }
       );
 

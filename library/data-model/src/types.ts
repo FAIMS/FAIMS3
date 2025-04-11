@@ -797,6 +797,9 @@ export const TemplateDerivedDetailsSchema = z.object({
 
   // Is this owned by a team?
   ownedByTeamId: z.string().min(1).optional(),
+
+  // Name
+  name: z.string(),
 });
 export type TemplateDerivedDetails = z.infer<
   typeof TemplateDerivedDetailsSchema

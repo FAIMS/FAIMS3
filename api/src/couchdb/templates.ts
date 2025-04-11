@@ -150,6 +150,7 @@ export const createTemplate = async ({
       project_status: 'active',
     },
     ownedByTeamId: payload.teamId,
+    name: payload.name,
   };
 
   // Try putting the new document
@@ -212,6 +213,7 @@ export const updateExistingTemplate = async (
     // Increment version by 1 when updated
     version: existingTemplate.version + 1,
     ownedByTeamId: existingTemplate.ownedByTeamId,
+    name: existingTemplate.name
   } satisfies TemplateDocument;
   try {
     await templateDb.put(newDocument);

@@ -183,6 +183,7 @@ export const useGetTemplates = (user: User | null) =>
   useQuery({
     queryKey: ['templates'],
     queryFn: async () => {
+      // Not sure why typing on this is really bad!
       const data = await get<GetListTemplatesResponse>('/api/templates/', user);
       return data.templates;
     },

@@ -7,7 +7,7 @@ export type Column = any;
 
 export const columns: ColumnDef<Column>[] = [
   {
-    accessorKey: 'metadata.name',
+    accessorKey: 'name',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Name" />
     ),
