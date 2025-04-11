@@ -27,6 +27,8 @@
         "@mui/lab": "^5.0.0-alpha.137",
         "@mui/material": "^5.14.2",
         "@reduxjs/toolkit": "^1.9.5",
+        "@rollup/rollup-darwin-arm64": "^4.39.0",
+        "@swc/core-darwin-arm64": "^1.11.18",
         "@vitest/browser": "^1.0.1",
         "ajv": "^8.16.0",
         "lexical": "^0.12.4",
