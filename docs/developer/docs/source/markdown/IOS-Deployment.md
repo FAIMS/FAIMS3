@@ -101,3 +101,16 @@ the Fastlane `update_app_identifier` action which can do this
 during the build. For now we will keep the Fieldmark id to the
 one that's been in use so far but when we want a BSS release
 we'll need it to be updated.
+
+## Note on Development Team
+
+The setting `APP_STORE_CONNECT_TEAM_ID` is required in the build and must match
+the identity of the team that generated the certificates used by `fastlane match`.
+This team name is mentioned in the file `app/ios/App/App.xcodeproj/project.pbxproj`
+but we've had problems with the build if we don't explicitly include the value
+in that file.   There is code in `Fastfile` to update it to the configured
+value. We've not yet verified that this works.  
+
+It may be necessary to change the value of DEVELOPMENT_TEAM in the project file
+if you want to deploy from a different team.
+
