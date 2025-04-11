@@ -27,7 +27,7 @@ export const AUTH_PROVIDER_DETAILS: Record<AuthProvider, ProviderDetails> = {
     relativeLoginCallbackUrl: '/auth-return/google',
     fullLoginCallbackUrl: `${CONDUCTOR_PUBLIC_URL}/auth-return/google`,
     strategyGenerator: getGoogleOAuthStrategy,
-    scope: ['profile', 'email'],
+    scope: ['profile', 'email', 'https://www.googleapis.com/auth/plus.login'],
   },
 };
 
@@ -47,12 +47,14 @@ export function applyPassportStrategies(providersToUse: AuthProvider[]) {
     const {
       strategyGenerator,
       fullLoginCallbackUrl: loginCallbackUrl,
+      scope,
       id,
     } = AUTH_PROVIDER_DETAILS[providerName];
 
     // Build the strategy, providing the login callback URL
     const strategy = strategyGenerator({
       loginCallbackUrl,
+      scope,
     });
 
     // Register the strategy generated
