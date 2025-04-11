@@ -49,8 +49,7 @@ import {isWeb} from '../../../utils/helpers';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
 
-// TODO when we fix the add new user logic, bring this back
-const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = false;
+const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = true;
 
 type ClusterCardProps = {
   serverId: string;
@@ -78,7 +77,8 @@ export default function ClusterCard(props: ClusterCardProps) {
   const handleAddNewUser = async () => {
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href = props.conductor_url + '/login?redirect=' + redirect;
+      window.location.href =
+        props.conductor_url + '/login?redirect=' + redirect;
     } else {
       await Browser.open({
         url: `${props.conductor_url}/login?redirect=${APP_ID}://auth-return`,
