@@ -23,7 +23,6 @@ import {
   Select,
   MenuItem,
   Alert,
-  TextField,
   List,
   ListItem,
   IconButton,
@@ -37,6 +36,7 @@ import {useState} from 'react';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType} from '../../state/initial';
+import DebouncedTextField from '../debounced-text-field';
 
 type PairList = [string, string][];
 type Props = {
@@ -230,7 +230,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
 
             <Grid item xs={12} sm={3}>
               <FormControl required sx={{minWidth: 150}}>
-                <TextField
+                <DebouncedTextField
                   name="related-type-label"
                   variant="outlined"
                   label="Related Type Label"
@@ -262,13 +262,13 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                     style={{display: 'flex'}}
                     direction={{xs: 'column', sm: 'row'}}
                   >
-                    <TextField
+                    <DebouncedTextField
                       label="Performed Before"
                       value={newOption1}
                       onChange={e => setNewOption1(e.target.value)}
                       sx={{my: 1.5}}
                     />
-                    <TextField
+                    <DebouncedTextField
                       label="Performed After"
                       value={newOption2}
                       onChange={e => setNewOption2(e.target.value)}

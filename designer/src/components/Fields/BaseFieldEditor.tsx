@@ -12,17 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
+  Alert,
+  Card,
   Checkbox,
   FormControlLabel,
   Grid,
-  TextField,
-  Card,
-  Alert,
   Tooltip,
 } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {useAppSelector, useAppDispatch} from '../../state/hooks';
+import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
   ConditionModal,
@@ -31,6 +30,7 @@ import {
 } from '../condition';
 
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+import DebouncedTextField from '../debounced-text-field';
 
 type Props = {
   fieldName: string;
@@ -149,7 +149,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
         <Card variant="outlined" sx={{p: 2}}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
-              <TextField
+              <DebouncedTextField
                 fullWidth
                 label="Label"
                 value={state.label}
@@ -157,7 +157,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
+              <DebouncedTextField
                 fullWidth
                 label="Helper Text"
                 value={state.helperText}
@@ -229,7 +229,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
             <Grid item container spacing={2}>
               <Grid item xs={12} md={6}>
                 {state.annotation ? (
-                  <TextField
+                  <DebouncedTextField
                     fullWidth
                     label="Annotation Label"
                     value={state.annotationLabel}
@@ -243,7 +243,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
               </Grid>
               <Grid item xs={12} md={6}>
                 {state.uncertainty ? (
-                  <TextField
+                  <DebouncedTextField
                     fullWidth
                     label="Uncertainty Label"
                     value={state.uncertaintyLabel}

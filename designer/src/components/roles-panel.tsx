@@ -16,21 +16,21 @@ import {
   Alert,
   Button,
   Divider,
+  Grid,
   IconButton,
   List,
   ListItem,
   ListItemText,
   Paper,
-  TextField,
   Typography,
-  Grid,
 } from '@mui/material';
 
 import {useState} from 'react';
-import {useAppSelector, useAppDispatch} from '../state/hooks';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
 
-import DeleteIcon from '@mui/icons-material/Delete';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DebouncedTextField from './debounced-text-field';
 
 /**
  * RolesPanel - edit the user roles associated with this notebook
@@ -73,7 +73,7 @@ export const RolesPanel = () => {
           </Alert>
         </Grid>
         <Grid item xs={4}>
-          <TextField
+          <DebouncedTextField
             label="Add User Role"
             value={newRole}
             onChange={e => setNewRole(e.target.value)}

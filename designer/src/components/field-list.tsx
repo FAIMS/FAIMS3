@@ -14,26 +14,26 @@
 
 import {
   Button,
-  Stack,
   Dialog,
-  DialogTitle,
+  DialogActions,
   DialogContent,
   DialogContentText,
-  TextField,
-  DialogActions,
+  DialogTitle,
   MenuItem,
   Select,
+  Stack,
 } from '@mui/material';
 
-import UnfoldMoreDoubleRoundedIcon from '@mui/icons-material/UnfoldMoreDoubleRounded';
-import UnfoldLessDoubleRoundedIcon from '@mui/icons-material/UnfoldLessDoubleRounded';
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
+import UnfoldLessDoubleRoundedIcon from '@mui/icons-material/UnfoldLessDoubleRounded';
+import UnfoldMoreDoubleRoundedIcon from '@mui/icons-material/UnfoldMoreDoubleRounded';
 
-import {FieldEditor} from './field-editor';
-import {useEffect, useState} from 'react';
-import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {getFieldNames} from '../fields';
 import Typography from '@mui/material/Typography';
+import {useEffect, useState} from 'react';
+import {getFieldNames} from '../fields';
+import {useAppDispatch, useAppSelector} from '../state/hooks';
+import DebouncedTextField from './debounced-text-field';
+import {FieldEditor} from './field-editor';
 
 type Props = {
   viewSetId: string;
@@ -238,7 +238,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           <DialogContentText>
             Create a new field in your form.
           </DialogContentText>
-          <TextField
+          <DebouncedTextField
             autoFocus
             margin="dense"
             id="name"

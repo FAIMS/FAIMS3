@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Card, Grid, TextField} from '@mui/material';
+import {Card, Grid} from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType, ValidationSchemaElement} from '../../state/initial';
+import DebouncedTextField from '../debounced-text-field';
 
 export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
@@ -85,7 +86,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
         <Grid item xs={6}>
           <Card variant="outlined" sx={{display: 'flex'}}>
             <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-              <TextField
+              <DebouncedTextField
                 name="pre-populated"
                 variant="outlined"
                 label="Default Text"
@@ -105,7 +106,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
         <Grid item xs={12} sm={6}>
           <Card variant="outlined" sx={{display: 'flex'}}>
             <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-              <TextField
+              <DebouncedTextField
                 name="pre-populated"
                 variant="outlined"
                 label="Default Number"
@@ -131,7 +132,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
           <Card variant="outlined">
             <Grid container p={2} rowSpacing={3}>
               <Grid item xs={12} sm={6}>
-                <TextField
+                <DebouncedTextField
                   name="min"
                   variant="outlined"
                   label="Min Control"
@@ -143,7 +144,7 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
+                <DebouncedTextField
                   name="max"
                   variant="outlined"
                   label="Max Control"
