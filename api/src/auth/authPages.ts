@@ -89,7 +89,6 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         } satisfies AuthContext,
         localAuth: true,
         redirect,
-        layout: 'auth',
         messages: req.flash(),
       });
     }
@@ -159,7 +158,6 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         } satisfies AuthContext,
         localAuth: true,
         messages: req.flash(),
-        layout: 'auth',
       });
     }
   );
