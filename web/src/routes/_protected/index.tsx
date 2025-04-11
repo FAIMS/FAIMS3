@@ -1,9 +1,6 @@
 import {createFileRoute} from '@tanstack/react-router';
+import {ProjectsRouteComponent} from './projects';
 
 export const Route = createFileRoute('/_protected/')({
-  component: RouteComponent,
+  component: ProjectsRouteComponent,
 });
-
-function RouteComponent() {
-  return <div></div>;
-}

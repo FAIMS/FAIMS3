@@ -53,8 +53,8 @@
         "eslint-plugin-react-refresh": "^0.4.3",
         "jsdom": "^22.1.0",
         "typescript": "^5.5.4",
-        "vite": "^4.5.11",
+        "vite": "^4.5.12",
         "vitest": "^1.6.1",
-        "webdriverio": "^8.32.2"
+        "webdriverio": "^9.12.2"
     }
 }

@@ -1,10 +1,11 @@
 import {
   couchInitialiser,
   initDataDB,
-  NonUniqueProjectID,
-  PossibleConnectionInfo,
   ProjectDataObject,
+  ProjectDocument,
+  ProjectStatus,
   ProjectUIModel,
+  PublicServerInfo,
 } from '@faims3/data-model';
 import {
   createAsyncThunk,
@@ -31,19 +32,6 @@ import {databaseService} from './helpers/databaseService';
 
 // TYPES
 // =====
-
-// TODO move this into data model
-export interface ApiProjectInfo {
-  _id: NonUniqueProjectID;
-  name: string;
-  description?: string;
-  template_id?: string;
-  data_db?: PossibleConnectionInfo;
-  metadata_db?: PossibleConnectionInfo;
-  last_updated?: string;
-  created?: string;
-  status?: string;
-}
 
 // Server info
 export interface ApiServerInfo {
@@ -143,18 +131,15 @@ export type ProjectIdToProjectMap = {[projectId: string]: Project};
 
 /** This is the subset of project information which is modifiable/trivial */
 export interface ProjectInformation {
-  // last updated (datetime string)
-  lastUpdated?: string;
-
-  // created time (datetime string)
-  createdAt?: string;
-
   // This is metadata information about the project
   metadata: ProjectMetadata;
 
   // The UI Specification which is NOT compiled - see compiledSpecId for the
   // reference to the compiledSpecService instance of the compiled spec.
   rawUiSpecification: ProjectUIModel;
+
+  // What is the status of the project?
+  status: ProjectStatus;
 }
 
 // A project is a 'notebook'/'survey' - it is relevant to a server, can be
@@ -366,12 +351,11 @@ const projectsSlice = createSlice({
 
         uiSpecificationId: compiledSpecId,
         rawUiSpecification: payload.rawUiSpecification,
-        lastUpdated: payload.lastUpdated,
-        createdAt: payload.createdAt,
 
         // Default not activated with no database
         isActivated: false,
         database: undefined,
+        status: payload.status,
       };
     },
 
@@ -496,8 +480,7 @@ const projectsSlice = createSlice({
         metadata: payload.metadata,
         uiSpecificationId: compiledSpecId,
         rawUiSpecification: payload.rawUiSpecification,
-        lastUpdated: payload.lastUpdated,
-        createdAt: payload.createdAt,
+        status: payload.status,
       };
     },
 
@@ -611,9 +594,8 @@ const projectsSlice = createSlice({
         projectId: project.projectId,
         rawUiSpecification: project.rawUiSpecification,
         uiSpecificationId: project.uiSpecificationId,
-        createdAt: project.createdAt,
-        lastUpdated: project.lastUpdated,
         serverId: project.serverId,
+        status: project.status,
 
         // These are updated
         isActivated: true,
@@ -715,9 +697,8 @@ const projectsSlice = createSlice({
         projectId: project.projectId,
         rawUiSpecification: project.rawUiSpecification,
         uiSpecificationId: project.uiSpecificationId,
-        createdAt: project.createdAt,
-        lastUpdated: project.lastUpdated,
         serverId: project.serverId,
+        status: project.status,
 
         // These are updated (to indicate de-activation)
         isActivated: false,
@@ -856,9 +837,8 @@ const projectsSlice = createSlice({
         projectId: project.projectId,
         rawUiSpecification: project.rawUiSpecification,
         uiSpecificationId: project.uiSpecificationId,
-        createdAt: project.createdAt,
-        lastUpdated: project.lastUpdated,
         serverId: project.serverId,
+        status: project.status,
 
         // These are updated
         isActivated: true,
@@ -944,9 +924,8 @@ const projectsSlice = createSlice({
         projectId: project.projectId,
         rawUiSpecification: project.rawUiSpecification,
         uiSpecificationId: project.uiSpecificationId,
-        createdAt: project.createdAt,
-        lastUpdated: project.lastUpdated,
         serverId: project.serverId,
+        status: project.status,
 
         // Project remains activated, but syncing is stopped
         isActivated: true,
@@ -1067,9 +1046,8 @@ const projectsSlice = createSlice({
         projectId: project.projectId,
         rawUiSpecification: project.rawUiSpecification,
         uiSpecificationId: project.uiSpecificationId,
-        createdAt: project.createdAt,
-        lastUpdated: project.lastUpdated,
         serverId: project.serverId,
+        status: project.status,
 
         // These are updated
         isActivated: true,
@@ -1194,9 +1172,8 @@ const projectsSlice = createSlice({
         projectId: project.projectId,
         rawUiSpecification: project.rawUiSpecification,
         uiSpecificationId: project.uiSpecificationId,
-        createdAt: project.createdAt,
-        lastUpdated: project.lastUpdated,
         serverId: project.serverId,
+        status: project.status,
 
         // These are updated
         isActivated: true,
@@ -1324,9 +1301,8 @@ const projectsSlice = createSlice({
         projectId: project.projectId,
         rawUiSpecification: project.rawUiSpecification,
         uiSpecificationId: project.uiSpecificationId,
-        createdAt: project.createdAt,
-        lastUpdated: project.lastUpdated,
         serverId: project.serverId,
+        status: project.status,
 
         // These are updated
         isActivated: true,
@@ -1647,13 +1623,13 @@ export const initialiseServers = createAsyncThunk<void>(
     const appDispatch = dispatch as AppDispatch;
 
     // for each URL in the conductor URLs - fetch directory
-    const discoveredServers: ApiServerInfo[] = [];
+    const discoveredServers: PublicServerInfo[] = [];
     for (const conductorUrl of CONDUCTOR_URLS) {
       // firstly - try and call the info endpoint
       await fetch(`${conductorUrl}/api/info`, {})
         .then(response => response.json())
         .then(info => {
-          discoveredServers.push(info as ApiServerInfo);
+          discoveredServers.push(info as PublicServerInfo);
         });
     }
 
@@ -1764,7 +1740,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
 
     // Now we have a token that is active - so let's fetch the directory (which
     // lists projects)
-    let directoryResults: ApiProjectInfo[] = [];
+    let directoryResults: ProjectDocument[] = [];
     await fetch(`${server.serverUrl}/api/directory`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -1772,7 +1748,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
     })
       .then(response => response.json())
       .then(rawDirectory => {
-        directoryResults = rawDirectory as ApiProjectInfo[];
+        directoryResults = rawDirectory as ProjectDocument[];
       })
       .catch(e => {
         console.warn(
@@ -1805,7 +1781,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         serverId,
       });
 
-      if (!details.data_db?.base_url) {
+      if (!details.dataDb?.base_url) {
         throw new Error(
           'Could not initialise from server as the base URL for the couch DB was not defined.'
         );
@@ -1823,26 +1799,26 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         // create
         appDispatch(
           addProject({
-            metadata: meta.metadata,
+            metadata: meta.metadata as ProjectMetadata,
             projectId,
             serverId,
-            rawUiSpecification: meta.uiSpec,
-            couchDbUrl: details.data_db.base_url,
-            createdAt: details.created,
-            lastUpdated: details.last_updated,
+            rawUiSpecification: meta.decodedSpec,
+            couchDbUrl: details.dataDb.base_url,
+            status: meta.status,
           })
         );
       } else {
         // update existing record
         appDispatch(
           updateProjectDetails({
-            metadata: meta?.metadata ?? project.metadata,
+            metadata:
+              (meta?.metadata as ProjectMetadata | undefined) ??
+              project.metadata,
             projectId: projectId,
             serverId,
-            rawUiSpecification: meta?.uiSpec ?? project.rawUiSpecification,
-            couchDbUrl: details.data_db.base_url,
-            createdAt: details.created,
-            lastUpdated: details.last_updated,
+            rawUiSpecification: meta?.decodedSpec ?? project.rawUiSpecification,
+            couchDbUrl: details.dataDb.base_url,
+            status: meta?.status ?? project.status,
           })
         );
       }

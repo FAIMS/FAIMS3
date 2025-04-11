@@ -1,6 +1,6 @@
 import {Skeleton} from '@/components/ui/skeleton';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTeam} from '@/hooks/get-hooks';
+import {useGetTeam} from '@/hooks/queries';
 import {Link} from '@tanstack/react-router';
 
 interface TeamCellComponentProps {

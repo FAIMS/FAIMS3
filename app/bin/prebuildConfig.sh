@@ -20,9 +20,8 @@ sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g"  ./capacitor.config.dist.j
 
 sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./public/manifest.dist.json > ./public/manifest.json
 
-# android/app/src/main/AndroidManifest.xml
-
-sed -i -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/AndroidManifest.xml
+# Generate android/app/src/main/AndroidManifest.xml
+sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/AndroidManifest-dist.xml > ./android/app/src/main/AndroidManifest.xml
 
 # android/app/src/main/res/values/strings.xml
 
@@ -68,8 +67,3 @@ if test -f /usr/libexec/PlistBuddy; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $VITE_APP_ID" ./ios/App/App/Info.plist
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $VITE_APP_ID" ./ios/App/App/Info.plist
 fi
-
-# update project file for local build
-sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./ios/App/App.xcodeproj/project.pbxproj.dist |\
-  sed -e "s/APP_STORE_CONNECT_TEAM_ID/${APP_STORE_CONNECT_TEAM_ID}/g" > ./ios/App/App.xcodeproj/project.pbxproj
-
