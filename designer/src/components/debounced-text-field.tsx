@@ -17,19 +17,22 @@ import React, {useState, useEffect, useRef} from 'react';
 import {TextField, TextFieldProps} from '@mui/material';
 
 export interface DebouncedTextFieldProps
-  extends Omit<TextFieldProps, 'onChange'> {
+  extends Omit<TextFieldProps, 'onChange'| 'value'> {
   /** The debounce delay in milliseconds (default is 300ms) */
   debounceTime?: number;
   /**
    * onChange callback that will be fired after the delay.
    */
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  // String value
+  value: string | null | undefined;
 }
 
 const DebouncedTextField: React.FC<DebouncedTextFieldProps> = props => {
   const {debounceTime = 300, onChange, value, ...other} = props;
-  const [innerValue, setInnerValue] = useState(value ?? '');
-  const lastCallTimestampRef = useRef<number | null>(null);
+  const [innerValue, setInnerValue] = useState<string | null | undefined>(
+    value ?? ''
+  );
 
   // Update inner value when the parent's value changes.
   useEffect(() => {
@@ -40,23 +43,10 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = props => {
   useEffect(() => {
     const handler = setTimeout(() => {
       if (onChange) {
-        if (lastCallTimestampRef.current === null) {
-          console.log(
-            `Calling external onChange for "${innerValue}" ${debounceTime}ms after first received this change`
-          );
-        } else {
-          const timeSinceLast = Date.now() - lastCallTimestampRef.current;
-          console.log(
-            `Calling external onChange for "${innerValue}" ${debounceTime}ms after first received this change`
-          );
-          console.log(
-            `Calling external onChange ${timeSinceLast}ms after previously called`
-          );
-        }
+        console.log('FIRING');
         onChange({
           target: {value: innerValue},
         } as React.ChangeEvent<HTMLInputElement>);
-        lastCallTimestampRef.current = Date.now();
       }
     }, debounceTime);
 
@@ -66,7 +56,6 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = props => {
   }, [innerValue, debounceTime, onChange]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(`Text field value internally set to "${e.target.value}"`);
     setInnerValue(e.target.value);
   };
 

@@ -18,12 +18,12 @@ import {
   IconButton,
   MenuItem,
   Select,
-  TextField,
   Typography,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
+import DebouncedTextField from './debounced-text-field';
 
 type ViewSetType = {
   views: string[];
@@ -272,7 +272,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               onChange={handleSummaryFieldsChange}
               getOptionLabel={option => option.label}
               renderInput={params => (
-                <TextField
+                <DebouncedTextField
                   {...params}
                   InputProps={{
                     ...params.InputProps,
@@ -295,7 +295,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               onChange={handleHridFieldChange}
               getOptionLabel={option => option.label}
               renderInput={params => (
-                <TextField
+                <DebouncedTextField
                   {...params}
                   InputProps={{
                     ...params.InputProps,
