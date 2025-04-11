@@ -193,7 +193,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         // 400 error as this is an invalid request
         res.status(400);
         req.flash('error', {
-          registration: 'No invite provided for registration.',
+          registrationError: {msg: 'No invite provided for registration.'},
         });
         // go back to auth homepage
         res.redirect('/auth');
@@ -229,7 +229,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           {username: email, email, name, password}
         );
         if (!user) {
-          req.flash('error', {registration: error});
+          req.flash('error', {registrationError: {msg: error}});
           req.flash('email', email);
           req.flash('name', name);
           res.status(400);
@@ -286,8 +286,9 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       } catch (e) {
         res.status(400);
         req.flash('error', {
-          registrationError:
-            'Invite is not valid for registration! Is it expired, or has been used too many times?',
+          registrationError: {
+            msg: 'Invite is not valid for registration! Is it expired, or has been used too many times?',
+          },
         });
         res.redirect(errorRedirect);
         return;
