@@ -152,6 +152,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
       } satisfies User;
 
       setStoredUser(updatedUser);
+      console.log("Setting user to ", updatedUser);
       setUser(updatedUser);
 
       return {status: 'success', message: ''};

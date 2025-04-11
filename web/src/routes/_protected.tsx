@@ -30,23 +30,31 @@ export const Route = createFileRoute('/_protected')({
   }),
   beforeLoad: async ({
     context: {
-      auth: {isAuthenticated, getUserDetails},
+      auth: {isAuthenticated, getUserDetails, user},
     },
     search: {token, refreshToken},
   }) => {
-    // Is there a token? If so we should update
-    if (token) {
-      const {status} = await getUserDetails(token, refreshToken);
+    // Is there a token which is new?
+    if (token && token !== user?.token) {
+      const {status, message} = await getUserDetails(token, refreshToken);
       if (status === 'success') {
         // After consuming the token, clean up the URL. Remove the query
         // parameters from the URL without causing a navigation
         const currentPath = window.location.pathname;
-        window.history.replaceState(null, '', currentPath);
+        // Just give a bit of time for changes to propagate before we strip
+        // token, otherwise we immediately see state with no token + no auth and
+        // get redirected!
+        setTimeout(() => {
+          window.history.replaceState(null, '', currentPath);
+        }, 500);
       } else {
+        console.error(
+          "Failed to get user details on presented 'new' token: ",
+          message
+        );
         // redirect to login
         window.location.href = SIGNIN_PATH;
       }
-      return;
     } else {
       if (isAuthenticated) return;
 
