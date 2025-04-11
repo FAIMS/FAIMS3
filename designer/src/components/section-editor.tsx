@@ -286,7 +286,12 @@ export const SectionEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => <DebouncedTextField {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    {...params}
+                    onChange={event => setTargetViewSetId(event.target.value)}
+                  />
+                )}
               />
             </DialogContent>
             <DialogActions>

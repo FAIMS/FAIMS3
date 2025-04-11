@@ -1007,7 +1007,11 @@ export const FieldConditionControl = (props: ConditionProps) => {
         {targetFieldDef ? (
           renderValueEditor(targetFieldDef)
         ) : (
-          <DebouncedTextField label="Value" sx={{minWidth: 200}} />
+          <DebouncedTextField
+            label="Value"
+            sx={{minWidth: 200}}
+            onChange={() => {}}
+          />
         )}
 
         <Tooltip describeChild title="Make this an 'and' or 'or' condition">
