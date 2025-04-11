@@ -1,6 +1,8 @@
 //import { Notebook } from "./state/initial";
 
-export const sampleNotebook: unknown = {
+import {Notebook} from './state/initial';
+
+export const sampleNotebook: Notebook = {
   metadata: {
     notebook_version: '1.0',
     schema_version: '1.0',
@@ -48,8 +50,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.string']],
         initialValue: '',
         meta: {
-          annotation: true,
-          annotation_label: 'annotation',
+          annotation: {include: true, label: 'annotation'},
           uncertainty: {
             include: true,
             label: 'uncertainty',
@@ -72,8 +73,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
         meta: {
-          annotation: true,
-          annotation_label: 'annotation',
+          annotation: {include: true, label: 'annotation'},
           uncertainty: {
             include: true,
             label: 'uncertainty',
@@ -102,8 +102,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
         meta: {
-          annotation: true,
-          annotation_label: 'annotation',
+          annotation: {include: true, label: 'annotation'},
           uncertainty: {
             include: true,
             label: 'uncertainty',
@@ -129,8 +128,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.string']],
         initialValue: '1',
         meta: {
-          annotation: false,
-          annotation_label: 'annotation',
+          annotation: {include: false, label: 'annotation'},
           uncertainty: {
             include: false,
             label: 'uncertainty',
@@ -152,8 +150,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.object'], ['yup.nullable']],
         initialValue: null,
         meta: {
-          annotation: true,
-          annotation_label: 'annotation',
+          annotation: {include: false, label: 'annotation'},
           uncertainty: {
             include: true,
             label: 'uncertainty',
@@ -175,8 +172,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.object'], ['yup.nullable']],
         initialValue: null,
         meta: {
-          annotation: true,
-          annotation_label: 'annotation',
+          annotation: {include: false, label: 'annotation'},
           uncertainty: {
             include: true,
             label: 'uncertainty',
@@ -205,8 +201,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.number']],
         initialValue: '',
         meta: {
-          annotation: true,
-          annotation_label: 'annotation',
+          annotation: {include: false, label: 'annotation'},
           uncertainty: {
             include: true,
             label: 'uncertainty',
@@ -240,8 +235,7 @@ export const sampleNotebook: unknown = {
         initialValue: '',
         access: ['admin'],
         meta: {
-          annotation_label: 'annotation',
-          annotation: false,
+          annotation: {include: false, label: 'annotation'},
           uncertainty: {
             include: false,
             label: 'uncertainty',
@@ -284,8 +278,7 @@ export const sampleNotebook: unknown = {
         validationSchema: [['yup.string']],
         initialValue: '',
         meta: {
-          annotation: false,
-          annotation_label: 'annotation',
+          annotation: {include: false, label: 'annotation'},
           uncertainty: {
             include: false,
             label: 'uncertainty',
@@ -312,8 +305,7 @@ export const sampleNotebook: unknown = {
         initialValue: false,
         access: ['admin'],
         meta: {
-          annotation_label: 'annotation',
-          annotation: false,
+          annotation: {include: false, label: 'annotation'},
           uncertainty: {
             include: false,
             label: 'uncertainty',
@@ -347,6 +339,7 @@ export const sampleNotebook: unknown = {
       Primary: {
         label: 'Observation',
         views: ['Primary-Next-Section', 'Primary-New-Section'],
+        publishButtonBehaviour: 'always',
       },
     },
     visible_types: ['Primary'],

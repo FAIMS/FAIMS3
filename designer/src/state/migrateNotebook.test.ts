@@ -15,9 +15,10 @@
 import {describe, expect, test} from 'vitest';
 import {migrateNotebook, validateNotebook} from './migrateNotebook';
 import {sampleNotebook} from '../test-notebook';
-import f3demo from '../../notebooks/FAIMS3-Beta-Demo-Notebook.json';
 import campusDemo from '../../notebooks/Campus-Survey-Demo.json';
+import f3Demo from '../../notebooks/Campus-Survey-Demo.json';
 import sampleNB from '../../notebooks/sample_notebook.json';
+import {Notebook} from './initial';
 
 describe('Migrate Notebook Tests', () => {
   test('validate notebook', () => {
@@ -125,14 +126,14 @@ describe('Migrate Notebook Tests', () => {
   });
 
   test('validate sample notebooks', () => {
-    const migratedF3 = migrateNotebook(f3demo);
+    const migratedF3 = migrateNotebook(f3Demo as unknown as Notebook);
     // should not throw an exception
     expect(migratedF3.metadata.name).toBe('Faims3 Beta Demo Notebook');
 
-    const migratedCD = migrateNotebook(campusDemo);
+    const migratedCD = migrateNotebook(campusDemo as unknown as Notebook);
     expect(migratedCD.metadata.name).toBe('Campus Survey Demo');
 
-    const migratedS = migrateNotebook(sampleNB);
+    const migratedS = migrateNotebook(sampleNB as unknown as Notebook);
     expect(migratedS.metadata.name).toBe('Blue Mountains Survey');
   });
 });

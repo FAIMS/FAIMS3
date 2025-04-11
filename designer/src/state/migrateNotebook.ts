@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {FieldType, Notebook} from './initial';
 import {Ajv} from 'ajv';
 import {schema} from '../notebook-schema';
+import {FieldType, Notebook} from './initial';
 
 /**
  * Migrate a notebook to the most recent notebook format
@@ -22,12 +22,12 @@ import {schema} from '../notebook-schema';
  * @returns an updated version of the same notebook
  * @throws an Error if the notebook is not valid
  */
-export const migrateNotebook = (notebook: unknown) => {
+export const migrateNotebook = (notebook: Notebook) => {
   // we should maybe in future have validation against alternate notebook schema versions...
   validateNotebook(notebook);
-  // error will be thrown by validateNotebook if invalid, let it go through
 
-  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook; // deep copy
+  // error will be thrown by validateNotebook if invalid, let it go through
+  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook;
 
   // move field labels from old locations to .label
   updateFieldLabels(notebookCopy);
@@ -49,6 +49,9 @@ export const migrateNotebook = (notebook: unknown) => {
 
   // fix old hrid format
   fixOldHridPrefix(notebookCopy);
+
+  // ensure visible_types exists in the ui-specification
+  updateVisibleTypes(notebookCopy);
 
   return notebookCopy;
 };
@@ -290,7 +293,7 @@ const fixOldHridPrefix = (notebook: Notebook) => {
 
   // Process fields, moving HRID fields to viewset settings
   for (const fieldName of Object.keys(notebook['ui-specification'].fields)) {
-    // Always strip off the hrid true property - this is no longer present
+    // Always strip off the hrid true property - this is no longer
     const params =
       notebook['ui-specification'].fields[fieldName]['component-parameters'];
     if (params && 'hrid' in params) {
@@ -307,4 +310,17 @@ const fixOldHridPrefix = (notebook: Notebook) => {
   }
 
   return notebook;
+};
+
+/**
+ * Ensure that the `visible_types` property exists in the ui-specification.
+ * If not, initialise it to the keys of the viewsets (or an empty array if there are none).
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+const updateVisibleTypes = (notebook: Notebook) => {
+  if (!notebook['ui-specification'].visible_types) {
+    notebook['ui-specification'].visible_types =
+      Object.keys(notebook['ui-specification'].viewsets) || [];
+  }
 };

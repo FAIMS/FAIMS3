@@ -39,12 +39,14 @@
         "react-redux": "^8.1.2",
         "react-router": "^6.26.0",
         "react-router-dom": "^6.26.0",
-        "react-router-hash-link": "^2.4.3"
+        "react-router-hash-link": "^2.4.3",
+        "redux-undo": "^1.1.0"
     },
     "devDependencies": {
         "@testing-library/react": "^14.0.0",
         "@testing-library/user-event": "^14.4.3",
         "@types/lodash": "^4.14.202",
+        "@types/mustache": "^4.2.5",
         "@types/react": "^18.2.15",
         "@types/react-dom": "^18.2.7",
         "@vitejs/plugin-react-swc": "^3.3.2",

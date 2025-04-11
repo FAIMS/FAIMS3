@@ -13,15 +13,24 @@
 // limitations under the License.
 
 import {Middleware, combineReducers, configureStore} from '@reduxjs/toolkit';
-import metadataReducer from './metadata-reducer';
-import uiSpecificationReducer from './uiSpec-reducer';
-import modifiedStatusReducer from './modifiedStatus-reducer';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
-import {AppState, Notebook} from './initial';
-import {loadState, saveState} from './localStorage';
 import {throttle} from 'lodash';
+import undoable, {includeAction} from 'redux-undo';
+import {AppState, NotebookWithHistory} from './initial';
+import {loadState, saveState} from './localStorage';
+import metadataReducer from './metadata-reducer';
+import modifiedStatusReducer from './modifiedStatus-reducer';
+import {uiSpecificationReducer} from './uiSpec-reducer';
 
 const persistedState = loadState();
+if (
+  persistedState &&
+  persistedState.notebook &&
+  persistedState.notebook['ui-specification']
+) {
+  persistedState.notebook['ui-specification'].past = [];
+  persistedState.notebook['ui-specification'].future = [];
+}
 
 const loggerMiddleware: Middleware<object, AppState> =
   storeAPI => next => action => {
@@ -32,9 +41,26 @@ const loggerMiddleware: Middleware<object, AppState> =
 
 export const store: ToolkitStore<AppState> = configureStore({
   reducer: {
-    notebook: combineReducers<Notebook>({
+    notebook: combineReducers<NotebookWithHistory>({
       metadata: metadataReducer,
-      'ui-specification': uiSpecificationReducer,
+      'ui-specification': undoable(uiSpecificationReducer.reducer, {
+        // This needs to be sensible as ui specs can be large
+        limit: 10,
+        filter: includeAction([
+          'ui-specification/fieldAdded',
+          'ui-specification/fieldDeleted',
+          'ui-specification/fieldUpdated',
+          'ui-specification/fieldDuplicated',
+          'ui-specification/sectionAdded',
+          'ui-specification/sectionDeleted',
+          'ui-specification/sectionRenamed',
+          'ui-specification/viewSetAdded',
+          'ui-specification/viewSetDeleted',
+          'ui-specification/viewSetRenamed',
+        ]),
+        clearHistoryType: 'CLEAR_HISTORY',
+        initTypes: [],
+      }),
     }),
     modified: modifiedStatusReducer,
   },
