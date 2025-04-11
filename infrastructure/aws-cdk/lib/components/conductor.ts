@@ -89,6 +89,8 @@ export interface FaimsConductorProps {
   androidAppPublicUrl: string;
   /** Public URL for iOS app */
   iosAppPublicUrl: string;
+  /** iOS/Android APP_ID */
+  appId: string;
   /** The configuration object for the Conductor service */
   config: ConductorConfig;
   /** FAIMS_COOKIE_SECRET */
@@ -193,6 +195,14 @@ export class FaimsConductor extends Construct {
         EMAIL_REPLY_TO: props.smtpConfig.replyTo || props.smtpConfig.fromEmail,
         TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
         SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
+
+        // Whitelising for redirects - should include API, APP, WEB and APP_ID://
+        REDIRECT_WHITELIST: [
+          this.conductorEndpoint,
+          props.webAppPublicUrl,
+          props.webUrl,
+          `${props.appId}://`,
+        ].join(','),
       },
       secrets: {
         COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(

@@ -55,6 +55,7 @@ import {
   localUserName,
   localUserToken,
 } from './utils';
+import { WEBAPP_PUBLIC_URL } from '../src/buildconfig';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
@@ -588,7 +589,9 @@ describe('Registration', () => {
       password: 'bobbyTables',
       repeat: 'bobbyTables',
       name: 'Bob Bobalooba',
-      redirect: '/test-target',
+      // Need to be careful to use a valid whitelisted URL here - this one
+      // should be!
+      redirect: WEBAPP_PUBLIC_URL + '/auth-return',
       action: 'register',
     };
 
@@ -621,7 +624,7 @@ describe('Registration', () => {
           expect(response.header.location[0]).not.to.equal('/');
           // check correct redirect
           const location = new URL(response.header.location);
-          expect(location.hostname).to.equal('localhost');
+          expect(location.origin).to.equal(WEBAPP_PUBLIC_URL);
           expect(location.search).to.match(/token/);
         });
     }
