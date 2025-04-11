@@ -242,10 +242,6 @@ export async function consumeInvite({
     );
   }
 
-  // TODO remove this save - this should be done explicitly outside - just including for
-  // compatibility while testing
-  await saveCouchUser(user);
-
   return {
     ...updatedInvite,
     _rev: result.rev,

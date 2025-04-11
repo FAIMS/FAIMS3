@@ -31,6 +31,7 @@ import {
   registerClient,
   Resource,
   Role,
+  saveUserMergeResult,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
@@ -45,7 +46,7 @@ import {
 } from '../src/couchdb/invites';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
-import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+import {getExpressUserFromEmailOrUsername, saveCouchUser} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {
@@ -247,12 +248,14 @@ describe('Invite Tests', () => {
         invite: limitedInvite,
         user: localUser!,
       });
+      await saveCouchUser(localUser!);
 
       const updatedInvite = await getInvite({inviteId: limitedInvite._id});
       await consumeInvite({
         invite: updatedInvite!,
         user: localUser!,
       });
+      await saveCouchUser(localUser!)
 
       // Check if it's now invalid due to usage limit
       const finalInvite = await getInvite({inviteId: limitedInvite._id});
@@ -300,6 +303,7 @@ describe('Invite Tests', () => {
         invite,
         user: localUser!,
       });
+      await saveCouchUser(localUser!)
 
       // Check results
       expect(updatedInvite.usesConsumed).to.equal(1);

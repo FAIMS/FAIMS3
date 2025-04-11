@@ -4,19 +4,14 @@ import {
   PeopleDBDocument,
 } from '@faims3/data-model';
 import {pbkdf2Sync, randomBytes} from 'crypto';
-import {ZodError} from 'zod';
 import {Response} from 'express';
-import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
-import {generateUserToken} from './keySigning/create';
-import {
-  ANDROID_APP_URL,
-  AuthProvider,
-  IOS_APP_URL,
-  REDIRECT_WHITELIST,
-} from '../buildconfig';
+import {ZodError} from 'zod';
+import {AuthProvider, REDIRECT_WHITELIST} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
+import {generateUserToken} from './keySigning/create';
+import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
