@@ -18,7 +18,6 @@
  *   Provides a component to show either a link to sign-in or the username
  *   which links to the sign-in page
  */
-import {Browser} from '@capacitor/browser';
 import {
   AccountCircle,
   ExpandLess,
@@ -41,7 +40,6 @@ import {
 } from '@mui/material';
 import React from 'react';
 import {NavigateFunction, NavLink, useNavigate} from 'react-router-dom';
-import {APP_ID} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {
   listAllConnections,
@@ -52,12 +50,8 @@ import {
 } from '../../../context/slices/authSlice';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {isWeb} from '../../../utils/helpers';
 import {theme} from '../../themes';
-import {
-  initialiseAllProjects,
-  Server,
-} from '../../../context/slices/projectSlice';
+import {Server} from '../../../context/slices/projectSlice';
 
 const SignInButtonComponent = () => {
   return (

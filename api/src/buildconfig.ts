@@ -653,38 +653,44 @@ export const TEST_EMAIL_ADDRESS = getTestEmailAddress();
 
 /**
  * Parses and validates the redirect whitelist from environment variables.
- * The whitelist is a comma-separated list of domains to which redirects 
+ * The whitelist is a comma-separated list of domains to which redirects
  * are allowed for auth flows.
- * 
+ *
  * @returns Array of whitelisted domains
  * @throws If the whitelist is not defined, contains invalid entries, or is empty
  */
 function getRedirectWhitelist(): string[] {
   const whitelist = process.env.REDIRECT_WHITELIST;
-  
+
   if (whitelist === '' || whitelist === undefined) {
-    throw new Error('REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.');
+    throw new Error(
+      'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.'
+    );
   }
-  
+
   // Split, trim, and filter empty entries
   const domains = whitelist
     .split(',')
     .map(domain => domain.trim())
     .filter(domain => domain.length !== 0);
-  
+
   if (domains.length === 0) {
-    throw new Error('REDIRECT_WHITELIST must contain at least one valid domain.');
+    throw new Error(
+      'REDIRECT_WHITELIST must contain at least one valid domain.'
+    );
   }
-  
+
   // Validate each domain (basic URL validation)
   for (const domain of domains) {
     try {
       new URL(domain);
     } catch (err) {
-      throw new Error(`Invalid domain in REDIRECT_WHITELIST: "${domain}". Each entry must be a valid URL.`);
+      throw new Error(
+        `Invalid domain in REDIRECT_WHITELIST: "${domain}". Each entry must be a valid URL.`
+      );
     }
   }
-  
+
   return domains;
 }
 

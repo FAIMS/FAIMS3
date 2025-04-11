@@ -282,7 +282,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           // Pass in the invite - it's all validated
           inviteCode: inviteId,
         });
-        await saveCouchUser(createdDbUser)
+        await saveCouchUser(createdDbUser);
       } catch (e) {
         res.status(400);
         req.flash('error', {

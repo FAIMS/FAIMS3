@@ -65,7 +65,7 @@ export const validateLocalUser: VerifyFunction = async (
   // instead)
   if (!profile) {
     return done(
-      `You are trying to login to an account which has been created using a social provider. Please login using the social provider instead.`,
+      'You are trying to login to an account which has been created using a social provider. Please login using the social provider instead.',
       false
     );
   }
@@ -73,7 +73,7 @@ export const validateLocalUser: VerifyFunction = async (
   // Handle case where profile exists but salt is missing (corrupted user data)
   if (!profile.salt) {
     return done(
-      `Please contact a system administrator. There was an issue logging you in.`,
+      'Please contact a system administrator. There was an issue logging you in.',
       false
     );
   }

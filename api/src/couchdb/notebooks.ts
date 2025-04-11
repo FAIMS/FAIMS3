@@ -42,7 +42,7 @@ import {
   resourceRoles,
   Role,
   userHasProjectRole,
-  PROJECT_METADATA_PREFIX
+  PROJECT_METADATA_PREFIX,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';

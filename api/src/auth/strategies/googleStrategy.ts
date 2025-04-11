@@ -176,7 +176,7 @@ async function oauthVerify(
     // them (checking invite is okay)
     if (matchingEmails.length === 0) {
       // So the invite is valid we should now start to setup the user
-      const [newDbUser, errorMsg] = await createUser({
+      const [newDbUser] = await createUser({
         email: verifiedEmails[0],
         username: verifiedEmails[0],
         name: profile.displayName,
@@ -185,7 +185,7 @@ async function oauthVerify(
       // something went wrong here
       if (!newDbUser) {
         throw Error(
-          `Internal system error: unable to create new user! Contact a system administrator.`
+          'Internal system error: unable to create new user! Contact a system administrator.'
         );
       }
 

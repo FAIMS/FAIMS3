@@ -31,22 +31,25 @@ import {
   registerClient,
   Resource,
   Role,
-  saveUserMergeResult,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
+import {WEBAPP_PUBLIC_URL} from '../src/buildconfig';
 import {
+  consumeInvite,
   createInvite,
   deleteInvite,
   getInvite,
   getInvitesForResource,
   isInviteValid,
-  consumeInvite,
 } from '../src/couchdb/invites';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
-import {getExpressUserFromEmailOrUsername, saveCouchUser} from '../src/couchdb/users';
+import {
+  getExpressUserFromEmailOrUsername,
+  saveCouchUser,
+} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {
@@ -55,8 +58,6 @@ import {
   localUserName,
   localUserToken,
 } from './utils';
-import { WEBAPP_PUBLIC_URL } from '../src/buildconfig';
-
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
 
@@ -256,7 +257,7 @@ describe('Invite Tests', () => {
         invite: updatedInvite!,
         user: localUser!,
       });
-      await saveCouchUser(localUser!)
+      await saveCouchUser(localUser!);
 
       // Check if it's now invalid due to usage limit
       const finalInvite = await getInvite({inviteId: limitedInvite._id});
@@ -304,7 +305,7 @@ describe('Invite Tests', () => {
         invite,
         user: localUser!,
       });
-      await saveCouchUser(localUser!)
+      await saveCouchUser(localUser!);
 
       // Check results
       expect(updatedInvite.usesConsumed).to.equal(1);
@@ -584,7 +585,7 @@ describe('Registration', () => {
   });
 
   it('redirects with a token on registration', async () => {
-    let payload: PostRegisterInput = {
+    const payload: PostRegisterInput = {
       email: 'bob@here.com',
       password: 'bobbyTables',
       repeat: 'bobbyTables',
@@ -611,9 +612,7 @@ describe('Registration', () => {
 
       const agent = request.agent(app);
 
-      await agent
-        .get(`/register`)
-        .expect(200);
+      await agent.get('/register').expect(200);
 
       return agent
         .post('/auth/local')

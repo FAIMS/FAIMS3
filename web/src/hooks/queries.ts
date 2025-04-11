@@ -1,4 +1,4 @@
-import {buildRegisterUrl, WEB_URL} from '@/constants';
+import {buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import type {
   GetNotebookListResponse,

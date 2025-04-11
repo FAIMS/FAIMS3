@@ -87,7 +87,7 @@ describe('Auth', () => {
   it('redirects with a token on login', done => {
     const redirect = 'http://localhost:8080/';
     request(app)
-      .post(`/auth/local`)
+      .post('/auth/local')
       .send({
         email: 'admin',
         password: adminPassword,

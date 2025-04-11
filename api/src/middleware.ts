@@ -19,12 +19,7 @@
  *   which server to use and whether to include test data
  */
 
-import {
-  Action,
-  isAuthorized,
-  PeopleDBDocument,
-  ResourceRole,
-} from '@faims3/data-model';
+import {Action, isAuthorized} from '@faims3/data-model';
 import Express from 'express';
 import {validateToken} from './auth/keySigning/read';
 import * as Exceptions from './exceptions';

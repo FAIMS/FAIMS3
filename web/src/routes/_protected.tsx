@@ -4,11 +4,11 @@ import {AppSidebar} from '@/components/side-bar/app-sidebar';
 import {Dialog} from '@/components/ui/dialog';
 import {Separator} from '@/components/ui/separator';
 import {
-  SidebarProvider,
   SidebarInset,
+  SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import {SIGNIN_PATH, WEB_URL} from '@/constants';
+import {SIGNIN_PATH} from '@/constants';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 
 interface TokenParams {

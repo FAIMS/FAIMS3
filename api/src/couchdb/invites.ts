@@ -20,19 +20,18 @@
 
 import {
   ExistingInvitesDBDocument,
-  InvitesDBFields,
   InvitesDBDocument,
+  InvitesDBFields,
+  PeopleDBDocument,
   Resource,
   Role,
-  writeNewDocument,
-  PeopleDBDocument,
-  addTeamRole,
   addProjectRole,
+  addTeamRole,
+  writeNewDocument,
 } from '@faims3/data-model';
 import {getInvitesDB} from '.';
 import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {saveCouchUser} from './users';
 
 // Default 30 days expiry
 export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;

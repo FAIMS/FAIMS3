@@ -1,7 +1,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectInvite} from '@/components/dialogs/create-project-invite';
 import {useGetInviteColumns} from '@/components/tables/project-invites';
-import {APP_TOKEN_RETURN_PATH, APP_URL, WEB_URL} from '@/constants';
+import {APP_TOKEN_RETURN_PATH} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {removeInviteForProject} from '@/hooks/project-hooks';

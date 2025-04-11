@@ -177,7 +177,7 @@ export function buildQueryString({
 }): string {
   // Filter out null and undefined values
   const validEntries = Object.entries(values).filter(
-    ([_, value]) => value !== null && value !== undefined
+    ([, value]) => value !== null && value !== undefined
   );
 
   // If no valid entries, return empty string
