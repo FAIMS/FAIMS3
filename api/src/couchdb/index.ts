@@ -50,7 +50,7 @@ import {
   TeamsDB,
   TemplateDetails,
 } from '@faims3/data-model';
-import {initialiseJWTKey} from '../authkeys/initJWTKeys';
+import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,

@@ -125,21 +125,17 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       return;
     }
 
-    const url =
-      server.serverUrl +
-      '/register/' +
-      server.shortCodePrefix +
-      '-' +
-      shortCode;
+    const inviteCode = server.shortCodePrefix + '-' + shortCode;
+    const url = `${server.serverUrl}/register?inviteId=${inviteCode}`;
 
     showSuccess('Initiating registration...');
 
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href = url + '?redirect=' + redirect;
+      window.location.href = url + '&redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${url}?redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${APP_ID}://auth-return`,
       });
     }
   };
@@ -237,12 +233,13 @@ export function QRCodeRegistration(props: ShortCodeProps) {
     // valid urls look like:
     // http://192.168.1.2:8154/register/DEV-TMKZSM
     const valid_hosts = props.servers.map(server => server.serverUrl);
-    const valid_re = valid_hosts.join('|') + '/register/.*-[A-Z1-9]+';
+    const valid_re = valid_hosts.join('|') + '/register.*';
 
     if (url.match(valid_re)) {
       // Use the capacitor browser plugin in apps
+      // TODO should we replace the redirect query string param here instead of appending
       await Browser.open({
-        url: `${url}?redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${APP_ID}://auth-return`,
       });
     } else {
       dispatch(

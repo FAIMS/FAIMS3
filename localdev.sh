@@ -63,6 +63,11 @@ echo "Installing monorepo dependencies"
 echo "> npm install"
 npm install
 
+# turbo build
+echo "Turbo build"
+echo "> npx turbo build"
+npx turbo build
+
 # create .env files
 
 echo "> cp ./.env.dist ./.env"

@@ -410,6 +410,7 @@ export class FaimsInfraStack extends cdk.Stack {
       webAppPublicUrl: `https://${domains.faims}`,
       androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
+      appId: config.uiConfiguration.appId,
       sharedBalancer: networking.sharedBalancer,
       config: config.conductor,
       cookieSecret: cookieSecret,

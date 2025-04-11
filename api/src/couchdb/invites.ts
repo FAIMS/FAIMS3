@@ -20,19 +20,18 @@
 
 import {
   ExistingInvitesDBDocument,
-  InvitesDBFields,
   InvitesDBDocument,
+  InvitesDBFields,
+  PeopleDBDocument,
   Resource,
   Role,
-  writeNewDocument,
-  PeopleDBDocument,
-  addTeamRole,
   addProjectRole,
+  addTeamRole,
+  writeNewDocument,
 } from '@faims3/data-model';
 import {getInvitesDB} from '.';
 import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {saveCouchUser} from './users';
 
 // Default 30 days expiry
 export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;
@@ -189,13 +188,19 @@ export async function getInvite({
 /**
  * Record usage of an invite by a user.
  *
+ * Also checks for validity (though you should do this prior to calling this
+ * function)
+ *
+ * NOTE: DOES NOT save the user - that is the responsibility of the caller - so as to
+ * enable efficiently managing this save point/transaction
+ *
  * @param {Object} params - The parameters for recording invite usage
  * @param {ExistingInvitesDBDocument} params.invite - The invite document
  * @param {string} params.userId - ID of the user using the invite
  * @returns {Promise<ExistingInvitesDBDocument>} The updated invite document
  * @throws {Error} If the invite has expired or exceeded usage limits
  */
-export async function useInvite({
+export async function consumeInvite({
   invite,
   user,
 }: {
@@ -238,9 +243,6 @@ export async function useInvite({
       'No invite target for resource type: ' + invite.resourceType
     );
   }
-
-  // Save the user
-  saveCouchUser(user);
 
   return {
     ...updatedInvite,

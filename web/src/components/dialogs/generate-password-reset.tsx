@@ -13,6 +13,7 @@ import {Button} from '../ui/button';
 import {Spinner} from '../ui/spinner';
 import {CopyButton} from '../ui/copy-button';
 import QRCode from 'qrcode';
+import {WEB_URL} from '@/constants';
 
 /**
  * Displays a QR code in a clickable format that opens a larger view in a dialog.
@@ -92,9 +93,7 @@ export const GeneratePasswordReset = ({
 
   useEffect(() => {
     if (data?.code) {
-      QRCode.toDataURL(
-        `${import.meta.env.VITE_WEB_URL}/reset-password?code=${data.code}`
-      )
+      QRCode.toDataURL(`${WEB_URL}/reset-password?code=${data.code}`)
         .then(url => setQrCodeData(url))
         .catch(err => console.error('Error generating QR code:', err));
     }
@@ -118,10 +117,10 @@ export const GeneratePasswordReset = ({
           <div className="space-y-6">
             <div className="flex items-center space-x-2">
               <div className="flex-1 rounded-md border p-2">
-                <code className="text-sm">{`${import.meta.env.VITE_WEB_URL}/reset-password?code=${data.code}`}</code>
+                <code className="text-sm">{`${WEB_URL}/reset-password?code=${data.code}`}</code>
               </div>
               <CopyButton
-                value={`${import.meta.env.VITE_WEB_URL}/reset-password?code=${data.code}`}
+                value={`${WEB_URL}/reset-password?code=${data.code}`}
               />
             </div>
 

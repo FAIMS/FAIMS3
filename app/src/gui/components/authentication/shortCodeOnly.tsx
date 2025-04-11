@@ -36,12 +36,12 @@ export function QRCodeButtonOnly(props: {servers: Server[]}) {
     // valid urls look like:
     // http://192.168.1.2:8154/register/DEV-TMKZSM
     const valid_hosts = props.servers.map(server => server.serverUrl);
-    const valid_re = valid_hosts.join('|') + '/register/.*-[A-Z1-9]+';
+    const valid_re = valid_hosts.join('|') + '/register.*';
 
     if (url.match(valid_re)) {
       // Use the capacitor browser plugin in apps
       await Browser.open({
-        url: `${url}?redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${APP_ID}://auth-return`,
       });
     } else {
       dispatch(
@@ -90,7 +90,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
     */
 
   const [shortCode, setShortCode] = useState('');
-  const {showSuccess, showError, showInfo} = useNotification();
+  const {showError, showInfo} = useNotification();
   const [selectedPrefix, setSelectedPrefix] = useState(
     props.servers[0]?.shortCodePrefix || ''
   );
@@ -157,21 +157,15 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
       return;
     }
 
-    const url =
-      serverInfo.serverUrl +
-      '/register/' +
-      serverInfo.shortCodePrefix +
-      '-' +
-      shortCode;
-
-    showSuccess('Initiating registration...');
+    const inviteCode = serverInfo.shortCodePrefix + '-' + shortCode;
+    const url = `${serverInfo.serverUrl}/register?inviteId=${inviteCode}`;
 
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href = url + '?redirect=' + redirect;
+      window.location.href = url + '&redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${url}?redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${APP_ID}://auth-return`,
       });
     }
   };

@@ -4,10 +4,11 @@ import {AppSidebar} from '@/components/side-bar/app-sidebar';
 import {Dialog} from '@/components/ui/dialog';
 import {Separator} from '@/components/ui/separator';
 import {
-  SidebarProvider,
   SidebarInset,
+  SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import {SIGNIN_PATH} from '@/constants';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 
 interface TokenParams {
@@ -38,9 +39,8 @@ export const Route = createFileRoute('/_protected')({
 
     if (status === 'success') return;
 
-    window.location.href = `${
-      import.meta.env.VITE_API_URL
-    }/auth?redirect=${import.meta.env.VITE_WEB_URL}`;
+    // redirect to login
+    window.location.href = SIGNIN_PATH;
   },
   component: RouteComponent,
 });

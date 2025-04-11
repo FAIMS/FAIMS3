@@ -30,14 +30,11 @@ import {
   userHasProjectRole,
 } from '@faims3/data-model';
 import {getUsersDB} from '.';
-import {
-  addLocalPasswordForUser,
-  registerLocalUser,
-} from '../auth_providers/local';
-import {upgradeCouchUserToExpressUser} from '../authkeys/create';
+import {upgradeCouchUserToExpressUser} from '../auth/keySigning/create';
 import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
+import {registerLocalUser, addLocalPasswordForUser} from '../auth/helpers';
 
 /**
  * Builds a minimum spec user object - need to add profiles
@@ -81,12 +78,13 @@ export const registerAdminUser = async () => {
     if (adminUser) {
       return;
     }
-    const [user, error] = await registerLocalUser(
-      'admin',
-      '', // no email address
-      'Admin User',
-      LOCAL_COUCHDB_AUTH.password
-    );
+    const [user, error] = await registerLocalUser({
+      username: 'admin',
+      // email is not specified - username is used
+      email: '',
+      name: 'Admin User',
+      password: LOCAL_COUCHDB_AUTH.password,
+    });
     if (user) {
       addGlobalRole({user, role: Role.GENERAL_ADMIN});
       await saveCouchUser(user);

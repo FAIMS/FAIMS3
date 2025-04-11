@@ -34,7 +34,7 @@ import {
 import {fail} from 'assert';
 import {expect} from 'chai';
 import * as fs from 'fs';
-import {upgradeCouchUserToExpressUser} from '../src/authkeys/create';
+import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
 import {
   getDirectoryDB,

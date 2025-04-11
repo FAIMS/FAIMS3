@@ -32,11 +32,11 @@ import {
   ACCESS_TOKEN_EXPIRY_MINUTES,
   CONDUCTOR_PUBLIC_URL,
   KEY_SERVICE,
-} from '../buildconfig';
-import {getProjectIdsByTeamId} from '../couchdb/notebooks';
-import {createNewRefreshToken} from '../couchdb/refreshTokens';
-import {getTemplateIdsByTeamId} from '../couchdb/templates';
-import type {SigningKey} from '../services/keyService';
+} from '../../buildconfig';
+import {getProjectIdsByTeamId} from '../../couchdb/notebooks';
+import {createNewRefreshToken} from '../../couchdb/refreshTokens';
+import {getTemplateIdsByTeamId} from '../../couchdb/templates';
+import type {SigningKey} from '../../services/keyService';
 
 const ASSOCIATIVE_RESOURCES = [Resource.TEMPLATE, Resource.PROJECT];
 

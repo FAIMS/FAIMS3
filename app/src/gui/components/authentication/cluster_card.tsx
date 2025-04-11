@@ -49,8 +49,7 @@ import {isWeb} from '../../../utils/helpers';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
 
-// TODO when we fix the add new user logic, bring this back
-const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = false;
+const ADD_NEW_USER_FOR_LOGGED_IN_SERVER_ENABLED = true;
 
 type ClusterCardProps = {
   serverId: string;
@@ -73,26 +72,16 @@ export default function ClusterCard(props: ClusterCardProps) {
   const handleLogout = async (username: string) => {
     // remove the server connection on logout
     dispatch(removeServerConnection({serverId: props.serverId, username}));
-    // TODO Update directory was here - why did we need it?
-    if (isWeb()) {
-      const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href =
-        props.conductor_url + '/logout?redirect=' + redirect;
-    } else {
-      // Use the capacitor browser plugin in apps
-      await Browser.open({
-        url: `${props.conductor_url}/logout?redirect=${APP_ID}://auth-return`,
-      });
-    }
   };
 
   const handleAddNewUser = async () => {
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href = props.conductor_url + '/auth?redirect=' + redirect;
+      window.location.href =
+        props.conductor_url + '/login?redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${props.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
+        url: `${props.conductor_url}/login?redirect=${APP_ID}://auth-return`,
       });
     }
   };

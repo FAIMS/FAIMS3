@@ -5,6 +5,7 @@ import {
   TokenPayload,
 } from '@faims3/data-model';
 import {jwtDecode} from 'jwt-decode';
+import {WEB_URL} from '@/constants';
 
 export interface User {
   user: {
@@ -88,16 +89,22 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   const isAuthenticated = !!user;
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshToken();
+
+      const intervalId = setInterval(refreshToken, 5 * 60 * 1000);
+      return () => clearInterval(intervalId);
+    }
+  }, [isAuthenticated]);
+
   /**
    * Logs out the user by removing the stored user object and setting the user to null.
    */
   const logout = () => {
-    window.location.href = `${
-      import.meta.env.VITE_API_URL
-    }/logout?redirect=${import.meta.env.VITE_WEB_URL}`;
-
     setStoredUser(null);
     setUser(null);
+    window.location.href = WEB_URL;
   };
 
   /**
@@ -183,15 +190,6 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
     return {status: 'success', message: ''};
   };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      refreshToken();
-
-      const intervalId = setInterval(refreshToken, 5 * 60 * 1000);
-      return () => clearInterval(intervalId);
-    }
-  }, [isAuthenticated]);
 
   return (
     <AuthContext.Provider
