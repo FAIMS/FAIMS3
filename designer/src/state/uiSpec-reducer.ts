@@ -421,7 +421,7 @@ export const uiSpecificationReducer = createSlice({
         const originalField = state.fields[originalFieldName];
         const baseLabel =
           originalField['component-parameters'].label || originalFieldName;
-        const newFieldLabel = baseLabel + ' copy';
+        const newFieldLabel = baseLabel;
         let fieldSlug = slugify(newFieldLabel);
         let N = 1;
         while (fieldSlug in state.fields) {
