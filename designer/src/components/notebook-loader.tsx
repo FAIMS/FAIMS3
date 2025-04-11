@@ -140,7 +140,10 @@ export const NotebookLoader = () => {
   };
 
   const newNotebook = () => {
-    loadFn(initialState.notebook);
+    loadFn({
+      metadata: initialState.notebook.metadata,
+      'ui-specification': initialState.notebook['ui-specification'].present,
+    });
     afterLoad();
   };
 

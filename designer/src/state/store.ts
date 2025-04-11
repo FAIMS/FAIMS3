@@ -13,13 +13,13 @@
 // limitations under the License.
 
 import {Middleware, combineReducers, configureStore} from '@reduxjs/toolkit';
-import metadataReducer from './metadata-reducer';
-import modifiedStatusReducer from './modifiedStatus-reducer';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
-import {AppState, Notebook} from './initial';
-import {loadState, saveState} from './localStorage';
 import {throttle} from 'lodash';
 import undoable, {includeAction} from 'redux-undo';
+import {AppState, NotebookWithHistory} from './initial';
+import {loadState, saveState} from './localStorage';
+import metadataReducer from './metadata-reducer';
+import modifiedStatusReducer from './modifiedStatus-reducer';
 import {uiSpecificationReducer} from './uiSpec-reducer';
 
 const persistedState = loadState();
@@ -41,10 +41,11 @@ const loggerMiddleware: Middleware<object, AppState> =
 
 export const store: ToolkitStore<AppState> = configureStore({
   reducer: {
-    notebook: combineReducers<Notebook>({
+    notebook: combineReducers<NotebookWithHistory>({
       metadata: metadataReducer,
       'ui-specification': undoable(uiSpecificationReducer.reducer, {
-        limit: 50,
+        // This needs to be sensible as ui specs can be large
+        limit: 10,
         filter: includeAction([
           'ui-specification/fieldAdded',
           'ui-specification/fieldDeleted',

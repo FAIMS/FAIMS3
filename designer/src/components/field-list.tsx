@@ -47,7 +47,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   );
 
   const fields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
 
   const dispatch = useAppDispatch();

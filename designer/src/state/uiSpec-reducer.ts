@@ -51,6 +51,7 @@ export const uiSpecificationReducer = createSlice({
   initialState: uiSpecInitialState,
   reducers: {
     loaded: (_state, action: PayloadAction<NotebookUISpec>) => {
+      _state = action.payload;
       return action.payload;
     },
     fieldUpdated: (

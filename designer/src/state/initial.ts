@@ -130,10 +130,15 @@ export type NotebookModified = {
 
 export type AppState = {
   modified: boolean;
-  notebook: Notebook;
+  notebook: NotebookWithHistory;
 };
 
 export type Notebook = {
+  metadata: NotebookMetadata;
+  'ui-specification': NotebookUISpec;
+};
+
+export type NotebookWithHistory = {
   metadata: NotebookMetadata;
   'ui-specification': StateWithHistory<NotebookUISpec>;
 };
