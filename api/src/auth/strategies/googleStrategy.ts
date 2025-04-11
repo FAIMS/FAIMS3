@@ -35,7 +35,7 @@ import {
 } from '../../couchdb/users';
 import {CustomSessionData} from '../../types';
 import {lookupAndValidateInvite} from '../helpers';
-import {StrategyGeneratorFunction} from './socialProviders';
+import {StrategyGeneratorFunction} from './applyStrategies';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -83,7 +83,7 @@ async function oauthVerify(
   // responsibility of this module - see the success callback in authRoutes
   if (action === 'register' && !inviteId) {
     return done(
-      'Trying to register a new account with any invite - this is not authorised.',
+      'Trying to register a new account without an invitation - this is not authorised.',
       undefined
     );
   }
@@ -136,7 +136,7 @@ async function oauthVerify(
     if (matchingEmails.length === 0) {
       // We abort here - this is an error
       return done(
-        'This google account has no existing account - you need to register a new account before logging in.',
+        'This Google user account does not exist. Instead, you should register for a new account by using an invite code shared with you.',
         undefined
       );
     }
@@ -185,7 +185,7 @@ async function oauthVerify(
       // something went wrong here
       if (!newDbUser) {
         throw Error(
-          `Internal system error: unable to create new user! Error: ${errorMsg ?? 'not provided.'}`
+          `Internal system error: unable to create new user! Contact a system administrator.`
         );
       }
 

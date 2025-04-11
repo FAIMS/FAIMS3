@@ -35,7 +35,7 @@ import passport from 'passport';
 import flash from 'req-flash';
 import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
-import {applyPassportStrategies} from './auth/strategies/socialProviders';
+import {applyPassportStrategies} from './auth/strategies/applyStrategies';
 import {CONDUCTOR_AUTH_PROVIDERS, COUCHDB_INTERNAL_URL} from './buildconfig';
 import {
   databaseValidityReport,

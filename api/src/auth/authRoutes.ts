@@ -46,7 +46,7 @@ import {
   validateAndApplyInviteToUser,
   validateRedirect,
 } from './helpers';
-import {AUTH_PROVIDER_DETAILS} from './strategies/socialProviders';
+import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 
 import patch from '../utils/patchExpressAsync';
 
@@ -128,7 +128,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         // custom success function which signs JWT and redirects
         async (err: string | Error | null, user: Express.User) => {
           if (err) {
-            req.flash('error', {'loginError' : {msg: err}});
+            req.flash('error', {loginError: {msg: err}});
             return res.redirect(errorRedirect);
           }
           // We have logged in - do we also want to consume an invite?
@@ -252,7 +252,8 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           // custom success function which signs JWT and redirects
           async (err: string | Error | null, user: Express.User) => {
             if (err) {
-              return next(err);
+              req.flash('error', {registrationError: {msg: err}});
+              return res.redirect(errorRedirect);
             }
             // We have logged in - do we also want to consume an invite?
             if (inviteId) {
@@ -284,7 +285,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       } catch (e) {
         res.status(400);
         req.flash('error', {
-          registration:
+          registrationError:
             'Invite is not valid for registration! Is it expired, or has been used too many times?',
         });
         res.redirect(errorRedirect);
@@ -349,20 +350,38 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
     // the callback URL for this provider - all we need to do is call the
     // validate function again since we will have come back with enough info now
     app.get(handlerDetails.relativeLoginCallbackUrl, (req, res, next) => {
+      // we expect these values! (Or some of them e.g. invite may not be
+      // present)
+      const redirectValues = {
+        inviteId: (req.session as CustomSessionData).inviteId,
+        redirect: (req.session as CustomSessionData).redirect,
+        action: (req.session as CustomSessionData).action,
+      };
+      const loginErrorRedirect = `/login${buildQueryString({
+        values: redirectValues,
+      })}`;
+      const registerErrorRedirect = `/register${buildQueryString({
+        values: redirectValues,
+      })}`;
       // authenticate using the associated validate function
       passport.authenticate(
         handlerDetails.id,
         // custom success function which signs JWT and redirects
         async (err: string | Error | null, user: Express.User) => {
-          // We have come back from EITHER login or registration In this case
-          // we could check which is which in the session.action as this is
-          // populated for sure, but we don't need to - in either case we have
-          // either a newly minted user, or an updated existing one - now we
-          // just apply an invite if present
+          // We have come back from EITHER login or registration. In either case
+          // we have either a newly minted user, or an updated existing one -
+          // now we just apply an invite if present
 
-          // firstly throw error if needed
+          // firstly throw error if needed (flash it out and redirect to the
+          // right place returning with full context for another attempt)
           if (err) {
-            return next(err);
+            if ((req.session as CustomSessionData).action === 'login') {
+              req.flash('error', {loginError: {msg: err}});
+              return res.redirect(loginErrorRedirect);
+            } else {
+              req.flash('error', {registrationError: {msg: err}});
+              return res.redirect(registerErrorRedirect);
+            }
           }
 
           const inviteId = (req.session as CustomSessionData).inviteId;

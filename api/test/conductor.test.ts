@@ -25,7 +25,7 @@ PouchDB.plugin(PouchDBFind);
 
 import {expect} from 'chai';
 import request from 'supertest';
-import {AUTH_PROVIDER_DETAILS} from '../src/auth/strategies/socialProviders';
+import {AUTH_PROVIDER_DETAILS} from '../src/auth/strategies/applyStrategies';
 import {CONDUCTOR_AUTH_PROVIDERS, LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';

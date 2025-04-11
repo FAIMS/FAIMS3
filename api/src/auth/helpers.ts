@@ -6,10 +6,10 @@ import {
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {ZodError} from 'zod';
 import {Response} from 'express';
-import {AUTH_PROVIDER_DETAILS} from './strategies/socialProviders';
+import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 import {generateUserToken} from './keySigning/create';
 import {
-    ANDROID_APP_URL,
+  ANDROID_APP_URL,
   AuthProvider,
   IOS_APP_URL,
   REDIRECT_WHITELIST,

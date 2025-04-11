@@ -90,6 +90,7 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         localAuth: true,
         redirect,
         layout: 'auth',
+        messages: req.flash(),
       });
     }
   );
