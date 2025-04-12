@@ -15,11 +15,10 @@
 
 import {TextField, TextFieldProps} from '@mui/material';
 import React, {useEffect, useState, useRef, ChangeEvent} from 'react';
-import { debounce } from 'lodash';
+import {debounce} from 'lodash';
 
 export interface DebouncedTextFieldProps
   extends Omit<TextFieldProps, 'onChange'> {
-
   /** The debounce delay in milliseconds (default is 200ms) */
   debounceTime?: number;
 
@@ -27,7 +26,6 @@ export interface DebouncedTextFieldProps
    * onChange callback that will be fired after the delay.
    */
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  
 }
 
 const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
@@ -37,14 +35,13 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
   debounceTime = 200,
   ...other
 }) => {
-
   const [innerValue, setInnerValue] = useState<unknown>(value ?? '');
 
   // Create ONE debounced function and store it in a ref
   const debouncedOnChange = useRef(
     debounce((newValue: string | number) => {
       const event = {
-        target: { name, value: newValue },
+        target: {name, value: newValue},
       } as ChangeEvent<HTMLInputElement>;
       console.log('FIRING');
       onChange(event);
@@ -69,7 +66,6 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
   };
 
   return <TextField {...other} value={innerValue} onChange={handleChange} />;
-
 };
 
 export default DebouncedTextField;
