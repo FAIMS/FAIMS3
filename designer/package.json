@@ -29,6 +29,7 @@
         "@reduxjs/toolkit": "^1.9.5",
         "@vitest/browser": "^1.0.1",
         "ajv": "^8.16.0",
+        "esbuild": "^0.21.5",
         "lexical": "^0.12.4",
         "lodash": "^4.17.21",
         "mdi-material-ui": "^7.7.0",
