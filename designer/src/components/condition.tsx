@@ -26,6 +26,7 @@ import {
   Tooltip,
   Dialog,
 } from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
 import {useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
@@ -946,7 +947,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
   };
 
   const valueMismatch = !isValueValidForField();
-  const allowedOperators = targetFieldDef
+    const allowedOperators = targetFieldDef
     ? (() => {
         const cName = targetFieldDef['component-name'];
         if (cName === 'MultiSelect')
@@ -969,21 +970,20 @@ export const FieldConditionControl = (props: ConditionProps) => {
         spacing={2}
         divider={<Divider orientation="vertical" flexItem />}
       >
-        <FormControl sx={{minWidth: 200}}>
-          <InputLabel>Field</InputLabel>
-          <Select
-            labelId="field"
-            label="Field"
-            onChange={e => updateField(e.target.value)}
-            value={condition.field ?? ''}
-          >
-            {selectFields.map(fieldId => (
-              <MenuItem key={fieldId} value={fieldId}>
-                {getFieldLabel(allFields[fieldId])}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Autocomplete
+          options={selectFields}
+          getOptionLabel={(fieldId: string) => getFieldLabel(allFields[fieldId])}
+          value={condition.field || null}
+          onChange={(event, newValue) => {
+            updateField(newValue || '');
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Field" variant="outlined" />
+          )}
+          style={{ minWidth: 200 }}
+          clearOnEscape
+        />
+
         <FormControl
           sx={{minWidth: 200}}
           data-testid="operator-input"
@@ -996,7 +996,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             onChange={e => updateOperator(e.target.value)}
             value={condition.operator}
           >
-            {allowedOperators.map(op => (
+           {allowedOperators.map(op => (
               <MenuItem key={op} value={op}>
                 {op}
               </MenuItem>
