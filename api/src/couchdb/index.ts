@@ -48,7 +48,7 @@ import {
   ProjectMetaObject,
   ProjectDocument,
   TeamsDB,
-  TemplateDB
+  TemplateDB,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../authkeys/initJWTKeys';
 import {

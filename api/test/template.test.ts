@@ -33,13 +33,11 @@ import {
   GetTemplateByIdResponseSchema,
   PostCreateNotebookResponseSchema,
   PostCreateTemplateInput,
-  PostCreateTemplateResponse,
   PostCreateTemplateResponseSchema,
   PutUpdateTemplateInput,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   PutUpdateTemplateResponseSchema,
-  UISpecification,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {Express} from 'express';

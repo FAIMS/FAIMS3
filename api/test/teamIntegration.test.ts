@@ -31,7 +31,6 @@ import {
   addTemplateRole,
   EncodedProjectUIModel,
   generateVirtualResourceRoles,
-  PostCreateNotebookInput,
   PostCreateTemplateInput,
   registerClient,
   removeTeamRole,

@@ -1,6 +1,6 @@
 import {Skeleton} from '@/components/ui/skeleton';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTeam, useGetTemplate} from '@/hooks/queries';
+import {useGetTemplate} from '@/hooks/queries';
 import {Link} from '@tanstack/react-router';
 
 interface TemplateCellComponentProps {
