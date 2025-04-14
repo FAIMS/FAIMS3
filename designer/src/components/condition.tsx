@@ -696,7 +696,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
     state => state.notebook['ui-specification'].fviews
   );
 
-  // work out which fields to show in the select, remove either
+  // work out which fields to show in the select/combobox, remove either
   // the current field or the fields in the current view
   let selectFields = Object.keys(allFields);
   if (props.field) {
@@ -974,7 +974,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           options={selectFields}
           getOptionLabel={(fieldId: string) => getFieldLabel(allFields[fieldId])}
           value={condition.field || null}
-          onChange={(event, newValue) => {
+          onChange={(_, newValue) => {
             updateField(newValue || '');
           }}
           renderInput={(params) => (
