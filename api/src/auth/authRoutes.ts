@@ -413,7 +413,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           }
 
           const inviteId = (req.session as CustomSessionData).inviteId;
-          let updatedUser = user;
+          const updatedUser = user;
           if (inviteId) {
             // apply invite
             const updatedUser = await validateAndApplyInviteToUser({

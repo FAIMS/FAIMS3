@@ -32,11 +32,10 @@ import {
   Grid,
   IconButton,
   InputAdornment,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-
+import DebouncedTextField from './debounced-text-field';
 import {useState, useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
@@ -287,7 +286,12 @@ export const SectionEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => <TextField {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    {...params}
+                    onChange={event => setTargetViewSetId(event.target.value)}
+                  />
+                )}
               />
             </DialogContent>
             <DialogActions>
@@ -315,7 +319,7 @@ export const SectionEditor = ({
                 setEditMode(false);
               }}
             >
-              <TextField
+              <DebouncedTextField
                 size="small"
                 margin="dense"
                 label="Section Name"
@@ -397,7 +401,7 @@ export const SectionEditor = ({
                 addNewSection();
               }}
             >
-              <TextField
+              <DebouncedTextField
                 required
                 fullWidth
                 size="small"

@@ -32,11 +32,9 @@ import {
   TableCell,
   TableContainer,
   TableRow,
-  Theme,
   Typography,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import {
   DataGrid,
   GridCellParams,
@@ -53,11 +51,11 @@ import {
   getVisibleTypes,
 } from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
+import {useDataGridStyles} from '../../../utils/useDataGridStyles';
+import {useScreenSize} from '../../../utils/useScreenSize';
 import getLocalDate from '../../fields/LocalDate';
 import CircularLoading from '../ui/circular_loading';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
-import {useScreenSize} from '../../../utils/useScreenSize';
-import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 
 // ============================================================================
 // Types & Interfaces
