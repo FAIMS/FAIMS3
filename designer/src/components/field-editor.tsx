@@ -586,9 +586,12 @@ export const FieldEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => <DebouncedTextField onChange={function (): void {
-                  
-                } } {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    onChange={function (): void {}}
+                    {...params}
+                  />
+                )}
               />
             </Grid>
             <Grid item xs={12}>
@@ -609,9 +612,12 @@ export const FieldEditor = ({
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 disabled={!selectedFormId}
-                renderInput={params => <DebouncedTextField onChange={function (): void {
-                  
-                } } {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    onChange={function (): void {}}
+                    {...params}
+                  />
+                )}
               />
             </Grid>
           </Grid>

@@ -1,12 +1,5 @@
 import {Edit as EditIcon} from '@mui/icons-material';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  Grid,
-  Typography,
-} from '@mui/material';
+import {Alert, Box, Button, Card, Grid, Typography} from '@mui/material';
 import {MutableRefObject, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {ComponentParameters, FieldType} from '../../state/initial';

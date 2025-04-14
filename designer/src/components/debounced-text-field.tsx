@@ -17,6 +17,9 @@ import {TextField, TextFieldProps} from '@mui/material';
 import React, {useEffect, useState, useRef, ChangeEvent} from 'react';
 import {debounce} from 'lodash';
 
+// By default, debounce 500ms for performance purposes
+const DEFAULT_DEBOUNCE_MS = 500;
+
 export interface DebouncedTextFieldProps
   extends Omit<TextFieldProps, 'onChange'> {
   /** The debounce delay in milliseconds (default is 200ms) */
@@ -32,7 +35,7 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
   name,
   value,
   onChange,
-  debounceTime = 200,
+  debounceTime = DEFAULT_DEBOUNCE_MS,
   ...other
 }) => {
   const [innerValue, setInnerValue] = useState<unknown>(value ?? '');

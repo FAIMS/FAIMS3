@@ -273,13 +273,15 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               getOptionLabel={option => option.label}
               renderInput={params => (
                 <DebouncedTextField
-                onChange={function (): void {
-                  throw new Error('Function not implemented.');
-                } } {...params}
-                InputProps={{
-                  ...params.InputProps,
-                  sx: { '& .MuiInputLabel-root': { display: 'none' } },
-                }}                />
+                  onChange={function (): void {
+                    throw new Error('Function not implemented.');
+                  }}
+                  {...params}
+                  InputProps={{
+                    ...params.InputProps,
+                    sx: {'& .MuiInputLabel-root': {display: 'none'}},
+                  }}
+                />
               )}
             />
           </SettingSection>
@@ -297,13 +299,13 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               getOptionLabel={option => option.label}
               renderInput={params => (
                 <DebouncedTextField
-                onChange={function (): void {
-                  
-                } } {...params}
-                InputProps={{
-                  ...params.InputProps,
-                  sx: { '& .MuiInputLabel-root': { display: 'none' } },
-                }}                />
+                  onChange={function (): void {}}
+                  {...params}
+                  InputProps={{
+                    ...params.InputProps,
+                    sx: {'& .MuiInputLabel-root': {display: 'none'}},
+                  }}
+                />
               )}
             />
           </SettingSection>
