@@ -22,6 +22,7 @@
  */
 
 import {
+    CouchProjectUIModel,
   EncodedProjectUIModel,
   FullyResolvedRecordID,
   ProjectUIModel,
@@ -68,7 +69,7 @@ export function split_full_record_id(
  * @returns Normal functional spec
  */
 export const decodeUiSpec = (
-  rawUiSpec: EncodedProjectUIModel
+  rawUiSpec: CouchProjectUIModel
 ): ProjectUIModel => {
   return {
     _id: rawUiSpec._id,

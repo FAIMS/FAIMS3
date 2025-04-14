@@ -1,23 +1,17 @@
 import {z} from 'zod';
-import {EncodedProjectUIModel} from '../../types';
+import {EncodedUISpecificationSchema} from '../../types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
-
-// TODO use Zod for existing UI schema models to validate. Note that this is a
-// schema for an JSON notebook (fviews, not views). We refine this model so that
-// it cannot be undefined - Zod.custom by default allows undefined to validate
-export const UiSpecificationSchema = z
-  .custom<EncodedProjectUIModel>()
-  .refine(val => !!val);
-export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
 
 // V1
 export const TemplateV1Schema = z.object({
   // Version (internally incremented upon update)
   version: z.number().min(1),
-  // Metdata for the notebook (not optional - refine to enforce this)
+  // NOTE: For some reason importing this from ./types causes an undefined error
+  // (maybe circular import issue?). Metadata for the notebook (not optional -
+  // refine to enforce this)
   metadata: z.record(z.any()).refine(val => !!val),
   // UI Spec of the template
-  'ui-specification': UiSpecificationSchema,
+  'ui-specification': EncodedUISpecificationSchema,
   // Which team owns this (optional)
   ownedByTeamId: z.string().optional(),
 });

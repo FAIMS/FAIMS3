@@ -26,6 +26,7 @@ PouchDB.plugin(PouchDBFind);
 import {
   CreateNotebookFromTemplate,
   EncodedNotebook,
+  EncodedUISpecification,
   GetListTemplatesResponse,
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
@@ -38,6 +39,7 @@ import {
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   PutUpdateTemplateResponseSchema,
+  UISpecification,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import {Express} from 'express';
@@ -51,6 +53,13 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
+
+const EMPTY_UI_SPEC = {
+  fields: {},
+  fviews: {},
+  viewsets: {},
+  visible_types: [],
+} satisfies Omit<EncodedUISpecification, '_id'>;
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
@@ -76,12 +85,10 @@ const createSampleTemplate = async (
   options: {
     teamId?: string;
     payloadExtras?: Object;
+    name?: string;
   },
   token: string = adminToken
-): Promise<{
-  template: PostCreateTemplateResponse;
-  notebook: EncodedNotebook;
-}> => {
+) => {
   // create a template from loaded spec
   const nb = getSampleNotebook();
   return await requestAuthAndType(
@@ -89,10 +96,10 @@ const createSampleTemplate = async (
       .post(`${TEMPLATE_API_BASE}`)
       .send({
         ...nb,
-        // Team?
+        name: options.name ?? 'test template',
         ...(options.teamId ? {teamId: options.teamId} : {}),
         ...(options.payloadExtras ?? {}),
-      } as PostCreateTemplateInput),
+      } satisfies PostCreateTemplateInput),
     token
   )
     .expect(200)
@@ -194,7 +201,8 @@ describe('template API tests', () => {
   //=============================
 
   it('create, list, get, delete', async () => {
-    const {template, notebook: nb} = await createSampleTemplate(app, {});
+    const name = 'test 123 template';
+    const {template, notebook: nb} = await createSampleTemplate(app, {name});
     const templateId1 = template._id;
 
     // list and see the new template
@@ -207,6 +215,7 @@ describe('template API tests', () => {
 
       // Check all properties match
       expect(entry._id).to.equal(templateId1);
+      expect(entry.name).to.equal(name);
 
       // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
       // expect(JSON.stringify(entry['ui-specification'])).to.equal(
@@ -340,7 +349,7 @@ describe('template API tests', () => {
         .send({
           name: 'test project name',
           template_id: template._id,
-        } as CreateNotebookFromTemplate)
+        } satisfies CreateNotebookFromTemplate)
     )
       .expect(200)
       .then(res => {
@@ -406,8 +415,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           metadata: {},
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404)
@@ -430,8 +439,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           metadata: {},
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404);
@@ -448,7 +457,7 @@ describe('template API tests', () => {
         .send({
           name: 'test project name',
           template_id: template._id + 'jdkfljs',
-        } as CreateNotebookFromTemplate)
+        } satisfies CreateNotebookFromTemplate)
     ).expect(404);
   });
 
@@ -507,8 +516,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           // missing! metadata: {},
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies Omit<PutUpdateTemplateInput, 'metadata'>)
     )
       // Expect 400 bad request
       .expect(400)
@@ -540,8 +549,8 @@ describe('template API tests', () => {
       .put(`${TEMPLATE_API_BASE}/12345`)
       .send({
         metadata: {},
-        'ui-specification': {},
-      } as PutUpdateTemplateInput)
+        'ui-specification': EMPTY_UI_SPEC,
+      } satisfies PutUpdateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -549,9 +558,10 @@ describe('template API tests', () => {
     return await request(app)
       .post(`${TEMPLATE_API_BASE}`)
       .send({
+        name: 'tests',
         metadata: {},
-        'ui-specification': {},
-      } as PostCreateTemplateInput)
+        'ui-specification': EMPTY_UI_SPEC,
+      } satisfies PostCreateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -568,7 +578,7 @@ describe('template API tests', () => {
       .send({
         name: '12345',
         template_id: '12345',
-      } as CreateNotebookFromTemplate)
+      } satisfies CreateNotebookFromTemplate)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -578,8 +588,9 @@ describe('template API tests', () => {
         .post(`${TEMPLATE_API_BASE}`)
         .send({
           metadata: {},
-          'ui-specification': {},
-        } as PostCreateTemplateInput),
+          'ui-specification': EMPTY_UI_SPEC,
+          name: 'test template 123',
+        } satisfies PostCreateTemplateInput),
       localUserToken
     )
       .set('Content-Type', 'application/json')
@@ -591,8 +602,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/12345`)
         .send({
           metadata: {},
-          'ui-specification': {},
-        } as PutUpdateTemplateInput),
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies PutUpdateTemplateInput),
       localUserToken
     ).expect(401);
   });
@@ -609,7 +620,7 @@ describe('template API tests', () => {
         .send({
           template_id: '12345',
           name: '12345',
-        } as CreateNotebookFromTemplate),
+        } satisfies CreateNotebookFromTemplate),
       localUserToken
     ).expect(401);
   });

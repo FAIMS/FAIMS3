@@ -1,18 +1,16 @@
 import {z} from 'zod';
+import {ProjectStatus} from './data_storage';
+import {
+  ExistingTemplateDocumentSchema,
+  TemplateDBFieldsSchema,
+} from './data_storage/templatesDB/types';
 import {Resource, Role} from './permission';
 import {
   APINotebookGetSchema,
   APINotebookListSchema,
+  EncodedUISpecificationSchema,
   NotebookAuthSummarySchema,
-  NotebookMetadataSchema,
-  UiSpecificationSchema,
 } from './types';
-import {ProjectStatus} from './data_storage';
-import {
-  ExistingTemplateDocument,
-  ExistingTemplateDocumentSchema,
-  TemplateDBFieldsSchema,
-} from './data_storage/templatesDB/types';
 
 // ==================
 // WIP USERS
@@ -116,7 +114,7 @@ export type GetNotebookListResponse = z.infer<
 export const NotebookEditableDetailsSchema = z.object({
   // This allows you to type hint as an interface but won't parse/validate it
   // TODO convert these models into their zod counterparts
-  'ui-specification': UiSpecificationSchema,
+  'ui-specification': EncodedUISpecificationSchema,
   metadata: z.record(z.any()),
 });
 export type NotebookEditableDetails = z.infer<
@@ -224,10 +222,12 @@ export type PostRandomRecordsResponse = z.infer<
 
 // POST create new template
 export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
-  'ui-specification': true,
   metadata: true,
+  'ui-specification': true,
   name: true,
-  ownedByTeamId: true,
+}).extend({
+  // prefer to use a nicer team ID input field
+  teamId: z.string().trim().min(1).optional(),
 });
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
@@ -239,9 +239,8 @@ export type PostCreateTemplateResponse = z.infer<
 
 // PUT update existing template input
 export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
-  // Allow editing only the UI spec and metadata
-  'ui-specification': true,
   metadata: true,
+  'ui-specification': true,
 });
 export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema

@@ -31,6 +31,8 @@ import {
   addTemplateRole,
   EncodedProjectUIModel,
   generateVirtualResourceRoles,
+  PostCreateNotebookInput,
+  PostCreateTemplateInput,
   registerClient,
   removeTeamRole,
   Resource,
@@ -74,7 +76,6 @@ const NOTEBOOKS_API_BASE = '/api/notebooks';
 const TEAMS_API_BASE = '/api/teams';
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},
@@ -136,6 +137,7 @@ describe('Team integration with templates and projects', () => {
         .post(`${TEMPLATE_API_BASE}`)
         .send({
           ...notebook,
+          name: 'test template',
           // No teamId
         }),
       adminToken
@@ -149,6 +151,7 @@ describe('Team integration with templates and projects', () => {
         .post(`${TEMPLATE_API_BASE}`)
         .send({
           ...notebook,
+          name: 'test template',
           teamId: team._id,
         }),
       adminToken
@@ -301,7 +304,8 @@ describe('Team integration with templates and projects', () => {
         .send({
           ...getSampleNotebook(),
           teamId: team._id,
-        }),
+          name: 'test template',
+        } satisfies PostCreateTemplateInput),
       memberToken
     ).expect(401);
 
@@ -348,6 +352,7 @@ describe('Team integration with templates and projects', () => {
         .post(`${TEMPLATE_API_BASE}`)
         .send({
           ...getSampleNotebook(),
+          name: 'test template',
           teamId: team._id,
         }),
       managerToken
@@ -428,7 +433,8 @@ describe('Team integration with templates and projects', () => {
         .send({
           ...getSampleNotebook(),
           teamId: team._id,
-        }),
+          name: 'test template',
+        } satisfies PostCreateTemplateInput),
       userToken
     ).expect(401);
   });
@@ -459,7 +465,8 @@ describe('Team integration with templates and projects', () => {
         .send({
           ...getSampleNotebook(),
           teamId: team._id,
-        }),
+          name: 'test name',
+        } satisfies PostCreateTemplateInput),
       adminToken
     ).expect(200);
   });
@@ -756,8 +763,9 @@ describe('Team integration with templates and projects', () => {
         .post(`${TEMPLATE_API_BASE}`)
         .send({
           ...getSampleNotebook(),
+          name: 'fake template',
           teamId: team1._id,
-        }),
+        } satisfies PostCreateTemplateInput),
       adminToken
     )
       .expect(200)

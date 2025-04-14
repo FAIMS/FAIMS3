@@ -167,34 +167,29 @@ export interface ProjectUIModelDetails {
   conditional_sources?: Set<string>;
 }
 
-export interface EncodedCouchRecordFields {
-  _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
-}
-
 // Type for the external format of Notebooks
 export interface EncodedNotebook {
   metadata: {[key: string]: any};
   'ui-specification': EncodedProjectUIModel;
 }
 
-export interface EncodedProjectUIModel extends EncodedCouchRecordFields {
+export interface EncodedProjectUIModel {
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
   viewsets: ProjectUIViewsets;
   visible_types: string[];
 }
+export type CouchProjectUIModel = PouchDB.Core.ExistingDocument<EncodedProjectUIModel>;
 
-export interface EncodedProjectMetadata extends EncodedCouchRecordFields {
+export type EncodedProjectMetadata = PouchDB.Core.Document<{
   _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
   single_attachment?: boolean;
-}
+}>;
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
-export interface EncodedRecord extends EncodedCouchRecordFields {
+export type EncodedRecord = PouchDB.Core.Document<{
   _conflicts?: string[]; // Pouchdb conflicts array
   record_format_version: number;
   created: string;
@@ -202,7 +197,8 @@ export interface EncodedRecord extends EncodedCouchRecordFields {
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
-}
+  _deleted?: boolean;
+}>;
 
 export type AttributeValuePairIDMap = {
   [field_name: string]: AttributeValuePairID;
@@ -737,14 +733,20 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 // TODO use zod more effectively here to enhance validation
 
 // The UI specification
-
 // TODO use Zod for existing UI schema models to validate. Note that this is a
 // schema for an JSON notebook (fviews, not views). We refine this model so that
 // it cannot be undefined - Zod.custom by default allows undefined to validate
-export const UiSpecificationSchema = z
+export const EncodedUISpecificationSchema = z
   .custom<EncodedProjectUIModel>()
   .refine(val => !!val);
-export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
+export type EncodedUISpecification = z.infer<
+  typeof EncodedUISpecificationSchema
+>;
+
+export const UISpecificationSchema = z
+  .custom<ProjectUIModel>()
+  .refine(val => !!val);
+export type UISpecification = z.infer<typeof UISpecificationSchema>;
 
 // Metadata schema
 // TODO use Zod for existing UI schema models to validate

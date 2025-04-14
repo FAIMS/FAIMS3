@@ -72,7 +72,6 @@ export const NOTEBOOKS_API_BASE = '/api/notebooks';
 registerClient(callbackObject);
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},

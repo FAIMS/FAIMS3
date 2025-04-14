@@ -58,7 +58,6 @@ import {
 registerClient(callbackObject);
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},

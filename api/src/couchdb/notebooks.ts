@@ -27,6 +27,7 @@ PouchDB.plugin(SecurityPlugin);
 import {
   Action,
   APINotebookList,
+  CouchProjectUIModel,
   EncodedProjectUIModel,
   ExistingProjectDocument,
   GetNotebookListResponse,
@@ -388,8 +389,10 @@ export const createNotebook = async (
   if (autoIncrementers) {
     await metaDB.put(autoIncrementers);
   }
-  uispec['_id'] = 'ui-specification';
-  await metaDB.put(uispec as PouchDB.Core.PutDocument<EncodedProjectUIModel>);
+  const payload = {_id: 'ui-specification', ...uispec};
+  await metaDB.put(
+    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
+  );
 
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
@@ -446,10 +449,15 @@ export const updateNotebook = async (
   // need the revision id of the existing one to do this...
   const existingUISpec = await metaDB.get('ui-specification');
   // set the id and rev
-  uispec['_id'] = 'ui-specification';
-  uispec['_rev'] = existingUISpec['_rev'];
+  const payload = {
+    _id: 'ui-specification',
+    _rev: existingUISpec['_rev'],
+    ...uispec,
+  };
   // now store it to update the spec
-  await metaDB.put(uispec as PouchDB.Core.PutDocument<EncodedProjectUIModel>);
+  await metaDB.put(
+    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
+  );
 
   // ensure that the name is in the metadata
   // metadata.name = projectName.trim();
@@ -593,7 +601,7 @@ export const getNotebookMetadata = async (
  */
 export const getEncodedNotebookUISpec = async (
   projectId: string
-): Promise<EncodedProjectUIModel | null> => {
+): Promise<CouchProjectUIModel | null> => {
   try {
     // get the metadata from the db
     const projectDB = await getMetadataDb(projectId);

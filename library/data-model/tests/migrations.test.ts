@@ -68,7 +68,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         author: 'Test User',
       },
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -88,7 +87,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         author: 'Test User',
       },
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -116,7 +114,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         // name is missing
       },
       'ui-specification': {
-        _id: 'uispec',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -133,7 +130,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         version: '1.0',
       },
       'ui-specification': {
-        _id: 'uispec',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -155,7 +151,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       _rev: '1-ghi789',
       metadata: {}, // Empty metadata
       'ui-specification': {
-        _id: 'spec',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -168,7 +163,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       name: 'template-template_789', // Should use the ID-based fallback
       metadata: {}, // Empty metadata should be preserved
       'ui-specification': {
-        _id: 'spec',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -208,7 +202,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         tags: ['survey', 'complex', 'nested'],
       },
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -240,7 +233,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         tags: ['survey', 'complex', 'nested'],
       },
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -264,7 +256,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       version: 1,
       metadata: null as any, // Null metadata (edge case)
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -278,7 +269,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       name: 'template-template_null_meta', // Should use the ID-based fallback
       metadata: {}, // Null metadata should be converted to {}
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -303,7 +293,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         name: 'Template with Additional Fields',
       },
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},
@@ -322,7 +311,6 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         name: 'Template with Additional Fields',
       },
       'ui-specification': {
-        _id: 'test',
         fields: {},
         fviews: {},
         viewsets: {},

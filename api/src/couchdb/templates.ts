@@ -4,10 +4,12 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {
+  ExistingTemplateDocument,
   PostCreateTemplateInput,
   ProjectID,
+  PutUpdateTemplateInput,
+  TemplateDBFields,
   TemplateDocument,
-  TemplateEditableDetails,
   TEMPLATES_BY_TEAM_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
@@ -23,12 +25,12 @@ export const getTemplates = async ({
   teamId,
 }: {
   teamId?: string;
-}): Promise<TemplateDocument[]> => {
+}): Promise<ExistingTemplateDocument[]> => {
   const templatesDb = getTemplatesDb();
   try {
     let resultList;
     if (teamId) {
-      resultList = await templatesDb.query<TemplateDocument>(
+      resultList = await templatesDb.query<TemplateDBFields>(
         TEMPLATES_BY_TEAM_ID,
         {
           key: teamId,
@@ -65,7 +67,7 @@ export const getTemplateIdsByTeamId = async ({
 }): Promise<string[]> => {
   const templatesDb = getTemplatesDb();
   try {
-    const resultList = await templatesDb.query<TemplateDocument>(
+    const resultList = await templatesDb.query<TemplateDBFields>(
       TEMPLATES_BY_TEAM_ID,
       {
         key: teamId,
@@ -129,7 +131,7 @@ export const createTemplate = async ({
   payload,
 }: {
   payload: PostCreateTemplateInput;
-}): Promise<TemplateDocument> => {
+}): Promise<ExistingTemplateDocument> => {
   // Get the templates DB so we can interact with it
   const templatesDb = getTemplatesDb();
 
@@ -183,8 +185,8 @@ export const createTemplate = async ({
  */
 export const updateExistingTemplate = async (
   templateId: string,
-  payload: TemplateEditableDetails
-): Promise<TemplateDocument> => {
+  payload: PutUpdateTemplateInput
+): Promise<ExistingTemplateDocument> => {
   // Now fetch the existing template - this will allow us to get the latest
   // revision etc
   let existingTemplate;
@@ -213,7 +215,7 @@ export const updateExistingTemplate = async (
     // Increment version by 1 when updated
     version: existingTemplate.version + 1,
     ownedByTeamId: existingTemplate.ownedByTeamId,
-    name: existingTemplate.name
+    name: existingTemplate.name,
   } satisfies TemplateDocument;
   try {
     await templateDb.put(newDocument);

@@ -1029,7 +1029,7 @@ export async function initialiseRecordForNewRevision({
     revisions: [revision_id],
     heads: [revision_id],
     type: record.type,
-  };
+  } satisfies EncodedRecord;
   try {
     await dataDb.put(new_encoded_record);
   } catch (err) {
