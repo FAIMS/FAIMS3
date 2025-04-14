@@ -372,7 +372,7 @@ export const uiSpecificationReducer = createSlice({
       state,
       action: PayloadAction<{
         sourceViewId: string;
-        destinationViewSetId?: string; // defaults to the source form if not provided
+        destinationViewSetId?: string;
         newSectionLabel: string;
       }>
     ) => {
@@ -383,7 +383,7 @@ export const uiSpecificationReducer = createSlice({
         throw new Error(`Source section ${sourceViewId} does not exist.`);
       }
 
-      // Determine the destination viewset.
+      // Find the destination form.
       let destViewSetId = destinationViewSetId;
       if (!destViewSetId) {
         for (const formId in state.viewsets) {
@@ -408,14 +408,14 @@ export const uiSpecificationReducer = createSlice({
 
       const sourceSection = state.fviews[sourceViewId];
 
-      // Create the new section, copying the condition (and any other properties you wish to duplicate)
+      // Create the new section, copying any condition that exists.
       const newSection = {
         label: newSectionLabel,
         fields: [] as string[],
         condition: sourceSection.condition,
       };
 
-      // Duplicate each field from the source section into the new section.
+      // Duplicate each field to the new section.
       for (const originalFieldName of sourceSection.fields) {
         if (!(originalFieldName in state.fields)) continue;
         const originalField = state.fields[originalFieldName];
@@ -428,7 +428,7 @@ export const uiSpecificationReducer = createSlice({
           fieldSlug = slugify(newFieldLabel + ' ' + N);
           N++;
         }
-        // Duplicate the field by creating a deep copy.
+        // Deep copy
         const newField: FieldType = JSON.parse(JSON.stringify(originalField));
         newField['component-parameters'].label = newFieldLabel;
         newField['component-parameters'].name = fieldSlug;
