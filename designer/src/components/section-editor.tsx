@@ -38,7 +38,7 @@ import {
   Typography,
 } from '@mui/material';
 
-import {useState, useEffect, useMemo} from 'react';
+import {useState, useMemo} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
   ConditionModal,
