@@ -1,4 +1,4 @@
-import {PossibleConnectionInfo} from '../..';
+import {PossibleConnectionInfo} from '../../types';
 
 // V1
 export type ProjectV1Fields = {

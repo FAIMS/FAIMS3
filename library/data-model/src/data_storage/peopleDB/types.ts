@@ -18,7 +18,9 @@
  *   Data models related to users.
  */
 
-import {NonUniqueProjectID, Resource, ResourceRole, Role} from '../../';
+import {NonUniqueProjectID} from '../../types';
+import {Resource, Role} from '../../permission/model';
+import {ResourceRole} from '../../permission/types';
 
 /*
  * This is used to pass around a user profile from an arbitrary service where

@@ -19,8 +19,6 @@
  */
 
 import {z} from 'zod';
-import {DecodedTokenPermissions, Role} from './permission';
-import {ExistingProjectDocument, ProjectStatus} from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -61,17 +59,6 @@ export type FAIMSAttachmentID = string;
 export type FAIMSTypeName = string;
 
 export type Annotations = {annotation: string; uncertainty: boolean};
-
-export interface TokenContents extends DecodedTokenPermissions {
-  // First/last name
-  name?: string;
-  // Username (i.e. email)
-  username: string;
-  // Server generating
-  server: string;
-  // This is required now - all tokens must have an expiry
-  exp: number;
-}
 
 export type ProjectRole = string;
 
@@ -119,37 +106,6 @@ export type PossibleConnectionInfo = {
   jwt_token?: string;
 };
 
-// TODO make this better, currently there is no real explanation for this
-// structure
-
-// This is returned from the list project endpoints
-export const APINotebookListSchema = z.object({
-  name: z.string(),
-  is_admin: z.boolean(),
-  last_updated: z.string().optional(),
-  created: z.string().optional(),
-  template_id: z.string().optional(),
-  project_id: z.string(),
-  metadata: z.record(z.unknown()).optional().nullable(),
-  ownedByTeamId: z.string().min(1).optional(),
-  status: z.nativeEnum(ProjectStatus),
-});
-export type APINotebookList = z.infer<typeof APINotebookListSchema>;
-
-// This is returned from the get project endpoint
-export const APINotebookGetSchema = z.object({
-  // metadata and spec to match notebook json schema
-  metadata: z.record(z.unknown()),
-  'ui-specification': z.record(z.unknown()),
-  ownedByTeamId: z.string().min(1).optional(),
-  status: z.nativeEnum(ProjectStatus),
-});
-export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
-
-export type ProjectsList = {
-  [key: string]: ExistingProjectDocument;
-};
-
 export interface ProjectSchema {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
@@ -179,7 +135,8 @@ export interface EncodedProjectUIModel {
   viewsets: ProjectUIViewsets;
   visible_types: string[];
 }
-export type CouchProjectUIModel = PouchDB.Core.ExistingDocument<EncodedProjectUIModel>;
+export type CouchProjectUIModel =
+  PouchDB.Core.ExistingDocument<EncodedProjectUIModel>;
 
 export type EncodedProjectMetadata = PouchDB.Core.Document<{
   _attachments?: PouchDB.Core.Attachments;
@@ -752,27 +709,3 @@ export type UISpecification = z.infer<typeof UISpecificationSchema>;
 // TODO use Zod for existing UI schema models to validate
 export const NotebookMetadataSchema = z.record(z.any());
 export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
-
-// =========
-// USER INFO
-// =========
-
-// Information about users and roles for a notebook
-export const NotebookAuthSummarySchema = z.object({
-  // What roles does the notebook have
-  roles: z.array(z.nativeEnum(Role)),
-  // users permissions for this notebook
-  users: z.array(
-    z.object({
-      name: z.string(),
-      username: z.string(),
-      roles: z.array(
-        z.object({
-          name: z.nativeEnum(Role),
-          value: z.boolean(),
-        })
-      ),
-    })
-  ),
-});
-export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;

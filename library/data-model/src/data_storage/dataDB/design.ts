@@ -1,7 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 
-import {Action, necessaryActionToCouchRoleList} from '../..';
+import {Action, necessaryActionToCouchRoleList} from '../../permission';
 import {convertToCouchDBString} from '../utils';
 
 /**

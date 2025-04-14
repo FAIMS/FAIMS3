@@ -1,4 +1,4 @@
-import {ResourceRole} from '..';
+import {ResourceRole} from './types';
 import {
   Action,
   Role,

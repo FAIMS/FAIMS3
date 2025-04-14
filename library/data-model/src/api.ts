@@ -4,17 +4,32 @@ import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
 } from './data_storage/templatesDB/types';
-import {Resource, Role} from './permission';
-import {
-  APINotebookGetSchema,
-  APINotebookListSchema,
-  EncodedUISpecificationSchema,
-  NotebookAuthSummarySchema,
-} from './types';
+import {Resource, Role} from './permission/model';
+import {EncodedUISpecificationSchema} from './types';
 
 // ==================
 // WIP USERS
 // ==================
+
+// Information about users and roles for a notebook
+export const NotebookAuthSummarySchema = z.object({
+  // What roles does the notebook have
+  roles: z.array(z.nativeEnum(Role)),
+  // users permissions for this notebook
+  users: z.array(
+    z.object({
+      name: z.string(),
+      username: z.string(),
+      roles: z.array(
+        z.object({
+          name: z.nativeEnum(Role),
+          value: z.boolean(),
+        })
+      ),
+    })
+  ),
+});
+export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
 
 // Post update a user UpdateUser input
 export const PostUpdateUserInputSchema = z.object({
@@ -99,6 +114,33 @@ export type PostRefreshTokenResponse = z.infer<
 // ==================
 // WIP NOTEBOOKS CRUD
 // ==================
+
+// TODO make this better, currently there is no real explanation for this
+// structure
+
+// This is returned from the list project endpoints
+export const APINotebookListSchema = z.object({
+  name: z.string(),
+  is_admin: z.boolean(),
+  last_updated: z.string().optional(),
+  created: z.string().optional(),
+  template_id: z.string().optional(),
+  project_id: z.string(),
+  metadata: z.record(z.unknown()).optional().nullable(),
+  ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
+});
+export type APINotebookList = z.infer<typeof APINotebookListSchema>;
+
+// This is returned from the get project endpoint
+export const APINotebookGetSchema = z.object({
+  // metadata and spec to match notebook json schema
+  metadata: z.record(z.unknown()),
+  'ui-specification': z.record(z.unknown()),
+  ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
+});
+export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
 // GET notebook by ID
 export const GetNotebookResponseSchema = APINotebookGetSchema;

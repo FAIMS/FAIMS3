@@ -1,3 +1,10 @@
+import {
+  MigrationFunc,
+  IS_TESTING,
+  DBTargetVersions,
+  DatabaseType,
+  MigrationDetails,
+} from './types';
 import {Resource, ResourceRole, Role} from '../../permission';
 import {
   V1InviteDBFields,
@@ -11,13 +18,6 @@ import {
 } from '../peopleDB';
 import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
 import {TemplateV1Fields, TemplateV2Fields} from '../templatesDB/types';
-import {
-  DatabaseType,
-  DBTargetVersions,
-  IS_TESTING,
-  MigrationDetails,
-  MigrationFunc,
-} from './migrationService';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -254,7 +254,6 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
     // Basic couch db fields
     _id: inputDoc._id,
     _rev: inputDoc._rev,
-
 
     // Pass through common properties
     'ui-specification': inputDoc['ui-specification'],
