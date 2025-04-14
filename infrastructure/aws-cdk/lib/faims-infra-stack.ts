@@ -12,6 +12,14 @@ import {z} from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const SocialProvidersConfigSchema = z.object({
+  google: z
+    .object({
+      secretArn: z.string(),
+    })
+    .optional(),
+});
+
 const SMTPConfigSchema = z.object({
   /** Email service type (SMTP or MOCK) */
   emailServiceType: z.enum(['SMTP']),
@@ -260,6 +268,8 @@ export const ConfigSchema = z.object({
   web: WebConfigSchema,
   /** Email service configuration */
   smtp: SMTPConfigSchema,
+  /** Social sign in providers */
+  socialProviders: SocialProvidersConfigSchema.optional(),
 });
 
 // Infer the types from the schemas
@@ -425,6 +435,7 @@ export class FaimsInfraStack extends cdk.Stack {
         testEmailAddress: config.smtp.testEmailAddress,
         cacheExpirySeconds: config.smtp.cacheExpirySeconds,
       },
+      socialProviders: config.socialProviders,
     });
 
     // FRONT-END

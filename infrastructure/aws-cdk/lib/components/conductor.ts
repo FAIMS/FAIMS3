@@ -59,6 +59,13 @@ export interface SMTPGeneralConfig {
   cacheExpirySeconds?: number;
 }
 
+export interface SocialProvidersConfig {
+  google?: {
+    // must contain CLIENT_ID and CLIENT_SECRET
+    secretArn: string;
+  };
+}
+
 /**
  * Properties for the FaimsConductor construct
  */
@@ -99,6 +106,8 @@ export interface FaimsConductorProps {
   smtpCredsArn: string;
   /** SMTP general configuration */
   smtpConfig: SMTPGeneralConfig;
+  /** Social providers info (if enabled) */
+  socialProviders?: SocialProvidersConfig;
 }
 
 /**
@@ -161,6 +170,33 @@ export class FaimsConductor extends Construct {
       props.smtpCredsArn
     );
 
+    const socialProviderList: string[] = [];
+    if (props.socialProviders?.google) {
+      socialProviderList.push('google');
+    }
+    const renderedProviderList = socialProviderList.join(';');
+
+    const googleSecretArn = props.socialProviders?.google?.secretArn;
+    const googleSecret = googleSecretArn
+      ? sm.Secret.fromSecretCompleteArn(
+          this,
+          'GoogleOAuthSecret',
+          googleSecretArn
+        )
+      : undefined;
+    const googleConfigSecrets = googleSecret
+      ? {
+          GOOGLE_CLIENT_ID: ecs.Secret.fromSecretsManager(
+            googleSecret,
+            'CLIENT_ID'
+          ),
+          GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
+            googleSecret,
+            'CLIENT_SECRET'
+          ),
+        }
+      : undefined;
+
     conductorTaskDfn.addContainer('conductor-container-dfn', {
       image: conductorContainerImage,
       portMappings: [
@@ -203,6 +239,13 @@ export class FaimsConductor extends Construct {
           props.webUrl,
           `${props.appId}://`,
         ].join(','),
+
+        // social providers (if at least one configured)
+        ...(socialProviderList.length > 0
+          ? {
+              CONDUCTOR_AUTH_PROVIDERS: renderedProviderList,
+            }
+          : {}),
       },
       secrets: {
         COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
@@ -221,6 +264,9 @@ export class FaimsConductor extends Construct {
         SMTP_SECURE: ecs.Secret.fromSecretsManager(smtpSecret, 'secure'),
         SMTP_USER: ecs.Secret.fromSecretsManager(smtpSecret, 'user'),
         SMTP_PASSWORD: ecs.Secret.fromSecretsManager(smtpSecret, 'pass'),
+
+        // Include google config if provided
+        ...(googleConfigSecrets ?? {}),
       },
       logging: ecs.LogDriver.awsLogs({
         streamPrefix: 'faims-conductor',
