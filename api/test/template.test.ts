@@ -26,7 +26,7 @@ PouchDB.plugin(PouchDBFind);
 import {
   CreateNotebookFromTemplate,
   EncodedNotebook,
-  EncodedUISpecification,
+  EncodedProjectUIModel,
   GetListTemplatesResponse,
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
@@ -57,7 +57,7 @@ const EMPTY_UI_SPEC = {
   fviews: {},
   viewsets: {},
   visible_types: [],
-} satisfies Omit<EncodedUISpecification, '_id'>;
+} satisfies EncodedProjectUIModel;
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
