@@ -4,8 +4,11 @@
 </div>
 
 {{#if localAuth}}
-<form method="post" action="/register/local">
-    <input type="hidden" name="redirect" value="{{redirect}}">
+<form method="post" action="{{postUrl}}">
+    <input type="hidden" name="redirect" value="{{localRegisterPostPayload.redirect}}">
+    <input type="hidden" name="inviteId" value="{{localRegisterPostPayload.inviteId}}">
+    <input type="hidden" name="action" value="{{localRegisterPostPayload.action}}">
+
     {{#if messages.error.registration}}
     <div class="alert alert-danger">{{messages.error.registration}}</div>
     {{/if}}
@@ -33,6 +36,9 @@
                id="NameInput" 
                value="{{messages.name}}"
                required>
+        {{#if messages.error.name}}
+        <div class="alert alert-danger">{{messages.error.name.msg}}</div>
+        {{/if}}
     </div>
 
     <div class="mb-3">
@@ -63,6 +69,9 @@
     </div>
 
     <button type="submit" class="auth-button">Create account</button>
+    {{#if messages.error.registrationError}}
+      <div class='alert alert-danger'>{{messages.error.registrationError.msg}}</div>
+    {{/if}}
 </form>
 {{/if}}
 
@@ -74,9 +83,9 @@
 
 <div class="sso-options">
     {{#each providers}}
-    <a href="/register/{{../invite}}/{{ this.label }}/?redirect={{ ../redirect }}" 
+    <a href="{{this.targetUrl}}"
        class="auth-button-outline">
-        <i class="bi bi-{{this.name}}" style="margin-right: 8px;"></i>
+        <i class="bi bi-{{this.id}}" style="margin-right: 8px;"></i>
         Continue with {{ this.name }}
     </a>
     {{/each}}

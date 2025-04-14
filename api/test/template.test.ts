@@ -43,7 +43,7 @@ import {expect} from 'chai';
 import {Express} from 'express';
 import fs from 'fs';
 import request from 'supertest';
-import {app} from '../src/routes';
+import {app} from '../src/expressSetup';
 import {NOTEBOOKS_API_BASE} from './api.test';
 import {
   adminToken,
