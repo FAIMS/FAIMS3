@@ -36,12 +36,14 @@ import {
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
+  ProjectMetadata,
   PROJECTS_BY_TEAM_ID,
   ProjectStatus,
   Resource,
   resourceRoles,
   Role,
   userHasProjectRole,
+  PROJECT_METADATA_PREFIX,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -54,11 +56,6 @@ import {
   verifyCouchDBConnection,
 } from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
-import {
-  PROJECT_METADATA_PREFIX,
-  ProjectMetadata,
-  ProjectUIFields,
-} from '../datamodel/database';
 import * as Exceptions from '../exceptions';
 
 import {
@@ -281,7 +278,7 @@ const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
     references: [],
   };
 
-  const fields = uiSpec.fields as ProjectUIFields;
+  const fields = uiSpec.fields;
   for (const field in fields) {
     // TODO are there other names?
     if (fields[field]['component-name'] === 'BasicAutoIncrementer') {

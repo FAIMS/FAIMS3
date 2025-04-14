@@ -55,7 +55,7 @@ import {processRequest} from 'zod-express-middleware';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
-} from '../authkeys/create';
+} from '../auth/keySigning/create';
 import {validateRefreshToken} from '../couchdb/refreshTokens';
 import patch from '../utils/patchExpressAsync';
 

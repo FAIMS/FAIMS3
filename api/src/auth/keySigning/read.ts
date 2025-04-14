@@ -20,8 +20,8 @@
 
 import {decodeAndValidateToken} from '@faims3/data-model';
 import {jwtVerify} from 'jose';
-import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../buildconfig';
-import {getCouchUserFromEmailOrUsername} from '../couchdb/users';
+import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../../buildconfig';
+import {getCouchUserFromEmailOrUsername} from '../../couchdb/users';
 
 /**
  * validateToken

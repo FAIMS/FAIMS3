@@ -42,12 +42,11 @@ import {expect} from 'chai';
 import {Express} from 'express';
 import fs from 'fs';
 import request from 'supertest';
-import {addLocalPasswordForUser} from '../src/auth_providers/local';
 import {
   generateJwtFromUser,
   getRelevantUserAssociations,
   upgradeCouchUserToExpressUser,
-} from '../src/authkeys/create';
+} from '../src/auth/keySigning/create';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {getDataDb, localGetProjectsDb} from '../src/couchdb';
 import {
@@ -63,9 +62,10 @@ import {
 } from '../src/couchdb/templates';
 import {createUser, saveCouchUser} from '../src/couchdb/users';
 import {userCanDo} from '../src/middleware';
-import {app} from '../src/routes';
+import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {adminToken, beforeApiTests, requestAuthAndType} from './utils';
+import {addLocalPasswordForUser} from '../src/auth/helpers';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);

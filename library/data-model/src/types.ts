@@ -367,8 +367,6 @@ export interface FAIMSPositionGeometry {
   coordinates: number[];
 }
 
-// end of types from datamodel/geo.ts --------------------------------
-
 // types from datamodel/typeSystems.ts --------------------------------
 
 export interface FAIMSType {
@@ -688,6 +686,7 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 // UI SCHEMA AND METADATA
 // ========================
 // TODO use zod more effectively here to enhance validation
+export type ProjectMetadata = {[key: string]: any};
 
 // The UI specification
 // TODO use Zod for existing UI schema models to validate. Note that this is a
