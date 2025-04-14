@@ -65,9 +65,13 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
       // Pull out the invite ID
       const inviteId = req.query.inviteId;
 
-      const redirect = validateRedirect(
+      const {valid, redirect} = validateRedirect(
         req.query.redirect || DEFAULT_REDIRECT_URL
       );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
 
       const action: AuthAction = 'login';
 
@@ -109,9 +113,13 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
     }),
     async (req, res) => {
       // Check the redirect is valid
-      const redirect = validateRedirect(
+      const {valid, redirect} = validateRedirect(
         req.query.redirect || DEFAULT_REDIRECT_URL
       );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
 
       // Pull out the invite ID
       const inviteId = req.query.inviteId;

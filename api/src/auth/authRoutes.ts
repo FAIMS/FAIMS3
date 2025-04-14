@@ -111,9 +111,14 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       // Now we have a validated login payload - proceed
 
       // Are we redirecting?
-      const redirect = validateRedirect(
+      const {valid, redirect} = validateRedirect(
         loginPayload.redirect || DEFAULT_REDIRECT_URL
       );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
       // Is there an invite present?
       const inviteId = loginPayload.inviteId;
 
@@ -188,9 +193,14 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       // Now we have a validated register payload - proceed
 
       // Are we redirecting?
-      const redirect = validateRedirect(
+      const {valid, redirect} = validateRedirect(
         registerPayload.redirect || DEFAULT_REDIRECT_URL
       );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
       // Is there an invite present?
       const inviteId = registerPayload.inviteId;
 
@@ -340,10 +350,14 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         // pull out session data
         const sessionData = req.session as CustomSessionData;
 
-        // check redirect and store in session
-        const redirect = validateRedirect(
+        // Are we redirecting?
+        const {valid, redirect} = validateRedirect(
           req.query.redirect || DEFAULT_REDIRECT_URL
         );
+
+        if (!valid) {
+          return res.render('redirect-error', {redirect});
+        }
         const inviteId = req.query.inviteId;
         const action = req.query.action;
 
@@ -410,9 +424,14 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             await saveCouchUser(updatedUser);
           }
 
-          const redirect = validateRedirect(
+          // Are we redirecting?
+          const {valid, redirect} = validateRedirect(
             (req.session as CustomSessionData)?.redirect || DEFAULT_REDIRECT_URL
           );
+
+          if (!valid) {
+            return res.render('redirect-error', {redirect});
+          }
 
           return redirectWithToken({
             res,

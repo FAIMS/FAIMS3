@@ -80,16 +80,17 @@ export const handleZodErrors = ({
 export function validateRedirect(
   redirect: string,
   whitelist: string[] = REDIRECT_WHITELIST
-): string {
+): {valid: boolean; redirect: string} {
+  const fail = () => ({valid: false, redirect: '/'});
   try {
     // If redirect is undefined, null, or empty string, return default
     if (!redirect) {
-      return '/';
+      return fail();
     }
 
     // First check if we can parse the URL
     if (!URL.canParse(redirect)) {
-      return '/';
+      return fail();
     }
 
     const redirectUrl = new URL(redirect);
@@ -112,7 +113,7 @@ export function validateRedirect(
         // Final check - slightly redundant
         if (redirectUrl.origin === whitelistedUrl.origin) {
           // Compare origins (protocol + hostname + port)
-          return redirect;
+          return {valid: true, redirect};
         }
       } catch (error) {
         // Skip invalid whitelist entries
@@ -122,11 +123,11 @@ export function validateRedirect(
     }
 
     // No match found, return the default redirect
-    return '/';
+    return fail();
   } catch (error) {
     // Any parsing errors or other issues, return the default redirect
     console.error('Error validating redirect URL:', error);
-    return '/';
+    return fail();
   }
 }
 

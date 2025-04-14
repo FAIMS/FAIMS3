@@ -117,10 +117,21 @@ async function oauthVerify(
     .filter(([, potentialUser]) => !!potentialUser)
     .map(([email]) => email);
 
+  // create a list of unique matched accounts - this way if you match on
+  // multiple email addresses, but already merged into a single account, this is
+  // managed properly
+  const matchingAccounts: ExistingPeopleDBDocument[] = [];
+  for (const email of matchingEmails) {
+    const user = userLookups[email]!;
+    if (!matchingAccounts.map(acc => acc._id).includes(user._id)) {
+      matchingAccounts.push(user);
+    }
+  }
+
   // So they have some existing match - is it more than one, this is an error
   // state - we shouldn't have a google profile linking to multiple accounts!
   // Confusing situation let's not allow this.
-  if (matchingEmails.length > 1) {
+  if (matchingAccounts.length > 1) {
     return done(
       'The users google profile included more than one email address, of which more than one match existing accounts. Unsure how to proceed.',
       undefined
@@ -133,10 +144,10 @@ async function oauthVerify(
 
     // This is a situation where they do have a verified email address but none
     // match
-    if (matchingEmails.length === 0) {
+    if (matchingAccounts.length === 0) {
       // We abort here - this is an error
       return done(
-        'This Google user account does not exist. Instead, you should register for a new account by using an invite code shared with you.',
+        'This Google user account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.',
         undefined
       );
     }
@@ -144,7 +155,7 @@ async function oauthVerify(
     // We have precisely one matching email address, let's ensure that this
     // account has the linked google profile, then return it (We can safely assert
     // non-null here due to our previous filtering)
-    const matchedSingleUser = userLookups[matchingEmails[0]]!;
+    const matchedSingleUser = matchingAccounts[0];
 
     // Firstly - ensure they have the google profile linked
     if (!('google' in matchedSingleUser.profiles)) {
@@ -174,9 +185,10 @@ async function oauthVerify(
 
     // This is scenario where this user does not yet exist - so let's create
     // them (checking invite is okay)
-    if (matchingEmails.length === 0) {
+    if (matchingAccounts.length === 0) {
       // So the invite is valid we should now start to setup the user
       const [newDbUser] = await createUser({
+        // Use the first email (assumed okay to be primary lookup email)
         email: verifiedEmails[0],
         username: verifiedEmails[0],
         name: profile.displayName,
@@ -213,13 +225,17 @@ async function oauthVerify(
     // We have precisely one matching email address, let's ensure that this
     // account has the linked google profile, then return it (We can safely assert
     // non-null here due to our previous filtering)
-    const matchedSingleUser = userLookups[matchingEmails[0]]!;
+    const matchedSingleUser = matchingAccounts[0];
 
     // Firstly - ensure they have the google profile linked
     if (!('google' in matchedSingleUser.profiles)) {
       matchedSingleUser.profiles['google'] = profile;
-      await saveCouchUser(matchedSingleUser);
     }
+
+    // add the other emails to the user emails array if necessary
+    addEmails({user: matchedSingleUser, emails: verifiedEmails});
+
+    await saveCouchUser(matchedSingleUser);
 
     // upgrade user and return login success - invite to be processed later if
     // at all
