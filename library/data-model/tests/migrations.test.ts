@@ -60,6 +60,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     inputDoc: {
       _id: 'template_123',
       _rev: '1-abc123',
+      version: 1,
       metadata: {
         name: 'Survey Template',
         description: 'A template for creating surveys',
@@ -78,6 +79,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     expectedOutputDoc: {
       _id: 'template_123',
       _rev: '1-abc123',
+      version: 1,
       name: 'Survey Template',
       metadata: {
         name: 'Survey Template',
@@ -107,6 +109,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     inputDoc: {
       _id: 'template_456',
       _rev: '1-def456',
+      version: 1,
       metadata: {
         description: 'A template without a name',
         version: '1.0',
@@ -124,6 +127,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       _id: 'template_456',
       _rev: '1-def456',
       name: 'template-template_456', // Should use the ID-based fallback
+      version: 1,
       metadata: {
         description: 'A template without a name',
         version: '1.0',
@@ -184,6 +188,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     inputDoc: {
       _id: 'template_complex',
       _rev: '1-complex',
+      version: 1,
       metadata: {
         name: 'Complex Template',
         configuration: {
@@ -214,6 +219,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     expectedOutputDoc: {
       _id: 'template_complex',
       _rev: '1-complex',
+      version: 1,
       name: 'Complex Template',
       metadata: {
         name: 'Complex Template',
@@ -255,6 +261,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     inputDoc: {
       _id: 'template_null_meta',
       _rev: '1-nullmeta',
+      version: 1,
       metadata: null as any, // Null metadata (edge case)
       'ui-specification': {
         _id: 'test',
@@ -267,6 +274,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     expectedOutputDoc: {
       _id: 'template_null_meta',
       _rev: '1-nullmeta',
+      version: 1,
       name: 'template-template_null_meta', // Should use the ID-based fallback
       metadata: {}, // Null metadata should be converted to {}
       'ui-specification': {
@@ -288,6 +296,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     from: 1,
     to: 2,
     inputDoc: {
+      version: 1,
       _id: 'template_additional',
       _rev: '1-additional',
       metadata: {
@@ -307,6 +316,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     expectedOutputDoc: {
       _id: 'template_additional',
       _rev: '1-additional',
+      version: 1,
       name: 'Template with Additional Fields',
       metadata: {
         name: 'Template with Additional Fields',

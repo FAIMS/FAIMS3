@@ -255,10 +255,12 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
     _id: inputDoc._id,
     _rev: inputDoc._rev,
 
+
     // Pass through common properties
     'ui-specification': inputDoc['ui-specification'],
     metadata: inputDoc.metadata ?? {},
     ownedByTeamId: inputDoc.ownedByTeamId,
+    version: inputDoc.version,
 
     // Pull out name from metadata (defaulting in weird cases to a suitable ID)
     name: inputDoc.metadata?.name ?? `template-${inputDoc._id}`,

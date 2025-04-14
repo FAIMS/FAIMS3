@@ -4,11 +4,15 @@ import {
   APINotebookGetSchema,
   APINotebookListSchema,
   NotebookAuthSummarySchema,
-  TemplateDocumentSchema,
-  TemplateEditableDetailsSchema,
+  NotebookMetadataSchema,
   UiSpecificationSchema,
 } from './types';
 import {ProjectStatus} from './data_storage';
+import {
+  ExistingTemplateDocument,
+  ExistingTemplateDocumentSchema,
+  TemplateDBFieldsSchema,
+} from './data_storage/templatesDB/types';
 
 // ==================
 // WIP USERS
@@ -218,43 +222,45 @@ export type PostRandomRecordsResponse = z.infer<
 // TEMPLATES CRUD
 // =================
 
-// POST create new template input
-export const PostCreateTemplateInputSchema =
-  TemplateEditableDetailsSchema.extend({
-    teamId: z.string().min(1).optional(),
-    name: z.string().min(1),
-  });
-
+// POST create new template
+export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
+  'ui-specification': true,
+  metadata: true,
+  name: true,
+  ownedByTeamId: true,
+});
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
 >;
-// POST create new template response
-export const PostCreateTemplateResponseSchema = TemplateDocumentSchema;
+export const PostCreateTemplateResponseSchema = ExistingTemplateDocumentSchema;
 export type PostCreateTemplateResponse = z.infer<
   typeof PostCreateTemplateResponseSchema
 >;
 
 // PUT update existing template input
-export const PutUpdateTemplateInputSchema = TemplateEditableDetailsSchema;
+export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
+  // Allow editing only the UI spec and metadata
+  'ui-specification': true,
+  metadata: true,
+});
 export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema
 >;
-// PUT update existing template response
-export const PutUpdateTemplateResponseSchema = TemplateDocumentSchema;
+export const PutUpdateTemplateResponseSchema = ExistingTemplateDocumentSchema;
 export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
 // GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(TemplateDocumentSchema),
+  templates: z.array(ExistingTemplateDocumentSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
 
 // GET a specific template by _id response
-export const GetTemplateByIdResponseSchema = TemplateDocumentSchema;
+export const GetTemplateByIdResponseSchema = ExistingTemplateDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
 >;
