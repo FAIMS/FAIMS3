@@ -947,7 +947,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
   };
 
   const valueMismatch = !isValueValidForField();
-    const allowedOperators = targetFieldDef
+  const allowedOperators = targetFieldDef
     ? (() => {
         const cName = targetFieldDef['component-name'];
         if (cName === 'MultiSelect')
@@ -972,15 +972,24 @@ export const FieldConditionControl = (props: ConditionProps) => {
       >
         <Autocomplete
           options={selectFields}
-          getOptionLabel={(fieldId: string) => getFieldLabel(allFields[fieldId])}
+          getOptionLabel={(fieldId: string) =>
+            getFieldLabel(allFields[fieldId])
+          }
           value={condition.field || null}
           onChange={(_, newValue) => {
             updateField(newValue || '');
           }}
-          renderInput={(params) => (
-            <TextField {...params} label="Field" variant="outlined" />
+          renderInput={params => (
+            <DebouncedTextField
+              onChange={function (): void {
+                throw new Error('Function not implemented.');
+              }}
+              {...params}
+              label="Field"
+              variant="outlined"
+            />
           )}
-          style={{ minWidth: 200 }}
+          style={{minWidth: 200}}
           clearOnEscape
         />
 
@@ -996,7 +1005,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             onChange={e => updateOperator(e.target.value)}
             value={condition.operator}
           >
-           {allowedOperators.map(op => (
+            {allowedOperators.map(op => (
               <MenuItem key={op} value={op}>
                 {op}
               </MenuItem>
