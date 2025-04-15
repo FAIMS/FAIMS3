@@ -14,8 +14,12 @@ import {
   V2InviteDBFields,
   V3InviteDBFields,
 } from '../src/data_storage';
-import {Resource, Role} from '../src';
+import {EncodedProjectUIModel, Resource, Role} from '../src';
 import {areDocsEqual} from './utils';
+import {
+  TemplateV1Fields,
+  TemplateV2Fields,
+} from '../src/data_storage/templatesDB/types';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -44,6 +48,297 @@ type MigrationTestCase = {
     expectedOutputDoc: PouchDB.Core.ExistingDocument<any>
   ) => boolean;
 };
+
+// Test cases for templatesV1toV2Migration
+const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Basic migration test with all fields
+  {
+    name: 'templatesV1toV2Migration - basic migration with all fields',
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'template_123',
+      _rev: '1-abc123',
+      version: 1,
+      metadata: {
+        name: 'Survey Template',
+        description: 'A template for creating surveys',
+        version: '1.0',
+        author: 'Test User',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team_456',
+    } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
+    expectedOutputDoc: {
+      _id: 'template_123',
+      _rev: '1-abc123',
+      version: 1,
+      name: 'Survey Template',
+      metadata: {
+        name: 'Survey Template',
+        description: 'A template for creating surveys',
+        version: '1.0',
+        author: 'Test User',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team_456',
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for missing metadata.name (should use template ID)
+  {
+    name: 'templatesV1toV2Migration - missing metadata.name',
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'template_456',
+      _rev: '1-def456',
+      version: 1,
+      metadata: {
+        description: 'A template without a name',
+        version: '1.0',
+        // name is missing
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number'],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
+    expectedOutputDoc: {
+      _id: 'template_456',
+      _rev: '1-def456',
+      name: 'template-template_456', // Should use the ID-based fallback
+      version: 1,
+      metadata: {
+        description: 'A template without a name',
+        version: '1.0',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number'],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for empty metadata
+  {
+    name: 'templatesV1toV2Migration - empty metadata',
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'template_789',
+      _rev: '1-ghi789',
+      metadata: {}, // Empty metadata
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text'],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
+    expectedOutputDoc: {
+      _id: 'template_789',
+      _rev: '1-ghi789',
+      name: 'template-template_789', // Should use the ID-based fallback
+      metadata: {}, // Empty metadata should be preserved
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text'],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for complex metadata with nested structures
+  {
+    name: 'templatesV1toV2Migration - complex metadata with nested structures',
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'template_complex',
+      _rev: '1-complex',
+      version: 1,
+      metadata: {
+        name: 'Complex Template',
+        configuration: {
+          fields: ['name', 'age', 'address'],
+          validators: {
+            age: {min: 18, max: 99},
+            name: {minLength: 2, maxLength: 50},
+          },
+          advanced: {
+            settings: {
+              display: 'grid',
+              pagination: true,
+              itemsPerPage: 10,
+            },
+          },
+        },
+        tags: ['survey', 'complex', 'nested'],
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team_complex',
+    } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
+    expectedOutputDoc: {
+      _id: 'template_complex',
+      _rev: '1-complex',
+      version: 1,
+      name: 'Complex Template',
+      metadata: {
+        name: 'Complex Template',
+        configuration: {
+          fields: ['name', 'age', 'address'],
+          validators: {
+            age: {min: 18, max: 99},
+            name: {minLength: 2, maxLength: 50},
+          },
+          advanced: {
+            settings: {
+              display: 'grid',
+              pagination: true,
+              itemsPerPage: 10,
+            },
+          },
+        },
+        tags: ['survey', 'complex', 'nested'],
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team_complex',
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case for null metadata (should handle gracefully)
+  {
+    name: 'templatesV1toV2Migration - null metadata',
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      _id: 'template_null_meta',
+      _rev: '1-nullmeta',
+      version: 1,
+      metadata: null as any, // Null metadata (edge case)
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
+    expectedOutputDoc: {
+      _id: 'template_null_meta',
+      _rev: '1-nullmeta',
+      version: 1,
+      name: 'template-template_null_meta', // Should use the ID-based fallback
+      metadata: {}, // Null metadata should be converted to {}
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case with additional fields that should be preserved
+  {
+    name: 'templatesV1toV2Migration - additional fields',
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    inputDoc: {
+      version: 1,
+      _id: 'template_additional',
+      _rev: '1-additional',
+      metadata: {
+        name: 'Template with Additional Fields',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team_add',
+      customField1: 'This should be dropped',
+      customField2: 42,
+    } as unknown as PouchDB.Core.ExistingDocument<TemplateV1Fields>,
+    expectedOutputDoc: {
+      _id: 'template_additional',
+      _rev: '1-additional',
+      version: 1,
+      name: 'Template with Additional Fields',
+      metadata: {
+        name: 'Template with Additional Fields',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: ['text', 'number', 'select'],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team_add',
+      // Additional fields should be dropped
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {action: 'update'},
+    // Custom equality function to ensure extra fields are dropped
+    equalityFunction: (actual, expected) => {
+      // Check that all expected keys are present with correct values
+      for (const key of Object.keys(expected)) {
+        if (JSON.stringify(actual[key]) !== JSON.stringify(expected[key])) {
+          return false;
+        }
+      }
+      // Check that no extra keys are present
+      const expectedKeys = new Set(Object.keys(expected));
+      for (const key of Object.keys(actual)) {
+        if (!expectedKeys.has(key)) {
+          return false;
+        }
+      }
+      return true;
+    },
+  },
+];
 
 // New test cases for projectsV1toV2Migration
 const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
@@ -821,6 +1116,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
 
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**

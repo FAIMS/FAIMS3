@@ -11,7 +11,8 @@ PouchDB.plugin(PouchDBFind);
 
 import {v4 as uuidv4} from 'uuid';
 import {DEFAULT_RELATION_LINK_VOCABULARY} from '../datamodel/core';
-import {getDataDB, shouldDisplayRecord} from '../index';
+import {getDataDB, shouldDisplayRecord} from '../callbacks';
+import {TokenContents} from '../permission/types';
 import {logError} from '../logging';
 import {
   DataDbType,
@@ -27,7 +28,6 @@ import {
   RecordRevisionListing,
   Revision,
   RevisionID,
-  TokenContents,
   UnhydratedRecord,
 } from '../types';
 import {

@@ -32,7 +32,7 @@ import {
 } from './buildconfig';
 import {getDataDb} from './couchdb';
 import {validateDatabases} from './couchdb/notebooks';
-import {app} from './routes';
+import {app} from './expressSetup';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
