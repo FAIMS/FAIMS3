@@ -39,7 +39,7 @@ import request from 'supertest';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
-} from '../src/authkeys/create';
+} from '../src/auth/keySigning/create';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -55,7 +55,7 @@ import {
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/routes';
+import {app} from '../src/expressSetup';
 import {callbackObject, databaseList} from './mocks';
 import {
   adminToken,
@@ -72,7 +72,6 @@ export const NOTEBOOKS_API_BASE = '/api/notebooks';
 registerClient(callbackObject);
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},

@@ -1,17 +1,10 @@
 import {Edit as EditIcon} from '@mui/icons-material';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  Grid,
-  TextField,
-  Typography,
-} from '@mui/material';
+import {Alert, Box, Button, Card, Grid, Typography} from '@mui/material';
 import {MutableRefObject, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {ComponentParameters, FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
+import DebouncedTextField from '../debounced-text-field';
 
 type PropType = {
   fieldName: string;
@@ -129,7 +122,7 @@ export const TemplatedStringFieldEditor = ({
         <Card variant="outlined">
           <Grid container spacing={2} sx={{p: 2}}>
             <Grid item sm={6} xs={12}>
-              <TextField
+              <DebouncedTextField
                 name="label"
                 variant="outlined"
                 label="Label"
@@ -140,7 +133,7 @@ export const TemplatedStringFieldEditor = ({
               />
             </Grid>
             <Grid item sm={6} xs={12}>
-              <TextField
+              <DebouncedTextField
                 name="helperText"
                 variant="outlined"
                 label="Helper Text"
@@ -165,7 +158,7 @@ export const TemplatedStringFieldEditor = ({
 
             <Grid container spacing={2}>
               <Grid item xs>
-                <TextField
+                <DebouncedTextField
                   name="template"
                   inputRef={textAreaRef}
                   variant="outlined"

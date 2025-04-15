@@ -4,10 +4,11 @@ import {AppSidebar} from '@/components/side-bar/app-sidebar';
 import {Dialog} from '@/components/ui/dialog';
 import {Separator} from '@/components/ui/separator';
 import {
-  SidebarProvider,
   SidebarInset,
+  SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import {SIGNIN_PATH} from '@/constants';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 
 interface TokenParams {
@@ -22,25 +23,44 @@ interface TokenParams {
  * @returns {JSX.Element} The rendered Route component.
  */
 export const Route = createFileRoute('/_protected')({
-  validateSearch: (search: Record<string, string>): TokenParams => ({
+  // We may not always have these - could be stored instead
+  validateSearch: (search: Record<string, string>): Partial<TokenParams> => ({
     token: search.token,
     refreshToken: search.refreshToken,
   }),
   beforeLoad: async ({
     context: {
-      auth: {isAuthenticated, getUserDetails},
+      auth: {isAuthenticated, getUserDetails, user},
     },
     search: {token, refreshToken},
   }) => {
-    if (isAuthenticated) return;
+    // Is there a token which is new?
+    if (token && token !== user?.token) {
+      const {status, message} = await getUserDetails(token, refreshToken);
+      if (status === 'success') {
+        // After consuming the token, clean up the URL. Remove the query
+        // parameters from the URL without causing a navigation
+        const currentPath = window.location.pathname;
+        // Just give a bit of time for changes to propagate before we strip
+        // token, otherwise we immediately see state with no token + no auth and
+        // get redirected!
+        setTimeout(() => {
+          window.history.replaceState(null, '', currentPath);
+        }, 500);
+      } else {
+        console.error(
+          "Failed to get user details on presented 'new' token: ",
+          message
+        );
+        // redirect to login
+        window.location.href = SIGNIN_PATH;
+      }
+    } else {
+      if (isAuthenticated) return;
 
-    const {status} = await getUserDetails(token, refreshToken);
-
-    if (status === 'success') return;
-
-    window.location.href = `${
-      import.meta.env.VITE_API_URL
-    }/auth?redirect=${import.meta.env.VITE_WEB_URL}`;
+      // redirect to login
+      window.location.href = SIGNIN_PATH;
+    }
   },
   component: RouteComponent,
 });

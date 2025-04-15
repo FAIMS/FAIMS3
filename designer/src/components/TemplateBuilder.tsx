@@ -27,12 +27,12 @@ import {
   Select,
   Tab,
   Tabs,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import Mustache from 'mustache';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import DebouncedTextField from './debounced-text-field';
 
 /*
 Patch mustache to not escape values.
@@ -286,7 +286,7 @@ const TemplateBlockEditor: React.FC<{
 
         {block.type === 'text' && (
           <Grid item xs>
-            <TextField
+            <DebouncedTextField
               fullWidth
               value={block.content}
               onChange={e => updateBlockContent(e.target.value)}
@@ -483,7 +483,7 @@ const TemplatePreview: React.FC<{
         <Grid container spacing={2}>
           {usedVariables.map(variable => (
             <Grid item xs={12} sm={6} key={variable.name}>
-              <TextField
+              <DebouncedTextField
                 fullWidth
                 label={variable.displayName}
                 value={previewValues[variable.name] || ''}

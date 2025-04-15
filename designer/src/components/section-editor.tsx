@@ -17,11 +17,12 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
-0;
+
 import {
   Alert,
   Autocomplete,
@@ -33,21 +34,21 @@ import {
   Grid,
   IconButton,
   InputAdornment,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-
-import {useState, useMemo} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {sectionDuplicated} from '../state/uiSpec-reducer';
 import {
   ConditionModal,
   ConditionTranslation,
   ConditionType,
   findSectionExternalUsage,
 } from './condition';
-import {FieldList} from './field-list';
+import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
+import {FieldList} from './field-list';
 
 type Props = {
   viewSetId: string;
@@ -107,6 +108,33 @@ export const SectionEditor = ({
   const [addAlertMessage, setAddAlertMessage] = useState('');
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
+
+  const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
+  const [duplicateSectionName, setDuplicateSectionName] = useState(
+    fView.label + ' copy'
+  );
+  const [duplicateTargetViewSetId, setDuplicateTargetViewSetId] = useState('');
+  const [duplicateAlertMessage, setDuplicateAlertMessage] = useState('');
+
+  useEffect(() => {
+    if (fView) {
+      setDuplicateSectionName(fView.label + ' copy');
+    }
+  }, [fView]);
+
+  const duplicateFormOptions = useMemo(
+    () =>
+      Object.entries(viewSets).map(([formId, form]) => ({
+        id: formId,
+        label: form.label,
+      })),
+    [viewSets]
+  );
+
+  const duplicateFormValue = useMemo(() => {
+    const formId = duplicateTargetViewSetId || viewSetId;
+    return {id: formId, label: viewSets[formId].label};
+  }, [duplicateTargetViewSetId, viewSetId, viewSets]);
 
   const handleCloseDeleteDialog = () => {
     setOpenDeleteDialog(false);
@@ -216,6 +244,25 @@ export const SectionEditor = ({
     });
   };
 
+  const duplicateSection = () => {
+    const targetForm = duplicateTargetViewSetId || viewSetId;
+    try {
+      dispatch(
+        sectionDuplicated({
+          sourceViewId: viewId,
+          destinationViewSetId: targetForm,
+          newSectionLabel: duplicateSectionName.trim(),
+        })
+      );
+      setOpenDuplicateDialog(false);
+      setDuplicateAlertMessage('');
+    } catch (error: unknown) {
+      setDuplicateAlertMessage(
+        error instanceof Error ? error.message : 'Error duplicating section.'
+      );
+    }
+  };
+
   return (
     <>
       <Grid container spacing={1.75} mb={2}>
@@ -249,6 +296,18 @@ export const SectionEditor = ({
             references={conditionReferences}
             onClose={handleCloseConditionAlert}
           />
+        </Grid>
+
+        {/* Duplicate Section Button */}
+        <Grid item xs={12} sm={1.9}>
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<ContentCopyRoundedIcon />}
+            onClick={() => setOpenDuplicateDialog(true)}
+          >
+            Duplicate section
+          </Button>
         </Grid>
 
         <Grid item xs={12} sm={1.9}>
@@ -288,7 +347,12 @@ export const SectionEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => <TextField {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    {...params}
+                    onChange={event => setTargetViewSetId(event.target.value)}
+                  />
+                )}
               />
             </DialogContent>
             <DialogActions>
@@ -316,7 +380,7 @@ export const SectionEditor = ({
                 setEditMode(false);
               }}
             >
-              <TextField
+              <DebouncedTextField
                 size="small"
                 margin="dense"
                 label="Section Name"
@@ -398,7 +462,7 @@ export const SectionEditor = ({
                 addNewSection();
               }}
             >
-              <TextField
+              <DebouncedTextField
                 required
                 fullWidth
                 size="small"
@@ -448,7 +512,68 @@ export const SectionEditor = ({
           />
         </Grid>
       </Grid>
-
+      <Dialog
+        open={openDuplicateDialog}
+        onClose={() => {
+          setOpenDuplicateDialog(false);
+          setDuplicateAlertMessage('');
+        }}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{style: {minWidth: '600px'}}}
+        aria-labelledby="duplicate-section-dialog-title"
+        aria-describedby="duplicate-section-dialog-description"
+      >
+        <DialogTitle id="duplicate-section-dialog-title">
+          Duplicate Section
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{mt: 0.5, mb: 1, fontWeight: 450}}>
+            New Section Name
+          </Typography>
+          <DebouncedTextField
+            fullWidth
+            value={duplicateSectionName}
+            onChange={e => setDuplicateSectionName(e.target.value)}
+          />
+          <Typography variant="body1" sx={{mt: 2, mb: 1, fontWeight: 450}}>
+            Destination Form
+          </Typography>
+          <Autocomplete
+            fullWidth
+            disableClearable
+            value={duplicateFormValue}
+            onChange={(_event, newValue) => {
+              setDuplicateTargetViewSetId(newValue ? newValue.id : viewSetId);
+            }}
+            options={duplicateFormOptions}
+            getOptionLabel={option => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={params => (
+              <DebouncedTextField {...params} onChange={() => {}} />
+            )}
+          />
+          {duplicateAlertMessage && (
+            <Alert severity="error">{duplicateAlertMessage}</Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenDuplicateDialog(false);
+              setDuplicateAlertMessage('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={duplicateSection}
+            disabled={!duplicateSectionName.trim()}
+          >
+            Duplicate
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Grid>
         {fView.condition ? (
           <Alert severity="info">

@@ -1,3 +1,10 @@
+import {
+  MigrationFunc,
+  IS_TESTING,
+  DBTargetVersions,
+  DatabaseType,
+  MigrationDetails,
+} from './types';
 import {Resource, ResourceRole, Role} from '../../permission';
 import {
   V1InviteDBFields,
@@ -10,13 +17,7 @@ import {
   PeopleV3Document,
 } from '../peopleDB';
 import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
-import {
-  DatabaseType,
-  DBTargetVersions,
-  IS_TESTING,
-  MigrationDetails,
-  MigrationFunc,
-} from './migrationService';
+import {TemplateV1Fields, TemplateV2Fields} from '../templatesDB/types';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -240,6 +241,33 @@ export const invitesV2toV3Migration: MigrationFunc = doc => {
   return {action: 'update', outputDoc};
 };
 
+/**
+ * Pulls out the template name from the metadata to top level prop
+ */
+export const templatesV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV1Fields>;
+
+  // Create the new V2 document structure
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV2Fields> = {
+    // Basic couch db fields
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+
+    // Pass through common properties
+    'ui-specification': inputDoc['ui-specification'],
+    metadata: inputDoc.metadata ?? {},
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    version: inputDoc.version,
+
+    // Pull out name from metadata (defaulting in weird cases to a suitable ID)
+    name: inputDoc.metadata?.name ?? `template-${inputDoc._id}`,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
@@ -253,7 +281,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 3},
   // projects v2
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 2},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
@@ -295,5 +323,13 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Overhauls migrations to be more generic and allow for team vs project invites. Includes logging information, expiry and uses.',
     migrationFunction: invitesV2toV3Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    description:
+      'Adds the name property to the template document (from the metadata)',
+    migrationFunction: templatesV1toV2Migration,
   },
 ];

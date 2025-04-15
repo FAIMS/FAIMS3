@@ -27,6 +27,7 @@ import {
   addProjectRole,
   addTeamRole,
   EncodedProjectUIModel,
+  PostRegisterInput,
   registerClient,
   Resource,
   Role,
@@ -34,18 +35,22 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
+import {WEBAPP_PUBLIC_URL} from '../src/buildconfig';
 import {
+  consumeInvite,
   createInvite,
   deleteInvite,
   getInvite,
   getInvitesForResource,
   isInviteValid,
-  useInvite,
 } from '../src/couchdb/invites';
 import {createNotebook} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
-import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/routes';
+import {
+  getExpressUserFromEmailOrUsername,
+  saveCouchUser,
+} from '../src/couchdb/users';
+import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {
   adminToken,
@@ -53,12 +58,10 @@ import {
   localUserName,
   localUserToken,
 } from './utils';
-
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient(callbackObject);
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},
@@ -242,16 +245,18 @@ describe('Invite Tests', () => {
       const localUser = await getExpressUserFromEmailOrUsername(localUserName);
       expect(localUser).to.not.be.null;
 
-      await useInvite({
+      await consumeInvite({
         invite: limitedInvite,
         user: localUser!,
       });
+      await saveCouchUser(localUser!);
 
       const updatedInvite = await getInvite({inviteId: limitedInvite._id});
-      await useInvite({
+      await consumeInvite({
         invite: updatedInvite!,
         user: localUser!,
       });
+      await saveCouchUser(localUser!);
 
       // Check if it's now invalid due to usage limit
       const finalInvite = await getInvite({inviteId: limitedInvite._id});
@@ -295,10 +300,11 @@ describe('Invite Tests', () => {
       });
 
       // Use the invite
-      const updatedInvite = await useInvite({
+      const updatedInvite = await consumeInvite({
         invite,
         user: localUser!,
       });
+      await saveCouchUser(localUser!);
 
       // Check results
       expect(updatedInvite.usesConsumed).to.equal(1);
@@ -578,12 +584,15 @@ describe('Registration', () => {
   });
 
   it('redirects with a token on registration', async () => {
-    const payload = {
+    const payload: PostRegisterInput = {
       email: 'bob@here.com',
       password: 'bobbyTables',
       repeat: 'bobbyTables',
       name: 'Bob Bobalooba',
-      redirect: 'http://redirect.org/',
+      // Need to be careful to use a valid whitelisted URL here - this one
+      // should be!
+      redirect: WEBAPP_PUBLIC_URL + '/auth-return',
+      action: 'register',
     };
 
     const project_id = await createNotebook('Test Notebook', uispec, {});
@@ -598,15 +607,14 @@ describe('Registration', () => {
         role: role,
       });
       const code = invite._id;
+      payload.inviteId = code;
 
       const agent = request.agent(app);
 
-      await agent
-        .get(`/register/${code}?redirect=${payload.redirect}`)
-        .expect(200);
+      await agent.get('/register').expect(200);
 
       return agent
-        .post('/register/local/')
+        .post('/auth/local')
         .send(payload)
         .expect(302)
         .then(response => {
@@ -614,7 +622,7 @@ describe('Registration', () => {
           expect(response.header.location[0]).not.to.equal('/');
           // check correct redirect
           const location = new URL(response.header.location);
-          expect(location.hostname).to.equal('redirect.org');
+          expect(location.origin).to.equal(WEBAPP_PUBLIC_URL);
           expect(location.search).to.match(/token/);
         });
     }

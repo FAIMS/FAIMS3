@@ -22,7 +22,7 @@ import {
   TextField,
   Snackbar,
 } from '@mui/material';
-
+import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
@@ -454,7 +454,7 @@ export const DesignPanel = () => {
                       addNewForm();
                     }}
                   >
-                    <TextField
+                    <DebouncedTextField
                       fullWidth
                       required
                       label="Form Name"

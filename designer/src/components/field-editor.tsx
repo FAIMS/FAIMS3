@@ -16,9 +16,9 @@ import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import LockRounded from '@mui/icons-material/LockRounded';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
@@ -27,10 +27,10 @@ import DuplicateIcon from '@mui/icons-material/ContentCopy';
 import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
 
 import {
-  Alert,
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
   Autocomplete,
   Button,
   Chip,
@@ -41,12 +41,16 @@ import {
   Grid,
   IconButton,
   Stack,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import React from 'react';
+import React, {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {
+  findFieldCondtionUsage,
+  findInvalidConditionReferences,
+} from './condition';
+import DebouncedTextField from './debounced-text-field';
 import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';
 import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
@@ -60,11 +64,6 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
-import {useState, useMemo} from 'react';
-import {
-  findFieldCondtionUsage,
-  findInvalidConditionReferences,
-} from './condition';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -587,7 +586,12 @@ export const FieldEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => <TextField {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    onChange={function (): void {}}
+                    {...params}
+                  />
+                )}
               />
             </Grid>
             <Grid item xs={12}>
@@ -608,7 +612,12 @@ export const FieldEditor = ({
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
                 disabled={!selectedFormId}
-                renderInput={params => <TextField {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    onChange={function (): void {}}
+                    {...params}
+                  />
+                )}
               />
             </Grid>
           </Grid>
@@ -638,7 +647,7 @@ export const FieldEditor = ({
           <Typography variant="body2" sx={{mb: 2}}>
             Enter a title for the duplicated field.
           </Typography>
-          <TextField
+          <DebouncedTextField
             autoFocus
             fullWidth
             value={duplicateTitle}

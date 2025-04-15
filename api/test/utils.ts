@@ -18,17 +18,18 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {addGlobalRole, Role} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
-import {addLocalPasswordForUser} from '../src/auth_providers/local';
+import {addLocalPasswordForUser} from '../src/auth/helpers';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
-} from '../src/authkeys/create';
+} from '../src/auth/keySigning/create';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
   createUser,
@@ -36,7 +37,6 @@ import {
   saveCouchUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
-import {addGlobalRole, Role} from '@faims3/data-model';
 
 export let adminToken = '';
 export let localUserToken = '';
