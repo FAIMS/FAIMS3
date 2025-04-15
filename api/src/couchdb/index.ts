@@ -48,9 +48,9 @@ import {
   ProjectMetaObject,
   ProjectDocument,
   TeamsDB,
-  TemplateDetails,
+  TemplateDB,
 } from '@faims3/data-model';
-import {initialiseJWTKey} from '../authkeys/initJWTKeys';
+import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -73,7 +73,7 @@ const TEAMS_DB_NAME = 'teams';
 
 let _directoryDB: PouchDB.Database | undefined;
 let _projectsDB: PouchDB.Database<ProjectDocument> | undefined;
-let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
+let _templatesDb: TemplateDB | undefined;
 let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
 let _invitesDB: InvitesDB | undefined;
@@ -222,7 +222,7 @@ export const localGetProjectsDb = (): PouchDB.Database<ProjectDocument> => {
   return _projectsDB;
 };
 
-export const getTemplatesDb = (): PouchDB.Database<TemplateDetails> => {
+export const getTemplatesDb = (): TemplateDB => {
   if (!_templatesDb) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;

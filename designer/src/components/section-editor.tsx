@@ -17,11 +17,11 @@ import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 
 import {
   Alert,
@@ -34,22 +34,21 @@ import {
   Grid,
   IconButton,
   InputAdornment,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-
-import {useState, useEffect, useMemo} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {sectionDuplicated} from '../state/uiSpec-reducer';
 import {
   ConditionModal,
   ConditionTranslation,
   ConditionType,
   findSectionExternalUsage,
 } from './condition';
-import {FieldList} from './field-list';
+import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
-import {sectionDuplicated} from '../state/uiSpec-reducer';
+import {FieldList} from './field-list';
 
 type Props = {
   viewSetId: string;
@@ -348,7 +347,12 @@ export const SectionEditor = ({
                 options={formOptions}
                 getOptionLabel={option => option.label}
                 isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => <TextField {...params} />}
+                renderInput={params => (
+                  <DebouncedTextField
+                    {...params}
+                    onChange={event => setTargetViewSetId(event.target.value)}
+                  />
+                )}
               />
             </DialogContent>
             <DialogActions>
@@ -376,7 +380,7 @@ export const SectionEditor = ({
                 setEditMode(false);
               }}
             >
-              <TextField
+              <DebouncedTextField
                 size="small"
                 margin="dense"
                 label="Section Name"
@@ -458,7 +462,7 @@ export const SectionEditor = ({
                 addNewSection();
               }}
             >
-              <TextField
+              <DebouncedTextField
                 required
                 fullWidth
                 size="small"

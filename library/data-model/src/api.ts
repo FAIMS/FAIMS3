@@ -1,18 +1,35 @@
 import {z} from 'zod';
-import {Resource, Role} from './permission';
-import {
-  APINotebookGetSchema,
-  APINotebookListSchema,
-  NotebookAuthSummarySchema,
-  TemplateDocumentSchema,
-  TemplateEditableDetailsSchema,
-  UiSpecificationSchema,
-} from './types';
 import {ProjectStatus} from './data_storage';
+import {
+  ExistingTemplateDocumentSchema,
+  TemplateDBFieldsSchema,
+} from './data_storage/templatesDB/types';
+import {Resource, Role} from './permission/model';
+import {EncodedUISpecificationSchema} from './types';
 
 // ==================
 // WIP USERS
 // ==================
+
+// Information about users and roles for a notebook
+export const NotebookAuthSummarySchema = z.object({
+  // What roles does the notebook have
+  roles: z.array(z.nativeEnum(Role)),
+  // users permissions for this notebook
+  users: z.array(
+    z.object({
+      name: z.string(),
+      username: z.string(),
+      roles: z.array(
+        z.object({
+          name: z.nativeEnum(Role),
+          value: z.boolean(),
+        })
+      ),
+    })
+  ),
+});
+export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
 
 // Post update a user UpdateUser input
 export const PostUpdateUserInputSchema = z.object({
@@ -29,58 +46,38 @@ export type UpdateUserProjectRoleInput = z.infer<
   typeof UpdateUserProjectRoleInputSchema
 >;
 
-// Optional redirect
-
-export const OptionalRedirectQuery = z.object({
-  redirect: z.string().optional(),
-});
-
 // Local login POST
 // Body
-export const PostLocalAuthInputSchema = z.object({
-  username: z.string(),
-  password: z.string().min(1),
-});
-// Query
-export const PostLocalAuthQuerySchema = z.object({
-  redirect: z.string().optional(),
-});
-export type PostLocalAuthQuery = z.infer<typeof PostLocalAuthQuerySchema>;
-export type PostLocalAuthInput = z.infer<typeof PostLocalAuthInputSchema>;
-
-// Register by invite ID
-// Body
-export const GetRegisterByInviteQuerySchema = OptionalRedirectQuery;
-export type GetRegisterByInviteQuery = z.infer<
-  typeof GetRegisterByInviteQuerySchema
->;
-
-// Local register
-export const PostRegisterLocalInputSchema = z.object({
-  // Username optional - email used if not provided
-  username: z
-    .string()
-    .trim()
-    .min(5, 'Must provide a username of at least length 5.')
-    .optional(),
-  password: z.string().trim(),
-  email: z
-    .string()
-    .trim()
-    .email(
-      'Email provided during user registration is not a valid email address.'
-    ),
-  repeat: z.string(),
-  name: z.string(),
+// This is used in many places to 'contextualise' the auth action
+export const AuthContextSchema = z.object({
+  // what action are we taking?
+  action: z.enum(['register', 'login']),
+  // Do we we want to redirect back somewhere once finished?
   redirect: z.string().trim().optional(),
+  // What is the invite ID (required if action is register)
+  inviteId: z.string().trim().optional(),
 });
-export const PostRegisterLocalQuerySchema = OptionalRedirectQuery;
-export type PostRegisterLocalInput = z.infer<
-  typeof PostRegisterLocalInputSchema
->;
-export type PostRegisterLocalQuery = z.infer<
-  typeof PostRegisterLocalQuerySchema
->;
+export type AuthContext = z.infer<typeof AuthContextSchema>;
+
+export const PostLoginInputSchema = AuthContextSchema.extend({
+  email: z.string().trim(),
+  password: z.string().trim().min(1),
+});
+export type PostLoginInput = z.infer<typeof PostLoginInputSchema>;
+export const PostRegisterInputSchema = AuthContextSchema.extend({
+  // Baseline email and password (always required)
+  email: z.string().trim().email('Email address must be a valid email.'),
+  password: z
+    .string()
+    .trim()
+    .min(10, 'Password must be of at least 10 characters in length.'),
+  repeat: z.string(),
+  name: z
+    .string()
+    .trim()
+    .min(5, 'Name must be of at least 5 characters in length.'),
+});
+export type PostRegisterInput = z.infer<typeof PostRegisterInputSchema>;
 
 export const PostRefreshTokenInputSchema = z.object({
   refreshToken: z.string(),
@@ -98,6 +95,33 @@ export type PostRefreshTokenResponse = z.infer<
 // WIP NOTEBOOKS CRUD
 // ==================
 
+// TODO make this better, currently there is no real explanation for this
+// structure
+
+// This is returned from the list project endpoints
+export const APINotebookListSchema = z.object({
+  name: z.string(),
+  is_admin: z.boolean(),
+  last_updated: z.string().optional(),
+  created: z.string().optional(),
+  template_id: z.string().optional(),
+  project_id: z.string(),
+  metadata: z.record(z.unknown()).optional().nullable(),
+  ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
+});
+export type APINotebookList = z.infer<typeof APINotebookListSchema>;
+
+// This is returned from the get project endpoint
+export const APINotebookGetSchema = z.object({
+  // metadata and spec to match notebook json schema
+  metadata: z.record(z.unknown()),
+  'ui-specification': z.record(z.unknown()),
+  ownedByTeamId: z.string().min(1).optional(),
+  status: z.nativeEnum(ProjectStatus),
+});
+export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
+
 // GET notebook by ID
 export const GetNotebookResponseSchema = APINotebookGetSchema;
 export type GetNotebookResponse = z.infer<typeof GetNotebookResponseSchema>;
@@ -112,7 +136,7 @@ export type GetNotebookListResponse = z.infer<
 export const NotebookEditableDetailsSchema = z.object({
   // This allows you to type hint as an interface but won't parse/validate it
   // TODO convert these models into their zod counterparts
-  'ui-specification': UiSpecificationSchema,
+  'ui-specification': EncodedUISpecificationSchema,
   metadata: z.record(z.any()),
 });
 export type NotebookEditableDetails = z.infer<
@@ -218,40 +242,46 @@ export type PostRandomRecordsResponse = z.infer<
 // TEMPLATES CRUD
 // =================
 
-// POST create new template input
-export const PostCreateTemplateInputSchema =
-  TemplateEditableDetailsSchema.extend({teamId: z.string().min(1).optional()});
-
+// POST create new template
+export const PostCreateTemplateInputSchema = TemplateDBFieldsSchema.pick({
+  metadata: true,
+  'ui-specification': true,
+  name: true,
+}).extend({
+  // prefer to use a nicer team ID input field
+  teamId: z.string().trim().min(1).optional(),
+});
 export type PostCreateTemplateInput = z.infer<
   typeof PostCreateTemplateInputSchema
 >;
-// POST create new template response
-export const PostCreateTemplateResponseSchema = TemplateDocumentSchema;
+export const PostCreateTemplateResponseSchema = ExistingTemplateDocumentSchema;
 export type PostCreateTemplateResponse = z.infer<
   typeof PostCreateTemplateResponseSchema
 >;
 
 // PUT update existing template input
-export const PutUpdateTemplateInputSchema = TemplateEditableDetailsSchema;
+export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
+  metadata: true,
+  'ui-specification': true,
+});
 export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema
 >;
-// PUT update existing template response
-export const PutUpdateTemplateResponseSchema = TemplateDocumentSchema;
+export const PutUpdateTemplateResponseSchema = ExistingTemplateDocumentSchema;
 export type PutUpdateTemplateResponse = z.infer<
   typeof PutUpdateTemplateResponseSchema
 >;
 
 // GET list all templates response
 export const GetListTemplatesResponseSchema = z.object({
-  templates: z.array(TemplateDocumentSchema),
+  templates: z.array(ExistingTemplateDocumentSchema),
 });
 export type GetListTemplatesResponse = z.infer<
   typeof GetListTemplatesResponseSchema
 >;
 
 // GET a specific template by _id response
-export const GetTemplateByIdResponseSchema = TemplateDocumentSchema;
+export const GetTemplateByIdResponseSchema = ExistingTemplateDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
 >;

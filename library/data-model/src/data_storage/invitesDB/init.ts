@@ -1,4 +1,5 @@
-import {InitialisationContent, invitesDesignDocuments} from '..';
+import {InitialisationContent} from '../utils';
+import {invitesDesignDocuments} from './design';
 import {InvitesDBSecurityDocument} from './security';
 
 export type InvitesDBInitialisationConfig = {};

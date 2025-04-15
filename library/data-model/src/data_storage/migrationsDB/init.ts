@@ -1,4 +1,4 @@
-import {InitialisationContent} from '..';
+import {InitialisationContent} from '../utils';
 import {migrationDbDesignDocuments} from './design';
 import {MigrationsDBSecurityDocument} from './security';
 
