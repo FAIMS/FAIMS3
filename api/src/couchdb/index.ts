@@ -43,13 +43,13 @@ import {
   MigrationsDB,
   PeopleDB,
   PeopleDBFields,
+  PossibleConnectionInfo,
   ProjectDataObject,
+  ProjectDocument,
   ProjectID,
   ProjectMetaObject,
-  ProjectDocument,
   TeamsDB,
   TemplateDB,
-  PossibleConnectionInfo,
 } from '@faims3/data-model';
 import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {
@@ -62,7 +62,6 @@ import {
 import * as Exceptions from '../exceptions';
 import {getAllProjectsDirectory} from './notebooks';
 import {registerAdminUser} from './users';
-import {DocDB} from 'aws-sdk';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
