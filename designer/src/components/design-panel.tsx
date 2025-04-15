@@ -12,16 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  Alert,
-  Box,
-  Button,
-  Grid,
-  Tab,
-  Tabs,
-  TextField,
-  Snackbar,
-} from '@mui/material';
+import {Alert, Box, Button, Grid, Tab, Tabs, Snackbar} from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import UndoIcon from '@mui/icons-material/Undo';
