@@ -57,6 +57,10 @@ import getLocalDate from '../../fields/LocalDate';
 import CircularLoading from '../ui/circular_loading';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 
+// ============================================================================
+// Types & Interfaces
+// ============================================================================
+
 /** Screen size categories matching Material-UI breakpoints */
 type SizeCategory = 'xs' | 'sm' | 'md' | 'lg';
 
