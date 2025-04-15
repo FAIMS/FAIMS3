@@ -115,6 +115,11 @@ function MapWrapper(props: MapProps) {
       const draw = new Draw({source, type: props.featureType || 'Point'});
       const modify = new Modify({source});
 
+      // Only allow one point at a time
+      draw.on('drawstart', () => {
+        source.clear();
+      });
+
       if (props.features && props.features.type) {
         const parsedFeatures = geoJson.readFeatures(props.features, {
           dataProjection: 'EPSG:4326',
