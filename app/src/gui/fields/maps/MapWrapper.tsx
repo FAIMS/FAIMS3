@@ -79,8 +79,7 @@ import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
 import {Extent} from 'ol/extent';
 import Feature from 'ol/Feature';
-import {Geometry, Point} from 'ol/geom';
-import {unByKey} from 'ol/Observable';
+import {Point} from 'ol/geom';
 import {RegularShape} from 'ol/style';
 
 function MapWrapper(props: MapProps) {
