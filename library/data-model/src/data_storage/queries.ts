@@ -17,7 +17,7 @@
  * Description:
  *   Functions to query specific information from pouchdb
  */
-import {getDataDB, listRecordMetadata} from '../index';
+import {getDataDB} from '../callbacks';
 import {
   AttributeValuePair,
   DataDbType,
@@ -28,6 +28,7 @@ import {
   RecordMetadata,
   RecordReference,
 } from '../types';
+import {listRecordMetadata} from './internals';
 
 export async function getAllRecordsOfType(
   project_id: ProjectID,

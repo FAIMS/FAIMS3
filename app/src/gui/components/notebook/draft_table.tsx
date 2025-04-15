@@ -19,7 +19,6 @@
  */
 
 import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
   Box,
   Paper,
@@ -47,11 +46,11 @@ import {
   getVisibleTypes,
 } from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
+import {useDataGridStyles} from '../../../utils/useDataGridStyles';
+import {useScreenSize} from '../../../utils/useScreenSize';
 import getLocalDate from '../../fields/LocalDate';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
-import {useScreenSize} from '../../../utils/useScreenSize';
-import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 
 /**
  * Props for the `DraftsTable` component
@@ -108,7 +107,7 @@ export function DraftsTable(props: DraftsRecordProps) {
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const styles = useDataGridStyles(theme);
-  const {currentSize, pageSize} = useScreenSize();
+  const {currentSize} = useScreenSize();
 
   const defaultMaxRowsMobile = 10;
 

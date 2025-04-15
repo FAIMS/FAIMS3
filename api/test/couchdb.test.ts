@@ -60,7 +60,6 @@ import {userCanDo} from '../src/middleware';
 import {resetDatabases} from './mocks';
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},

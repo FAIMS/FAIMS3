@@ -1,5 +1,6 @@
-import {logError} from '.';
-import {TokenContents, RecordMetadata, ProjectID} from '.';
+import {logError} from './logging';
+import {TokenContents} from './permission/types';
+import {RecordMetadata, ProjectID} from './types';
 
 export type DBCallbackObject = {
   getDataDB: (projectId: string) => Promise<any>;

@@ -19,8 +19,6 @@
  */
 
 import {z} from 'zod';
-import {DecodedTokenPermissions, Role} from './permission';
-import {ExistingProjectDocument, ProjectStatus} from './data_storage';
 
 // from datamodel/core.ts ---------------------------------------------------
 
@@ -61,17 +59,6 @@ export type FAIMSAttachmentID = string;
 export type FAIMSTypeName = string;
 
 export type Annotations = {annotation: string; uncertainty: boolean};
-
-export interface TokenContents extends DecodedTokenPermissions {
-  // First/last name
-  name?: string;
-  // Username (i.e. email)
-  username: string;
-  // Server generating
-  server: string;
-  // This is required now - all tokens must have an expiry
-  exp: number;
-}
 
 export type ProjectRole = string;
 
@@ -119,37 +106,6 @@ export type PossibleConnectionInfo = {
   jwt_token?: string;
 };
 
-// TODO make this better, currently there is no real explanation for this
-// structure
-
-// This is returned from the list project endpoints
-export const APINotebookListSchema = z.object({
-  name: z.string(),
-  is_admin: z.boolean(),
-  last_updated: z.string().optional(),
-  created: z.string().optional(),
-  template_id: z.string().optional(),
-  project_id: z.string(),
-  metadata: z.record(z.unknown()).optional().nullable(),
-  ownedByTeamId: z.string().min(1).optional(),
-  status: z.nativeEnum(ProjectStatus),
-});
-export type APINotebookList = z.infer<typeof APINotebookListSchema>;
-
-// This is returned from the get project endpoint
-export const APINotebookGetSchema = z.object({
-  // metadata and spec to match notebook json schema
-  metadata: z.record(z.unknown()),
-  'ui-specification': z.record(z.unknown()),
-  ownedByTeamId: z.string().min(1).optional(),
-  status: z.nativeEnum(ProjectStatus),
-});
-export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
-
-export type ProjectsList = {
-  [key: string]: ExistingProjectDocument;
-};
-
 export interface ProjectSchema {
   _id?: string; // optional as we may want to include the raw json in places
   _rev?: string; // optional as we may want to include the raw json in places
@@ -167,34 +123,30 @@ export interface ProjectUIModelDetails {
   conditional_sources?: Set<string>;
 }
 
-export interface EncodedCouchRecordFields {
-  _id: string;
-  _rev?: string; // optional as we may want to include the raw json in places
-  _deleted?: boolean;
-}
-
 // Type for the external format of Notebooks
 export interface EncodedNotebook {
   metadata: {[key: string]: any};
   'ui-specification': EncodedProjectUIModel;
 }
 
-export interface EncodedProjectUIModel extends EncodedCouchRecordFields {
+export interface EncodedProjectUIModel {
   fields: ProjectUIFields;
   fviews: ProjectUIViews; // conflicts with pouchdb views/indexes, hence fviews
   viewsets: ProjectUIViewsets;
   visible_types: string[];
 }
+export type CouchProjectUIModel =
+  PouchDB.Core.ExistingDocument<EncodedProjectUIModel>;
 
-export interface EncodedProjectMetadata extends EncodedCouchRecordFields {
+export type EncodedProjectMetadata = PouchDB.Core.Document<{
   _attachments?: PouchDB.Core.Attachments;
   is_attachment: boolean;
   metadata: any;
   single_attachment?: boolean;
-}
+}>;
 
 // This is used within the pouch/sync subsystem, do not use with form/ui
-export interface EncodedRecord extends EncodedCouchRecordFields {
+export type EncodedRecord = PouchDB.Core.Document<{
   _conflicts?: string[]; // Pouchdb conflicts array
   record_format_version: number;
   created: string;
@@ -202,7 +154,8 @@ export interface EncodedRecord extends EncodedCouchRecordFields {
   revisions: RevisionID[];
   heads: RevisionID[];
   type: FAIMSTypeName;
-}
+  _deleted?: boolean;
+}>;
 
 export type AttributeValuePairIDMap = {
   [field_name: string]: AttributeValuePairID;
@@ -736,82 +689,22 @@ export type CouchDocumentFields = z.infer<typeof CouchDocumentFieldsSchema>;
 export type ProjectMetadata = {[key: string]: any};
 
 // The UI specification
-
 // TODO use Zod for existing UI schema models to validate. Note that this is a
 // schema for an JSON notebook (fviews, not views). We refine this model so that
 // it cannot be undefined - Zod.custom by default allows undefined to validate
-export const UiSpecificationSchema = z
+export const EncodedUISpecificationSchema = z
   .custom<EncodedProjectUIModel>()
   .refine(val => !!val);
-export type UiSpecification = z.infer<typeof UiSpecificationSchema>;
+export type EncodedUISpecification = z.infer<
+  typeof EncodedUISpecificationSchema
+>;
+
+export const UISpecificationSchema = z
+  .custom<ProjectUIModel>()
+  .refine(val => !!val);
+export type UISpecification = z.infer<typeof UISpecificationSchema>;
 
 // Metadata schema
 // TODO use Zod for existing UI schema models to validate
 export const NotebookMetadataSchema = z.record(z.any());
 export type NotebookMetadata = z.infer<typeof NotebookMetadataSchema>;
-
-// =========
-// USER INFO
-// =========
-
-// Information about users and roles for a notebook
-export const NotebookAuthSummarySchema = z.object({
-  // What roles does the notebook have
-  roles: z.array(z.nativeEnum(Role)),
-  // users permissions for this notebook
-  users: z.array(
-    z.object({
-      name: z.string(),
-      username: z.string(),
-      roles: z.array(
-        z.object({
-          name: z.nativeEnum(Role),
-          value: z.boolean(),
-        })
-      ),
-    })
-  ),
-});
-export type NotebookAuthSummary = z.infer<typeof NotebookAuthSummarySchema>;
-
-// ==================
-// TEMPLATE DB MODELS
-// ==================
-
-// The editable properties for a template
-export const TemplateEditableDetailsSchema = z.object({
-  // The UI specification for this template
-  'ui-specification': UiSpecificationSchema,
-  // The metadata from the designer - copied into new notebooks
-  metadata: NotebookMetadataSchema,
-});
-export type TemplateEditableDetails = z.infer<
-  typeof TemplateEditableDetailsSchema
->;
-
-// The system/derived properties for a template
-export const TemplateDerivedDetailsSchema = z.object({
-  // Version identifier for the template
-  version: z.number().default(1),
-
-  // Is this owned by a team?
-  ownedByTeamId: z.string().min(1).optional(),
-});
-export type TemplateDerivedDetails = z.infer<
-  typeof TemplateDerivedDetailsSchema
->;
-
-// The template record is an intersection of the editable/derived fields
-export const TemplateDetailsSchema = z.intersection(
-  // Need to disable strictness here or it propagates in the intersection
-  TemplateEditableDetailsSchema,
-  TemplateDerivedDetailsSchema
-);
-export type TemplateDetails = z.infer<typeof TemplateDetailsSchema>;
-
-// The full encoded record including _id, extension of Details
-export const TemplateDocumentSchema = z.intersection(
-  TemplateDetailsSchema,
-  CouchDocumentFieldsSchema
-);
-export type TemplateDocument = z.infer<typeof TemplateDocumentSchema>;

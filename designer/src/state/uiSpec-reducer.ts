@@ -26,7 +26,6 @@ import {ConditionType} from '../components/condition';
 export const slugify = (str: string) => {
   str = str.trim();
   //str = str.toLowerCase();
-
   // remove accents, swap ñ for n, etc
   const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
   const to = 'aaaaaeeeeeiiiiooooouuuunc------';
@@ -348,7 +347,7 @@ export const uiSpecificationReducer = createSlice({
         state.fviews[viewId].label = label;
       } else {
         throw new Error(
-          `Can't update unknown section ${viewId} via sectionNameUpdated action`
+          `Can't update unknown section ${viewId} via sectionRenamed action`
         );
       }
     },
@@ -368,6 +367,79 @@ export const uiSpecificationReducer = createSlice({
         state.fviews[sectionId] = newSection;
         state.viewsets[viewSetId].views.push(sectionId);
       }
+    },
+    sectionDuplicated: (
+      state,
+      action: PayloadAction<{
+        sourceViewId: string;
+        destinationViewSetId?: string;
+        newSectionLabel: string;
+      }>
+    ) => {
+      const {sourceViewId, destinationViewSetId, newSectionLabel} =
+        action.payload;
+
+      if (!(sourceViewId in state.fviews)) {
+        throw new Error(`Source section ${sourceViewId} does not exist.`);
+      }
+
+      // Find the destination form.
+      let destViewSetId = destinationViewSetId;
+      if (!destViewSetId) {
+        for (const formId in state.viewsets) {
+          if (state.viewsets[formId].views.includes(sourceViewId)) {
+            destViewSetId = formId;
+            break;
+          }
+        }
+        if (!destViewSetId) {
+          throw new Error(
+            `Cannot determine the source form for section ${sourceViewId}.`
+          );
+        }
+      }
+
+      const newSectionId = destViewSetId + '-' + slugify(newSectionLabel);
+      if (newSectionId in state.fviews) {
+        throw new Error(
+          `Section ${newSectionLabel} already exists in form ${destViewSetId}.`
+        );
+      }
+
+      const sourceSection = state.fviews[sourceViewId];
+
+      // Create the new section, copying any condition that exists.
+      const newSection = {
+        label: newSectionLabel,
+        fields: [] as string[],
+        condition: sourceSection.condition,
+      };
+
+      // Duplicate each field to the new section.
+      for (const originalFieldName of sourceSection.fields) {
+        if (!(originalFieldName in state.fields)) continue;
+        const originalField = state.fields[originalFieldName];
+        const baseLabel =
+          originalField['component-parameters'].label || originalFieldName;
+        const newFieldLabel = baseLabel;
+        let fieldSlug = slugify(newFieldLabel);
+        let N = 1;
+        while (fieldSlug in state.fields) {
+          fieldSlug = slugify(newFieldLabel + ' ' + N);
+          N++;
+        }
+        // Deep copy
+        const newField: FieldType = JSON.parse(JSON.stringify(originalField));
+        newField['component-parameters'].label = newFieldLabel;
+        newField['component-parameters'].name = fieldSlug;
+        // Add the new field to the state and record it in the new section.
+        state.fields[fieldSlug] = newField;
+        newSection.fields.push(fieldSlug);
+      }
+
+      // Add the new section to the fviews and to the destination form's views list.
+      state.fviews[newSectionId] = newSection;
+      state.viewsets[destViewSetId].views.push(newSectionId);
     },
     sectionDeleted: (
       state,
@@ -613,6 +685,7 @@ export const {
   fieldDuplicated,
   sectionRenamed,
   sectionAdded,
+  sectionDuplicated,
   sectionDeleted,
   sectionMovedToForm,
   sectionMoved,
