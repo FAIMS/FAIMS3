@@ -1,6 +1,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
@@ -29,7 +30,7 @@ export function ProjectsRouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: 'Projects',
+        label: NOTEBOOK_NAME_CAPITALIZED + 's',
       },
     ],
     [pathname, isLoading]
