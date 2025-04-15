@@ -175,18 +175,16 @@ function MapWrapper(props: MapProps) {
     const triangleFeature = new Feature(new Point([0, 0]));
     const accuracyFeature = new Feature(new Point([0, 0]));
     positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
+
     const updateStyles = (
       coords: number[],
       heading: number,
       accuracy: number
     ) => {
-      const view = theMap.getView();
+      const pixelResolution = view.getResolution() ?? 1;
 
       // geometry
       dotFeature.setGeometry(new Point(coords));
-      triangleFeature.setGeometry(new Point(coords));
-      accuracyFeature.setGeometry(new Point(coords));
-
       // blue ocation circle)
       dotFeature.setStyle(
         new Style({
@@ -199,7 +197,21 @@ function MapWrapper(props: MapProps) {
         })
       );
 
+      // accuracy circle (scales with resolution)
+      accuracyFeature.setGeometry(new Point(coords));
+      const accuracyRadius = accuracy / pixelResolution;
+      accuracyFeature.setStyle(
+        new Style({
+          image: new CircleStyle({
+            radius: accuracyRadius,
+            fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
+            stroke: new Stroke({color: 'rgba(100, 149, 237, 0.4)', width: 1}),
+          }),
+        })
+      );
+
       // directional triangle
+      triangleFeature.setGeometry(new Point(coords));
       triangleFeature.setStyle(
         new Style({
           image: new RegularShape({
