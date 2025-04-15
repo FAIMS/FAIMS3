@@ -43,10 +43,11 @@ import {
   MigrationsDB,
   PeopleDB,
   PeopleDBFields,
+  PossibleConnectionInfo,
   ProjectDataObject,
+  ProjectDocument,
   ProjectID,
   ProjectMetaObject,
-  ProjectDocument,
   TeamsDB,
   TemplateDB,
 } from '@faims3/data-model';
@@ -308,15 +309,22 @@ export const getMetadataDb = async (
     );
   }
 
-  // Now get the metadata DB from the project document
-  if (!projectDoc.metadataDb) {
-    throw new Exceptions.InternalSystemError(
-      "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
-    );
+  // Now get the metadata DB from the project document (and be backwards
+  // compatible)
+  let db: PossibleConnectionInfo;
+  db = projectDoc.metadataDb;
+  if (!db) {
+    const doc = projectDoc as any;
+    db = doc.metadata_db;
+    if (!db) {
+      throw new Exceptions.InternalSystemError(
+        "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
+      );
+    }
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadataDb.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
   const pouch_options = pouchOptions();
 
   // Authorise against this DB
@@ -346,23 +354,28 @@ export const getDataDb = async (
 
   // Get the project doc for the given ID
   const projectDoc = await projectsDB.get(projectID);
-
-  // 404 if project doc not found
   if (!projectDoc) {
     throw new Exceptions.ItemNotFoundException(
       'Cannot find the given project ID in the projects database.'
     );
   }
 
-  // Now get the data DB for this project
-  if (!projectDoc.dataDb) {
-    throw new Exceptions.InternalSystemError(
-      "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
-    );
+  // Now get the metadata DB from the project document (and be backwards
+  // compatible)
+  let db: PossibleConnectionInfo;
+  db = projectDoc.dataDb;
+  if (!db) {
+    const doc = projectDoc as any;
+    db = doc.data_db;
+    if (!db) {
+      throw new Exceptions.InternalSystemError(
+        "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
+      );
+    }
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.dataDb.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
   const pouch_options = pouchOptions();
   // Authorize against this DB
   if (LOCAL_COUCHDB_AUTH !== undefined) {
