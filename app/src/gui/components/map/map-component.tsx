@@ -37,6 +37,13 @@ const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
+// fake gps flag for browser testing: window.__USE_FAKE_GPS__ = true; @TODO: ranisa remove later.
+declare global {
+  interface Window {
+    __USE_FAKE_GPS__?: boolean;
+  }
+}
+
 /**
  * canShowMapNear - can we show a map near this location?
  *
