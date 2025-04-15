@@ -70,7 +70,7 @@ export const RemoveUserFromProjectDialog = ({
               }
 
               queryClient.invalidateQueries({
-                queryKey: ['project-users', projectId],
+                queryKey: ['projectusers', projectId],
               });
 
               setOpen(false);

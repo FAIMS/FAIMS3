@@ -16,7 +16,7 @@ if (API_URL === '') {
 
 export const APP_URL =
   (import.meta.env.VITE_APP_URL as string | undefined) ?? '';
-if (API_URL === '') {
+if (APP_URL === '') {
   throw new Error('Missing required env variable VITE_APP_URL');
 }
 

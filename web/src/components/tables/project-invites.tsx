@@ -23,6 +23,7 @@ import {
 } from '../ui/tooltip';
 import {Button} from '../ui/button';
 import {toast} from 'sonner';
+import {NOTEBOOK_NAME} from '@/constants';
 
 export const useGetInviteColumns = ({
   projectId,
@@ -210,7 +211,7 @@ export const useGetInviteColumns = ({
                 <TooltipContent className="w-40 text-balance">
                   {!canRemove
                     ? 'You are not authorised to remove this invite'
-                    : 'Removes this invite from the project.'}
+                    : `Removes this invite from the ${NOTEBOOK_NAME}.`}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

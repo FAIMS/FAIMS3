@@ -44,7 +44,8 @@ export function CreateProjectForm({
       name: 'name',
       label: 'Name',
       schema: z.string().min(5, {
-        message: 'Project name must be at least 5 characters.',
+        message:
+          NOTEBOOK_NAME_CAPITALIZED + ' name must be at least 5 characters.',
       }),
     },
     {
@@ -116,7 +117,12 @@ export function CreateProjectForm({
       return {type: 'submit', message: 'No file or template selected'};
 
     const response = file
-      ? await createProjectFromFile({user, name, file, teamId: team})
+      ? await createProjectFromFile({
+          user,
+          name,
+          file,
+          teamId: specifiedTeam ?? team,
+        })
       : await createProjectFromTemplate({
           user,
           name,
@@ -125,7 +131,7 @@ export function CreateProjectForm({
         });
 
     if (!response.ok)
-      return {type: 'submit', message: 'Error creating project'};
+      return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}`};
 
     if (specifiedTeam || team) {
       QueryClient.invalidateQueries({

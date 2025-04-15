@@ -76,6 +76,7 @@ export class FaimsFrontEnd extends Construct {
 
   // derived property
   designerUrl: string;
+  faimsAppUrl: string;
 
   constructor(scope: Construct, id: string, props: FaimsFrontEndProps) {
     super(scope, id);
@@ -85,6 +86,7 @@ export class FaimsFrontEnd extends Construct {
 
     // use the first domain name to form canonical URL
     this.designerUrl = `https://${props.designerDomainNames[0]}`;
+    this.faimsAppUrl = `https://${props.faimsDomainNames[0]}`;
 
     // Main Faims frontend
     this.deployFaims(props);
@@ -320,6 +322,8 @@ export class FaimsFrontEnd extends Construct {
     const environment: {[key: string]: string} = {
       VITE_WEB_URL: `https://${props.webDomainName}`,
       VITE_API_URL: props.conductorUrl,
+      // FAIMS /app URL (uses first domain if multiple provided)
+      VITE_APP_URL: this.faimsAppUrl,
       VITE_DESIGNER_URL: this.designerUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
     };
