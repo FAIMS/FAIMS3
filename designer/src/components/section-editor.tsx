@@ -531,7 +531,7 @@ export const SectionEditor = ({
           <Typography variant="body1" sx={{mt: 0.5, mb: 1, fontWeight: 450}}>
             New Section Name
           </Typography>
-          <TextField
+          <DebouncedTextField
             fullWidth
             value={duplicateSectionName}
             onChange={e => setDuplicateSectionName(e.target.value)}
@@ -549,7 +549,9 @@ export const SectionEditor = ({
             options={duplicateFormOptions}
             getOptionLabel={option => option.label}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderInput={params => <TextField {...params} />}
+            renderInput={params => (
+              <DebouncedTextField {...params} onChange={() => {}} />
+            )}
           />
           {duplicateAlertMessage && (
             <Alert severity="error">{duplicateAlertMessage}</Alert>
