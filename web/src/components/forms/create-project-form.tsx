@@ -116,7 +116,12 @@ export function CreateProjectForm({
       return {type: 'submit', message: 'No file or template selected'};
 
     const response = file
-      ? await createProjectFromFile({user, name, file, teamId: team})
+      ? await createProjectFromFile({
+          user,
+          name,
+          file,
+          teamId: specifiedTeam ?? team,
+        })
       : await createProjectFromTemplate({
           user,
           name,
