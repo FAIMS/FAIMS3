@@ -46,7 +46,8 @@ export const ProjectFromTemplateDialog = () => {
           </Button>
         </TooltipTrigger>
         <TooltipContent className="w-32 text-balance">
-          Unable to create a project from an archived template.
+          Unable to create a {NOTEBOOK_NAME_CAPITALIZED} from an archived
+          template.
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
