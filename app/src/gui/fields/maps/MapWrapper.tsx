@@ -46,6 +46,13 @@ register(proj4);
 
 export type MapAction = 'save' | 'close';
 
+// // To simulate movement for PR: open browser console and set `window.__USE_FAKE_GPS__ = true`
+declare global {
+  interface Window {
+    __USE_FAKE_GPS__?: boolean;
+  }
+}
+
 interface MapProps extends ButtonProps {
   label: string;
   features: any;
@@ -93,31 +100,35 @@ function MapWrapper(props: MapProps) {
   // notifications
   const notify = useNotification();
 
-  const [positionLayer, setPositionLayer] = useState<VectorLayer>();
-  const watchIdRef = useRef<number | null>(null);
-
-  // ddd draw interaction with pin mark - can be imporved if needed
+  // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
     (theMap: Map, props: MapProps) => {
-      const source = new VectorSource();
-
-      const layer = new VectorLayer({
-        source: source,
-        style: new Style({
-          image: new Icon({
-            src: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png',
-            anchor: [0.5, 1],
-            scale: 1,
-          }),
-        }),
+      const vectorSource = new VectorSource();
+      // @TODO: RG - Strech goal to show a popup on click of any point with lat-long info
+      const pinIcon = new Icon({
+        src: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+        anchor: [0.5, 1],
+        scale: 0.07,
       });
 
-      const draw = new Draw({source, type: props.featureType || 'Point'});
-      const modify = new Modify({source});
+      const pinStyle = new Style({
+        image: pinIcon,
+      });
+
+      const layer = new VectorLayer({
+        source: vectorSource,
+        style: pinStyle,
+      });
+
+      const draw = new Draw({
+        source: vectorSource,
+        type: props.featureType || 'Point',
+      });
+      const modify = new Modify({source: vectorSource});
 
       // Only allow one point at a time
       draw.on('drawstart', () => {
-        source.clear();
+        vectorSource.clear();
       });
 
       if (props.features && props.features.type) {
@@ -125,194 +136,36 @@ function MapWrapper(props: MapProps) {
           dataProjection: 'EPSG:4326',
           featureProjection: theMap.getView().getProjection(),
         });
-        source.addFeatures(parsedFeatures);
+        vectorSource.addFeatures(parsedFeatures);
 
-        const extent = source.getExtent();
+        const extent = vectorSource.getExtent();
         if (!extent.includes(Infinity)) setFeaturesExtent(extent);
       }
-
-      draw.on('drawstart', () => {
-        source.clear(); // 1 pin
-      });
 
       theMap.addLayer(layer);
       theMap.addInteraction(draw);
       theMap.addInteraction(modify);
-      setFeaturesLayer(layer); // layr clenaup
+      setFeaturesLayer(layer);
     },
     [geoJson, setFeaturesExtent]
   );
-
-  //  Stop tracking live GPS
-  const stopTracking = () => {
-    if (watchIdRef.current) {
-      clearInterval(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-    if (map && positionLayer) {
-      positionLayer.getSource()?.clear();
-      map.removeLayer(positionLayer);
-      setPositionLayer(undefined);
-    }
-  };
-
-  /// Live location + direction + accuracy style
-  const startLocationTracking = (theMap: Map) => {
-    stopTracking(); // Clear previous tracking
-
-    const view = theMap.getView();
-    const projection = view.getProjection();
-
-    const positionSource = new VectorSource();
-    const layer = new VectorLayer({
-      source: positionSource,
-      zIndex: 999,
-    });
-    theMap.addLayer(layer);
-    setPositionLayer(layer);
-
-    const dotFeature = new Feature(new Point([0, 0]));
-    const triangleFeature = new Feature(new Point([0, 0]));
-    const accuracyFeature = new Feature(new Point([0, 0]));
-    positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
-
-    const updateStyles = (
-      coords: number[],
-      heading: number,
-      accuracy: number
-    ) => {
-      const pixelResolution = view.getResolution() ?? 1;
-
-      // geometry
-      dotFeature.setGeometry(new Point(coords));
-      // blue ocation circle)
-      dotFeature.setStyle(
-        new Style({
-          image: new CircleStyle({
-            radius: 14,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: '#A19F9FFF', width: 3}),
-          }),
-          zIndex: 1000,
-        })
-      );
-
-      // accuracy circle (scales with resolution)
-      accuracyFeature.setGeometry(new Point(coords));
-      const accuracyRadius = accuracy / pixelResolution;
-      accuracyFeature.setStyle(
-        new Style({
-          image: new CircleStyle({
-            radius: accuracyRadius,
-            fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
-            stroke: new Stroke({color: 'rgba(100, 149, 237, 0.4)', width: 1}),
-          }),
-        })
-      );
-
-      // directional triangle
-      triangleFeature.setGeometry(new Point(coords));
-      triangleFeature.setStyle(
-        new Style({
-          image: new RegularShape({
-            points: 3,
-            radius: 12, // distance from center to each point
-            rotation: heading + Math.PI, // flip to base the (dot)
-            angle: Math.PI, // vertex up
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: 'white', width: 2}),
-          }),
-          geometry: () => {
-            const px = theMap.getPixelFromCoordinate(coords);
-            const offset = 22;
-            const dx = offset * Math.sin(heading);
-            const dy = -offset * Math.cos(heading);
-            const offsetPx = [px[0] + dx, px[1] + dy];
-            return new Point(theMap.getCoordinateFromPixel(offsetPx));
-          },
-          zIndex: 1001,
-        })
-      );
-
-      // aaccuracy circle
-      accuracyFeature.setStyle(
-        new Style({
-          image: new CircleStyle({
-            radius: Math.max(25, accuracy / 2),
-            fill: new Fill({color: 'rgba(100, 149, 237, 0.1)'}),
-            stroke: new Stroke({color: 'rgba(100, 149, 237, 0.3)', width: 1}),
-          }),
-        })
-      );
-    };
-
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const coords = transform(
-          [pos.coords.longitude, pos.coords.latitude],
-          'EPSG:4326',
-          projection
-        );
-        view.setCenter(coords);
-        view.setZoom(17);
-      },
-      err => {
-        console.error('Initial GPS error', err);
-        props.setNoPermission(true);
-      },
-      {enableHighAccuracy: true}
-    );
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      pos => {
-        const coords = transform(
-          [pos.coords.longitude, pos.coords.latitude],
-          'EPSG:4326',
-          projection
-        );
-        const heading = pos.coords.heading ?? 0;
-        const accuracy = pos.coords.accuracy ?? 30;
-        updateStyles(coords, heading, accuracy);
-      },
-      err => {
-        console.error('Live GPS error', err);
-        props.setNoPermission(true);
-      },
-      {enableHighAccuracy: true, maximumAge: 0, timeout: 10000}
-    );
-  };
-
-  //  ini.  load & cleanup
-  useEffect(() => {
-    if (mapOpen && map) {
-      addDrawInteraction(map, props);
-      startLocationTracking(map);
-    }
-    return stopTracking;
-  }, [mapOpen, map]);
-
-  useEffect(() => {
-    if (map) addDrawInteraction(map, props);
-  }, [map]);
 
   // save cleanr and close
   const handleClose = (action: MapAction | 'clear') => {
     if (!map) return;
 
-    if (featuresLayer) {
-      map.removeLayer(featuresLayer); // Remove previous layer
-      setFeaturesLayer(undefined);
-    }
-
     const source = featuresLayer?.getSource();
-    const features = source?.getFeatures() ?? [];
 
     if (action === 'clear') {
-      console.log('Inside clear');
-      props.setFeatures({}, 'save'); // Clear pin from state
-      addDrawInteraction(map, props); // re-ad draw layer
+      source?.clear();
       return;
     }
+    const features = source?.getFeatures() ?? [];
+
+    if (featuresLayer) {
+      featuresLayer?.getSource()?.clear(); // just clear features, don’t remove layer
+    }
+
     // action save
     if (action === 'save') {
       if (!features.length) {
@@ -321,8 +174,8 @@ function MapWrapper(props: MapProps) {
       }
 
       const geoJsonFeatures = geoJson.writeFeaturesObject(features, {
-        featureProjection: map.getView().getProjection(),
-        dataProjection: 'EPSG:4326',
+        featureProjection: map.getView().getProjection(), // EPSG:3857
+        dataProjection: 'EPSG:4326', // convert back to EPSG:4326
       });
 
       props.setFeatures(geoJsonFeatures, 'save');
@@ -342,14 +195,22 @@ function MapWrapper(props: MapProps) {
     setMapOpen(true);
     setTimeout(() => {
       if (map) {
-        startLocationTracking(map);
+        map.getLayers().forEach(layer => {
+          if (layer.getZIndex?.() === 999) map.removeLayer(layer); // remove old layer
+        });
+        map.updateSize(); // resize in case of fullscreen bug
+        map.getView().setZoom(props.zoom || 17);
       }
-    }, 300); // adding delaye intentionally so map tracking instantiastes
+    }, 300); // delay to ensure DOM is ready
   };
+
+  // always re-apply draw interaction if maps open.
+  useEffect(() => {
+    if (mapOpen && map) addDrawInteraction(map, props);
+  }, [mapOpen, map]);
 
   return (
     <>
-      <div className="mapInputWidget">TEST CSS WORKING</div>
       <div>
         {!props.isLocationSelected ? (
           <Button
@@ -579,6 +440,13 @@ function MapWrapper(props: MapProps) {
           </DialogActions>
         </Dialog>
       </div>
+      <style>
+        {`
+    .ol-layer canvas {
+      will-change: unset !important;
+    }
+  `}
+      </style>
     </>
   );
 }
