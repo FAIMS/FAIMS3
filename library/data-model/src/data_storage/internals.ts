@@ -19,7 +19,6 @@
  */
 
 import {v4 as uuidv4} from 'uuid';
-
 import {HRID_STRING} from '../datamodel/core';
 import {
   getAttachmentDumperForType,
@@ -31,7 +30,7 @@ import {
   getHridFieldNameForViewset,
   getIdsByFieldName,
   HridFieldMap,
-} from '../index';
+} from '../utils';
 import {
   Annotations,
   AttributeValuePair,
@@ -1029,7 +1028,7 @@ export async function initialiseRecordForNewRevision({
     revisions: [revision_id],
     heads: [revision_id],
     type: record.type,
-  };
+  } satisfies EncodedRecord;
   try {
     await dataDb.put(new_encoded_record);
   } catch (err) {

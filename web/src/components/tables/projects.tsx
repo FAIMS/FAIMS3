@@ -2,6 +2,7 @@ import {GetNotebookListResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {TeamCellComponent} from './cells/team-cell';
+import {TemplateCellComponent} from './cells/template-cell';
 
 export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
   {
@@ -23,6 +24,22 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
     }) => {
       return ownedByTeamId ? (
         <TeamCellComponent teamId={ownedByTeamId} />
+      ) : null;
+    },
+  },
+  {
+    id: 'template',
+    accessorKey: 'template_id',
+    header: ({column}) => (
+      <DataTableColumnHeader column={column} title="Template" />
+    ),
+    cell: ({
+      row: {
+        original: {template_id},
+      },
+    }) => {
+      return template_id ? (
+        <TemplateCellComponent templateId={template_id} />
       ) : null;
     },
   },

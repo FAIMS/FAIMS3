@@ -1,6 +1,17 @@
 import PouchDB from 'pouchdb';
 import PouchDBSecurity from 'pouchdb-security-helper';
+import {z} from 'zod';
 PouchDB.plugin(PouchDBSecurity);
+
+// Zod schema for the document and existing document couch interfaces
+export const CouchDocumentSchema = z.object({
+  _id: z.string().min(1),
+  _rev: z.string().min(1).optional(),
+});
+export const CouchExistingDocumentSchema = z.object({
+  _id: z.string().min(1),
+  _rev: z.string().min(1),
+});
 
 /**
  * Converts a JavaScript function to a CouchDB-compatible string representation.

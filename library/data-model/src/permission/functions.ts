@@ -9,13 +9,8 @@ import {
   roleDetails,
   RoleScope,
 } from './model';
-import {
-  decodeAndValidateToken,
-  DecodedTokenPermissions,
-  encodeClaim,
-  ResourceRole,
-  TokenPermissions,
-} from './tokenEncoding';
+import {decodeAndValidateToken, encodeClaim} from './tokenEncoding';
+import {TokenPermissions, DecodedTokenPermissions, ResourceRole} from './types';
 
 /**
  * Determines if a token authorizes an action on a resource

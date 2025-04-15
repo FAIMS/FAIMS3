@@ -29,8 +29,11 @@ jobs:
     needs: check_date
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     continue-on-error: false
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+ 
     steps:
-      # note not using Turbo build as it caused a problem with missing assets
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Cache node modules
@@ -44,6 +47,21 @@ jobs:
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
             ${{ runner.os }}-
+      - name: Configure Turborepo Remote Cache
+        run: |
+          mkdir -p .turbo
+          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
+            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
+            echo "Turborepo config file created at .turbo/config.json"
+          else
+            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
+          fi
+          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
+            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
+          else
+            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
+          fi
+            
       - name: Install jq
         run: |
           brew update
@@ -95,6 +113,9 @@ jobs:
           export VITE_APP_NAME="${{vars.APP_NAME}}"
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
           npm ci --python=python3.10
+          # we install these here because of a bug in npm with platform specific
+          # dependencies
+          npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
           npm run build
       - name: Update IOS Build
         run: |
@@ -102,6 +123,10 @@ jobs:
           npx cap update ios
           npx cap sync --deployment ios
           cd ios/App; pod install
+      - name: Set up XCode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:

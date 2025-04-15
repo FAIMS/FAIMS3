@@ -76,7 +76,7 @@ Fastlane certificates repository.
 
 `APPLE_KEY_ID` - The key id from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
 `APPLE_ISSUER_ID` - the Issuer ID from the 'Team Key' in App Store Connect.  Look under Users and Access > Integrations > App Store Connect API for Team Keys.
-`APPLE_KEY_CONTENT` - base64 encoded content of the key file. You can only download this on creation of the key.
+`APPLE_KEY_CONTENT` - Content of the key file (not encoded). You can only download this on creation of the key.
 
 `BROWSERSTACK_USERNAME` - username on BrowserStack (for app testing);
 'BROWSERSTACK_ACCESS_KEY` - api access key for BrowserStack.
@@ -101,3 +101,16 @@ the Fastlane `update_app_identifier` action which can do this
 during the build. For now we will keep the Fieldmark id to the
 one that's been in use so far but when we want a BSS release
 we'll need it to be updated.
+
+## Note on Development Team
+
+The setting `APP_STORE_CONNECT_TEAM_ID` is required in the build and must match
+the identity of the team that generated the certificates used by `fastlane match`.
+This team name is mentioned in the file `app/ios/App/App.xcodeproj/project.pbxproj`
+but we've had problems with the build if we don't explicitly include the value
+in that file.   There is code in `Fastfile` to update it to the configured
+value. We've not yet verified that this works.  
+
+It may be necessary to change the value of DEVELOPMENT_TEAM in the project file
+if you want to deploy from a different team.
+
