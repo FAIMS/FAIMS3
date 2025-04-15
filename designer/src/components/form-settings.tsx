@@ -180,9 +180,30 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     });
   };
 
+  // Make sure that all our selected summary fields are valid.
+  // If any summary field isn't present, tell redux.
+  // Not sure if we should be doing this here but it works for now.
+  React.useEffect(() => {
+    if (viewSet && viewSet.summary_fields) {
+      const validSummaryFieldIds = viewSet.summary_fields.filter(
+        fieldId => fields[fieldId] !== undefined
+      );
+      if (validSummaryFieldIds.length !== viewSet.summary_fields.length) {
+        dispatch({
+          type: 'ui-specification/viewSetSummaryFieldsUpdated',
+          payload: {viewSetId, fields: validSummaryFieldIds},
+        });
+      }
+    }
+  }, [dispatch, viewSet, fields, viewSetId]);
+
+  // Compute selected fields using only valid options,
+  // filtering out any undefined values (which occur if the field was deleted).
   const selectedFields = (viewSet.summary_fields || [])
     .map(fieldId => fieldOptions.find(opt => opt.value === fieldId))
-    .filter((x): x is {label: string; value: string} => x !== null);
+    .filter(
+      (x): x is {label: string; value: string} => x !== null && x !== undefined
+    );
 
   const selectedHridField = viewSet.hridField
     ? hridFieldOptions.find(opt => opt.value === viewSet.hridField) || null
