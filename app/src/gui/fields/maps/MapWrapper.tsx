@@ -93,15 +93,8 @@ function MapWrapper(props: MapProps) {
   // notifications
   const notify = useNotification();
 
-  // trakcing user's real-time location, make precise after test inputs-  @todo ranisa
-  const [positionFeature, setPositionFeature] = useState<Feature<Point> | null>(
-    null
-  );
   const [positionLayer, setPositionLayer] = useState<VectorLayer>();
   const watchIdRef = useRef<number | null>(null);
-  const [accuracyFeature, setAccuracyFeature] = useState<Feature<Point> | null>(
-    null
-  );
 
   // ddd draw interaction with pin mark - can be imporved if needed
   const addDrawInteraction = useCallback(
