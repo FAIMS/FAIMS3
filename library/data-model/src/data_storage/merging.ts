@@ -20,8 +20,7 @@
  *   merging by humans.
  */
 
-import {getDataDB} from '../index';
-
+import {getDataDB} from '../callbacks';
 import {
   AttributeValuePairIDMap,
   DataDbType,

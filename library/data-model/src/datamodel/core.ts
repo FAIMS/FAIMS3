@@ -22,6 +22,7 @@
  */
 
 import {
+  CouchProjectUIModel,
   EncodedProjectUIModel,
   FullyResolvedRecordID,
   ProjectUIModel,
@@ -71,11 +72,25 @@ export const decodeUiSpec = (
   rawUiSpec: EncodedProjectUIModel
 ): ProjectUIModel => {
   return {
-    _id: rawUiSpec._id,
-    _rev: rawUiSpec._rev,
     fields: rawUiSpec.fields,
     views: rawUiSpec.fviews,
     viewsets: rawUiSpec.viewsets,
     visible_types: rawUiSpec.visible_types,
+  };
+};
+
+/**
+ * converts the encoded UI spec representation into the normal one
+ * @param rawUiSpec The raw encoded spec
+ * @returns Normal functional spec
+ */
+export const decodeCouchUiSpec = (
+  rawUiSpec: CouchProjectUIModel
+): ProjectUIModel => {
+  const {_id, _rev, ...spec} = rawUiSpec;
+  return {
+    _id,
+    _rev,
+    ...decodeUiSpec(spec),
   };
 };

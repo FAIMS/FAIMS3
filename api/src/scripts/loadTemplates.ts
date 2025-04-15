@@ -1,7 +1,6 @@
 /* eslint-disable n/no-process-exit */
 import {readFileSync} from 'fs';
 import {createTemplate} from '../couchdb/templates';
-import {TemplateEditableDetails} from '@faims3/data-model';
 
 const extension = (filename: string) => {
   return (
@@ -14,9 +13,9 @@ const loadTemplate = async (filename: string) => {
   try {
     console.log('loading', filename);
     const jsonText = readFileSync(filename, 'utf-8');
-    const templateSpec: TemplateEditableDetails = JSON.parse(jsonText);
+    const templateSpec = JSON.parse(jsonText);
 
-    const result = await createTemplate({payload : templateSpec});
+    const result = await createTemplate({payload: templateSpec});
     console.log('created template', result._id);
     process.exit(0);
   } catch (error) {

@@ -12,13 +12,14 @@ import {
 } from '../src/permission/helpers';
 import {Action, Resource, Role} from '../src/permission/model';
 import {
-  COUCHDB_ROLES_PATH,
-  decodeAndValidateToken,
   DecodedTokenPermissions,
+  TokenPermissions,
+} from '../src/permission/types';
+import {COUCHDB_ROLES_PATH, ENCODING_SEPARATOR} from '../src/constants';
+import {
+  decodeAndValidateToken,
   decodePerResourceStatement,
   encodeToken,
-  ENCODING_SEPARATOR,
-  TokenPermissions,
 } from '../src/permission/tokenEncoding';
 
 beforeEach(() => {
