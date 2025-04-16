@@ -27,7 +27,7 @@
           "label": "HRID Field",
           "fullWidth": true,
           "name": "hridMain-New-Section",
-          "helperText": "Human Readable ID",
+          "helperText": "",
           "required": true,
           "template": "{{Text-Field}}-{{Select}}",
           "InputProps": {
@@ -65,7 +65,7 @@
         "component-parameters": {
           "label": "Text Field",
           "fullWidth": true,
-          "helperText": "Enter text",
+          "helperText": "",
           "variant": "outlined",
           "required": true,
           "InputProps": {
@@ -100,7 +100,7 @@
         "component-parameters": {
           "label": "Multi Select",
           "fullWidth": true,
-          "helperText": "Choose items from the dropdown",
+          "helperText": "",
           "variant": "outlined",
           "required": true,
           "select": true,
@@ -152,7 +152,7 @@
         "component-parameters": {
           "label": "Select",
           "fullWidth": true,
-          "helperText": "Choose a value from the dropdown",
+          "helperText": "",
           "required": true,
           "ElementProps": {
             "options": [
@@ -199,7 +199,7 @@
         "component-parameters": {
           "label": "Date and Time",
           "fullWidth": true,
-          "helperText": "And a calendar prompt with a timestamp.",
+          "helperText": "",
           "variant": "outlined",
           "required": true,
           "InputProps": {
@@ -235,7 +235,7 @@
           "label": "File Upload",
           "name": "File-Upload",
           "id": "file-upload-field",
-          "helperText": "Choose a file",
+          "helperText": "",
           "required": true
         },
         "validationSchema": [
@@ -315,7 +315,7 @@
               }
             ]
           },
-          "helperText": "Make sure you choose the right one!"
+          "helperText": ""
         },
         "validationSchema": [
           [
@@ -347,7 +347,7 @@
           "id": "checkbox-field",
           "required": true,
           "type": "checkbox",
-          "helperText": "Checkbox help."
+          "helperText": ""
         },
         "validationSchema": [
           [
@@ -375,7 +375,7 @@
         "type-returned": "faims-attachment::Files",
         "component-parameters": {
           "name": "Photo",
-          "helperText": "Take a photo",
+          "helperText": "",
           "label": "Photo",
           "required": true
         },
@@ -420,7 +420,7 @@
         "component-parameters": {
           "fullWidth": true,
           "name": "GPS-Location",
-          "helperText": "Click to save current location",
+          "helperText": "",
           "variant": "outlined",
           "label": "GPS Location",
           "required": true
@@ -456,7 +456,7 @@
           "name": "QR",
           "required": true,
           "label": "QR",
-          "helperText": "Scan QR Code on the sample"
+          "helperText": ""
         },
         "validationSchema": [
           [
@@ -483,7 +483,7 @@
         "component-name": "AddressField",
         "type-returned": "faims-core::JSON",
         "component-parameters": {
-          "helperText": "Enter your address",
+          "helperText": "",
           "required": true,
           "name": "Address",
           "label": "Address"

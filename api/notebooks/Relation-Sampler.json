@@ -25,7 +25,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Helper Text",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -63,7 +63,7 @@
           "label": "hridField",
           "fullWidth": true,
           "name": "hridForm-Section",
-          "helperText": "Human Readable ID",
+          "helperText": "",
           "required": true,
           "template": "{{Name}}",
           "InputProps": {
@@ -101,7 +101,7 @@
         "component-parameters": {
           "label": "Name",
           "fullWidth": true,
-          "helperText": "Enter text",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -137,7 +137,7 @@
           "label": "ID",
           "fullWidth": true,
           "name": "hridWidget-Main",
-          "helperText": "Human Readable ID",
+          "helperText": "",
           "required": true,
           "template": "{{Name-2}}",
           "InputProps": {
@@ -175,7 +175,7 @@
         "component-parameters": {
           "label": "Widgets in Company",
           "fullWidth": true,
-          "helperText": "Add widgets to this thing.",
+          "helperText": "",
           "required": false,
           "related_type": "Widget",
           "relation_type": "faims-core::Child",
@@ -212,7 +212,7 @@
         "component-parameters": {
           "label": "Factories",
           "fullWidth": true,
-          "helperText": "Add one or more related factories",
+          "helperText": "",
           "required": false,
           "related_type": "Form",
           "relation_type": "faims-core::Linked",
