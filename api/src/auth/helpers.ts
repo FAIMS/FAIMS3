@@ -154,7 +154,7 @@ export const redirectWithToken = async ({
   redirect: string;
 }) => {
   // Generate a refresh token
-  const {exchangeToken} = await createNewRefreshToken(user._id);
+  const {exchangeToken} = await createNewRefreshToken({userId: user._id});
 
   // Append the token to the redirect URL with exchange token and server ID
   // (this helps multi server clients know who is redirecting back)

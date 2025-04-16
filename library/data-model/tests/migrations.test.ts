@@ -890,6 +890,7 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       // New fields added by migration
       exchangeTokenHash: 'fake',
       exchangeTokenUsed: true,
+      exchangeTokenExpiryTimestampMs: 0
     } as RefreshRecordV2ExistingDocument,
     expectedResult: {action: 'update'},
     equalityFunction: areDocsEqual,
@@ -941,6 +942,7 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       // New fields added by migration
       exchangeTokenHash: 'fake',
       exchangeTokenUsed: true,
+      exchangeTokenExpiryTimestampMs: 0
     } as RefreshRecordV2ExistingDocument,
     expectedResult: {action: 'update'},
     equalityFunction: areDocsEqual,
@@ -974,6 +976,7 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       // New fields added by migration
       exchangeTokenHash: 'fake',
       exchangeTokenUsed: true,
+      exchangeTokenExpiryTimestampMs: 0
       // Extra fields should be dropped
       // createdAt,
       // lastUsed,

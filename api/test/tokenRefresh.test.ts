@@ -217,7 +217,9 @@ describe('token refresh tests', () => {
     expect(valid.validationError).to.not.be.undefined;
 
     // Now generate a new token with a very short expiry
-    refresh = (await createNewRefreshToken(localUser._id!, 10)).refresh.token;
+    refresh = (
+      await createNewRefreshToken({userId: localUser._id!, refreshExpiryMs: 10})
+    ).refresh.token;
 
     // Wait until it expires
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -291,9 +293,9 @@ describe('token refresh tests', () => {
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // Create refresh token with exchange token using the existing function
-    const {refresh, exchangeToken} = await createNewRefreshToken(
-      localUser.user_id!
-    );
+    const {refresh, exchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // Verify the tokens exist and are strings
     expect(exchangeToken).to.be.a('string');
@@ -324,9 +326,9 @@ describe('token refresh tests', () => {
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // Create refresh token with exchange token
-    const {refresh, exchangeToken} = await createNewRefreshToken(
-      localUser.user_id!
-    );
+    const {refresh, exchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // Exchange the token for access and refresh tokens
     const response = await request(app)
@@ -357,7 +359,9 @@ describe('token refresh tests', () => {
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // Create refresh token with exchange token
-    const {exchangeToken} = await createNewRefreshToken(localUser.user_id!);
+    const {exchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // First exchange should succeed
     await request(app)
@@ -390,7 +394,9 @@ describe('token refresh tests', () => {
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // Create refresh token with exchange token for local user
-    const {exchangeToken} = await createNewRefreshToken(localUser.user_id!);
+    const {exchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // Exchange should succeed when not authenticated
     await request(app)
@@ -401,9 +407,9 @@ describe('token refresh tests', () => {
       .expect(200);
 
     // Create another token for testing with authentication
-    const {exchangeToken: secondExchangeToken} = await createNewRefreshToken(
-      localUser.user_id!
-    );
+    const {exchangeToken: secondExchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // Exchange should succeed when authenticated as the same user
     await requestAuthAndType(
@@ -416,9 +422,9 @@ describe('token refresh tests', () => {
     ).expect(200);
 
     // Create a third token for testing with wrong authentication
-    const {exchangeToken: thirdExchangeToken} = await createNewRefreshToken(
-      localUser.user_id!
-    );
+    const {exchangeToken: thirdExchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // Exchange should fail when authenticated as a different user
     await requestAuthAndType(
@@ -436,7 +442,9 @@ describe('token refresh tests', () => {
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // Create refresh token with exchange token
-    const {exchangeToken} = await createNewRefreshToken(localUser.user_id!);
+    const {exchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // Exchange the token for access and refresh tokens
     const exchangeResponse = await request(app)
@@ -470,9 +478,9 @@ describe('token refresh tests', () => {
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // Create refresh token with exchange token
-    const {refresh, exchangeToken} = await createNewRefreshToken(
-      localUser.user_id!
-    );
+    const {refresh, exchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+    });
 
     // Exchange the token for access and refresh tokens
     const exchangeResponse = await request(app)
@@ -502,10 +510,10 @@ describe('token refresh tests', () => {
     const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
 
     // Create a refresh token with a short expiry
-    const {exchangeToken} = await createNewRefreshToken(
-      localUser.user_id!,
-      500
-    );
+    const {exchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+      refreshExpiryMs: 500,
+    });
 
     // Immediately exchange it (should work)
     await request(app)
@@ -516,10 +524,10 @@ describe('token refresh tests', () => {
       .expect(200);
 
     // Create another with even shorter expiry for testing expiration
-    const {exchangeToken: shortExchangeToken} = await createNewRefreshToken(
-      localUser.user_id!,
-      10
-    );
+    const {exchangeToken: shortExchangeToken} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+      refreshExpiryMs: 10,
+    });
 
     // Wait for it to expire
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -529,6 +537,39 @@ describe('token refresh tests', () => {
       .post('/api/auth/exchange')
       .send({
         exchangeToken: shortExchangeToken,
+      } satisfies PostExchangeTokenInput)
+      .expect(400);
+
+    // Create a refresh token with a short exchange expiry
+    const {exchangeToken: shortExchangeToken2} = await createNewRefreshToken({
+      userId: localUser.user_id!,
+      exchangeExpiryMs: 500,
+    });
+
+    // Immediately exchange it (should work)
+    await request(app)
+      .post('/api/auth/exchange')
+      .send({
+        exchangeToken: shortExchangeToken2,
+      } satisfies PostExchangeTokenInput)
+      .expect(200);
+
+    // Create another with even shorter exchange expiry for testing expiration
+    const {exchangeToken: veryShortExchangeToken} = await createNewRefreshToken(
+      {
+        userId: localUser.user_id!,
+        exchangeExpiryMs: 10,
+      }
+    );
+
+    // Wait for it to expire
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Attempt to use expired exchange token
+    await request(app)
+      .post('/api/auth/exchange')
+      .send({
+        exchangeToken: veryShortExchangeToken,
       } satisfies PostExchangeTokenInput)
       .expect(400);
   });

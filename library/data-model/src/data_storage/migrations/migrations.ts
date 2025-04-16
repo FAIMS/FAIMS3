@@ -290,6 +290,8 @@ export const authV1toV2Migration: MigrationFunc = doc => {
         // Just put in fake data here to satisfy model
         exchangeTokenHash: 'fake',
         exchangeTokenUsed: true,
+        // This is expired / invalid
+        exchangeTokenExpiryTimestampMs: 0,
       } satisfies RefreshRecordV2ExistingDocument,
     };
   }

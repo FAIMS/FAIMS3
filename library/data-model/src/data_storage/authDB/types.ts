@@ -95,6 +95,8 @@ export const RefreshRecordV2FieldsSchema = RefreshRecordV1FieldsSchema.extend({
   // New fields for V2 - only for refresh tokens
   exchangeTokenHash: z.string(),
   exchangeTokenUsed: z.boolean(),
+  // When does the exchange token expire?
+  exchangeTokenExpiryTimestampMs: z.number(),
 });
 
 // V2 - Email code schema remains the same as V1

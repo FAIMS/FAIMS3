@@ -22,6 +22,8 @@ import {getCouchUserFromEmailOrUsername} from './users';
 
 // Expiry time in hours
 const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
+// 5 minutes
+const EXCHANGE_EXPIRY_MS = 60 * 1000 * 5;
 
 /**
  * Generates an expiry timestamp for a refresh token.
@@ -43,10 +45,18 @@ function generateExpiryTimestamp(expiryMs: number): number {
  * @param userId The ID of the user for whom the token is being created.
  * @returns A Promise that resolves to the newly created AuthRecord.
  */
-export const createNewRefreshToken = async (
-  userId: string,
-  expiryMs: number = TOKEN_EXPIRY_MS
-): Promise<{refresh: RefreshRecordExistingDocument; exchangeToken: string}> => {
+export const createNewRefreshToken = async ({
+  userId,
+  refreshExpiryMs = TOKEN_EXPIRY_MS,
+  exchangeExpiryMs = EXCHANGE_EXPIRY_MS,
+}: {
+  userId: string;
+  refreshExpiryMs?: number;
+  exchangeExpiryMs?: number;
+}): Promise<{
+  refresh: RefreshRecordExistingDocument;
+  exchangeToken: string;
+}> => {
   const authDB = getAuthDB();
 
   // Generate a new UUID for the token
@@ -54,22 +64,22 @@ export const createNewRefreshToken = async (
   const dbId = AUTH_RECORD_ID_PREFIXES.refresh + uuidv4();
 
   // Set expiry to configured duration
-  const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
+  const refreshExpiry = generateExpiryTimestamp(refreshExpiryMs);
+  const exchangeExpiry = generateExpiryTimestamp(exchangeExpiryMs);
 
   // Create the exchange token
   const code = generateVerificationCode();
   const hash = hashVerificationCode(code);
-
-  // TODO generate code here
   const newRefreshToken: RefreshRecordFields = {
     documentType: 'refresh',
     userId,
+    expiryTimestampMs: refreshExpiry,
     token,
-    expiryTimestampMs,
     enabled: true,
     // this is the HASH of the exchange token (to be looked up later)
     exchangeTokenHash: hash,
     exchangeTokenUsed: false,
+    exchangeTokenExpiryTimestampMs: exchangeExpiry,
   };
 
   // Create a new document in the database
@@ -137,7 +147,13 @@ export const consumeExchangeTokenForRefreshToken = async ({
       return {valid: false, validationError: 'Token is not enabled.'};
     }
 
-    // Check if the token has expired
+    // Check if the exchangeToken has expired (this is more likely as it has a
+    // short duration)
+    if (tokenDoc.exchangeTokenExpiryTimestampMs < Date.now()) {
+      return {valid: false, validationError: 'Exchange token has expired'};
+    }
+
+    // Check if the refresh token has expired
     if (tokenDoc.expiryTimestampMs < Date.now()) {
       return {valid: false, validationError: 'Token has expired'};
     }
