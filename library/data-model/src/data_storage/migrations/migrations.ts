@@ -200,8 +200,8 @@ export const projectsV1toV2Migration: MigrationFunc = doc => {
 
     // we check these to be defined above (just force the migration here - it is
     // probably the best option as deleting a project could result in data loss)
-    dataDb: inputDoc.data_db ?? undefined as any,
-    metadataDb: inputDoc.metadata_db ?? undefined as any,
+    dataDb: inputDoc.data_db ?? (undefined as any),
+    metadataDb: inputDoc.metadata_db ?? (undefined as any),
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -290,7 +290,7 @@ export const authV1toV2Migration: MigrationFunc = doc => {
         // Just put in fake data here to satisfy model
         exchangeToken: 'fake',
         exchangeTokenUsed: true,
-      } satisfies RefreshRecordV2ExistingDocument & any,
+      } satisfies RefreshRecordV2ExistingDocument,
     };
   }
 };

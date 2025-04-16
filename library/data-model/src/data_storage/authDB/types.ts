@@ -5,16 +5,10 @@ import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 // V1 Definition
 // =============
 
-// V1 - Common base for all auth record types
-export const AuthRecordBaseV1FieldsSchema = z.object({
-  // Version (internally incremented upon update)
-  version: z.number().min(1),
+// V1 - Refresh token schema
+export const RefreshRecordV1FieldsSchema = z.object({
   // When does it expire? unix timestamp in ms
   expiryTimestampMs: z.number(),
-});
-
-// V1 - Refresh token schema
-export const RefreshRecordV1FieldsSchema = AuthRecordBaseV1FieldsSchema.extend({
   // Discriminator field
   documentType: z.literal('refresh'),
   // Which user ID has this refresh token
@@ -26,7 +20,9 @@ export const RefreshRecordV1FieldsSchema = AuthRecordBaseV1FieldsSchema.extend({
 });
 
 // V1 - Email code schema
-export const EmailCodeV1FieldsSchema = AuthRecordBaseV1FieldsSchema.extend({
+export const EmailCodeV1FieldsSchema = z.object({
+  // When does it expire? unix timestamp in ms
+  expiryTimestampMs: z.number(),
   // Discriminator field
   documentType: z.literal('emailcode'),
   // Which user ID generated this code?
@@ -64,7 +60,6 @@ export type RefreshRecordV1Fields = z.infer<typeof RefreshRecordV1FieldsSchema>;
 export type EmailCodeV1Fields = z.infer<typeof EmailCodeV1FieldsSchema>;
 export type AuthRecordV1Fields = z.infer<typeof AuthRecordV1FieldsSchema>;
 
-
 // refresh token
 export const RefreshRecordV1DocumentSchema = CouchDocumentSchema.extend(
   RefreshRecordV1FieldsSchema.shape
@@ -90,7 +85,6 @@ export const EmailCodeV1ExistingDocumentSchema =
 export type EmailCodeV1ExistingDocument = z.infer<
   typeof EmailCodeV1ExistingDocumentSchema
 >;
-
 
 // =============
 // V2 Definition
@@ -175,6 +169,8 @@ export const AuthRecordExistingDocumentSchema =
 export type AuthRecordExistingDocument = AuthRecordV2ExistingDocument;
 
 // Helper types for specific record documents
+export type RefreshRecordFields = RefreshRecordV2Fields;
+export type EmailCodeFields = EmailCodeV2Fields;
 
 // refresh token
 export const RefreshRecordDocumentSchema = RefreshRecordV2DocumentSchema;

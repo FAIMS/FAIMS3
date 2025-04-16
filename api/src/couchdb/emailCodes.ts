@@ -7,19 +7,18 @@
  */
 
 import {
-  AuthRecord,
-  AuthRecordIdPrefixMap,
-  GetEmailCodeIndex,
+  AUTH_RECORD_ID_PREFIXES,
+  EmailCodeExistingDocument,
   EmailCodeFields,
-  EmailCodeRecord,
   ExistingPeopleDBDocument,
+  GetEmailCodeIndex,
 } from '@faims3/data-model';
-import {getAuthDB} from '.';
+import crypto from 'crypto';
 import {v4 as uuidv4} from 'uuid';
+import {getAuthDB} from '.';
+import {EMAIL_CODE_EXPIRY_MINUTES, NEW_CONDUCTOR_URL} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {getCouchUserFromEmailOrUsername} from './users';
-import {EMAIL_CODE_EXPIRY_MINUTES, NEW_CONDUCTOR_URL} from '../buildconfig';
-import crypto from 'crypto';
 
 // Expiry time in milliseconds
 const CODE_EXPIRY_MS = EMAIL_CODE_EXPIRY_MINUTES * 60 * 1000;
@@ -103,11 +102,11 @@ function generateVerificationCode(
 export const createNewEmailCode = async (
   userId: string,
   expiryMs: number = CODE_EXPIRY_MS
-): Promise<{record: EmailCodeRecord; code: string}> => {
+): Promise<{record: EmailCodeExistingDocument; code: string}> => {
   const authDB = getAuthDB();
   const code = generateVerificationCode();
   const hash = hashVerificationCode(code);
-  const dbId = AuthRecordIdPrefixMap.get('emailcode') + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + uuidv4();
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
 
   const newEmailCode: EmailCodeFields = {
@@ -116,10 +115,11 @@ export const createNewEmailCode = async (
     code: hash,
     used: false,
     expiryTimestampMs,
+    version: 1,
   };
 
   const response = await authDB.put({_id: dbId, ...newEmailCode});
-  const record = await authDB.get<EmailCodeRecord>(response.id);
+  const record = await authDB.get<EmailCodeExistingDocument>(response.id);
 
   // Return both the database record and the raw code
   return {record, code};
@@ -144,7 +144,7 @@ export const validateEmailCode = async (
     const hashedCode = hashVerificationCode(code);
 
     // Try to find the code (hashed)
-    const codeDoc: EmailCodeRecord | null = await getCodeByCode(hashedCode);
+    const codeDoc = await getCodeByCode(hashedCode);
 
     if (!codeDoc) {
       return {
@@ -197,9 +197,11 @@ export const validateEmailCode = async (
  * @param code The verification code to mark as used (not hashed)
  * @returns A Promise that resolves to the updated AuthRecord.
  */
-export const markCodeAsUsed = async (code: string): Promise<AuthRecord> => {
+export const markCodeAsUsed = async (
+  code: string
+): Promise<EmailCodeExistingDocument> => {
   const hashedCode = hashVerificationCode(code);
-  const codeDoc: EmailCodeRecord | null = await getCodeByCode(hashedCode);
+  const codeDoc = await getCodeByCode(hashedCode);
 
   if (!codeDoc) {
     throw new ItemNotFoundException('Could not find the specified code.');
@@ -219,10 +221,10 @@ export const markCodeAsUsed = async (code: string): Promise<AuthRecord> => {
  */
 export const getCodesByUserId = async (
   userId: string
-): Promise<AuthRecord[]> => {
+): Promise<EmailCodeExistingDocument[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>(
+  const result = await authDB.query<EmailCodeExistingDocument>(
     'viewsDocument/emailCodesByUserId',
     {
       key: userId,
@@ -240,10 +242,10 @@ export const getCodesByUserId = async (
  */
 export const getCodeByCode = async (
   code: string
-): Promise<EmailCodeRecord | null> => {
+): Promise<EmailCodeExistingDocument | null> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<EmailCodeRecord>(
+  const result = await authDB.query<EmailCodeExistingDocument>(
     'viewsDocument/emailCodesByCode',
     {
       key: code,
@@ -270,14 +272,17 @@ export const getCodeByCode = async (
  * Retrieves all email codes in the database.
  * @returns A Promise that resolves to an array of all AuthRecords.
  */
-export const getAllCodes = async (): Promise<AuthRecord[]> => {
+export const getAllCodes = async (): Promise<EmailCodeExistingDocument[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>('viewsDocument/emailCodes', {
-    include_docs: true,
-  });
+  const result = await authDB.query<EmailCodeExistingDocument>(
+    'viewsDocument/emailCodes',
+    {
+      include_docs: true,
+    }
+  );
 
-  return result.rows.map(row => row.doc as AuthRecord);
+  return result.rows.map(row => row.doc as EmailCodeExistingDocument);
 };
 
 /**
@@ -293,7 +298,7 @@ export const deleteEmailCode = async (
   identifier: string
 ): Promise<void> => {
   const authDB = getAuthDB();
-  let codeDoc: AuthRecord | null = null;
+  let codeDoc: EmailCodeExistingDocument | null = null;
 
   if (index === 'id') {
     try {
@@ -314,7 +319,7 @@ export const deleteEmailCode = async (
   }
 
   try {
-    await authDB.remove(codeDoc._id, codeDoc._rev);
+    await authDB.remove(codeDoc!._id, codeDoc!._rev);
   } catch (error) {
     throw new Error(`Failed to delete email code: ${(error as Error).message}`);
   }
