@@ -23,11 +23,14 @@ import {FieldType, Notebook} from './initial';
  * @throws an Error if the notebook is not valid
  */
 export const migrateNotebook = (notebook: Notebook) => {
-  // we should maybe in future have validation against alternate notebook schema versions...
-  validateNotebook(notebook);
-
   // error will be thrown by validateNotebook if invalid, let it go through
   const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook;
+
+  // Remove null fields before validating
+  removeNullFields(notebookCopy);
+
+  // we should maybe in future have validation against alternate notebook schema versions...
+  validateNotebook(notebookCopy);
 
   // move field labels from old locations to .label
   updateFieldLabels(notebookCopy);
@@ -66,8 +69,22 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Remove any fields that are explicitly set to null from `ui-specification.fields`.
+ * These fields will otherwise cause validation failures if the schema does not allow null.
+ */
+function removeNullFields(notebook: Notebook) {
+  if (!notebook['ui-specification']?.fields) return;
+
+  for (const fieldName of Object.keys(notebook['ui-specification'].fields)) {
+    if (notebook['ui-specification'].fields[fieldName] === null) {
+      delete notebook['ui-specification'].fields[fieldName];
+    }
+  }
+}
+
+/**
  *
- * @param pNB - an object that might be a notebook
+ * @param n - an object that might be a notebook
  * @returns a validated Notebook object
  * @throws ValidationError if there is one, `messages` property contains error messages for presentation
  */

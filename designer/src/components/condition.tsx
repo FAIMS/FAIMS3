@@ -623,7 +623,9 @@ const BooleanConditionControl = (props: ConditionProps) => {
   };
 
   const deleteCondition = () => {
-    updateCondition(EMPTY_FIELD_CONDITION);
+    if (props.onChange) {
+      props.onChange(EMPTY_FIELD_CONDITION);
+    }
   };
 
   if (condition)
