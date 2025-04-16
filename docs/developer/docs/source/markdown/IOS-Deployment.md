@@ -65,7 +65,7 @@ up as either secrets or variables in the Github repository.
 <https://developer.apple.com/account>, look for Membership Details. This is an
 alphanumeric identifier.
 
-`APP_STORE_CONNECT_TEAM_ID` - App Store Connect team identifier.  May be the same
+`VITE_APP_STORE_CONNECT_TEAM_ID` - App Store Connect team identifier.  May be the same
 as the  Developer Portal team identifier, find this via App Store Connect
 by looking at your personal account which will list the id of your team.
 
@@ -91,11 +91,11 @@ These are not sensitive so can be variables:
 in App Store Connect and view 'App Information', look for "Apple Id" under
 general information.
 
-`APPLE_BUNDLE_IDENTIFIER`: bundle identifier for Apple build, this needs to be unique
+`VITE_APPLE_BUNDLE_IDENTIFIER`: bundle identifier for Apple build, this needs to be unique
 in the app store, can be different to APP_ID (which is used for the app URL scheme)
 `au.edu.faims.electronicfieldnotebook`.
 
-TODO: make `APPLE_BUNDLE_IDENTIFIER` fully configurable in the build
+TODO: make `VITE_APPLE_BUNDLE_IDENTIFIER` fully configurable in the build
 process. Look at
 the Fastlane `update_app_identifier` action which can do this
 during the build. For now we will keep the Fieldmark id to the
@@ -104,7 +104,7 @@ we'll need it to be updated.
 
 ## Note on Development Team
 
-The setting `APP_STORE_CONNECT_TEAM_ID` is required in the build and must match
+The setting `VITE_APP_STORE_CONNECT_TEAM_ID` is required in the build and must match
 the identity of the team that generated the certificates used by `fastlane match`.
 This team name is mentioned in the file `app/ios/App/App.xcodeproj/project.pbxproj`
 but we've had problems with the build if we don't explicitly include the value

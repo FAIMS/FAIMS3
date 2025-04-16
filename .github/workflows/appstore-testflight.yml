@@ -29,10 +29,6 @@ jobs:
     needs: check_date
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     continue-on-error: false
-    env:
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
- 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,22 +42,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - name: Configure Turborepo Remote Cache
-        run: |
-          mkdir -p .turbo
-          if [ -n "${{ vars.TURBO_API_URL }}" ]; then
-            echo '{"apiurl": "${{ vars.TURBO_API_URL }}"}' > .turbo/config.json
-            echo "Turborepo config file created at .turbo/config.json"
-          else
-            echo "TURBO_API_URL not set. Skipping Turborepo cache configuration."
-          fi
-          if [ -n "$TURBO_TEAM" ] && [ -n "$TURBO_TOKEN" ]; then
-            echo "TURBO_TEAM and TURBO_TOKEN environment variables set"
-          else
-            echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
-          fi
-            
+            ${{ runner.os }}-            
       - name: Install jq
         run: |
           brew update
@@ -112,10 +93,16 @@ jobs:
           export VITE_APP_ID=${{vars.APP_ID}}
           export VITE_APP_NAME="${{vars.APP_NAME}}"
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
+          export VITE_APPLE_BUNDLE_IDENTIFIER="${{vars.VITE_APPLE_BUNDLE_IDENTIFIER}}"
+          export VITE_APP_STORE_CONNECT_TEAM_ID="${{secrets.VITE_APP_STORE_CONNECT_TEAM_ID}}"
+          export VITE_VITE_APPLE_BUNDLE_IDENTIFIER="${{vars.VITE_APPLE_BUNDLE_IDENTIFIER}}"
+          export VITE_VITE_APP_STORE_CONNECT_TEAM_ID="${{secrets.VITE_APP_STORE_CONNECT_TEAM_ID}}"
+          printenv
           npm ci --python=python3.10
           # we install these here because of a bug in npm with platform specific
           # dependencies
           npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          npm run configIOSbuild
           npm run build
       - name: Update IOS Build
         run: |
@@ -135,9 +122,9 @@ jobs:
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
-          APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
+          VITE_APP_STORE_CONNECT_TEAM_ID: '${{ secrets.VITE_APP_STORE_CONNECT_TEAM_ID }}'
           DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
-          APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
+          VITE_APPLE_BUNDLE_IDENTIFIER: '${{ vars.VITE_APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
           FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
