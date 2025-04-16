@@ -623,7 +623,7 @@ describe('Registration', () => {
           // check correct redirect
           const location = new URL(response.header.location);
           expect(location.origin).to.equal(WEBAPP_PUBLIC_URL);
-          expect(location.search).to.match(/token/);
+          expect(location.search).to.match(/exchangeToken/);
         });
     }
   });

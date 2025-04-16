@@ -98,7 +98,7 @@ describe('Auth', () => {
       .then(response => {
         const location = new URL(response.header.location);
         expect(location.hostname).to.equal('localhost');
-        expect(location.search).to.match(/token/);
+        expect(location.search).to.match(/exchangeToken/);
         done();
       });
   });

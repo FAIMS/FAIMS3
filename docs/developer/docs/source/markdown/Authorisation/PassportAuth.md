@@ -10,6 +10,7 @@ The authentication system consists of several components:
 - Passport.js strategies for various authentication methods
 - Session management for storing authentication state
 - Token generation for authenticated users
+- Token exchange for secure acquisition of access and refresh tokens
 
 ## Configuration
 
@@ -29,6 +30,38 @@ Social providers are defined in `buildconfig.ts` as `CONDUCTOR_AUTH_PROVIDERS`. 
 - `strategies/localStrategy.ts`: Local authentication strategy
 - `strategies/googleStrategy.ts`: Google OAuth strategy
 - `helpers.ts`: Utility functions for authentication
+
+## Token Exchange System
+
+The authentication system uses a secure token exchange flow to prevent token leakage:
+
+1. After successful authentication, the server generates an **exchange token**
+2. The exchange token is delivered to the client via a redirect URL parameter
+3. The client then makes a secure API call to exchange this token for:
+   - An access token (JWT)
+   - A refresh token
+
+This approach improves security by:
+
+- Preventing long-lived tokens from appearing in browser history or logs
+- Ensuring the exchange token can only be used once
+- Storing exchange tokens as hashes in the database to protect against data breaches
+
+### Exchange Token Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+    participant CouchDB
+
+    Note over Client,Server: Authentication successful
+    Server->>Client: Redirect with exchangeToken & serverId
+    Client->>Server: POST /api/auth/exchange {exchangeToken}
+    Server->>CouchDB: consumeExchangeTokenForRefreshToken()
+    CouchDB->>Server: {valid: true, user, refreshDocument}
+    Server->>Client: {accessToken, refreshToken}
+```
 
 ## Authentication Flows
 
@@ -65,8 +98,17 @@ sequenceDiagram
                 Server->>CouchDB: saveExpressUser()
             end
 
-            Server->>Server: Generate JWT token via redirectWithToken()
-            Server-->>Browser: Redirect to redirect_url?token=JWT&refreshToken=REFRESH
+            Server->>Server: Generate exchange token via redirectWithToken()
+            Server-->>Browser: Redirect to redirect_url?exchangeToken=TOKEN&serverId=ID
+
+            Browser->>Server: POST /api/auth/exchange
+            Note over Browser,Server: Body: {exchangeToken: TOKEN}
+
+            Server->>CouchDB: consumeExchangeTokenForRefreshToken()
+            CouchDB-->>Server: {valid: true, user, refreshDocument}
+
+            Server->>Server: Generate JWT token
+            Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
         else Invalid password
             Passport-->>Server: Return error
             Server->>Browser: Flash error and redirect to /login with query params
@@ -119,8 +161,17 @@ sequenceDiagram
                     Server->>CouchDB: validateAndApplyInviteToUser()
                     CouchDB-->>Server: Updated user
                     Server->>CouchDB: saveExpressUser()
+                    Server->>Server: Generate exchange token
+                    Server->>Browser: Redirect to redirect_url?exchangeToken=TOKEN&serverId=ID
+
+                    Browser->>Server: POST /api/auth/exchange
+                    Note over Browser,Server: Body: {exchangeToken: TOKEN}
+
+                    Server->>CouchDB: consumeExchangeTokenForRefreshToken()
+                    CouchDB-->>Server: {valid: true, user, refreshDocument}
+
                     Server->>Server: Generate JWT token
-                    Server->>Browser: Redirect to redirect_url?token=JWT&refreshToken=REFRESH
+                    Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
                 else Authentication failed
                     Passport-->>Server: Return error
                     Server->>Browser: Flash error and redirect to /register with query params
@@ -128,8 +179,17 @@ sequenceDiagram
             else User doesn't exist
                 Server->>CouchDB: validateAndApplyInviteToUser() with createUser function
                 CouchDB-->>Server: Created user with invite applied
+                Server->>Server: Generate exchange token
+                Server->>Browser: Redirect to redirect_url?exchangeToken=TOKEN&serverId=ID
+
+                Browser->>Server: POST /api/auth/exchange
+                Note over Browser,Server: Body: {exchangeToken: TOKEN}
+
+                Server->>CouchDB: consumeExchangeTokenForRefreshToken()
+                CouchDB-->>Server: {valid: true, user, refreshDocument}
+
                 Server->>Server: Generate JWT token
-                Server->>Browser: Redirect to redirect_url?token=JWT&refreshToken=REFRESH
+                Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
             end
         end
     end
@@ -182,8 +242,17 @@ sequenceDiagram
             Server->>CouchDB: saveCouchUser()
         end
 
+        Server->>Server: Generate exchange token
+        Server->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
+
+        Browser->>Server: POST /api/auth/exchange
+        Note over Browser,Server: Body: {exchangeToken: TOKEN}
+
+        Server->>CouchDB: consumeExchangeTokenForRefreshToken()
+        CouchDB-->>Server: {valid: true, user, refreshDocument}
+
         Server->>Server: Generate JWT token
-        Server->>Browser: Redirect to session.redirect?token=JWT&refreshToken=REFRESH
+        Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
     else Multiple matching emails
         Passport-->>Server: Return error (ambiguous match)
         Server->>Browser: Flash error, redirect to login page
@@ -244,8 +313,17 @@ sequenceDiagram
                 Server->>CouchDB: validateAndApplyInviteToUser()
                 CouchDB-->>Server: Updated user
                 Server->>CouchDB: saveCouchUser()
+                Server->>Server: Generate exchange token
+                Server->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
+
+                Browser->>Server: POST /api/auth/exchange
+                Note over Browser,Server: Body: {exchangeToken: TOKEN}
+
+                Server->>CouchDB: consumeExchangeTokenForRefreshToken()
+                CouchDB-->>Server: {valid: true, user, refreshDocument}
+
                 Server->>Server: Generate JWT token
-                Server->>Browser: Redirect to session.redirect?token=JWT&refreshToken=REFRESH
+                Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
             else One matching email
                 Passport->>CouchDB: Ensure Google profile is linked to user
                 CouchDB-->>Passport: Updated user
@@ -254,8 +332,17 @@ sequenceDiagram
                 Server->>CouchDB: validateAndApplyInviteToUser()
                 CouchDB-->>Server: Updated user
                 Server->>CouchDB: saveCouchUser()
+                Server->>Server: Generate exchange token
+                Server->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
+
+                Browser->>Server: POST /api/auth/exchange
+                Note over Browser,Server: Body: {exchangeToken: TOKEN}
+
+                Server->>CouchDB: consumeExchangeTokenForRefreshToken()
+                CouchDB-->>Server: {valid: true, user, refreshDocument}
+
                 Server->>Server: Generate JWT token
-                Server->>Browser: Redirect to session.redirect?token=JWT&refreshToken=REFRESH
+                Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
             else Multiple matching emails
                 Passport-->>Server: Return error (ambiguous match)
                 Server->>Browser: Flash error, redirect to /register
@@ -287,12 +374,28 @@ Invitations are used for registration and to grant access to resources:
 2. Applied to users with `validateAndApplyInviteToUser()`
 3. Consumed with `consumeInvite()`
 
-### Token Generation
+### Token Generation and Exchange
 
-After successful authentication, JWT tokens are generated and passed to the client:
+After successful authentication, a token exchange flow is implemented:
 
-1. `generateUserToken()` creates a token and refresh token
-2. `redirectWithToken()` redirects to the client app with tokens
+1. `createNewRefreshToken()` creates a refresh token with an exchange token
+2. `redirectWithToken()` redirects to the client app with the exchange token
+3. Client calls `/api/auth/exchange` with the exchange token
+4. `consumeExchangeTokenForRefreshToken()` validates and consumes the exchange token
+5. Server returns both access token (JWT) and refresh token
+
+The exchange token workflow provides enhanced security:
+
+- Exchange tokens are single-use only (`exchangeTokenUsed: true` after use)
+- Exchange tokens are stored as hashes in the database (`exchangeTokenHash`)
+- Exchange tokens have the same expiry as the refresh token they're associated with
+
+### Refresh Token Flow
+
+After initial authentication, refresh tokens can be used to obtain new access tokens:
+
+1. Client calls `/api/auth/refresh` with the refresh token
+2. Server validates the refresh token and returns a new access token
 
 ## URL Validation
 
@@ -323,3 +426,4 @@ To add a new authentication provider:
 - Social providers store profile information in `user.profiles[provider]`
 - Multiple emails can be associated with a single user account
 - The system enforces unique email addresses across all users
+- Exchange tokens are one-time use and stored as hashes for security
