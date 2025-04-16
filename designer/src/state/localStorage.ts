@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {AppState, NotebookWithHistory} from './initial';
-import {slugify} from './uiSpec-reducer';
+import {slugify} from './helpers/uiSpec-helpers';
 
 // The following functions are inspired by Dan Abramov's lesson on persisting redux state to localStorage,
 // see https://egghead.io/lessons/javascript-redux-persisting-the-state-to-the-local-storage.

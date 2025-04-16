@@ -183,7 +183,15 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
 
   const selectedFields = (viewSet.summary_fields || [])
     .map(fieldId => fieldOptions.find(opt => opt.value === fieldId))
-    .filter((x): x is {label: string; value: string} => x !== null);
+    .filter((x): x is {label: string; value: string} => {
+      const isValid = x !== null && x !== undefined;
+      if (!isValid) {
+        console.warn(
+          'Found null/undefined field while attempting to render summary fields!'
+        );
+      }
+      return isValid;
+    });
 
   const selectedHridField = viewSet.hridField
     ? hridFieldOptions.find(opt => opt.value === viewSet.hridField) || null
