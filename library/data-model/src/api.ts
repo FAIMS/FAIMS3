@@ -114,7 +114,7 @@ export type PostRefreshTokenResponse = z.infer<
 export const PostExchangeTokenInputSchema = z.object({
   exchangeToken: z.string().min(1),
 });
-export type PostExchangeTokenInputSchema = z.infer<
+export type PostExchangeTokenInput = z.infer<
   typeof PostExchangeTokenInputSchema
 >;
 export const PostExchangeTokenResponseSchema = z.object({

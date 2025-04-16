@@ -38,6 +38,7 @@ import {
   EMAIL_SERVICE_TYPE,
   TEST_EMAIL_ADDRESS,
   RUNNING_UNDER_TEST,
+  CONDUCTOR_SERVER_ID,
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
@@ -104,7 +105,7 @@ api.post(
  */
 api.get('/info', async (req, res) => {
   const response: PublicServerInfo = {
-    id: slugify(CONDUCTOR_INSTANCE_NAME),
+    id: CONDUCTOR_SERVER_ID,
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
@@ -153,7 +154,7 @@ api.post(
     } = await consumeExchangeTokenForRefreshToken({exchangeToken, userId});
 
     // If the refresh token / exchange token is not valid, let user know (ambiguously)
-    if (!valid || !refreshDocument) {
+    if (!valid || !refreshDocument || !resultingUser) {
       throw new Exceptions.InvalidRequestException(
         `Validation of exchange token failed.`
       );
@@ -162,7 +163,9 @@ api.post(
     // We know the refresh is valid, generate a JWT (no refresh) for this
     // existing user.
     // From the db user, drill and generate permissions
-    const expressUser = await upgradeCouchUserToExpressUser({dbUser: user!});
+    const expressUser = await upgradeCouchUserToExpressUser({
+      dbUser: resultingUser,
+    });
     const {token} = await generateUserToken(expressUser, false);
 
     // return the tokens

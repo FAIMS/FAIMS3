@@ -6,12 +6,16 @@ import {
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
 import {ZodError} from 'zod';
-import {AuthProvider, REDIRECT_WHITELIST} from '../buildconfig';
+import {
+  AuthProvider,
+  CONDUCTOR_SERVER_ID,
+  REDIRECT_WHITELIST,
+} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
+import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
-import {createNewRefreshToken} from '../couchdb/refreshTokens';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -152,8 +156,9 @@ export const redirectWithToken = async ({
   // Generate a refresh token
   const {exchangeToken} = await createNewRefreshToken(user._id);
 
-  // Append the token to the redirect URL
-  const redirectUrlWithToken = `${redirect}?exchangeToken=${exchangeToken}`;
+  // Append the token to the redirect URL with exchange token and server ID
+  // (this helps multi server clients know who is redirecting back)
+  const redirectUrlWithToken = `${redirect}?exchangeToken=${exchangeToken}&serverId=${CONDUCTOR_SERVER_ID}`;
 
   // Redirect to the app with the token
   return res.redirect(redirectUrlWithToken);

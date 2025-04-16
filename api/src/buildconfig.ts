@@ -29,6 +29,7 @@ import {
   SMTPEmailServiceConfig,
 } from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
+import {slugify} from './utils';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -696,3 +697,4 @@ function getRedirectWhitelist(): string[] {
 
 // Export the redirect whitelist
 export const REDIRECT_WHITELIST = getRedirectWhitelist();
+export const CONDUCTOR_SERVER_ID = slugify(CONDUCTOR_INSTANCE_NAME);
