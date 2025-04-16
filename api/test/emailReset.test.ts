@@ -1,12 +1,24 @@
 import {expect} from 'chai';
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {
+  PostRequestPasswordResetRequest,
+  PutRequestPasswordResetRequest,
+} from '@faims3/data-model';
 import request from 'supertest';
+import {
+  createNewEmailCode,
+  getCodeByCode,
+  markCodeAsUsed,
+  validateEmailCode,
+} from '../src/couchdb/emailCodes';
+import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
+import {hashVerificationCode} from '../src/utils';
 import {
   adminToken,
   adminUserName,
@@ -15,18 +27,6 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
-import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {
-  PostRequestPasswordResetRequest,
-  PutRequestPasswordResetRequest,
-} from '@faims3/data-model';
-import {
-  createNewEmailCode,
-  validateEmailCode,
-  markCodeAsUsed,
-  getCodeByCode,
-  hashVerificationCode,
-} from '../src/couchdb/emailCodes';
 
 describe('password reset tests', () => {
   beforeEach(beforeApiTests);

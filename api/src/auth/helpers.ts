@@ -10,8 +10,8 @@ import {AuthProvider, REDIRECT_WHITELIST} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
-import {generateUserToken} from './keySigning/create';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
+import {createNewRefreshToken} from '../couchdb/refreshTokens';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -132,13 +132,13 @@ export function validateRedirect(
 }
 
 /**
- * Generate a redirect response with a token and refresh token for a logged in
- * user
+ * Generate a redirect response with an exchange token granting access to a
+ * refresh token
  *
  * @param res Express response
  * @param user Express user
  * @param redirect URL to redirect to
- * @returns a redirect response with a suitable token
+ * @returns a redirect response with a suitable exchange token
  */
 export const redirectWithToken = async ({
   res,
@@ -149,11 +149,11 @@ export const redirectWithToken = async ({
   user: Express.User;
   redirect: string;
 }) => {
-  // Generate a token (include refresh)
-  const token = await generateUserToken(user, true);
+  // Generate a refresh token
+  const {exchangeToken} = await createNewRefreshToken(user._id);
 
   // Append the token to the redirect URL
-  const redirectUrlWithToken = `${redirect}?token=${token.token}&refreshToken=${token.refreshToken}`;
+  const redirectUrlWithToken = `${redirect}?exchangeToken=${exchangeToken}`;
 
   // Redirect to the app with the token
   return res.redirect(redirectUrlWithToken);

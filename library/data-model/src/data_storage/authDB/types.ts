@@ -93,7 +93,7 @@ export type EmailCodeV1ExistingDocument = z.infer<
 // Refresh token schema with new fields added only to refresh tokens
 export const RefreshRecordV2FieldsSchema = RefreshRecordV1FieldsSchema.extend({
   // New fields for V2 - only for refresh tokens
-  exchangeToken: z.string(),
+  exchangeTokenHash: z.string(),
   exchangeTokenUsed: z.boolean(),
 });
 

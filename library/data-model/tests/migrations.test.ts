@@ -888,7 +888,7 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       enabled: true,
       expiryTimestampMs,
       // New fields added by migration
-      exchangeToken: 'fake',
+      exchangeTokenHash: 'fake',
       exchangeTokenUsed: true,
     } as RefreshRecordV2ExistingDocument,
     expectedResult: {action: 'update'},
@@ -939,7 +939,7 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       expiryTimestampMs,
 
       // New fields added by migration
-      exchangeToken: 'fake',
+      exchangeTokenHash: 'fake',
       exchangeTokenUsed: true,
     } as RefreshRecordV2ExistingDocument,
     expectedResult: {action: 'update'},
@@ -972,7 +972,7 @@ const AUTH_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       enabled: true,
       expiryTimestampMs,
       // New fields added by migration
-      exchangeToken: 'fake',
+      exchangeTokenHash: 'fake',
       exchangeTokenUsed: true,
       // Extra fields should be dropped
       // createdAt,

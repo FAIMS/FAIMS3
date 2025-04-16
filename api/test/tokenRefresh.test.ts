@@ -213,7 +213,7 @@ describe('token refresh tests', () => {
     expect(valid.validationError).to.not.be.undefined;
 
     // Now generate a new token with a very short expiry
-    refresh = (await createNewRefreshToken(localUser._id!, 10)).token;
+    refresh = (await createNewRefreshToken(localUser._id!, 10)).refresh.token;
 
     // Wait until it expires
     await new Promise(resolve => setTimeout(resolve, 100));

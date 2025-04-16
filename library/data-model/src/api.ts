@@ -110,6 +110,22 @@ export type PostRefreshTokenResponse = z.infer<
   typeof PostRefreshTokenResponseSchema
 >;
 
+// Token exchange
+export const PostExchangeTokenInputSchema = z.object({
+  exchangeToken: z.string().min(1),
+});
+export type PostExchangeTokenInputSchema = z.infer<
+  typeof PostExchangeTokenInputSchema
+>;
+export const PostExchangeTokenResponseSchema = z.object({
+  // token pair
+  refreshToken: z.string(),
+  accessToken: z.string(),
+});
+export type PostExchangeTokenResponse = z.infer<
+  typeof PostExchangeTokenResponseSchema
+>;
+
 // ==================
 // WIP NOTEBOOKS CRUD
 // ==================

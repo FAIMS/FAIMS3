@@ -7,16 +7,17 @@
  */
 
 import {
-  AuthRecordIdPrefixMap,
+  AUTH_RECORD_ID_PREFIXES,
   ExistingPeopleDBDocument,
   GetRefreshTokenIndex,
-  RefreshRecord,
+  RefreshRecordExistingDocument,
   RefreshRecordFields,
 } from '@faims3/data-model';
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
+import {generateVerificationCode, hashVerificationCode} from '../utils';
 import {getCouchUserFromEmailOrUsername} from './users';
 
 // Expiry time in hours
@@ -45,29 +46,129 @@ function generateExpiryTimestamp(expiryMs: number): number {
 export const createNewRefreshToken = async (
   userId: string,
   expiryMs: number = TOKEN_EXPIRY_MS
-): Promise<RefreshRecord> => {
+): Promise<{refresh: RefreshRecordExistingDocument; exchangeToken: string}> => {
   const authDB = getAuthDB();
 
   // Generate a new UUID for the token
   const token = uuidv4();
-  const dbId = AuthRecordIdPrefixMap.get('refresh') + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.refresh + uuidv4();
 
   // Set expiry to configured duration
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
 
+  // Create the exchange token
+  const code = generateVerificationCode();
+  const hash = hashVerificationCode(code);
+
+  // TODO generate code here
   const newRefreshToken: RefreshRecordFields = {
     documentType: 'refresh',
     userId,
     token,
     expiryTimestampMs,
     enabled: true,
+    // this is the HASH of the exchange token (to be looked up later)
+    exchangeTokenHash: hash,
+    exchangeTokenUsed: false,
   };
 
   // Create a new document in the database
   const response = await authDB.put({_id: dbId, ...newRefreshToken});
 
   // Fetch the created document to return the full AuthRecord
-  return await authDB.get<RefreshRecord>(response.id);
+  return {
+    refresh: await authDB.get<RefreshRecordExistingDocument>(response.id),
+    exchangeToken: code,
+  };
+};
+
+/**
+ * Takes the raw exchange token, hashes it, searches for a refresh token, then
+ * returns it. Invalidates the exchange in the DB.
+ * @param exchangeToken - raw exchange token (provided to user for one time use)
+ * @param userId - the user ID to check for match, if available
+ */
+export const consumeExchangeTokenForRefreshToken = async ({
+  exchangeToken,
+  userId,
+}: {
+  exchangeToken: string;
+  userId?: string;
+}): Promise<{
+  valid: boolean;
+  validationError?: string;
+  refreshDocument?: RefreshRecordExistingDocument;
+  user?: ExistingPeopleDBDocument;
+}> => {
+  const exchangeTokenHash = hashVerificationCode(exchangeToken);
+  try {
+    const tokenDocs = await getTokensByExchangeTokenHash({
+      exchangeTokenHash,
+    });
+
+    if (tokenDocs.length === 0) {
+      return {
+        valid: false,
+        validationError:
+          'The exchange token does not refer to a valid refresh token',
+      };
+    }
+
+    if (tokenDocs.length > 1) {
+      return {
+        valid: false,
+        validationError:
+          'The exchange token refers to multiple refresh tokens. Unsure how to proceed.',
+      };
+    }
+
+    const tokenDoc = tokenDocs[0];
+
+    // Check if the token belongs to the correct user (If a user ID is supplied for validation)
+    if (userId && tokenDoc.userId !== userId) {
+      return {
+        valid: false,
+        validationError: 'Token does not belong to the user specified.',
+      };
+    }
+
+    // Check if the token is enabled
+    if (!tokenDoc.enabled) {
+      return {valid: false, validationError: 'Token is not enabled.'};
+    }
+
+    // Check if the token has expired
+    if (tokenDoc.expiryTimestampMs < Date.now()) {
+      return {valid: false, validationError: 'Token has expired'};
+    }
+
+    // Get the user by the user ID
+    const user =
+      (await getCouchUserFromEmailOrUsername(tokenDoc.userId)) ?? undefined;
+
+    if (!user) {
+      return {
+        valid: false,
+        validationError:
+          'While token appears valid, could not find associated user.',
+      };
+    }
+
+    // consume the exchange token
+    tokenDoc.exchangeTokenUsed = true;
+    await getAuthDB().put(tokenDoc);
+
+    return {valid: true, user, refreshDocument: tokenDoc};
+  } catch (error) {
+    console.error(
+      'Unhandled error validating refresh token. Token hash: ',
+      exchangeTokenHash,
+      ' Error: ',
+      error,
+      console.trace()
+    );
+    return {valid: false, validationError: 'Internal server error'};
+  }
 };
 
 /**
@@ -144,10 +245,10 @@ export const validateRefreshToken = async (
  */
 export const getTokensByUserId = async (
   userId: string
-): Promise<RefreshRecord[]> => {
+): Promise<RefreshRecordExistingDocument[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<RefreshRecord>(
+  const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokensByUserId',
     {
       key: userId,
@@ -157,7 +258,32 @@ export const getTokensByUserId = async (
 
   return result.rows
     .filter(r => !!r.doc)
-    .map(row => row.doc!) as RefreshRecord[];
+    .map(row => row.doc! as RefreshRecordExistingDocument);
+};
+
+/**
+ * Retrieves all refresh tokens for a given user.
+ * @param userId The ID of the user whose tokens are being retrieved.
+ * @returns A Promise that resolves to an array of AuthRecords.
+ */
+export const getTokensByExchangeTokenHash = async ({
+  exchangeTokenHash,
+}: {
+  exchangeTokenHash: string;
+}): Promise<RefreshRecordExistingDocument[]> => {
+  const authDB = getAuthDB();
+
+  const result = await authDB.query<RefreshRecordExistingDocument>(
+    'viewsDocument/refreshTokensByExchangeTokenHash',
+    {
+      key: exchangeTokenHash,
+      include_docs: true,
+    }
+  );
+
+  return result.rows
+    .filter(r => !!r.doc)
+    .map(row => row.doc! as RefreshRecordExistingDocument);
 };
 
 /**
@@ -167,10 +293,10 @@ export const getTokensByUserId = async (
  */
 export const invalidateToken = async (
   token: string
-): Promise<RefreshRecord | null> => {
+): Promise<RefreshRecordExistingDocument | null> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<RefreshRecord>(
+  const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokensByToken',
     {
       key: token,
@@ -215,10 +341,10 @@ export const invalidateToken = async (
  */
 export const getTokenByToken = async (
   token: string
-): Promise<RefreshRecord | null> => {
+): Promise<RefreshRecordExistingDocument | null> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<RefreshRecord>(
+  const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokensByToken',
     {
       key: token,
@@ -248,28 +374,30 @@ export const getTokenByToken = async (
  */
 export const getTokenByTokenId = async (
   tokenId: string
-): Promise<RefreshRecord> => {
+): Promise<RefreshRecordExistingDocument> => {
   const authDB = getAuthDB();
 
   // Directly fetch the document by its ID
-  return await authDB.get<RefreshRecord>(tokenId);
+  return await authDB.get<RefreshRecordExistingDocument>(tokenId);
 };
 
 /**
  * Retrieves all refresh tokens in the database.
  * @returns A Promise that resolves to an array of all RefreshRecord.
  */
-export const getAllTokens = async (): Promise<RefreshRecord[]> => {
+export const getAllTokens = async (): Promise<
+  RefreshRecordExistingDocument[]
+> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<RefreshRecord>(
+  const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokens',
     {
       include_docs: true,
     }
   );
 
-  return result.rows.map(row => row.doc as RefreshRecord);
+  return result.rows.map(row => row.doc as RefreshRecordExistingDocument);
 };
 
 /**
@@ -285,7 +413,7 @@ export const deleteRefreshToken = async (
   identifier: string
 ): Promise<void> => {
   const authDB = getAuthDB();
-  let tokenDoc: RefreshRecord | null = null;
+  let tokenDoc: RefreshRecordExistingDocument | null = null;
 
   // Find the token document based on the specified index
   if (index === 'id') {

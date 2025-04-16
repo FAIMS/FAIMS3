@@ -194,7 +194,7 @@ export async function generateUserToken(user: Express.User, refresh = false) {
       token: token,
       // Provide a refresh token if necessary
       refreshToken: refresh
-        ? (await createNewRefreshToken(user._id!)).token
+        ? (await createNewRefreshToken(user._id!)).refresh.token
         : undefined,
       pubkey: signingKey.publicKeyString,
       pubalg: signingKey.alg,

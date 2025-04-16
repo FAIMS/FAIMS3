@@ -288,7 +288,7 @@ export const authV1toV2Migration: MigrationFunc = doc => {
       updatedRecord: {
         ...inputDoc,
         // Just put in fake data here to satisfy model
-        exchangeToken: 'fake',
+        exchangeTokenHash: 'fake',
         exchangeTokenUsed: true,
       } satisfies RefreshRecordV2ExistingDocument,
     };
