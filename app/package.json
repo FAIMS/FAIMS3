@@ -44,12 +44,13 @@
     "fix": "gts fix",
     "doc": "jsdoc -c ./jsdoc.config.json",
     "set-version": "./bin/setBuildVersion.sh",
-    "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh"
+    "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh",
+    "configIOSbuild": "env-cmd --no-override --silent ./bin/prebuildIOS.sh"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",
     "@bugsnag/plugin-react": "^7.19.0",
-    "@capacitor-mlkit/barcode-scanning": "^6.1.0",
+    "@capacitor-mlkit/barcode-scanning": "^7.2.1",
     "@capacitor/android": "^7.2.0",
     "@capacitor/app": "^7.0.1",
     "@capacitor/app-launcher": "^7.0.1",
