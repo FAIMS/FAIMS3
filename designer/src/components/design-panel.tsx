@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Alert, Box, Button, Grid, Tab, Tabs} from '@mui/material';
+import {Alert, Box, Button, Grid, Tab, Tabs, Snackbar} from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
 
 import {TabContext} from '@mui/lab';
-import {useState} from 'react';
+import {useState, useEffect, useCallback} from 'react';
+// eslint-disable-next-line n/no-extraneous-import
+import {ActionCreators} from 'redux-undo';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {shallowEqual} from 'react-redux';
@@ -28,11 +32,11 @@ export const DesignPanel = () => {
   const {pathname} = useLocation();
 
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets,
+    state => state.notebook['ui-specification'].present.viewsets,
     shallowEqual
   );
   const visibleTypes: string[] = useAppSelector(
-    state => state.notebook['ui-specification'].visible_types
+    state => state.notebook['ui-specification'].present.visible_types
   );
   const dispatch = useAppDispatch();
 
@@ -45,6 +49,27 @@ export const DesignPanel = () => {
   );
 
   const maxKeys = Object.keys(viewSets).length;
+
+  // State for toast notifications
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  // Use redux-undo state to determine if there is something to undo/redo
+  const undoableState = useAppSelector(
+    state => state.notebook['ui-specification']
+  );
+  const canUndo = undoableState.past.length > 0;
+  const canRedo = undoableState.future.length > 0;
+
+  const handleToastClose = (
+    _event?: React.SyntheticEvent | Event,
+    reason?: string
+  ) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setToastOpen(false);
+  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabIndex(newValue.toString());
@@ -179,29 +204,107 @@ export const DesignPanel = () => {
     }
   };
 
-  return (
-    <TabContext value={tabIndex}>
-      <Alert severity="info" sx={{marginBottom: 2}}>
-        Define the user interface for your notebook here. Add one or more forms
-        to collect data from users. Each form can have one or more sections.
-        Each section has one or more form fields.
-      </Alert>
+  function handleUndo(): void {
+    if (!canUndo) {
+      setToastMessage('Nothing to undo');
+      setToastOpen(true);
+      return;
+    }
+    dispatch(ActionCreators.undo());
+    setToastMessage('Undo complete');
+    setToastOpen(true);
+  }
 
-      <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-        <Tabs
-          value={tabIndex}
-          onChange={handleTabChange}
-          aria-label="form tabs"
-          variant="scrollable"
-          scrollButtons={false}
-          indicatorColor={
-            tabIndex >= `${visibleTypes.length}` && tabIndex < `${maxKeys}`
-              ? 'secondary'
-              : 'primary'
-          }
+  function handleRedo(): void {
+    if (!canRedo) {
+      setToastMessage('Nothing to redo');
+      setToastOpen(true);
+      return;
+    }
+    dispatch(ActionCreators.redo());
+    setToastMessage('Redo complete');
+    setToastOpen(true);
+  }
+
+  // Keyboard shortcuts for undo/redo
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (
+        (event.ctrlKey || event.metaKey) &&
+        !event.shiftKey &&
+        event.key.toLowerCase() === 'z'
+      ) {
+        event.preventDefault();
+        handleUndo();
+      } else if (
+        (event.ctrlKey || event.metaKey) &&
+        (event.key.toLowerCase() === 'y' ||
+          (event.shiftKey && event.key.toLowerCase() === 'z'))
+      ) {
+        event.preventDefault();
+        handleRedo();
+      }
+    },
+    [canUndo, canRedo]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  return (
+    <>
+      <Box sx={{display: 'flex', justifyContent: 'flex-end', marginBottom: 2}}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<UndoIcon />}
+          onClick={handleUndo}
+          disabled={!canUndo}
+          sx={{marginRight: 2}}
         >
-          {visibleTypes.map((form: string, index: number) => {
-            return (
+          Undo
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<RedoIcon />}
+          onClick={handleRedo}
+          disabled={!canRedo}
+        >
+          Redo
+        </Button>
+      </Box>
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={3000}
+        onClose={handleToastClose}
+        message={toastMessage}
+      />
+      <TabContext value={tabIndex}>
+        <Alert severity="info" sx={{marginBottom: 2}}>
+          Define the user interface for your notebook here. Add one or more
+          forms to collect data from users. Each form can have one or more
+          sections. Each section has one or more form fields.
+        </Alert>
+
+        <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
+          <Tabs
+            value={tabIndex}
+            onChange={handleTabChange}
+            aria-label="form tabs"
+            variant="scrollable"
+            scrollButtons={false}
+            indicatorColor={
+              tabIndex >= `${visibleTypes.length}` && tabIndex < `${maxKeys}`
+                ? 'secondary'
+                : 'primary'
+            }
+          >
+            {visibleTypes.map((form: string, index: number) => (
               <Tab
                 component={Link}
                 to={`${index}`}
@@ -228,73 +331,71 @@ export const DesignPanel = () => {
                   },
                 }}
               />
-            );
-          })}
-          {untickedForms.map((form: string, index: number) => {
-            const startIndex: number = index + visibleTypes.length;
-            return (
-              <Tab
-                component={Link}
-                to={`${startIndex}`}
-                key={startIndex}
-                value={`${startIndex}`}
-                label={`Form: ${viewSets[form].label}`}
-                sx={{
-                  '&.MuiTab-root': {
-                    backgroundColor: '#F9FAFB',
-                    border: '0.75px solid #E18200',
-                    borderBottom: 'none',
-                    borderTopLeftRadius: '10px',
-                    borderTopRightRadius: '10px',
-                    marginX: '0.25em',
-                  },
-                  '&.Mui-selected': {
-                    color: '#E18200',
-                    border: '1px solid #E18200',
-                    backgroundColor: '#FFF4E5',
-                  },
-                  '&:hover': {
-                    color: '#E18200',
-                    opacity: 1,
-                    backgroundColor: '#FFF4E5',
-                  },
-                }}
-              />
-            );
-          })}
-          <Tab
-            component={Link}
-            to={maxKeys.toString()}
-            key={maxKeys}
-            value={maxKeys.toString()}
-            icon={<AddIcon />}
-            sx={{
-              '&.MuiTab-root': {
-                backgroundColor: '#F9FAFB',
-                border: '0.75px solid #669911',
-                borderBottom: 'none',
-                borderTopLeftRadius: '10px',
-                borderTopRightRadius: '10px',
-                marginLeft: '0.5em',
-              },
-              '&.Mui-selected': {
-                color: '#669911',
-                border: '1px solid #669911',
-                backgroundColor: '#F5FCE8',
-              },
-              '&:hover': {
-                color: '#669911',
-                opacity: 1,
-                backgroundColor: '#F5FCE8',
-              },
-            }}
-          />
-        </Tabs>
-      </Box>
+            ))}
+            {untickedForms.map((form: string, index: number) => {
+              const startIndex: number = index + visibleTypes.length;
+              return (
+                <Tab
+                  component={Link}
+                  to={`${startIndex}`}
+                  key={startIndex}
+                  value={`${startIndex}`}
+                  label={`Form: ${viewSets[form].label}`}
+                  sx={{
+                    '&.MuiTab-root': {
+                      backgroundColor: '#F9FAFB',
+                      border: '0.75px solid #E18200',
+                      borderBottom: 'none',
+                      borderTopLeftRadius: '10px',
+                      borderTopRightRadius: '10px',
+                      marginX: '0.25em',
+                    },
+                    '&.Mui-selected': {
+                      color: '#E18200',
+                      border: '1px solid #E18200',
+                      backgroundColor: '#FFF4E5',
+                    },
+                    '&:hover': {
+                      color: '#E18200',
+                      opacity: 1,
+                      backgroundColor: '#FFF4E5',
+                    },
+                  }}
+                />
+              );
+            })}
+            <Tab
+              component={Link}
+              to={maxKeys.toString()}
+              key={maxKeys}
+              value={maxKeys.toString()}
+              icon={<AddIcon />}
+              sx={{
+                '&.MuiTab-root': {
+                  backgroundColor: '#F9FAFB',
+                  border: '0.75px solid #669911',
+                  borderBottom: 'none',
+                  borderTopLeftRadius: '10px',
+                  borderTopRightRadius: '10px',
+                  marginLeft: '0.5em',
+                },
+                '&.Mui-selected': {
+                  color: '#669911',
+                  border: '1px solid #669911',
+                  backgroundColor: '#F5FCE8',
+                },
+                '&:hover': {
+                  color: '#669911',
+                  opacity: 1,
+                  backgroundColor: '#F5FCE8',
+                },
+              }}
+            />
+          </Tabs>
+        </Box>
 
-      <Routes>
-        {visibleTypes.map((form: string, index: number) => {
-          return (
+        <Routes>
+          {visibleTypes.map((form: string, index: number) => (
             <Route
               key={index}
               path={`${index}`}
@@ -310,71 +411,75 @@ export const DesignPanel = () => {
                 />
               }
             />
-          );
-        })}
+          ))}
 
-        {untickedForms.map((form: string, index: number) => {
-          const startIndex: number = index + visibleTypes.length;
-          return (
-            <Route
-              key={startIndex}
-              path={`${startIndex}`}
-              element={
-                <FormEditor
-                  viewSetId={form}
-                  moveCallback={moveForm}
-                  moveButtonsDisabled={true}
-                  handleChangeCallback={handleCheckboxTabChange}
-                  handleDeleteCallback={handleDeleteFormTabChange}
-                  handleSectionMoveCallback={handleSectionMove}
-                  handleFieldMoveCallback={handleFieldMove}
-                />
-              }
-            />
-          );
-        })}
-
-        <Route
-          path={maxKeys.toString()}
-          element={
-            <Grid container spacing={2} pt={3}>
-              <Grid item xs={12} sm={6}>
-                <form
-                  onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                    e.preventDefault();
-                    addNewForm();
-                  }}
-                >
-                  <DebouncedTextField
-                    fullWidth
-                    required
-                    label="Form Name"
-                    helperText="Enter a name for the form."
-                    name="formName"
-                    data-testid="formName"
-                    value={newFormName}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      setNewFormName(event.target.value);
-                    }}
+          {untickedForms.map((form: string, index: number) => {
+            const startIndex: number = index + visibleTypes.length;
+            return (
+              <Route
+                key={startIndex}
+                path={`${startIndex}`}
+                element={
+                  <FormEditor
+                    viewSetId={form}
+                    moveCallback={moveForm}
+                    moveButtonsDisabled={true}
+                    handleChangeCallback={handleCheckboxTabChange}
+                    handleDeleteCallback={handleDeleteFormTabChange}
+                    handleSectionMoveCallback={handleSectionMove}
+                    handleFieldMoveCallback={handleFieldMove}
                   />
-                </form>
+                }
+              />
+            );
+          })}
+
+          <Route
+            path={maxKeys.toString()}
+            element={
+              <Grid container spacing={2} pt={3}>
+                <Grid item xs={12} sm={6}>
+                  <form
+                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                      e.preventDefault();
+                      addNewForm();
+                    }}
+                  >
+                    <DebouncedTextField
+                      fullWidth
+                      required
+                      label="Form Name"
+                      helperText="Enter a name for the form."
+                      name="formName"
+                      data-testid="formName"
+                      value={newFormName}
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>
+                      ) => {
+                        setNewFormName(event.target.value);
+                      }}
+                    />
+                  </form>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={addNewForm}
+                  >
+                    Add New Form
+                  </Button>
+                </Grid>
+                <Grid item xs={12}>
+                  {alertMessage && (
+                    <Alert severity="error">{alertMessage}</Alert>
+                  )}
+                </Grid>
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={addNewForm}
-                >
-                  Add New Form
-                </Button>
-              </Grid>
-              <Grid item xs={12}>
-                {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
-              </Grid>
-            </Grid>
-          }
-        />
-      </Routes>
-    </TabContext>
+            }
+          />
+        </Routes>
+      </TabContext>
+    </>
   );
 };

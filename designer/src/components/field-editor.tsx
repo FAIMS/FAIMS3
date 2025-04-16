@@ -91,17 +91,17 @@ export const FieldEditor = ({
   moveFieldCallback,
 }: FieldEditorProps) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets
+    state => state.notebook['ui-specification'].present.viewsets
   );
 
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
 
   const invalidRefs = useMemo(() => {
