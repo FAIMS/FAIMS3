@@ -1,11 +1,8 @@
-import {
-  MigrationFunc,
-  IS_TESTING,
-  DBTargetVersions,
-  DatabaseType,
-  MigrationDetails,
-} from './types';
 import {Resource, ResourceRole, Role} from '../../permission';
+import {
+  AuthRecordV1ExistingDocumentSchema,
+  RefreshRecordV2ExistingDocument,
+} from '../authDB';
 import {
   V1InviteDBFields,
   V2InviteDBFields,
@@ -18,6 +15,13 @@ import {
 } from '../peopleDB';
 import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
 import {TemplateV1Fields, TemplateV2Fields} from '../templatesDB/types';
+import {
+  DBTargetVersions,
+  DatabaseType,
+  IS_TESTING,
+  MigrationDetails,
+  MigrationFunc,
+} from './types';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -196,8 +200,8 @@ export const projectsV1toV2Migration: MigrationFunc = doc => {
 
     // we check these to be defined above (just force the migration here - it is
     // probably the best option as deleting a project could result in data loss)
-    dataDb: inputDoc.data_db!,
-    metadataDb: inputDoc.metadata_db!,
+    dataDb: inputDoc.data_db ?? undefined as any,
+    metadataDb: inputDoc.metadata_db ?? undefined as any,
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -268,6 +272,29 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
   return {action: 'update', updatedRecord: outputDoc};
 };
 
+/**
+ * Adds the exchange token (fatuous) to mimic new format
+ */
+export const authV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc = AuthRecordV1ExistingDocumentSchema.parse(doc);
+
+  if (inputDoc.documentType === 'emailcode') {
+    // pass through as is
+    return {action: 'none'};
+  } else {
+    return {
+      action: 'update',
+      updatedRecord: {
+        ...inputDoc,
+        // Just put in fake data here to satisfy model
+        exchangeToken: 'fake',
+        exchangeTokenUsed: true,
+      } satisfies RefreshRecordV2ExistingDocument & any,
+    };
+  }
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
@@ -331,5 +358,12 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds the name property to the template document (from the metadata)',
     migrationFunction: templatesV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.AUTH,
+    from: 1,
+    to: 2,
+    description: 'Adds the exchange token property to refresh tokens',
+    migrationFunction: authV1toV2Migration,
   },
 ];

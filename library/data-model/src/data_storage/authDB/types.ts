@@ -1,65 +1,202 @@
-/** Provides types for the Auth database */
-export type AuthRecordTypes = 'refresh' | 'emailcode';
+import {z} from 'zod';
+import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 
-// These indicate the available indexes to fetch things
-export type GetRefreshTokenIndex = 'id' | 'token';
+// =============
+// V1 Definition
+// =============
 
-// You can fetch email codes by index or code
-export type GetEmailCodeIndex = 'id' | 'code';
+// V1 - Common base for all auth record types
+export const AuthRecordBaseV1FieldsSchema = z.object({
+  // Version (internally incremented upon update)
+  version: z.number().min(1),
+  // When does it expire? unix timestamp in ms
+  expiryTimestampMs: z.number(),
+});
 
-// Refresh token fields
-export interface RefreshRecordFields {
-  // Mandatory field for auth records
-  documentType: 'refresh';
-
+// V1 - Refresh token schema
+export const RefreshRecordV1FieldsSchema = AuthRecordBaseV1FieldsSchema.extend({
+  // Discriminator field
+  documentType: z.literal('refresh'),
   // Which user ID has this refresh token
-  userId: string;
-
+  userId: z.string(),
   // What is the token?
-  token: string;
-
-  // When does it expire? unix timestamp in ms
-  expiryTimestampMs: number;
-
+  token: z.string(),
   // Is this token valid
-  enabled: boolean;
-}
+  enabled: z.boolean(),
+});
 
-// Refresh token fields
-export interface EmailCodeFields {
-  // Mandatory field for auth records
-  documentType: 'emailcode';
-
+// V1 - Email code schema
+export const EmailCodeV1FieldsSchema = AuthRecordBaseV1FieldsSchema.extend({
+  // Discriminator field
+  documentType: z.literal('emailcode'),
   // Which user ID generated this code?
-  userId: string;
-
+  userId: z.string(),
   // Hashed code
-  code: string;
-
+  code: z.string(),
   // Has it been used?
-  used: boolean;
+  used: z.boolean(),
+});
 
-  // When does it expire? unix timestamp in ms
-  expiryTimestampMs: number;
-}
-
-// ID prefix map
-export const AuthRecordIdPrefixMap = new Map<AuthRecordTypes, string>([
-  // Refresh records start with prefix
-  ['refresh', 'refresh_'],
-  ['emailcode', 'emailcode_'],
+// V1 - Union of auth record types using discriminated union
+export const AuthRecordV1FieldsSchema = z.discriminatedUnion('documentType', [
+  RefreshRecordV1FieldsSchema,
+  EmailCodeV1FieldsSchema,
 ]);
 
-// NOTE: if we have multiple record types, we could update below to use a union
-// of different fields and update the prefix map
-export type AuthRecordFields = RefreshRecordFields | EmailCodeFields;
+export const AuthRecordV1DocumentSchema = z.discriminatedUnion('documentType', [
+  CouchDocumentSchema.extend(RefreshRecordV1FieldsSchema.shape),
+  CouchDocumentSchema.extend(EmailCodeV1FieldsSchema.shape),
+]);
+export type AuthRecordV1Document = z.infer<typeof AuthRecordV1DocumentSchema>;
 
-export type EmailCodeRecord = PouchDB.Core.Document<EmailCodeFields> &
-  PouchDB.Core.RevisionIdMeta;
-export type RefreshRecord = PouchDB.Core.Document<RefreshRecordFields> &
-  PouchDB.Core.RevisionIdMeta;
+export const AuthRecordV1ExistingDocumentSchema = z.discriminatedUnion(
+  'documentType',
+  [
+    CouchExistingDocumentSchema.extend(RefreshRecordV1FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(EmailCodeV1FieldsSchema.shape),
+  ]
+);
+export type AuthRecordV1ExistingDocument = z.infer<
+  typeof AuthRecordV1ExistingDocumentSchema
+>;
 
-// Type of instantiated auth record in the database
-export type AuthRecord = PouchDB.Core.Document<AuthRecordFields> &
-  PouchDB.Core.RevisionIdMeta;
+export type RefreshRecordV1Fields = z.infer<typeof RefreshRecordV1FieldsSchema>;
+export type EmailCodeV1Fields = z.infer<typeof EmailCodeV1FieldsSchema>;
+export type AuthRecordV1Fields = z.infer<typeof AuthRecordV1FieldsSchema>;
+
+
+// refresh token
+export const RefreshRecordV1DocumentSchema = CouchDocumentSchema.extend(
+  RefreshRecordV1FieldsSchema.shape
+);
+export type RefreshRecordV1Document = z.infer<
+  typeof RefreshRecordV1DocumentSchema
+>;
+
+export const RefreshRecordV1ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(RefreshRecordV1FieldsSchema.shape);
+export type RefreshRecordV1ExistingDocument = z.infer<
+  typeof RefreshRecordV1ExistingDocumentSchema
+>;
+
+// email code
+export const EmailCodeV1DocumentSchema = CouchDocumentSchema.extend(
+  EmailCodeV1FieldsSchema.shape
+);
+export type EmailCodeV1Document = z.infer<typeof EmailCodeV1DocumentSchema>;
+
+export const EmailCodeV1ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(EmailCodeV1FieldsSchema.shape);
+export type EmailCodeV1ExistingDocument = z.infer<
+  typeof EmailCodeV1ExistingDocumentSchema
+>;
+
+
+// =============
+// V2 Definition
+// =============
+
+// Refresh token schema with new fields added only to refresh tokens
+export const RefreshRecordV2FieldsSchema = RefreshRecordV1FieldsSchema.extend({
+  // New fields for V2 - only for refresh tokens
+  exchangeToken: z.string(),
+  exchangeTokenUsed: z.boolean(),
+});
+
+// V2 - Email code schema remains the same as V1
+export const EmailCodeV2FieldsSchema = EmailCodeV1FieldsSchema;
+
+export const AuthRecordV2FieldsSchema = z.discriminatedUnion('documentType', [
+  RefreshRecordV2FieldsSchema,
+  EmailCodeV2FieldsSchema,
+]);
+
+export const AuthRecordV2DocumentSchema = z.discriminatedUnion('documentType', [
+  CouchDocumentSchema.extend(RefreshRecordV2FieldsSchema.shape),
+  CouchDocumentSchema.extend(EmailCodeV2FieldsSchema.shape),
+]);
+export type AuthRecordV2Document = z.infer<typeof AuthRecordV2DocumentSchema>;
+
+export const AuthRecordV2ExistingDocumentSchema = z.discriminatedUnion(
+  'documentType',
+  [
+    CouchExistingDocumentSchema.extend(RefreshRecordV2FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(EmailCodeV2FieldsSchema.shape),
+  ]
+);
+export type AuthRecordV2ExistingDocument = z.infer<
+  typeof AuthRecordV2ExistingDocumentSchema
+>;
+
+export type RefreshRecordV2Fields = z.infer<typeof RefreshRecordV2FieldsSchema>;
+export type EmailCodeV2Fields = z.infer<typeof EmailCodeV2FieldsSchema>;
+export type AuthRecordV2Fields = z.infer<typeof AuthRecordV2FieldsSchema>;
+
+// refresh token
+export const RefreshRecordV2DocumentSchema = CouchDocumentSchema.extend(
+  RefreshRecordV2FieldsSchema.shape
+);
+export type RefreshRecordV2Document = z.infer<
+  typeof RefreshRecordV2DocumentSchema
+>;
+
+export const RefreshRecordV2ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(RefreshRecordV2FieldsSchema.shape);
+export type RefreshRecordV2ExistingDocument = z.infer<
+  typeof RefreshRecordV2ExistingDocumentSchema
+>;
+
+// email code
+export const EmailCodeV2DocumentSchema = CouchDocumentSchema.extend(
+  EmailCodeV2FieldsSchema.shape
+);
+export type EmailCodeV2Document = z.infer<typeof EmailCodeV2DocumentSchema>;
+
+export const EmailCodeV2ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(EmailCodeV2FieldsSchema.shape);
+export type EmailCodeV2ExistingDocument = z.infer<
+  typeof EmailCodeV2ExistingDocumentSchema
+>;
+
+// CURRENT EXPORTS
+// ===============
+
+// Fields
+export const AuthRecordFieldsSchema = AuthRecordV2FieldsSchema;
+export type AuthRecordFields = AuthRecordV2Fields;
+
+// possibly existing document schemas
+export const AuthRecordDocumentSchema = AuthRecordV2DocumentSchema;
+export type AuthRecordDocument = AuthRecordV2Document;
+
+// existing document schemas
+export const AuthRecordExistingDocumentSchema =
+  AuthRecordV2ExistingDocumentSchema;
+export type AuthRecordExistingDocument = AuthRecordV2ExistingDocument;
+
+// Helper types for specific record documents
+
+// refresh token
+export const RefreshRecordDocumentSchema = RefreshRecordV2DocumentSchema;
+export type RefreshRecordDocument = RefreshRecordV2Document;
+export const RefreshRecordExistingDocumentSchema =
+  RefreshRecordV2ExistingDocumentSchema;
+export type RefreshRecordExistingDocument = RefreshRecordV2ExistingDocument;
+
+// email code
+export const EmailCodeDocumentSchema = EmailCodeV2DocumentSchema;
+export type EmailCodeDocument = EmailCodeV2Document;
+export const EmailCodeExistingDocumentSchema =
+  EmailCodeV2ExistingDocumentSchema;
+export type EmailCodeExistingDocument = EmailCodeV2ExistingDocument;
+
+// ID prefix map
+export const AUTH_RECORD_ID_PREFIXES = {
+  refresh: 'refresh_',
+  emailcode: 'emailcode_',
+} as const;
+
+// Database
+export type GetRefreshTokenIndex = 'id' | 'token';
+export type GetEmailCodeIndex = 'id' | 'code';
 export type AuthDatabase = PouchDB.Database<AuthRecordFields>;
