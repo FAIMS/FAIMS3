@@ -12,27 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  Grid,
-  Select,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Stack,
-  Divider,
-  Button,
-  IconButton,
-  Tooltip,
-  Dialog,
-  TextField,
-} from '@mui/material';
-import Autocomplete from '@mui/material/Autocomplete';
-import {useAppSelector} from '../state/hooks';
-import {FieldType} from '../state/initial';
+import QuizIcon from '@mui/icons-material/Quiz';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
-import QuizIcon from '@mui/icons-material/Quiz';
-import {useState, useMemo} from 'react';
+import {
+  Button,
+  Dialog,
+  Divider,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  TextField,
+  Tooltip,
+} from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
+import {useMemo, useState} from 'react';
+import {useAppSelector} from '../state/hooks';
+import {FieldType} from '../state/initial';
 import DebouncedTextField from './debounced-text-field';
 
 // Defines the Condition component to create a conditional expression
