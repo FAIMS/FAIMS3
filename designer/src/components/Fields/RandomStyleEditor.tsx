@@ -27,7 +27,7 @@ import DebouncedTextField from '../debounced-text-field';
 
 export const RandomStyleEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
