@@ -1,7 +1,7 @@
-import {useAuth} from '@/context/auth-provider';
-import {useQuery} from '@tanstack/react-query';
 import {DataTable} from '@/components/data-table/data-table';
 import {columns} from '@/components/tables/project-users';
+import {useAuth} from '@/context/auth-provider';
+import {useGetUsersForProject} from '@/hooks/queries';
 
 /**
  * ProjectUsers component renders a table of users for a project.
@@ -12,39 +12,19 @@ import {columns} from '@/components/tables/project-users';
  */
 const ProjectUsers = ({projectId}: {projectId: string}) => {
   const {user} = useAuth();
-
-  const {data, isPending} = useQuery({
-    queryKey: ['project-users', projectId],
-    queryFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/users`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user?.token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      const tableData = data
-        .filter((user: any) =>
-          user.resourceRoles.find((role: any) => role.resourceId === projectId)
-        )
-        .map((user: any) => ({
-          ...user,
-          projectRoles: user.resourceRoles
-            .filter((role: any) => role.resourceId === projectId)
-            .map((role: any) => role.role),
-        }));
-
-      return tableData;
-    },
+  const {isLoading, data: projectUsers} = useGetUsersForProject({
+    user,
+    projectId,
   });
 
-  return <DataTable columns={columns} data={data || []} loading={isPending} />;
+  const tableData = projectUsers?.users.map(user => ({
+    ...user,
+    projectRoles: user.roles.filter(role => role.value).map(role => role.name),
+  }));
+
+  return (
+    <DataTable columns={columns} data={tableData || []} loading={isLoading} />
+  );
 };
 
 export default ProjectUsers;

@@ -10,6 +10,7 @@ import {
   GetListTeamsResponse,
   GetListTemplatesResponse,
   GetNotebookResponse,
+  GetNotebookUsersResponse,
   GetProjectInvitesResponse,
   GetTeamByIdResponse,
   GetTeamInvitesResponse,
@@ -290,5 +291,27 @@ export const useGetRecords = (user: User | null, projectId: string) =>
         `/api/notebooks/${projectId}/records/`,
         user
       ),
+    enabled: !!user,
+  });
+
+/**
+ * @param projectId - the project ID to lookup
+ * @param user - The user object.
+ */
+export const useGetUsersForProject = ({
+  projectId,
+  user,
+}: {
+  user: User | null;
+  projectId: string;
+}) =>
+  useQuery({
+    queryKey: ['projectusers', projectId],
+    queryFn: async () => {
+      return await get<GetNotebookUsersResponse>(
+        `/api/notebooks/${projectId}/users`,
+        user
+      );
+    },
     enabled: !!user,
   });
