@@ -16,6 +16,11 @@ import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
+import {
+  getViewSetForView,
+  removeFieldFromSummary,
+  removeFieldFromSummaryForViewset,
+} from './helpers/uiSpec-helpers';
 // eslint-disable-next-line n/no-extraneous-import
 
 /**
@@ -156,6 +161,15 @@ export const uiSpecificationReducer = createSlice({
 
       // add field to target section
       state.fviews[targetViewId].fields.push(fieldName);
+
+      // Get viewset (form) ids for both fields.
+      const sourceViewSetId = getViewSetForView(state, sourceViewId);
+      const targetViewSetId = getViewSetForView(state, targetViewId);
+      // If the field has moved to a different form or we couldn't find one of the forms,
+      // then remove the field from the form's summary fields.
+      if (sourceViewSetId && sourceViewSetId !== targetViewSetId) {
+        removeFieldFromSummaryForViewset(state, fieldName, sourceViewSetId);
+      }
     },
     fieldRenamed: (
       state,
@@ -296,6 +310,7 @@ export const uiSpecificationReducer = createSlice({
         state.fviews[viewId].fields = state.fviews[viewId].fields.filter(
           field => field !== fieldName
         );
+        removeFieldFromSummary(state, fieldName);
       } else {
         throw new Error(
           `Cannot delete unknown field ${fieldName} via fieldDeleted action`
