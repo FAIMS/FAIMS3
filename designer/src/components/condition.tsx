@@ -24,6 +24,7 @@ import {
   IconButton,
   Tooltip,
   Dialog,
+  TextField,
 } from '@mui/material';
 import Autocomplete from '@mui/material/Autocomplete';
 import {useAppSelector} from '../state/hooks';
@@ -980,14 +981,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             updateField(newValue || '');
           }}
           renderInput={params => (
-            <DebouncedTextField
-              onChange={function (): void {
-                throw new Error('Function not implemented.');
-              }}
-              {...params}
-              label="Field"
-              variant="outlined"
-            />
+            <TextField {...params} label="Field" variant="outlined" />
           )}
           style={{minWidth: 200}}
           clearOnEscape
