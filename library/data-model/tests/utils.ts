@@ -25,7 +25,7 @@ export const areDocsEqual = (
     if (a === b) return true;
 
     // If either is null or undefined but not both (since we already checked a === b)
-    if (a == null || b == null) return false;
+    if (a === null || b === null) return false;
 
     // Different types means not equal
     if (typeof a !== typeof b) return false;

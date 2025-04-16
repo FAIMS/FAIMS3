@@ -18,53 +18,50 @@
  */
 
 import {
-  PostRefreshTokenInputSchema,
-  PostRefreshTokenResponse,
-  PublicServerInfo,
   Action,
   PostExchangeTokenInputSchema,
   PostExchangeTokenResponse,
+  PostRefreshTokenInputSchema,
+  PostRefreshTokenResponse,
+  PublicServerInfo,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
-import {
-  CONDUCTOR_DESCRIPTION,
-  CONDUCTOR_INSTANCE_NAME,
-  CONDUCTOR_PUBLIC_URL,
-  CONDUCTOR_SHORT_CODE_PREFIX,
-  DEVELOPER_MODE,
-  EMAIL_CONFIG,
-  EMAIL_SERVICE,
-  EMAIL_SERVICE_TYPE,
-  TEST_EMAIL_ADDRESS,
-  RUNNING_UNDER_TEST,
-  CONDUCTOR_SERVER_ID,
-} from '../buildconfig';
-import {initialiseDbAndKeys} from '../couchdb';
-import {restoreFromBackup} from '../couchdb/backupRestore';
-import {getUserProjectsDirectory} from '../couchdb/notebooks';
-import * as Exceptions from '../exceptions';
-import {
-  isAllowedToMiddleware,
-  optionalAuthenticationJWT,
-  requireAuthenticationAPI,
-} from '../middleware';
-import {slugify} from '../utils';
-
-// TODO: configure this directory
-const upload = multer({dest: '/tmp/'});
-
 import {processRequest} from 'zod-express-middleware';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
 import {
+  CONDUCTOR_DESCRIPTION,
+  CONDUCTOR_INSTANCE_NAME,
+  CONDUCTOR_PUBLIC_URL,
+  CONDUCTOR_SERVER_ID,
+  CONDUCTOR_SHORT_CODE_PREFIX,
+  DEVELOPER_MODE,
+  EMAIL_CONFIG,
+  EMAIL_SERVICE,
+  EMAIL_SERVICE_TYPE,
+  RUNNING_UNDER_TEST,
+  TEST_EMAIL_ADDRESS,
+} from '../buildconfig';
+import {initialiseDbAndKeys} from '../couchdb';
+import {restoreFromBackup} from '../couchdb/backupRestore';
+import {getUserProjectsDirectory} from '../couchdb/notebooks';
+import {
   consumeExchangeTokenForRefreshToken,
   validateRefreshToken,
 } from '../couchdb/refreshTokens';
+import * as Exceptions from '../exceptions';
+import {
+  isAllowedToMiddleware,
+  optionalAuthenticationJWT,
+  requireAuthenticationAPI,
+} from '../middleware';
 import patch from '../utils/patchExpressAsync';
-import bodyParser from 'body-parser';
+
+// TODO: configure this directory
+const upload = multer({dest: '/tmp/'});
 
 // This must occur before express api is used
 patch();
@@ -156,7 +153,7 @@ api.post(
     // If the refresh token / exchange token is not valid, let user know (ambiguously)
     if (!valid || !refreshDocument || !resultingUser) {
       throw new Exceptions.InvalidRequestException(
-        `Validation of exchange token failed.`
+        'Validation of exchange token failed.'
       );
     }
 
