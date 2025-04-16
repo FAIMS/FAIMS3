@@ -50,18 +50,18 @@ export interface TokenContents extends DecodedTokenPermissions {
 // =======================================
 
 // Schema for a decoded resource role
-export const decodedResourceRoleSchema = z.object({
+export const resourceRoleSchema = z.object({
   resourceId: z.string().min(1),
   role: z.nativeEnum(Role),
 });
-export type ResourceRole = z.infer<typeof decodedResourceRoleSchema>;
+export type ResourceRole = z.infer<typeof resourceRoleSchema>;
 
 // Schema for a global role
 export const globalRoleSchema = z.nativeEnum(Role);
 
 // Complete decoded token structure
 export const decodedTokenSchema = z.object({
-  resourceRoles: z.array(decodedResourceRoleSchema),
+  resourceRoles: z.array(resourceRoleSchema),
   globalRoles: z.array(globalRoleSchema),
 });
 

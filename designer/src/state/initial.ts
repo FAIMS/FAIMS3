@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// eslint-disable-next-line n/no-extraneous-import
+import {StateWithHistory} from 'redux-undo';
 import {ConditionType} from '../components/condition';
 
 export type NotebookMetadata = PropertyMap;
@@ -128,12 +130,17 @@ export type NotebookModified = {
 
 export type AppState = {
   modified: boolean;
-  notebook: Notebook;
+  notebook: NotebookWithHistory;
 };
 
 export type Notebook = {
   metadata: NotebookMetadata;
   'ui-specification': NotebookUISpec;
+};
+
+export type NotebookWithHistory = {
+  metadata: NotebookMetadata;
+  'ui-specification': StateWithHistory<NotebookUISpec>;
 };
 
 // an empty notebook
@@ -156,10 +163,14 @@ export const initialState: AppState = {
       sections: {},
     },
     'ui-specification': {
-      fields: {},
-      fviews: {},
-      viewsets: {},
-      visible_types: [],
+      present: {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      },
+      past: [],
+      future: [],
     },
   },
 };

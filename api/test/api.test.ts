@@ -26,6 +26,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 import {
   EncodedProjectUIModel,
   getDataDB,
+  GetListAllUsersResponseSchema,
   GetNotebookResponse,
   ProjectStatus,
   registerClient,
@@ -407,6 +408,29 @@ describe('API tests', () => {
         delete databaseList[db_name];
       }
     }
+  });
+
+  it('list users, ensuring no profile info is leaked', async () => {
+    await request(app)
+      .get('/api/users')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200)
+      .then(response => {
+        // parse as proper type
+        const res = GetListAllUsersResponseSchema.parse(response.body);
+
+        // there are a couple of users
+        expect(res.length).to.eq(3);
+
+        // ensure they don't have profile info!!
+        for (const user of res) {
+          expect((user as any).profiles).to.be.undefined;
+
+          // but other properties should be valid
+          expect(user.name).to.not.be.undefined;
+        }
+      });
   });
 
   it('update admin user - no auth', async () => {
