@@ -78,7 +78,7 @@ jobs:
           # we install these here because of a bug in npm with platform specific
           # dependencies
           npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
-          npm run configIOSbuild
+          npm run configIOSbuild --workspace app
           npm run build
       - name: Update IOS Build
         run: |
