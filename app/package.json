@@ -44,7 +44,8 @@
     "fix": "gts fix",
     "doc": "jsdoc -c ./jsdoc.config.json",
     "set-version": "./bin/setBuildVersion.sh",
-    "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh"
+    "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh",
+    "configIOSbuild": "env-cmd --no-override --silent ./bin/prebuildIOS.sh"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",
