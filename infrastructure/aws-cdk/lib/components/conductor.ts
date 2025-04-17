@@ -108,6 +108,9 @@ export interface FaimsConductorProps {
   smtpConfig: SMTPGeneralConfig;
   /** Social providers info (if enabled) */
   socialProviders?: SocialProvidersConfig;
+  /** If true, adds typical localhost addresses to the allowable redirect
+   * whitelist (DEV ONLY) */
+  localhostWhitelist: boolean;
 }
 
 /**
@@ -238,6 +241,14 @@ export class FaimsConductor extends Construct {
           props.webAppPublicUrl,
           props.webUrl,
           `${props.appId}://`,
+          ...(props.localhostWhitelist
+            ? [
+                'http://localhost:3000',
+                'http://localhost:3001',
+                'http://localhost:8080',
+                'http://localhost:8000',
+              ]
+            : []),
         ].join(','),
 
         // social providers (if at least one configured)
