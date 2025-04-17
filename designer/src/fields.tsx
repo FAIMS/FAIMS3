@@ -22,7 +22,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'FAIMS Text Field',
       fullWidth: true,
-      helperText: 'Enter text',
+      helperText: '',
       variant: 'outlined',
       required: false,
     },
@@ -36,7 +36,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Email',
       fullWidth: true,
-      helperText: 'Enter a valid email address',
+      helperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -53,7 +53,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Number field',
       fullWidth: true,
-      helperText: 'We have fields for storing Numbers.',
+      helperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -70,7 +70,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Controlled number',
       fullWidth: true,
-      helperText: 'This number must be at least 10 and not more than 20.',
+      helperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -107,7 +107,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Text Field',
       fullWidth: true,
-      helperText: 'Helper Text',
+      helperText: '',
       variant: 'outlined',
       required: false,
       multiline: true,
@@ -129,7 +129,7 @@ const fields: {[key: string]: FieldType} = {
       id: 'checkbox-field',
       required: false,
       type: 'checkbox',
-      helperText: 'Checkbox help.',
+      helperText: '',
     },
     validationSchema: [['yup.bool']],
     initialValue: false,
@@ -141,8 +141,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Date and Time with Now button',
       fullWidth: true,
-      helperText:
-        'Add a datetime stamp (click now to record the current date+time)',
+      helperText: '',
       variant: 'outlined',
       required: false,
       is_auto_pick: false,
@@ -157,7 +156,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Date picker',
       fullWidth: true,
-      helperText: 'Select a date',
+      helperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -174,7 +173,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Date and Time',
       fullWidth: true,
-      helperText: 'And a calendar prompt with a timestamp.',
+      helperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -191,7 +190,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Month picker',
       fullWidth: true,
-      helperText: 'Select a month',
+      helperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -209,7 +208,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Upload a File',
       name: 'file-upload-field',
       id: 'file-upload-field',
-      helperText: 'Choose a file',
+      helperText: '',
     },
     validationSchema: [['yup.mixed']],
     initialValue: null,
@@ -238,7 +237,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Select Multiple',
       fullWidth: true,
-      helperText: 'Choose items from the dropdown',
+      helperText: '',
       variant: 'outlined',
       required: false,
       select: true,
@@ -283,7 +282,7 @@ const fields: {[key: string]: FieldType} = {
           },
         ],
       },
-      helperText: 'Make sure you choose the right one!',
+      helperText: '',
     },
     validationSchema: [['yup.string']],
     initialValue: '',
@@ -294,7 +293,7 @@ const fields: {[key: string]: FieldType} = {
     'type-returned': 'faims-core::String',
     'component-parameters': {
       fullWidth: true,
-      helperText: 'This is sub Title',
+      helperText: '',
       variant: 'outlined',
       label: 'Title',
       variant_style: 'h5',
@@ -319,7 +318,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Select Related',
       fullWidth: true,
-      helperText: 'Select or add new related record',
+      helperText: '',
       required: true,
       related_type: '',
       relation_type: 'faims-core::Child',
@@ -335,7 +334,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Select Field',
       fullWidth: true,
-      helperText: 'Choose a value from the dropdown',
+      helperText: '',
       required: false,
       ElementProps: {
         options: [],
@@ -351,7 +350,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Select Field',
       fullWidth: true,
-      helperText: 'Select from list',
+      helperText: '',
       required: false,
       ElementProps: {
         optiontree: [
@@ -372,7 +371,7 @@ const fields: {[key: string]: FieldType} = {
     'type-returned': 'faims-attachment::Files',
     'component-parameters': {
       name: 'take-photo-field',
-      helperText: 'Take a photo',
+      helperText: '',
       label: 'Take Photo',
     },
     validationSchema: [
@@ -388,7 +387,7 @@ const fields: {[key: string]: FieldType} = {
     'type-returned': 'faims-pos::Location',
     'component-parameters': {
       name: 'take-point-field',
-      helperText: 'Click to save current location',
+      helperText: '',
       label: 'Take point',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
@@ -402,7 +401,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Templated String Field',
       fullWidth: true,
       name: 'templated-field',
-      helperText: 'Templated String Field',
+      helperText: '',
       required: true,
       template: ' {{}}',
       hidden: true,
@@ -418,7 +417,7 @@ const fields: {[key: string]: FieldType} = {
       name: 'qr-code-field',
       required: false,
       label: 'Scan QR Code',
-      helperText: 'Scan QR Code on the sample',
+      helperText: '',
     },
     validationSchema: [['yup.string']],
     initialValue: '',
@@ -428,7 +427,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'AddressField',
     'type-returned': 'faims-core::JSON',
     'component-parameters': {
-      helperText: 'Enter your address',
+      helperText: '',
       required: false,
       name: 'Address',
       label: 'Address',
@@ -443,7 +442,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       label: 'Number Input',
       fullWidth: true,
-      helperText: 'Enter a valid number',
+      helperText: '',
       required: false,
       InputProps: {
         type: 'number',

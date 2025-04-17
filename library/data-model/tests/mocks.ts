@@ -78,7 +78,7 @@ export const sampleUiSpecForViewId = ({
         'component-parameters': {
           label: 'name',
           fullWidth: true,
-          helperText: 'Enter text',
+          helperText: '',
           variant: 'outlined',
           required: false,
           InputProps: {
@@ -109,7 +109,7 @@ export const sampleUiSpecForViewId = ({
         'component-parameters': {
           label: 'age',
           fullWidth: true,
-          helperText: 'We have fields for storing Numbers.',
+          helperText: '',
           variant: 'outlined',
           required: false,
           InputProps: {

@@ -64,10 +64,9 @@
           "fullWidth": true,
           "name": "take-photo",
           "id": "take-photo",
-          "helperText": "Take a photo",
+          "helperText": "",
           "variant": "outlined",
-          "label": "Take Photo",
-          "helpertext": "Take an overview photo"
+          "label": "Take Photo"
         },
         "validationSchema": [
           [
@@ -98,7 +97,7 @@
           "fullWidth": true,
           "name": "take-gps-point",
           "id": "take-gps-point",
-          "helperText": "Click to save current location",
+          "helperText": "",
           "variant": "outlined",
           "label": "Take GPS Point"
         },
@@ -129,7 +128,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "This is the type of feature",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "select": true,
@@ -193,7 +192,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Enter a detailed description of the feature",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "multiline": true,
@@ -233,7 +232,7 @@
         "type-returned": "faims-core::Relationship",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Select or Add new related record",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "related_type": "FORM2",
@@ -274,7 +273,7 @@
         "type-returned": "faims-core::Relationship",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Measurements",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "related_type": "FORM3",
@@ -315,7 +314,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Select dimension type",
+          "helperText": "",
           "variant": "outlined",
           "required": true,
           "select": true,
@@ -398,7 +397,7 @@
         "type-returned": "faims-core::Integer",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Enter your value here",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -440,7 +439,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Select your material here",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "select": true,
@@ -506,7 +505,7 @@
           "fullWidth": true,
           "name": "take-photo-2",
           "id": "take-photo-2",
-          "helperText": "Take a photo",
+          "helperText": "",
           "variant": "outlined",
           "label": "Take Photo"
         },
@@ -539,7 +538,7 @@
           "fullWidth": true,
           "name": "artefactid",
           "id": "artefactid",
-          "helperText": "Human Readable ID",
+          "helperText": "",
           "variant": "outlined",
           "required": true,
           "template": "{{html-text}}-{{artefactid-counter}}",
@@ -584,7 +583,7 @@
           "fullWidth": true,
           "name": "hridFORM2",
           "id": "hridFORM2",
-          "helperText": "Human Readable ID",
+          "helperText": "",
           "variant": "outlined",
           "required": true,
           "template": "{{html-text}}-{{artefactid-counter}}",
@@ -628,7 +627,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "What do you think this is?",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "multiline": true,
@@ -668,7 +667,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "Add additional comments about the feature here.",
+          "helperText": "",
           "variant": "outlined",
           "required": false,
           "multiline": true,

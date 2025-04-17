@@ -56,10 +56,9 @@
                     "fullWidth": true,
                     "name": "newfieldb66e2b4f",
                     "id": "newfieldb66e2b4f",
-                    "helperText": "Take a photo",
+                    "helperText": "",
                     "variant": "outlined",
-                    "label": "Take Photo",
-                    "helpertext": "Take an overview photo"
+                    "label": "Take Photo"
                 },
                 "validationSchema":
                 [
@@ -96,7 +95,7 @@
                     "fullWidth": true,
                     "name": "newfield1b5341a3",
                     "id": "newfield1b5341a3",
-                    "helperText": "Click to save current location",
+                    "helperText": "",
                     "variant": "outlined",
                     "label": "Take GPS Point"
                 },
@@ -133,7 +132,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "This is the type of feature",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "select": true,
@@ -208,7 +207,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Enter a detailed description of the feature",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "multiline": true,
@@ -258,7 +257,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Select or Add new related record",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "related_type": "FORM2",
@@ -310,7 +309,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Measurements",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "related_type": "FORM3",
@@ -361,7 +360,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Select dimension type",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": true,
                     "select": true,
@@ -455,7 +454,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Enter your value here",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "InputProps":
@@ -507,7 +506,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Select your material here",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "select": true,
@@ -584,7 +583,7 @@
                     "fullWidth": true,
                     "name": "newfieldcce6babf",
                     "id": "newfieldcce6babf",
-                    "helperText": "Take a photo",
+                    "helperText": "",
                     "variant": "outlined",
                     "label": "Take Photo"
                 },
@@ -623,7 +622,7 @@
                     "fullWidth": true,
                     "name": "newfieldfa3c1b6b",
                     "id": "newfieldfa3c1b6b",
-                    "helperText": "Human Readable ID",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": true,
                     "template": "{{newfield4ac4f23b}}-{{newfield4510ea65}}",
@@ -676,7 +675,7 @@
                     "fullWidth": true,
                     "name": "hridFORM2",
                     "id": "hridFORM2",
-                    "helperText": "Human Readable ID",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": true,
                     "template": "{{newfield4ac4f23b}}-{{newfield4510ea65}}",
@@ -728,7 +727,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "What do you think this is?",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": true,
                     "multiline": true,
@@ -778,7 +777,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Add additional comments about the feature here.",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "multiline": true,
@@ -1160,7 +1159,7 @@
                 "component-parameters":
                 {
                     "fullWidth": true,
-                    "helperText": "Enter additional comments about the artefacts associated with this feature, as needed",
+                    "helperText": "",
                     "variant": "outlined",
                     "required": false,
                     "multiline": true,
