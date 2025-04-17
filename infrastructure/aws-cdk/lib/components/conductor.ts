@@ -24,9 +24,9 @@ import * as r53 from 'aws-cdk-lib/aws-route53';
 import * as r53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
-import {ConductorConfig} from '../faims-infra-stack';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
+import {ConductorConfig} from '../config';
 
 const DEFAULT_SMTP_CACHE_EXPIRY = 300;
 
