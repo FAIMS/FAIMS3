@@ -27,10 +27,10 @@ import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
-import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
+import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
-import {useCallback, useEffect, useState} from 'react';
-
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {transform} from 'ol/proj';
 // define some EPSG codes - these are for two sample images
 // TODO: we need to have a better way to include a useful set or allow
 // them to be defined by a project
@@ -45,6 +45,13 @@ proj4.defs(
 register(proj4);
 
 export type MapAction = 'save' | 'close';
+
+// // To simulate movement for PR: open browser console and set `window.__USE_FAKE_GPS__ = true`
+declare global {
+  interface Window {
+    __USE_FAKE_GPS__?: boolean;
+  }
+}
 
 interface MapProps extends ButtonProps {
   label: string;
@@ -78,349 +85,369 @@ import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
 import {Extent} from 'ol/extent';
+import Feature from 'ol/Feature';
+import {Point} from 'ol/geom';
+import {RegularShape} from 'ol/style';
 
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
-  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer<any>>();
+  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer>();
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
-  const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
+  const [featuresExtent, setFeaturesExtent] = useState<Extent>();
 
   // notifications
   const notify = useNotification();
 
+  // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
     (theMap: Map, props: MapProps) => {
-      const source = new VectorSource();
+      const vectorSource = new VectorSource();
+      // @TODO: RG - Strech goal to show a popup on click of any point with lat-long info
+      const pinIcon = new Icon({
+        src: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+        anchor: [0.5, 1],
+        scale: 0.07,
+      });
+
+      const pinStyle = new Style({
+        image: pinIcon,
+      });
 
       const layer = new VectorLayer({
-        source: source,
-        style: new Style({
-          stroke: new Stroke({
-            color: '#33ff33',
-            width: 4,
-          }),
-          image: new CircleStyle({
-            radius: 7,
-            fill: new Fill({color: '#33ff33'}),
-          }),
-        }),
-      });
-      const draw = new Draw({
-        source: source,
-        type: props.featureType || 'Point',
-      });
-      const modify = new Modify({
-        source: source,
+        source: vectorSource,
+        style: pinStyle,
       });
 
-      // add features to map if we're passed any in
+      const draw = new Draw({
+        source: vectorSource,
+        type: props.featureType || 'Point',
+      });
+      const modify = new Modify({source: vectorSource});
+
+      // Only allow one point at a time
+      draw.on('drawstart', () => {
+        vectorSource.clear();
+      });
+
       if (props.features && props.features.type) {
         const parsedFeatures = geoJson.readFeatures(props.features, {
           dataProjection: 'EPSG:4326',
           featureProjection: theMap.getView().getProjection(),
         });
-        source.addFeatures(parsedFeatures);
+        vectorSource.addFeatures(parsedFeatures);
 
-        // set the view so that we can see the features
-        // but don't zoom too much
-        const extent = source.getExtent();
-        // don't fit if the extent is infinite because it crashes
-        if (!extent.includes(Infinity)) {
-          setFeaturesExtent(extent);
-        }
+        const extent = vectorSource.getExtent();
+        if (!extent.includes(Infinity)) setFeaturesExtent(extent);
       }
 
       theMap.addLayer(layer);
       theMap.addInteraction(draw);
       theMap.addInteraction(modify);
       setFeaturesLayer(layer);
-
-      draw.on('drawstart', () => {
-        // clear any existing features if we start drawing again
-        // could allow up to a fixed number of features
-        // here by counting
-        source.clear();
-      });
     },
-    [setFeaturesLayer]
+    [geoJson, setFeaturesExtent]
   );
 
-  const handleClose = (action: 'save' | 'clear' | 'close') => {
+  // save cleanr and close
+  const handleClose = (action: MapAction | 'clear') => {
+    if (!map) return;
+
+    const source = featuresLayer?.getSource();
+
+    if (action === 'clear') {
+      source?.clear();
+      return;
+    }
+    const features = source?.getFeatures() ?? [];
+
     if (featuresLayer) {
-      const source = featuresLayer.getSource();
+      featuresLayer?.getSource()?.clear(); // just clear features, don’t remove layer
+    }
 
-      if (source) {
-        const features = source.getFeatures();
-
-        if (map) {
-          const geoJsonFeatures = geoJson.writeFeaturesObject(features, {
-            featureProjection: map.getView().getProjection(),
-            dataProjection: 'EPSG:4326',
-            rightHanded: true,
-          });
-          if (action === 'clear') {
-            // if clearing - just remove locally don't callback so we don't save this change
-            source.clear();
-          } else if (action === 'save') {
-            if (!features.length) {
-              setShowConfirmSave(true); // show confirmation dialog if no location is selected while saving.
-              return;
-            }
-            props.setFeatures(geoJsonFeatures, 'save');
-            setMapOpen(false);
-          } else if (action === 'close') {
-            setMapOpen(false);
-          }
-        }
+    // action save
+    if (action === 'save') {
+      if (!features.length) {
+        setShowConfirmSave(true);
+        return;
       }
+
+      const geoJsonFeatures = geoJson.writeFeaturesObject(features, {
+        featureProjection: map.getView().getProjection(), // EPSG:3857
+        dataProjection: 'EPSG:4326', // convert back to EPSG:4326
+      });
+
+      props.setFeatures(geoJsonFeatures, 'save');
+      setMapOpen(false);
+    } else if (action === 'close') {
+      setMapOpen(false);
     }
   };
 
+  // ppen map
   const handleClickOpen = () => {
     if (props.fallbackCenter) {
       notify.showWarning(
-        'Using default map location - unable to determine current location and no center location configured.'
+        'Using default map location - no current GPS or center.'
       );
     }
-    // We always provide a center, so it's always safe to open the map
     setMapOpen(true);
+    setTimeout(() => {
+      if (map) {
+        map.getLayers().forEach(layer => {
+          if (layer.getZIndex?.() === 999) map.removeLayer(layer); // remove old layer
+        });
+        map.updateSize(); // resize in case of fullscreen bug
+        map.getView().setZoom(props.zoom || 17);
+      }
+    }, 300); // delay to ensure DOM is ready
   };
 
+  // always re-apply draw interaction if maps open.
   useEffect(() => {
-    if (map) {
-      addDrawInteraction(map, props);
-    }
-  }, [map]);
+    if (mapOpen && map) addDrawInteraction(map, props);
+  }, [mapOpen, map]);
 
   return (
-    <div>
-      {!props.isLocationSelected ? (
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={handleClickOpen}
-          sx={{
-            width: {xs: '100%', sm: '50%', md: '40%'},
-            maxWidth: '450px',
-            backgroundColor: theme.palette.primary.main,
-            color: theme.palette.background.default,
-            padding: '12px',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            borderRadius: '12px',
-            boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-            transition: 'all 0.3s ease-in-out',
-            display: props.isLocationSelected ? 'none' : 'block',
-            alignItems: 'left',
-            justifyContent: 'center',
-            '&:hover': {
-              backgroundColor: theme.palette.secondary.main,
-              transform: 'scale(1.03)',
-              boxShadow: '0px 6px 14px rgba(0, 0, 0, 0.3)',
-            },
-          }}
-        >
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-            <MapIcon
-              sx={{
-                fontSize: 26,
-                color: theme.palette.background.default,
-                transform: 'scale(1.5)',
-              }}
-            />
-
-            <Typography
-              variant="h6"
-              sx={{fontWeight: 'bold', fontSize: '18px'}}
-            >
-              {props.label}
-            </Typography>
-          </Box>
-        </Button>
-      ) : (
-        <Box>
-          <Tooltip title="Edit location">
-            <Box
-              id="edit-location-container"
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 80,
-                height: 80,
-                backgroundColor: '#dfdfdf',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease-in-out',
-                '&:hover': {
-                  backgroundColor: '#e0e0e0',
-                  transform: 'scale(1.1)',
-                  boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
-                },
-              }}
-              onClick={handleClickOpen}
-            >
-              <EditIcon
+    <>
+      <div>
+        {!props.isLocationSelected ? (
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleClickOpen}
+            sx={{
+              width: {xs: '100%', sm: '50%', md: '40%'},
+              maxWidth: '450px',
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.background.default,
+              padding: '12px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              borderRadius: '12px',
+              boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
+              transition: 'all 0.3s ease-in-out',
+              display: props.isLocationSelected ? 'none' : 'block',
+              alignItems: 'left',
+              justifyContent: 'center',
+              '&:hover': {
+                backgroundColor: theme.palette.secondary.main,
+                transform: 'scale(1.03)',
+                boxShadow: '0px 6px 14px rgba(0, 0, 0, 0.3)',
+              },
+            }}
+          >
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+              <MapIcon
                 sx={{
                   fontSize: 26,
-                  color: theme.palette.primary.main,
+                  color: theme.palette.background.default,
+                  transform: 'scale(1.5)',
                 }}
               />
-            </Box>
-          </Tooltip>
-        </Box>
-      )}
 
-      <Dialog fullScreen open={mapOpen} onClose={() => setMapOpen(false)}>
-        <AppBar
-          sx={{
-            position: 'relative',
-            backgroundColor: theme.palette.background.default,
-          }}
-        >
-          <Toolbar
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              backgroundColor: theme.palette.background.default,
-              width: '100%',
-              paddingX: {xs: '8px', sm: '12px'},
-            }}
-          >
-            <Box
-              sx={{display: 'flex', alignItems: 'center', marginLeft: '10px'}}
-            >
-              <IconButton
-                edge="start"
-                color="inherit"
-                onClick={() => setMapOpen(false)}
-                aria-label="close"
+              <Typography
+                variant="h6"
+                sx={{fontWeight: 'bold', fontSize: '18px'}}
+              >
+                {props.label}
+              </Typography>
+            </Box>
+          </Button>
+        ) : (
+          <Box>
+            <Tooltip title="Edit location">
+              <Box
+                id="edit-location-container"
                 sx={{
-                  backgroundColor: theme.palette.primary.dark,
-                  color: theme.palette.background.default,
-                  fontSize: '16px',
-                  gap: '4px',
-                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 80,
+                  height: 80,
+                  backgroundColor: '#dfdfdf',
                   borderRadius: '6px',
-                  padding: '6px 12px',
-                  transition:
-                    'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease-in-out',
                   '&:hover': {
-                    backgroundColor: theme.palette.text.primary,
-                    transform: 'scale(1.05)',
+                    backgroundColor: '#e0e0e0',
+                    transform: 'scale(1.1)',
+                    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
                   },
                 }}
+                onClick={handleClickOpen}
               >
-                <CloseIcon
+                <EditIcon
                   sx={{
-                    stroke: theme.palette.background.default,
-                    strokeWidth: '1.5',
+                    fontSize: 26,
+                    color: theme.palette.primary.main,
                   }}
                 />
-                Close
-              </IconButton>
-            </Box>
+              </Box>
+            </Tooltip>
+          </Box>
+        )}
 
-            <Box
+        <Dialog fullScreen open={mapOpen} onClose={() => setMapOpen(false)}>
+          <AppBar
+            sx={{
+              position: 'relative',
+              backgroundColor: theme.palette.background.default,
+            }}
+          >
+            <Toolbar
               sx={{
                 display: 'flex',
-                gap: 1,
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: theme.palette.background.default,
+                width: '100%',
+                paddingX: {xs: '8px', sm: '12px'},
               }}
             >
-              <Button
-                color="inherit"
-                onClick={() => handleClose('clear')}
+              <Box
+                sx={{display: 'flex', alignItems: 'center', marginLeft: '10px'}}
+              >
+                <IconButton
+                  edge="start"
+                  color="inherit"
+                  onClick={() => setMapOpen(false)}
+                  aria-label="close"
+                  sx={{
+                    backgroundColor: theme.palette.primary.dark,
+                    color: theme.palette.background.default,
+                    fontSize: '16px',
+                    gap: '4px',
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    transition:
+                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: theme.palette.text.primary,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  <CloseIcon
+                    sx={{
+                      stroke: theme.palette.background.default,
+                      strokeWidth: '1.5',
+                    }}
+                  />
+                  Close
+                </IconButton>
+              </Box>
+
+              <Box
                 sx={{
-                  backgroundColor: theme.palette.highlightColor.main,
-                  color: theme.palette.dialogButton.dialogText,
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  transition:
-                    'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: theme.palette.text.primary,
-                    transform: 'scale(1.05)',
-                  },
+                  display: 'flex',
+                  gap: 1,
                 }}
               >
-                Clear
-              </Button>
+                <Button
+                  color="inherit"
+                  onClick={() => handleClose('clear')}
+                  sx={{
+                    backgroundColor: theme.palette.highlightColor.main,
+                    color: theme.palette.dialogButton.dialogText,
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    transition:
+                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: theme.palette.text.primary,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  Clear
+                </Button>
 
-              <Button
-                color="inherit"
-                onClick={() => handleClose('save')}
-                sx={{
-                  backgroundColor: theme.palette.alert.successBackground,
-                  color: theme.palette.dialogButton.dialogText,
-                  borderRadius: '6px',
-                  fontWeight: 'bold',
-                  transition:
-                    'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: theme.palette.text.primary,
-                    transform: 'scale(1.05)',
-                  },
-                }}
-              >
-                Save
-              </Button>
-            </Box>
-          </Toolbar>
-        </AppBar>
+                <Button
+                  color="inherit"
+                  onClick={() => handleClose('save')}
+                  sx={{
+                    backgroundColor: theme.palette.alert.successBackground,
+                    color: theme.palette.dialogButton.dialogText,
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    transition:
+                      'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: theme.palette.text.primary,
+                      transform: 'scale(1.05)',
+                    },
+                  }}
+                >
+                  Save
+                </Button>
+              </Box>
+            </Toolbar>
+          </AppBar>
 
-        {/* <div ref={refCallback} style={styles.mapContainer} /> */}
-        <Grid container spacing={2} sx={{height: '100%'}}>
-          <MapComponent
-            parentSetMap={setMap}
-            center={props.center}
-            extent={featuresExtent}
-            zoom={props.zoom}
-          />
-        </Grid>
-      </Dialog>
+          {/* <div ref={refCallback} style={styles.mapContainer} /> */}
+          <Grid container spacing={2} sx={{height: '100%'}}>
+            <MapComponent
+              parentSetMap={setMap}
+              center={props.center}
+              extent={featuresExtent}
+              zoom={props.zoom}
+            />
+          </Grid>
+        </Dialog>
 
-      <Dialog open={showConfirmSave} onClose={() => setShowConfirmSave(false)}>
-        <Alert severity="warning">
-          <AlertTitle>No location selected</AlertTitle>
-          Are you sure you want to save an empty location selection?
-        </Alert>
-        <DialogActions>
-          <Button
-            onClick={() => setShowConfirmSave(false)}
-            sx={{
-              backgroundColor: theme.palette.dialogButton.cancel,
-              color: theme.palette.background.default,
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            sx={{
-              backgroundColor: theme.palette.alert.successBackground,
-              color: theme.palette.dialogButton.dialogText,
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-                transform: 'scale(1.05)',
-              },
-            }}
-            onClick={() => {
-              setShowConfirmSave(false);
-              props.setFeatures({}, 'save');
-              setMapOpen(false);
-            }}
-          >
-            Confirm
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </div>
+        <Dialog
+          open={showConfirmSave}
+          onClose={() => setShowConfirmSave(false)}
+        >
+          <Alert severity="warning">
+            <AlertTitle>No location selected</AlertTitle>
+            Are you sure you want to save an empty location selection?
+          </Alert>
+          <DialogActions>
+            <Button
+              onClick={() => setShowConfirmSave(false)}
+              sx={{
+                backgroundColor: theme.palette.dialogButton.cancel,
+                color: theme.palette.background.default,
+                '&:hover': {
+                  backgroundColor: theme.palette.text.primary,
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              sx={{
+                backgroundColor: theme.palette.alert.successBackground,
+                color: theme.palette.dialogButton.dialogText,
+                '&:hover': {
+                  backgroundColor: theme.palette.text.primary,
+                  transform: 'scale(1.05)',
+                },
+              }}
+              onClick={() => {
+                setShowConfirmSave(false);
+                props.setFeatures({}, 'save');
+                setMapOpen(false);
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+      <style>
+        {`
+    .ol-layer canvas {
+      will-change: unset !important;
+    }
+  `}
+      </style>
+    </>
   );
 }
 // added forward rendering..
