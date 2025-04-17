@@ -178,6 +178,9 @@ const ConductorConfigSchema = z.object({
     /** The cooldown period (in seconds) before allowing another scale out action */
     scaleOutCooldown: z.number().int().nonnegative(),
   }),
+  /** Allow localhost typical addresses in the redirects for conductor? NOT
+   * recommended for production use cases (for security reasons). */
+  localhostWhitelist: z.boolean().default(false),
 });
 
 const WebConfigSchema = z.object({});
