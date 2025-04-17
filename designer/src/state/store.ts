@@ -53,6 +53,7 @@ export const store: ToolkitStore<AppState> = configureStore({
           'ui-specification/fieldUpdated',
           'ui-specification/fieldDuplicated',
           'ui-specification/fieldMoved',
+          'ui-specification/fieldConditionChanged',
           'ui-specification/fieldMovedToSection',
           'ui-specification/fieldRenamed',
           'ui-specification/toggleFieldProtection',

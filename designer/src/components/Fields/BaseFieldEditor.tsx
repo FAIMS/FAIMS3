@@ -126,7 +126,6 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
       newField['component-parameters'].protection = 'none';
     }
 
-    newField.condition = newState.condition || null;
     newField.persistent = newState.persistent || false;
     newField.displayParent = newState.displayParent || false;
 
@@ -139,8 +138,10 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    const newState: StateType = {...state, condition};
-    updateFieldFromState(newState);
+    dispatch({
+      type: 'ui-specification/fieldConditionChanged',
+      payload: {fieldName, condition},
+    });
   };
 
   return (

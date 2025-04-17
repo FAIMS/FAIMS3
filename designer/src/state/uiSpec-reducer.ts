@@ -343,6 +343,20 @@ export const uiSpecificationReducer = createSlice({
         state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
       state.fviews[viewId].fields.splice(position, 0, fieldLabel);
     },
+    fieldConditionChanged: (
+      state,
+      action: PayloadAction<{
+        fieldName: string;
+        condition: ConditionType | null;
+      }>
+    ) => {
+      const {fieldName, condition} = action.payload;
+      const field = state.fields[fieldName];
+      if (!field) throw new Error(`Unknown field ${fieldName}`);
+
+      if (condition === null) delete field.condition;
+      else field.condition = condition;
+    },
     sectionRenamed: (
       state,
       action: PayloadAction<{viewId: string; label: string}>
@@ -525,7 +539,11 @@ export const uiSpecificationReducer = createSlice({
       const {viewId, condition} = action.payload;
 
       if (viewId in state.fviews) {
-        state.fviews[viewId].condition = condition;
+        if (condition === null) {
+          delete state.fviews[viewId].condition;
+        } else {
+          state.fviews[viewId].condition = condition;
+        }
       }
     },
     viewSetAdded: (state, action: PayloadAction<{formName: string}>) => {
@@ -688,6 +706,9 @@ export const {
   fieldAdded,
   fieldDeleted,
   fieldDuplicated,
+  fieldConditionChanged,
+  toggleFieldProtection,
+  toggleFieldHidden,
   sectionRenamed,
   sectionAdded,
   sectionDuplicated,
