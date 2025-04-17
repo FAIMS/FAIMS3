@@ -1,3 +1,4 @@
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {GetNotebookListResponse} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
@@ -46,7 +47,10 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
   {
     accessorKey: 'metadata.project_lead',
     header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Project Lead" />
+      <DataTableColumnHeader
+        column={column}
+        title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
+      />
     ),
   },
   {

@@ -4,7 +4,7 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import {Duration, RemovalPolicy, Stack} from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
-import {BackupConfig} from '../faims-infra-stack';
+import {BackupConfig} from '../config';
 
 /**
  * A construct that creates an AWS Backup plan and associated resources

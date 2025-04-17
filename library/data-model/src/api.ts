@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {ProjectStatus} from './data_storage';
+import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
 import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
@@ -10,6 +10,25 @@ import {EncodedUISpecificationSchema} from './types';
 // ==================
 // WIP USERS
 // ==================
+
+export const GetListAllUsersResponseSchema = z.array(
+  // Be careful here - do NOT expose any salt info etc
+  PeopleDBDocumentSchema.pick({
+    _id: true,
+    emails: true,
+    globalRoles: true,
+    projectRoles: true,
+    teamRoles: true,
+    templateRoles: true,
+    name: true,
+    user_id: true,
+  })
+    // configure to strip not fail for extra fields
+    .strip()
+);
+export type GetListAllUsersResponse = z.infer<
+  typeof GetListAllUsersResponseSchema
+>;
 
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
@@ -89,6 +108,22 @@ export const PostRefreshTokenResponseSchema = z.object({
 });
 export type PostRefreshTokenResponse = z.infer<
   typeof PostRefreshTokenResponseSchema
+>;
+
+// Token exchange
+export const PostExchangeTokenInputSchema = z.object({
+  exchangeToken: z.string().min(1),
+});
+export type PostExchangeTokenInput = z.infer<
+  typeof PostExchangeTokenInputSchema
+>;
+export const PostExchangeTokenResponseSchema = z.object({
+  // token pair
+  refreshToken: z.string(),
+  accessToken: z.string(),
+});
+export type PostExchangeTokenResponse = z.infer<
+  typeof PostExchangeTokenResponseSchema
 >;
 
 // ==================

@@ -1,4 +1,4 @@
-import {ResourceRole} from './types';
+import {ResourceRole, TokenPermissions} from './types';
 import {
   Action,
   Role,

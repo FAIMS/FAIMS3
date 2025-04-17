@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import {FaimsInfraStack, loadConfig} from '../lib/faims-infra-stack';
+import {FaimsInfraStack} from '../lib/faims-infra-stack';
 import * as path from 'path';
+import {loadConfig} from '../lib/config';
 
 // Read the config file path from the environment variable
 const configFileName = process.env.CONFIG_FILE_NAME;

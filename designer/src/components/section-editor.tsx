@@ -85,16 +85,16 @@ export const SectionEditor = ({
   moveFieldCallback,
 }: Props) => {
   const fView = useAppSelector(
-    state => state.notebook['ui-specification'].fviews[viewId]
+    state => state.notebook['ui-specification'].present.fviews[viewId]
   );
   const viewSets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets
+    state => state.notebook['ui-specification'].present.viewsets
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
 
   const dispatch = useAppDispatch();

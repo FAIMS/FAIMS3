@@ -20,6 +20,10 @@
  *    to the main page
  */
 
+import {
+  PostExchangeTokenInput,
+  PostExchangeTokenResponseSchema,
+} from '@faims3/data-model';
 import {Button, Stack} from '@mui/material';
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
@@ -75,10 +79,13 @@ export function AuthReturn() {
     if (hasRun.current) return;
     hasRun.current = true;
 
-    const storeToken = async (
-      token: string,
-      refreshToken: string | undefined
-    ) => {
+    const storeToken = async ({
+      token,
+      refreshToken,
+    }: {
+      token: string;
+      refreshToken: string | undefined;
+    }) => {
       // Decode in case URI encoded
       const decodedToken = decodeURIComponent(token);
       const decodedRefreshToken = refreshToken
@@ -122,19 +129,70 @@ export function AuthReturn() {
       login();
     };
 
+    /**
+     * Exchanges the exchangeToken for an access + refresh token using the
+     * /api/auth/exchange endpoint
+     */
+    const upgradeExchangeTokenForRefresh = async ({
+      exchangeToken,
+      serverId,
+    }: {
+      exchangeToken: string;
+      serverId: string;
+    }) => {
+      // Decode in case URI encoded
+      const decodedExchangeToken = decodeURIComponent(exchangeToken);
+
+      // Get the conductor URL so we know where to go
+      const serverUrl = servers[serverId]?.serverUrl;
+
+      if (!serverUrl) {
+        // we don't know about this server - this is troubling
+        setErrorAndReturnHome(
+          'This token is not valid on this server. Returning home...'
+        );
+        return;
+      }
+
+      // We have the URL - do the exchange
+      const response = await fetch(serverUrl + '/api/auth/exchange', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          exchangeToken: decodedExchangeToken,
+        } satisfies PostExchangeTokenInput),
+      });
+
+      if (!response.ok) {
+        // we don't know about this server - this is troubling
+        setErrorAndReturnHome(
+          "An error occurred while logging in. Returning home. If refreshing your page and trying again doesn't help, contact an administrator."
+        );
+        return;
+      }
+
+      const {accessToken, refreshToken} = PostExchangeTokenResponseSchema.parse(
+        await response.json()
+      );
+
+      await storeToken({token: accessToken, refreshToken});
+    };
+
     const params = new URLSearchParams(window.location.search);
 
-    const rawToken = params.get('token');
-    const refreshToken = params.get('refreshToken') ?? undefined;
-    if (!rawToken) {
-      navigate('/');
+    const exchangeToken = params.get('exchangeToken');
+    const serverId = params.get('serverId');
+    if (!exchangeToken || !serverId) {
+      setErrorAndReturnHome(
+        'Missing required information to login - returning home...'
+      );
       return;
     }
 
     // Now try to decode and store it
-    storeToken(rawToken, refreshToken).catch(() => {
+    upgradeExchangeTokenForRefresh({exchangeToken, serverId}).catch(() => {
       return setErrorAndReturnHome(
-        'An unhandled error occurred during token storage.'
+        'An unhandled error occurred during token exchange.'
       );
     });
   }, []);
@@ -154,7 +212,7 @@ export function AuthReturn() {
           </Button>
         </Stack>
       ) : (
-        <h1>Logged in... please wait</h1>
+        <h1>Logging in... please wait</h1>
       )}
     </div>
   );

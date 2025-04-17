@@ -49,21 +49,3 @@ if test -f icons/icon-48.webp; then
   mkdir -p ./public/assets
   mv icons ./public/assets/icons
 fi
-
-## IOS specific configuration
-
-# Setting the IOS build version
-# https://pgu.dev/2020/12/16/ios-build-versioning.html
-
-version=$(grep '"version":' $PROJECT_DIR/package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
-buildNumber=$(date -u "+%Y%m%d%H%M")
-
-# create Info.plist
-cp ./ios/App/App/Info.plist.dist ./ios/App/App/Info.plist
-if test -f /usr/libexec/PlistBuddy; then
-  echo "\nIOS: Configuring Info.plist settings"
-  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $buildNumber" ./ios/App/App/Info.plist
-  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" ./ios/App/App/Info.plist
-  /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $VITE_APP_ID" ./ios/App/App/Info.plist
-  /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $VITE_APP_ID" ./ios/App/App/Info.plist
-fi
