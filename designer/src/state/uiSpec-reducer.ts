@@ -534,7 +534,7 @@ export const uiSpecificationReducer = createSlice({
     },
     sectionConditionChanged: (
       state,
-      action: PayloadAction<{viewId: string; condition: ConditionType | null}>
+      action: PayloadAction<{viewId: string; condition: ConditionType}>
     ) => {
       const {viewId, condition} = action.payload;
 
