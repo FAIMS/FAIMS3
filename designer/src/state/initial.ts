@@ -107,7 +107,7 @@ export type NotebookUISpec = {
       description?: string;
       uidesign?: string;
       label: string;
-      condition?: ConditionType;
+      condition?: ConditionType | null;
     };
   };
   viewsets: {
