@@ -1,5 +1,9 @@
 import {Resource, ResourceRole, Role} from '../../permission';
 import {
+  AuthRecordV1ExistingDocumentSchema,
+  RefreshRecordV2ExistingDocument,
+} from '../authDB';
+import {
   V1InviteDBFields,
   V2InviteDBFields,
   V3InviteDBFields,
@@ -10,13 +14,14 @@ import {
   PeopleV3Document,
 } from '../peopleDB';
 import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
+import {TemplateV1Fields, TemplateV2Fields} from '../templatesDB/types';
 import {
-  DatabaseType,
   DBTargetVersions,
+  DatabaseType,
   IS_TESTING,
   MigrationDetails,
   MigrationFunc,
-} from './migrationService';
+} from './types';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -195,8 +200,8 @@ export const projectsV1toV2Migration: MigrationFunc = doc => {
 
     // we check these to be defined above (just force the migration here - it is
     // probably the best option as deleting a project could result in data loss)
-    dataDb: inputDoc.data_db!,
-    metadataDb: inputDoc.metadata_db!,
+    dataDb: inputDoc.data_db ?? (undefined as any),
+    metadataDb: inputDoc.metadata_db ?? (undefined as any),
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -240,10 +245,62 @@ export const invitesV2toV3Migration: MigrationFunc = doc => {
   return {action: 'update', outputDoc};
 };
 
+/**
+ * Pulls out the template name from the metadata to top level prop
+ */
+export const templatesV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV1Fields>;
+
+  // Create the new V2 document structure
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV2Fields> = {
+    // Basic couch db fields
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+
+    // Pass through common properties
+    'ui-specification': inputDoc['ui-specification'],
+    metadata: inputDoc.metadata ?? {},
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    version: inputDoc.version,
+
+    // Pull out name from metadata (defaulting in weird cases to a suitable ID)
+    name: inputDoc.metadata?.name ?? `template-${inputDoc._id}`,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Adds the exchange token (fatuous) to mimic new format
+ */
+export const authV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc = AuthRecordV1ExistingDocumentSchema.parse(doc);
+
+  if (inputDoc.documentType === 'emailcode') {
+    // pass through as is
+    return {action: 'none'};
+  } else {
+    return {
+      action: 'update',
+      updatedRecord: {
+        ...inputDoc,
+        // Just put in fake data here to satisfy model
+        exchangeTokenHash: 'fake',
+        exchangeTokenUsed: true,
+        // This is expired / invalid
+        exchangeTokenExpiryTimestampMs: 0,
+      } satisfies RefreshRecordV2ExistingDocument,
+    };
+  }
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
-  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v3
@@ -253,7 +310,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 3},
   // projects v2
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 2},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
@@ -295,5 +352,20 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Overhauls migrations to be more generic and allow for team vs project invites. Includes logging information, expiry and uses.',
     migrationFunction: invitesV2toV3Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 1,
+    to: 2,
+    description:
+      'Adds the name property to the template document (from the metadata)',
+    migrationFunction: templatesV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.AUTH,
+    from: 1,
+    to: 2,
+    description: 'Adds the exchange token property to refresh tokens',
+    migrationFunction: authV1toV2Migration,
   },
 ];

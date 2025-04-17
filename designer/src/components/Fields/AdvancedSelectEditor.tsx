@@ -19,7 +19,6 @@ import {
   Button,
   Alert,
   AlertTitle,
-  TextField,
   Grid,
   Card,
   FormControl,
@@ -35,6 +34,7 @@ import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 
 import {useState} from 'react';
+import DebouncedTextField from '../debounced-text-field';
 
 type OptionTreeType = {
   name: string;
@@ -50,7 +50,7 @@ type newState = {
 
 export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -217,7 +217,7 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
               </Alert>
 
               <form onSubmit={validateOptionTree}>
-                <TextField
+                <DebouncedTextField
                   InputProps={{style: {fontFamily: 'monospace', fontSize: 14}}}
                   InputLabelProps={{style: {fontSize: 14}}}
                   label="JSON"

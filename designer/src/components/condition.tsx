@@ -12,26 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {
-  Grid,
-  Select,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Stack,
-  Divider,
-  TextField,
-  Button,
-  IconButton,
-  Tooltip,
-  Dialog,
-} from '@mui/material';
-import {useAppSelector} from '../state/hooks';
-import {FieldType} from '../state/initial';
+import QuizIcon from '@mui/icons-material/Quiz';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
-import QuizIcon from '@mui/icons-material/Quiz';
-import {useState, useMemo} from 'react';
+import {
+  Button,
+  Dialog,
+  Divider,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  TextField,
+  Tooltip,
+} from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
+import {useMemo, useState} from 'react';
+import {useAppSelector} from '../state/hooks';
+import {FieldType} from '../state/initial';
+import DebouncedTextField from './debounced-text-field';
 
 // Defines the Condition component to create a conditional expression
 // that can be attached to a View or Field (and maybe more)
@@ -481,7 +483,7 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
 
 export const ConditionTranslation = (props: {condition: ConditionType}) => {
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
 
   const getFieldName = (field: string | undefined) => {
@@ -689,13 +691,13 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const [condition, setCondition] = useState(initialValue);
 
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const views = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
 
-  // work out which fields to show in the select, remove either
+  // work out which fields to show in the select/combobox, remove either
   // the current field or the fields in the current view
   let selectFields = Object.keys(allFields);
   if (props.field) {
@@ -781,7 +783,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       cName !== 'Checkbox'
     ) {
       return (
-        <TextField
+        <DebouncedTextField
           variant="outlined"
           label="Value"
           value={condition.value ?? ''}
@@ -879,7 +881,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       default: {
         if (possibleOptions.length === 0) {
           return (
-            <TextField
+            <DebouncedTextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -892,7 +894,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             (opt: any) => opt.value === condition.value
           );
           return (
-            <TextField
+            <DebouncedTextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -969,21 +971,22 @@ export const FieldConditionControl = (props: ConditionProps) => {
         spacing={2}
         divider={<Divider orientation="vertical" flexItem />}
       >
-        <FormControl sx={{minWidth: 200}}>
-          <InputLabel>Field</InputLabel>
-          <Select
-            labelId="field"
-            label="Field"
-            onChange={e => updateField(e.target.value)}
-            value={condition.field ?? ''}
-          >
-            {selectFields.map(fieldId => (
-              <MenuItem key={fieldId} value={fieldId}>
-                {getFieldLabel(allFields[fieldId])}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Autocomplete
+          options={selectFields}
+          getOptionLabel={(fieldId: string) =>
+            getFieldLabel(allFields[fieldId])
+          }
+          value={condition.field || null}
+          onChange={(_, newValue) => {
+            updateField(newValue || '');
+          }}
+          renderInput={params => (
+            <TextField {...params} label="Field" variant="outlined" />
+          )}
+          style={{minWidth: 200}}
+          clearOnEscape
+        />
+
         <FormControl
           sx={{minWidth: 200}}
           data-testid="operator-input"
@@ -1007,7 +1010,11 @@ export const FieldConditionControl = (props: ConditionProps) => {
         {targetFieldDef ? (
           renderValueEditor(targetFieldDef)
         ) : (
-          <TextField label="Value" sx={{minWidth: 200}} />
+          <DebouncedTextField
+            label="Value"
+            sx={{minWidth: 200}}
+            onChange={() => {}}
+          />
         )}
 
         <Tooltip describeChild title="Make this an 'and' or 'or' condition">

@@ -3,10 +3,11 @@
  * (PeopleDBDocument) in relation to roles and actions.
  */
 
-import {generateVirtualResourceRoles, ResourceAssociation} from '..';
-import {PeopleDBDocument} from '../data_storage';
+import {generateVirtualResourceRoles, ResourceAssociation} from './functions';
+import {ResourceRole, TokenPermissions} from './types';
+import {PeopleDBDocument} from '../data_storage/peopleDB/types';
 import {Role} from './model';
-import {encodeToken, ResourceRole, TokenPermissions} from './tokenEncoding';
+import {encodeToken} from './tokenEncoding';
 
 // ======
 // CHECKS

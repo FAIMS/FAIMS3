@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
 import ExportProjectForm from '../forms/export-project-form';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 /**
  * PhotoExportDialog component renders a dialog for exporting a project's photos.
@@ -24,10 +25,10 @@ export const PhotoExportDialog = () => (
       <DialogHeader>
         <DialogTitle>Photo Export</DialogTitle>
         <DialogDescription>
-          Export all photos for this project to a ZIP file.
+          Export all photos for this {NOTEBOOK_NAME_CAPITALIZED} to a ZIP file.
         </DialogDescription>
       </DialogHeader>
-      <ExportProjectForm type={'zip'}/>
+      <ExportProjectForm type={'zip'} />
     </DialogContent>
   </Dialog>
 );

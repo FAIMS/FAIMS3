@@ -9,13 +9,13 @@ import {
 } from '@/components/ui/sidebar';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
+import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
-import {LayoutTemplate, LetterText, Users, House} from 'lucide-react';
+import {House, LayoutTemplate, LetterText, Users} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action} from '@faims3/data-model';
 
 /**
  * AppSidebar component renders the main application sidebar with navigation items
@@ -51,9 +51,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
       url: '/projects',
       icon: LetterText,
-      isActive: pathname.startsWith('/templates'),
+      isActive: pathname.startsWith('/projects') || pathname === '/',
       items:
-        projects?.length > 0
+        projects && projects?.length > 0
           ? projects.map(({name, project_id}: any) => ({
               id: project_id,
               title: name,
@@ -70,12 +70,14 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       icon: LayoutTemplate,
       isActive: pathname.startsWith('/templates'),
       items:
-        templates?.length > 0
-          ? templates.map(({_id, metadata: {name}}: any) => ({
-              id: _id,
-              title: name,
-              url: `/templates/${_id}`,
-            }))
+        templates && templates?.length > 0
+          ? templates.map(
+              ({_id, name}: GetListTemplatesResponse['templates'][number]) => ({
+                id: _id,
+                title: name,
+                url: `/templates/${_id}`,
+              })
+            )
           : [{id: 'no-templates', title: 'No templates...'}],
     });
   }

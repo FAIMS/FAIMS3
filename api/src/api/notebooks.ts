@@ -254,7 +254,15 @@ api.get(
         status: project.status,
       } satisfies GetNotebookResponse);
     } else {
-      throw new Exceptions.ItemNotFoundException('Notebook not found.');
+      throw new Exceptions.ItemNotFoundException(
+        'Notebook not found. ' +
+          JSON.stringify({
+            'ui-specification': uiSpec as unknown as Record<string, unknown>,
+            ownedByTeamId: project.ownedByTeamId,
+            status: project.status,
+            metadata,
+          })
+      );
     }
   }
 );

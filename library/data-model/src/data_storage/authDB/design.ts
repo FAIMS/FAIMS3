@@ -66,6 +66,27 @@ export const viewsDocument = {
       }),
     },
 
+    // All refresh tokens by hash of exchange token
+    refreshTokensByExchangeTokenHash: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'refresh';
+        const ID_PREFIX = 'refresh_';
+
+        // Check that document type is defined and that the type is refresh and the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0 &&
+          doc.exchangeTokenHash &&
+          !doc.exchangeTokenUsed
+        ) {
+          // Emit the whole refresh object indexed by the hash of the exchange
+          // token
+          emit(doc.exchangeTokenHash, doc);
+        }
+      }),
+    },
+
     // EMAIL RESETS
     // ==============
 

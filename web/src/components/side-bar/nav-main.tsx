@@ -49,71 +49,74 @@ export function NavMain({title, items}: NavMainProps) {
     <SidebarGroup>
       <SidebarGroupLabel>{title}</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map(item => (
-          <Collapsible
-            key={item.title}
-            asChild
-            defaultOpen={pathname.startsWith(item.url)}
-            className="group/collapsible"
-          >
-            <SidebarMenuItem>
-              {item.items ? (
-                <CollapsibleTrigger asChild>
+        {items.map(item => {
+          const isActive = item.isActive ?? pathname.startsWith(item.url);
+          return (
+            <Collapsible
+              key={item.title}
+              asChild
+              defaultOpen={isActive}
+              className="group/collapsible"
+            >
+              <SidebarMenuItem>
+                {item.items ? (
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton asChild tooltip={item.title}>
+                      <Link
+                        to={item.url}
+                        className={cn(
+                          'flex items-center gap-2',
+                          isActive && 'bg-sidebar-accent'
+                        )}
+                      >
+                        {item.icon && <item.icon />}
+                        <span>{item.title}</span>
+                        <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </Link>
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                ) : (
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <Link
-                      to={item.url}
-                      className={cn(
-                        'flex items-center gap-2',
-                        pathname === item.url && 'bg-sidebar-accent'
-                      )}
-                    >
+                    <Link to={item.url} className="flex items-center gap-2">
                       {item.icon && <item.icon />}
                       <span>{item.title}</span>
-                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                     </Link>
                   </SidebarMenuButton>
-                </CollapsibleTrigger>
-              ) : (
-                <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link to={item.url} className="flex items-center gap-2">
-                    {item.icon && <item.icon />}
-                    <span>{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              )}
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {item.items?.map(subItem => (
-                    <SidebarMenuSubItem key={subItem.id}>
-                      <SidebarMenuSubButton asChild>
-                        {subItem.url ? (
-                          <Link
-                            to={subItem.url}
-                            className={
-                              pathname === subItem.url
-                                ? 'bg-sidebar-accent'
-                                : ''
-                            }
-                          >
-                            <span className="text-muted-foreground">
-                              {subItem.title}
-                            </span>
-                          </Link>
-                        ) : (
-                          <div className={'cursor-default'}>
-                            <span className="text-muted-foreground">
-                              {subItem.title}
-                            </span>
-                          </div>
-                        )}
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-        ))}
+                )}
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {item.items?.map(subItem => (
+                      <SidebarMenuSubItem key={subItem.id}>
+                        <SidebarMenuSubButton asChild>
+                          {subItem.url ? (
+                            <Link
+                              to={subItem.url}
+                              className={
+                                pathname.startsWith(subItem.url)
+                                  ? 'bg-sidebar-accent'
+                                  : ''
+                              }
+                            >
+                              <span className="text-muted-foreground">
+                                {subItem.title}
+                              </span>
+                            </Link>
+                          ) : (
+                            <div className={'cursor-default'}>
+                              <span className="text-muted-foreground">
+                                {subItem.title}
+                              </span>
+                            </div>
+                          )}
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          );
+        })}
       </SidebarMenu>
     </SidebarGroup>
   );

@@ -1,4 +1,5 @@
-import {InitialisationContent, peopleDesignDocuments} from '../';
+import {peopleDesignDocuments} from './design';
+import {InitialisationContent} from '../utils';
 import {PeopleDBSecurityDocument} from './security';
 
 export type PeopleDBInitialisationConfig = {};

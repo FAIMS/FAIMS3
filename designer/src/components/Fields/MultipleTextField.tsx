@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Grid, Card, TextField} from '@mui/material';
+import {Grid, Card} from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType} from '../../state/initial';
+import DebouncedTextField from '../debounced-text-field';
 
 export const MultipleTextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -39,7 +40,7 @@ export const MultipleTextFieldEditor = ({fieldName}: {fieldName: string}) => {
       <Grid item sm={6} xs={12}>
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-            <TextField
+            <DebouncedTextField
               name="rows"
               variant="outlined"
               label="Rows to display"

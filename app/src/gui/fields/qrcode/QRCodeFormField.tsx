@@ -170,13 +170,14 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
     let scanCount = 0;
     let scanResult = '';
     const listener = await BarcodeScanner.addListener(
-      'barcodeScanned',
+      'barcodesScanned',
       async result => {
         // require ten consecutive scans of the same code before
         // accepting the scan
+        // just look at the first barcode scanned
         if (scanCount < 10) {
-          if (scanResult !== result.barcode.displayValue) {
-            scanResult = result.barcode.displayValue;
+          if (scanResult !== result.barcodes[0].displayValue) {
+            scanResult = result.barcodes[0].displayValue;
             scanCount = 1;
           } else {
             scanCount = scanCount + 1;
@@ -188,7 +189,7 @@ export function QRCodeButton(props: QRCodeButtonProps): JSX.Element {
         showBackground();
         await BarcodeScanner.stopScan();
         setScanning(false);
-        updateField(result.barcode.displayValue);
+        updateField(result.barcodes[0].displayValue);
       }
     );
 

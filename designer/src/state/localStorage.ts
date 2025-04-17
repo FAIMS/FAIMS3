@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {AppState, Notebook} from './initial';
+import {AppState, NotebookWithHistory} from './initial';
 import {slugify} from './uiSpec-reducer';
 
 // The following functions are inspired by Dan Abramov's lesson on persisting redux state to localStorage,
@@ -37,13 +37,17 @@ export const saveState = (state: AppState) => {
   }
 };
 
-export const downloadNotebook = (notebook: Notebook) => {
+export const downloadNotebook = (notebook: NotebookWithHistory) => {
+  const actualNotebook = {
+    metadata: notebook.metadata,
+    'ui-specification': notebook['ui-specification'].present,
+  };
   const element = document.createElement('a');
-  const file = new Blob([JSON.stringify(notebook, null, 2)], {
+  const file = new Blob([JSON.stringify(actualNotebook, null, 2)], {
     type: 'application/json',
   });
   element.href = URL.createObjectURL(file);
-  const name = slugify(notebook.metadata.name as string);
+  const name = slugify(actualNotebook.metadata.name as string);
   element.download = `${name}.json`;
   document.body.appendChild(element);
   element.click();

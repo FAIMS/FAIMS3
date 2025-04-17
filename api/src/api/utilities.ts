@@ -18,46 +18,50 @@
  */
 
 import {
+  Action,
+  PostExchangeTokenInputSchema,
+  PostExchangeTokenResponse,
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
   PublicServerInfo,
-  Action,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import multer from 'multer';
+import {processRequest} from 'zod-express-middleware';
+import {
+  generateUserToken,
+  upgradeCouchUserToExpressUser,
+} from '../auth/keySigning/create';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
+  CONDUCTOR_SERVER_ID,
   CONDUCTOR_SHORT_CODE_PREFIX,
   DEVELOPER_MODE,
   EMAIL_CONFIG,
   EMAIL_SERVICE,
   EMAIL_SERVICE_TYPE,
-  TEST_EMAIL_ADDRESS,
   RUNNING_UNDER_TEST,
+  TEST_EMAIL_ADDRESS,
 } from '../buildconfig';
 import {initialiseDbAndKeys} from '../couchdb';
 import {restoreFromBackup} from '../couchdb/backupRestore';
 import {getUserProjectsDirectory} from '../couchdb/notebooks';
+import {
+  consumeExchangeTokenForRefreshToken,
+  validateRefreshToken,
+} from '../couchdb/refreshTokens';
 import * as Exceptions from '../exceptions';
 import {
   isAllowedToMiddleware,
   optionalAuthenticationJWT,
   requireAuthenticationAPI,
 } from '../middleware';
-import {slugify} from '../utils';
+import patch from '../utils/patchExpressAsync';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
-
-import {processRequest} from 'zod-express-middleware';
-import {
-  generateUserToken,
-  upgradeCouchUserToExpressUser,
-} from '../authkeys/create';
-import {validateRefreshToken} from '../couchdb/refreshTokens';
-import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
 patch();
@@ -98,7 +102,7 @@ api.post(
  */
 api.get('/info', async (req, res) => {
   const response: PublicServerInfo = {
-    id: slugify(CONDUCTOR_INSTANCE_NAME),
+    id: CONDUCTOR_SERVER_ID,
     name: CONDUCTOR_INSTANCE_NAME,
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
@@ -118,6 +122,51 @@ api.get(
     }
     const projects = await getUserProjectsDirectory(req.user);
     res.json(projects);
+  }
+);
+
+/**
+ * Token exchange - trade an exchange token for a refresh + access token.
+ */
+api.post(
+  '/auth/exchange',
+  optionalAuthenticationJWT,
+  processRequest({body: PostExchangeTokenInputSchema}),
+  async (
+    {user, body: {exchangeToken}},
+    res: Response<PostExchangeTokenResponse>
+  ) => {
+    // If the user is logged in - then record the user ID as an additional
+    // security measure - don't allow a user who currently has a JWT of user
+    // A, to use a refresh token for user B, but if the user is not logged in
+    // at all (e.g. JWT expired) we still want to ensure they can generate a
+    // fresh JWT
+    const userId: string | undefined = user?._id;
+
+    // validate the token
+    const {
+      valid,
+      user: resultingUser,
+      refreshDocument,
+    } = await consumeExchangeTokenForRefreshToken({exchangeToken, userId});
+
+    // If the refresh token / exchange token is not valid, let user know (ambiguously)
+    if (!valid || !refreshDocument || !resultingUser) {
+      throw new Exceptions.InvalidRequestException(
+        'Validation of exchange token failed.'
+      );
+    }
+
+    // We know the refresh is valid, generate a JWT (no refresh) for this
+    // existing user.
+    // From the db user, drill and generate permissions
+    const expressUser = await upgradeCouchUserToExpressUser({
+      dbUser: resultingUser,
+    });
+    const {token} = await generateUserToken(expressUser, false);
+
+    // return the tokens
+    res.json({accessToken: token, refreshToken: refreshDocument.token});
   }
 );
 

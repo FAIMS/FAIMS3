@@ -5,13 +5,17 @@ import TeamProjects from '@/components/tabs/teams/team-projects';
 import TeamTemplates from '@/components/tabs/teams/team-templates';
 import TeamUsers from '@/components/tabs/teams/team-users';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useGetTeam} from '@/hooks/queries';
+import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action} from '@faims3/data-model';
-import {createFileRoute} from '@tanstack/react-router';
+import {createFileRoute, useRouter} from '@tanstack/react-router';
 import {Edit} from 'lucide-react';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 
-type TabLabel = 'Details' | 'Invites' | 'Surveys' | 'Templates' | 'Users';
+type TabLabel = 'Details' | 'Invites' | 'Projects' | 'Templates' | 'Users';
 
 export const Route = createFileRoute('/_protected/teams/$teamId')({
   component: RouteComponent,
@@ -19,6 +23,31 @@ export const Route = createFileRoute('/_protected/teams/$teamId')({
 
 function RouteComponent() {
   const {teamId} = Route.useParams();
+  const {user} = useAuth();
+  const {data: team, isLoading} = useGetTeam(user, teamId);
+  const pathname = useRouter().state.location.pathname;
+
+  // breadcrumbs addition
+  const paths = useMemo(
+    () => [
+      // projects ->
+      {
+        path: '/teams',
+        label: 'Teams',
+      },
+      // project name
+      {
+        path: pathname,
+        label: team?.name ?? teamId,
+      },
+    ],
+    [pathname, team]
+  );
+
+  useBreadcrumbUpdate({
+    isLoading,
+    paths,
+  });
 
   // Access checks
   const canSeeTeamDetails = useIsAuthorisedTo({
@@ -38,36 +67,40 @@ function RouteComponent() {
     resourceId: teamId,
   });
 
-  const tabs: {name: TabLabel; Component: any}[] = [];
+  const tabs: {label?: string; id: TabLabel; Component: any}[] = [];
 
   // details?
   if (canSeeTeamDetails) {
-    tabs.push({name: 'Details', Component: TeamDetails});
+    tabs.push({id: 'Details', Component: TeamDetails});
   }
   if (canSeeTeamInvites) {
-    tabs.push({name: 'Invites', Component: TeamInvites});
+    tabs.push({id: 'Invites', Component: TeamInvites});
   }
-  tabs.push({name: 'Surveys', Component: TeamProjects});
-  tabs.push({name: 'Templates', Component: TeamTemplates});
+  tabs.push({
+    id: 'Projects',
+    label: NOTEBOOK_NAME_CAPITALIZED + 's',
+    Component: TeamProjects,
+  });
+  tabs.push({id: 'Templates', Component: TeamTemplates});
   // members?
   if (canViewTeamMembers) {
-    tabs.push({name: 'Users', Component: TeamUsers});
+    tabs.push({id: 'Users', Component: TeamUsers});
   }
 
-  const [activeTab, setActiveTab] = useState<TabLabel>(tabs[0].name);
+  const [activeTab, setActiveTab] = useState<TabLabel>(tabs[0].id);
 
   return (
     <Tabs
-      defaultValue={tabs[0].name}
+      defaultValue={tabs[0].id}
       onValueChange={tab => {
         setActiveTab(tab as TabLabel);
       }}
     >
       <div className="flex justify-start items-center gap-4">
         <TabsList>
-          {tabs.map(({name}) => (
-            <TabsTrigger key={name} value={name}>
-              {name}
+          {tabs.map(({id, label}) => (
+            <TabsTrigger key={id} value={id}>
+              {label ?? id}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -84,8 +117,8 @@ function RouteComponent() {
         )}
       </div>
 
-      {tabs.map(({name, Component}) => (
-        <TabsContent key={name} value={name}>
+      {tabs.map(({id, Component}) => (
+        <TabsContent key={id} value={id}>
           <Component teamId={teamId} />
         </TabsContent>
       ))}

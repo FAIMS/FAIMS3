@@ -13,9 +13,10 @@
 // limitations under the License.
 
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
-import {NotebookUISpec, initialState, FieldType} from './initial';
+import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
+// eslint-disable-next-line n/no-extraneous-import
 
 /**
  * Slugify a string, replacing special characters with less special ones
@@ -26,7 +27,6 @@ import {ConditionType} from '../components/condition';
 export const slugify = (str: string) => {
   str = str.trim();
   //str = str.toLowerCase();
-
   // remove accents, swap ñ for n, etc
   const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
   const to = 'aaaaaeeeeeiiiiooooouuuunc------';
@@ -42,11 +42,15 @@ export const slugify = (str: string) => {
   return str;
 };
 
+const uiSpecInitialState: NotebookUISpec =
+  initialState.notebook['ui-specification'].present;
+
 export const uiSpecificationReducer = createSlice({
   name: 'ui-specification',
-  initialState: initialState.notebook['ui-specification'],
+  initialState: uiSpecInitialState,
   reducers: {
     loaded: (_state, action: PayloadAction<NotebookUISpec>) => {
+      _state = action.payload;
       return action.payload;
     },
     fieldUpdated: (
@@ -61,6 +65,39 @@ export const uiSpecificationReducer = createSlice({
         throw new Error(
           `Cannot update unknown field ${fieldName} via fieldUpdated action`
         );
+      }
+    },
+    toggleFieldProtection: (
+      state,
+      action: PayloadAction<{
+        fieldName: string;
+        protection: 'protected' | 'allow-hiding' | 'none';
+      }>
+    ) => {
+      const {fieldName, protection} = action.payload;
+      if (fieldName in state.fields) {
+        state.fields[fieldName]['component-parameters'].protection = protection;
+        if (
+          protection === 'protected' &&
+          state.fields[fieldName]['component-parameters'].hidden
+        ) {
+          state.fields[fieldName]['component-parameters'].hidden = false;
+        }
+      } else {
+        throw new Error(
+          `Cannot toggle protection for unknown field ${fieldName}`
+        );
+      }
+    },
+    toggleFieldHidden: (
+      state,
+      action: PayloadAction<{fieldName: string; hidden: boolean}>
+    ) => {
+      const {fieldName, hidden} = action.payload;
+      if (fieldName in state.fields) {
+        state.fields[fieldName]['component-parameters'].hidden = hidden;
+      } else {
+        throw new Error(`Cannot toggle hidden for unknown field ${fieldName}`);
       }
     },
     fieldMoved: (
@@ -186,6 +223,21 @@ export const uiSpecificationReducer = createSlice({
         newField['component-parameters'].form_id = viewId;
       }
 
+      if (fieldType === 'TemplatedStringField') {
+        // if there is no existing HRID field in this form, then
+        // this field becomes one by getting a name starting 'hrid'
+        let hasHRID = false;
+        for (const fieldName of state.fviews[viewId].fields) {
+          if (fieldName.startsWith('hrid') && fieldName.endsWith(viewId)) {
+            hasHRID = true;
+            break;
+          }
+        }
+        if (!hasHRID) {
+          fieldLabel = 'hrid' + viewId;
+        }
+      }
+
       // add in the meta field
       newField.meta = {
         annotation: {
@@ -232,13 +284,18 @@ export const uiSpecificationReducer = createSlice({
       action: PayloadAction<{fieldName: string; viewId: string}>
     ) => {
       const {fieldName, viewId} = action.payload;
-      // remove the field from fields and the viewSet
       if (fieldName in state.fields) {
+        const protection =
+          state.fields[fieldName]['component-parameters'].protection;
+        if (protection === 'protected') {
+          throw new Error(
+            `Field ${fieldName} is protected and cannot be deleted.`
+          );
+        }
         delete state.fields[fieldName];
-        const newView = state.fviews[viewId].fields.filter(
+        state.fviews[viewId].fields = state.fviews[viewId].fields.filter(
           field => field !== fieldName
         );
-        state.fviews[viewId].fields = newView;
       } else {
         throw new Error(
           `Cannot delete unknown field ${fieldName} via fieldDeleted action`
@@ -295,7 +352,7 @@ export const uiSpecificationReducer = createSlice({
         state.fviews[viewId].label = label;
       } else {
         throw new Error(
-          `Can't update unknown section ${viewId} via sectionNameUpdated action`
+          `Can't update unknown section ${viewId} via sectionRenamed action`
         );
       }
     },
@@ -315,6 +372,79 @@ export const uiSpecificationReducer = createSlice({
         state.fviews[sectionId] = newSection;
         state.viewsets[viewSetId].views.push(sectionId);
       }
+    },
+    sectionDuplicated: (
+      state,
+      action: PayloadAction<{
+        sourceViewId: string;
+        destinationViewSetId?: string;
+        newSectionLabel: string;
+      }>
+    ) => {
+      const {sourceViewId, destinationViewSetId, newSectionLabel} =
+        action.payload;
+
+      if (!(sourceViewId in state.fviews)) {
+        throw new Error(`Source section ${sourceViewId} does not exist.`);
+      }
+
+      // Find the destination form.
+      let destViewSetId = destinationViewSetId;
+      if (!destViewSetId) {
+        for (const formId in state.viewsets) {
+          if (state.viewsets[formId].views.includes(sourceViewId)) {
+            destViewSetId = formId;
+            break;
+          }
+        }
+        if (!destViewSetId) {
+          throw new Error(
+            `Cannot determine the source form for section ${sourceViewId}.`
+          );
+        }
+      }
+
+      const newSectionId = destViewSetId + '-' + slugify(newSectionLabel);
+      if (newSectionId in state.fviews) {
+        throw new Error(
+          `Section ${newSectionLabel} already exists in form ${destViewSetId}.`
+        );
+      }
+
+      const sourceSection = state.fviews[sourceViewId];
+
+      // Create the new section, copying any condition that exists.
+      const newSection = {
+        label: newSectionLabel,
+        fields: [] as string[],
+        condition: sourceSection.condition,
+      };
+
+      // Duplicate each field to the new section.
+      for (const originalFieldName of sourceSection.fields) {
+        if (!(originalFieldName in state.fields)) continue;
+        const originalField = state.fields[originalFieldName];
+        const baseLabel =
+          originalField['component-parameters'].label || originalFieldName;
+        const newFieldLabel = baseLabel;
+        let fieldSlug = slugify(newFieldLabel);
+        let N = 1;
+        while (fieldSlug in state.fields) {
+          fieldSlug = slugify(newFieldLabel + ' ' + N);
+          N++;
+        }
+        // Deep copy
+        const newField: FieldType = JSON.parse(JSON.stringify(originalField));
+        newField['component-parameters'].label = newFieldLabel;
+        newField['component-parameters'].name = fieldSlug;
+        // Add the new field to the state and record it in the new section.
+        state.fields[fieldSlug] = newField;
+        newSection.fields.push(fieldSlug);
+      }
+
+      // Add the new section to the fviews and to the destination form's views list.
+      state.fviews[newSectionId] = newSection;
+      state.viewsets[destViewSetId].views.push(newSectionId);
     },
     sectionDeleted: (
       state,
@@ -560,6 +690,7 @@ export const {
   fieldDuplicated,
   sectionRenamed,
   sectionAdded,
+  sectionDuplicated,
   sectionDeleted,
   sectionMovedToForm,
   sectionMoved,
@@ -573,5 +704,3 @@ export const {
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
 } = uiSpecificationReducer.actions;
-
-export default uiSpecificationReducer.reducer;

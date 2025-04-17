@@ -18,12 +18,12 @@ import {
   IconButton,
   MenuItem,
   Select,
-  TextField,
   Typography,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
+import DebouncedTextField from './debounced-text-field';
 
 type ViewSetType = {
   views: string[];
@@ -73,14 +73,15 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const dispatch = useAppDispatch();
 
   const fields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const viewSet: ViewSetType | undefined = useAppSelector(
     state =>
-      state.notebook?.['ui-specification']?.viewsets?.[viewSetId] || undefined
+      state.notebook?.['ui-specification']?.present.viewsets?.[viewSetId] ||
+      undefined
   );
   const fviews = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
   const [expanded, setExpanded] = React.useState(false);
 
@@ -272,7 +273,10 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               onChange={handleSummaryFieldsChange}
               getOptionLabel={option => option.label}
               renderInput={params => (
-                <TextField
+                <DebouncedTextField
+                  onChange={function (): void {
+                    throw new Error('Function not implemented.');
+                  }}
                   {...params}
                   InputProps={{
                     ...params.InputProps,
@@ -295,7 +299,8 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               onChange={handleHridFieldChange}
               getOptionLabel={option => option.label}
               renderInput={params => (
-                <TextField
+                <DebouncedTextField
+                  onChange={function (): void {}}
                   {...params}
                   InputProps={{
                     ...params.InputProps,

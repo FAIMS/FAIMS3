@@ -19,8 +19,16 @@
  */
 
 import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import {Box, Paper, Typography} from '@mui/material';
+import {
+  Box,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableRow,
+  Typography,
+} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {
@@ -38,10 +46,15 @@ import {
   getVisibleTypes,
 } from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
+import {useDataGridStyles} from '../../../utils/useDataGridStyles';
+import {useScreenSize} from '../../../utils/useScreenSize';
 import getLocalDate from '../../fields/LocalDate';
 import {NotebookDraftDataGridToolbar} from './datagrid_toolbar';
 import RecordDelete from './delete';
 
+/**
+ * Props for the `DraftsTable` component
+ */
 type DraftsRecordProps = {
   project_id: ProjectID;
   serverId: string;
@@ -52,18 +65,34 @@ type DraftsRecordProps = {
   handleRefresh: () => void;
 };
 
-function getDisplayDataFromDraft(
-  field: string,
-  data: {[key: string]: any}
-): string | undefined {
-  const value = data[field];
-  console.log('value in drafts', value);
-
-  if (value === undefined || value === null) return undefined;
-  if (typeof value === 'object') return JSON.stringify(value);
-  return value.toString();
+/**
+ * Returns the value from a draft row for a given field.
+ * Looks both at top-level keys and inside the `data` field.
+ *
+ * @param field - The field name to extract
+ * @param row - The draft row
+ * @returns The stringified value, or '-' if not found
+ */
+function getDisplayDataFromDraft(field: string, row: any): string | undefined {
+  const value = row?.[field] ?? row?.data?.[field];
+  if (value === undefined || value === null) return '-';
+  return typeof value === 'object' ? JSON.stringify(value) : String(value);
 }
 
+/**
+ * React component for rendering the drafts table view.
+ *
+ * @component
+ * @param props - Component props
+ * @param props.project_id - The project ID
+ * @param props.serverId - Server identifier for route navigation
+ * @param props.maxRows - Maximum rows to show in the table (pagination limit)
+ * @param props.rows - Array of draft records to display
+ * @param props.loading - Flag indicating if data is loading
+ * @param props.viewsets - Optional viewsets for mapping types to labels
+ * @param props.handleRefresh - Callback to trigger data refresh
+ * @returns A responsive DataGrid component for drafts (mobile & desktop views)
+ */
 export function DraftsTable(props: DraftsRecordProps) {
   const {
     project_id,
@@ -77,17 +106,30 @@ export function DraftsTable(props: DraftsRecordProps) {
   const theme = useTheme();
   const history = useNavigate();
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
+  const styles = useDataGridStyles(theme);
+  const {currentSize} = useScreenSize();
 
   const defaultMaxRowsMobile = 10;
 
   const uiSpecId = rows?.[0]?.ui_spec_id || project_id;
   const uiSpec = compiledSpecService.getSpec(uiSpecId);
+
   const visibleTypes = useMemo(
     () => (uiSpec ? getVisibleTypes(uiSpec) : []),
     [uiSpec]
   );
 
-  // The entire row is clickable to the record
+  const includeKind = visibleTypes.length > 1;
+  const summaryFields = useMemo(() => {
+    if (!uiSpec || visibleTypes.length !== 1) return ['hrid'];
+    return getSummaryFieldInformation(uiSpec, visibleTypes[0]).fieldNames;
+  }, [uiSpec, visibleTypes]);
+
+  /**
+   * Navigates to the draft editing route when a row is clicked.
+   *
+   * @param params - Row click event params containing draft data
+   */
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     history(
       ROUTES.getDraftRoute(
@@ -101,123 +143,159 @@ export function DraftsTable(props: DraftsRecordProps) {
     );
   };
 
-  const summaryFields = useMemo(() => {
-    if (!uiSpec || visibleTypes.length !== 1) return [];
-    return getSummaryFieldInformation(uiSpec, visibleTypes[0]).fieldNames;
-  }, [uiSpec, visibleTypes]);
-
-  const getKindLabel = (type: string) =>
-    viewsets && type && viewsets[type]?.label ? viewsets[type].label : type;
-
-  const columns: GridColDef[] = [
-    ...(summaryFields.length > 0
-      ? summaryFields.map(field => ({
-          field,
-          headerName: prettifyFieldName(field),
+  /**
+   * Defines the columns used in the DataGrid based on screen size.
+   * Mobile view shows a compact vertical stack, desktop uses multiple columns.
+   */
+  const columns: GridColDef[] = useMemo(() => {
+    const isMobile = currentSize === 'xs' || currentSize === 'sm';
+    if (isMobile) {
+      return [
+        {
+          field: 'summary',
+          headerName: 'Details',
           type: 'string',
           flex: 1,
-          renderCell: (params: GridCellParams) => (
-            <Typography>
-              {getDisplayDataFromDraft(field, params.row.data || {}) || '-'}
-            </Typography>
-          ),
-        }))
-      : [
-          {
-            field: 'hrid',
-            headerName: 'HRID/UUID',
-            type: 'string',
-            flex: 1,
-            renderCell: (params: GridCellParams) => (
-              <Typography fontWeight="bold">{params.row.hrid}</Typography>
-            ),
-          },
-        ]),
+          renderCell: (params: GridCellParams) => {
+            //  key-value pairs to show in a stacked table layout (mobile view)
+            const row = params.row || {};
+            const data = row.data || {};
 
-    {
-      field: 'created',
-      headerName: 'Created',
-      type: 'dateTime',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>
-          {params.row.created
-            ? getLocalDate(params.row.created).replace('T', ' ')
-            : '-'}
-        </Typography>
-      ),
-    },
-    {
-      field: 'updated',
-      headerName: 'Last Updated',
-      type: 'dateTime',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>
-          {params.row.updated
-            ? getLocalDate(params.row.updated).replace('T', ' ')
-            : '-'}
-        </Typography>
-      ),
-    },
-    {
-      field: 'created_by',
-      headerName: 'Created By',
-      type: 'string',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>{params.row.created_by || '-'}</Typography>
-      ),
-    },
-    {
-      field: 'updated_by',
-      headerName: 'Last Updated By',
-      type: 'string',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>{params.row.updated_by || '-'}</Typography>
-      ),
-    },
-    {
-      field: 'type',
-      headerName: 'Type',
-      flex: 1,
-      renderCell: (params: GridCellParams) => (
-        <Typography>{getKindLabel(params.row.type)}</Typography>
-      ),
-    },
-    {
-      field: 'conflicts',
-      headerName: 'Conflicts',
-      flex: 0.5,
-      renderCell: (params: GridCellParams) =>
-        params.row.conflicts ? (
-          <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
-        ) : (
-          '-'
+            const kvp: {[key: string]: string} = {};
+
+            // includiing record type label
+            if (includeKind) {
+              kvp['Type'] = viewsets?.[row.type]?.label ?? row.type ?? '-';
+            }
+
+            // summary fields or hrid
+            (summaryFields.length > 0 ? summaryFields : ['hrid']).forEach(
+              field => {
+                let value = row?.[field];
+                if (value === undefined) {
+                  value = getDisplayDataFromDraft(field, data);
+                }
+                const label =
+                  field === 'hrid' ? 'Field ID' : prettifyFieldName(field);
+                kvp[label] = value || '-';
+              }
+            );
+
+            kvp['Created'] = row.created
+              ? getLocalDate(row.created).replace('T', ' ')
+              : '-';
+
+            kvp['Last Updated'] = row.updated
+              ? getLocalDate(row.updated).replace('T', ' ')
+              : '-';
+            return (
+              <TableContainer>
+                <Table size="small">
+                  <TableBody>
+                    {Object.entries(kvp).map(([key, val]) => (
+                      <TableRow key={key}>
+                        <TableCell
+                          sx={{
+                            width: '40%',
+                            borderBottom: 'none',
+                            padding: '4px 8px',
+                          }}
+                        >
+                          {key}
+                        </TableCell>
+                        <TableCell
+                          sx={{
+                            width: '60%',
+                            borderBottom: 'none',
+                            padding: '4px 8px',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {val}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            );
+          },
+        },
+      ];
+    }
+
+    const baseCols: GridColDef[] = [];
+
+    (summaryFields.length > 0 ? summaryFields : ['hrid']).forEach(field => {
+      baseCols.push({
+        field,
+        headerName: field === 'hrid' ? 'Field ID' : prettifyFieldName(field),
+        type: 'string',
+        flex: 1,
+        renderCell: (params: GridCellParams) => (
+          <Typography>
+            {getDisplayDataFromDraft(field, params.row) || '-'}
+          </Typography>
         ),
-    },
-    {
-      field: 'delete',
-      headerName: 'Actions',
-      type: 'actions',
-      flex: 0.3,
-      renderCell: (params: GridCellParams) => (
-        <RecordDelete
-          project_id={project_id}
-          serverId={serverId}
-          record_id={params.row.record_id}
-          revision_id={params.row.revision_id}
-          draft_id={params.row._id}
-          show_label={false}
-          handleRefresh={handleRefresh}
-        />
-      ),
-    },
-  ];
+      });
+    });
+    baseCols.push(
+      {
+        field: 'created',
+        headerName: 'Created',
+        type: 'dateTime',
+        flex: 1,
+        renderCell: (params: GridCellParams) => (
+          <Typography>
+            {params.row.created
+              ? getLocalDate(params.row.created).replace('T', ' ')
+              : '-'}
+          </Typography>
+        ),
+      },
+
+      {
+        field: 'last_updated',
+        headerName: 'Last Updated',
+        type: 'dateTime',
+        flex: 1,
+        renderCell: (params: GridCellParams) => (
+          <Typography>
+            {params.row.updated
+              ? getLocalDate(params.row.updated).replace('T', ' ')
+              : '-'}
+          </Typography>
+        ),
+      },
+      {
+        field: 'delete',
+        headerName: 'Actions',
+        type: 'actions',
+        flex: 0.3,
+        renderCell: (params: GridCellParams) => (
+          <RecordDelete
+            project_id={project_id}
+            serverId={serverId}
+            record_id={params.row.record_id}
+            revision_id={params.row.revision_id}
+            draft_id={params.row._id}
+            show_label={false}
+            handleRefresh={handleRefresh}
+          />
+        ),
+      }
+    );
+
+    return baseCols;
+  }, [summaryFields, viewsets, currentSize]);
+
   return (
     <React.Fragment>
-      <Box component={Paper} elevation={0}>
+      <Box
+        component={Paper}
+        elevation={0}
+        sx={{backgroundColor: 'voilet', padding: 2}}
+      >
         <DataGrid
           key={'drafttable'}
           rows={rows}
@@ -225,25 +303,7 @@ export function DraftsTable(props: DraftsRecordProps) {
           getRowId={r => r._id}
           columns={columns}
           autoHeight
-          sx={{
-            cursor: 'pointer',
-            padding: '8px',
-            backgroundColor: theme.palette.background.tabsBackground,
-            borderRadius: '4px',
-            boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
-            mb: 2,
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: theme.palette.background.default,
-              borderBottom: '1px solid #ccc',
-            },
-            '& .MuiDataGrid-columnSeparator': {
-              visibility: 'visible',
-              color: '#ccc',
-            },
-            '& .MuiDataGrid-cell': {
-              borderBottom: '1px solid #eee',
-            },
-          }}
+          sx={styles.grid}
           getRowHeight={() => 'auto'}
           disableRowSelectionOnClick
           onRowClick={handleRowClick}
@@ -255,7 +315,7 @@ export function DraftsTable(props: DraftsRecordProps) {
           }}
           initialState={{
             sorting: {
-              sortModel: [{field: 'updated', sort: 'desc'}],
+              sortModel: [{field: 'last_updated', sort: 'desc'}],
             },
             pagination: {
               paginationModel: {

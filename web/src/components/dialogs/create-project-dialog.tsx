@@ -12,7 +12,7 @@ import {CreateProjectForm} from '../forms/create-project-form';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Plus} from 'lucide-react';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTeam} from '@/hooks/get-hooks';
+import {useGetTeam} from '@/hooks/queries';
 import {ErrorComponent} from '@tanstack/react-router';
 
 export const CreateProjectDialog = ({
@@ -25,11 +25,11 @@ export const CreateProjectDialog = ({
   const [open, setOpen] = useState(false);
 
   const {user} = useAuth();
+  const {data: team} = useGetTeam(user, specifiedTeam);
+
   if (!user) {
     return <ErrorComponent error="Unauthenticated" />;
   }
-
-  const {data: team} = useGetTeam(user, specifiedTeam);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

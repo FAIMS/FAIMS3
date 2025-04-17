@@ -1,10 +1,11 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectInvite} from '@/components/dialogs/create-project-invite';
 import {useGetInviteColumns} from '@/components/tables/project-invites';
+import {APP_TOKEN_RETURN_PATH} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {removeInviteForProject} from '@/hooks/project-hooks';
-import {useGetProjectInvites} from '@/hooks/get-hooks';
+import {useGetProjectInvites} from '@/hooks/queries';
 import {Action} from '@faims3/data-model';
 import {ErrorComponent} from '@tanstack/react-router';
 
@@ -21,7 +22,13 @@ const ProjectInvites = ({projectId}: {projectId: string}) => {
     return <ErrorComponent error="Not authenticated" />;
   }
 
-  const {data, isLoading} = useGetProjectInvites(user, projectId);
+  const {data, isLoading} = useGetProjectInvites({
+    user,
+    projectId,
+    // this redirect is designed to bring the user back to the main app logged
+    // in
+    redirect: APP_TOKEN_RETURN_PATH,
+  });
 
   const columns = useGetInviteColumns({
     projectId,

@@ -3,7 +3,7 @@ import {Field, Form} from '@/components/form';
 import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetTeams} from '@/hooks/get-hooks';
+import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 
@@ -64,6 +64,7 @@ export function CreateTemplateForm({
   const onSubmit = async ({
     file,
     team,
+    name,
   }: {
     // Doesn't currently do anything!
     name: string;
@@ -91,7 +92,7 @@ export function CreateTemplateForm({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
           },
-          body: JSON.stringify({teamId: team ?? specifiedTeam, ...json}),
+          body: JSON.stringify({teamId: team ?? specifiedTeam, ...json, name}),
         }
       );
 

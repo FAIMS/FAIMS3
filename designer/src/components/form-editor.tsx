@@ -36,7 +36,6 @@ import {
   Step,
   StepButton,
   Stepper,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -50,6 +49,7 @@ import {SectionEditor} from './section-editor';
 import {useLocation} from 'react-router-dom';
 import {findFormExternalUsage} from './condition';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
+import DebouncedTextField from './debounced-text-field';
 
 type Props = {
   viewSetId: string;
@@ -75,25 +75,24 @@ export const FormEditor = ({
   const sectionParam = searchParams.get('section');
 
   const visibleTypes = useAppSelector(
-    state => state.notebook['ui-specification'].visible_types
+    state => state.notebook['ui-specification'].present.visible_types
   );
   const viewsets = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets
+    state => state.notebook['ui-specification'].present.viewsets
   );
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets[viewSetId],
+    state => state.notebook['ui-specification'].present.viewsets[viewSetId],
     (left, right) => {
       return shallowEqual(left, right);
     }
   );
   const sections = viewSet ? viewSet.views : [];
-  console.log('FormEditor', {viewSetId, sections});
 
   const views = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
   const fields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const dispatch = useAppDispatch();
 
@@ -438,7 +437,7 @@ export const FormEditor = ({
                 setEditMode(false);
               }}
             >
-              <TextField
+              <DebouncedTextField
                 size="small"
                 margin="dense"
                 label="Form Name"
@@ -626,7 +625,7 @@ export const FormEditor = ({
                       addNewSection(viewSetId, newSectionName);
                     }}
                   >
-                    <TextField
+                    <DebouncedTextField
                       required
                       label="Section Name"
                       name="sectionName"

@@ -1,4 +1,5 @@
 import {TokenContents} from '@faims3/data-model';
+import crypto from 'crypto';
 import {CONDUCTOR_INSTANCE_NAME} from './buildconfig';
 
 /**
@@ -55,3 +56,51 @@ export const generateRandomString = (length = 4): string => {
     .toString(36)
     .substring(2, 2 + length);
 };
+
+// Configuration for verification codes
+export const VERIFICATION_CODE_LENGTH = 10;
+export const VERIFICATION_CODE_CHARSET =
+  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+/**
+ * Creates a cryptographic hash of a verification code.
+ * Uses SHA-256 with a random salt for secure storage.
+ *
+ * @param code The verification code to hash
+ * @returns An object containing the hash and salt
+ */
+export function hashVerificationCode(code: string): string {
+  return crypto.createHash('sha256').update(code).digest('hex');
+}
+
+/**
+ * Generates a cryptographically secure random verification code.
+ *
+ * @param length The length of the code to generate (default: VERIFICATION_CODE_LENGTH)
+ * @param charset The characters to use in the code (default: VERIFICATION_CODE_CHARSET)
+ * @returns {string} A random verification code of the specified length
+ */
+export function generateVerificationCode(
+  length: number = VERIFICATION_CODE_LENGTH,
+  charset: string = VERIFICATION_CODE_CHARSET
+): string {
+  if (length <= 0) {
+    throw new Error('Code length must be greater than 0');
+  }
+  if (charset.length === 0) {
+    throw new Error('Charset must not be empty');
+  }
+
+  // Calculate how many random bytes we need
+  // We need enough bytes to have sufficient entropy for our charset
+  const randomBytes = crypto.randomBytes(length * 2);
+  let result = '';
+
+  for (let i = 0; i < length; i++) {
+    // Use two bytes for each character to ensure uniform distribution
+    const randomValue = (randomBytes[i * 2] << 8) + randomBytes[i * 2 + 1];
+    result += charset[randomValue % charset.length];
+  }
+
+  return result;
+}

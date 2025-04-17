@@ -1,66 +1,68 @@
-import {Link, useLocation} from '@tanstack/react-router';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from './ui/breadcrumb';
-import {useAuth} from '@/context/auth-provider';
-import {Fragment} from 'react';
-import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/get-hooks';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import React from 'react';
+import {Link, useRouter} from '@tanstack/react-router';
+import {ChevronRight} from 'lucide-react';
+import {useBreadcrumb} from '../context/breadcrumb-provider';
 import {Skeleton} from './ui/skeleton';
-import {capitalize} from '@/lib/utils';
 
-/**
- * Breadcrumbs component renders a breadcrumb navigation for the current page.
- * It displays the current page's path as a list of breadcrumb items.
- *
- * @returns {JSX.Element} The rendered Breadcrumbs component.
- */
 export default function Breadcrumbs() {
-  const pathname = useLocation({
-    select: ({pathname}) => pathname,
-  })
-    .split('/')
-    .slice(1);
+  const router = useRouter();
+  const {breadcrumbs} = useBreadcrumb();
 
-  const {user} = useAuth();
-  const {data, isLoading} =
-    pathname.at(0) === 'projects'
-      ? useGetProjects(user, pathname.at(1))
-      : pathname.at(0) === 'templates'
-        ? useGetTemplates(user, pathname.at(1))
-        : pathname.at(0) === 'teams'
-          ? useGetTeams(user)
-          : {data: null, isLoading: false};
+  // Get current route path parts
+  const currentPath = router.state.location.pathname;
+  const pathParts = currentPath.split('/').filter(Boolean);
+
+  // Build up all possible parent paths
+  const routePaths = pathParts.map((_, index) => {
+    return '/' + pathParts.slice(0, index + 1).join('/');
+  });
+
+  // Add home route
+  if (currentPath !== '/') {
+    routePaths.unshift('/');
+  }
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        {pathname.map((path, index) => (
-          <Fragment key={path}>
-            {index > 0 && <BreadcrumbSeparator />}
-            {index === 0 && (
-              <BreadcrumbItem>
-                <Link to={pathname.at(0)}>
-                  {pathname.at(0) === 'projects'
-                    ? `${NOTEBOOK_NAME_CAPITALIZED}s`
-                    : capitalize(pathname.at(0) || '')}
-                </Link>
-              </BreadcrumbItem>
+    <nav className="flex items-center space-x-1 text-sm">
+      {routePaths.map((path, index) => {
+        // Get custom breadcrumb info if available
+        const crumbInfo = breadcrumbs[path];
+
+        // Default label is the path segment itself or "Home" for root
+        const defaultLabel =
+          path === '/' ? 'Home' : pathParts[index - 1] || pathParts[index];
+
+        const label = crumbInfo?.label || defaultLabel;
+        const isLoading = crumbInfo?.isLoading;
+
+        const isLast = index === routePaths.length - 1;
+
+        return (
+          <React.Fragment key={path}>
+            {index > 0 && (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
-            {index === 1 &&
-              (isLoading ? (
-                <Skeleton className="w-16 h-5 rounded-md" />
+
+            <div className="flex items-center">
+              {isLoading ? (
+                <Skeleton className="h-4 w-20" />
               ) : (
-                <BreadcrumbItem>
-                  {data?.metadata?.name || pathname.at(1)}
-                </BreadcrumbItem>
-              ))}
-          </Fragment>
-        ))}
-      </BreadcrumbList>
-    </Breadcrumb>
+                <Link
+                  to={path}
+                  className={`hover:text-foreground ${
+                    isLast
+                      ? 'font-medium text-foreground'
+                      : 'text-muted-foreground'
+                  }`}
+                  aria-current={isLast ? 'page' : undefined}
+                >
+                  {label}
+                </Link>
+              )}
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </nav>
   );
 }

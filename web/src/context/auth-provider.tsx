@@ -5,13 +5,13 @@ import {
   TokenPayload,
 } from '@faims3/data-model';
 import {jwtDecode} from 'jwt-decode';
+import {WEB_URL} from '@/constants';
 
 export interface User {
   user: {
     id: string;
     name: string;
     email: string;
-    cluster_admin: boolean;
   };
   token: string;
   refreshToken: string;
@@ -24,7 +24,7 @@ export interface AuthContext {
     token?: string,
     refreshToken?: string
   ) => Promise<{
-    status: string;
+    status: 'success' | 'error';
     message: string;
   }>;
   logout: () => void;
@@ -44,6 +44,13 @@ function decodeToken(token: string): TokenContents | null {
   try {
     // TODO clarify the typing for payload vs contents -this is confusing!
     const payload = jwtDecode<TokenPayload & {exp: number}>(token);
+
+    // Minute buffer is considered expired
+    if (payload.exp * 1000 < Date.now() - 60 * 1000) {
+      console.log('Access token has expired.');
+      return null;
+    }
+
     // Combine the permissions part with the base payload to construct a complete version
     return {...payload, ...decodeAndValidateToken(payload)};
   } catch (e) {
@@ -89,16 +96,22 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   const isAuthenticated = !!user;
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshToken();
+
+      const intervalId = setInterval(refreshToken, 3 * 60 * 1000);
+      return () => clearInterval(intervalId);
+    }
+  }, [isAuthenticated]);
+
   /**
    * Logs out the user by removing the stored user object and setting the user to null.
    */
   const logout = () => {
-    window.location.href = `${
-      import.meta.env.VITE_API_URL
-    }/logout?redirect=${import.meta.env.VITE_WEB_URL}`;
-
     setStoredUser(null);
     setUser(null);
+    window.location.href = WEB_URL;
   };
 
   /**
@@ -107,7 +120,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
    * @param {string} refreshToken - The refresh token to use for authentication.
    * @returns {Promise<{status: string, message: string}>} A promise that resolves to an object containing the status and message.
    */
-  const getUserDetails = async (token?: string, refreshToken = '') => {
+  const getUserDetails = async (
+    token?: string,
+    refreshToken = ''
+  ): Promise<{status: 'error' | 'success'; message: string}> => {
     if (!token) return {status: 'error', message: 'No token provided'};
 
     try {
@@ -133,7 +149,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         token,
         refreshToken,
         decodedToken,
-      };
+      } satisfies User;
 
       setStoredUser(updatedUser);
       setUser(updatedUser);
@@ -184,15 +200,6 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
     return {status: 'success', message: ''};
   };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      refreshToken();
-
-      const intervalId = setInterval(refreshToken, 5 * 60 * 1000);
-      return () => clearInterval(intervalId);
-    }
-  }, [isAuthenticated]);
 
   return (
     <AuthContext.Provider

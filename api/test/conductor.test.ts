@@ -19,50 +19,50 @@
  */
 
 import PouchDB from 'pouchdb';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
 import {expect} from 'chai';
-import fs from 'fs';
 import request from 'supertest';
+import {AUTH_PROVIDER_DETAILS} from '../src/auth/strategies/applyStrategies';
 import {CONDUCTOR_AUTH_PROVIDERS, LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
-import {createNotebook} from '../src/couchdb/notebooks';
-import {app} from '../src/routes';
+import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
+import {PostLoginInput} from '@faims3/data-model';
+
+const adminPassword = LOCAL_COUCHDB_AUTH ? LOCAL_COUCHDB_AUTH.password : '';
 
 it('check is up', async () => {
   const result = await request(app).get('/up');
   expect(result.statusCode).to.equal(200);
 });
 
-const localUserName = 'bobalooba';
-const localUserPassword = 'bobalooba';
-const adminPassword = LOCAL_COUCHDB_AUTH ? LOCAL_COUCHDB_AUTH.password : '';
-
-const notebookUser = 'notebook';
-const notebookPassword = 'notebook';
-
 describe('Auth', () => {
   beforeEach(beforeApiTests);
 
-  it('redirect to auth', done => {
+  it('redirect to login', done => {
     request(app)
       .get('/')
       .expect(302)
-      .expect('Location', /\/auth/, done);
+      .expect('Location', /\/login/, done);
   });
 
-  it('auth returns HTML', done => {
+  it('login returns HTML', done => {
     request(app)
-      .get('/auth')
+      .get('/login')
       .expect(200)
       .expect('Content-Type', /text\/html/, done);
   });
-
+  it('register returns HTML', done => {
+    request(app)
+      .get('/register')
+      .expect(200)
+      .expect('Content-Type', /text\/html/, done);
+  });
   it('shows local login form', done => {
     request(app)
-      .get('/auth')
+      .get('/login')
       .expect(200)
       .then(response => {
         expect(response.text).to.include('Welcome');
@@ -72,210 +72,34 @@ describe('Auth', () => {
 
   it('shows the configured login button(s)', done => {
     request(app)
-      .get('/auth')
+      .get('/login')
       .expect(200)
       .then(response => {
-        CONDUCTOR_AUTH_PROVIDERS.forEach((provider: string) => {
-          expect(response.text).to.include(provider);
+        CONDUCTOR_AUTH_PROVIDERS.forEach(provider => {
+          expect(response.text).to.include(
+            AUTH_PROVIDER_DETAILS[provider].displayName
+          );
         });
         done();
       });
   });
 
   it('redirects with a token on login', done => {
-    const redirect = 'http://redirect.org/';
+    const redirect = 'http://localhost:8080/';
     request(app)
-      .post(`/auth/local/?redirect=${redirect}`)
-      .send({username: 'admin', password: adminPassword})
+      .post('/auth/local')
+      .send({
+        email: 'admin',
+        password: adminPassword,
+        action: 'login',
+        redirect,
+      } satisfies PostLoginInput)
       .expect(302)
       .then(response => {
         const location = new URL(response.header.location);
-        expect(location.hostname).to.equal('redirect.org');
-        expect(location.search).to.match(/token/);
+        expect(location.hostname).to.equal('localhost');
+        expect(location.search).to.match(/exchangeToken/);
         done();
       });
-  });
-});
-
-describe('Pages', () => {
-  beforeEach(beforeApiTests);
-
-  it('shows the notebooks page', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    await createNotebook('test-notebook', uiSpec, metadata);
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: 'admin', password: adminPassword})
-      .expect(302);
-
-    await agent
-      .get('/notebooks/')
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('test-notebook');
-        expect(response.text).to.include('New Notebook');
-      });
-  });
-
-  it("doesn't show the notebooks page when not logged in", async () => {
-    const agent = request.agent(app);
-    // expect a redirect to login
-    await agent.get('/notebooks/').expect(302);
-  });
-
-  it('shows the add notebook option for a notebook-creater user', async () => {
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: notebookUser, password: notebookPassword})
-      .expect(302);
-
-    await agent
-      .get('/notebooks/')
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('New Notebook');
-      });
-  });
-
-  it("doesn't show the add notebook option for a regular user", async () => {
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: localUserName, password: localUserPassword})
-      .expect(302);
-
-    await agent
-      .get('/notebooks/')
-      .expect(200)
-      .then(response => {
-        expect(response.text).not.to.include('Upload a Notebook');
-      });
-  });
-
-  it('shows page for one notebook', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    const project_id = await createNotebook('test-notebook', uiSpec, metadata);
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: 'admin', password: adminPassword})
-      .expect(302);
-
-    await agent
-      .get(`/notebooks/${project_id}/`)
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('test-notebook');
-      });
-  });
-
-  it('shows notebook users page for admin user', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    const project_id = await createNotebook('test-notebook', uiSpec, metadata);
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: 'admin', password: adminPassword})
-      .expect(302);
-
-    await agent
-      .get(`/notebooks/${project_id}/users`)
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('PROJECT_ADMIN');
-      });
-  });
-
-  it('get home page logged in', async () => {
-    const filename = 'notebooks/sample_notebook.json';
-    const jsonText = fs.readFileSync(filename, 'utf-8');
-    const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-
-    await createNotebook('test-notebook', uiSpec, metadata);
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: 'admin', password: adminPassword})
-      .expect(302);
-
-    await agent
-      .get('/')
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('Admin User');
-      });
-  });
-
-  it('shows users page for admin user', async () => {
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: 'admin', password: adminPassword})
-      .expect(302);
-
-    await agent
-      .get('/users')
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('admin');
-      });
-  });
-
-  it('does not show the users page for regular user', async () => {
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: localUserName, password: localUserPassword})
-      .expect(302);
-
-    await agent.get('/users').expect(401);
-  });
-
-  it('shows templates page for admin user', async () => {
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: 'admin', password: adminPassword})
-      .expect(302);
-
-    await agent
-      .get('/templates')
-      .expect(200)
-      .then(response => {
-        expect(response.text).to.include('Admin User');
-      });
-  });
-
-  it('does not show the templates page for regular user', async () => {
-    const agent = request.agent(app);
-
-    await agent
-      .post('/auth/local/')
-      .send({username: localUserName, password: localUserPassword})
-      .expect(302);
-
-    // Who should be able to view templates? This should be the same as API which allows viewing
-    // await agent.get('/templates').expect(401);
-    await agent.get('/templates').expect(200);
   });
 });

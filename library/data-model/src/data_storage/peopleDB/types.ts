@@ -17,106 +17,115 @@
  * Description:
  *   Data models related to users.
  */
+import {z} from 'zod';
+import {Role} from '../../permission/model';
+import {resourceRoleSchema} from '../../permission/types';
+import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 
-import {NonUniqueProjectID, Resource, ResourceRole, Role} from '../../';
+// Basic types defined as Zod schemas
+export const ServiceIDSchema = z.string();
+export type ServiceID = z.infer<typeof ServiceIDSchema>;
 
-/*
- * This is used to pass around a user profile from an arbitrary service where
- * the details of the profile are *not* needed.
- */
-export type UserServiceProfileLocked = unknown;
-export type ServiceID = string;
-export type UserServiceProfiles = {
-  [ServiceID: string]: UserServiceProfileLocked;
-};
-export type CouchDBUsername = string;
-export type CouchDBUserRole = string;
-export type CouchDBUserRoles = CouchDBUserRole[];
-export type Email = string;
-export type ConductorRole = string;
-export type AllProjectRoles = {[NonUniqueProjectID: string]: ConductorRole[]};
-export type OtherRoles = ConductorRole[];
+export const UserServiceProfileLockedSchema = z.unknown();
+export type UserServiceProfileLocked = z.infer<
+  typeof UserServiceProfileLockedSchema
+>;
 
-// This is the v1.1 or prior user model - these represent entries in the people
-// DB
-export interface PeopleV1Fields {
-  user_id: string;
-  name: string;
-  emails: Email[];
-  // CouchDB accessible roles array either <role> or <projectId>||<projectRole>
-  roles: string[];
-  // This is the explicitly granted roles for each project: projectId -> projectRole[]
-  project_roles: AllProjectRoles;
-  // These are global roles
-  other_roles: OtherRoles;
-  // This maps the profile (e.g. local) -> info about that profile
-  profiles: UserServiceProfiles;
-  // This is deprecated - never used
-  owned: NonUniqueProjectID[];
-}
+export const UserServiceProfilesSchema = z.record(
+  UserServiceProfileLockedSchema
+);
+export type UserServiceProfiles = z.infer<typeof UserServiceProfilesSchema>;
+
+export const CouchDBUsernameSchema = z.string();
+export type CouchDBUsername = z.infer<typeof CouchDBUsernameSchema>;
+
+export const CouchDBUserRoleSchema = z.string();
+export type CouchDBUserRole = z.infer<typeof CouchDBUserRoleSchema>;
+
+export const CouchDBUserRolesSchema = z.array(CouchDBUserRoleSchema);
+export type CouchDBUserRoles = z.infer<typeof CouchDBUserRolesSchema>;
+
+export const EmailSchema = z.string().email();
+export type Email = z.infer<typeof EmailSchema>;
+
+export const ConductorRoleSchema = z.string();
+export type ConductorRole = z.infer<typeof ConductorRoleSchema>;
+
+export const AllProjectRolesSchema = z.record(z.array(ConductorRoleSchema));
+export type AllProjectRoles = z.infer<typeof AllProjectRolesSchema>;
+
+export const OtherRolesSchema = z.array(ConductorRoleSchema);
+export type OtherRoles = z.infer<typeof OtherRolesSchema>;
+
+// V1 Schema
+export const PeopleV1FieldsSchema = z.object({
+  user_id: z.string(),
+  name: z.string(),
+  emails: z.array(EmailSchema),
+  roles: z.array(z.string()),
+  project_roles: AllProjectRolesSchema,
+  other_roles: OtherRolesSchema,
+  profiles: UserServiceProfilesSchema,
+  owned: z.array(z.string()),
+});
+export type PeopleV1Fields = z.infer<typeof PeopleV1FieldsSchema>;
 export type PeopleV1Document = PouchDB.Core.ExistingDocument<PeopleV1Fields>;
 
-export type ResourceRoleMap = {
-  [resource in Resource]?: {resourceId: string; role: Role}[] | undefined;
-};
+// Resource Role Map schema
+export const ResourceRoleMapSchema = z.record(
+  z
+    .array(
+      z.object({
+        resourceId: z.string(),
+        role: z.nativeEnum(Role),
+      })
+    )
+    .optional()
+);
+export type ResourceRoleMap = z.infer<typeof ResourceRoleMapSchema>;
 
-export interface PeopleV2Fields {
-  // Unique user ID - same as _id in all cases thus far
-  user_id: string;
-
-  // Full name
-  name: string;
-
-  // Emails associated with this profile
-  emails: Email[];
-
-  // A list of global scope roles (these roles apply globally if global role,
-  // and to all resources if it's a resource role)
-  globalRoles: Role[];
-
-  // A list of explicitly granted resource scoped roles e.g. {Resource.PROJECT :
-  // {resourceId: '1234', role: 'survey-manager'}}
-  resourceRoles: ResourceRole[];
-
-  // This links profile information to profiles
-  profiles: UserServiceProfiles;
-}
+// V2 Schema
+export const PeopleV2FieldsSchema = z.object({
+  user_id: z.string(),
+  name: z.string(),
+  emails: z.array(EmailSchema),
+  globalRoles: z.array(z.nativeEnum(Role)),
+  resourceRoles: z.array(resourceRoleSchema),
+  profiles: UserServiceProfilesSchema,
+});
+export type PeopleV2Fields = z.infer<typeof PeopleV2FieldsSchema>;
 export type PeopleV2Document = PouchDB.Core.ExistingDocument<PeopleV2Fields>;
 
-// V3 adds teams
-export interface PeopleV3Fields {
-  // Unique user ID - same as _id in all cases thus far
-  user_id: string;
-
-  // Full name
-  name: string;
-
-  // Emails associated with this profile
-  emails: Email[];
-
-  // This links profile information to profiles
-  profiles: UserServiceProfiles;
-
-  // Explicitly granted roles - we don't store the flattened/resolved roles
-  // This way we can be more careful about understanding where roles came from
-
-  // Project roles
-  projectRoles: ResourceRole[];
-
-  // Team roles
-  teamRoles: ResourceRole[];
-
-  // Template roles
-  templateRoles: ResourceRole[];
-
-  // Global (non resource-specific roles)
-  globalRoles: Role[];
-}
+// V3 Schema (current)
+export const PeopleV3FieldsSchema = z.object({
+  user_id: z.string(),
+  name: z.string(),
+  emails: z.array(EmailSchema),
+  profiles: UserServiceProfilesSchema,
+  projectRoles: z.array(resourceRoleSchema),
+  teamRoles: z.array(resourceRoleSchema),
+  templateRoles: z.array(resourceRoleSchema),
+  globalRoles: z.array(z.nativeEnum(Role)),
+});
+export type PeopleV3Fields = z.infer<typeof PeopleV3FieldsSchema>;
 export type PeopleV3Document = PouchDB.Core.ExistingDocument<PeopleV3Fields>;
-// We are at v3
-export type PeopleDBFields = PeopleV3Fields;
 
-export type PeopleDBDocument = PouchDB.Core.Document<PeopleDBFields>;
-export type ExistingPeopleDBDocument =
-  PouchDB.Core.ExistingDocument<PeopleDBFields>;
+// Current Version (V3)
+export const PeopleDBFieldsSchema = PeopleV3FieldsSchema;
+export type PeopleDBFields = z.infer<typeof PeopleDBFieldsSchema>;
+
+// Document
+export const PeopleDBDocumentSchema = CouchDocumentSchema.extend(
+  PeopleDBFieldsSchema.shape
+);
+export type PeopleDBDocument = z.infer<typeof PeopleDBDocumentSchema>;
+
+// Existing document
+export const ExistingPeopleDBDocumentSchema =
+  CouchExistingDocumentSchema.extend(PeopleDBFieldsSchema.shape);
+export type ExistingPeopleDBDocument = z.infer<
+  typeof ExistingPeopleDBDocumentSchema
+>;
+
+// Database
 export type PeopleDB = PouchDB.Database<PeopleDBFields>;
