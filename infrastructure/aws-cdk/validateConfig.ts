@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {ConfigSchema, Config} from './lib/faims-infra-stack';
 import {ZodError} from 'zod';
 import {exit} from 'process';
+import {Config, ConfigSchema} from './lib/config';
 
 function validateConfig(configPath: string): boolean {
   try {

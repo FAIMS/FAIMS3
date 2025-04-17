@@ -152,6 +152,25 @@ value of USER_TOKEN.
 npm run load-notebooks
 ```
 
+## IOS Notes
+
+To build the IOS app locally you need to be on MacOS.  A number of the build
+files for IOS are generated from configuration variables in the `app/.env` 
+file.   These must be set for the build to work, in particular the
+development team might need to be set to a valid team id for the build
+to work.  
+
+Before building the IOS app run 
+
+```bash
+npm run configIOSbuild
+```
+
+in the `app` directory.  This modifies two build files.   See the notes on
+[IOS Deployment](docs/developer/docs/source/markdown/IOS-Deployment.md) for
+more details. That documents the CI workflows but some of it applies for
+local builds.
+
 ## Developer notes to run test copies of FAIMS
 
 Before you do anything (apart from cloning this repository), you should run
