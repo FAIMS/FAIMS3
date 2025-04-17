@@ -65,7 +65,6 @@ export const store: ToolkitStore<AppState> = configureStore({
           'ui-specification/sectionDuplicated',
           'ui-specification/sectionMovedToForm',
           'ui-specification/sectionMoved',
-          'ui-specification/sectionConditionChanged',
 
           // ViewSet actions
           'ui-specification/viewSetAdded',

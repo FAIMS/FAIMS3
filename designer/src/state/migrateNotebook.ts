@@ -27,7 +27,7 @@ export const migrateNotebook = (notebook: Notebook) => {
   const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook;
 
   // Remove null conditions before validating
-  removeNullConditions(notebookCopy);
+  removeNullFieldConditions(notebookCopy);
   removeNullFviewConditions(notebookCopy);
 
   // we should maybe in future have validation against alternate notebook schema versions...
@@ -86,10 +86,10 @@ function removeNullFviewConditions(notebook: Notebook) {
 }
 
 /**
- * Remove any fields that are explicitly set to null,
- * and remove null .condition properties before validating.
+ * Remove any fields that are set to null,
+ * and remove null .condition properties.
  */
-function removeNullConditions(notebook: Notebook) {
+function removeNullFieldConditions(notebook: Notebook) {
   const fields = notebook['ui-specification']?.fields;
   if (!fields) return;
 
