@@ -228,14 +228,16 @@ export const MapComponent = (props: MapComponentProps) => {
         })
       );
 
-      // directional navigation traingle
+      // heading is in degrees
+      const headingRadians = (heading * Math.PI) / 180;
+      // directional navigation triangle
       triangleFeature.setGeometry(new Point(coords));
       triangleFeature.setStyle(
         new Style({
           image: new RegularShape({
             points: 3,
             radius: 12,
-            rotation: heading + Math.PI,
+            rotation: headingRadians + Math.PI,
             angle: Math.PI,
             fill: new Fill({color: '#1a73e8'}),
             stroke: new Stroke({color: 'white', width: 2}),
@@ -243,8 +245,8 @@ export const MapComponent = (props: MapComponentProps) => {
           geometry: () => {
             const px = theMap.getPixelFromCoordinate(coords);
             const offset = 23;
-            const dx = offset * Math.sin(heading);
-            const dy = -offset * Math.cos(heading);
+            const dx = offset * Math.sin(headingRadians);
+            const dy = -offset * Math.cos(headingRadians);
             const newPx = [px[0] + dx, px[1] + dy];
             return new Point(theMap.getCoordinateFromPixel(newPx));
           },
