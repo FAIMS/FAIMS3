@@ -33,6 +33,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import {useMemo, useState} from 'react';
 import {useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
+import DebouncedTextField from './debounced-text-field';
 
 // Defines the Condition component to create a conditional expression
 // that can be attached to a View or Field (and maybe more)
@@ -622,7 +623,9 @@ const BooleanConditionControl = (props: ConditionProps) => {
   };
 
   const deleteCondition = () => {
-    updateCondition(EMPTY_FIELD_CONDITION);
+    if (props.onChange) {
+      props.onChange(EMPTY_FIELD_CONDITION);
+    }
   };
 
   if (condition)
@@ -782,7 +785,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       cName !== 'Checkbox'
     ) {
       return (
-        <TextField
+        <DebouncedTextField
           variant="outlined"
           label="Value"
           value={condition.value ?? ''}
@@ -880,7 +883,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       default: {
         if (possibleOptions.length === 0) {
           return (
-            <TextField
+            <DebouncedTextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -893,7 +896,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             (opt: any) => opt.value === condition.value
           );
           return (
-            <TextField
+            <DebouncedTextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -1009,7 +1012,11 @@ export const FieldConditionControl = (props: ConditionProps) => {
         {targetFieldDef ? (
           renderValueEditor(targetFieldDef)
         ) : (
-          <TextField label="Value" sx={{minWidth: 200}} onChange={() => {}} />
+          <DebouncedTextField
+            label="Value"
+            sx={{minWidth: 200}}
+            onChange={() => {}}
+          />
         )}
 
         <Tooltip describeChild title="Make this an 'and' or 'or' condition">

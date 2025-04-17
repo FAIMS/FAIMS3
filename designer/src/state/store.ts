@@ -53,6 +53,7 @@ export const store: ToolkitStore<AppState> = configureStore({
           'ui-specification/fieldUpdated',
           'ui-specification/fieldDuplicated',
           'ui-specification/fieldMoved',
+          'ui-specification/fieldConditionChanged',
           'ui-specification/fieldMovedToSection',
           'ui-specification/fieldRenamed',
           'ui-specification/toggleFieldProtection',
@@ -65,6 +66,7 @@ export const store: ToolkitStore<AppState> = configureStore({
           'ui-specification/sectionDuplicated',
           'ui-specification/sectionMovedToForm',
           'ui-specification/sectionMoved',
+          'ui-specification/sectionConditionChanged',
 
           // ViewSet actions
           'ui-specification/viewSetAdded',
