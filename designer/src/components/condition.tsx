@@ -783,7 +783,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       cName !== 'Checkbox'
     ) {
       return (
-        <DebouncedTextField
+        <TextField
           variant="outlined"
           label="Value"
           value={condition.value ?? ''}
@@ -881,7 +881,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       default: {
         if (possibleOptions.length === 0) {
           return (
-            <DebouncedTextField
+            <TextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -894,7 +894,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             (opt: any) => opt.value === condition.value
           );
           return (
-            <DebouncedTextField
+            <TextField
               variant="outlined"
               label="Value"
               value={condition.value ?? ''}
@@ -1010,11 +1010,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
         {targetFieldDef ? (
           renderValueEditor(targetFieldDef)
         ) : (
-          <DebouncedTextField
-            label="Value"
-            sx={{minWidth: 200}}
-            onChange={() => {}}
-          />
+          <TextField label="Value" sx={{minWidth: 200}} onChange={() => {}} />
         )}
 
         <Tooltip describeChild title="Make this an 'and' or 'or' condition">
