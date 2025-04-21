@@ -37,6 +37,8 @@ const fields: {[key: string]: FieldType} = {
       label: 'Email',
       fullWidth: true,
       helperText: 'Enter a valid email address',
+      advancedHelperText:
+        'Enter detailed help text in markdown format, can include images',
       variant: 'outlined',
       required: false,
       InputProps: {
