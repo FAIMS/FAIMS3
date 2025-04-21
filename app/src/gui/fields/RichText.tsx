@@ -28,7 +28,13 @@ interface Props {
 }
 
 export const RichTextField: React.FC<Props> = ({content}) => {
+  const cleanedContent = content
+    .replace(/\\n/g, '\n') // convert escaped newlines
+    .replace(/\\\\/g, '\\'); // convert double backslashes to single
+
   return (
-    <div dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(content)}} />
+    <div
+      dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(cleanedContent)}}
+    />
   );
 };
