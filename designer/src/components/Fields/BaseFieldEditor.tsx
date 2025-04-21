@@ -19,6 +19,10 @@ import {
   TextField,
   Card,
   Alert,
+  Typography,
+  Collapse,
+  IconButton,
+  Box,
 } from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -27,6 +31,11 @@ import {
   ConditionTranslation,
   ConditionType,
 } from '../condition';
+import {MdxEditor} from '../mdx-editor';
+import {useRef, useState} from 'react';
+import {MDXEditorMethods} from '@mdxeditor/editor';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 type Props = {
   fieldName: string;
@@ -37,6 +46,7 @@ type Props = {
 type StateType = {
   label?: string;
   helperText: string;
+  advancedHelperText: string;
   required: boolean;
   persistent: boolean;
   displayParent: boolean;
@@ -52,6 +62,8 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
     state => state.notebook['ui-specification'].fields[fieldName]
   );
   const dispatch = useAppDispatch();
+
+  const ref = useRef<MDXEditorMethods>(null);
 
   // These are needed because there is no consistency in how
   // the field label is stored in the notebook
@@ -77,6 +89,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   const state = {
     label: getFieldLabel(),
     helperText: cParams.helperText || '',
+    advancedHelperText: cParams.advancedHelperText || '',
     required: cParams.required || false,
     annotation: field.meta ? field.meta.annotation?.include : false,
     annotationLabel: field.meta ? field.meta.annotation?.label || '' : '',
@@ -87,10 +100,15 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
     displayParent: field.displayParent || false,
   };
 
+  const [showAdvanced, setShowAdvanced] = useState(!!state.advancedHelperText);
+  const [expanded, setExpanded] = useState(true);
+
   const updateFieldFromState = (newState: StateType) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
     if (newState.label) setFieldLabel(newField, newState.label);
     newField['component-parameters'].helperText = newState.helperText;
+    newField['component-parameters'].advancedHelperText =
+      newState.advancedHelperText;
     newField['component-parameters'].required = newState.required;
     if (newField.meta) {
       newField.meta.annotation = {
@@ -134,6 +152,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
       <Grid item xs={12}>
         <Card variant="outlined">
           <Grid container p={2} rowSpacing={3}>
+            {/* Label for field  */}
             <Grid item sm={6} xs={12}>
               <TextField
                 name="label"
@@ -145,6 +164,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
               />
             </Grid>
 
+            {/* Helper Text  */}
             <Grid item sm={6} xs={12}>
               <TextField
                 name="helperText"
@@ -157,6 +177,70 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 helperText="Help text shown along with the field (like this text)."
                 onChange={e => updateProperty('helperText', e.target.value)}
               />
+              {/* </Grid>
+
+          </Grid> */}
+
+              {/* Advanced Helper Toggle */}
+              <Box mt={3}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={showAdvanced}
+                      onChange={e => {
+                        setShowAdvanced(e.target.checked);
+                        setExpanded(true);
+                        if (!e.target.checked) {
+                          updateProperty('advancedHelperText', '');
+                        }
+                      }}
+                    />
+                  }
+                  label="Include advanced helper text"
+                />
+              </Box>
+
+              {/* Expandable Advanced Helper Text */}
+              {showAdvanced && (
+                <Card variant="outlined" sx={{mt: 2, p: 2}}>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="space-between"
+                  >
+                    <Typography variant="subtitle2" fontWeight="bold">
+                      Advanced Helper Text
+                    </Typography>
+                    <IconButton
+                      onClick={() => setExpanded(!expanded)}
+                      size="small"
+                      aria-label="Toggle advanced editor"
+                    >
+                      {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                    </IconButton>
+                  </Box>
+
+                  <Collapse in={expanded}>
+                    <Box mt={2}>
+                      <MdxEditor
+                        initialMarkdown={state.advancedHelperText}
+                        handleChange={() =>
+                          updateProperty(
+                            'advancedHelperText',
+                            ref.current?.getMarkdown() || ''
+                          )
+                        }
+                        editorRef={ref}
+                      />
+                      <Alert severity="info" sx={{mt: 2}}>
+                        This markdown-based helper will appear in a dialog when
+                        users click the info icon next to the field label in the
+                        app.
+                      </Alert>
+                    </Box>
+                  </Collapse>
+                </Card>
+              )}
             </Grid>
           </Grid>
         </Card>

@@ -23,6 +23,8 @@ const fields: {[key: string]: FieldType} = {
       label: 'FAIMS Text Field',
       fullWidth: true,
       helperText: 'Enter text',
+      advancedHelperText:
+        'Enter detailed help text in markdown format, can include images',
       variant: 'outlined',
       required: false,
     },

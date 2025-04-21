@@ -28,7 +28,14 @@ interface Props {
 }
 
 export const RichTextField: React.FC<Props> = ({content}) => {
+  // Decode double-escaped JSON string if needed
+  const cleanedContent = content
+    .replace(/\\n/g, '\n') // Convert escaped newlines
+    .replace(/\\\\/g, '\\'); // Convert double backslashes to single
+
   return (
-    <div dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(content)}} />
+    <div
+      dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(cleanedContent)}}
+    />
   );
 };

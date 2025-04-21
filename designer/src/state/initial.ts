@@ -26,6 +26,7 @@ export type ComponentParameters = {
   id?: string;
   helperText?: string;
   helpertext?: string; // was allowed for TakePhoto
+  advancedHelperText?: string;
   variant?: string;
   label?: string;
   multiline?: boolean;

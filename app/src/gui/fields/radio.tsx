@@ -63,6 +63,7 @@ interface Props {
   ElementProps: ElementProps; // Radio options
   disabled?: boolean; // Wheter the field is disabled
   required?: boolean;
+  advancedHelperText?: string;
 }
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
@@ -91,6 +92,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
         heading={label}
         subheading={helperText}
         required={this.props.required}
+        advancedHelperText={this.props.advancedHelperText}
       >
         <FormControl sx={{mb: 4}} error={Boolean(form.errors?.[field.name])}>
           <MuiRadioGroup

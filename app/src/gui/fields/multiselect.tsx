@@ -48,6 +48,7 @@ interface ElementProps {
 interface Props {
   ElementProps: ElementProps;
   select_others?: string;
+  advancedHelperText?: string;
 }
 
 /**
@@ -60,6 +61,7 @@ interface ExpandedChecklistProps {
   label?: ReactNode;
   helperText?: ReactNode;
   exclusiveOptions?: Array<string>;
+  advancedHelperText?: ReactNode;
 }
 
 /**
@@ -72,6 +74,7 @@ interface MuiMultiSelectProps {
   label?: ReactNode;
   helperText?: ReactNode;
   exclusiveOptions?: Array<string>;
+  advancedHelperText?: ReactNode;
 }
 
 /**
@@ -265,6 +268,7 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
       heading={props.label}
       subheading={props.helperText}
       required={props.required}
+      advancedHelperText={props.advancedHelperText}
     >
       <Box sx={{mt: 2, mb: 2}}>
         {isExpandedChecklist ? (

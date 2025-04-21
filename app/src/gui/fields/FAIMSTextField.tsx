@@ -33,6 +33,7 @@ interface Props {
   helperText?: ReactNode;
   required?: boolean;
   fullWidth?: boolean;
+  advancedHelperText?: string;
 }
 
 /**
@@ -56,6 +57,7 @@ export const FAIMSTextField = (props: FieldProps & Props) => {
       heading={props.label}
       subheading={props.helperText}
       required={props.required}
+      advancedHelperText={props.advancedHelperText}
     >
       <MuiTextField
         {...props.field}

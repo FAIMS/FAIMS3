@@ -15,7 +15,7 @@ import TextField from '@mui/material/TextField';
 import FieldWrapper from './fieldWrapper';
 
 const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
-  const {label, helperText, required, min, max} = props;
+  const {label, helperText, required, min, max, advancedHelperText} = props;
 
   const error = form.touched[field.name] && Boolean(form.errors[field.name]);
 
@@ -27,7 +27,12 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
     : form.errors[field.name] || helperText;
 
   return (
-    <FieldWrapper heading={label} subheading={helperText} required={required}>
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}
+      required={required}
+      advancedHelperText={advancedHelperText}
+    >
       <TextField
         {...field}
         fullWidth
