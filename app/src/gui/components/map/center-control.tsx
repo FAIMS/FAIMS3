@@ -8,12 +8,12 @@ import src from '../../../target.svg';
  * Creates a custom control button that centers the map view to a specified coordinate.
  *
  * @param {View} view - The map view instance to be controlled.
- * @param {Coordinate} center - The coordinate to which the map view should be centered.
+ * @param {() => void} center - Callback to center the map view.
  * @returns {Control} - The custom control instance.
  */
 export const createCenterControl = (
   view: View,
-  center: Coordinate
+  centerMap: () => void
 ): Control => {
   const button = document.createElement('button');
   button.className = 'ol-center-button';
@@ -28,7 +28,7 @@ export const createCenterControl = (
   );
 
   const handleClick = () => {
-    view.setCenter(center);
+    centerMap();
   };
 
   button.addEventListener('click', handleClick);

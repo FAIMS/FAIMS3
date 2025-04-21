@@ -42,6 +42,7 @@ import {VectorTileStore} from './tile-source';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
 import CircleStyle from 'ol/style/Circle';
+import {Geolocation, Position} from '@capacitor/geolocation';
 
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -124,8 +125,9 @@ export const MapComponent = (props: MapComponentProps) => {
   }, [props.center, currentPosition]);
 
   const positionLayerRef = useRef<VectorLayer>();
-  const watchIdRef = useRef<number | null>(null);
+  const watchIdRef = useRef<string | null>(null);
   const fakeIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const liveLocationRef = useRef<Position | null>(null);
 
   /**
    * Initializes the map instance with base tile layers and zoom controls.
@@ -167,7 +169,8 @@ export const MapComponent = (props: MapComponentProps) => {
    * - Blue dot at user location with directional traingular and accuracy circle. which would wokk on rela-time gps location tracking
    *
    * Also supports fake GPS simulation for browser testing.
-   */ const startLiveCursor = (theMap: Map) => {
+   */
+  const startLiveCursor = (theMap: Map) => {
     // Clean up before re-adding
     if (positionLayerRef.current) {
       theMap.removeLayer(positionLayerRef.current);
@@ -175,8 +178,9 @@ export const MapComponent = (props: MapComponentProps) => {
       positionLayerRef.current = undefined;
     }
     if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
+      Geolocation.clearWatch({id: watchIdRef.current}).then(() => {
+        watchIdRef.current = null;
+      });
     }
     // to be removed later after testing @TODO: RG
     if (fakeIntervalRef.current !== null) {
@@ -255,37 +259,29 @@ export const MapComponent = (props: MapComponentProps) => {
     };
 
     if (!window.__USE_FAKE_GPS__) {
-      // GPS tracking for real-time (mobile/tablet etc.)
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          const coords = transform(
-            [pos.coords.longitude, pos.coords.latitude],
-            'EPSG:4326',
-            projection
-          );
-          view.setCenter(coords);
-          view.setZoom(17);
-        },
-        () => {},
-        {enableHighAccuracy: true}
-      );
+      // Add a watch on position, update our live cursor when it changes
 
-      watchIdRef.current = navigator.geolocation.watchPosition(
-        pos => {
+      Geolocation.watchPosition({enableHighAccuracy: true}, (position, err) => {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        if (position) {
+          liveLocationRef.current = position;
           const coords = transform(
-            [pos.coords.longitude, pos.coords.latitude],
+            [position.coords.longitude, position.coords.latitude],
             'EPSG:4326',
             projection
           );
           updateCursor(
             coords,
-            pos.coords.heading ?? 0,
-            pos.coords.accuracy ?? 30
+            position.coords.heading ?? 0,
+            position.coords.accuracy ?? 30
           );
-        },
-        err => console.error('Live GPS error:', err),
-        {enableHighAccuracy: true}
-      );
+        }
+      }).then(id => {
+        watchIdRef.current = id;
+      });
     } else {
       /**
        * Fake GPS Simulation (for browser testing only)
@@ -309,46 +305,16 @@ export const MapComponent = (props: MapComponentProps) => {
     }
   };
 
-  // /**
-  //  * Add a marker to the map at the current location
-  //  * TODO ranisa to update this based on integration of live cursor.
-  //  * @param theMap the map element
-  //  */
-  // const addCurrentLocationMarker = (theMap: Map) => {
-  //   const source = new VectorSource();
-  //   const geoJson = new GeoJSON();
-
-  //   const stroke = new Stroke({color: '#e2ebef', width: 2});
-  //   const layer = new VectorLayer({
-  //     source: source,
-  //     style: new Style({
-  //       image: new Circle({
-  //         radius: 10,
-  //         fill: new Fill({color: '#465ddf90'}),
-  //         stroke: stroke,
-  //       }),
-  //     }),
-  //   });
-
-  //   // only do this if we have a real map_center
-  //   if (mapCenter) {
-  //     const centerFeature = {
-  //       type: 'Feature',
-  //       geometry: {
-  //         type: 'Point',
-  //         coordinates: mapCenter,
-  //       },
-  //     };
-
-  //     // there is only one feature but readFeature return type is odd and readFeatures works for singletons
-  //     const theFeatures = geoJson.readFeatures(centerFeature, {
-  //       dataProjection: 'EPSG:4326',
-  //       featureProjection: theMap.getView().getProjection(),
-  //     });
-  //     source.addFeature(theFeatures[0]);
-  //     theMap.addLayer(layer);
-  //   }
-  // };
+  // center the map on the current location
+  const centerMap = () => {
+    if (map && liveLocationRef.current) {
+      const coords = getCoordinates(liveLocationRef.current);
+      if (coords) {
+        const center = transform(coords, 'EPSG:4326', defaultMapProjection);
+        map.getView().setCenter(center);
+      }
+    }
+  };
 
   // when we have a location and a map, add the 'here' marker to the map
   useEffect(() => {
@@ -356,7 +322,7 @@ export const MapComponent = (props: MapComponentProps) => {
       startLiveCursor(map);
       if (mapCenter) {
         const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
-        map.addControl(createCenterControl(map.getView(), center));
+        map.addControl(createCenterControl(map.getView(), centerMap));
 
         // we set the map extent if we were given one or if not,
         // set the map center which will either have been passed
