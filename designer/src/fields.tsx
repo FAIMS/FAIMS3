@@ -151,7 +151,6 @@ const fields: {[key: string]: FieldType} = {
       fullWidth: true,
       helperText:
         'Add a datetime stamp (click now to record the current date+time)',
-      advancedHelperText: 'Detailed help text for datetimenow',
       variant: 'outlined',
       required: false,
       is_auto_pick: false,
@@ -167,7 +166,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Date picker',
       fullWidth: true,
       helperText: 'Select a date',
-      advancedHelperText: 'Detailed help text for datepicker',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -185,7 +183,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Date and Time',
       fullWidth: true,
       helperText: 'And a calendar prompt with a timestamp.',
-      advancedHelperText: 'Detailed help text for datetimpciker',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -203,7 +200,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Month picker',
       fullWidth: true,
       helperText: 'Select a month',
-      advancedHelperText: 'Detailed help text for datetimenow',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -222,7 +218,6 @@ const fields: {[key: string]: FieldType} = {
       name: 'file-upload-field',
       id: 'file-upload-field',
       helperText: 'Choose a file',
-      advancedHelperText: 'Detailed help text for fileuploader',
     },
     validationSchema: [['yup.mixed']],
     initialValue: null,
@@ -234,7 +229,6 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       name: 'map-form-field',
       id: 'map-form-field',
-      advancedHelperText: 'Detailed help text for mapformfield',
       variant: 'outlined',
       required: false,
       featureType: 'Point',
@@ -311,7 +305,6 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       fullWidth: true,
       helperText: 'This is sub Title',
-      advancedHelperText: 'Detailed help text for randomstyle',
       variant: 'outlined',
       label: 'Title',
       variant_style: 'h5',
@@ -371,7 +364,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Select Field',
       fullWidth: true,
       helperText: 'Select from list',
-      advancedHelperText: 'Detailed help text for advanced select.',
       required: false,
       ElementProps: {
         optiontree: [
@@ -410,7 +402,6 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       name: 'take-point-field',
       helperText: 'Click to save current location',
-      advancedHelperText: 'Detailed help text for takepoint.',
       label: 'Take point',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
@@ -425,7 +416,6 @@ const fields: {[key: string]: FieldType} = {
       fullWidth: true,
       name: 'templated-field',
       helperText: 'Templated String Field',
-      advancedHelperText: 'Detailed help text for templatedstringfield.',
       required: true,
       template: ' {{}}',
       hidden: true,
@@ -442,7 +432,6 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       label: 'Scan QR Code',
       helperText: 'Scan QR Code on the sample',
-      advancedHelperText: 'Detailed help text for Qrcodeformfield.',
     },
     validationSchema: [['yup.string']],
     initialValue: '',
@@ -453,7 +442,6 @@ const fields: {[key: string]: FieldType} = {
     'type-returned': 'faims-core::JSON',
     'component-parameters': {
       helperText: 'Enter your address',
-      advancedHelperText: 'Detailed help text for address field.',
       required: false,
       name: 'Address',
       label: 'Address',
