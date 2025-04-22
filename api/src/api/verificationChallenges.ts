@@ -63,6 +63,12 @@ api.post(
       );
     }
 
+    if (user.emails.find(e => e.email === email)?.verified) {
+      throw new Exceptions.InvalidRequestException(
+        'This email address is already verified!'
+      );
+    }
+
     // Check if verification attempt is allowed
     const canCreate = await checkCanCreateVerificationChallenge({
       userId: user.user_id,
@@ -103,6 +109,60 @@ api.post(
 );
 
 /**
+ * Verifies an email using a verification code.
+ *
+ * @param code The verification code
+ * @returns A Promise that resolves to an object with the verification result
+ */
+export async function verifyEmailWithCode({code}: {code: string}): Promise<{
+  success: boolean;
+  email?: string;
+  error?: string;
+}> {
+  try {
+    // Validate the verification code
+    const validationResult = await validateVerificationChallenge({
+      code,
+    });
+
+    if (
+      !validationResult.valid ||
+      !validationResult.user ||
+      !validationResult.challenge
+    ) {
+      return {
+        success: false,
+        error: validationResult.validationError || 'Invalid verification code.',
+      };
+    }
+
+    // Get the verified email from the challenge
+    const verifiedEmail = validationResult.challenge.email;
+
+    // Update the user's email verification status
+    await updateUserEmailVerificationStatus({
+      userId: validationResult.user._id,
+      email: verifiedEmail,
+      verified: true,
+    });
+
+    // Mark the verification code as used
+    await consumeVerificationChallenge({code});
+
+    return {
+      success: true,
+      email: verifiedEmail,
+    };
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    return {
+      success: false,
+      error: 'An error occurred while verifying your email.',
+    };
+  }
+}
+
+/**
  * PUT /verify
  *
  * Completes an email verification using a valid verification code.
@@ -122,37 +182,17 @@ api.put(
   async (req, res: Response<PutConfirmEmailVerificationResponse>) => {
     const {code} = req.body;
 
-    // Validate the verification code
-    const validationResult = await validateVerificationChallenge({
-      code,
-    });
+    const result = await verifyEmailWithCode({code});
 
-    if (
-      !validationResult.valid ||
-      !validationResult.user ||
-      !validationResult.challenge
-    ) {
+    if (!result.success) {
       throw new Exceptions.UnauthorizedException(
-        validationResult.validationError || 'Invalid verification code.'
+        result.error || 'Invalid verification code.'
       );
     }
 
-    // Get the verified email from the challenge
-    const verifiedEmail = validationResult.challenge.email;
-
-    // Update the user's email verification status
-    await updateUserEmailVerificationStatus({
-      userId: validationResult.user._id,
-      email: verifiedEmail,
-      verified: true,
-    });
-
-    // Mark the verification code as used
-    await consumeVerificationChallenge({code});
-
     res.json({
       message: 'Email has been successfully verified.',
-      email: verifiedEmail,
+      email: result.email!,
     });
   }
 );

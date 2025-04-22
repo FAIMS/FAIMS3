@@ -5,8 +5,12 @@
  * through the email service.
  */
 
-import {EMAIL_SERVICE, NEW_CONDUCTOR_URL} from '../buildconfig';
-import {IEmailService, EmailOptions} from '../services/emailService';
+import {
+  CONDUCTOR_PUBLIC_URL,
+  EMAIL_SERVICE,
+  WEBAPP_PUBLIC_URL,
+} from '../buildconfig';
+import {EmailOptions} from '../services/emailService';
 
 /**
  * Build a URL with the verification code embedded for easy user access
@@ -15,9 +19,9 @@ import {IEmailService, EmailOptions} from '../services/emailService';
  * @returns The complete verification URL
  */
 export function buildVerificationUrl({code}: {code: string}): string {
-  return `${NEW_CONDUCTOR_URL}/auth/verify-email?code=${encodeURIComponent(
+  return `${CONDUCTOR_PUBLIC_URL}/verify-email?code=${encodeURIComponent(
     code
-  )}`;
+  )}&redirect=${encodeURIComponent(WEBAPP_PUBLIC_URL)}`;
 }
 
 /**
