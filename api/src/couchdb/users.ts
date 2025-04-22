@@ -44,16 +44,18 @@ export const generateInitialUser = ({
   email,
   username,
   name,
+  verified = false,
 }: {
   email?: string;
   username: string;
   name: string;
+  verified?: boolean;
 }): PeopleDBDocument => {
   return {
     _id: username,
     user_id: username,
     name,
-    emails: email ? [email.toLowerCase()] : [],
+    emails: email ? [{email: email.toLowerCase(), verified}] : [],
     // General user is given by default
     globalRoles: [Role.GENERAL_USER],
     // Project roles is empty
@@ -349,4 +351,65 @@ export function removeUser(user: ExistingPeopleDBDocument) {
     .catch(err => {
       throw new Error(`User not found or could not be removed! Error: ${err}.`);
     });
+}
+
+/**
+ * Updates the verification status of a user's email address.
+ *
+ * @param userId The ID of the user whose email is being verified
+ * @param email The email address to mark as verified/unverified
+ * @param verified Whether the email should be marked as verified or not
+ *
+ * @returns A Promise that resolves when the email verification status has been updated
+ *
+ * @throws ItemNotFoundException if the user is not found
+ * @throws InvalidRequestException if the specified email is not associated with the user
+ */
+export async function updateUserEmailVerificationStatus({
+  userId,
+  email,
+  verified,
+}: {
+  userId: string;
+  email: string;
+  verified: boolean;
+}): Promise<void> {
+  // Get the user from the database
+  const user = await getCouchUserFromEmailOrUsername(userId);
+
+  if (!user) {
+    throw new Exceptions.ItemNotFoundException(
+      'Could not find specified user.'
+    );
+  }
+
+  // Normalize email to lowercase for comparison
+  const normalizedEmail = email.toLowerCase();
+
+  // Check if the user has the specified email
+  let emailFound = false;
+
+  // Update the verification status if the email exists
+  const updatedEmails = user.emails.map(emailEntry => {
+    if (emailEntry.email.toLowerCase() === normalizedEmail) {
+      emailFound = true;
+      // Update the verification status
+      return {...emailEntry, verified};
+    }
+    // Keep other emails unchanged
+    return emailEntry;
+  });
+
+  // If the email wasn't found, throw an error
+  if (!emailFound) {
+    throw new Exceptions.InvalidRequestException(
+      `The email ${email} is not associated with this user account.`
+    );
+  }
+
+  // Update the user's emails array with the new verification statuses
+  user.emails = updatedEmails;
+
+  // Save the updated user to the database
+  await saveCouchUser(user);
 }

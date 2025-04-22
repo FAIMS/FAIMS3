@@ -110,8 +110,32 @@ export const PeopleV3FieldsSchema = z.object({
 export type PeopleV3Fields = z.infer<typeof PeopleV3FieldsSchema>;
 export type PeopleV3Document = PouchDB.Core.ExistingDocument<PeopleV3Fields>;
 
+// V4 Schema (current)
+export const VerifiableEmailSchema = z.object({
+  // What is the email address?
+  email: EmailSchema,
+  // Records whether this email is verified or not
+  verified: z.boolean(),
+});
+export const PeopleV4FieldsSchema = z.object({
+  // All the same
+  user_id: z.string(),
+  name: z.string(),
+  profiles: UserServiceProfilesSchema,
+  projectRoles: z.array(resourceRoleSchema),
+  teamRoles: z.array(resourceRoleSchema),
+  templateRoles: z.array(resourceRoleSchema),
+  globalRoles: z.array(z.nativeEnum(Role)),
+
+  // Email updates to include verification
+  emails: z.array(VerifiableEmailSchema),
+});
+export type VerifiableEmail = z.infer<typeof VerifiableEmailSchema>;
+export type PeopleV4Fields = z.infer<typeof PeopleV4FieldsSchema>;
+export type PeopleV4Document = PouchDB.Core.ExistingDocument<PeopleV4Fields>;
+
 // Current Version (V3)
-export const PeopleDBFieldsSchema = PeopleV3FieldsSchema;
+export const PeopleDBFieldsSchema = PeopleV4FieldsSchema;
 export type PeopleDBFields = z.infer<typeof PeopleDBFieldsSchema>;
 
 // Document

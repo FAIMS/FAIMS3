@@ -183,6 +183,7 @@ export enum Action {
   VALIDATE_DBS = 'VALIDATE_DBS',
   RESTORE_FROM_BACKUP = 'RESTORE_FROM_BACKUP',
   SEND_TEST_EMAIL = 'SEND_TEST_EMAIL',
+  VERIFY_EMAIL = 'VERIFY_EMAIL',
 }
 
 /**
@@ -694,6 +695,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
+  [Action.VERIFY_EMAIL]: {
+    name: 'Verify an email address',
+    description: 'Allows the user to generate a verification challenge email.',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
 };
 
 /**
@@ -702,15 +709,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
  */
 export const resourceToActions: Record<Resource, Action[]> = Object.values(
   Resource
-).reduce(
-  (mapping, resource) => {
-    mapping[resource] = Object.entries(actionDetails)
-      .filter(([, desc]) => desc.resource === resource)
-      .map(([action]) => action as Action);
-    return mapping;
-  },
-  {} as Record<Resource, Action[]>
-);
+).reduce((mapping, resource) => {
+  mapping[resource] = Object.entries(actionDetails)
+    .filter(([, desc]) => desc.resource === resource)
+    .map(([action]) => action as Action);
+  return mapping;
+}, {} as Record<Resource, Action[]>);
 
 // =====================================
 // ROLES
@@ -850,25 +854,22 @@ export const roleDetails: Record<Role, RoleDetails> = {
 // Maps resources into a list of role details + Role enum so you can ask the
 // question 'what roles are available for this type of resource'
 export const resourceRoles: Record<Resource, (RoleDetails & {role: Role})[]> =
-  Object.entries(roleDetails).reduce(
-    (acc, [role, details]) => {
-      // Only process roles mapped specifically to resources
-      if (details.resource) {
-        // Initialize the array if this is the first role for this resource
-        if (!acc[details.resource]) {
-          acc[details.resource] = [];
-        }
-
-        // Add the role details with the role enum value included
-        acc[details.resource].push({
-          ...details,
-          role: role as unknown as Role,
-        });
+  Object.entries(roleDetails).reduce((acc, [role, details]) => {
+    // Only process roles mapped specifically to resources
+    if (details.resource) {
+      // Initialize the array if this is the first role for this resource
+      if (!acc[details.resource]) {
+        acc[details.resource] = [];
       }
-      return acc;
-    },
-    {} as Record<Resource, (RoleDetails & {role: Role})[]>
-  );
+
+      // Add the role details with the role enum value included
+      acc[details.resource].push({
+        ...details,
+        role: role as unknown as Role,
+      });
+    }
+    return acc;
+  }, {} as Record<Resource, (RoleDetails & {role: Role})[]>);
 
 // Map roles directly to the actions they grant
 export const roleActions: Record<
@@ -953,7 +954,7 @@ export const roleActions: Record<
 
   // GLOBAL ROLES
   [Role.GENERAL_USER]: {
-    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES],
+    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES, Action.VERIFY_EMAIL],
   },
   [Role.GENERAL_CREATOR]: {
     actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
@@ -1076,15 +1077,12 @@ export function getAllActionsForRole(role: Role): Action[] {
  */
 export const actionRoles: Record<Action, Role[]> = (() => {
   // Initialize an empty mapping for all actions
-  const mapping = Object.values(Action).reduce(
-    (acc, action) => {
-      if (typeof action === 'string') {
-        acc[action] = [];
-      }
-      return acc;
-    },
-    {} as Record<Action, Role[]>
-  );
+  const mapping = Object.values(Action).reduce((acc, action) => {
+    if (typeof action === 'string') {
+      acc[action] = [];
+    }
+    return acc;
+  }, {} as Record<Action, Role[]>);
 
   // For each role, determine all of its actions (including inherited ones)
   // and add this role to each action's list
