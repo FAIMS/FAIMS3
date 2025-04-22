@@ -101,7 +101,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             )}
           </Typography>
 
-          {/* More info help tooltip  */}
+          {/* More info help icon with dialog */}
           {advancedHelperText && (
             <IconButton
               aria-label="Advanced Help"
