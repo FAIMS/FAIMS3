@@ -384,15 +384,14 @@ api.get(
 );
 
 // Types for download format and token payloads
-export const DownloadFormatSchema = z.enum(['csv', 'zip']);
-export const DownloadTokenPayloadSchema = z.object({
+const DownloadFormatSchema = z.enum(['csv', 'zip']);
+const DownloadTokenPayloadSchema = z.object({
   projectID: z.string(),
   format: DownloadFormatSchema,
   viewID: z.string(),
   userID: z.string(),
 });
-export type DownloadFormatType = z.infer<typeof DownloadFormatSchema>;
-export type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
+type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
 // download tokens last this long
 const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
@@ -431,7 +430,6 @@ const validateDownloadToken = async ({
       // verify issuer
       issuer: signingKey.instanceName,
     });
-    console.log('verify result is', result);
     return result.payload as DownloadTokenPayload;
   } catch {
     console.log('invalid token');
@@ -439,7 +437,11 @@ const validateDownloadToken = async ({
   }
 };
 
-// export current versions of all records in this notebook as csv or zip
+// Export record data.
+//
+// Export route redirects to a new URL containing a signed JWT containing
+// details of the download, that route is handled below to do the actual
+// download.
 api.get(
   '/:id/records/:viewID.:format',
   requireAuthenticationAPI,
@@ -471,7 +473,6 @@ api.get(
           user: req.user,
           payload: payload,
         });
-        console.log(`redirecting to /api/notebooks/download/${jwt}`);
         return res.redirect(`/api/notebooks/download/${jwt}`);
       } else {
         throw new Exceptions.ItemNotFoundException(
@@ -489,7 +490,6 @@ api.get(
     const payload = await validateDownloadToken({
       token: req.params.downloadToken,
     });
-    console.log('decoded download token', payload);
     if (payload) {
       const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
       if (uiSpec && payload.viewID in uiSpec.viewsets) {
@@ -519,37 +519,6 @@ api.get(
     }
   }
 );
-
-// // export files for all records in this notebook as zip
-// api.get(
-//   '/:id/records/:viewID.zip',
-//   requireAuthenticationAPI,
-//   isAllowedToMiddleware({
-//     action: Action.EXPORT_PROJECT_DATA,
-//     getResourceId(req) {
-//       return req.params.id;
-//     },
-//   }),
-//   processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
-//   async (req, res) => {
-//     // get the label for this form for the filename header
-//     const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-//     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-//       const label = uiSpec.viewsets[req.params.viewID].label;
-
-//       res.setHeader(
-//         'Content-Disposition',
-//         `attachment; filename="${label}.zip"`
-//       );
-//       res.setHeader('Content-Type', 'application/zip');
-//       streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
-//     } else {
-//       throw new Exceptions.ItemNotFoundException(
-//         `Form with id ${req.params.viewID} not found in notebook`
-//       );
-//     }
-//   }
-// );
 
 api.get(
   '/:id/users/',
