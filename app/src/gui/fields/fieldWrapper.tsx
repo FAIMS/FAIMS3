@@ -9,7 +9,7 @@
  *
  * It is used across multiple input components to standardize the UI.
  */
-import React, {ReactNode, useRef, useState} from 'react';
+import React, {ReactNode, useState} from 'react';
 import {
   Box,
   Button,
