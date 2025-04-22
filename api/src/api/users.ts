@@ -106,11 +106,12 @@ api.get(
   '/current',
   requireAuthenticationAPI,
   async (
-    req: any,
+    req,
     res: Response<{
       id: string;
       name: string;
       email: string;
+      isVerified: boolean;
       cluster_admin: boolean;
     }>
   ) => {
@@ -125,7 +126,8 @@ api.get(
     return res.json({
       id,
       name,
-      email: emails[0],
+      email: emails[0].email,
+      isVerified: emails[0].verified,
       cluster_admin: userHasGlobalRole({
         role: Role.GENERAL_ADMIN,
         user: req.user,

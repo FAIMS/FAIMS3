@@ -1,6 +1,7 @@
 import Breadcrumbs from '@/components/breadcrumbs';
 import {ModeToggle} from '@/components/mode-toggle';
 import {AppSidebar} from '@/components/side-bar/app-sidebar';
+import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Dialog} from '@/components/ui/dialog';
 import {Separator} from '@/components/ui/separator';
 import {
@@ -9,6 +10,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {API_URL, SIGNIN_PATH} from '@/constants';
+import {useAuth} from '@/context/auth-provider';
 import {
   PostExchangeTokenInput,
   PostExchangeTokenResponseSchema,
@@ -115,6 +117,13 @@ export const Route = createFileRoute('/_protected')({
 });
 
 function RouteComponent() {
+  const {user} = useAuth();
+
+  const verification = {
+    showNeedsVerification: user && !user.user.isVerified,
+    email: user?.user.email,
+  };
+
   return (
     <Dialog>
       <SidebarProvider>
@@ -130,7 +139,19 @@ function RouteComponent() {
               <ModeToggle />
             </div>
           </header>
+
           <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+            {verification.showNeedsVerification && (
+              <Alert>
+                <AlertTitle className="text-red-700 text-lg">
+                  Your email is not verified!
+                </AlertTitle>
+                <AlertDescription>
+                  Check your emails for a verification request. Click here to
+                  send another request to {verification.email}
+                </AlertDescription>
+              </Alert>
+            )}
             <Outlet />
           </div>
         </SidebarInset>
