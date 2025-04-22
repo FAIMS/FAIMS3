@@ -87,17 +87,12 @@ api.post(
       email,
     });
 
-    // Calculate expiry in hours from milliseconds
-    const expiryMs = record.expiryTimestampMs - Date.now();
-    // Convert ms to hours and round up
-    const expiryHours = Math.ceil(expiryMs / (1000 * 60 * 60));
-
     // Send verification email (this would be implemented in the email service)
     await sendEmailVerificationChallenge({
       recipientEmail: email,
       verificationCode: code,
-      userName: user.name,
-      expiresInHours: expiryHours,
+      username: user.name,
+      expiryTimestampMs: record.expiryTimestampMs,
     });
 
     res.json({

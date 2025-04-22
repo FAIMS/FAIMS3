@@ -177,12 +177,20 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
     const {token} = await response.json();
     const decodedToken = decodeToken(token);
+    let userData = user.user;
+
+    try {
+      userData = await getCurrentUser({token});
+    } catch (e) {
+      console.error('Failed to fetch updated user data!', e);
+    }
 
     const updatedUser = {
-      ...user,
+      user: userData,
       token,
+      refreshToken: user.refreshToken,
       decodedToken,
-    };
+    } satisfies User;
 
     setStoredUser(updatedUser);
     setUser(updatedUser);

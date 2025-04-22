@@ -49,6 +49,8 @@ import {
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 
 import patch from '../utils/patchExpressAsync';
+import {createVerificationChallenge} from '../couchdb/verificationChallenges';
+import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
 
 // This must occur before express app is used
 patch();
@@ -252,6 +254,23 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           throw Error(
             'User could not be created due to an issue writing to the database!'
           );
+        }
+
+        // Here we send a verification challenge email(s)
+        for (const emailDetails of user.emails) {
+          if (!emailDetails.verified) {
+            createVerificationChallenge({
+              userId: user._id,
+              email: emailDetails.email,
+            }).then(challenge => {
+              return sendEmailVerificationChallenge({
+                recipientEmail: emailDetails.email,
+                username: user._id,
+                verificationCode: challenge.code,
+                expiryTimestampMs: challenge.record.expiryTimestampMs,
+              });
+            });
+          }
         }
         return user;
       };

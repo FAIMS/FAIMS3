@@ -195,6 +195,7 @@ async function oauthVerify(
         email: verifiedEmails[0],
         username: verifiedEmails[0],
         name: profile.displayName,
+        verified: true
       });
 
       // something went wrong here

@@ -37,15 +37,19 @@ export function buildVerificationUrl({code}: {code: string}): string {
  */
 export async function sendEmailVerificationChallenge({
   recipientEmail,
-  userName,
+  username,
   verificationCode,
-  expiresInHours = 24,
+  expiryTimestampMs,
 }: {
   recipientEmail: string;
-  userName: string;
+  username: string;
   verificationCode: string;
-  expiresInHours?: number;
+  expiryTimestampMs: number;
 }): Promise<void> {
+  // Calculate expiry in hours from milliseconds
+  const expiryMs = expiryTimestampMs - Date.now();
+  // Convert ms to hours and round up
+  const expiryHours = Math.ceil(expiryMs / (1000 * 60 * 60));
   const emailService = EMAIL_SERVICE;
   const verificationUrl = buildVerificationUrl({code: verificationCode});
 
@@ -53,12 +57,12 @@ export async function sendEmailVerificationChallenge({
 
   // Plain text version of the email
   const textContent = `
-Hello ${userName},
+Hello ${username},
 
 Thank you for registering your email address with us. To complete the verification process, please click the link below:
 ${verificationUrl}
 
-This verification code will expire in ${expiresInHours} hours.
+This verification code will expire in ${expiryHours} hours.
 
 If you did not request this verification, please ignore this email.
   `.trim();
@@ -104,7 +108,7 @@ If you did not request this verification, please ignore this email.
       display: block;
       width: 100%;
       max-width: 250px;
-      background-color: #4a69bd;
+      background-color:rgb(216, 220, 231);
       color: white;
       text-align: center;
       padding: 12px 20px;
@@ -136,10 +140,10 @@ If you did not request this verification, please ignore this email.
     <div class="header">
       <h1>Verify Your Email Address</h1>
     </div>
-    <p>Hello ${userName},</p>
+    <p>Hello ${username},</p>
     <p>Thank you for registering your email address with us. To complete the verification process, please click the button below:</p>
     <a href="${verificationUrl}" class="button">Verify Email</a>
-    <p>This verification code will expire in ${expiresInHours} hours.</p>
+    <p>This verification code will expire in ${expiryHours} hours.</p>
     <p>If you did not request this verification, please ignore this email.</p>
     <div class="footer">
       <p>This is an automated message. Please do not reply to this email.</p>
