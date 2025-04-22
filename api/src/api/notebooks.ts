@@ -66,7 +66,7 @@ import {
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   getUserInfoForProject,
   getUsers,
   saveCouchUser,
@@ -514,7 +514,7 @@ api.post(
     }
 
     // Get the user specified
-    const user = await getCouchUserFromEmailOrUsername(username);
+    const user = await getCouchUserFromEmailOrUserId(username);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
@@ -630,7 +630,7 @@ api.delete(
       }
     }
 
-    const user = await getCouchUserFromEmailOrUsername(req.params.user_id);
+    const user = await getCouchUserFromEmailOrUserId(req.params.user_id);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(

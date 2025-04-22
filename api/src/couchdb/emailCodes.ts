@@ -18,7 +18,7 @@ import {getAuthDB} from '.';
 import {EMAIL_CODE_EXPIRY_MINUTES, NEW_CONDUCTOR_URL} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {generateVerificationCode, hashVerificationCode} from '../utils';
-import {getCouchUserFromEmailOrUsername} from './users';
+import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds
 const CODE_EXPIRY_MS = EMAIL_CODE_EXPIRY_MINUTES * 60 * 1000;
@@ -122,7 +122,7 @@ export const validateEmailCode = async (
       return {valid: false, validationError: 'Code has expired.'};
     }
 
-    const user = await getCouchUserFromEmailOrUsername(codeDoc.userId);
+    const user = await getCouchUserFromEmailOrUserId(codeDoc.userId);
     if (!user) {
       return {
         valid: false,

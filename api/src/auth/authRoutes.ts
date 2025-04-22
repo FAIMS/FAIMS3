@@ -33,7 +33,7 @@ import {processRequest} from 'zod-express-middleware';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   saveCouchUser,
   saveExpressUser,
 } from '../couchdb/users';
@@ -258,7 +258,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
       // Do we have an existing user if so - reuse our login behaviour instead!
       // (This checks the password is correct)
-      if (await getCouchUserFromEmailOrUsername(email)) {
+      if (await getCouchUserFromEmailOrUserId(email)) {
         return passport.authenticate(
           // local strategy (user/pass)
           'local',

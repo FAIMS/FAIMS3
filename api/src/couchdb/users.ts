@@ -76,7 +76,7 @@ export const registerAdminUser = async () => {
   // register a local admin user with the same password as couchdb if there
   // isn't already one there
   if (LOCAL_COUCHDB_AUTH) {
-    const adminUser = await getCouchUserFromEmailOrUsername('admin');
+    const adminUser = await getCouchUserFromEmailOrUserId('admin');
     if (adminUser) {
       return;
     }
@@ -108,10 +108,12 @@ export async function createUser({
   email,
   username,
   name,
+  verified = false,
 }: {
   email?: string;
   username?: string;
   name: string;
+  verified?: boolean;
 }): Promise<[PeopleDBDocument | null, string]> {
   if (!email && !username) {
     return [null, 'At least one of username or email is required'];
@@ -119,7 +121,7 @@ export async function createUser({
   if (email && (await getUserFromEmail(email))) {
     return [null, `User with email '${email}' already exists`];
   }
-  if (username && (await getUserFromUsername(username))) {
+  if (username && (await getUserFromUserId(username))) {
     return [null, `User with username '${username}' already exists`];
   }
   if (!username) {
@@ -127,7 +129,12 @@ export async function createUser({
   }
 
   // make a new user record
-  const initialUser = generateInitialUser({email: email, username, name});
+  const initialUser = generateInitialUser({
+    email,
+    username,
+    name,
+    verified,
+  });
   return [initialUser, ''];
 }
 
@@ -142,7 +149,7 @@ export async function updateUserPassword(
   userId: string,
   newPassword: string
 ): Promise<void> {
-  const possibleUser = await getCouchUserFromEmailOrUsername(userId);
+  const possibleUser = await getCouchUserFromEmailOrUserId(userId);
 
   if (!possibleUser) {
     throw new Exceptions.ItemNotFoundException(
@@ -216,13 +223,13 @@ export async function getUsersForTeam({
  * @param identifier - either an email address or username
  * @returns The Express.User record denoted by the identifier or null if it doesn't exist
  */
-export async function getCouchUserFromEmailOrUsername(
+export async function getCouchUserFromEmailOrUserId(
   identifier: string
 ): Promise<null | ExistingPeopleDBDocument> {
   let user;
   user = await getUserFromEmail(identifier);
   if (!user) {
-    user = await getUserFromUsername(identifier);
+    user = await getUserFromUserId(identifier);
   }
   return user;
 }
@@ -233,10 +240,10 @@ export async function getCouchUserFromEmailOrUsername(
  * @param identifier
  * @returns
  */
-export async function getExpressUserFromEmailOrUsername(
+export async function getExpressUserFromEmailOrUserId(
   identifier: string
 ): Promise<Express.User | null> {
-  const dbUser = await getCouchUserFromEmailOrUsername(identifier);
+  const dbUser = await getCouchUserFromEmailOrUserId(identifier);
   if (dbUser === null) {
     return dbUser;
   }
@@ -247,42 +254,63 @@ export async function getExpressUserFromEmailOrUsername(
 /**
  * getUserFromEmail - retrieve a user record given their email address
  * @param email User email address
- * @returns An Express.User record or null if the user is not in the database
  */
 async function getUserFromEmail(
   email: string
 ): Promise<null | ExistingPeopleDBDocument> {
-  const users_db = getUsersDB();
-  if (users_db) {
-    const result = await users_db.find({
-      selector: {emails: {$elemMatch: {$eq: email.toLowerCase()}}},
-    });
-    if (result.docs.length === 0) {
-      return null;
-    } else if (result.docs.length === 1) {
-      return result.docs[0] as ExistingPeopleDBDocument;
-    } else {
-      throw Error(`Multiple conflicting users with email ${email}`);
-    }
-  } else {
+  const usersDb = getUsersDB();
+  if (!usersDb) {
     throw Error('Failed to connect to user database');
+  }
+
+  // Normalize email to lowercase
+  const normalizedEmail = email.toLowerCase();
+
+  // Query the byEmail view
+  const result = await usersDb.query<ExistingPeopleDBDocument>(
+    'indexes/byEmail',
+    {
+      key: normalizedEmail,
+      include_docs: true,
+    }
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  } else if (result.rows.length === 1) {
+    return result.rows[0].doc as ExistingPeopleDBDocument;
+  } else {
+    throw Error(`Multiple conflicting users with email ${email}`);
   }
 }
 
 /**
  * getUserFromUsername - retrieve a user record given their username
- * @param username - the username
- * @returns An ExistingPeopleDBDocument record or null if the user is not in the database
+ * @param userId - the username
  */
-async function getUserFromUsername(
-  username: CouchDBUsername
+async function getUserFromUserId(
+  userId: CouchDBUsername
 ): Promise<ExistingPeopleDBDocument | null> {
-  const users_db = getUsersDB();
-  try {
-    const user = (await users_db.get(username)) as ExistingPeopleDBDocument;
-    return user;
-  } catch (err) {
+  const usersDb = getUsersDB();
+  if (!usersDb) {
+    throw Error('Failed to connect to user database');
+  }
+
+  // Query the byUserId view
+  const result = await usersDb.query<ExistingPeopleDBDocument>(
+    'indexes/byUserId',
+    {
+      key: userId,
+      include_docs: true,
+    }
+  );
+
+  if (result.rows.length === 0) {
     return null;
+  } else if (result.rows.length === 1) {
+    return result.rows[0].doc as ExistingPeopleDBDocument;
+  } else {
+    throw Error(`Multiple conflicting users with username ${userId}`);
   }
 }
 
@@ -375,7 +403,7 @@ export async function updateUserEmailVerificationStatus({
   verified: boolean;
 }): Promise<void> {
   // Get the user from the database
-  const user = await getCouchUserFromEmailOrUsername(userId);
+  const user = await getCouchUserFromEmailOrUserId(userId);
 
   if (!user) {
     throw new Exceptions.ItemNotFoundException(

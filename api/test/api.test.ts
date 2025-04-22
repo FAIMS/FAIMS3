@@ -55,7 +55,7 @@ import {
   getNotebookMetadata,
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
-import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
 import {callbackObject, databaseList} from './mocks';
 import {
@@ -178,8 +178,9 @@ describe('API tests', () => {
     expect(project_id).not.to.be.undefined;
     expect(project_id).to.include('-test-notebook');
 
-    const notebookUser =
-      await getExpressUserFromEmailOrUsername(notebookUserName);
+    const notebookUser = await getExpressUserFromEmailOrUserId(
+      notebookUserName
+    );
     if (notebookUser) {
       // check that this user now has the right roles on this notebook
       expect(
@@ -376,7 +377,7 @@ describe('API tests', () => {
     const filename = 'notebooks/sample_notebook.json';
     const jsonText = fs.readFileSync(filename, 'utf-8');
     const {metadata, 'ui-specification': uiSpec} = JSON.parse(jsonText);
-    const adminDbUser = await getExpressUserFromEmailOrUsername('admin');
+    const adminDbUser = await getExpressUserFromEmailOrUserId('admin');
     if (!adminDbUser) {
       throw Error('Admin db user missing!');
     }
@@ -574,7 +575,7 @@ describe('API tests', () => {
         })
         .expect(404);
 
-      const bobbyDb = await getExpressUserFromEmailOrUsername(localUserName);
+      const bobbyDb = await getExpressUserFromEmailOrUserId(localUserName);
       if (!bobbyDb) {
         throw new Error('Bobby gone-a missin!');
       }
@@ -601,7 +602,7 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
-    const admin = await getExpressUserFromEmailOrUsername('admin');
+    const admin = await getExpressUserFromEmailOrUserId('admin');
     if (!admin) {
       throw new Error('Admin gone missing');
     }
@@ -621,7 +622,7 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
-    const adminUser = await getExpressUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
     if (adminUser) {
       const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
@@ -655,7 +656,7 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
-    const adminUser = await getExpressUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
     if (adminUser) {
       const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);

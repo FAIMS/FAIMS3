@@ -46,7 +46,7 @@ import {
   updateTeam,
 } from '../couchdb/teams';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   getUsersForTeam,
   saveCouchUser,
   saveExpressUser,
@@ -281,7 +281,7 @@ api.post(
     await getTeamById(teamId);
 
     // Get user to modify
-    const targetUser = await getCouchUserFromEmailOrUsername(username);
+    const targetUser = await getCouchUserFromEmailOrUserId(username);
     if (!targetUser) {
       throw new Exceptions.ItemNotFoundException(
         'User not found. Please check the username or email address.'

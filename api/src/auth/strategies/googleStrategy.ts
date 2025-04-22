@@ -33,7 +33,7 @@ import {
 import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../../buildconfig';
 import {
   createUser,
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   saveCouchUser,
 } from '../../couchdb/users';
 import {CustomSessionData} from '../../types';
@@ -113,9 +113,7 @@ async function oauthVerify(
 
   for (const targetEmail of verifiedEmails) {
     // Try to get the user based on the target email
-    userLookups[targetEmail] = await getCouchUserFromEmailOrUsername(
-      targetEmail
-    );
+    userLookups[targetEmail] = await getCouchUserFromEmailOrUserId(targetEmail);
   }
 
   const matchingEmails = Object.entries(userLookups)

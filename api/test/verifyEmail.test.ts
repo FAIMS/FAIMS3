@@ -11,7 +11,7 @@ import {
 } from '@faims3/data-model';
 import request from 'supertest';
 import {
-  getExpressUserFromEmailOrUsername,
+  getExpressUserFromEmailOrUserId,
   updateUserEmailVerificationStatus,
 } from '../src/couchdb/users';
 import {
@@ -27,6 +27,7 @@ import {app} from '../src/expressSetup';
 import {hashVerificationCode} from '../src/utils';
 import {
   beforeApiTests,
+  localEmail,
   localUserName,
   localUserToken,
   requestAuthAndType,
@@ -38,7 +39,7 @@ describe('Email Verification Tests', () => {
   // ===== Service Layer Tests =====
   describe('Service Layer', () => {
     it('creates verification challenge correctly', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(localUser).to.not.be.null;
 
       const testEmail = 'test@example.com';
@@ -58,7 +59,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('retrieves verification challenges by user ID', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
 
       // Create a couple of verification challenges
       const testEmail1 = 'test1@example.com';
@@ -86,7 +87,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('retrieves verification challenges by email', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const testEmail = 'specific@example.com';
 
       // Create a verification challenge
@@ -107,7 +108,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('validates verification challenges correctly', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const testEmail = 'validate@example.com';
 
       // Create a verification challenge
@@ -173,7 +174,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('handles rate limiting correctly', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const testEmail = 'ratelimit@example.com';
 
       // Check initial state (should be allowed)
@@ -234,7 +235,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('consumes verification challenges correctly', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const testEmail = 'consume@example.com';
 
       // Create a verification challenge
@@ -269,7 +270,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('updates user email verification status correctly', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(localUser).to.not.be.null;
 
       // Ensure we have at least one email that's not verified
@@ -281,7 +282,7 @@ describe('Email Verification Tests', () => {
       });
 
       // Get fresh user data
-      let updatedUser = await getExpressUserFromEmailOrUsername(localUserName);
+      let updatedUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(updatedUser!.emails.find(e => e.email === userEmail)!.verified).to
         .be.false;
 
@@ -293,7 +294,7 @@ describe('Email Verification Tests', () => {
       });
 
       // Verify the status was updated
-      updatedUser = await getExpressUserFromEmailOrUsername(localUserName);
+      updatedUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(updatedUser!.emails.find(e => e.email === userEmail)!.verified).to
         .be.true;
     });
@@ -302,7 +303,7 @@ describe('Email Verification Tests', () => {
   // ===== API Tests =====
   describe('API Layer', () => {
     it('initiate email verification requires authentication', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const userEmail = localUser!.emails[0].email;
 
       // Should fail without auth token
@@ -316,7 +317,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('initiate email verification for own email succeeds', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const userEmail = localUser!.emails[0].email;
 
       const response = await requestAuthAndType(
@@ -337,7 +338,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('initiate email verification fails for non-owned email', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
 
       await requestAuthAndType(
         request(app)
@@ -351,7 +352,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('confirm email verification with valid code succeeds', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const userEmail = localUser!.emails[0].email;
 
       // Ensure email is not verified
@@ -379,9 +380,7 @@ describe('Email Verification Tests', () => {
       expect(response.body.email).to.equal(userEmail);
 
       // Verify the email is now marked as verified
-      const updatedUser = await getExpressUserFromEmailOrUsername(
-        localUserName
-      );
+      const updatedUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(updatedUser!.emails.find(e => e.email === userEmail)!.verified).to
         .be.true;
 
@@ -396,7 +395,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('confirm email verification with expired code fails', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const userEmail = localUser!.emails[0].email;
 
       // Create a verification challenge with short expiry
@@ -428,7 +427,7 @@ describe('Email Verification Tests', () => {
     });
 
     it('confirm email verification with used code fails', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       const userEmail = localUser!.emails[0].email;
 
       // Create a verification challenge
@@ -452,11 +451,9 @@ describe('Email Verification Tests', () => {
     });
 
     it('handles rate limiting at API level', async () => {
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
-      const userEmail = 'ratelimit-api@example.com';
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
+      const userEmail = localEmail;
 
-      // Add the test email to the user
-      localUser!.emails.push({email: userEmail, verified: false});
       await updateUserEmailVerificationStatus({
         userId: localUser!.user_id,
         email: userEmail,

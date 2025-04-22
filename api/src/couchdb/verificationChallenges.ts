@@ -16,7 +16,7 @@ import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {generateVerificationCode, hashVerificationCode} from '../utils';
-import {getCouchUserFromEmailOrUsername} from './users';
+import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds - 24 hours by default
 const VERIFICATION_CHALLENGE_EXPIRY_MS = 24 * 60 * 60 * 1000;
@@ -237,7 +237,7 @@ export const validateVerificationChallenge = async ({
     }
 
     // Get the user associated with the challenge
-    const user = await getCouchUserFromEmailOrUsername(challenge.userId);
+    const user = await getCouchUserFromEmailOrUserId(challenge.userId);
     if (!user) {
       return {
         valid: false,

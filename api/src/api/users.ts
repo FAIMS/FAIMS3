@@ -33,7 +33,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   getUsers,
   removeUser,
   saveCouchUser,
@@ -70,7 +70,7 @@ api.post(
     }
 
     // Get the current user from DB
-    const foundUser = await getCouchUserFromEmailOrUsername(id);
+    const foundUser = await getCouchUserFromEmailOrUserId(id);
     if (!foundUser) {
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
@@ -179,7 +179,7 @@ api.delete(
   async ({params: {id}}, res) => {
     if (!id) throw new Exceptions.ValidationException('User ID not specified');
 
-    const userToRemove = await getCouchUserFromEmailOrUsername(id);
+    const userToRemove = await getCouchUserFromEmailOrUserId(id);
 
     if (!userToRemove)
       throw new Exceptions.ItemNotFoundException(
