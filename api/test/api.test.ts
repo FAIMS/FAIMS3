@@ -621,7 +621,8 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
-    const url = '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
+    const url =
+      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
     const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
       const notebooks = await getUserProjectsDetailed(adminUser);
@@ -668,21 +669,33 @@ describe('API tests', () => {
       const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
+      const url =
+        '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip';
+      let redirectURL = '';
       await request(app)
-        .get(
-          '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip'
-        )
+        .get(url)
         .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200)
-        .expect('Content-Type', 'application/zip')
+        .set('Content-Type', 'application/json')
+        .expect(302)
         .expect(response => {
-          const zipContent = response.text;
-          // check for _1 filename which should be there because of
-          // a clash of names
-          expect(zipContent).to.contain(
-            'take-photo/DuplicateHRID-take-photo_1.png'
-          );
+          expect(response.headers.location).to.match(/\/download\/.*/);
+          redirectURL = response.headers.location;
         });
+
+      if (redirectURL)
+        await request(app)
+          .get(redirectURL)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200)
+          .expect('Content-Type', 'application/zip')
+          .expect(response => {
+            const zipContent = response.text;
+            // check for _1 filename which should be there because of
+            // a clash of names
+            expect(zipContent).to.contain(
+              'take-photo/DuplicateHRID-take-photo_1.png'
+            );
+          });
     }
   });
 

@@ -43,7 +43,7 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import express, {Response} from 'express';
+import express, {response, Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
@@ -383,12 +383,16 @@ api.get(
   }
 );
 
-export type DownloadTokenPayload = {
-  projectID: string;
-  format: 'csv' | 'zip';
-  viewID: string;
-  userID: string;
-};
+// Types for download format and token payloads
+export const DownloadFormatSchema = z.enum(['csv', 'zip']);
+export const DownloadTokenPayloadSchema = z.object({
+  projectID: z.string(),
+  format: DownloadFormatSchema,
+  viewID: z.string(),
+  userID: z.string(),
+});
+export type DownloadFormatType = z.infer<typeof DownloadFormatSchema>;
+export type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
 // download tokens last this long
 const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
@@ -435,9 +439,9 @@ const validateDownloadToken = async ({
   }
 };
 
-// export current versions of all records in this notebook as csv
+// export current versions of all records in this notebook as csv or zip
 api.get(
-  '/:id/records/:viewID.csv',
+  '/:id/records/:viewID.:format',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
@@ -445,7 +449,13 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+  processRequest({
+    params: z.object({
+      id: z.string(),
+      viewID: z.string(),
+      format: DownloadFormatSchema,
+    }),
+  }),
   async (req, res) => {
     if (req.user) {
       // get the label for this form for the filename header
@@ -453,7 +463,7 @@ api.get(
       if (uiSpec && req.params.viewID in uiSpec.viewsets) {
         const payload: DownloadTokenPayload = {
           projectID: req.params.id,
-          format: 'csv',
+          format: req.params.format,
           viewID: req.params.viewID,
           userID: req.user.user_id,
         };
@@ -484,13 +494,23 @@ api.get(
       const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
       if (uiSpec && payload.viewID in uiSpec.viewsets) {
         const label = uiSpec.viewsets[payload.viewID].label;
-
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${label}.csv"`
-        );
-        streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
+        switch (payload.format) {
+          case 'csv':
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader(
+              'Content-Disposition',
+              `attachment; filename="${label}.csv"`
+            );
+            streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
+            break;
+          case 'zip':
+            res.setHeader(
+              'Content-Disposition',
+              `attachment; filename="${label}.zip"`
+            );
+            res.setHeader('Content-Type', 'application/zip');
+            streamNotebookFilesAsZip(payload.projectID, payload.viewID, res);
+        }
       } else {
         throw new Exceptions.ItemNotFoundException(
           `Form with id ${payload.viewID} not found in notebook`
@@ -500,67 +520,36 @@ api.get(
   }
 );
 
-// export current versions of all records in this notebook as csv
-api.get(
-  '/:id/xrecords/:viewID.csv',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.EXPORT_PROJECT_DATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
-  async (req, res) => {
-    // get the label for this form for the filename header
-    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-    if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-      const label = uiSpec.viewsets[req.params.viewID].label;
+// // export files for all records in this notebook as zip
+// api.get(
+//   '/:id/records/:viewID.zip',
+//   requireAuthenticationAPI,
+//   isAllowedToMiddleware({
+//     action: Action.EXPORT_PROJECT_DATA,
+//     getResourceId(req) {
+//       return req.params.id;
+//     },
+//   }),
+//   processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+//   async (req, res) => {
+//     // get the label for this form for the filename header
+//     const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+//     if (uiSpec && req.params.viewID in uiSpec.viewsets) {
+//       const label = uiSpec.viewsets[req.params.viewID].label;
 
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${label}.csv"`
-      );
-      streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
-    } else {
-      throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.params.viewID} not found in notebook`
-      );
-    }
-  }
-);
-
-// export files for all records in this notebook as zip
-api.get(
-  '/:id/records/:viewID.zip',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.EXPORT_PROJECT_DATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
-  async (req, res) => {
-    // get the label for this form for the filename header
-    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-    if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-      const label = uiSpec.viewsets[req.params.viewID].label;
-
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${label}.zip"`
-      );
-      res.setHeader('Content-Type', 'application/zip');
-      streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
-    } else {
-      throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.params.viewID} not found in notebook`
-      );
-    }
-  }
-);
+//       res.setHeader(
+//         'Content-Disposition',
+//         `attachment; filename="${label}.zip"`
+//       );
+//       res.setHeader('Content-Type', 'application/zip');
+//       streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
+//     } else {
+//       throw new Exceptions.ItemNotFoundException(
+//         `Form with id ${req.params.viewID} not found in notebook`
+//       );
+//     }
+//   }
+// );
 
 api.get(
   '/:id/users/',
