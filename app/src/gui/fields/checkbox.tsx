@@ -29,12 +29,15 @@ import {
   Box,
 } from '@mui/material';
 import {fieldToCheckbox, CheckboxProps} from 'formik-mui';
+import FieldWrapper from './fieldWrapper';
 
 interface Props {
   FormControlLabelProps?: FormControlLabelProps; // deprecated
   FormHelperTextProps?: FormHelperTextProps; // deprecated
   helperText?: string;
   label?: string;
+  advancedHelperText?: string;
+  required?: boolean;
 }
 
 export class Checkbox extends React.Component<CheckboxProps & Props> {
@@ -43,6 +46,8 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
       FormControlLabelProps,
       FormHelperTextProps,
       helperText,
+      advancedHelperText,
+      required,
       ...checkboxWithLabelProps
     } = this.props;
 
@@ -60,30 +65,32 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
     ) {
       error = true;
     }
-
     return (
-      <FormControl error={error}>
-        <FormControlLabel
-          label={<Box component="span">{label}</Box>}
-          control={
-            <MuiCheckbox
-              {...fieldToCheckbox(checkboxWithLabelProps)}
-              checked={checkboxWithLabelProps.field.value}
-            />
-          }
-        />
-        {error ? (
-          <FormHelperText
-            children={
-              checkboxWithLabelProps.form.errors[
-                checkboxWithLabelProps.field.name
-              ] as string
+      <FieldWrapper
+        heading={label}
+        subheading={helperText}
+        required={required}
+        advancedHelperText={advancedHelperText}
+      >
+        <FormControl error={error}>
+          <FormControlLabel
+            control={
+              <MuiCheckbox
+                {...fieldToCheckbox(checkboxWithLabelProps)}
+                checked={checkboxWithLabelProps.field.value}
+              />
             }
+            label="" // label shown via FieldWrapper
           />
-        ) : (
-          <FormHelperText children={theHelperText} />
-        )}
-      </FormControl>
+          <FormHelperText>
+            {error
+              ? (checkboxWithLabelProps.form.errors[
+                  checkboxWithLabelProps.field.name
+                ] as string)
+              : ''}
+          </FormHelperText>
+        </FormControl>
+      </FieldWrapper>
     );
   }
 }

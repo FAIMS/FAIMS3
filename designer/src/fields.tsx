@@ -57,7 +57,6 @@ const fields: {[key: string]: FieldType} = {
       label: 'Number field',
       fullWidth: true,
       helperText: 'We have fields for storing Numbers.',
-      advancedHelperText: 'Enter detailed help text for number.',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -113,8 +112,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Text Field',
       fullWidth: true,
       helperText: 'Helper Text',
-      advancedHelperText:
-        'Enter detailed help text in markdown format, can include images',
+      advancedHelperText: 'Enter detailed help text for multipletextfield',
       variant: 'outlined',
       required: false,
       multiline: true,

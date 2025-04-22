@@ -109,7 +109,11 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
     allowHiding: allowHidingEnabled,
   };
 
-  const [showAdvanced, setShowAdvanced] = useState(!!state.advancedHelperText);
+  const hasAdvancedSupport = 'advancedHelperText' in cParams;
+
+  const [showAdvanced, setShowAdvanced] = useState(
+    hasAdvancedSupport && !!cParams.advancedHelperText
+  );
   const [expanded, setExpanded] = useState(true);
 
   const updateFieldFromState = (newState: StateType) => {
@@ -180,62 +184,66 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 rows={2}
                 onChange={e => updateProperty('helperText', e.target.value)}
               />
-              <Box mt={2}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={showAdvanced}
-                      onChange={e => {
-                        setShowAdvanced(e.target.checked);
-                        if (!e.target.checked) {
-                          updateProperty('advancedHelperText', '');
-                        }
-                      }}
+              {hasAdvancedSupport && (
+                <>
+                  <Box mt={2}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={showAdvanced}
+                          onChange={e => {
+                            setShowAdvanced(e.target.checked);
+                            if (!e.target.checked) {
+                              updateProperty('advancedHelperText', '');
+                            }
+                          }}
+                        />
+                      }
+                      label="Include advanced helper text"
                     />
-                  }
-                  label="Include advanced helper text"
-                />
-              </Box>
-
-              {showAdvanced && (
-                <Card variant="outlined" sx={{mt: 2, p: 2}}>
-                  <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <Typography variant="subtitle2" fontWeight="bold">
-                      Advanced Helper Text (Markdown)
-                    </Typography>
-                    <IconButton
-                      onClick={() => setExpanded(!expanded)}
-                      size="small"
-                      aria-label="Toggle advanced editor"
-                    >
-                      {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                    </IconButton>
                   </Box>
 
-                  <Collapse in={expanded}>
-                    <Box mt={2}>
-                      <MdxEditor
-                        initialMarkdown={state.advancedHelperText}
-                        handleChange={() =>
-                          updateProperty(
-                            'advancedHelperText',
-                            ref.current?.getMarkdown() || ''
-                          )
-                        }
-                        editorRef={ref}
-                      />
-                      <Alert severity="info" sx={{mt: 2}}>
-                        This markdown-based helper will appear in a dialog when
-                        users click the info icon next to the field label in the
-                        app.
-                      </Alert>
-                    </Box>
-                  </Collapse>
-                </Card>
+                  {showAdvanced && (
+                    <Card variant="outlined" sx={{mt: 2, p: 2}}>
+                      <Box
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="space-between"
+                      >
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          Advanced Helper Text (Markdown)
+                        </Typography>
+                        <IconButton
+                          onClick={() => setExpanded(!expanded)}
+                          size="small"
+                          aria-label="Toggle advanced editor"
+                        >
+                          {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                      </Box>
+
+                      <Collapse in={expanded}>
+                        <Box mt={2}>
+                          <MdxEditor
+                            initialMarkdown={state.advancedHelperText}
+                            handleChange={() =>
+                              updateProperty(
+                                'advancedHelperText',
+                                ref.current?.getMarkdown() || ''
+                              )
+                            }
+                            editorRef={ref}
+                          />
+                          <Alert severity="info" sx={{mt: 2}}>
+                            This markdown-based helper will appear in a dialog
+                            when users click the info icon next to the field
+                            label in the app.
+                          </Alert>
+                        </Box>
+                      </Collapse>
+                    </Card>
+                  )}
+                </>
               )}
             </Grid>
             {children && (
