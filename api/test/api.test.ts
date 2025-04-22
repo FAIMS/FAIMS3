@@ -178,9 +178,8 @@ describe('API tests', () => {
     expect(project_id).not.to.be.undefined;
     expect(project_id).to.include('-test-notebook');
 
-    const notebookUser = await getExpressUserFromEmailOrUserId(
-      notebookUserName
-    );
+    const notebookUser =
+      await getExpressUserFromEmailOrUserId(notebookUserName);
     if (notebookUser) {
       // check that this user now has the right roles on this notebook
       expect(

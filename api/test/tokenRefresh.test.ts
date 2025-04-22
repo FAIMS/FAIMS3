@@ -84,9 +84,8 @@ describe('token refresh tests', () => {
     // setup user profiles
     const adminUser = (await getExpressUserFromEmailOrUserId(adminUserName))!;
     const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
-    const notebookUser = (await getExpressUserFromEmailOrUserId(
-      notebookUserName
-    ))!;
+    const notebookUser =
+      (await getExpressUserFromEmailOrUserId(notebookUserName))!;
 
     // check there are no tokens for all list methods
     let allTokens = await getAllTokens();

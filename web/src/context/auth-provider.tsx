@@ -1,8 +1,7 @@
 import {WEB_URL} from '@/constants';
-import {get, getCurrentUser} from '@/hooks/queries';
+import {getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
-  GetCurrentUserResponse,
   TokenContents,
   TokenPayload,
 } from '@faims3/data-model';

@@ -71,7 +71,7 @@ export const Route = createFileRoute('/_protected')({
   }),
   beforeLoad: async ({
     context: {
-      auth: {isAuthenticated, getUserDetails, user},
+      auth: {isAuthenticated, getUserDetails},
     },
     search: {exchangeToken},
   }) => {

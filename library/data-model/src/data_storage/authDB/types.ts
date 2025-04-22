@@ -200,7 +200,9 @@ export const AuthRecordV3ExistingDocumentSchema = z.discriminatedUnion(
   [
     CouchExistingDocumentSchema.extend(RefreshRecordV3FieldsSchema.shape),
     CouchExistingDocumentSchema.extend(EmailCodeV3FieldsSchema.shape),
-    CouchExistingDocumentSchema.extend(VerificationChallengeV3FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(
+      VerificationChallengeV3FieldsSchema.shape
+    ),
   ]
 );
 export type AuthRecordV3ExistingDocument = z.infer<
@@ -209,7 +211,9 @@ export type AuthRecordV3ExistingDocument = z.infer<
 
 export type RefreshRecordV3Fields = z.infer<typeof RefreshRecordV3FieldsSchema>;
 export type EmailCodeV3Fields = z.infer<typeof EmailCodeV3FieldsSchema>;
-export type VerificationChallengeV3Fields = z.infer<typeof VerificationChallengeV3FieldsSchema>;
+export type VerificationChallengeV3Fields = z.infer<
+  typeof VerificationChallengeV3FieldsSchema
+>;
 export type AuthRecordV3Fields = z.infer<typeof AuthRecordV3FieldsSchema>;
 
 // refresh token
@@ -288,11 +292,13 @@ export const EmailCodeExistingDocumentSchema =
 export type EmailCodeExistingDocument = EmailCodeV3ExistingDocument;
 
 // verification challenge
-export const VerificationChallengeDocumentSchema = VerificationChallengeV3DocumentSchema;
+export const VerificationChallengeDocumentSchema =
+  VerificationChallengeV3DocumentSchema;
 export type VerificationChallengeDocument = VerificationChallengeV3Document;
 export const VerificationChallengeExistingDocumentSchema =
   VerificationChallengeV3ExistingDocumentSchema;
-export type VerificationChallengeExistingDocument = VerificationChallengeV3ExistingDocument;
+export type VerificationChallengeExistingDocument =
+  VerificationChallengeV3ExistingDocument;
 
 // ID prefix map
 export const AUTH_RECORD_ID_PREFIXES = {

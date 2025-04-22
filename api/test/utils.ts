@@ -69,9 +69,8 @@ export const beforeApiTests = async () => {
   const signingKey = await KEY_SERVICE.getSigningKey();
 
   // get the admin user - this should exist at this point
-  const possibleAdminUser = await getExpressUserFromEmailOrUserId(
-    adminUserName
-  );
+  const possibleAdminUser =
+    await getExpressUserFromEmailOrUserId(adminUserName);
 
   // If this is null then the admin user wasn't seeded properly
   expect(possibleAdminUser, 'Admin user was null from the database.').to.not.be

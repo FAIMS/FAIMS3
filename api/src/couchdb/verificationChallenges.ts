@@ -160,7 +160,7 @@ export const checkCanCreateVerificationChallenge = async ({
   // User must wait until cooldown ends
   return {
     canCreate: false,
-    reason: `Too many verification attempts. Please try again later.`,
+    reason: 'Too many verification attempts. Please try again later.',
     nextAttemptAllowedAt: cooldownEndsAt,
   };
 };

@@ -11,7 +11,6 @@ import {
   MigrationsDB,
   MigrationsDBDocument,
   MigrationsDBFields,
-  PeopleV1Document,
   PeopleV1Fields,
   buildDefaultMigrationDoc,
   couchInitialiser,
@@ -532,7 +531,7 @@ describe('Migration System Tests', () => {
           project_roles: {notebook1: ['admin']},
           user_id: '1234',
           owned: [],
-        } satisfies PeopleV1Fields & {_id : string},
+        } satisfies PeopleV1Fields & {_id: string},
       ]);
 
       // Create an existing migration document

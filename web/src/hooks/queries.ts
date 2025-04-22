@@ -84,7 +84,7 @@ export const get = async <T = any>(
  * @returns GetCurrentUserResponse or throws
  */
 export const getCurrentUser = async ({token}: {token: string}) => {
-  return await get<GetCurrentUserResponse>(`/api/users/current`, null, token);
+  return await get<GetCurrentUserResponse>('/api/users/current', null, token);
 };
 
 /**
@@ -374,7 +374,7 @@ export const useRequestVerify = () => {
       return await post<
         PostRequestEmailVerificationRequest,
         PostRequestEmailVerificationResponse
-      >({path: `/api/verify`, data: {email: user.user.email}, user: user});
+      >({path: '/api/verify', data: {email: user.user.email}, user: user});
     },
   });
 };
