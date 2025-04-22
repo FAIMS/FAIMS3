@@ -430,7 +430,7 @@ const validateDownloadToken = async ({
       // verify issuer
       issuer: signingKey.instanceName,
     });
-    return result.payload as DownloadTokenPayload;
+    return DownloadTokenPayloadSchema.parse(result.payload);
   } catch {
     console.log('invalid token');
     return null;
