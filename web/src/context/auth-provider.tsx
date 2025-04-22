@@ -1,11 +1,13 @@
-import {useEffect, createContext, useState, useContext} from 'react';
+import {WEB_URL} from '@/constants';
+import {get, getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
+  GetCurrentUserResponse,
   TokenContents,
   TokenPayload,
 } from '@faims3/data-model';
 import {jwtDecode} from 'jwt-decode';
-import {WEB_URL} from '@/constants';
+import {createContext, useContext, useEffect, useState} from 'react';
 
 export interface User {
   user: {
@@ -128,21 +130,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     if (!token) return {status: 'error', message: 'No token provided'};
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/users/current`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok)
-        return {status: 'error', message: 'Error fetching user'};
-
-      const userData = await response.json();
+      const userData = await getCurrentUser({token});
       const decodedToken = decodeToken(token);
 
       const updatedUser = {
@@ -157,7 +145,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
       return {status: 'success', message: ''};
     } catch (e) {
-      return {status: 'error', message: 'Error fetching user'};
+      return {status: 'error', message: 'Error fetching user ' + e};
     }
   };
 

@@ -20,6 +20,7 @@
 import {
   Action,
   addGlobalRole,
+  GetCurrentUserResponse,
   GetListAllUsersResponse,
   GetListAllUsersResponseSchema,
   PostUpdateUserInputSchema,
@@ -105,34 +106,26 @@ api.post(
 api.get(
   '/current',
   requireAuthenticationAPI,
-  async (
-    req,
-    res: Response<{
-      id: string;
-      name: string;
-      email: string;
-      isVerified: boolean;
-      cluster_admin: boolean;
-    }>
-  ) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to get the current user.'
-      );
+  async (req, res: Response<GetCurrentUserResponse>) => {
+    try {
+      if (!req.user) {
+        throw new Exceptions.UnauthorizedException('Not authenticated.');
+      }
+      console.log(req.user);
+
+      const {_id: id, name, emails, user_id} = req.user;
+
+      return res.json({
+        id,
+        name,
+        // email should always be defined but for admin is not
+        email: emails[0]?.email ?? user_id,
+        isVerified: emails[0]?.verified ?? false,
+      });
+    } catch (e) {
+      console.error(e);
+      throw e;
     }
-
-    const {_id: id, name, emails} = req.user;
-
-    return res.json({
-      id,
-      name,
-      email: emails[0].email,
-      isVerified: emails[0].verified,
-      cluster_admin: userHasGlobalRole({
-        role: Role.GENERAL_ADMIN,
-        user: req.user,
-      }),
-    });
   }
 );
 

@@ -1,7 +1,7 @@
+import {VerificationAlertComponent} from '@/components/alerts/verification-alert';
 import Breadcrumbs from '@/components/breadcrumbs';
 import {ModeToggle} from '@/components/mode-toggle';
 import {AppSidebar} from '@/components/side-bar/app-sidebar';
-import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {Dialog} from '@/components/ui/dialog';
 import {Separator} from '@/components/ui/separator';
 import {
@@ -11,11 +11,13 @@ import {
 } from '@/components/ui/sidebar';
 import {API_URL, SIGNIN_PATH} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
+import {useRequestVerify} from '@/hooks/queries';
 import {
   PostExchangeTokenInput,
   PostExchangeTokenResponseSchema,
 } from '@faims3/data-model';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
+import {toast} from 'sonner';
 
 interface TokenParams {
   exchangeToken?: string;
@@ -118,6 +120,7 @@ export const Route = createFileRoute('/_protected')({
 
 function RouteComponent() {
   const {user} = useAuth();
+  const {mutate: verify, isPending: verifyLoading} = useRequestVerify();
 
   const verification = {
     showNeedsVerification: user && !user.user.isVerified,
@@ -142,15 +145,29 @@ function RouteComponent() {
 
           <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
             {verification.showNeedsVerification && (
-              <Alert>
-                <AlertTitle className="text-red-700 text-lg">
-                  Your email is not verified!
-                </AlertTitle>
-                <AlertDescription>
-                  Check your emails for a verification request. Click here to
-                  send another request to {verification.email}
-                </AlertDescription>
-              </Alert>
+              <VerificationAlertComponent
+                email={verification.email ?? 'Unknown'}
+                isLoading={verifyLoading}
+                onRequestVerification={() => {
+                  user &&
+                    verify(
+                      {user},
+                      {
+                        onSuccess: () => {
+                          toast.success(
+                            'Successfully sent verification email.'
+                          );
+                        },
+                        onError: error => {
+                          toast.error(
+                            'Failed to send verification email. Error: ' +
+                              error.message
+                          );
+                        },
+                      }
+                    );
+                }}
+              />
             )}
             <Outlet />
           </div>

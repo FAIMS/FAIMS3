@@ -11,6 +11,16 @@ import {EncodedUISpecificationSchema} from './types';
 // WIP USERS
 // ==================
 
+export const GetCurrentUserResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  isVerified: z.boolean(),
+});
+export type GetCurrentUserResponse = z.infer<
+  typeof GetCurrentUserResponseSchema
+>;
+
 export const GetListAllUsersResponseSchema = z.array(
   // Be careful here - do NOT expose any salt info etc
   PeopleDBDocumentSchema.pick({
