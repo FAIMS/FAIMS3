@@ -43,10 +43,10 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import express, {Response} from 'express';
+import express, {response, Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {DEVELOPER_MODE} from '../buildconfig';
+import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -80,6 +80,8 @@ import {
 } from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
+import {jwtVerify, SignJWT} from 'jose';
+import {redirectWithToken} from '../auth/helpers';
 
 // This must occur before express api is used
 patch();
@@ -254,7 +256,15 @@ api.get(
         status: project.status,
       } satisfies GetNotebookResponse);
     } else {
-      throw new Exceptions.ItemNotFoundException('Notebook not found.');
+      throw new Exceptions.ItemNotFoundException(
+        'Notebook not found. ' +
+          JSON.stringify({
+            'ui-specification': uiSpec as unknown as Record<string, unknown>,
+            ownedByTeamId: project.ownedByTeamId,
+            status: project.status,
+            metadata,
+          })
+      );
     }
   }
 );
@@ -373,9 +383,67 @@ api.get(
   }
 );
 
-// export current versions of all records in this notebook as csv
+// Types for download format and token payloads
+const DownloadFormatSchema = z.enum(['csv', 'zip']);
+const DownloadTokenPayloadSchema = z.object({
+  projectID: z.string(),
+  format: DownloadFormatSchema,
+  viewID: z.string(),
+  userID: z.string(),
+});
+type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
+
+// download tokens last this long
+const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
+
+const generateDownloadToken = async ({
+  user,
+  payload,
+}: {
+  user: Express.User;
+  payload: DownloadTokenPayload;
+}) => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({
+      alg: signingKey.alg,
+      kid: signingKey.kid,
+    })
+    .setSubject(user.user_id)
+    .setIssuedAt()
+    .setIssuer(signingKey.instanceName)
+    // Expiry in minutes
+    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .sign(signingKey.privateKey);
+  return token;
+};
+
+const validateDownloadToken = async ({
+  token,
+}: {
+  token: string;
+}): Promise<DownloadTokenPayload | null> => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  try {
+    const result = await jwtVerify(token, signingKey.publicKey, {
+      algorithms: [signingKey.alg],
+      // verify issuer
+      issuer: signingKey.instanceName,
+    });
+    return DownloadTokenPayloadSchema.parse(result.payload);
+  } catch {
+    console.log('invalid token');
+    return null;
+  }
+};
+
+// Export record data.
+//
+// Export route redirects to a new URL containing a signed JWT containing
+// details of the download, that route is handled below to do the actual
+// download.
 api.get(
-  '/:id/records/:viewID.csv',
+  '/:id/records/:viewID.:format',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
@@ -383,54 +451,71 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+  processRequest({
+    params: z.object({
+      id: z.string(),
+      viewID: z.string(),
+      format: DownloadFormatSchema,
+    }),
+  }),
   async (req, res) => {
-    // get the label for this form for the filename header
-    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-    if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-      const label = uiSpec.viewsets[req.params.viewID].label;
-
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${label}.csv"`
-      );
-      streamNotebookRecordsAsCSV(req.params.id, req.params.viewID, res);
-    } else {
-      throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.params.viewID} not found in notebook`
-      );
+    if (req.user) {
+      // get the label for this form for the filename header
+      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+      if (uiSpec && req.params.viewID in uiSpec.viewsets) {
+        const payload: DownloadTokenPayload = {
+          projectID: req.params.id,
+          format: req.params.format,
+          viewID: req.params.viewID,
+          userID: req.user.user_id,
+        };
+        const jwt = await generateDownloadToken({
+          user: req.user,
+          payload: payload,
+        });
+        return res.redirect(`/api/notebooks/download/${jwt}`);
+      } else {
+        throw new Exceptions.ItemNotFoundException(
+          `Form with id ${req.params.viewID} not found in notebook`
+        );
+      }
     }
   }
 );
 
-// export files for all records in this notebook as zip
 api.get(
-  '/:id/records/:viewID.zip',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.EXPORT_PROJECT_DATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+  '/download/:downloadToken',
+  processRequest({params: z.object({downloadToken: z.string()})}),
   async (req, res) => {
-    // get the label for this form for the filename header
-    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-    if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-      const label = uiSpec.viewsets[req.params.viewID].label;
-
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${label}.zip"`
-      );
-      res.setHeader('Content-Type', 'application/zip');
-      streamNotebookFilesAsZip(req.params.id, req.params.viewID, res);
-    } else {
-      throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.params.viewID} not found in notebook`
-      );
+    const payload = await validateDownloadToken({
+      token: req.params.downloadToken,
+    });
+    if (payload) {
+      const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
+      if (uiSpec && payload.viewID in uiSpec.viewsets) {
+        const label = uiSpec.viewsets[payload.viewID].label;
+        switch (payload.format) {
+          case 'csv':
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader(
+              'Content-Disposition',
+              `attachment; filename="${label}.csv"`
+            );
+            streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
+            break;
+          case 'zip':
+            res.setHeader(
+              'Content-Disposition',
+              `attachment; filename="${label}.zip"`
+            );
+            res.setHeader('Content-Type', 'application/zip');
+            streamNotebookFilesAsZip(payload.projectID, payload.viewID, res);
+        }
+      } else {
+        throw new Exceptions.ItemNotFoundException(
+          `Form with id ${payload.viewID} not found in notebook`
+        );
+      }
     }
   }
 );

@@ -4,16 +4,54 @@ import {AppSidebar} from '@/components/side-bar/app-sidebar';
 import {Dialog} from '@/components/ui/dialog';
 import {Separator} from '@/components/ui/separator';
 import {
-  SidebarProvider,
   SidebarInset,
+  SidebarProvider,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
+import {API_URL, SIGNIN_PATH} from '@/constants';
+import {
+  PostExchangeTokenInput,
+  PostExchangeTokenResponseSchema,
+} from '@faims3/data-model';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
 
 interface TokenParams {
-  token?: string;
-  refreshToken?: string;
+  exchangeToken?: string;
+  // we ignore this - but it's still there
+  serverId?: string;
 }
+/**
+ * Exchanges the exchangeToken for an access + refresh token using the
+ * /api/auth/exchange endpoint
+ */
+const upgradeExchangeTokenForRefresh = async ({
+  exchangeToken,
+  successCallback,
+  errorCallback,
+}: {
+  exchangeToken: string;
+  successCallback: (param: {access: string; refresh: string}) => Promise<void>;
+  errorCallback: (msg: string) => void;
+}) => {
+  // We have the URL - do the exchange
+  const response = await fetch(API_URL + '/api/auth/exchange', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      exchangeToken,
+    } satisfies PostExchangeTokenInput),
+  });
+
+  if (!response.ok) {
+    return errorCallback('Failed login exchange!');
+  }
+
+  const {accessToken, refreshToken} = PostExchangeTokenResponseSchema.parse(
+    await response.json()
+  );
+
+  return await successCallback({access: accessToken, refresh: refreshToken});
+};
 
 /**
  * Route component renders the protected route with a sidebar.
@@ -22,25 +60,56 @@ interface TokenParams {
  * @returns {JSX.Element} The rendered Route component.
  */
 export const Route = createFileRoute('/_protected')({
-  validateSearch: (search: Record<string, string>): TokenParams => ({
-    token: search.token,
-    refreshToken: search.refreshToken,
+  // We may not always have these - could be stored instead
+  validateSearch: (search: Record<string, string>): Partial<TokenParams> => ({
+    exchangeToken: search.exchangeToken,
+    serverId: search.serverId,
   }),
   beforeLoad: async ({
     context: {
-      auth: {isAuthenticated, getUserDetails},
+      auth: {isAuthenticated, getUserDetails, user},
     },
-    search: {token, refreshToken},
+    search: {exchangeToken},
   }) => {
-    if (isAuthenticated) return;
+    if (exchangeToken) {
+      // Attempt to exchange the token and update things
+      await upgradeExchangeTokenForRefresh({
+        exchangeToken,
+        successCallback: async ({access, refresh}) => {
+          const {status, message} = await getUserDetails(access, refresh);
 
-    const {status} = await getUserDetails(token, refreshToken);
+          if (status === 'success') {
+            // After consuming the token, clean up the URL. Remove the query
+            // parameters from the URL without causing a navigation
+            const currentPath = window.location.pathname;
+            // Just give a bit of time for changes to propagate before we strip
+            // token, otherwise we immediately see state with no token + no auth and
+            // get redirected!
+            setTimeout(() => {
+              window.history.replaceState(null, '', currentPath);
+            }, 500);
+            return;
+          } else {
+            console.error(
+              "Failed to get user details on presented 'new' token: ",
+              message
+            );
+            // redirect to login
+            window.location.href = SIGNIN_PATH;
+          }
+        },
+        errorCallback: msg => {
+          console.error('Token exchange failed: msg:' + msg);
+          // redirect to login
+          window.location.href = SIGNIN_PATH;
+        },
+      });
+    } else {
+      if (isAuthenticated) return;
 
-    if (status === 'success') return;
-
-    window.location.href = `${
-      import.meta.env.VITE_API_URL
-    }/auth?redirect=${import.meta.env.VITE_WEB_URL}`;
+      // redirect to login
+      window.location.href = SIGNIN_PATH;
+    }
   },
   component: RouteComponent,
 });

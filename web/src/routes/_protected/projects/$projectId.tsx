@@ -9,6 +9,7 @@ import {useGetProject} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo} from 'react';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 const tabs = [
   {name: 'Details', Component: ProjectDetails},
@@ -40,7 +41,7 @@ function RouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: 'Projects',
+        label: NOTEBOOK_NAME_CAPITALIZED + 's',
       },
       // project name
       {

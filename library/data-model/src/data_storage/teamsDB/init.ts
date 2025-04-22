@@ -1,4 +1,5 @@
-import {InitialisationContent, teamsDesignDocuments} from '..';
+import {teamsDesignDocuments} from './design';
+import {InitialisationContent} from '../utils';
 import {TeamsDBSecurityDocument} from './security';
 
 export type TeamsDBInitialisationConfig = {};

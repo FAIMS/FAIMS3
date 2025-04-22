@@ -20,7 +20,8 @@
 import {
   Action,
   addGlobalRole,
-  ExistingPeopleDBDocument,
+  GetListAllUsersResponse,
+  GetListAllUsersResponseSchema,
   PostUpdateUserInputSchema,
   removeGlobalRole,
   Role,
@@ -138,7 +139,7 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.VIEW_USER_LIST}),
-  async (req: any, res: Response<ExistingPeopleDBDocument[]>) => {
+  async (req: any, res: Response<GetListAllUsersResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('You are not logged in.');
     }
@@ -149,28 +150,16 @@ api.get(
       );
     }
 
-    return res.json(await getUsers());
-  }
-);
+    const allUsers = await getUsers();
 
-// GET all roles
-api.get(
-  '/roles',
-  requireAuthenticationAPI,
-  async (req: any, res: Response<string[]>) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException('You are not logged in.');
-    }
-
-    // TODO fix this
-    if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
-      throw new Exceptions.ForbiddenException(
-        'You are not allowed to get roles.'
+    // We explicitly parse here so as to make sure we strip out anything we don't want!
+    try {
+      return res.json(GetListAllUsersResponseSchema.parse(allUsers));
+    } catch (e) {
+      throw new Exceptions.InternalSystemError(
+        `User data from database could not be parsed into the correct model. Error: ${e}.`
       );
     }
-
-    // TODO fix this
-    return res.json(['cluster-admin']);
   }
 );
 

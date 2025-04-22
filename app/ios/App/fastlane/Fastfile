@@ -3,7 +3,7 @@ update_fastlane
 default_platform(:ios)
 
 DEVELOPER_APP_ID = ENV["DEVELOPER_APP_ID"]
-APPLE_BUNDLE_IDENTIFIER = ENV["APPLE_BUNDLE_IDENTIFIER"]
+VITE_APPLE_BUNDLE_IDENTIFIER = ENV["VITE_APPLE_BUNDLE_IDENTIFIER"]
 PROVISIONING_PROFILE_SPECIFIER = ENV["PROVISIONING_PROFILE_SPECIFIER"]
 APPLE_ISSUER_ID = ENV["APPLE_ISSUER_ID"]
 APPLE_KEY_ID = ENV["APPLE_KEY_ID"]
@@ -53,13 +53,18 @@ platform :ios do
     match(
       type: 'development',
       storage_mode: "git",
-      app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
       git_url: ENV["MATCH_GIT_URL"],
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
       keychain_name: KEYCHAIN_NAME,
       keychain_password: KEYCHAIN_PASSWORD,
       api_key: api_key
+    )
+
+    update_project_team(
+      path: "App.xcodeproj",
+      teamid: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
     )
 
     gym(
@@ -69,8 +74,9 @@ platform :ios do
       export_method: "development",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match Development #{APPLE_BUNDLE_IDENTIFIER}"
-        }
+            DEVELOPER_APP_ID => "match Development #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+        },
+        teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
       }
     )
 
@@ -105,13 +111,18 @@ platform :ios do
     match(
       type: 'appstore',
       storage_mode: "git",
-      app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
       git_url: ENV["MATCH_GIT_URL"],
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
       keychain_name: KEYCHAIN_NAME,
       keychain_password: KEYCHAIN_PASSWORD,
       api_key: api_key
+    )
+
+    update_project_team(
+      path: "App.xcodeproj",
+      teamid: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
     )
 
     gym(
@@ -121,9 +132,9 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match AppStore #{APPLE_BUNDLE_IDENTIFIER}"
-            # AppStore needs app-store. Browserstack needs development
-        }
+            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+        },
+        teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
       }
     )
     changelog = changelog_from_git_commits(
@@ -133,7 +144,7 @@ platform :ios do
 
     pilot(
       apple_id: "#{DEVELOPER_APP_ID}",
-      app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
       skip_waiting_for_build_processing: false,
       skip_submission: true,
       distribute_external: false,
@@ -166,13 +177,18 @@ platform :ios do
     match(
       type: 'appstore',
       storage_mode: "git",
-      app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
       git_url: ENV["MATCH_GIT_URL"],
       git_basic_authorization: Base64.strict_encode64(ENV["GIT_AUTHORIZATION"]),
       readonly: false,
       keychain_name: KEYCHAIN_NAME,
       keychain_password: KEYCHAIN_PASSWORD,
       api_key: api_key
+    )
+
+    update_project_team(
+      path: "App.xcodeproj",
+      teamid: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
     )
 
     gym(
@@ -182,14 +198,14 @@ platform :ios do
       export_method: "app-store",
       export_options: {
         provisioningProfiles: {
-            DEVELOPER_APP_ID => "match AppStore #{APPLE_BUNDLE_IDENTIFIER}"
-            # AppStore needs app-store. Browserstack needs development
-        }
+            DEVELOPER_APP_ID => "match AppStore #{VITE_APPLE_BUNDLE_IDENTIFIER}"
+        },
+        teamID: ENV["VITE_APP_STORE_CONNECT_TEAM_ID"]
       }
     )
 
     deliver(
-      app_identifier: "#{APPLE_BUNDLE_IDENTIFIER}",
+      app_identifier: "#{VITE_APPLE_BUNDLE_IDENTIFIER}",
       ipa: "App.ipa",
       submit_for_review: false,
       automatic_release: false,

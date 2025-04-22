@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// eslint-disable-next-line n/no-extraneous-import
+import {StateWithHistory} from 'redux-undo';
 import {ConditionType} from '../components/condition';
 
 export type NotebookMetadata = PropertyMap;
@@ -31,8 +33,6 @@ export type ComponentParameters = {
   multiline?: boolean;
   multiple?: boolean;
   SelectProps?: unknown;
-  // Hide this field but keep values being updated etc.
-  hidden?: boolean;
   ElementProps?: {
     expandedChecklist?: boolean;
     // These items must correspond to values in the options[]. Only one of such
@@ -65,10 +65,13 @@ export type ComponentParameters = {
   variant_style?: string;
   html_tag?: string;
   content?: string;
+  hrid?: boolean;
   select?: boolean;
   geoTiff?: string;
   type?: string;
   valuetype?: string;
+  protection?: 'protected' | 'allow-hiding' | 'none';
+  hidden?: boolean;
 };
 
 export type ValidationSchemaElement = (string | number | unknown[])[];
@@ -127,12 +130,17 @@ export type NotebookModified = {
 
 export type AppState = {
   modified: boolean;
-  notebook: Notebook;
+  notebook: NotebookWithHistory;
 };
 
 export type Notebook = {
   metadata: NotebookMetadata;
   'ui-specification': NotebookUISpec;
+};
+
+export type NotebookWithHistory = {
+  metadata: NotebookMetadata;
+  'ui-specification': StateWithHistory<NotebookUISpec>;
 };
 
 // an empty notebook
@@ -155,10 +163,14 @@ export const initialState: AppState = {
       sections: {},
     },
     'ui-specification': {
-      fields: {},
-      fviews: {},
-      viewsets: {},
-      visible_types: [],
+      present: {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      },
+      past: [],
+      future: [],
     },
   },
 };

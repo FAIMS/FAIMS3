@@ -2,12 +2,13 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {RoleCard} from '../ui/role-card';
 import {TeamCellComponent} from './cells/team-cell';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 export type Column = any;
 
 export const columns: ColumnDef<Column>[] = [
   {
-    accessorKey: 'metadata.name',
+    accessorKey: 'name',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Name" />
     ),
@@ -44,7 +45,10 @@ export const columns: ColumnDef<Column>[] = [
   {
     accessorKey: 'metadata.project_lead',
     header: ({column}) => (
-      <DataTableColumnHeader column={column} title="Project Lead" />
+      <DataTableColumnHeader
+        column={column}
+        title={`${NOTEBOOK_NAME_CAPITALIZED} Lead`}
+      />
     ),
   },
   {

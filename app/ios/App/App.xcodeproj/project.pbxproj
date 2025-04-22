@@ -403,7 +403,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "Auto-set by script in build phases";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "WTH5X6HHX7";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_PREFIX_HEADER = Plist/Prefix;
@@ -435,8 +435,8 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "Auto-set by script in build phases";
-				DEVELOPMENT_TEAM = "";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = "";
+				DEVELOPMENT_TEAM = "WTH5X6HHX7";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = "WTH5X6HHX7";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				INFOPLIST_PREFIX_HEADER = Plist/Prefix;

@@ -26,6 +26,7 @@ PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for 
 import {
   EncodedProjectUIModel,
   getDataDB,
+  GetListAllUsersResponseSchema,
   GetNotebookResponse,
   ProjectStatus,
   registerClient,
@@ -39,7 +40,7 @@ import request from 'supertest';
 import {
   generateJwtFromUser,
   upgradeCouchUserToExpressUser,
-} from '../src/authkeys/create';
+} from '../src/auth/keySigning/create';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -55,7 +56,7 @@ import {
   getUserProjectsDetailed,
 } from '../src/couchdb/notebooks';
 import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
-import {app} from '../src/routes';
+import {app} from '../src/expressSetup';
 import {callbackObject, databaseList} from './mocks';
 import {
   adminToken,
@@ -72,7 +73,6 @@ export const NOTEBOOKS_API_BASE = '/api/notebooks';
 registerClient(callbackObject);
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},
@@ -410,6 +410,29 @@ describe('API tests', () => {
     }
   });
 
+  it('list users, ensuring no profile info is leaked', async () => {
+    await request(app)
+      .get('/api/users')
+      .set('Content-Type', 'application/json')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200)
+      .then(response => {
+        // parse as proper type
+        const res = GetListAllUsersResponseSchema.parse(response.body);
+
+        // there are a couple of users
+        expect(res.length).to.eq(3);
+
+        // ensure they don't have profile info!!
+        for (const user of res) {
+          expect((user as any).profiles).to.be.undefined;
+
+          // but other properties should be valid
+          expect(user.name).to.not.be.undefined;
+        }
+      });
+  });
+
   it('update admin user - no auth', async () => {
     await request(app)
       .post(`/api/users/${localUserName}/admin`)
@@ -598,33 +621,42 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
+    const url =
+      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
     const adminUser = await getExpressUserFromEmailOrUsername('admin');
     if (adminUser) {
       const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
+      let redirectURL = '';
       await request(app)
-        .get(
-          '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv'
-        )
+        .get(url)
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
-        .expect(200)
-        .expect('Content-Type', 'text/csv')
+        .expect(302)
         .expect(response => {
-          // response body should be csv data
-          expect(response.text).to.contain('identifier');
-          const lines = response.text.split('\n');
-          lines.forEach(line => {
-            if (line !== '' && !line.startsWith('identifier')) {
-              expect(line).to.contain('rec');
-              expect(line).to.contain('FORM2');
-              expect(line).to.contain('frev');
-            }
-          });
-          // one more newline than the number of records + header
-          expect(lines).to.have.lengthOf(19);
+          expect(response.headers.location).to.match(/\/download\/.*/);
+          redirectURL = response.headers.location;
         });
+
+      if (redirectURL)
+        await request(app)
+          .get(redirectURL)
+          .expect('Content-Type', 'text/csv')
+          .expect(response => {
+            // response body should be csv data
+            expect(response.text).to.contain('identifier');
+            const lines = response.text.split('\n');
+            lines.forEach(line => {
+              if (line !== '' && !line.startsWith('identifier')) {
+                expect(line).to.contain('rec');
+                expect(line).to.contain('FORM2');
+                expect(line).to.contain('frev');
+              }
+            });
+            // one more newline than the number of records + header
+            expect(lines).to.have.lengthOf(19);
+          });
     }
   });
 
@@ -637,21 +669,33 @@ describe('API tests', () => {
       const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
+      const url =
+        '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip';
+      let redirectURL = '';
       await request(app)
-        .get(
-          '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip'
-        )
+        .get(url)
         .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200)
-        .expect('Content-Type', 'application/zip')
+        .set('Content-Type', 'application/json')
+        .expect(302)
         .expect(response => {
-          const zipContent = response.text;
-          // check for _1 filename which should be there because of
-          // a clash of names
-          expect(zipContent).to.contain(
-            'take-photo/DuplicateHRID-take-photo_1.png'
-          );
+          expect(response.headers.location).to.match(/\/download\/.*/);
+          redirectURL = response.headers.location;
         });
+
+      if (redirectURL)
+        await request(app)
+          .get(redirectURL)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200)
+          .expect('Content-Type', 'application/zip')
+          .expect(response => {
+            const zipContent = response.text;
+            // check for _1 filename which should be there because of
+            // a clash of names
+            expect(zipContent).to.contain(
+              'take-photo/DuplicateHRID-take-photo_1.png'
+            );
+          });
     }
   });
 

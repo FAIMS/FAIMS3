@@ -29,7 +29,7 @@ import * as sns from 'aws-cdk-lib/aws-sns';
 import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 
 import {Construct} from 'constructs';
-import {MonitoringConfig} from '../faims-infra-stack';
+import {MonitoringConfig} from '../config';
 import {SharedBalancer} from './networking';
 
 /**

@@ -52,10 +52,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
+import DebouncedTextField from '../debounced-text-field';
 import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -236,13 +236,13 @@ export const OptionsEditor = ({
 }) => {
   // Get field state from Redux store
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const allFviews = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
 
   const dispatch = useAppDispatch();
@@ -581,7 +581,7 @@ export const OptionsEditor = ({
               <form onSubmit={addOption}>
                 <Grid container spacing={1} alignItems="center">
                   <Grid item xs>
-                    <TextField
+                    <DebouncedTextField
                       fullWidth
                       size="small"
                       placeholder="Add Option"
@@ -759,7 +759,7 @@ export const OptionsEditor = ({
         >
           <DialogTitle>Edit Option</DialogTitle>
           <DialogContent>
-            <TextField
+            <DebouncedTextField
               autoFocus
               margin="dense"
               label="Option Text"

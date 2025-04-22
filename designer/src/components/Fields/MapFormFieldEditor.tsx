@@ -14,7 +14,6 @@
 
 import {
   Grid,
-  TextField,
   Card,
   FormControl,
   InputLabel,
@@ -24,10 +23,11 @@ import {
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType} from '../../state/initial';
+import DebouncedTextField from '../debounced-text-field';
 
 export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -69,7 +69,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid container p={2} rowGap={2}>
             <Grid item sm={6} xs={12}>
-              <TextField
+              <DebouncedTextField
                 variant="outlined"
                 label="Zoom Level"
                 type="number"

@@ -1,15 +1,15 @@
-import {z} from 'zod';
-import {Role} from './model';
+import {ENCODING_SEPARATOR, COUCHDB_ROLES_PATH} from '../constants';
+import {drillRoles, resourceRolesEqual} from './helpers';
+import {
+  TokenPermissions,
+  DecodedTokenPermissions,
+  decodedTokenSchema,
+  tokenPermissionsSchema,
+} from './types';
 
 // ==============
 // TOKEN ENCODING
 // ==============
-
-export const ENCODING_SEPARATOR = '||';
-export const COUCH_ADMIN_ROLE_NAME = '_admin';
-
-// This is configurable, but it's fine to use the default
-export const COUCHDB_ROLES_PATH = '_couchdb.roles';
 
 /**
  * Decodes a resource-specific role string from the format "resourceId||role"
@@ -42,61 +42,6 @@ export const decodePerResourceStatement = ({
   }
   return {resourceId: splitResult[0], claimString: splitResult[1]};
 };
-
-// =======================================
-// Zod schemas for encoded token structure
-// =======================================
-
-// Input schema for the raw TokenStructure
-const tokenPermissionsSchema = z.object({
-  // Encoded resource roles OR global roles available to couch
-  // functions. Here we include roles that CouchDB needs for authorization.
-  [COUCHDB_ROLES_PATH]: z.array(z.string()),
-  // These are roles which apply to specific resources (encoded as above) - NOT
-  // visible in couch. NOTE: TEAMS and other associative roles are drilled into
-  // this resource roles list
-  resourceRoles: z.array(z.string()),
-  // These are roles that apply generally - not resource specific - they may
-  // imply resources specific actions but for all resources of that type -
-  // NOT visible in couch
-  globalRoles: z.array(z.string()),
-});
-export type TokenPermissions = z.infer<typeof tokenPermissionsSchema>;
-
-const tokenPayloadSchema = z
-  .object({
-    // The name of the user - this is the full display name
-    name: z.string(),
-    // The server which generated this token - this is the URL
-    server: z.string(),
-    // username
-    username: z.string(),
-  })
-  .merge(tokenPermissionsSchema);
-export type TokenPayload = z.infer<typeof tokenPayloadSchema>;
-
-// =======================================
-// Zod schemas for decoded token structure
-// =======================================
-
-// Schema for a decoded resource role
-const decodedResourceRoleSchema = z.object({
-  resourceId: z.string().min(1),
-  role: z.nativeEnum(Role),
-});
-export type ResourceRole = z.infer<typeof decodedResourceRoleSchema>;
-
-// Schema for a global role
-const globalRoleSchema = z.nativeEnum(Role);
-
-// Complete decoded token structure
-const decodedTokenSchema = z.object({
-  resourceRoles: z.array(decodedResourceRoleSchema),
-  globalRoles: z.array(globalRoleSchema),
-});
-
-// Export the type for the decoded token
-export type DecodedTokenPermissions = z.infer<typeof decodedTokenSchema>;
 
 /**
  * Transforms and validates an encoded TokenStructure into a more usable DecodedToken
@@ -167,10 +112,16 @@ export function encodeToken(
   // Validate the decoded token first
   decodedTokenSchema.parse(decodedToken);
 
-  // Encode resource roles
-  const resourceRoles = decodedToken.resourceRoles.map(({resourceId, role}) =>
-    encodeClaim({resourceId, claim: role})
-  );
+  // Encode resource roles (ONLY THOSE NOT GRANTED BY A GLOBAL ROLE (for
+  // encoding efficiency purposes))
+  const resourceRoles = decodedToken.resourceRoles
+    .filter(
+      resourceRole =>
+        !decodedToken.globalRoles.some(globalRole =>
+          drillRoles({role: globalRole}).some(rr => rr === resourceRole.role)
+        )
+    )
+    .map(({resourceId, role}) => encodeClaim({resourceId, claim: role}));
 
   // Generate CouchDB roles list - this contains both:
   // 1. Global roles (as is)

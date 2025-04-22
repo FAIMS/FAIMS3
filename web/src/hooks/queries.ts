@@ -1,3 +1,4 @@
+import {buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import type {
   GetNotebookListResponse,
@@ -9,6 +10,7 @@ import {
   GetListTeamsResponse,
   GetListTemplatesResponse,
   GetNotebookResponse,
+  GetNotebookUsersResponse,
   GetProjectInvitesResponse,
   GetTeamByIdResponse,
   GetTeamInvitesResponse,
@@ -204,19 +206,27 @@ export const useGetUsers = (user: User | null) =>
  * useGetProjectInvites hook returns a query for fetching invites.
  *
  * @param {User} user - The user object.
- * @param {string} notebookId - The ID of the notebook.
+ * @param {string} projectId - The ID of the notebook.
  * @returns {Query} A query for fetching invites.
  */
-export const useGetProjectInvites = (user: User | null, notebookId: string) =>
+export const useGetProjectInvites = ({
+  user,
+  redirect,
+  projectId,
+}: {
+  user: User | null;
+  projectId: string;
+  redirect: string;
+}) =>
   useQuery({
-    queryKey: ['projectinvites', notebookId],
+    queryKey: ['projectinvites', projectId],
     queryFn: async () => {
       const invites = await get<GetProjectInvitesResponse>(
-        `/api/invites/notebook/${notebookId}`,
+        `/api/invites/notebook/${projectId}`,
         user
       );
       const promises = invites.map(async invite => {
-        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}`;
+        const url = buildRegisterUrl({inviteId: invite._id, redirect});
         return {
           ...invite,
           url: url,
@@ -227,7 +237,7 @@ export const useGetProjectInvites = (user: User | null, notebookId: string) =>
       return Promise.all(promises);
     },
     // Only run the query if both user and notebookId are available
-    enabled: !!user && !!notebookId,
+    enabled: !!user && !!projectId,
   });
 
 /**
@@ -244,7 +254,7 @@ export const useGetTeamInvites = ({
 }: {
   user: User | null;
   teamId: string;
-  redirect?: string;
+  redirect: string;
 }) =>
   useQuery({
     queryKey: ['teaminvites', teamId],
@@ -254,7 +264,7 @@ export const useGetTeamInvites = ({
         user
       );
       const promises = invites.map(async invite => {
-        const url = `${import.meta.env.VITE_API_URL}/register/${invite._id}${redirect ? '?redirect=' + redirect : ''}`;
+        const url = buildRegisterUrl({inviteId: invite._id, redirect});
         return {
           ...invite,
           url: url,
@@ -281,5 +291,27 @@ export const useGetRecords = (user: User | null, projectId: string) =>
         `/api/notebooks/${projectId}/records/`,
         user
       ),
+    enabled: !!user,
+  });
+
+/**
+ * @param projectId - the project ID to lookup
+ * @param user - The user object.
+ */
+export const useGetUsersForProject = ({
+  projectId,
+  user,
+}: {
+  user: User | null;
+  projectId: string;
+}) =>
+  useQuery({
+    queryKey: ['projectusers', projectId],
+    queryFn: async () => {
+      return await get<GetNotebookUsersResponse>(
+        `/api/notebooks/${projectId}/users`,
+        user
+      );
+    },
     enabled: !!user,
   });

@@ -51,7 +51,7 @@ function RouteComponent() {
       // project name
       {
         path: pathname,
-        label: (template?.metadata.name as string | undefined) ?? templateId,
+        label: template?.name ?? templateId,
       },
     ],
     [pathname, template]

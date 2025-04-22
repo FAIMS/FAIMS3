@@ -1,17 +1,10 @@
 import {Edit as EditIcon} from '@mui/icons-material';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  Grid,
-  TextField,
-  Typography,
-} from '@mui/material';
+import {Alert, Box, Button, Card, Grid, Typography} from '@mui/material';
 import {MutableRefObject, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {ComponentParameters, FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
+import DebouncedTextField from '../debounced-text-field';
 
 type PropType = {
   fieldName: string;
@@ -28,10 +21,10 @@ export const TemplatedStringFieldEditor = ({
   viewsetId,
 }: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const allFields = useAppSelector(
-    state => state.notebook['ui-specification'].fields
+    state => state.notebook['ui-specification'].present.fields
   );
   const dispatch = useAppDispatch();
   const textAreaRef = useRef(null) as MutableRefObject<unknown>;
@@ -42,10 +35,10 @@ export const TemplatedStringFieldEditor = ({
   const state = field['component-parameters'];
 
   const viewSet = useAppSelector(
-    state => state.notebook['ui-specification'].viewsets[viewsetId]
+    state => state.notebook['ui-specification'].present.viewsets[viewsetId]
   );
   const fviews = useAppSelector(
-    state => state.notebook['ui-specification'].fviews
+    state => state.notebook['ui-specification'].present.fviews
   );
 
   /**
@@ -129,7 +122,7 @@ export const TemplatedStringFieldEditor = ({
         <Card variant="outlined">
           <Grid container spacing={2} sx={{p: 2}}>
             <Grid item sm={6} xs={12}>
-              <TextField
+              <DebouncedTextField
                 name="label"
                 variant="outlined"
                 label="Label"
@@ -140,7 +133,7 @@ export const TemplatedStringFieldEditor = ({
               />
             </Grid>
             <Grid item sm={6} xs={12}>
-              <TextField
+              <DebouncedTextField
                 name="helperText"
                 variant="outlined"
                 label="Helper Text"
@@ -165,7 +158,7 @@ export const TemplatedStringFieldEditor = ({
 
             <Grid container spacing={2}>
               <Grid item xs>
-                <TextField
+                <DebouncedTextField
                   name="template"
                   inputRef={textAreaRef}
                   variant="outlined"

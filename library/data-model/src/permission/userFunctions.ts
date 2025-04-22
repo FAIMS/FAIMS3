@@ -3,10 +3,12 @@
  * (PeopleDBDocument) in relation to roles and actions.
  */
 
-import {generateVirtualResourceRoles, ResourceAssociation} from '..';
-import {PeopleDBDocument} from '../data_storage';
+import {generateVirtualResourceRoles, ResourceAssociation} from './functions';
+import {ResourceRole, TokenPermissions} from './types';
+import {PeopleDBDocument} from '../data_storage/peopleDB/types';
 import {Role} from './model';
-import {encodeToken, ResourceRole, TokenPermissions} from './tokenEncoding';
+import {encodeToken} from './tokenEncoding';
+import {drillRoles} from './helpers';
 
 // ======
 // CHECKS
@@ -393,23 +395,30 @@ export function resourceRolesEqual(a: ResourceRole, b: ResourceRole): boolean {
  * @returns a compiled list of resource roles
  */
 export function couchUserToResourceRoles({
-  user: {projectRoles, teamRoles, templateRoles},
+  user: {projectRoles, teamRoles, templateRoles, globalRoles},
   relevantAssociations,
 }: {
   user: PeopleDBDocument;
   relevantAssociations: ResourceAssociation[];
 }): ResourceRole[] {
-  // Collapse the project and team roles into one set
+  // Collapse the project and team roles into one set (ONLY THOSE NOT GRANTED BY A GLOBAL ROLE)
   const allResourceRoles = [...projectRoles, ...teamRoles, ...templateRoles];
-
-  // Need to drill teams virtual roles
+  // Need to drill teams virtual roles (ONLY THOSE NOT GRANTED BY A GLOBAL ROLE)
   const virtualRoles = generateVirtualResourceRoles({
     resourceRoles: allResourceRoles,
     resourceAssociations: relevantAssociations,
   });
 
   // And build it into resource roles list
-  return allResourceRoles.concat(virtualRoles);
+  const combined = allResourceRoles.concat(virtualRoles);
+
+  // Now filter again - just in case of unpredictable interactions re: global roles
+  return combined.filter(
+    resourceRole =>
+      !globalRoles.some(globalRole =>
+        drillRoles({role: globalRole}).some(rr => rr === resourceRole.role)
+      )
+  );
 }
 
 /**

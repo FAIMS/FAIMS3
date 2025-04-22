@@ -1,6 +1,7 @@
-import {Grid, Card, TextField} from '@mui/material';
+import {Grid, Card} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+import DebouncedTextField from '../debounced-text-field';
 
 type PropType = {
   fieldName: string;
@@ -9,7 +10,7 @@ type PropType = {
 
 export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
   const field = useAppSelector(
-    state => state.notebook['ui-specification'].fields[fieldName]
+    state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
 
@@ -41,7 +42,7 @@ export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
     <Grid item sm={6} xs={12}>
       <Card variant="outlined" sx={{display: 'flex'}}>
         <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-          <TextField
+          <DebouncedTextField
             name="label"
             variant="outlined"
             label="Label"
@@ -54,7 +55,7 @@ export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
       </Card>
       <Card variant="outlined" sx={{display: 'flex'}}>
         <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-          <TextField
+          <DebouncedTextField
             name="digits"
             variant="outlined"
             label="Number of digits in identifier"

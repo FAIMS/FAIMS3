@@ -30,7 +30,6 @@ jobs:
     if: ${{ needs.check_date.outputs.should_run != 'false' }}
     continue-on-error: false
     steps:
-      # note not using Turbo build as it caused a problem with missing assets
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Cache node modules
@@ -43,7 +42,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
             ${{ runner.os }}-build-
-            ${{ runner.os }}-
+            ${{ runner.os }}-            
       - name: Install jq
         run: |
           brew update
@@ -94,7 +93,14 @@ jobs:
           export VITE_APP_ID=${{vars.APP_ID}}
           export VITE_APP_NAME="${{vars.APP_NAME}}"
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
+          export VITE_APPLE_BUNDLE_IDENTIFIER="${{vars.APPLE_BUNDLE_IDENTIFIER}}"
+          export VITE_APP_STORE_CONNECT_TEAM_ID="${{secrets.APP_STORE_CONNECT_TEAM_ID}}"
+          printenv
           npm ci --python=python3.10
+          # we install these here because of a bug in npm with platform specific
+          # dependencies
+          npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          npm run configIOSbuild --workspace app
           npm run build
       - name: Update IOS Build
         run: |
@@ -102,6 +108,10 @@ jobs:
           npx cap update ios
           npx cap sync --deployment ios
           cd ios/App; pod install
+      - name: Set up XCode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:
@@ -110,9 +120,9 @@ jobs:
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
-          APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
+          VITE_APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
           DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
-          APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
+          VITE_APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
           FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
