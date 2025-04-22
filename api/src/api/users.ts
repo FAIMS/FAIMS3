@@ -111,7 +111,6 @@ api.get(
       if (!req.user) {
         throw new Exceptions.UnauthorizedException('Not authenticated.');
       }
-      console.log(req.user);
 
       const {_id: id, name, emails, user_id} = req.user;
 
