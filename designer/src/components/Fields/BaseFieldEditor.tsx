@@ -125,6 +125,8 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
 
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].required = newState.required;
+    newField['component-parameters'].advancedHelperText =
+      newState.advancedHelperText;
 
     if (newField.meta) {
       newField.meta.annotation = {
@@ -226,11 +228,8 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                         <Box mt={2}>
                           <MdxEditor
                             initialMarkdown={state.advancedHelperText}
-                            handleChange={() =>
-                              updateProperty(
-                                'advancedHelperText',
-                                ref.current?.getMarkdown() || ''
-                              )
+                            handleChange={markdown =>
+                              updateProperty('advancedHelperText', markdown)
                             }
                             editorRef={ref}
                           />
