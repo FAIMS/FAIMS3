@@ -37,10 +37,17 @@ const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({form}: {form: string}) => {
-    window.open(
-      `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/${form}.${type}`,
-      '_blank'
-    );
+    if (user) {
+      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/${form}.${type}`;
+      const response = await fetch(downloadURL, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+      // open the download URL in the current window to force the download
+      if (response.redirected) window.open(response.url, '_self');
+    }
     return undefined;
   };
 

@@ -46,7 +46,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {DEVELOPER_MODE} from '../buildconfig';
+import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -80,6 +80,8 @@ import {
 } from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
+import {jwtVerify, SignJWT} from 'jose';
+import {redirectWithToken} from '../auth/helpers';
 
 // This must occur before express api is used
 patch();
@@ -381,9 +383,126 @@ api.get(
   }
 );
 
+export type DownloadTokenPayload = {
+  projectID: string;
+  format: 'csv' | 'zip';
+  viewID: string;
+  userID: string;
+};
+
+// download tokens last this long
+const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
+
+const generateDownloadToken = async ({
+  user,
+  payload,
+}: {
+  user: Express.User;
+  payload: DownloadTokenPayload;
+}) => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({
+      alg: signingKey.alg,
+      kid: signingKey.kid,
+    })
+    .setSubject(user.user_id)
+    .setIssuedAt()
+    .setIssuer(signingKey.instanceName)
+    // Expiry in minutes
+    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .sign(signingKey.privateKey);
+  return token;
+};
+
+const validateDownloadToken = async ({
+  token,
+}: {
+  token: string;
+}): Promise<DownloadTokenPayload | null> => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  try {
+    const result = await jwtVerify(token, signingKey.publicKey, {
+      algorithms: [signingKey.alg],
+      // verify issuer
+      issuer: signingKey.instanceName,
+    });
+    console.log('verify result is', result);
+    return result.payload as DownloadTokenPayload;
+  } catch {
+    console.log('invalid token');
+    return null;
+  }
+};
+
 // export current versions of all records in this notebook as csv
 api.get(
   '/:id/records/:viewID.csv',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({params: z.object({id: z.string(), viewID: z.string()})}),
+  async (req, res) => {
+    if (req.user) {
+      // get the label for this form for the filename header
+      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+      if (uiSpec && req.params.viewID in uiSpec.viewsets) {
+        const payload: DownloadTokenPayload = {
+          projectID: req.params.id,
+          format: 'csv',
+          viewID: req.params.viewID,
+          userID: req.user.user_id,
+        };
+        const jwt = await generateDownloadToken({
+          user: req.user,
+          payload: payload,
+        });
+        console.log(`redirecting to /api/notebooks/download/${jwt}`);
+        return res.redirect(`/api/notebooks/download/${jwt}`);
+      } else {
+        throw new Exceptions.ItemNotFoundException(
+          `Form with id ${req.params.viewID} not found in notebook`
+        );
+      }
+    }
+  }
+);
+
+api.get(
+  '/download/:downloadToken',
+  processRequest({params: z.object({downloadToken: z.string()})}),
+  async (req, res) => {
+    const payload = await validateDownloadToken({
+      token: req.params.downloadToken,
+    });
+    console.log('decoded download token', payload);
+    if (payload) {
+      const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
+      if (uiSpec && payload.viewID in uiSpec.viewsets) {
+        const label = uiSpec.viewsets[payload.viewID].label;
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${label}.csv"`
+        );
+        streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
+      } else {
+        throw new Exceptions.ItemNotFoundException(
+          `Form with id ${payload.viewID} not found in notebook`
+        );
+      }
+    }
+  }
+);
+
+// export current versions of all records in this notebook as csv
+api.get(
+  '/:id/xrecords/:viewID.csv',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
