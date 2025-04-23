@@ -21,7 +21,13 @@
     "notebookListType": "tabs",
     "notebookName": "notebook",
     "appName": "FAIMS Mobile",
-    "appId": "FAIMS"
+    "appId": "FAIMS",
+    "offlineMaps": {
+      "mapSource": "maptiler",
+      "mapSourceKey": "your-maptiler-api-key",
+      "offlineMaps": true,
+      "mapStyle": "basic"
+    }
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
@@ -87,7 +93,8 @@
       "targetMemoryUtilization": 70,
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
-    }
+    },
+    "localhostWhitelist" : "false"
   },
   "domains": {
     "baseDomain": "your-domain.com",

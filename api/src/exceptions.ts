@@ -65,3 +65,12 @@ export class InternalSystemError extends CustomException {
     super(message, 403);
   }
 }
+
+/**
+ * Use when a user has made too many requests or attempts in a given time period.
+ */
+export class TooManyRequestsException extends CustomException {
+  constructor(message = 'Too many requests') {
+    super(message, 429);
+  }
+}

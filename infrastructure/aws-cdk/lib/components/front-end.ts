@@ -14,6 +14,13 @@ import {IDistribution} from 'aws-cdk-lib/aws-cloudfront';
 import {IHostedZone} from 'aws-cdk-lib/aws-route53';
 import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
 import {getPathHash, getPathToRoot} from '../util/mono';
+import {OfflineMapsConfig} from '../config';
+
+const MAP_ORIGINS_SHARED = [
+  'openmaptiles.github.io',
+  'api.maptiler.com',
+  '*.openstreetmap.org',
+];
 
 export interface FaimsFrontEndProps {
   // FAIMS main website
@@ -54,6 +61,9 @@ export interface FaimsFrontEndProps {
 
   // Enable debugging settings @default false
   debugMode?: boolean;
+
+  // Offline maps settings -> env variables in faims
+  offlineMaps: OfflineMapsConfig;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -121,6 +131,12 @@ export class FaimsFrontEnd extends Construct {
   }
 
   setupFaimsDistribution(props: FaimsFrontEndProps) {
+    // this allows connections to various map services supported as well as the
+    // API and couch domains
+    const csp =
+      `connect-src 'self' https://${props.couchDbDomainOnly} ${props.conductorUrl} ` +
+      MAP_ORIGINS_SHARED.join(' ');
+
     const website = new StaticWebsite(this, 'faims-website', {
       hostedZone: props.faimsHz,
       domainNames: props.faimsDomainNames,
@@ -146,7 +162,7 @@ export class FaimsFrontEnd extends Construct {
       securityHeadersBehavior: {
         contentSecurityPolicy: {
           // enable connection to the couch db URL
-          contentSecurityPolicy: `connect-src 'self' https://${props.couchDbDomainOnly} ${props.conductorUrl}`,
+          contentSecurityPolicy: csp,
           override: true,
         },
       },
@@ -194,6 +210,14 @@ export class FaimsFrontEnd extends Construct {
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
       VITE_TAG: 'CDKDeployment',
+
+      // offline maps configuration
+      VITE_MAP_SOURCE: props.offlineMaps.mapSource,
+      VITE_OFFLINE_MAPS: props.offlineMaps.offlineMaps ? 'true' : 'false',
+      VITE_MAP_STYLE: props.offlineMaps.mapStyle,
+      ...(props.offlineMaps.mapSourceKey
+        ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
+        : {}),
     };
 
     // Setup a deployment into this bucket with static files

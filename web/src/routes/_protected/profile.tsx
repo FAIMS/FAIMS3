@@ -1,17 +1,44 @@
-import {useAuth, User} from '@/context/auth-provider';
-import {Card} from '@/components/ui/card';
-import {createFileRoute} from '@tanstack/react-router';
-import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {Button} from '@/components/ui/button';
+import {Card} from '@/components/ui/card';
+import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
+import {useAuth, User} from '@/context/auth-provider';
+import {createFileRoute} from '@tanstack/react-router';
+import {CheckCircle, XCircle} from 'lucide-react';
+import React from 'react';
 import {toast} from 'sonner';
 
 export const Route = createFileRoute('/_protected/profile')({
   component: RouteComponent,
 });
 
-const userFields: {field: keyof User['user']; label: string}[] = [
+const userFields: {
+  field: keyof User['user'];
+  label: string;
+  render?: (data: any) => React.ReactNode;
+}[] = [
   {field: 'id', label: 'Email'},
   {field: 'name', label: 'Name'},
+  {
+    field: 'isVerified',
+    label: 'Email Verification',
+    render: v => {
+      if (v) {
+        return (
+          <div className="flex items-center justify-start gap-2">
+            <p>Your email address is verified!</p>
+            <CheckCircle className="h-5 w-5 text-green-500" />
+          </div>
+        );
+      } else {
+        return (
+          <div className="flex items-center justify-start gap-2">
+            <p>Your email address is not verified.</p>
+            <XCircle className="h-5 w-5 text-red-500" />
+          </div>
+        );
+      }
+    },
+  },
 ];
 
 /**
@@ -27,10 +54,12 @@ function RouteComponent() {
     <div className="flex lg:flex-row flex-col gap-4">
       <Card className="flex-1">
         <List>
-          {userFields.map(({field, label}) => (
+          {userFields.map(({field, label, render}) => (
             <ListItem key={field}>
               <ListLabel>{label}</ListLabel>
-              <ListDescription>{user?.user[field]}</ListDescription>
+              <ListDescription>
+                {render ? render(user?.user[field]) : user?.user[field]}
+              </ListDescription>
             </ListItem>
           ))}
         </List>

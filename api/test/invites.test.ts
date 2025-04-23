@@ -47,7 +47,7 @@ import {
 import {createNotebook} from '../src/couchdb/notebooks';
 import {createTeamDocument} from '../src/couchdb/teams';
 import {
-  getExpressUserFromEmailOrUsername,
+  getExpressUserFromEmailOrUserId,
   saveCouchUser,
 } from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
@@ -242,7 +242,7 @@ describe('Invite Tests', () => {
       });
 
       // Use the invite twice to reach the limit
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(localUser).to.not.be.null;
 
       await consumeInvite({
@@ -278,7 +278,7 @@ describe('Invite Tests', () => {
         usesOriginal: 3,
       });
 
-      const localUser = await getExpressUserFromEmailOrUsername(localUserName);
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(localUser).to.not.be.null;
 
       // Check initial state
@@ -464,7 +464,7 @@ describe('Invite Tests', () => {
       });
 
       // Add admin role to the admin user for this team
-      const adminUser = await getExpressUserFromEmailOrUsername('admin');
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
       if (!adminUser) {
         throw new Error('Admin user not found');
       }
@@ -522,7 +522,7 @@ describe('Invite Tests', () => {
       });
 
       // Add admin role to the admin user for this team
-      const adminUser = await getExpressUserFromEmailOrUsername('admin');
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
       if (!adminUser) {
         throw new Error('Admin user not found');
       }
@@ -554,8 +554,7 @@ describe('Invite Tests', () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
 
       // Add contributor role to local user
-      const localUserDb =
-        await getExpressUserFromEmailOrUsername(localUserName);
+      const localUserDb = await getExpressUserFromEmailOrUserId(localUserName);
       if (!localUserDb) {
         throw new Error('Local user not found');
       }
@@ -623,7 +622,7 @@ describe('Registration', () => {
           // check correct redirect
           const location = new URL(response.header.location);
           expect(location.origin).to.equal(WEBAPP_PUBLIC_URL);
-          expect(location.search).to.match(/token/);
+          expect(location.search).to.match(/exchangeToken/);
         });
     }
   });

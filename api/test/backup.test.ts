@@ -33,7 +33,7 @@ import {
   getUserProjectsDetailed,
   getProjectUIModel,
 } from '../src/couchdb/notebooks';
-import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {mockTokenContentsForUser} from '../src/utils';
 import {
   callbackObject,
@@ -55,7 +55,7 @@ describe('Backup and restore', () => {
     await restoreFromBackup('test/backup.jsonl');
 
     // should now have the notebooks from the backup defined
-    const user = await getExpressUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUserId('admin');
     expect(user).not.to.be.undefined;
     if (user) {
       const notebooks = await getUserProjectsDetailed(user);
