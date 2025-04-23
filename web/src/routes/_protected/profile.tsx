@@ -66,10 +66,7 @@ function RouteComponent() {
             <Key size={18} />
             <span>Password</span>
           </ListLabel>
-          <ListDescription>
-            Update your account password. You'll need to know your current
-            password to make this change.
-          </ListDescription>
+          <ListDescription>Click the button below to change the password for your account.</ListDescription>
           <Button
             variant="outline"
             onClick={handleChangePassword}
