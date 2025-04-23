@@ -320,7 +320,7 @@ export default function RecordCreate() {
         ? 'Parent'
         : location.state.relation_type_vocabPair[0];
     breadcrumbs.splice(-1, 0, {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link,
+      link: location.state.parent_link,
       title:
         type! +
         ':' +
