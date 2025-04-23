@@ -1,13 +1,13 @@
-import {useAuth} from '@/context/auth-provider';
 import {Form} from '@/components/form';
-import {Route} from '@/routes/_protected/templates/$templateId';
-import {z} from 'zod';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {QueryClient, useQueryClient} from '@tanstack/react-query';
-import {useMemo} from 'react';
-import {useGetTeams} from '@/hooks/queries';
+import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useGetTeams} from '@/hooks/queries';
+import {Route} from '@/routes/_protected/templates/$templateId';
 import {Action} from '@faims3/data-model';
+import {useQueryClient} from '@tanstack/react-query';
+import {useMemo} from 'react';
+import {z} from 'zod';
 
 interface CreateProjectFromTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;

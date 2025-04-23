@@ -1,13 +1,12 @@
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
+import {API_URL, WEB_URL} from '@/constants';
 import {useAuth, User} from '@/context/auth-provider';
 import {createFileRoute} from '@tanstack/react-router';
-import {CheckCircle, XCircle} from 'lucide-react';
+import {CheckCircle, Key, ShieldAlert, XCircle} from 'lucide-react';
 import React from 'react';
 import {toast} from 'sonner';
-import {ShieldAlert, Key} from 'lucide-react';
-import {API_URL, APP_URL, WEB_URL} from '@/constants';
 
 export const Route = createFileRoute('/_protected/profile')({
   component: RouteComponent,
