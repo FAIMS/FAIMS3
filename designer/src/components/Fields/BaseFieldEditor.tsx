@@ -225,7 +225,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                       </Box>
 
                       <Collapse in={expanded}>
-                        <Box mt={2}>
+                        <Box mt={2} sx={{maxHeight: 300, overflowY: 'auto'}}>
                           <MdxEditor
                             initialMarkdown={state.advancedHelperText}
                             handleChange={markdown =>

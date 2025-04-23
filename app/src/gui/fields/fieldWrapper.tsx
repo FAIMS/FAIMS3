@@ -102,29 +102,30 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           </Typography>
 
           {/* More info help icon with dialog */}
-          {advancedHelperText && (
-            <IconButton
-              aria-label="Advanced Help"
-              size="small"
-              onClick={() => setOpenDialog(true)}
-              sx={{
-                mt: '4px',
-                color: theme.palette.info.main,
-                padding: 0,
-                '&:hover': {
-                  backgroundColor: 'transparent',
-                },
-              }}
-            >
-              <InfoOutlinedIcon
+          {typeof advancedHelperText === 'string' &&
+            advancedHelperText.trim() && (
+              <IconButton
+                aria-label="Advanced Help"
+                size="small"
+                onClick={() => setOpenDialog(true)}
                 sx={{
-                  fontSize: '1.6rem',
-                  stroke: theme.palette.info.main,
-                  strokeWidth: 0.8,
+                  mt: '4px',
+                  color: theme.palette.info.main,
+                  padding: 0,
+                  '&:hover': {
+                    backgroundColor: 'transparent',
+                  },
                 }}
-              />
-            </IconButton>
-          )}
+              >
+                <InfoOutlinedIcon
+                  sx={{
+                    fontSize: '1.6rem',
+                    stroke: theme.palette.info.main,
+                    strokeWidth: 0.8,
+                  }}
+                />
+              </IconButton>
+            )}
         </Box>
       )}
 
@@ -162,88 +163,90 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         />
       )}
       {/* Centered Dialog */}
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        fullWidth
-        maxWidth="md"
-        PaperProps={{
-          sx: {
-            backgroundColor: theme.palette.background.draftBackground,
-            borderRadius: 2,
-            p: 2,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            position: 'relative',
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            fontWeight: 'bold',
-            fontSize: '1.2rem',
-            paddingRight: 4,
-            color: theme.palette.text.primary,
-          }}
-        >
-          Field: {typeof heading === 'string' ? heading : 'This field'}
-          <IconButton
-            onClick={() => setOpenDialog(false)}
-            sx={{position: 'absolute', right: 16, top: 16}}
-          >
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent
-          dividers
-          sx={{
-            maxHeight: '60vh',
-            overflowY: 'auto',
-            '& img': {
-              maxWidth: '100%',
-              height: 'auto',
-              marginTop: 1,
-              borderRadius: 1,
-              display: 'block',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            },
-            '& p': {
-              wordBreak: 'break-word',
+      {typeof advancedHelperText === 'string' && advancedHelperText.trim() && (
+        <Dialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          fullWidth
+          maxWidth="md"
+          PaperProps={{
+            sx: {
+              backgroundColor: theme.palette.background.draftBackground,
+              borderRadius: 2,
+              p: 2,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
+              position: 'relative',
             },
           }}
         >
-          <Box
+          <DialogTitle
             sx={{
-              fontSize: '1rem',
-              lineHeight: 1.6,
+              fontWeight: 'bold',
+              fontSize: '1.2rem',
+              paddingRight: 4,
               color: theme.palette.text.primary,
             }}
           >
-            <RichTextField content={String(advancedHelperText || '')} />
-          </Box>
-        </DialogContent>
+            Field: {typeof heading === 'string' ? heading : null}
+            <IconButton
+              onClick={() => setOpenDialog(false)}
+              sx={{position: 'absolute', right: 16, top: 16}}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
 
-        <DialogActions sx={{pt: 2, justifyContent: 'flex-end'}}>
-          <Button
-            onClick={() => setOpenDialog(false)}
-            variant="contained"
+          <DialogContent
+            dividers
             sx={{
-              backgroundColor: theme.palette.background.draftBackground,
-              color: theme.palette.dialogButton.confirm,
-              fontWeight: 'bold',
-              textTransform: 'none',
-              fontSize: isMobile ? '0.85rem' : '0.95rem',
-              px: 2.5,
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-                color: '#fff',
+              maxHeight: '60vh',
+              overflowY: 'auto',
+              '& img': {
+                maxWidth: '100%',
+                height: 'auto',
+                marginTop: 1,
+                borderRadius: 1,
+                display: 'block',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              },
+              '& p': {
+                wordBreak: 'break-word',
               },
             }}
           >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Box
+              sx={{
+                fontSize: '1rem',
+                lineHeight: 1.6,
+                color: theme.palette.text.primary,
+              }}
+            >
+              <RichTextField content={String(advancedHelperText || '')} />
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{pt: 2, justifyContent: 'flex-end'}}>
+            <Button
+              onClick={() => setOpenDialog(false)}
+              variant="contained"
+              sx={{
+                backgroundColor: theme.palette.background.draftBackground,
+                color: theme.palette.dialogButton.confirm,
+                fontWeight: 'bold',
+                textTransform: 'none',
+                fontSize: isMobile ? '0.85rem' : '0.95rem',
+                px: 2.5,
+                '&:hover': {
+                  backgroundColor: theme.palette.text.primary,
+                  color: '#fff',
+                },
+              }}
+            >
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
     </Box>
   );
 };
