@@ -20,7 +20,7 @@ export const TemplateCellComponent = ({
     return <p>Unauthenticated</p>;
   }
 
-  const {data: template, isLoading} = useGetTemplate(user, templateId);
+  const {data: template, isLoading, isError} = useGetTemplate(user, templateId);
 
   return isLoading ? (
     <Skeleton className="h-5 w-24" />
@@ -37,7 +37,11 @@ export const TemplateCellComponent = ({
         params={{templateId}}
         className="text-gray-700 hover:text-gray-900 hover:underline cursor-pointer transition-colors"
       >
-        {template?.name ?? 'Loading...'}
+        {isError
+          ? templateId
+          : isLoading
+            ? 'Loading...'
+            : (template?.name ?? templateId)}
       </Link>
     </div>
   );

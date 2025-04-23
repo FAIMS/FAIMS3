@@ -18,7 +18,7 @@ export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
     return <p>Unauthenticated</p>;
   }
 
-  const {data: team, isLoading} = useGetTeam(user, teamId);
+  const {data: team, isLoading, isError} = useGetTeam(user, teamId);
 
   return isLoading ? (
     <Skeleton className="h-5 w-24" />
@@ -35,7 +35,7 @@ export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
         params={{teamId}}
         className="text-gray-700 hover:text-gray-900 hover:underline cursor-pointer transition-colors"
       >
-        {team?.name ?? 'Loading...'}
+        {isError ? teamId : isLoading ? 'Loading...' : (team?.name ?? teamId)}
       </Link>
     </div>
   );
