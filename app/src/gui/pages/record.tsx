@@ -82,6 +82,7 @@ import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 
 export default function Record() {
   /**
@@ -148,7 +149,9 @@ export default function Record() {
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, setBreadcrumbs] = useState<{link?: string; title: string}[]>([]);
+  const [breadcrumbs, setBreadcrumbs] = useState<
+    {link?: string; title: string}[]
+  >([]);
   const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const dataDb = localGetDataDb(projectId);
@@ -508,11 +511,11 @@ export default function Record() {
       <div style={{padding: '10px'}}>
         <ProgressBar percentage={progress} />
       </div>
-      {/**
+      
       <Grid item xs>
         {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
       </Grid>
-         */}
+        
       {draftId !== undefined && (
         <Alert severity={'warning'}>
           This record is currently a draft. The data is stored locally on your
