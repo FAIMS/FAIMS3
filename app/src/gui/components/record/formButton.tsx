@@ -31,6 +31,7 @@ import {useState} from 'react';
 interface FormProps {
   isSubmitting: boolean;
 }
+type CloseOptionType = 'close' | 'new' | 'cancel';
 
 interface FormSubmitButtonProps {
   /** Whether this is the final view in a multi-step form */
@@ -40,13 +41,13 @@ interface FormSubmitButtonProps {
   /** Form state containing submission status */
   formProps: FormProps;
   /** Callback for form submission */
-  handleFormSubmit: (closeType: 'close' | 'new') => void;
+  handleFormSubmit: (closeType: CloseOptionType) => void;
   /** Determines if form should close or create new after submission */
-  is_close: 'close' | 'new';
+  is_close: CloseOptionType;
   /** Button text */
   text: string;
   /** Button color variant */
-  color?: 'primary' | 'secondary';
+  color?: 'primary' | 'secondary' | 'warning';
   /** Test ID for the button */
   'data-testid'?: string;
 }
@@ -65,7 +66,7 @@ interface FormButtonGroupProps {
   /** Form state containing submission status */
   formProps: FormProps;
   /** Callback for form submission */
-  handleFormSubmit: (closeType: 'close' | 'new') => void;
+  handleFormSubmit: (closeType: CloseOptionType) => void;
   /** Array of form views for stepper */
   views: Array<any>;
   /** UI configuration object */
@@ -113,7 +114,7 @@ function FormSubmitButton({
       fullWidth
       data-testid={dataTestId}
       color={formProps.isSubmitting ? undefined : color}
-      variant={is_final_view && is_close === 'close' ? 'contained' : 'outlined'}
+      variant={is_final_view && is_close !== 'new' ? 'contained' : 'outlined'}
       disableElevation
       disabled={formProps.isSubmitting}
       onClick={() => handleFormSubmit(is_close)}
@@ -189,6 +190,15 @@ export default function FormButtonGroup({
                   formProps={formProps}
                   text={`Finish and new ${record_type}`}
                   is_close="new"
+                  handleFormSubmit={handleFormSubmit}
+                  is_final_view={is_final_view}
+                />
+                <FormSubmitButton
+                  color="warning"
+                  disabled={disabled}
+                  formProps={formProps}
+                  text={'Cancel'}
+                  is_close="cancel"
                   handleFormSubmit={handleFormSubmit}
                   is_final_view={is_final_view}
                 />

@@ -170,7 +170,7 @@ type RecordIdentifiers = {
 };
 
 // options for the close action on a form
-export type FormCloseOptions = 'continue' | 'close' | 'new';
+export type FormCloseOptions = 'continue' | 'close' | 'new' | 'cancel';
 
 /*
   Callers of RecordForm
@@ -896,6 +896,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
   /**
    * save a record and navigate to the next location
+   *  - cancel: we don't want to save the record, clear the draft and go back to the record list or parent
    *  - continue: setSubmitting re-enabled, so user can save form for the new revision id
    *  - close: - close the current record and return to project list
    *           - close the current record and back to parent record if record created from parent or if record has parent
@@ -917,6 +918,20 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   }): Promise<RevisionID | void | undefined> {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
+
+    if (closeOption === 'cancel') {
+      const relationState = this.props.location?.state;
+      console.log('cancelling', relationState);
+      // first case is if we have a parent record, there should be
+      // some location state passed in
+      if (relationState !== undefined && relationState !== null) {
+        this.navigateTo(relationState.parent_link);
+      } else {
+        this.navigateTo(this.getRoute('project'));
+      }
+      return new Promise(() => undefined);
+    }
+
     //save state into persistent data
     savefieldpersistentSetting(
       this.props.project_id,
@@ -1088,7 +1103,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     closeOption,
     setSubmitting = () => {},
   }: {
-    ids: RecordIdentifiers;
+    ids: RecordIdentifiers | null;
     closeOption: FormCloseOptions;
     setSubmitting?: (s: boolean) => void;
   }) {
