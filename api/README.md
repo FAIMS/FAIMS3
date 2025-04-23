@@ -66,10 +66,19 @@ npm run watch
 
 instead, which will monitor for changes with `nodemon`.
 
-## Initialisation
+## Initialisation and migration
 
 Once the services are up and running we need to initialise the CouchDB
-database. This is done with the migrate script:
+database.
+
+If you want to include pushing the keys (only recommended for local development):
+
+```bash
+npm run migrate --keys
+```
+
+If you just want to migrate databases without applying any public key
+configuration, then exclude this flag
 
 ```bash
 npm run migrate
@@ -82,7 +91,7 @@ run in the container rather than from your local environment:
 docker compose exec conductor npm run migrate
 ```
 
-This ensures that the correct CouchDB URL is used to access the database.  The same
+This ensures that the correct CouchDB URL is used to access the database. The same
 applies for the commands below.
 
 For development, there is also a script that will populate the database with projects (notebooks
