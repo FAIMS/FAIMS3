@@ -18,7 +18,7 @@ import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {generateVerificationCode, hashVerificationCode} from '../utils';
-import {getCouchUserFromEmailOrUsername} from './users';
+import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in hours
 const TOKEN_EXPIRY_MS = REFRESH_TOKEN_EXPIRY_MINUTES * 60 * 1000;
@@ -160,7 +160,7 @@ export const consumeExchangeTokenForRefreshToken = async ({
 
     // Get the user by the user ID
     const user =
-      (await getCouchUserFromEmailOrUsername(tokenDoc.userId)) ?? undefined;
+      (await getCouchUserFromEmailOrUserId(tokenDoc.userId)) ?? undefined;
 
     if (!user) {
       return {
@@ -231,7 +231,7 @@ export const validateRefreshToken = async (
 
     // Get the user by the user ID
     const user =
-      (await getCouchUserFromEmailOrUsername(tokenDoc.userId)) ?? undefined;
+      (await getCouchUserFromEmailOrUserId(tokenDoc.userId)) ?? undefined;
 
     if (!user) {
       return {

@@ -68,6 +68,7 @@ import {api as teamsApi} from './api/teams';
 import {api as templatesApi} from './api/templates';
 import {api as usersApi} from './api/users';
 import {api as utilityApi} from './api/utilities';
+import {api as emailVerifyApi} from './api/verificationChallenges';
 import {
   COOKIE_SECRET,
   RATE_LIMITER_ENABLED,
@@ -169,6 +170,7 @@ app.use('/api/notebooks', notebookApi);
 app.use('/api/templates', templatesApi);
 app.use('/api/teams', teamsApi);
 app.use('/api/users', usersApi);
+app.use('/api/verify', emailVerifyApi);
 app.use('/api/reset', resetPasswordApi);
 app.use('/api/invites', invitesApi);
 app.use('/api', utilityApi);

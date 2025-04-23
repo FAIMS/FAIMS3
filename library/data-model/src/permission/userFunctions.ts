@@ -5,7 +5,10 @@
 
 import {generateVirtualResourceRoles, ResourceAssociation} from './functions';
 import {ResourceRole, TokenPermissions} from './types';
-import {PeopleDBDocument} from '../data_storage/peopleDB/types';
+import {
+  PeopleDBDocument,
+  VerifiableEmail,
+} from '../data_storage/peopleDB/types';
 import {Role} from './model';
 import {encodeToken} from './tokenEncoding';
 import {drillRoles} from './helpers';
@@ -364,10 +367,12 @@ export function addEmails({
   emails,
 }: {
   user: PeopleDBDocument;
-  emails: string[];
+  emails: VerifiableEmail[];
 }): void {
   // Filter out emails that already exist in the user's emails array
-  const newEmails = emails.filter(email => !user.emails.includes(email));
+  const newEmails = emails.filter(
+    email => !user.emails.map(e => e.email).includes(email.email)
+  );
 
   // If no new emails to add, return
   if (newEmails.length === 0) {

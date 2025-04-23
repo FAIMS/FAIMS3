@@ -52,7 +52,7 @@ import {
 } from '../src/couchdb/notebooks';
 import {
   createUser,
-  getExpressUserFromEmailOrUsername,
+  getExpressUserFromEmailOrUserId,
   saveCouchUser,
   saveExpressUser,
 } from '../src/couchdb/users';
@@ -72,7 +72,7 @@ let bobalooba: Express.User;
 describe('notebook api', () => {
   beforeEach(async () => {
     await resetDatabases();
-    const adminUser = await getExpressUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
     if (adminUser) {
       const [user, error] = await createUser({username, name: username});
       if (user) {
@@ -243,7 +243,7 @@ describe('notebook api', () => {
 
   it('can create a notebook', async () => {
     await initialiseDbAndKeys({});
-    const user = await getExpressUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUserId('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -363,7 +363,7 @@ describe('notebook api', () => {
 
   it('updateNotebook', async () => {
     await initialiseDbAndKeys({});
-    const user = await getExpressUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUserId('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',

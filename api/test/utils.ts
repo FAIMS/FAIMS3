@@ -33,7 +33,7 @@ import {
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
   createUser,
-  getExpressUserFromEmailOrUsername,
+  getExpressUserFromEmailOrUserId,
   saveCouchUser,
 } from '../src/couchdb/users';
 import {cleanDataDBS, resetDatabases} from './mocks';
@@ -44,6 +44,7 @@ export let notebookUserToken = '';
 
 export const adminUserName = 'admin';
 export const localUserName = 'bobalooba';
+export const localEmail = 'bobalooba@gmail.com';
 export const localUserPassword = 'bobalooba';
 export const notebookUserName = 'notebook';
 export const notebookPassword = 'notebook';
@@ -69,7 +70,7 @@ export const beforeApiTests = async () => {
 
   // get the admin user - this should exist at this point
   const possibleAdminUser =
-    await getExpressUserFromEmailOrUsername(adminUserName);
+    await getExpressUserFromEmailOrUserId(adminUserName);
 
   // If this is null then the admin user wasn't seeded properly
   expect(possibleAdminUser, 'Admin user was null from the database.').to.not.be
@@ -83,6 +84,7 @@ export const beforeApiTests = async () => {
   const [possibleLocalUser] = await createUser({
     username: localUserName,
     name: localUserName,
+    email: localEmail,
   });
   // If this is null then the createUser function is not working
   expect(possibleLocalUser, 'Local user was null from create function.').to.not
