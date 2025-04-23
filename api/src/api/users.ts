@@ -20,6 +20,7 @@
 import {
   Action,
   addGlobalRole,
+  GetCurrentUserResponse,
   GetListAllUsersResponse,
   GetListAllUsersResponseSchema,
   PostUpdateUserInputSchema,
@@ -33,7 +34,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   getUsers,
   removeUser,
   saveCouchUser,
@@ -70,7 +71,7 @@ api.post(
     }
 
     // Get the current user from DB
-    const foundUser = await getCouchUserFromEmailOrUsername(id);
+    const foundUser = await getCouchUserFromEmailOrUserId(id);
     if (!foundUser) {
       throw new Exceptions.ItemNotFoundException(
         'Username cannot be found in user database.'
@@ -105,32 +106,25 @@ api.post(
 api.get(
   '/current',
   requireAuthenticationAPI,
-  async (
-    req: any,
-    res: Response<{
-      id: string;
-      name: string;
-      email: string;
-      cluster_admin: boolean;
-    }>
-  ) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not allowed to get the current user.'
-      );
+  async (req, res: Response<GetCurrentUserResponse>) => {
+    try {
+      if (!req.user) {
+        throw new Exceptions.UnauthorizedException('Not authenticated.');
+      }
+
+      const {_id: id, name, emails, user_id} = req.user;
+
+      return res.json({
+        id,
+        name,
+        // email should always be defined but for admin is not
+        email: emails[0]?.email ?? user_id,
+        isVerified: emails[0]?.verified ?? false,
+      });
+    } catch (e) {
+      console.error(e);
+      throw e;
     }
-
-    const {_id: id, name, emails} = req.user;
-
-    return res.json({
-      id,
-      name,
-      email: emails[0],
-      cluster_admin: userHasGlobalRole({
-        role: Role.GENERAL_ADMIN,
-        user: req.user,
-      }),
-    });
   }
 );
 
@@ -179,7 +173,7 @@ api.delete(
   async ({params: {id}}, res) => {
     if (!id) throw new Exceptions.ValidationException('User ID not specified');
 
-    const userToRemove = await getCouchUserFromEmailOrUsername(id);
+    const userToRemove = await getCouchUserFromEmailOrUserId(id);
 
     if (!userToRemove)
       throw new Exceptions.ItemNotFoundException(

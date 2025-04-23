@@ -43,7 +43,8 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import express, {response, Response} from 'express';
+import express, {Response} from 'express';
+import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
@@ -66,7 +67,7 @@ import {
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   getUserInfoForProject,
   getUsers,
   saveCouchUser,
@@ -80,8 +81,6 @@ import {
 } from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
-import {jwtVerify, SignJWT} from 'jose';
-import {redirectWithToken} from '../auth/helpers';
 
 // This must occur before express api is used
 patch();
@@ -591,7 +590,7 @@ api.post(
     }
 
     // Get the user specified
-    const user = await getCouchUserFromEmailOrUsername(username);
+    const user = await getCouchUserFromEmailOrUserId(username);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
@@ -707,7 +706,7 @@ api.delete(
       }
     }
 
-    const user = await getCouchUserFromEmailOrUsername(req.params.user_id);
+    const user = await getCouchUserFromEmailOrUserId(req.params.user_id);
 
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
