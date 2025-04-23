@@ -43,7 +43,8 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import express, {response, Response} from 'express';
+import express, {Response} from 'express';
+import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
@@ -80,8 +81,6 @@ import {
 } from '../middleware';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
-import {jwtVerify, SignJWT} from 'jose';
-import {redirectWithToken} from '../auth/helpers';
 
 // This must occur before express api is used
 patch();

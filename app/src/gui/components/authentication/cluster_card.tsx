@@ -163,7 +163,7 @@ export default function ClusterCard(props: ClusterCardProps) {
       content={true}
     >
       {usernames.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{display: 'flex', justifyContent: 'center'}}>
           <LoginButton
             key={props.serverId}
             conductor_url={props.conductor_url}
@@ -221,35 +221,42 @@ export default function ClusterCard(props: ClusterCardProps) {
               >
                 <Stack spacing={2}>
                   {/* User Header - Username, Active Status, and Action Button */}
-                  <Stack 
-                    direction={isMobile ? "column" : "row"} 
-                    alignItems={isMobile ? "flex-start" : "center"}
+                  <Stack
+                    direction={isMobile ? 'column' : 'row'}
+                    alignItems={isMobile ? 'flex-start' : 'center'}
                     justifyContent="space-between"
                     spacing={1}
                   >
-                    <Stack 
-                      direction="row" 
-                      alignItems="center" 
+                    <Stack
+                      direction="row"
+                      alignItems="center"
                       spacing={1}
-                      sx={{ 
+                      sx={{
                         width: isMobile ? '100%' : 'auto',
-                        justifyContent: isMobile ? 'space-between' : 'flex-start' 
+                        justifyContent: isMobile
+                          ? 'space-between'
+                          : 'flex-start',
                       }}
                     >
-                      <Box sx={{ maxWidth: isMobile ? 'calc(100% - 60px)' : 'none', overflow: 'hidden' }}>
-                        <Typography 
-                          variant="h5" 
+                      <Box
+                        sx={{
+                          maxWidth: isMobile ? 'calc(100% - 60px)' : 'none',
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <Typography
+                          variant="h5"
                           component="h4"
-                          sx={{ 
+                          sx={{
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           {username}
                         </Typography>
                       </Box>
-                      
+
                       {isActive && (
                         <Chip
                           icon={<CheckCircleIcon />}
@@ -258,7 +265,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                           size="small"
                         />
                       )}
-                      
+
                       {isMobile && isLoggedIn && (
                         <IconButton
                           edge="end"
@@ -301,13 +308,13 @@ export default function ClusterCard(props: ClusterCardProps) {
 
                   {/* User Name Display */}
                   {tokenInfo?.parsedToken?.name && (
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       color="text.secondary"
-                      sx={{ 
+                      sx={{
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {tokenInfo.parsedToken.name}

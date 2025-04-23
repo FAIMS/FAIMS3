@@ -32,7 +32,6 @@ import {
 import {NextFunction, Router} from 'express';
 import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
-import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
   getCouchUserFromEmailOrUsername,
@@ -49,10 +48,10 @@ import {
   validateAndApplyInviteToUser,
   validateRedirect,
 } from './helpers';
+import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 
 import patch from '../utils/patchExpressAsync';
-import {z} from 'zod';
 import {verifyUserCredentials} from './strategies/localStrategy';
 
 // This must occur before express app is used
