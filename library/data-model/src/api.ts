@@ -11,6 +11,16 @@ import {EncodedUISpecificationSchema} from './types';
 // WIP USERS
 // ==================
 
+export const GetCurrentUserResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  isVerified: z.boolean(),
+});
+export type GetCurrentUserResponse = z.infer<
+  typeof GetCurrentUserResponseSchema
+>;
+
 export const GetListAllUsersResponseSchema = z.array(
   // Be careful here - do NOT expose any salt info etc
   PeopleDBDocumentSchema.pick({
@@ -108,6 +118,22 @@ export const PostRefreshTokenResponseSchema = z.object({
 });
 export type PostRefreshTokenResponse = z.infer<
   typeof PostRefreshTokenResponseSchema
+>;
+
+// Token exchange
+export const PostExchangeTokenInputSchema = z.object({
+  exchangeToken: z.string().min(1),
+});
+export type PostExchangeTokenInput = z.infer<
+  typeof PostExchangeTokenInputSchema
+>;
+export const PostExchangeTokenResponseSchema = z.object({
+  // token pair
+  refreshToken: z.string(),
+  accessToken: z.string(),
+});
+export type PostExchangeTokenResponse = z.infer<
+  typeof PostExchangeTokenResponseSchema
 >;
 
 // ==================
@@ -588,3 +614,40 @@ export type PostCreateTeamInviteResponse = z.infer<
   typeof PostCreateTeamInviteResponseSchema
 >;
 export type PostUseInviteResponse = z.infer<typeof PostUseInviteResponseSchema>;
+
+// EMAIL VERIFICATION
+
+// POST /verify request schema
+export const PostRequestEmailVerificationRequestSchema = z.object({
+  email: z.string().email('Must be a valid email address'),
+});
+export type PostRequestEmailVerificationRequest = z.infer<
+  typeof PostRequestEmailVerificationRequestSchema
+>;
+
+// POST /verify response schema
+export const PostRequestEmailVerificationResponseSchema = z.object({
+  message: z.string(),
+  email: z.string().email(),
+  expiresAt: z.number(),
+});
+export type PostRequestEmailVerificationResponse = z.infer<
+  typeof PostRequestEmailVerificationResponseSchema
+>;
+
+// PUT /verify request schema
+export const PutConfirmEmailVerificationRequestSchema = z.object({
+  code: z.string(),
+});
+export type PutConfirmEmailVerificationRequest = z.infer<
+  typeof PutConfirmEmailVerificationRequestSchema
+>;
+
+// PUT /verify response schema
+export const PutConfirmEmailVerificationResponseSchema = z.object({
+  message: z.string(),
+  email: z.string().email(),
+});
+export type PutConfirmEmailVerificationResponse = z.infer<
+  typeof PutConfirmEmailVerificationResponseSchema
+>;

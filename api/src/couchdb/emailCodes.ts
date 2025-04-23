@@ -7,27 +7,21 @@
  */
 
 import {
-  AuthRecord,
-  AuthRecordIdPrefixMap,
-  GetEmailCodeIndex,
+  AUTH_RECORD_ID_PREFIXES,
+  EmailCodeExistingDocument,
   EmailCodeFields,
-  EmailCodeRecord,
   ExistingPeopleDBDocument,
+  GetEmailCodeIndex,
 } from '@faims3/data-model';
-import {getAuthDB} from '.';
 import {v4 as uuidv4} from 'uuid';
-import {InternalSystemError, ItemNotFoundException} from '../exceptions';
-import {getCouchUserFromEmailOrUsername} from './users';
+import {getAuthDB} from '.';
 import {EMAIL_CODE_EXPIRY_MINUTES, NEW_CONDUCTOR_URL} from '../buildconfig';
-import crypto from 'crypto';
+import {InternalSystemError, ItemNotFoundException} from '../exceptions';
+import {generateVerificationCode, hashVerificationCode} from '../utils';
+import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds
 const CODE_EXPIRY_MS = EMAIL_CODE_EXPIRY_MINUTES * 60 * 1000;
-
-// Configuration for verification codes
-const VERIFICATION_CODE_LENGTH = 10;
-const VERIFICATION_CODE_CHARSET =
-  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
 /**
  * Takes a reset code and embeds into URL
@@ -52,49 +46,6 @@ function generateExpiryTimestamp(expiryMs: number): number {
 }
 
 /**
- * Creates a cryptographic hash of a verification code.
- * Uses SHA-256 with a random salt for secure storage.
- *
- * @param code The verification code to hash
- * @returns An object containing the hash and salt
- */
-export function hashVerificationCode(code: string): string {
-  return crypto.createHash('sha256').update(code).digest('hex');
-}
-
-/**
- * Generates a cryptographically secure random verification code.
- *
- * @param length The length of the code to generate (default: VERIFICATION_CODE_LENGTH)
- * @param charset The characters to use in the code (default: VERIFICATION_CODE_CHARSET)
- * @returns {string} A random verification code of the specified length
- */
-function generateVerificationCode(
-  length: number = VERIFICATION_CODE_LENGTH,
-  charset: string = VERIFICATION_CODE_CHARSET
-): string {
-  if (length <= 0) {
-    throw new Error('Code length must be greater than 0');
-  }
-  if (charset.length === 0) {
-    throw new Error('Charset must not be empty');
-  }
-
-  // Calculate how many random bytes we need
-  // We need enough bytes to have sufficient entropy for our charset
-  const randomBytes = crypto.randomBytes(length * 2);
-  let result = '';
-
-  for (let i = 0; i < length; i++) {
-    // Use two bytes for each character to ensure uniform distribution
-    const randomValue = (randomBytes[i * 2] << 8) + randomBytes[i * 2 + 1];
-    result += charset[randomValue % charset.length];
-  }
-
-  return result;
-}
-
-/**
  * Creates a new email verification code for a given user.
  * @param userId The ID of the user for whom the code is being created.
  * @param purpose The purpose of the email code (e.g., 'verification', 'password-reset')
@@ -103,11 +54,11 @@ function generateVerificationCode(
 export const createNewEmailCode = async (
   userId: string,
   expiryMs: number = CODE_EXPIRY_MS
-): Promise<{record: EmailCodeRecord; code: string}> => {
+): Promise<{record: EmailCodeExistingDocument; code: string}> => {
   const authDB = getAuthDB();
   const code = generateVerificationCode();
   const hash = hashVerificationCode(code);
-  const dbId = AuthRecordIdPrefixMap.get('emailcode') + uuidv4();
+  const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + uuidv4();
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
 
   const newEmailCode: EmailCodeFields = {
@@ -119,7 +70,7 @@ export const createNewEmailCode = async (
   };
 
   const response = await authDB.put({_id: dbId, ...newEmailCode});
-  const record = await authDB.get<EmailCodeRecord>(response.id);
+  const record = await authDB.get<EmailCodeExistingDocument>(response.id);
 
   // Return both the database record and the raw code
   return {record, code};
@@ -144,7 +95,7 @@ export const validateEmailCode = async (
     const hashedCode = hashVerificationCode(code);
 
     // Try to find the code (hashed)
-    const codeDoc: EmailCodeRecord | null = await getCodeByCode(hashedCode);
+    const codeDoc = await getCodeByCode(hashedCode);
 
     if (!codeDoc) {
       return {
@@ -171,7 +122,7 @@ export const validateEmailCode = async (
       return {valid: false, validationError: 'Code has expired.'};
     }
 
-    const user = await getCouchUserFromEmailOrUsername(codeDoc.userId);
+    const user = await getCouchUserFromEmailOrUserId(codeDoc.userId);
     if (!user) {
       return {
         valid: false,
@@ -197,9 +148,11 @@ export const validateEmailCode = async (
  * @param code The verification code to mark as used (not hashed)
  * @returns A Promise that resolves to the updated AuthRecord.
  */
-export const markCodeAsUsed = async (code: string): Promise<AuthRecord> => {
+export const markCodeAsUsed = async (
+  code: string
+): Promise<EmailCodeExistingDocument> => {
   const hashedCode = hashVerificationCode(code);
-  const codeDoc: EmailCodeRecord | null = await getCodeByCode(hashedCode);
+  const codeDoc = await getCodeByCode(hashedCode);
 
   if (!codeDoc) {
     throw new ItemNotFoundException('Could not find the specified code.');
@@ -219,10 +172,10 @@ export const markCodeAsUsed = async (code: string): Promise<AuthRecord> => {
  */
 export const getCodesByUserId = async (
   userId: string
-): Promise<AuthRecord[]> => {
+): Promise<EmailCodeExistingDocument[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>(
+  const result = await authDB.query<EmailCodeExistingDocument>(
     'viewsDocument/emailCodesByUserId',
     {
       key: userId,
@@ -240,10 +193,10 @@ export const getCodesByUserId = async (
  */
 export const getCodeByCode = async (
   code: string
-): Promise<EmailCodeRecord | null> => {
+): Promise<EmailCodeExistingDocument | null> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<EmailCodeRecord>(
+  const result = await authDB.query<EmailCodeExistingDocument>(
     'viewsDocument/emailCodesByCode',
     {
       key: code,
@@ -270,14 +223,17 @@ export const getCodeByCode = async (
  * Retrieves all email codes in the database.
  * @returns A Promise that resolves to an array of all AuthRecords.
  */
-export const getAllCodes = async (): Promise<AuthRecord[]> => {
+export const getAllCodes = async (): Promise<EmailCodeExistingDocument[]> => {
   const authDB = getAuthDB();
 
-  const result = await authDB.query<AuthRecord>('viewsDocument/emailCodes', {
-    include_docs: true,
-  });
+  const result = await authDB.query<EmailCodeExistingDocument>(
+    'viewsDocument/emailCodes',
+    {
+      include_docs: true,
+    }
+  );
 
-  return result.rows.map(row => row.doc as AuthRecord);
+  return result.rows.map(row => row.doc as EmailCodeExistingDocument);
 };
 
 /**
@@ -293,7 +249,7 @@ export const deleteEmailCode = async (
   identifier: string
 ): Promise<void> => {
   const authDB = getAuthDB();
-  let codeDoc: AuthRecord | null = null;
+  let codeDoc: EmailCodeExistingDocument | null = null;
 
   if (index === 'id') {
     try {
@@ -314,7 +270,7 @@ export const deleteEmailCode = async (
   }
 
   try {
-    await authDB.remove(codeDoc._id, codeDoc._rev);
+    await authDB.remove(codeDoc!._id, codeDoc!._rev);
   } catch (error) {
     throw new Error(`Failed to delete email code: ${(error as Error).message}`);
   }

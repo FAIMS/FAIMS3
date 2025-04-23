@@ -1,8 +1,9 @@
-import {ENCODING_SEPARATOR, COUCHDB_ROLES_PATH} from '../constants';
+import {COUCHDB_ROLES_PATH, ENCODING_SEPARATOR} from '../constants';
+import {drillRoles} from './helpers';
 import {
-  TokenPermissions,
   DecodedTokenPermissions,
   decodedTokenSchema,
+  TokenPermissions,
   tokenPermissionsSchema,
 } from './types';
 
@@ -111,10 +112,16 @@ export function encodeToken(
   // Validate the decoded token first
   decodedTokenSchema.parse(decodedToken);
 
-  // Encode resource roles
-  const resourceRoles = decodedToken.resourceRoles.map(({resourceId, role}) =>
-    encodeClaim({resourceId, claim: role})
-  );
+  // Encode resource roles (ONLY THOSE NOT GRANTED BY A GLOBAL ROLE (for
+  // encoding efficiency purposes))
+  const resourceRoles = decodedToken.resourceRoles
+    .filter(
+      resourceRole =>
+        !decodedToken.globalRoles.some(globalRole =>
+          drillRoles({role: globalRole}).some(rr => rr === resourceRole.role)
+        )
+    )
+    .map(({resourceId, role}) => encodeClaim({resourceId, claim: role}));
 
   // Generate CouchDB roles list - this contains both:
   // 1. Global roles (as is)

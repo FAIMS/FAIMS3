@@ -1,6 +1,6 @@
-app_identifier(ENV["APPLE_BUNDLE_IDENTIFIER"])
+app_identifier(ENV["VITE_APPLE_BUNDLE_IDENTIFIER"])
 apple_id(ENV["FASTLANE_APPLE_ID"])
-itc_team_id(ENV["APP_STORE_CONNECT_TEAM_ID"])
+itc_team_id(ENV["VITE_APP_STORE_CONNECT_TEAM_ID"])
 team_id(ENV["DEVELOPER_PORTAL_TEAM_ID"])
 
 # For more information about the Appfile, see:

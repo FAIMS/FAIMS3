@@ -1,11 +1,9 @@
-import {
-  MigrationFunc,
-  IS_TESTING,
-  DBTargetVersions,
-  DatabaseType,
-  MigrationDetails,
-} from './types';
 import {Resource, ResourceRole, Role} from '../../permission';
+import {
+  AuthRecordV1ExistingDocumentSchema,
+  AuthRecordV2ExistingDocumentSchema,
+  RefreshRecordV2ExistingDocument,
+} from '../authDB';
 import {
   V1InviteDBFields,
   V2InviteDBFields,
@@ -15,9 +13,17 @@ import {
   PeopleV1Document,
   PeopleV2Document,
   PeopleV3Document,
+  PeopleV4Document,
 } from '../peopleDB';
 import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
 import {TemplateV1Fields, TemplateV2Fields} from '../templatesDB/types';
+import {
+  DBTargetVersions,
+  DatabaseType,
+  IS_TESTING,
+  MigrationDetails,
+  MigrationFunc,
+} from './types';
 
 /**
  * Takes a v1 person and maps the global and resource roles into new permission
@@ -83,8 +89,7 @@ export const peopleV1toV2Migration: MigrationFunc = doc => {
 };
 
 /**
- * Takes a v1 person and maps the global and resource roles into new permission
- * model
+ * Adds empty teams role
  * @returns Updated doc
  */
 export const peopleV2toV3Migration: MigrationFunc = doc => {
@@ -111,6 +116,42 @@ export const peopleV2toV3Migration: MigrationFunc = doc => {
   };
 
   return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Adds email verification
+ * @returns Updated doc
+ */
+export const peopleV3toV4Migration: MigrationFunc = doc => {
+  // Take input as v1 then output as v2
+  const inputDoc = doc as unknown as PeopleV3Document;
+
+  // Add empty team roles
+  const outputDoc: PeopleV4Document = {
+    ...inputDoc,
+    emails: inputDoc.emails.map(email => ({email, verified: false})),
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Migration from V2 to V3 of the Auth database
+ *
+ *  This is a no-op migration since V3 only adds a new document type
+ * (verification challenges) which won't exist in the V2 database, and doesn't
+ * modify the structure of existing types
+ */
+export const authV2toV3Migration: MigrationFunc = doc => {
+  // Parse the document to ensure it's a valid V2 document
+  try {
+    AuthRecordV2ExistingDocumentSchema.parse(doc);
+  } catch (e) {
+    console.warn(
+      `Auth v2 to v3 migration detected an unparseable document. Doc: ${doc}. Id: ${doc._id}. Error: ${e}.`
+    );
+  }
+  return {action: 'none'};
 };
 
 /**
@@ -196,8 +237,8 @@ export const projectsV1toV2Migration: MigrationFunc = doc => {
 
     // we check these to be defined above (just force the migration here - it is
     // probably the best option as deleting a project could result in data loss)
-    dataDb: inputDoc.data_db!,
-    metadataDb: inputDoc.metadata_db!,
+    dataDb: inputDoc.data_db ?? (undefined as any),
+    metadataDb: inputDoc.metadata_db ?? (undefined as any),
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -268,17 +309,42 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
   return {action: 'update', updatedRecord: outputDoc};
 };
 
+/**
+ * Adds the exchange token (fatuous) to mimic new format
+ */
+export const authV1toV2Migration: MigrationFunc = doc => {
+  // Cast input document to V1 type
+  const inputDoc = AuthRecordV1ExistingDocumentSchema.parse(doc);
+
+  if (inputDoc.documentType === 'emailcode') {
+    // pass through as is
+    return {action: 'none'};
+  } else {
+    return {
+      action: 'update',
+      updatedRecord: {
+        ...inputDoc,
+        // Just put in fake data here to satisfy model
+        exchangeTokenHash: 'fake',
+        exchangeTokenUsed: true,
+        // This is expired / invalid
+        exchangeTokenExpiryTimestampMs: 0,
+      } satisfies RefreshRecordV2ExistingDocument,
+    };
+  }
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
-  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 1},
+  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 3},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v3
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 3},
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v3
-  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 3},
+  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 4},
   // projects v2
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 2},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 2},
@@ -299,6 +365,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     to: 3,
     description: 'Adds empty teams field',
     migrationFunction: peopleV2toV3Migration,
+  },
+  {
+    dbType: DatabaseType.PEOPLE,
+    from: 3,
+    to: 4,
+    description:
+      'Adds email verification field for emails - defaulting to false',
+    migrationFunction: peopleV3toV4Migration,
   },
   {
     dbType: DatabaseType.INVITES,
@@ -331,5 +405,20 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds the name property to the template document (from the metadata)',
     migrationFunction: templatesV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.AUTH,
+    from: 1,
+    to: 2,
+    description: 'Adds the exchange token property to refresh tokens',
+    migrationFunction: authV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.AUTH,
+    from: 2,
+    to: 3,
+    description:
+      'No-op migration to prompt V3 of schema which includes the new verification email document.',
+    migrationFunction: authV2toV3Migration,
   },
 ];

@@ -72,10 +72,13 @@ jobs:
           export VITE_APP_ID=${{vars.APP_ID}}
           export VITE_APP_NAME="${{vars.APP_NAME}}"
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
+          export VITE_APPLE_BUNDLE_IDENTIFIER=${{vars.APPLE_BUNDLE_IDENTIFIER}}
+          export VITE_APP_STORE_CONNECT_TEAM_ID=${{secrets.APP_STORE_CONNECT_TEAM_ID}}
           npm ci --python=python3.10
           # we install these here because of a bug in npm with platform specific
           # dependencies
           npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          npm run configIOSbuild --workspace app
           npm run build
       - name: Update IOS Build
         run: |
@@ -95,9 +98,9 @@ jobs:
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
-          APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
+          VITE_APP_STORE_CONNECT_TEAM_ID: '${{ secrets.VITE_APP_STORE_CONNECT_TEAM_ID }}'
           DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
-          APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
+          VITE_APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
           FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
