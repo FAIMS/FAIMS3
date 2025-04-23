@@ -1,10 +1,13 @@
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
+import {EncodedProjectUIModel, Resource, Role} from '../src';
 import {
   AUTH_RECORD_ID_PREFIXES,
   DB_MIGRATIONS,
   DatabaseType,
   EmailCodeV1ExistingDocument,
+  EmailCodeV3ExistingDocument,
+  EmailCodeV4ExistingDocument,
   MigrationFuncReturn,
   PeopleV1Document,
   PeopleV2Document,
@@ -15,16 +18,17 @@ import {
   ProjectV2Fields,
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
+  RefreshRecordV3ExistingDocument,
   V1InviteDBFields,
   V2InviteDBFields,
   V3InviteDBFields,
+  VerificationChallengeV3ExistingDocument,
 } from '../src/data_storage';
-import {EncodedProjectUIModel, Resource, Role} from '../src';
-import {areDocsEqual} from './utils';
 import {
   TemplateV1Fields,
   TemplateV2Fields,
 } from '../src/data_storage/templatesDB/types';
+import {areDocsEqual} from './utils';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -1517,6 +1521,91 @@ const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+// Test cases for authV3toV4Migration
+const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Test case 1: Email code migration - should add createdTimestampMs
+  {
+    name: 'authV3toV4Migration - email code',
+    dbType: DatabaseType.AUTH,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}123456`,
+      _rev: '3-abc123',
+      documentType: 'emailcode',
+      userId: 'user123',
+      code: 'hashed_code_abc',
+      used: false,
+      expiryTimestampMs: Date.now() + 3600000, // 1 hour from now
+    } satisfies EmailCodeV3ExistingDocument,
+    expectedOutputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}123456`,
+      _rev: '3-abc123',
+      documentType: 'emailcode',
+      userId: 'user123',
+      code: 'hashed_code_abc',
+      used: false,
+      expiryTimestampMs: Date.now() + 3600000,
+      createdTimestampMs: Date.now(),
+    } satisfies Partial<EmailCodeV4ExistingDocument>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (a, b) => {
+      const {createdTimestampMs: createdA, ...otherA} = a;
+      const {createdTimestampMs: createdB, ...otherB} = b;
+      return (
+        createdA !== undefined &&
+        createdB !== undefined &&
+        areDocsEqual(otherA, otherB)
+      );
+    },
+  },
+
+  // Test case 2: Refresh token - should remain unchanged (no-op)
+  {
+    name: 'authV3toV4Migration - refresh token (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}345678`,
+      _rev: '3-def456',
+      documentType: 'refresh',
+      userId: 'user789',
+      token: 'token_xyz',
+      enabled: true,
+      expiryTimestampMs: Date.now() + 86400000, // 24 hours from now
+      exchangeTokenHash: 'hash123',
+      exchangeTokenUsed: false,
+      exchangeTokenExpiryTimestampMs: Date.now() + 3600000, // 1 hour from now
+    } satisfies RefreshRecordV3ExistingDocument,
+    expectedOutputDoc: undefined, // No changes expected
+    expectedResult: {action: 'none'},
+  },
+
+  // Test case 3: Verification challenge - should remain unchanged (no-op)
+  {
+    name: 'authV3toV4Migration - verification challenge (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.verification}901234`,
+      _rev: '3-jkl012',
+      documentType: 'verification',
+      userId: 'user012',
+      email: 'user@example.com',
+      code: 'hashed_verification_code',
+      used: false,
+      createdTimestampMs: Date.now() - 3600000, // 1 hour ago
+      expiryTimestampMs: Date.now() + 86400000, // 24 hours from now
+    } satisfies VerificationChallengeV3ExistingDocument,
+    expectedOutputDoc: undefined, // No changes expected
+    expectedResult: {action: 'none'},
+  },
+];
+
+// Add the new test cases to the MIGRATION_TEST_CASES array
+MIGRATION_TEST_CASES.push(...AUTH_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);

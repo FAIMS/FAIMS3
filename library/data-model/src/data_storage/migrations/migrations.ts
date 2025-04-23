@@ -2,6 +2,8 @@ import {Resource, ResourceRole, Role} from '../../permission';
 import {
   AuthRecordV1ExistingDocumentSchema,
   AuthRecordV2ExistingDocumentSchema,
+  AuthRecordV3ExistingDocumentSchema,
+  AuthRecordV4ExistingDocument,
   RefreshRecordV2ExistingDocument,
 } from '../authDB';
 import {
@@ -152,6 +154,30 @@ export const authV2toV3Migration: MigrationFunc = doc => {
     );
   }
   return {action: 'none'};
+};
+
+/**
+ * Migration from V3 to V4 of the Auth database
+ */
+export const authV3toV4Migration: MigrationFunc = doc => {
+  const v3inputDoc = AuthRecordV3ExistingDocumentSchema.parse(doc);
+  if (v3inputDoc.documentType === 'refresh') {
+    // noop
+    return {action: 'none'};
+  } else if (v3inputDoc.documentType === 'verification') {
+    // noop
+    return {action: 'none'};
+  } else {
+    // email code
+    return {
+      action: 'update',
+      updatedRecord: {
+        ...v3inputDoc,
+        // imagine it was created now
+        createdTimestampMs: Date.now(),
+      } satisfies AuthRecordV4ExistingDocument,
+    };
+  }
 };
 
 /**
@@ -337,7 +363,7 @@ export const authV1toV2Migration: MigrationFunc = doc => {
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
-  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 3},
+  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v3
@@ -420,5 +446,13 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'No-op migration to prompt V3 of schema which includes the new verification email document.',
     migrationFunction: authV2toV3Migration,
+  },
+  {
+    dbType: DatabaseType.AUTH,
+    from: 3,
+    to: 4,
+    description:
+      'Adds a created timestamp to email codes such that we can determine rate limiting',
+    migrationFunction: authV3toV4Migration,
   },
 ];

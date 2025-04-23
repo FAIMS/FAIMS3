@@ -68,6 +68,7 @@ import {
 import patch from '../utils/patchExpressAsync';
 import {verifyUserCredentials} from './strategies/localStrategy';
 import {record} from 'zod';
+import {TooManyRequestsException} from '../exceptions';
 
 // This must occur before express app is used
 patch();
@@ -468,7 +469,8 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
   /**
    * Handle forgot password requests
-   * Generates a password reset code and provides instructions to the user
+   * Generates a password reset code and sends an email to the user
+   * Includes rate limiting to prevent abuse
    */
   app.post(
     '/auth/forgotPassword',
@@ -487,7 +489,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         return res.render('redirect-error', {redirect: validatedRedirect});
       }
 
-      const backToForgotPassword = `/forgot-password${buildQueryString({
+      const errRedirect = `/forgot-password${buildQueryString({
         values: {redirect: validatedRedirect},
       })}`;
 
@@ -496,13 +498,13 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         const user = await getCouchUserFromEmailOrUserId(email);
 
         if (!user) {
-          // For security reasons, don't reveal if the email exists or not Just
-          // show the success page as if we sent the email
+          // For security reasons, don't reveal if the email exists or not
+          // Just show the success page as if we sent the email
           req.flash(
             'success',
             'If an account exists with that email, you will receive password reset instructions shortly.'
           );
-          return res.redirect(backToForgotPassword);
+          return res.redirect(errRedirect);
         }
 
         // Check if the user has a local profile
@@ -512,32 +514,48 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
               msg: 'This account uses social login. Please sign in with your social provider instead.',
             },
           });
-          return res.redirect(backToForgotPassword);
+          return res.redirect(errRedirect);
         }
 
-        // Generate reset code
-        const {code, record} = await createNewEmailCode(user.user_id);
+        try {
+          // Generate reset code with email and purpose for rate limiting
+          const {code, record} = await createNewEmailCode({
+            userId: user.user_id,
+          });
 
-        // Send the password reset email
+          // Send the password reset email. We don't await to keep response fast.
+          sendPasswordResetEmail({
+            recipientEmail: email,
+            username: user.name || user.user_id,
+            resetCode: code,
+            expiryTimestampMs: record.expiryTimestampMs,
+            redirect: validatedRedirect,
+          });
 
-        // NOTE: we intentionally don't await this
-        // so that it is harder as an attacker to tell if something happened -
-        // this will complete in the background
-        sendPasswordResetEmail({
-          recipientEmail: email,
-          username: user.name || user.user_id,
-          resetCode: code,
-          expiryTimestampMs: record.expiryTimestampMs,
-          redirect: validatedRedirect,
-        });
+          // Flash success message
+          req.flash(
+            'success',
+            'If an account exists with that email, you will receive password reset instructions shortly.'
+          );
+        } catch (error) {
+          if (error instanceof TooManyRequestsException) {
+            req.flash('error', {
+              forgotPasswordError: {
+                msg: `Too many password reset attempts.`,
+              },
+            });
+          } else {
+            // For other errors, log but don't reveal details to user
+            console.error('Password reset error:', error);
+            req.flash('error', {
+              forgotPasswordError: {
+                msg: 'An error occurred while processing your request. Please try again later.',
+              },
+            });
+          }
+        }
 
-        // Flash success message
-        req.flash(
-          'success',
-          'If an account exists with that email, you will receive password reset instructions shortly.'
-        );
-
-        return res.redirect(backToForgotPassword);
+        return res.redirect(errRedirect);
       } catch (error) {
         console.error('Password reset error:', error);
         req.flash('error', {
@@ -545,7 +563,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             msg: 'An error occurred while processing your request. Please try again later.',
           },
         });
-        return res.redirect(backToForgotPassword);
+        return res.redirect(errRedirect);
       }
     }
   );

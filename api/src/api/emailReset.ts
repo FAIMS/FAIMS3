@@ -7,8 +7,9 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {processRequest} from 'zod-express-middleware';
+import {DEFAULT_REDIRECT_URL} from '../auth/authRoutes';
+import {validateRedirect} from '../auth/helpers';
 import {
-  buildCodeIntoUrl,
   createNewEmailCode,
   markCodeAsUsed,
   validateEmailCode,
@@ -21,12 +22,8 @@ import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {
   buildPasswordResetUrl,
-  buildVerificationUrl,
   sendPasswordResetEmail,
 } from '../utils/emailHelpers';
-import {DEFAULT_REDIRECT_URL} from '../auth/authRoutes';
-import {validateRedirect} from '../auth/helpers';
-import {record} from 'zod';
 
 export const api = express.Router();
 
@@ -58,7 +55,8 @@ api.post(
   async (req, res: Response<PostRequestPasswordResetResponse>) => {
     const {email, redirect} = req.body;
 
-    const {valid, redirect: validatedRedirect} = validateRedirect(
+    // Don't throw error here if invalid - just make a more sensible one
+    const {redirect: validatedRedirect} = validateRedirect(
       redirect || DEFAULT_REDIRECT_URL
     );
 
@@ -71,7 +69,7 @@ api.post(
     }
 
     // Generate reset code
-    const {code, record} = await createNewEmailCode(user.user_id);
+    const {code, record} = await createNewEmailCode({userId: user.user_id});
     const url = buildPasswordResetUrl({code, redirect: validatedRedirect});
 
     // NOTE: we intentionally don't await this

@@ -82,7 +82,7 @@ describe('password reset tests', () => {
     const localUser = await getExpressUserFromEmailOrUserId(localUserName);
     expect(localUser).to.not.be.undefined;
 
-    const {code} = await createNewEmailCode(localUser!.user_id!);
+    const {code} = await createNewEmailCode({userId : localUser!.user_id!});
 
     // Now try to reset the password
     const newPassword = 'NewSecurePassword123!';
@@ -122,7 +122,7 @@ describe('password reset tests', () => {
   it('complete password reset fails with expired code', async () => {
     // Create a code with very short expiry
     const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-    const {code} = await createNewEmailCode(localUser!.user_id!, 10); // 10ms expiry
+    const {code} = await createNewEmailCode({userId: localUser!.user_id!, expiryMs: 10}); // 10ms expiry
 
     // Wait for code to expire
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -138,7 +138,7 @@ describe('password reset tests', () => {
 
   it('email code validation works correctly', async () => {
     const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-    const {code} = await createNewEmailCode(localUser!.user_id!);
+    const {code} = await createNewEmailCode({userId: localUser!.user_id!});
 
     // Valid code check
     let validation = await validateEmailCode(code);
