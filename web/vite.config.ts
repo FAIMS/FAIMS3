@@ -5,7 +5,7 @@ import {TanStackRouterVite} from '@tanstack/router-plugin/vite';
 
 export default defineConfig({
   // Just a hack to get this to typecheck - works fine??
-  plugins: [TanStackRouterVite(), react() as PluginOption],
+  plugins: [TanStackRouterVite() as PluginOption, react() as PluginOption],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

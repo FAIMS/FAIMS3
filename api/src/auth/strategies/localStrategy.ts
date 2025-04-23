@@ -22,7 +22,7 @@
 import {pbkdf2Sync} from 'crypto';
 import {Strategy, VerifyFunction} from 'passport-local';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {getCouchUserFromEmailOrUsername} from '../../couchdb/users';
+import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 
 /**
  * Interface for local authentication profile
@@ -51,7 +51,7 @@ export const validateLocalUser: VerifyFunction = async (
   const ambiguousErrorMessage = 'Username or password incorrect.';
 
   // Look up user in database by email or username
-  const dbUser = await getCouchUserFromEmailOrUsername(email);
+  const dbUser = await getCouchUserFromEmailOrUserId(email);
 
   // Handle case where user doesn't exist
   if (!dbUser) {

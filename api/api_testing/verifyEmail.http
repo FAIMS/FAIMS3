@@ -1,0 +1,94 @@
+@verifyBaseUrl = {{$dotenv BASE_URL}}/api/verify
+@token = {{$dotenv API_TOKEN}}
+@testEmail = {{$dotenv TEST_EMAIL}}
+@nonAssociatedEmail = not-my-email@example.com
+@rateLimitEmail = {{$dotenv TEST_EMAIL}}
+@invalidEmailFormat = not-an-email
+
+### Request email verification (unauthorized - no token)
+POST {{verifyBaseUrl}}
+Content-Type: application/json
+
+{
+    "email": "{{testEmail}}"
+}
+
+### Request email verification
+# @name initiateVerification
+POST {{verifyBaseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "email": "{{testEmail}}"
+}
+
+### Confirm email verification (invalid code)
+PUT {{verifyBaseUrl}}
+Content-Type: application/json
+
+{
+    "code": "INVALID_CODE"
+}
+
+### Confirm email verification (success)
+# Uses the code from the previous initiate request
+PUT {{verifyBaseUrl}}
+Content-Type: application/json
+
+{
+    "code": "{{initiateVerification.response.body.code}}"
+}
+
+### Confirm email verification (code already used)
+# Attempts to use the same code again
+PUT {{verifyBaseUrl}}
+Content-Type: application/json
+
+{
+    "code": "{{initiateVerification.response.body.code}}"
+}
+
+### Request email verification (email not associated with user)
+POST {{verifyBaseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "email": "{{nonAssociatedEmail}}"
+}
+
+### Request email verification (too many attempts)
+# Will trigger rate limiting if you run this multiple times
+POST {{verifyBaseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "email": "{{rateLimitEmail}}"
+}
+
+### Confirm email verification with email parameter
+PUT {{verifyBaseUrl}}
+Content-Type: application/json
+
+{
+    "code": "{{initiateVerification.response.body.code}}"
+}
+
+### Confirm email verification (missing required fields)
+PUT {{verifyBaseUrl}}
+Content-Type: application/json
+
+{
+    "code": ""
+}
+
+### Request email verification with invalid email format
+POST {{verifyBaseUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+    "email": "{{invalidEmailFormat}}"
+}

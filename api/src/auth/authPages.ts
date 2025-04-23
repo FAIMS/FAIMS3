@@ -34,6 +34,7 @@ import {
 } from './helpers';
 
 import patch from '../utils/patchExpressAsync';
+import {verifyEmailWithCode} from '../api/verificationChallenges';
 
 // This must occur before express app is used
 patch();
@@ -166,6 +167,65 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
         } satisfies AuthContext,
         localAuth: true,
         messages: req.flash(),
+      });
+    }
+  );
+
+  /**
+   * PAGE: Email verification landing page
+   * This renders a view showing the result of the email verification process
+   */
+  app.get(
+    '/verify-email',
+    processRequest({
+      query: z.object({
+        code: z.string().optional(),
+        redirect: z.string().optional(),
+      }),
+    }),
+    async (req, res) => {
+      // Check the redirect is valid
+      const {valid, redirect} = validateRedirect(
+        req.query.redirect || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
+      // Pull out the verification code
+      const code = req.query.code;
+
+      // If no code was provided, show an error
+      if (!code) {
+        req.flash('error', 'No verification code was provided.');
+        return res.render('verify-email', {
+          success: false,
+          redirect,
+          messages: req.flash(),
+        });
+      }
+
+      // Call the shared verification function
+      const result = await verifyEmailWithCode({code});
+
+      if (!result.success) {
+        return res.render('verify-email', {
+          success: false,
+          redirect,
+          messages: {
+            error:
+              result.error ||
+              'Failed to verify email. The code may be invalid or expired.',
+          },
+        });
+      }
+
+      // Verification successful
+      return res.render('verify-email', {
+        success: true,
+        email: result.email,
+        redirect: valid ? redirect : DEFAULT_REDIRECT_URL,
       });
     }
   );

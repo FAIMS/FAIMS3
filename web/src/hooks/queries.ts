@@ -1,9 +1,12 @@
 import {buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import type {
+  GetCurrentUserResponse,
   GetNotebookListResponse,
   GetTemplateByIdResponse,
   PeopleDBDocument,
+  PostRequestEmailVerificationRequest,
+  PostRequestEmailVerificationResponse,
   RecordMetadata,
 } from '@faims3/data-model';
 import {
@@ -16,8 +19,38 @@ import {
   GetTeamInvitesResponse,
   GetTeamMembersResponse,
 } from '@faims3/data-model';
-import {useQuery} from '@tanstack/react-query';
+import {useMutation, useQuery} from '@tanstack/react-query';
 import QRCode from 'qrcode';
+
+/**
+ * post function is a utility function for making GET requests to the API.
+ *
+ * @param {string} path - The path to the API endpoint.
+ * @param {User | null} user - The user object.
+ * @returns {Promise<any>} A promise that resolves to the response data.
+ */
+export const post = async <TPayload, TResponse>({
+  user,
+  data,
+  path,
+}: {
+  path: string;
+  data: TPayload;
+  user: User;
+}) => {
+  const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${user.token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) throw new Error(response.statusText);
+
+  return (await response.json()) as TResponse;
+};
 
 /**
  * get function is a utility function for making GET requests to the API.
@@ -26,20 +59,32 @@ import QRCode from 'qrcode';
  * @param {User | null} user - The user object.
  * @returns {Promise<any>} A promise that resolves to the response data.
  */
-export const get = async <T = any>(path: string, user: User | null) => {
-  if (!user) throw new Error('Not authenticated');
+export const get = async <T = any>(
+  path: string,
+  user: User | null,
+  token: string | null = null
+) => {
+  if (!user && !token) throw new Error('Not authenticated');
 
   const response = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${user.token}`,
+      Authorization: `Bearer ${user ? user.token : token}`,
     },
   });
 
   if (!response.ok) throw new Error(response.statusText);
 
   return (await response.json()) as T;
+};
+
+/**
+ * Fetches details about the current user
+ * @returns GetCurrentUserResponse or throws
+ */
+export const getCurrentUser = async ({token}: {token: string}) => {
+  return await get<GetCurrentUserResponse>('/api/users/current', null, token);
 };
 
 /**
@@ -315,3 +360,21 @@ export const useGetUsersForProject = ({
     },
     enabled: !!user,
   });
+
+/**
+ * useGetProject hook returns a query for fetching a project.
+ *
+ * @param {User} user - The user object.
+ * @param {string} projectId - The ID of the project.
+ * @returns {Query} A query for fetching a project.
+ */
+export const useRequestVerify = () => {
+  return useMutation({
+    mutationFn: async ({user}: {user: User}) => {
+      return await post<
+        PostRequestEmailVerificationRequest,
+        PostRequestEmailVerificationResponse
+      >({path: '/api/verify', data: {email: user.user.email}, user: user});
+    },
+  });
+};

@@ -33,7 +33,7 @@ import {processRequest} from 'zod-express-middleware';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   saveCouchUser,
   saveExpressUser,
 } from '../couchdb/users';
@@ -49,6 +49,8 @@ import {
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 
 import patch from '../utils/patchExpressAsync';
+import {createVerificationChallenge} from '../couchdb/verificationChallenges';
+import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
 
 // This must occur before express app is used
 patch();
@@ -253,12 +255,29 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             'User could not be created due to an issue writing to the database!'
           );
         }
+
+        // Here we send a verification challenge email(s)
+        for (const emailDetails of user.emails) {
+          if (!emailDetails.verified) {
+            createVerificationChallenge({
+              userId: user._id,
+              email: emailDetails.email,
+            }).then(challenge => {
+              return sendEmailVerificationChallenge({
+                recipientEmail: emailDetails.email,
+                username: user._id,
+                verificationCode: challenge.code,
+                expiryTimestampMs: challenge.record.expiryTimestampMs,
+              });
+            });
+          }
+        }
         return user;
       };
 
       // Do we have an existing user if so - reuse our login behaviour instead!
       // (This checks the password is correct)
-      if (await getCouchUserFromEmailOrUsername(email)) {
+      if (await getCouchUserFromEmailOrUserId(email)) {
         return passport.authenticate(
           // local strategy (user/pass)
           'local',

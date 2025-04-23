@@ -1,11 +1,11 @@
-import {ResourceRole, TokenPermissions} from './types';
 import {
   Action,
+  actionRoles,
+  getAllActionsForRole,
   Role,
   roleActions,
-  getAllActionsForRole,
-  actionRoles,
 } from './model';
+import {ResourceRole} from './types';
 
 /**
  * Helper function to check if an action can be performed based on assigned roles
