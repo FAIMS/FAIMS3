@@ -34,8 +34,13 @@ export const TemplateCellComponent = ({
     >
       <Link
         to="/templates/$templateId"
+        disabled={!template}
         params={{templateId}}
-        className="text-gray-700 hover:text-gray-900 hover:underline cursor-pointer transition-colors"
+        className={
+          'text-gray-700' + template
+            ? ' hover:text-gray-900 cursor-pointer transition-colors'
+            : ''
+        }
       >
         {isError
           ? templateId

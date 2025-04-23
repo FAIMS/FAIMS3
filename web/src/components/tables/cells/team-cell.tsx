@@ -32,8 +32,13 @@ export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
     >
       <Link
         to="/teams/$teamId"
+        disabled={!team}
         params={{teamId}}
-        className="text-gray-700 hover:text-gray-900 hover:underline cursor-pointer transition-colors"
+        className={
+          'text-gray-700' + team
+            ? ' hover:text-gray-900 cursor-pointer transition-colors'
+            : ''
+        }
       >
         {isError ? teamId : isLoading ? 'Loading...' : (team?.name ?? teamId)}
       </Link>
