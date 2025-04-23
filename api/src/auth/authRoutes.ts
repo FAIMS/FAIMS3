@@ -37,12 +37,24 @@ import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
+  createNewEmailCode,
+  markCodeAsUsed,
+  validateEmailCode,
+} from '../couchdb/emailReset';
+import {
   getCouchUserFromEmailOrUserId,
   saveCouchUser,
   saveExpressUser,
   updateUserPassword,
 } from '../couchdb/users';
+import {createVerificationChallenge} from '../couchdb/verificationChallenges';
+import {TooManyRequestsException} from '../exceptions';
 import {AuthAction, CustomSessionData} from '../types';
+import {
+  sendEmailVerificationChallenge,
+  sendPasswordResetEmail,
+} from '../utils/emailHelpers';
+import patch from '../utils/patchExpressAsync';
 import {
   buildQueryString,
   handleZodErrors,
@@ -53,22 +65,7 @@ import {
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
-
-import {
-  buildCodeIntoUrl,
-  createNewEmailCode,
-  markCodeAsUsed,
-  validateEmailCode,
-} from '../couchdb/emailReset';
-import {createVerificationChallenge} from '../couchdb/verificationChallenges';
-import {
-  sendEmailVerificationChallenge,
-  sendPasswordResetEmail,
-} from '../utils/emailHelpers';
-import patch from '../utils/patchExpressAsync';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {record} from 'zod';
-import {TooManyRequestsException} from '../exceptions';
 
 // This must occur before express app is used
 patch();
@@ -541,7 +538,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           if (error instanceof TooManyRequestsException) {
             req.flash('error', {
               forgotPasswordError: {
-                msg: `Too many password reset attempts.`,
+                msg: 'Too many password reset attempts.',
               },
             });
           } else {
