@@ -13,62 +13,80 @@
 // limitations under the License.
 //
 
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  ChangeEvent,
+  FocusEvent,
+} from 'react';
 import {TextField, TextFieldProps} from '@mui/material';
-import React, {useEffect, useState, useRef, ChangeEvent} from 'react';
-import {debounce} from 'lodash';
-
-// By default, debounce 500ms for performance purposes
-const DEFAULT_DEBOUNCE_MS = 500;
+import debounce from 'lodash/debounce';
 
 export interface DebouncedTextFieldProps
   extends Omit<TextFieldProps, 'onChange'> {
-  /** The debounce delay in milliseconds (default is 200ms) */
+  /**
+   * Debounce delay in milliseconds (default is 200ms)
+   */
   debounceTime?: number;
 
-  /**
-   * onChange callback that will be fired after the delay.
-   */
-  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
+const DEFAULT_DEBOUNCE_MS = 200;
+
 const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
-  name,
   value,
   onChange,
   debounceTime = DEFAULT_DEBOUNCE_MS,
-  ...other
+  onBlur,
+  ...rest
 }) => {
-  const [innerValue, setInnerValue] = useState<unknown>(value ?? '');
+  const [localValue, setLocalValue] = useState<string>(String(value ?? ''));
 
-  // Create ONE debounced function and store it in a ref
-  const debouncedOnChange = useRef(
-    debounce((newValue: string | number) => {
-      const event = {
-        target: {name, value: newValue},
-      } as ChangeEvent<HTMLInputElement>;
-      console.log('FIRING');
-      onChange(event);
-    }, debounceTime)
-  ).current;
-
+  // Sync local state with external value
   useEffect(() => {
-    return () => {
-      debouncedOnChange.cancel();
-    };
-  }, [debouncedOnChange]);
-
-  // Update local state if external `value` changes
-  useEffect(() => {
-    setInnerValue(value);
+    setLocalValue(String(value ?? ''));
   }, [value]);
 
-  // Fire debounced onChange whenever local input changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInnerValue(e.target.value);
-    debouncedOnChange(e.target.value);
+  // Create debounced version of onChange
+  const debouncedChange = useMemo(() => {
+    if (!onChange) return undefined;
+
+    return debounce(
+      (e: ChangeEvent<HTMLInputElement>) => {
+        onChange(e);
+      },
+      debounceTime,
+      {leading: false, trailing: true}
+    );
+  }, [onChange, debounceTime]);
+
+  // Flush on unmount
+  useEffect(() => {
+    return () => {
+      debouncedChange?.flush();
+    };
+  }, [debouncedChange]);
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setLocalValue(e.target.value);
+    debouncedChange?.(e);
   };
 
-  return <TextField {...other} value={innerValue} onChange={handleChange} />;
+  const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
+    debouncedChange?.flush();
+    onBlur?.(e);
+  };
+
+  return (
+    <TextField
+      {...rest}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  );
 };
 
 export default DebouncedTextField;
