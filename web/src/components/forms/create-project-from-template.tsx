@@ -3,17 +3,11 @@ import {Form} from '@/components/form';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {z} from 'zod';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {useQueryClient} from '@tanstack/react-query';
-
-export const fields = [
-  {
-    name: 'name',
-    label: `${NOTEBOOK_NAME_CAPITALIZED} Name`,
-    schema: z.string().min(5, {
-      message: `${NOTEBOOK_NAME_CAPITALIZED} name must be at least 5 characters.`,
-    }),
-  },
-];
+import {QueryClient, useQueryClient} from '@tanstack/react-query';
+import {useMemo} from 'react';
+import {useGetTeams} from '@/hooks/queries';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {Action} from '@faims3/data-model';
 
 interface CreateProjectFromTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -32,6 +26,31 @@ export function CreateProjectFromTemplateForm({
   const {templateId} = Route.useParams();
 
   const QueryClient = useQueryClient();
+
+  const {data: teams} = useGetTeams(user);
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
+
+  const fields = useMemo(
+    () => [
+      {
+        name: 'name',
+        label: `${NOTEBOOK_NAME_CAPITALIZED} Name`,
+        schema: z.string().min(5, {
+          message: `${NOTEBOOK_NAME_CAPITALIZED} name must be at least 5 characters.`,
+        }),
+      },
+      {
+        name: 'team',
+        label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally && ' (optional)'}`,
+        options: teams?.teams.map(({_id, name}) => ({
+          label: name,
+          value: _id,
+        })),
+        schema: canCreateGlobally ? z.string().optional() : z.string(),
+      },
+    ],
+    [teams, canCreateGlobally]
+  );
 
   /**
    * Handles form submission for creating a project.
