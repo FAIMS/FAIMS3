@@ -11,6 +11,27 @@ import {EncodedUISpecificationSchema} from './types';
 // WIP USERS
 // ==================
 
+// Change Password
+export const PostChangePasswordInputSchema = z
+  .object({
+    username: z.string().trim(),
+    currentPassword: z.string().trim(),
+    newPassword: z
+      .string()
+      .trim()
+      .min(10, 'New password must be at least 10 characters in length.'),
+    confirmPassword: z.string().trim(),
+    redirect: z.string().trim().optional(),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: 'New passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export type PostChangePasswordInput = z.infer<
+  typeof PostChangePasswordInputSchema
+>;
+
 export const GetListAllUsersResponseSchema = z.array(
   // Be careful here - do NOT expose any salt info etc
   PeopleDBDocumentSchema.pick({

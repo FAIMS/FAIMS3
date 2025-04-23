@@ -169,4 +169,42 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
       });
     }
   );
+
+  /**
+   * PAGE: Change password form for local users
+   */
+  app.get(
+    '/change-password',
+    processRequest({
+      query: z.object({
+        // Where should we go once finished?
+        redirect: z.string().optional(),
+        // Require username as query param - this lets us know who the user is
+        username: z.string(),
+      }),
+    }),
+    (req, res) => {
+      const {valid, redirect} = validateRedirect(
+        req.query.redirect || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
+      const username = req.query.username;
+
+      // Render the change password form
+      return res.render('change-password', {
+        // The POST endpoint to handle password change
+        postUrl: '/auth/change-password',
+        changePasswordPostPayload: {
+          username,
+          redirect,
+        },
+        username,
+        messages: req.flash(),
+      });
+    }
+  );
 }
