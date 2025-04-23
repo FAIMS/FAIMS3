@@ -621,33 +621,42 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
 
+    const url =
+      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
     const adminUser = await getExpressUserFromEmailOrUserId('admin');
     if (adminUser) {
       const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
+      let redirectURL = '';
       await request(app)
-        .get(
-          '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv'
-        )
+        .get(url)
         .set('Authorization', `Bearer ${adminToken}`)
         .set('Content-Type', 'application/json')
-        .expect(200)
-        .expect('Content-Type', 'text/csv')
+        .expect(302)
         .expect(response => {
-          // response body should be csv data
-          expect(response.text).to.contain('identifier');
-          const lines = response.text.split('\n');
-          lines.forEach(line => {
-            if (line !== '' && !line.startsWith('identifier')) {
-              expect(line).to.contain('rec');
-              expect(line).to.contain('FORM2');
-              expect(line).to.contain('frev');
-            }
-          });
-          // one more newline than the number of records + header
-          expect(lines).to.have.lengthOf(19);
+          expect(response.headers.location).to.match(/\/download\/.*/);
+          redirectURL = response.headers.location;
         });
+
+      if (redirectURL)
+        await request(app)
+          .get(redirectURL)
+          .expect('Content-Type', 'text/csv')
+          .expect(response => {
+            // response body should be csv data
+            expect(response.text).to.contain('identifier');
+            const lines = response.text.split('\n');
+            lines.forEach(line => {
+              if (line !== '' && !line.startsWith('identifier')) {
+                expect(line).to.contain('rec');
+                expect(line).to.contain('FORM2');
+                expect(line).to.contain('frev');
+              }
+            });
+            // one more newline than the number of records + header
+            expect(lines).to.have.lengthOf(19);
+          });
     }
   });
 
@@ -660,21 +669,33 @@ describe('API tests', () => {
       const notebooks = await getUserProjectsDetailed(adminUser);
       expect(notebooks).to.have.lengthOf(2);
 
+      const url =
+        '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip';
+      let redirectURL = '';
       await request(app)
-        .get(
-          '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip'
-        )
+        .get(url)
         .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200)
-        .expect('Content-Type', 'application/zip')
+        .set('Content-Type', 'application/json')
+        .expect(302)
         .expect(response => {
-          const zipContent = response.text;
-          // check for _1 filename which should be there because of
-          // a clash of names
-          expect(zipContent).to.contain(
-            'take-photo/DuplicateHRID-take-photo_1.png'
-          );
+          expect(response.headers.location).to.match(/\/download\/.*/);
+          redirectURL = response.headers.location;
         });
+
+      if (redirectURL)
+        await request(app)
+          .get(redirectURL)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .expect(200)
+          .expect('Content-Type', 'application/zip')
+          .expect(response => {
+            const zipContent = response.text;
+            // check for _1 filename which should be there because of
+            // a clash of names
+            expect(zipContent).to.contain(
+              'take-photo/DuplicateHRID-take-photo_1.png'
+            );
+          });
     }
   });
 
