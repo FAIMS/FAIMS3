@@ -15,10 +15,15 @@ import {
 } from '@faims3/data-model';
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
-import {EMAIL_CODE_EXPIRY_MINUTES, NEW_CONDUCTOR_URL} from '../buildconfig';
+import {
+  CONDUCTOR_PUBLIC_URL,
+  EMAIL_CODE_EXPIRY_MINUTES,
+  NEW_CONDUCTOR_URL,
+} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
 import {generateVerificationCode, hashVerificationCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
+import {buildQueryString} from '../auth/helpers';
 
 // Expiry time in milliseconds
 const CODE_EXPIRY_MS = EMAIL_CODE_EXPIRY_MINUTES * 60 * 1000;
@@ -28,8 +33,14 @@ const CODE_EXPIRY_MS = EMAIL_CODE_EXPIRY_MINUTES * 60 * 1000;
  * @param code The unhashed code to embed into the URL
  * @returns The URL to present to the user
  */
-export function buildCodeIntoUrl(code: string): string {
-  return `${NEW_CONDUCTOR_URL}/auth/resetPassword?code=${code}`;
+export function buildCodeIntoUrl({
+  code,
+  redirect,
+}: {
+  code: string;
+  redirect: string;
+}): string {
+  return `${CONDUCTOR_PUBLIC_URL}/reset-password${buildQueryString({values: {code, redirect}})}`;
 }
 
 /**

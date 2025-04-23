@@ -12,13 +12,21 @@ import {
   createNewEmailCode,
   markCodeAsUsed,
   validateEmailCode,
-} from '../couchdb/emailCodes';
+} from '../couchdb/emailReset';
 import {
   getCouchUserFromEmailOrUserId,
   updateUserPassword,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {
+  buildPasswordResetUrl,
+  buildVerificationUrl,
+  sendPasswordResetEmail,
+} from '../utils/emailHelpers';
+import {DEFAULT_REDIRECT_URL} from '../auth/authRoutes';
+import {validateRedirect} from '../auth/helpers';
+import {record} from 'zod';
 
 export const api = express.Router();
 
@@ -48,7 +56,11 @@ api.post(
     },
   }),
   async (req, res: Response<PostRequestPasswordResetResponse>) => {
-    const {email} = req.body;
+    const {email, redirect} = req.body;
+
+    const {valid, redirect: validatedRedirect} = validateRedirect(
+      redirect || DEFAULT_REDIRECT_URL
+    );
 
     // Get the user by email
     const user = await getCouchUserFromEmailOrUserId(email);
@@ -59,8 +71,19 @@ api.post(
     }
 
     // Generate reset code
-    const {code} = await createNewEmailCode(user.user_id);
-    const url = buildCodeIntoUrl(code);
+    const {code, record} = await createNewEmailCode(user.user_id);
+    const url = buildPasswordResetUrl({code, redirect: validatedRedirect});
+
+    // NOTE: we intentionally don't await this
+    // so that it is harder as an attacker to tell if something happened -
+    // this will complete in the background
+    sendPasswordResetEmail({
+      recipientEmail: email,
+      username: user.name || user.user_id,
+      resetCode: code,
+      expiryTimestampMs: record.expiryTimestampMs,
+      redirect: validatedRedirect,
+    });
 
     res.json({
       code,

@@ -15,7 +15,7 @@ import {
   getCodeByCode,
   markCodeAsUsed,
   validateEmailCode,
-} from '../src/couchdb/emailCodes';
+} from '../src/couchdb/emailReset';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
 import {hashVerificationCode} from '../src/utils';
