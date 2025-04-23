@@ -354,7 +354,9 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         redirect: errRedirect,
       });
       if (!handled) {
-        req.flash('error', 'An unexpected error occurred');
+        req.flash('error', {
+          changePasswordError: {msg: 'An unexpected error occurred'},
+        });
         res.status(500).redirect(errRedirect);
         return;
       }
@@ -376,7 +378,9 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
     // Check if passwords match
     if (newPassword !== confirmPassword) {
-      req.flash('error', 'New passwords do not match');
+      req.flash('error', {
+        changePasswordError: {msg: 'New passwords do not match'},
+      });
       return res.redirect(errRedirect);
     }
 
@@ -388,22 +392,29 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       });
 
       if (!verificationResult.success) {
-        req.flash('error', verificationResult.error || 'Password incorrect.');
+        req.flash('error', {
+          currentPassword: {
+            msg: verificationResult.error || 'Password incorrect.',
+          },
+        });
         return res.redirect(errRedirect);
       }
 
       const dbUser = verificationResult.user;
       if (!dbUser) {
-        req.flash('error', 'Failed to change password.');
+        req.flash('error', {
+          changePasswordError: {msg: 'Failed to change password.'},
+        });
         return res.redirect(errRedirect);
       }
 
       // Check the db user has a local profile
       if (!dbUser.profiles.local) {
-        req.flash(
-          'error',
-          'You are trying to change the password of a social provider account!'
-        );
+        req.flash('error', {
+          changePasswordError: {
+            msg: 'You are trying to change the password of a social provider account!',
+          },
+        });
         return res.redirect(errRedirect);
       }
 
@@ -415,10 +426,11 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       return res.redirect(validatedRedirect);
     } catch (error) {
       console.error('Password change error:', error);
-      req.flash(
-        'error',
-        'An error occurred while changing password. Contact a system administrator.'
-      );
+      req.flash('error', {
+        changePasswordError: {
+          msg: 'An error occurred while changing password. Contact a system administrator.',
+        },
+      });
       return res.redirect(errRedirect);
     }
   });
