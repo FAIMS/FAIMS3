@@ -43,7 +43,7 @@ import {
   invalidateToken,
   validateRefreshToken,
 } from '../src/couchdb/refreshTokens';
-import {getExpressUserFromEmailOrUsername} from '../src/couchdb/users';
+import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
 import {hashVerificationCode} from '../src/utils';
 import {listTemplates} from './template.test';
@@ -64,7 +64,7 @@ describe('token refresh tests', () => {
   //==================================
 
   it('generate refresh token', async () => {
-    const adminUser = await getExpressUserFromEmailOrUsername(adminUserName);
+    const adminUser = await getExpressUserFromEmailOrUserId(adminUserName);
     expect(adminUser).to.be.not.undefined;
 
     // true indicates generation of refresh token
@@ -82,10 +82,10 @@ describe('token refresh tests', () => {
     // get all tokens
 
     // setup user profiles
-    const adminUser = (await getExpressUserFromEmailOrUsername(adminUserName))!;
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const adminUser = (await getExpressUserFromEmailOrUserId(adminUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
     const notebookUser =
-      (await getExpressUserFromEmailOrUsername(notebookUserName))!;
+      (await getExpressUserFromEmailOrUserId(notebookUserName))!;
 
     // check there are no tokens for all list methods
     let allTokens = await getAllTokens();
@@ -184,8 +184,8 @@ describe('token refresh tests', () => {
 
   it('refresh token validity expiry and enabled', async () => {
     // Get local user profile and setup refresh
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
-    const adminUser = (await getExpressUserFromEmailOrUsername(adminUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
+    const adminUser = (await getExpressUserFromEmailOrUserId(adminUserName))!;
 
     let refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
@@ -232,7 +232,7 @@ describe('token refresh tests', () => {
 
   it('use refresh token to generate new token', async () => {
     // Get local user profile and setup refresh
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // This should work now
     await listTemplates(app, localUserToken);
@@ -261,7 +261,7 @@ describe('token refresh tests', () => {
 
   it('user ID must match if requested as a logged in user', async () => {
     // Get local user profile and setup refresh
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
     const refresh = (await generateUserToken(localUser, true)).refreshToken!;
 
     // now run the refresh method - this should work
@@ -290,7 +290,7 @@ describe('token refresh tests', () => {
 
   it('should successfully create a refresh token with exchange token', async () => {
     // Get local user profile
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // Create refresh token with exchange token using the existing function
     const {refresh, exchangeToken} = await createNewRefreshToken({
@@ -323,7 +323,7 @@ describe('token refresh tests', () => {
 
   it('should successfully exchange token for refresh and access tokens', async () => {
     // Get local user profile
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // Create refresh token with exchange token
     const {refresh, exchangeToken} = await createNewRefreshToken({
@@ -356,7 +356,7 @@ describe('token refresh tests', () => {
 
   it('should fail when attempting to use an exchange token more than once', async () => {
     // Get local user profile
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // Create refresh token with exchange token
     const {exchangeToken} = await createNewRefreshToken({
@@ -391,7 +391,7 @@ describe('token refresh tests', () => {
 
   it('should verify user ID when exchanging token while authenticated', async () => {
     // Get local user profile
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // Create refresh token with exchange token for local user
     const {exchangeToken} = await createNewRefreshToken({
@@ -439,7 +439,7 @@ describe('token refresh tests', () => {
 
   it('should integrate with refresh token workflow', async () => {
     // Get local user profile
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // Create refresh token with exchange token
     const {exchangeToken} = await createNewRefreshToken({
@@ -475,7 +475,7 @@ describe('token refresh tests', () => {
 
   it('should fail when the refresh token is invalidated after exchange', async () => {
     // Get local user profile
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // Create refresh token with exchange token
     const {refresh, exchangeToken} = await createNewRefreshToken({
@@ -507,7 +507,7 @@ describe('token refresh tests', () => {
 
   it('should create a new refresh token with exchange token with custom expiry', async () => {
     // Get local user profile
-    const localUser = (await getExpressUserFromEmailOrUsername(localUserName))!;
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
 
     // Create a refresh token with a short expiry
     const {exchangeToken} = await createNewRefreshToken({

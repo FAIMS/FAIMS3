@@ -1,0 +1,47 @@
+<div class='auth-header'>
+  {{#if success}}
+    <h2>Email Verified</h2>
+    <p>Your email has been successfully verified.</p>
+  {{else}}
+    <h2>Email Verification Failed</h2>
+    <p>We were unable to verify your email address.</p>
+  {{/if}}
+</div>
+
+{{#if messages.error}}
+  <div class='alert alert-danger'>
+    {{messages.error}}
+  </div>
+{{/if}}
+
+<div class='text-center mt-4'>
+  {{#if success}}
+    <div class='mb-4'>
+      <div class='d-flex justify-content-center mb-3'>
+        <i
+          class='bi bi-check-circle-fill text-success'
+          style='font-size: 3rem;'
+        ></i>
+      </div>
+      <p>Your email address
+        <strong>{{email}}</strong>
+        has been successfully verified.</p>
+      <p class='helper-text'>Thank you for confirming your email address. Your
+        account is now fully verified.</p>
+    </div>
+  {{else}}
+    <div class='mb-4'>
+      <div class='d-flex justify-content-center mb-3'>
+        <i class='bi bi-x-circle-fill text-danger' style='font-size: 3rem;'></i>
+      </div>
+      <p>We couldn't verify your email address.</p>
+      <p class='helper-text'>The verification link may have expired or is
+        invalid. You can request a new verification email from your account
+        settings.</p>
+    </div>
+  {{/if}}
+
+  <a href='{{redirect}}' class='auth-button'>
+    Return to Application
+  </a>
+</div>

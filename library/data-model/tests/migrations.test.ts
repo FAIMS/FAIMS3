@@ -1,29 +1,34 @@
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
+import {EncodedProjectUIModel, Resource, Role} from '../src';
 import {
   AUTH_RECORD_ID_PREFIXES,
   DB_MIGRATIONS,
   DatabaseType,
   EmailCodeV1ExistingDocument,
+  EmailCodeV3ExistingDocument,
+  EmailCodeV4ExistingDocument,
   MigrationFuncReturn,
   PeopleV1Document,
   PeopleV2Document,
   PeopleV3Document,
+  PeopleV4Document,
   ProjectStatus,
   ProjectV1Fields,
   ProjectV2Fields,
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
+  RefreshRecordV3ExistingDocument,
   V1InviteDBFields,
   V2InviteDBFields,
   V3InviteDBFields,
+  VerificationChallengeV3ExistingDocument,
 } from '../src/data_storage';
-import {EncodedProjectUIModel, Resource, Role} from '../src';
-import {areDocsEqual} from './utils';
 import {
   TemplateV1Fields,
   TemplateV2Fields,
 } from '../src/data_storage/templatesDB/types';
+import {areDocsEqual} from './utils';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -1263,10 +1268,350 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+// Test cases for peopleV3toV4Migration
+const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Basic test case with single email
+  {
+    name: 'peopleV3toV4Migration - single email',
+    dbType: DatabaseType.PEOPLE,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: 'user_single_email',
+      _rev: '1-abc123',
+      user_id: 'user_single_email',
+      name: 'Jerry Seinfeld',
+      emails: ['jerry@seinfeld.com'],
+      profiles: {
+        google: {
+          id: '12345',
+          email: 'jerry@seinfeld.com',
+        },
+      },
+      projectRoles: [{resourceId: 'comedy_show', role: Role.PROJECT_ADMIN}],
+      teamRoles: [],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER],
+    } satisfies PeopleV3Document,
+    expectedOutputDoc: {
+      _id: 'user_single_email',
+      _rev: '1-abc123',
+      user_id: 'user_single_email',
+      name: 'Jerry Seinfeld',
+      emails: [{email: 'jerry@seinfeld.com', verified: false}],
+      profiles: {
+        google: {
+          id: '12345',
+          email: 'jerry@seinfeld.com',
+        },
+      },
+      projectRoles: [{resourceId: 'comedy_show', role: Role.PROJECT_ADMIN}],
+      teamRoles: [],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER],
+    } satisfies PeopleV4Document,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Test case with multiple emails
+  {
+    name: 'peopleV3toV4Migration - multiple emails',
+    dbType: DatabaseType.PEOPLE,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: 'user_multiple_emails',
+      _rev: '1-def456',
+      user_id: 'user_multiple_emails',
+      name: 'Elaine Benes',
+      emails: [
+        'elaine@pendant.com',
+        'elaine.benes@gmail.com',
+        'ebenes@hotmail.com',
+      ],
+      profiles: {
+        local: {
+          password: 'hashed_password',
+          salt: 'salt123',
+        },
+      },
+      projectRoles: [
+        {resourceId: 'pendant_publishing', role: Role.PROJECT_ADMIN},
+        {resourceId: 'j_peterman', role: Role.PROJECT_CONTRIBUTOR},
+      ],
+      teamRoles: [{resourceId: 'seinfeld_gang', role: Role.TEAM_MEMBER}],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER, Role.GENERAL_CREATOR],
+    } satisfies PeopleV3Document,
+    expectedOutputDoc: {
+      _id: 'user_multiple_emails',
+      _rev: '1-def456',
+      user_id: 'user_multiple_emails',
+      name: 'Elaine Benes',
+      emails: [
+        {email: 'elaine@pendant.com', verified: false},
+        {email: 'elaine.benes@gmail.com', verified: false},
+        {email: 'ebenes@hotmail.com', verified: false},
+      ],
+      profiles: {
+        local: {
+          password: 'hashed_password',
+          salt: 'salt123',
+        },
+      },
+      projectRoles: [
+        {resourceId: 'pendant_publishing', role: Role.PROJECT_ADMIN},
+        {resourceId: 'j_peterman', role: Role.PROJECT_CONTRIBUTOR},
+      ],
+      teamRoles: [{resourceId: 'seinfeld_gang', role: Role.TEAM_MEMBER}],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER, Role.GENERAL_CREATOR],
+    } satisfies PeopleV4Document,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+
+  // Edge case with empty emails array
+  {
+    name: 'peopleV3toV4Migration - empty emails array',
+    dbType: DatabaseType.PEOPLE,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: 'user_no_emails',
+      _rev: '1-ghi789',
+      user_id: 'user_no_emails',
+      name: 'Newman',
+      emails: [], // Empty array of emails
+      profiles: {},
+      projectRoles: [],
+      teamRoles: [],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER],
+    } satisfies PeopleV3Document,
+    expectedOutputDoc: {
+      _id: 'user_no_emails',
+      _rev: '1-ghi789',
+      user_id: 'user_no_emails',
+      name: 'Newman',
+      emails: [], // Should still be an empty array
+      profiles: {},
+      projectRoles: [],
+      teamRoles: [],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER],
+    } satisfies PeopleV4Document,
+    expectedResult: {action: 'update'},
+    equalityFunction: areDocsEqual,
+  },
+];
+
+// Test cases for authV2toV3Migration
+const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Test case 1: Refresh token should remain unchanged
+  {
+    name: 'authV2toV3Migration - refresh token (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}123456`,
+      _rev: '2-abc123',
+      documentType: 'refresh',
+      userId: 'user123',
+      token: 'token123456',
+      enabled: true,
+      expiryTimestampMs: Date.now() + 3600000, // 1 hour from now
+      exchangeTokenHash: 'hash789',
+      exchangeTokenUsed: false,
+      exchangeTokenExpiryTimestampMs: Date.now() + 1800000, // 30 minutes from now
+    } satisfies RefreshRecordV2ExistingDocument,
+    expectedOutputDoc: undefined, // No changes expected
+    expectedResult: {action: 'none'},
+  },
+
+  // Test case 2: Disabled refresh token should remain unchanged
+  {
+    name: 'authV2toV3Migration - disabled refresh token (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}654321`,
+      _rev: '2-def456',
+      documentType: 'refresh',
+      userId: 'user456',
+      token: 'expiredtoken',
+      enabled: false, // Disabled token
+      expiryTimestampMs: Date.now() - 3600000, // 1 hour ago (expired)
+      exchangeTokenHash: 'oldhash',
+      exchangeTokenUsed: true,
+      exchangeTokenExpiryTimestampMs: Date.now() - 7200000, // 2 hours ago (expired)
+    } satisfies RefreshRecordV2ExistingDocument,
+    expectedOutputDoc: undefined,
+    expectedResult: {action: 'none'},
+  },
+
+  // Test case 3: Email code should remain unchanged
+  {
+    name: 'authV2toV3Migration - email code (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}789012`,
+      _rev: '2-ghi789',
+      documentType: 'emailcode',
+      userId: 'user789',
+      code: 'hashedcode123',
+      used: false,
+      expiryTimestampMs: Date.now() + 1800000, // 30 minutes from now
+    } satisfies EmailCodeV1ExistingDocument, // V2 email code is same as V1
+    expectedOutputDoc: undefined,
+    expectedResult: {action: 'none'},
+  },
+
+  // Test case 4: Used email code should remain unchanged
+  {
+    name: 'authV2toV3Migration - used email code (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}345678`,
+      _rev: '2-jkl012',
+      documentType: 'emailcode',
+      userId: 'user012',
+      code: 'usedcodehash',
+      used: true,
+      expiryTimestampMs: Date.now() - 3600000, // 1 hour ago (expired)
+    } satisfies EmailCodeV1ExistingDocument, // V2 email code is same as V1
+    expectedOutputDoc: undefined,
+    expectedResult: {action: 'none'},
+  },
+
+  // Test case 5: Refresh token with additional custom fields should remain unchanged
+  {
+    name: 'authV2toV3Migration - refresh token with custom fields (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}901234`,
+      _rev: '2-mno345',
+      documentType: 'refresh',
+      userId: 'user345',
+      token: 'customtoken',
+      enabled: true,
+      expiryTimestampMs: Date.now() + 3600000, // 1 hour from now
+      exchangeTokenHash: 'customhash',
+      exchangeTokenUsed: false,
+      exchangeTokenExpiryTimestampMs: Date.now() + 1800000, // 30 minutes from now
+      createdAt: Date.now() - 86400000, // 1 day ago
+      lastUsed: Date.now() - 3600000, // 1 hour ago
+      deviceInfo: {
+        userAgent: 'Mozilla/5.0',
+        ipAddress: '192.168.1.1',
+        deviceId: 'device123',
+      },
+    } satisfies RefreshRecordV2ExistingDocument & Record<string, any>,
+    expectedOutputDoc: undefined,
+    expectedResult: {action: 'none'},
+  },
+];
+
+// Test cases for authV3toV4Migration
+const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  // Test case 1: Email code migration - should add createdTimestampMs
+  {
+    name: 'authV3toV4Migration - email code',
+    dbType: DatabaseType.AUTH,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}123456`,
+      _rev: '3-abc123',
+      documentType: 'emailcode',
+      userId: 'user123',
+      code: 'hashed_code_abc',
+      used: false,
+      expiryTimestampMs: Date.now() + 3600000, // 1 hour from now
+    } satisfies EmailCodeV3ExistingDocument,
+    expectedOutputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.emailcode}123456`,
+      _rev: '3-abc123',
+      documentType: 'emailcode',
+      userId: 'user123',
+      code: 'hashed_code_abc',
+      used: false,
+      expiryTimestampMs: Date.now() + 3600000,
+      createdTimestampMs: Date.now(),
+    } satisfies Partial<EmailCodeV4ExistingDocument>,
+    expectedResult: {action: 'update'},
+    equalityFunction: (a, b) => {
+      const {createdTimestampMs: createdA, ...otherA} = a;
+      const {createdTimestampMs: createdB, ...otherB} = b;
+      return (
+        createdA !== undefined &&
+        createdB !== undefined &&
+        areDocsEqual(otherA, otherB)
+      );
+    },
+  },
+
+  // Test case 2: Refresh token - should remain unchanged (no-op)
+  {
+    name: 'authV3toV4Migration - refresh token (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.refresh}345678`,
+      _rev: '3-def456',
+      documentType: 'refresh',
+      userId: 'user789',
+      token: 'token_xyz',
+      enabled: true,
+      expiryTimestampMs: Date.now() + 86400000, // 24 hours from now
+      exchangeTokenHash: 'hash123',
+      exchangeTokenUsed: false,
+      exchangeTokenExpiryTimestampMs: Date.now() + 3600000, // 1 hour from now
+    } satisfies RefreshRecordV3ExistingDocument,
+    expectedOutputDoc: undefined, // No changes expected
+    expectedResult: {action: 'none'},
+  },
+
+  // Test case 3: Verification challenge - should remain unchanged (no-op)
+  {
+    name: 'authV3toV4Migration - verification challenge (no changes)',
+    dbType: DatabaseType.AUTH,
+    from: 3,
+    to: 4,
+    inputDoc: {
+      _id: `${AUTH_RECORD_ID_PREFIXES.verification}901234`,
+      _rev: '3-jkl012',
+      documentType: 'verification',
+      userId: 'user012',
+      email: 'user@example.com',
+      code: 'hashed_verification_code',
+      used: false,
+      createdTimestampMs: Date.now() - 3600000, // 1 hour ago
+      expiryTimestampMs: Date.now() + 86400000, // 24 hours from now
+    } satisfies VerificationChallengeV3ExistingDocument,
+    expectedOutputDoc: undefined, // No changes expected
+    expectedResult: {action: 'none'},
+  },
+];
+
+// Add the new test cases to the MIGRATION_TEST_CASES array
+MIGRATION_TEST_CASES.push(...AUTH_V3_TO_V4_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**

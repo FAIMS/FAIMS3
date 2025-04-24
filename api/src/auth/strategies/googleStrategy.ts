@@ -25,16 +25,20 @@ import {
   VerifyCallback,
 } from 'passport-google-oauth20';
 
-import {addEmails, ExistingPeopleDBDocument} from '@faims3/data-model';
-import {upgradeCouchUserToExpressUser} from '../keySigning/create';
+import {
+  addEmails,
+  ExistingPeopleDBDocument,
+  VerifiableEmail,
+} from '@faims3/data-model';
 import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../../buildconfig';
 import {
   createUser,
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   saveCouchUser,
 } from '../../couchdb/users';
 import {CustomSessionData} from '../../types';
 import {lookupAndValidateInvite} from '../helpers';
+import {upgradeCouchUserToExpressUser} from '../keySigning/create';
 import {StrategyGeneratorFunction} from './applyStrategies';
 
 /**
@@ -109,8 +113,7 @@ async function oauthVerify(
 
   for (const targetEmail of verifiedEmails) {
     // Try to get the user based on the target email
-    userLookups[targetEmail] =
-      await getCouchUserFromEmailOrUsername(targetEmail);
+    userLookups[targetEmail] = await getCouchUserFromEmailOrUserId(targetEmail);
   }
 
   const matchingEmails = Object.entries(userLookups)
@@ -192,6 +195,7 @@ async function oauthVerify(
         email: verifiedEmails[0],
         username: verifiedEmails[0],
         name: profile.displayName,
+        verified: true,
       });
 
       // something went wrong here
@@ -205,7 +209,13 @@ async function oauthVerify(
       newDbUser.profiles['google'] = profile;
 
       // add the other emails to the user emails array if necessary
-      addEmails({user: newDbUser, emails: verifiedEmails});
+      addEmails({
+        user: newDbUser,
+        emails: verifiedEmails.map(vEmail => {
+          // Mark as verified!
+          return {email: vEmail, verified: true} satisfies VerifiableEmail;
+        }),
+      });
 
       // save the user
       await saveCouchUser(newDbUser);
@@ -233,7 +243,13 @@ async function oauthVerify(
     }
 
     // add the other emails to the user emails array if necessary
-    addEmails({user: matchedSingleUser, emails: verifiedEmails});
+    addEmails({
+      user: matchedSingleUser,
+      emails: verifiedEmails.map(vEmail => {
+        // Mark as verified!
+        return {email: vEmail, verified: true} satisfies VerifiableEmail;
+      }),
+    });
 
     await saveCouchUser(matchedSingleUser);
 

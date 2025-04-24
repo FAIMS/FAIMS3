@@ -52,10 +52,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import DebouncedTextField from '../debounced-text-field';
 import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -581,7 +581,7 @@ export const OptionsEditor = ({
               <form onSubmit={addOption}>
                 <Grid container spacing={1} alignItems="center">
                   <Grid item xs>
-                    <DebouncedTextField
+                    <TextField
                       fullWidth
                       size="small"
                       placeholder="Add Option"
@@ -759,7 +759,7 @@ export const OptionsEditor = ({
         >
           <DialogTitle>Edit Option</DialogTitle>
           <DialogContent>
-            <DebouncedTextField
+            <TextField
               autoFocus
               margin="dense"
               label="Option Text"

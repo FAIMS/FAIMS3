@@ -53,7 +53,10 @@ export const EditProjectDialog = () => {
             <Button variant="outline">
               <a
                 href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                  JSON.stringify(data)
+                  JSON.stringify({
+                    'ui-specification': data?.['ui-specification'],
+                    metadata: data?.metadata,
+                  })
                 )}`}
                 download={`${projectId}.json`}
               >
