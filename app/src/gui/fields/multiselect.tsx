@@ -40,6 +40,7 @@ interface ElementProps {
   options: Array<ElementOption>;
   expandedChecklist?: boolean;
   exclusiveOptions?: Array<string>;
+  advancedHelperText?: ReactNode;
 }
 
 /**
@@ -48,6 +49,7 @@ interface ElementProps {
 interface Props {
   ElementProps: ElementProps;
   select_others?: string;
+  advancedHelperText?: ReactNode;
 }
 
 /**
@@ -258,6 +260,7 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
     label: props.label,
     helperText: props.helperText,
     exclusiveOptions: props.ElementProps.exclusiveOptions,
+    advancedHelperText: props.ElementProps.advancedHelperText,
   };
 
   return (
@@ -265,6 +268,7 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
       heading={props.label}
       subheading={props.helperText}
       required={props.required}
+      advancedHelperText={props.advancedHelperText}
     >
       <Box sx={{mt: 2, mb: 2}}>
         {isExpandedChecklist ? (

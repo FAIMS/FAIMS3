@@ -23,6 +23,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'FAIMS Text Field',
       fullWidth: true,
       helperText: 'Enter text',
+      advancedHelperText: '',
       variant: 'outlined',
       required: false,
     },
@@ -37,6 +38,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Email',
       fullWidth: true,
       helperText: 'Enter a valid email address',
+      advancedHelperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -71,6 +73,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Controlled number',
       fullWidth: true,
       helperText: 'This number must be at least 10 and not more than 20.',
+      advancedHelperText: '',
       variant: 'outlined',
       required: false,
       InputProps: {
@@ -108,6 +111,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Text Field',
       fullWidth: true,
       helperText: 'Helper Text',
+      advancedHelperText: '',
       variant: 'outlined',
       required: false,
       multiline: true,
@@ -130,6 +134,7 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       type: 'checkbox',
       helperText: 'Checkbox help.',
+      advancedHelperText: '',
     },
     validationSchema: [['yup.bool']],
     initialValue: false,
@@ -239,6 +244,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Select Multiple',
       fullWidth: true,
       helperText: 'Choose items from the dropdown',
+      advancedHelperText: '',
       variant: 'outlined',
       required: false,
       select: true,
@@ -270,6 +276,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Select one option',
       name: 'radio-group-field',
       id: 'radio-group-field',
+      advancedHelperText: '',
       variant: 'outlined',
       required: false,
       ElementProps: {
@@ -320,6 +327,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Select Related',
       fullWidth: true,
       helperText: 'Select or add new related record',
+      advancedHelperText: '',
       required: true,
       related_type: '',
       relation_type: 'faims-core::Child',
@@ -336,6 +344,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Select Field',
       fullWidth: true,
       helperText: 'Choose a value from the dropdown',
+      advancedHelperText: '',
       required: false,
       ElementProps: {
         options: [],
@@ -373,6 +382,7 @@ const fields: {[key: string]: FieldType} = {
     'component-parameters': {
       name: 'take-photo-field',
       helperText: 'Take a photo',
+      advancedHelperText: '',
       label: 'Take Photo',
     },
     validationSchema: [
@@ -444,6 +454,7 @@ const fields: {[key: string]: FieldType} = {
       label: 'Number Input',
       fullWidth: true,
       helperText: 'Enter a valid number',
+      advancedHelperText: '',
       required: false,
       InputProps: {
         type: 'number',
