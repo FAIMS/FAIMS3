@@ -22,6 +22,8 @@
 import {
   AuthContextSchema,
   PeopleDBDocument,
+  PostChangePasswordInput,
+  PostChangePasswordInputSchema,
   PostLoginInput,
   PostLoginInputSchema,
   PostRegisterInput,
@@ -30,12 +32,12 @@ import {
 import {NextFunction, Router} from 'express';
 import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
-import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
-  getCouchUserFromEmailOrUsername,
+  getCouchUserFromEmailOrUserId,
   saveCouchUser,
   saveExpressUser,
+  updateUserPassword,
 } from '../couchdb/users';
 import {AuthAction, CustomSessionData} from '../types';
 import {
@@ -46,9 +48,13 @@ import {
   validateAndApplyInviteToUser,
   validateRedirect,
 } from './helpers';
+import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 
 import patch from '../utils/patchExpressAsync';
+import {verifyUserCredentials} from './strategies/localStrategy';
+import {createVerificationChallenge} from '../couchdb/verificationChallenges';
+import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
 
 // This must occur before express app is used
 patch();
@@ -253,12 +259,29 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
             'User could not be created due to an issue writing to the database!'
           );
         }
+
+        // Here we send a verification challenge email(s)
+        for (const emailDetails of user.emails) {
+          if (!emailDetails.verified) {
+            createVerificationChallenge({
+              userId: user._id,
+              email: emailDetails.email,
+            }).then(challenge => {
+              return sendEmailVerificationChallenge({
+                recipientEmail: emailDetails.email,
+                username: user._id,
+                verificationCode: challenge.code,
+                expiryTimestampMs: challenge.record.expiryTimestampMs,
+              });
+            });
+          }
+        }
         return user;
       };
 
       // Do we have an existing user if so - reuse our login behaviour instead!
       // (This checks the password is correct)
-      if (await getCouchUserFromEmailOrUsername(email)) {
+      if (await getCouchUserFromEmailOrUserId(email)) {
         return passport.authenticate(
           // local strategy (user/pass)
           'local',
@@ -325,6 +348,108 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         user: expressUser,
         redirect,
       });
+    }
+  });
+
+  /**
+   * Handle password change for local users
+   */
+  app.post('/auth/change-password', async (req, res) => {
+    // Parse the body of the payload - we do this here so we can flash err messages
+    let payload: PostChangePasswordInput = req.body;
+    const errRedirect = `/change-password${buildQueryString({values: {username: payload.username, redirect: payload.redirect}})}`;
+
+    // If anything goes wrong - flash back to form fields
+    try {
+      payload = PostChangePasswordInputSchema.parse(req.body);
+    } catch (validationError) {
+      const handled = handleZodErrors({
+        error: validationError,
+        // type hacking here due to override not being picked up
+        req: req as unknown as Request,
+        res,
+        formData: {},
+        redirect: errRedirect,
+      });
+      if (!handled) {
+        req.flash('error', {
+          changePasswordError: {msg: 'An unexpected error occurred'},
+        });
+        res.status(500).redirect(errRedirect);
+        return;
+      }
+      return;
+    }
+
+    // We now have a validated payload
+    const {username, currentPassword, newPassword, confirmPassword, redirect} =
+      payload;
+
+    // Validate the redirect URL
+    const {valid, redirect: validatedRedirect} = validateRedirect(
+      redirect || DEFAULT_REDIRECT_URL
+    );
+
+    if (!valid) {
+      return res.render('redirect-error', {redirect: validatedRedirect});
+    }
+
+    // Check if passwords match
+    if (newPassword !== confirmPassword) {
+      req.flash('error', {
+        changePasswordError: {msg: 'New passwords do not match'},
+      });
+      return res.redirect(errRedirect);
+    }
+
+    try {
+      // Verify current password using our standalone verification function
+      const verificationResult = await verifyUserCredentials({
+        username,
+        password: currentPassword,
+      });
+
+      if (!verificationResult.success) {
+        req.flash('error', {
+          currentPassword: {
+            msg: verificationResult.error || 'Password incorrect.',
+          },
+        });
+        return res.redirect(errRedirect);
+      }
+
+      const dbUser = verificationResult.user;
+      if (!dbUser) {
+        req.flash('error', {
+          changePasswordError: {msg: 'Failed to change password.'},
+        });
+        return res.redirect(errRedirect);
+      }
+
+      // Check the db user has a local profile
+      if (!dbUser.profiles.local) {
+        req.flash('error', {
+          changePasswordError: {
+            msg: 'You are trying to change the password of a social provider account!',
+          },
+        });
+        return res.redirect(errRedirect);
+      }
+
+      // Apply change (this also saves)
+      await updateUserPassword(username, newPassword);
+
+      // Flash success message and redirect
+      req.flash('success', 'Password changed successfully');
+      return res.redirect(validatedRedirect);
+    } catch (error) {
+      console.error('Password change error:', error);
+      req.flash('error', {
+        changePasswordError: {
+          msg: 'An error occurred while changing password. Contact a system administrator.',
+        },
+      });
+      return res.redirect(errRedirect);
     }
   });
 

@@ -154,47 +154,161 @@ export type EmailCodeV2ExistingDocument = z.infer<
   typeof EmailCodeV2ExistingDocumentSchema
 >;
 
+// =============
+// V3 Definition
+// =============
+
+// V3 - Refresh token schema remains the same as V2
+export const RefreshRecordV3FieldsSchema = RefreshRecordV2FieldsSchema;
+
+// V3 - Email code schema remains the same as V2
+export const EmailCodeV3FieldsSchema = EmailCodeV2FieldsSchema;
+
+// V3 - New Verification Challenge schema
+export const VerificationChallengeV3FieldsSchema = z.object({
+  // When was it created? unix timestamp in ms
+  createdTimestampMs: z.number(),
+  // When does it expire? unix timestamp in ms
+  expiryTimestampMs: z.number(),
+  // Discriminator field
+  documentType: z.literal('verification'),
+  // Which user ID generated this verification challenge?
+  userId: z.string(),
+  // Target email for verification
+  email: z.string(),
+  // Hashed verification code
+  code: z.string(),
+  // Has it been used?
+  used: z.boolean(),
+});
+
+export const AuthRecordV3FieldsSchema = z.discriminatedUnion('documentType', [
+  RefreshRecordV3FieldsSchema,
+  EmailCodeV3FieldsSchema,
+  VerificationChallengeV3FieldsSchema,
+]);
+
+export const AuthRecordV3DocumentSchema = z.discriminatedUnion('documentType', [
+  CouchDocumentSchema.extend(RefreshRecordV3FieldsSchema.shape),
+  CouchDocumentSchema.extend(EmailCodeV3FieldsSchema.shape),
+  CouchDocumentSchema.extend(VerificationChallengeV3FieldsSchema.shape),
+]);
+export type AuthRecordV3Document = z.infer<typeof AuthRecordV3DocumentSchema>;
+
+export const AuthRecordV3ExistingDocumentSchema = z.discriminatedUnion(
+  'documentType',
+  [
+    CouchExistingDocumentSchema.extend(RefreshRecordV3FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(EmailCodeV3FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(
+      VerificationChallengeV3FieldsSchema.shape
+    ),
+  ]
+);
+export type AuthRecordV3ExistingDocument = z.infer<
+  typeof AuthRecordV3ExistingDocumentSchema
+>;
+
+export type RefreshRecordV3Fields = z.infer<typeof RefreshRecordV3FieldsSchema>;
+export type EmailCodeV3Fields = z.infer<typeof EmailCodeV3FieldsSchema>;
+export type VerificationChallengeV3Fields = z.infer<
+  typeof VerificationChallengeV3FieldsSchema
+>;
+export type AuthRecordV3Fields = z.infer<typeof AuthRecordV3FieldsSchema>;
+
+// refresh token
+export const RefreshRecordV3DocumentSchema = CouchDocumentSchema.extend(
+  RefreshRecordV3FieldsSchema.shape
+);
+export type RefreshRecordV3Document = z.infer<
+  typeof RefreshRecordV3DocumentSchema
+>;
+
+export const RefreshRecordV3ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(RefreshRecordV3FieldsSchema.shape);
+export type RefreshRecordV3ExistingDocument = z.infer<
+  typeof RefreshRecordV3ExistingDocumentSchema
+>;
+
+// email code
+export const EmailCodeV3DocumentSchema = CouchDocumentSchema.extend(
+  EmailCodeV3FieldsSchema.shape
+);
+export type EmailCodeV3Document = z.infer<typeof EmailCodeV3DocumentSchema>;
+
+export const EmailCodeV3ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(EmailCodeV3FieldsSchema.shape);
+export type EmailCodeV3ExistingDocument = z.infer<
+  typeof EmailCodeV3ExistingDocumentSchema
+>;
+
+// verification challenge
+export const VerificationChallengeV3DocumentSchema = CouchDocumentSchema.extend(
+  VerificationChallengeV3FieldsSchema.shape
+);
+export type VerificationChallengeV3Document = z.infer<
+  typeof VerificationChallengeV3DocumentSchema
+>;
+
+export const VerificationChallengeV3ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(VerificationChallengeV3FieldsSchema.shape);
+export type VerificationChallengeV3ExistingDocument = z.infer<
+  typeof VerificationChallengeV3ExistingDocumentSchema
+>;
+
 // CURRENT EXPORTS
 // ===============
 
 // Fields
-export const AuthRecordFieldsSchema = AuthRecordV2FieldsSchema;
-export type AuthRecordFields = AuthRecordV2Fields;
+export const AuthRecordFieldsSchema = AuthRecordV3FieldsSchema;
+export type AuthRecordFields = AuthRecordV3Fields;
 
 // possibly existing document schemas
-export const AuthRecordDocumentSchema = AuthRecordV2DocumentSchema;
-export type AuthRecordDocument = AuthRecordV2Document;
+export const AuthRecordDocumentSchema = AuthRecordV3DocumentSchema;
+export type AuthRecordDocument = AuthRecordV3Document;
 
 // existing document schemas
 export const AuthRecordExistingDocumentSchema =
-  AuthRecordV2ExistingDocumentSchema;
-export type AuthRecordExistingDocument = AuthRecordV2ExistingDocument;
+  AuthRecordV3ExistingDocumentSchema;
+export type AuthRecordExistingDocument = AuthRecordV3ExistingDocument;
 
 // Helper types for specific record documents
-export type RefreshRecordFields = RefreshRecordV2Fields;
-export type EmailCodeFields = EmailCodeV2Fields;
+export type RefreshRecordFields = RefreshRecordV3Fields;
+export type EmailCodeFields = EmailCodeV3Fields;
+export type VerificationChallengeFields = VerificationChallengeV3Fields;
 
 // refresh token
-export const RefreshRecordDocumentSchema = RefreshRecordV2DocumentSchema;
-export type RefreshRecordDocument = RefreshRecordV2Document;
+export const RefreshRecordDocumentSchema = RefreshRecordV3DocumentSchema;
+export type RefreshRecordDocument = RefreshRecordV3Document;
 export const RefreshRecordExistingDocumentSchema =
-  RefreshRecordV2ExistingDocumentSchema;
-export type RefreshRecordExistingDocument = RefreshRecordV2ExistingDocument;
+  RefreshRecordV3ExistingDocumentSchema;
+export type RefreshRecordExistingDocument = RefreshRecordV3ExistingDocument;
 
 // email code
-export const EmailCodeDocumentSchema = EmailCodeV2DocumentSchema;
-export type EmailCodeDocument = EmailCodeV2Document;
+export const EmailCodeDocumentSchema = EmailCodeV3DocumentSchema;
+export type EmailCodeDocument = EmailCodeV3Document;
 export const EmailCodeExistingDocumentSchema =
-  EmailCodeV2ExistingDocumentSchema;
-export type EmailCodeExistingDocument = EmailCodeV2ExistingDocument;
+  EmailCodeV3ExistingDocumentSchema;
+export type EmailCodeExistingDocument = EmailCodeV3ExistingDocument;
+
+// verification challenge
+export const VerificationChallengeDocumentSchema =
+  VerificationChallengeV3DocumentSchema;
+export type VerificationChallengeDocument = VerificationChallengeV3Document;
+export const VerificationChallengeExistingDocumentSchema =
+  VerificationChallengeV3ExistingDocumentSchema;
+export type VerificationChallengeExistingDocument =
+  VerificationChallengeV3ExistingDocument;
 
 // ID prefix map
 export const AUTH_RECORD_ID_PREFIXES = {
   refresh: 'refresh_',
   emailcode: 'emailcode_',
+  verification: 'verification_',
 } as const;
 
 // Database
 export type GetRefreshTokenIndex = 'id' | 'token';
 export type GetEmailCodeIndex = 'id' | 'code';
+export type GetVerificationChallengeIndex = 'id' | 'code';
 export type AuthDatabase = PouchDB.Database<AuthRecordFields>;

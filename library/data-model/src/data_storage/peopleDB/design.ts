@@ -20,7 +20,7 @@ const designDoc = {
       map: convertToCouchDBString(doc => {
         if (doc.emails) {
           for (const email of doc.emails) {
-            emit(email, 1);
+            emit(email.email, 1);
           }
         }
       }),

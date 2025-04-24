@@ -18,11 +18,11 @@
  * Description: Implements the validate callback for the local passport auth
  * strategy
  */
-
 import {pbkdf2Sync} from 'crypto';
 import {Strategy, VerifyFunction} from 'passport-local';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {getCouchUserFromEmailOrUsername} from '../../couchdb/users';
+import {PeopleDBDocument} from '@faims3/data-model';
+import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 
 /**
  * Interface for local authentication profile
@@ -33,6 +33,92 @@ type LocalProfile = {
   password: string;
   // Salt used in password hashing
   salt: string;
+};
+
+/**
+ * Result of verifying a user's credentials
+ */
+export type VerifyUserResult = {
+  // Whether the verification succeeded
+  success: boolean;
+  // Error message if verification failed
+  error?: string;
+  // The user document if verification succeeded
+  user?: PeopleDBDocument;
+};
+
+/**
+ * Verifies a user's credentials by username/email and password
+ *
+ * @param username - User's email or username
+ * @param password - User's plaintext password
+ * @returns Promise resolving to the verification result
+ */
+export const verifyUserCredentials = async ({
+  username,
+  password,
+}: {
+  username: string;
+  password: string;
+}): Promise<VerifyUserResult> => {
+  const ambiguousErrorMessage = 'Username or password incorrect.';
+
+  // Look up user in database by email or username
+  const dbUser = await getCouchUserFromEmailOrUserId(username);
+
+  // Handle case where user doesn't exist
+  if (!dbUser) {
+    return {
+      success: false,
+      error: ambiguousErrorMessage,
+    };
+  }
+
+  // Get the local authentication profile for the user
+  const profile = dbUser.profiles['local'] as LocalProfile;
+
+  // Handle case where user exists but has no local profile (uses social auth instead)
+  if (!profile) {
+    return {
+      success: false,
+      error:
+        'You are trying to login to an account which has been created using a social provider. Please login using the social provider instead.',
+    };
+  }
+
+  // Handle case where profile exists but salt is missing (corrupted user data)
+  if (!profile.salt) {
+    return {
+      success: false,
+      error:
+        'Please contact a system administrator. There was an issue logging you in.',
+    };
+  }
+
+  // Hash the provided password with the stored salt using PBKDF2
+  // 100000 iterations, 64 byte output length, SHA-256 hash function
+  const hashedPassword = pbkdf2Sync(
+    password,
+    profile.salt,
+    100000,
+    64,
+    'sha256'
+  );
+
+  // Compare the computed hash with the stored password hash
+  if (hashedPassword.toString('hex') === profile.password) {
+    // Password matches
+    return {
+      success: true,
+      user: dbUser,
+    };
+  } else {
+    // Password doesn't match
+    return {
+      success: false,
+      error: ambiguousErrorMessage,
+    };
+  }
 };
 
 /**
@@ -48,53 +134,17 @@ export const validateLocalUser: VerifyFunction = async (
   password,
   done
 ): Promise<void> => {
-  const ambiguousErrorMessage = 'Username or password incorrect.';
+  const result = await verifyUserCredentials({username: email, password});
 
-  // Look up user in database by email or username
-  const dbUser = await getCouchUserFromEmailOrUsername(email);
-
-  // Handle case where user doesn't exist
-  if (!dbUser) {
-    return done(ambiguousErrorMessage, false);
-  }
-
-  // Get the local authentication profile for the user
-  const profile = dbUser.profiles['local'] as LocalProfile;
-
-  // Handle case where user exists but has no local profile (uses social auth
-  // instead)
-  if (!profile) {
+  if (result.success && result.user) {
+    // If verification succeeded, upgrade to Express user and authenticate
     return done(
-      'You are trying to login to an account which has been created using a social provider. Please login using the social provider instead.',
-      false
+      null,
+      await upgradeCouchUserToExpressUser({dbUser: result.user})
     );
-  }
-
-  // Handle case where profile exists but salt is missing (corrupted user data)
-  if (!profile.salt) {
-    return done(
-      'Please contact a system administrator. There was an issue logging you in.',
-      false
-    );
-  }
-
-  // Hash the provided password with the stored salt using PBKDF2
-  // 100000 iterations, 64 byte output length, SHA-256 hash function
-  const hashedPassword = pbkdf2Sync(
-    password,
-    profile.salt,
-    100000,
-    64,
-    'sha256'
-  );
-
-  // Compare the computed hash with the stored password hash
-  if (hashedPassword.toString('hex') === profile.password) {
-    // Password matches - convert CouchDB user to Express user and authenticate
-    return done(null, await upgradeCouchUserToExpressUser({dbUser}));
   } else {
-    // Password doesn't match
-    return done(ambiguousErrorMessage, false);
+    // If verification failed, pass the error message
+    return done(result.error, false);
   }
 };
 

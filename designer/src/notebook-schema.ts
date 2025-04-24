@@ -156,6 +156,7 @@ export const schema = {
         id: {type: 'string'},
         helperText: {type: 'string'},
         helpertext: {type: 'string'},
+        advancedHelperText: {type: 'string'},
         variant: {type: 'string'},
         label: {type: 'string'},
         multiline: {type: 'boolean'},

@@ -1,9 +1,9 @@
-import {ENCODING_SEPARATOR, COUCHDB_ROLES_PATH} from '../constants';
-import {drillRoles, resourceRolesEqual} from './helpers';
+import {COUCHDB_ROLES_PATH, ENCODING_SEPARATOR} from '../constants';
+import {drillRoles} from './helpers';
 import {
-  TokenPermissions,
   DecodedTokenPermissions,
   decodedTokenSchema,
+  TokenPermissions,
   tokenPermissionsSchema,
 } from './types';
 
