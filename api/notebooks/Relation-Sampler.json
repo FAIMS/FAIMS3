@@ -3,11 +3,7 @@
     "notebook_version": "1.0",
     "schema_version": "1.0",
     "name": "Relation Sampler",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "filenames": [],
     "ispublic": false,
     "isrequest": false,
@@ -35,11 +31,7 @@
           "name": "Name",
           "label": "Factory Name"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -74,14 +66,7 @@
             "label": "hridField"
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -109,11 +94,7 @@
           },
           "name": "Name-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -148,14 +129,7 @@
             "label": "ID"
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -185,11 +159,7 @@
           "relation_linked_vocabPair": [],
           "relation_preferred_label": "Preferred"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -220,21 +190,11 @@
           "related_type_label": "Factory",
           "name": "Factories",
           "relation_linked_vocabPair": [
-            [
-              "exports to",
-              "imports from"
-            ],
-            [
-              "supplies",
-              "is supplied by"
-            ]
+            ["exports to", "imports from"],
+            ["supplies", "is supplied by"]
           ]
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -254,38 +214,23 @@
     "fviews": {
       "Form-Section": {
         "label": "Section",
-        "fields": [
-          "hridForm-Section",
-          "Name",
-          "Widgets",
-          "Factories"
-        ]
+        "fields": ["hridForm-Section", "Name", "Widgets", "Factories"]
       },
       "Widget-Main": {
         "label": "Main",
-        "fields": [
-          "hridWidget-Main",
-          "Name-2"
-        ]
+        "fields": ["hridWidget-Main", "Name-2"]
       }
     },
     "viewsets": {
       "Form": {
         "label": "Factory",
-        "views": [
-          "Form-Section"
-        ]
+        "views": ["Form-Section"]
       },
       "Widget": {
         "label": "Widget",
-        "views": [
-          "Widget-Main"
-        ]
+        "views": ["Widget-Main"]
       }
     },
-    "visible_types": [
-      "Form",
-      "Widget"
-    ]
+    "visible_types": ["Form", "Widget"]
   }
 }

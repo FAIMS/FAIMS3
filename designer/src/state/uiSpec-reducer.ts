@@ -231,11 +231,11 @@ export const uiSpecificationReducer = createSlice({
       // add in the meta field
       newField.meta = {
         annotation: {
-          include: true,
+          include: false,
           label: 'annotation',
         },
         uncertainty: {
-          include: true,
+          include: false,
           label: 'uncertainty',
         },
       };

@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {MDXEditorMethods} from '@mdxeditor/editor';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
@@ -25,6 +28,9 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {debounce} from 'lodash';
+import {useRef, useState} from 'react';
+import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {
@@ -32,14 +38,8 @@ import {
   ConditionTranslation,
   ConditionType,
 } from '../condition';
-
-import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
-import {useRef, useState} from 'react';
-import {MDXEditorMethods} from '@mdxeditor/editor';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 type Props = {
   fieldName: string;
@@ -229,9 +229,12 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                         <Box mt={2} sx={{maxHeight: 300, overflowY: 'auto'}}>
                           <MdxEditor
                             initialMarkdown={state.advancedHelperText}
-                            handleChange={markdown =>
-                              updateProperty('advancedHelperText', markdown)
-                            }
+                            handleChange={debounce(
+                              markdown =>
+                                updateProperty('advancedHelperText', markdown),
+                              500,
+                              {leading: false, trailing: true}
+                            )}
                             editorRef={ref}
                           />
                           <Alert severity="info" sx={{mt: 2}}>
