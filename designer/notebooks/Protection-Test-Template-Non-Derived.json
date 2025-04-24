@@ -26,7 +26,7 @@
         "component-parameters": {
           "label": "Field with No Protection",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Enter text",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -72,7 +72,7 @@
               }
             ]
           },
-          "helperText": "",
+          "helperText": "Make sure you choose the right one!",
           "protection": "allow-hiding"
         },
         "validationSchema": [
@@ -134,7 +134,7 @@
           "id": "checkbox-field",
           "required": false,
           "type": "checkbox",
-          "helperText": ""
+          "helperText": "Checkbox help."
         },
         "validationSchema": [
           [
@@ -163,7 +163,7 @@
           "id": "checkbox-field",
           "required": false,
           "type": "checkbox",
-          "helperText": "",
+          "helperText": "Checkbox help.",
           "protection": "allow-hiding"
         },
         "validationSchema": [
@@ -193,7 +193,7 @@
           "id": "checkbox-field",
           "required": false,
           "type": "checkbox",
-          "helperText": "",
+          "helperText": "Checkbox help.",
           "protection": "protected"
         },
         "validationSchema": [

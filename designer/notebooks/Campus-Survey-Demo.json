@@ -56,7 +56,7 @@
           "fullWidth": true,
           "name": "take-gps-starting-point",
           "id": "take-gps-starting-point",
-          "helperText": "",
+          "helperText": "Tap to select the starting point for the survey.",
           "variant": "outlined",
           "label": "Take GPS Starting Point"
         },
@@ -93,7 +93,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Select your campus area from the list. (For other, use annotation icon)",
           "variant": "outlined",
           "required": false,
           "select": true,
@@ -159,7 +159,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Note comments about survey area here",
           "variant": "outlined",
           "required": false,
           "multiline": true,
@@ -201,7 +201,7 @@
           "fullWidth": true,
           "name": "take-gps-end-point",
           "id": "take-gps-end-point",
-          "helperText": "",
+          "helperText": "Tap to select the end point for the survey.",
           "variant": "outlined",
           "label": "Take GPS End Point"
         },
@@ -240,7 +240,7 @@
           "fullWidth": true,
           "name": "hridFORM2",
           "id": "hridFORM2",
-          "helperText": "",
+          "helperText": "This is unique ID for each landscape element composed from an auto-incrementer and the element type.",
           "variant": "filled",
           "required": true,
           "template": "Element: {{element-type}}-{{autoincrementer}}",
@@ -319,7 +319,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Select the type of landscape element that you see, e.g. bench seat, street lamp etc. Fill other in annotation.",
           "variant": "outlined",
           "required": false,
           "select": true,
@@ -436,7 +436,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Enter the asset number of the item, if known. In annotation, note difficulties.",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -547,7 +547,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Add additional description or observations as needed.",
           "variant": "outlined",
           "required": false,
           "multiline": true,
@@ -589,7 +589,7 @@
           "fullWidth": true,
           "name": "take-photo",
           "id": "take-photo",
-          "helperText": "",
+          "helperText": "Take a photo",
           "variant": "outlined",
           "label": "Take Photo"
         },
@@ -620,7 +620,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Make a note of the nearest identifiable building. Check uncertain in the field annotation if uncertain.",
           "variant": "outlined",
           "required": false,
           "InputProps": {},
@@ -658,7 +658,7 @@
           "fullWidth": true,
           "name": "hridFORM1",
           "id": "hridFORM1",
-          "helperText": "",
+          "helperText": "A read-only field composited from campus-zone and nickname to make a custom ID.",
           "variant": "filled",
           "required": true,
           "template": "Survey Area: {{campus-zone}} {{survey-area-nickname}}",
@@ -702,7 +702,7 @@
         "type-returned": "faims-core::Relationship",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Associate/record new street furniture with this survey area",
           "variant": "outlined",
           "required": false,
           "related_type": "FORM2",
@@ -743,7 +743,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Give a memorable name to your survey area.",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -783,7 +783,7 @@
           "fullWidth": true,
           "name": "take-photo-2",
           "id": "take-photo-2",
-          "helperText": "",
+          "helperText": "Take a photo",
           "variant": "outlined",
           "label": "Take Photo"
         },
@@ -814,7 +814,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Journal entries as needed",
           "variant": "outlined",
           "required": false,
           "multiline": true,
@@ -922,7 +922,7 @@
         "type-returned": "faims-core::Relationship",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Select or Add new related survey area",
           "variant": "outlined",
           "required": false,
           "related_type": "FORM1",

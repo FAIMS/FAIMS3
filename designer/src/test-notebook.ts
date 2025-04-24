@@ -34,7 +34,7 @@ export const sampleNotebook: Notebook = {
         'type-returned': 'faims-core::String',
         'component-parameters': {
           fullWidth: true,
-          helperText: '',
+          helperText: 'Summarise the collection location.',
           variant: 'outlined',
           required: false,
           InputProps: {
@@ -88,7 +88,7 @@ export const sampleNotebook: Notebook = {
           fullWidth: true,
           name: 'hridPrimary-Next-Section',
           id: 'hrid-field',
-          helperText: '',
+          helperText: 'Human Readable observation ID',
           variant: 'outlined',
           required: true,
           template: '',
@@ -143,7 +143,7 @@ export const sampleNotebook: Notebook = {
           fullWidth: true,
           name: 'Sample-Location',
           id: 'take-point-field',
-          helperText: '',
+          helperText: 'Click to save current location',
           variant: 'outlined',
           label: 'Sample Location',
         },
@@ -165,7 +165,7 @@ export const sampleNotebook: Notebook = {
           fullWidth: true,
           name: 'Sample-Photograph',
           id: 'take-photo-field',
-          helpertext: '',
+          helpertext: 'Take a photo',
           variant: 'outlined',
           label: 'Sample Photograph',
         },
@@ -185,7 +185,7 @@ export const sampleNotebook: Notebook = {
         'type-returned': 'faims-core::Integer',
         'component-parameters': {
           fullWidth: true,
-          helperText: '',
+          helperText: 'Longest dimension of sample in mm.',
           variant: 'outlined',
           required: false,
           InputProps: {
@@ -215,7 +215,7 @@ export const sampleNotebook: Notebook = {
         'type-returned': 'faims-core::String',
         'component-parameters': {
           fullWidth: true,
-          helperText: '',
+          helperText: 'Note comments about survey area here',
           variant: 'outlined',
           required: false,
           multiline: true,
@@ -248,7 +248,7 @@ export const sampleNotebook: Notebook = {
         'type-returned': 'faims-core::String',
         'component-parameters': {
           fullWidth: true,
-          helperText: '',
+          helperText: 'Choose a field from the dropdown',
           variant: 'outlined',
           required: false,
           select: true,
