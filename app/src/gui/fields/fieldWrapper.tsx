@@ -63,7 +63,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
   advancedHelperText,
 }) => {
   const [openDialog, setOpenDialog] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  // TODO understand why we have this but never set it other than null? Should
+  // this be a ref instead?
+  const [anchorEl] = useState<null | HTMLElement>(null);
   const muiTheme = useTheme();
   const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
   const open = Boolean(anchorEl);

@@ -17,34 +17,37 @@
  * Description:
  *   Internals of map generation for MapFormField
  */
+
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import MapIcon from '@mui/icons-material/LocationOn';
+import {
+  Alert,
+  AlertTitle,
+  AppBar,
+  Box,
+  Dialog,
+  DialogActions,
+  Grid,
+  IconButton,
+  Toolbar,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import Button, {ButtonProps} from '@mui/material/Button';
-import Map from 'ol/Map';
+import {Extent} from 'ol/extent';
 import GeoJSON from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
+import Map from 'ol/Map';
 import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
-import {Circle as CircleStyle, Fill, Icon, Stroke, Style} from 'ol/style';
+import {Icon, Style} from 'ol/style';
 import proj4 from 'proj4';
-import {useCallback, useEffect, useRef, useState} from 'react';
-import {transform} from 'ol/proj';
-// define some EPSG codes - these are for two sample images
-// TODO: we need to have a better way to include a useful set or allow
-// them to be defined by a project
-// e.g. https://www.npmjs.com/package/epsg-index
-// or maybe https://github.com/matafokka/geotiff-geokeys-to-proj4 allows us
-// to get things from the image?
-proj4.defs('EPSG:32636', '+proj=utm +zone=36 +datum=WGS84 +units=m +no_defs');
-proj4.defs(
-  'EPSG:28354',
-  '+proj=utm +zone=54 +south +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
-);
-register(proj4);
-
-export type MapAction = 'save' | 'close';
+import {useCallback, useEffect, useState} from 'react';
+import {useNotification} from '../../../context/popup';
+import {MapComponent} from '../../components/map/map-component';
+import {theme} from '../../themes';
 
 // // To simulate movement for PR: open browser console and set `window.__USE_FAKE_GPS__ = true`
 declare global {
@@ -52,6 +55,8 @@ declare global {
     __USE_FAKE_GPS__?: boolean;
   }
 }
+
+export type MapAction = 'save' | 'close';
 
 interface MapProps extends ButtonProps {
   label: string;
@@ -68,26 +73,18 @@ interface MapProps extends ButtonProps {
   openMap?: () => void;
 }
 
-import {
-  Alert,
-  AlertTitle,
-  AppBar,
-  Box,
-  Dialog,
-  DialogActions,
-  Grid,
-  IconButton,
-  Toolbar,
-  Tooltip,
-  Typography,
-} from '@mui/material';
-import {useNotification} from '../../../context/popup';
-import {MapComponent} from '../../components/map/map-component';
-import {theme} from '../../themes';
-import {Extent} from 'ol/extent';
-import Feature from 'ol/Feature';
-import {Point} from 'ol/geom';
-import {RegularShape} from 'ol/style';
+// define some EPSG codes - these are for two sample images
+// TODO: we need to have a better way to include a useful set or allow
+// them to be defined by a project
+// e.g. https://www.npmjs.com/package/epsg-index
+// or maybe https://github.com/matafokka/geotiff-geokeys-to-proj4 allows us
+// to get things from the image?
+proj4.defs('EPSG:32636', '+proj=utm +zone=36 +datum=WGS84 +units=m +no_defs');
+proj4.defs(
+  'EPSG:28354',
+  '+proj=utm +zone=54 +south +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs'
+);
+register(proj4);
 
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);

@@ -18,18 +18,18 @@
  *   TODO
  */
 
-import React from 'react';
-import MuiRadioGroup from '@mui/material/RadioGroup';
-import MuiRadio, {RadioProps} from '@mui/material/Radio';
-import FormControl from '@mui/material/FormControl';
 import {
-  FormControlLabel,
-  FormLabelProps,
-  FormHelperTextProps,
-  FormControlLabelProps,
   Box,
+  FormControlLabel,
+  FormControlLabelProps,
+  FormHelperTextProps,
+  FormLabelProps,
 } from '@mui/material';
+import FormControl from '@mui/material/FormControl';
+import MuiRadio, {RadioProps} from '@mui/material/Radio';
+import MuiRadioGroup from '@mui/material/RadioGroup';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
+import React from 'react';
 import FieldWrapper from './fieldWrapper';
 /**
  * Represents a single option in the radio group.
@@ -99,7 +99,7 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
         heading={label}
         subheading={helperText}
         required={this.props.required}
-        advancedHelperText={this.props.advancedHelperText}
+        advancedHelperText={advancedHelperText}
       >
         <FormControl sx={{mb: 4}} error={Boolean(form.errors?.[field.name])}>
           <MuiRadioGroup
