@@ -55,6 +55,13 @@ import patch from '../utils/patchExpressAsync';
 import {verifyUserCredentials} from './strategies/localStrategy';
 import {createVerificationChallenge} from '../couchdb/verificationChallenges';
 import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
+import {z} from 'zod';
+import {
+  optionalAuthenticationJWT,
+  requireAuthenticationAPI,
+} from '../middleware';
+import {InternalSystemError, UnauthorizedException} from '../exceptions';
+import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 
 // This must occur before express app is used
 patch();
@@ -452,6 +459,53 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       return res.redirect(errRedirect);
     }
   });
+
+  /**
+   * Logout - logging out is an optional client 'good will' process in which the
+   * client indicates they wish for all active refresh tokens for the current
+   * user to be invalidated. This is just a normal POST operation.
+   */
+  app.put(
+    '/auth/logout',
+    requireAuthenticationAPI,
+    processRequest({
+      body: z.object({
+        refreshToken: z.string(),
+      }),
+    }),
+    async ({user, body: {refreshToken}}, res) => {
+      if (!user) {
+        throw new UnauthorizedException();
+      }
+
+      // token
+      const refresh = await getTokenByToken(refreshToken);
+
+      if (!refresh) {
+        // It's fine - just let client think logout succeeded- this refresh
+        // token is invalid anyway
+        return res.sendStatus(200);
+      }
+
+      // User's should not be able to disable other people's token - but let's
+      // not give info here - just return 200
+      if (refresh.userId !== user._id) {
+        return res.sendStatus(200);
+      }
+
+      try {
+        await invalidateToken(refreshToken);
+      } catch (e) {
+        console.error('Invalidation of token failed unexpectedly. Error: ', e);
+        throw new InternalSystemError(
+          'Unexpected failure to invalidate token.'
+        );
+      }
+
+      // job done
+      return res.sendStatus(200);
+    }
+  );
 
   // For each handler, deploy an auth route + auth return route
   for (const handler of socialProviders) {
