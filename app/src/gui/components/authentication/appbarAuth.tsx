@@ -53,7 +53,7 @@ import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {theme} from '../../themes';
 import {Server} from '../../../context/slices/projectSlice';
-import { PutLogoutInput } from '@faims3/data-model';
+import {PutLogoutInput} from '@faims3/data-model';
 
 const SignInButtonComponent = () => {
   return (
