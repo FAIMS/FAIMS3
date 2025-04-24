@@ -103,8 +103,8 @@ else
 fi
 
 echo "Initialising database using API container"
-echo ">docker compose exec api sh -c \"cd api && npm run migrate\""
-docker compose exec api sh -c "cd api && npm run migrate"
+echo ">docker compose exec api sh -c \"cd api && npm run migrate --keys\""
+docker compose exec api sh -c "cd api && npm run migrate --keys"
 
 
 echo "Service is setup, to load notebooks and templates follow the below steps"
