@@ -55,6 +55,7 @@ interface ElementProps {
 interface Props {
   ElementProps: ElementProps;
   select_others?: string;
+  advancedHelperText?: string;
 }
 
 import {useTheme} from '@mui/material/styles';
@@ -79,6 +80,7 @@ export const Select = (props: Props & TextFieldProps) => {
       heading={props.label}
       subheading={props.helperText}
       required={props.required}
+      advancedHelperText={props.advancedHelperText}
     >
       <FormControl
         sx={{

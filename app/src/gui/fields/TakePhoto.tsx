@@ -79,6 +79,7 @@ interface Props {
   issyncing?: string;
   isconflict?: boolean;
   required?: boolean;
+  advancedHelperText?: string;
 }
 
 interface ImageListProps {
@@ -474,6 +475,7 @@ export const TakePhoto: React.FC<
       heading={props.label}
       subheading={props.helperText || props.helpertext}
       required={props.required}
+      advancedHelperText={props.advancedHelperText}
     >
       <Box sx={{width: '100%'}}>
         {/* Download Banner */}
