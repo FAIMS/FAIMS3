@@ -40,6 +40,7 @@ import {useRef, useState} from 'react';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {debounce} from 'lodash';
 
 type Props = {
   fieldName: string;
@@ -229,9 +230,12 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                         <Box mt={2} sx={{maxHeight: 300, overflowY: 'auto'}}>
                           <MdxEditor
                             initialMarkdown={state.advancedHelperText}
-                            handleChange={markdown =>
-                              updateProperty('advancedHelperText', markdown)
-                            }
+                            handleChange={debounce(
+                              markdown =>
+                                updateProperty('advancedHelperText', markdown),
+                              500,
+                              {leading: false, trailing: true}
+                            )}
                             editorRef={ref}
                           />
                           <Alert severity="info" sx={{mt: 2}}>
