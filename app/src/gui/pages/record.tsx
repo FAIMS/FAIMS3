@@ -148,7 +148,7 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [backLink, setBackLink] = useState('');
   const [breadcrumbs, setBreadcrumbs] = useState<
     {link?: string; title: string}[]
   >([]);
@@ -174,6 +174,9 @@ export default function Record() {
         uiSpecification: uiSpec,
       }).then(hrid => {
         setHrid(hrid);
+        setBackLink(
+          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId
+        );
         setBreadcrumbs([
           // {link: ROUTES.INDEX, title: 'Home'},
           {
@@ -345,6 +348,7 @@ export default function Record() {
                 },
                 {title: hrid! ?? recordId!},
               ];
+              setBackLink(newParent[0]['route']);
             }
             setBreadcrumbs(newBreadcrumbs);
           }
@@ -487,10 +491,7 @@ export default function Record() {
             label="Back"
             onClick={() => {
               // Go back to the records list
-              history({
-                pathname:
-                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
-              });
+              history({pathname: backLink});
             }}
           />
         </Grid>
