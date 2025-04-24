@@ -43,3 +43,6 @@ export function buildRegisterUrl({
 }) {
   return `${API_URL}/register?redirect=${redirect}&inviteId=${inviteId}`;
 }
+
+// Token refresh interval (every 3 minutes)
+export const REFRESH_INTERVAL = 3 * 60 * 1000;
