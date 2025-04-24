@@ -4,7 +4,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetTeams} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
-import {Action} from '@faims3/data-model';
+import {Action, PostCreateNotebookInput} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import {z} from 'zod';
@@ -57,7 +57,7 @@ export function CreateProjectFromTemplateForm({
    * @param {{name: string}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({name}: {name: string}) => {
+  const onSubmit = async ({name, team}: {name: string; team?: string}) => {
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/api/notebooks`,
       {
@@ -69,7 +69,8 @@ export function CreateProjectFromTemplateForm({
         body: JSON.stringify({
           template_id: templateId,
           name,
-        }),
+          ...(team ? {teamId: team} : {}),
+        } satisfies PostCreateNotebookInput),
       }
     );
 
