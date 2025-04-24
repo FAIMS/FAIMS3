@@ -326,7 +326,6 @@ const fields: {[key: string]: FieldType} = {
       multiple: false,
     },
     validationSchema: [['yup.string']],
-    initialValue: '',
   },
   Select: {
     'component-namespace': 'faims-custom',
