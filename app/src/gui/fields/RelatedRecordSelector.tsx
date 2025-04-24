@@ -505,13 +505,6 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
             handleCreateError={remove_related_child}
           />
         </Grid>
-        {props.form.isValid === false && (
-          <Grid item xs={12} sm={12} md={12} lg={12}>
-            <Typography variant="caption" color="error">
-              To enable Add record or Link, please make sure form has no errors
-            </Typography>
-          </Grid>
-        )}
         <Grid item xs={12} sm={12} md={12} lg={12}>
           <Typography variant="caption">
             {props.helperText}
