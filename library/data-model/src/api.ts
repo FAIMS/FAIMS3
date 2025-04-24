@@ -11,6 +11,10 @@ import {EncodedUISpecificationSchema} from './types';
 // WIP USERS
 // ==================
 
+// logout
+export const PutLogoutInputSchema = z.object({refreshToken: z.string()});
+export type PutLogoutInput = z.infer<typeof PutLogoutInputSchema>;
+
 // Change Password
 export const PostChangePasswordInputSchema = z
   .object({

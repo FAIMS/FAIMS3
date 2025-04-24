@@ -28,6 +28,7 @@ import {
   PostLoginInputSchema,
   PostRegisterInput,
   PostRegisterInputSchema,
+  PutLogoutInputSchema,
 } from '@faims3/data-model';
 import {NextFunction, Router} from 'express';
 import passport from 'passport';
@@ -469,9 +470,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
     '/auth/logout',
     requireAuthenticationAPI,
     processRequest({
-      body: z.object({
-        refreshToken: z.string(),
-      }),
+      body: PutLogoutInputSchema,
     }),
     async ({user, body: {refreshToken}}, res) => {
       if (!user) {

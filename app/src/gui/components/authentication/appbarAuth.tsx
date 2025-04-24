@@ -47,11 +47,13 @@ import {
   selectActiveUser,
   selectIsAuthenticated,
   setActiveUser,
+  TokenInfo,
 } from '../../../context/slices/authSlice';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {theme} from '../../themes';
 import {Server} from '../../../context/slices/projectSlice';
+import { PutLogoutInput } from '@faims3/data-model';
 
 const SignInButtonComponent = () => {
   return (
@@ -90,7 +92,7 @@ const AuthenticatedDisplayComponent = () => {
   const navigate = useNavigate();
 
   const authState = useAppSelector(state => state.auth);
-  const {activeUser} = authState;
+  const {activeUser, servers: authServers} = authState;
   const dispatch = useAppDispatch();
 
   const userInitial =
@@ -158,6 +160,22 @@ const AuthenticatedDisplayComponent = () => {
         })
       );
     }
+
+    const targetUser: TokenInfo | undefined =
+      authServers[serverId]?.users[username];
+
+    // invalidate the refresh token - client nicety to do this so don't stress
+    // too much about errors here
+    await fetch(`${conductorUrl}/auth/logout`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${targetUser?.token ?? ''}`,
+      },
+      body: JSON.stringify({
+        refreshToken: targetUser?.refreshToken ?? '',
+      } satisfies PutLogoutInput),
+    });
 
     // remove the server connection on logout
     dispatch(removeServerConnection({serverId, username}));
