@@ -34,13 +34,19 @@ import {NextFunction, Router} from 'express';
 import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
+import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 import {
   getCouchUserFromEmailOrUserId,
   saveCouchUser,
   saveExpressUser,
   updateUserPassword,
 } from '../couchdb/users';
+import {createVerificationChallenge} from '../couchdb/verificationChallenges';
+import {InternalSystemError, UnauthorizedException} from '../exceptions';
+import {requireAuthenticationAPI} from '../middleware';
 import {AuthAction, CustomSessionData} from '../types';
+import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
+import patch from '../utils/patchExpressAsync';
 import {
   buildQueryString,
   handleZodErrors,
@@ -51,20 +57,8 @@ import {
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
-
-import patch from '../utils/patchExpressAsync';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {createVerificationChallenge} from '../couchdb/verificationChallenges';
-import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
-import {z} from 'zod';
-import {
-  optionalAuthenticationJWT,
-  requireAuthenticationAPI,
-} from '../middleware';
-import {InternalSystemError, UnauthorizedException} from '../exceptions';
-import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 
-// This must occur before express app is used
 patch();
 
 // This is the place to go if all else fails - it will have a token!
