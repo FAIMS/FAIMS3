@@ -457,8 +457,8 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
   /**
    * Logout - logging out is an optional client 'good will' process in which the
-   * client indicates they wish for all active refresh tokens for the current
-   * user to be invalidated. This is just a normal POST operation.
+   * client indicates they wish for the specific refresh token to be
+   * invalidated. This is just a normal POST operation.
    */
   app.put(
     '/auth/logout',
