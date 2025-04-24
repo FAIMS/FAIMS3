@@ -18,17 +18,16 @@
  *   TODO
  */
 
-import React from 'react';
-import MuiCheckbox from '@mui/material/Checkbox';
-import FormControl from '@mui/material/FormControl';
 import {
   FormControlLabel,
+  FormControlLabelProps,
   FormHelperText,
   FormHelperTextProps,
-  FormControlLabelProps,
-  Box,
 } from '@mui/material';
-import {fieldToCheckbox, CheckboxProps} from 'formik-mui';
+import MuiCheckbox from '@mui/material/Checkbox';
+import FormControl from '@mui/material/FormControl';
+import {CheckboxProps, fieldToCheckbox} from 'formik-mui';
+import React from 'react';
 import FieldWrapper from './fieldWrapper';
 
 interface Props {
@@ -44,7 +43,6 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
   render() {
     const {
       FormControlLabelProps,
-      FormHelperTextProps,
       helperText,
       advancedHelperText,
       required,
@@ -55,8 +53,6 @@ export class Checkbox extends React.Component<CheckboxProps & Props> {
     // just the plain label and helperText properties
     const label =
       this.props.label || FormControlLabelProps?.label || this.props.field.name;
-
-    const theHelperText = helperText || FormHelperTextProps?.children || '';
 
     let error = false;
     if (

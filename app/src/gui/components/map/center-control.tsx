@@ -1,8 +1,7 @@
-import {Control} from 'ol/control';
-import {Coordinate} from 'ol/coordinate';
 import {View} from 'ol';
-import {CreateDomIcon} from './dom-icon';
+import {Control} from 'ol/control';
 import src from '../../../target.svg';
+import {CreateDomIcon} from './dom-icon';
 
 /**
  * Creates a custom control button that centers the map view to a specified coordinate.
