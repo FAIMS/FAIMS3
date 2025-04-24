@@ -120,10 +120,10 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user?.token}`,
+          Authorization: `Bearer ${user.token}`,
         },
         body: JSON.stringify({
-          refreshToken: user?.refreshToken,
+          refreshToken: user.refreshToken,
         } satisfies PutLogoutInput),
       });
       setStoredUser(null);
