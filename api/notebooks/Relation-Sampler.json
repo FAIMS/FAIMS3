@@ -3,11 +3,7 @@
     "notebook_version": "1.0",
     "schema_version": "1.0",
     "name": "Relation Sampler",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "filenames": [],
     "ispublic": false,
     "isrequest": false,
@@ -25,7 +21,7 @@
         "type-returned": "faims-core::String",
         "component-parameters": {
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Helper Text",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -35,11 +31,7 @@
           "name": "Name",
           "label": "Factory Name"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -63,7 +55,7 @@
           "label": "hridField",
           "fullWidth": true,
           "name": "hridForm-Section",
-          "helperText": "",
+          "helperText": "Human Readable ID",
           "required": true,
           "template": "{{Name}}",
           "InputProps": {
@@ -74,14 +66,7 @@
             "label": "hridField"
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -101,7 +86,7 @@
         "component-parameters": {
           "label": "Name",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Enter text",
           "variant": "outlined",
           "required": false,
           "InputProps": {
@@ -109,11 +94,7 @@
           },
           "name": "Name-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -137,7 +118,7 @@
           "label": "ID",
           "fullWidth": true,
           "name": "hridWidget-Main",
-          "helperText": "",
+          "helperText": "Human Readable ID",
           "required": true,
           "template": "{{Name-2}}",
           "InputProps": {
@@ -148,14 +129,7 @@
             "label": "ID"
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -175,7 +149,7 @@
         "component-parameters": {
           "label": "Widgets in Company",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Add widgets to this thing.",
           "required": false,
           "related_type": "Widget",
           "relation_type": "faims-core::Child",
@@ -185,11 +159,7 @@
           "relation_linked_vocabPair": [],
           "relation_preferred_label": "Preferred"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -212,7 +182,7 @@
         "component-parameters": {
           "label": "Factories",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Add one or more related factories",
           "required": false,
           "related_type": "Form",
           "relation_type": "faims-core::Linked",
@@ -220,21 +190,11 @@
           "related_type_label": "Factory",
           "name": "Factories",
           "relation_linked_vocabPair": [
-            [
-              "exports to",
-              "imports from"
-            ],
-            [
-              "supplies",
-              "is supplied by"
-            ]
+            ["exports to", "imports from"],
+            ["supplies", "is supplied by"]
           ]
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -254,38 +214,23 @@
     "fviews": {
       "Form-Section": {
         "label": "Section",
-        "fields": [
-          "hridForm-Section",
-          "Name",
-          "Widgets",
-          "Factories"
-        ]
+        "fields": ["hridForm-Section", "Name", "Widgets", "Factories"]
       },
       "Widget-Main": {
         "label": "Main",
-        "fields": [
-          "hridWidget-Main",
-          "Name-2"
-        ]
+        "fields": ["hridWidget-Main", "Name-2"]
       }
     },
     "viewsets": {
       "Form": {
         "label": "Factory",
-        "views": [
-          "Form-Section"
-        ]
+        "views": ["Form-Section"]
       },
       "Widget": {
         "label": "Widget",
-        "views": [
-          "Widget-Main"
-        ]
+        "views": ["Widget-Main"]
       }
     },
-    "visible_types": [
-      "Form",
-      "Widget"
-    ]
+    "visible_types": ["Form", "Widget"]
   }
 }

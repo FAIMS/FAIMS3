@@ -3,11 +3,7 @@
     "notebook_version": "1.0",
     "schema_version": "1.0",
     "name": "Field Sampler",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "filenames": [],
     "ispublic": false,
     "isrequest": false,
@@ -27,7 +23,7 @@
           "label": "HRID Field",
           "fullWidth": true,
           "name": "hridMain-New-Section",
-          "helperText": "",
+          "helperText": "Human Readable ID",
           "required": true,
           "template": "{{Text-Field}}-{{Select}}",
           "InputProps": {
@@ -38,14 +34,7 @@
             "label": "HRID Field"
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -65,7 +54,7 @@
         "component-parameters": {
           "label": "Text Field",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Enter text",
           "variant": "outlined",
           "required": true,
           "InputProps": {
@@ -73,11 +62,7 @@
           },
           "name": "Text-Field"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -100,7 +85,7 @@
         "component-parameters": {
           "label": "Multi Select",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Choose items from the dropdown",
           "variant": "outlined",
           "required": true,
           "select": true,
@@ -125,11 +110,7 @@
           },
           "name": "Multi-Select"
         },
-        "validationSchema": [
-          [
-            "yup.array"
-          ]
-        ],
+        "validationSchema": [["yup.array"]],
         "initialValue": [],
         "meta": {
           "annotation": {
@@ -152,7 +133,7 @@
         "component-parameters": {
           "label": "Select",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "Choose a value from the dropdown",
           "required": true,
           "ElementProps": {
             "options": [
@@ -172,11 +153,7 @@
           },
           "name": "Select"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -199,7 +176,7 @@
         "component-parameters": {
           "label": "Date and Time",
           "fullWidth": true,
-          "helperText": "",
+          "helperText": "And a calendar prompt with a timestamp.",
           "variant": "outlined",
           "required": true,
           "InputProps": {
@@ -207,11 +184,7 @@
           },
           "name": "Date-and-Time"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -235,14 +208,10 @@
           "label": "File Upload",
           "name": "File-Upload",
           "id": "file-upload-field",
-          "helperText": "",
+          "helperText": "Choose a file",
           "required": true
         },
-        "validationSchema": [
-          [
-            "yup.mixed"
-          ]
-        ],
+        "validationSchema": [["yup.mixed"]],
         "initialValue": null,
         "meta": {
           "annotation": {
@@ -273,11 +242,7 @@
           "geoTiff": "",
           "helperText": ""
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -315,13 +280,9 @@
               }
             ]
           },
-          "helperText": ""
+          "helperText": "Make sure you choose the right one!"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -347,13 +308,9 @@
           "id": "checkbox-field",
           "required": true,
           "type": "checkbox",
-          "helperText": ""
+          "helperText": "Checkbox help."
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
           "annotation": {
@@ -375,28 +332,14 @@
         "type-returned": "faims-attachment::Files",
         "component-parameters": {
           "name": "Photo",
-          "helperText": "",
+          "helperText": "Take a photo",
           "label": "Photo",
           "required": true
         },
         "validationSchema": [
-          [
-            "yup.array"
-          ],
-          [
-            "yup.of",
-            [
-              [
-                "yup.object"
-              ],
-              [
-                "yup.nullable"
-              ]
-            ]
-          ],
-          [
-            "yup.nullable"
-          ]
+          ["yup.array"],
+          ["yup.of", [["yup.object"], ["yup.nullable"]]],
+          ["yup.nullable"]
         ],
         "initialValue": null,
         "meta": {
@@ -420,19 +363,12 @@
         "component-parameters": {
           "fullWidth": true,
           "name": "GPS-Location",
-          "helperText": "",
+          "helperText": "Click to save current location",
           "variant": "outlined",
           "label": "GPS Location",
           "required": true
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
         "meta": {
           "annotation": {
@@ -456,13 +392,9 @@
           "name": "QR",
           "required": true,
           "label": "QR",
-          "helperText": ""
+          "helperText": "Scan QR Code on the sample"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -483,19 +415,12 @@
         "component-name": "AddressField",
         "type-returned": "faims-core::JSON",
         "component-parameters": {
-          "helperText": "",
+          "helperText": "Enter your address",
           "required": true,
           "name": "Address",
           "label": "Address"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "meta": {
           "annotation": {
             "include": true,
@@ -539,14 +464,9 @@
     "viewsets": {
       "Main": {
         "label": "Main",
-        "views": [
-          "Main-New-Section",
-          "Main-Section2"
-        ]
+        "views": ["Main-New-Section", "Main-Section2"]
       }
     },
-    "visible_types": [
-      "Main"
-    ]
+    "visible_types": ["Main"]
   }
 }
