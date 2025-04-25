@@ -34,8 +34,6 @@ import {
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
-import {selectProjectById} from '../../../../context/slices/projectSlice';
-import {useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
@@ -423,9 +421,11 @@ export async function getRelatedRecords(
 
   // Convert to array for processing
   const links = multiple ? fieldValue : [fieldValue];
+  console.log(`links for ${field_name} are`, links);
   // Validate each link has record_id
   links.forEach((link: any, index: number) => {
     if (!link || typeof link !== 'object' || !('record_id' in link)) {
+      console.log('link with error', link, index);
       throw new Error(
         `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property. Link was ${JSON.stringify(link)}`
       );
@@ -958,22 +958,20 @@ export async function removeRecordLink(
  * @param child_record - the record to be linked to
  * @param parent - a LinkedRelation object including the record being linked from and the link type
  * @param relation_type - 'Child' or 'Linked'
+ * @param uiSpecId - id of the relevant uiSpec for this project
  * @returns the new child record object
  */
 export async function addRecordLink({
   childRecord,
   parent,
   relationType,
-  projectId,
+  uiSpecId,
 }: {
-  projectId: string;
   childRecord: RecordReference;
   parent: LinkedRelation;
   relationType: string;
+  uiSpecId: string | undefined;
 }): Promise<RecordMetadata | null> {
-  const uiSpecId = useAppSelector(state =>
-    selectProjectById(state, projectId)
-  )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   let child_record_meta = null;

@@ -208,6 +208,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         )
           setIs_enabled(true);
         // or just no existing value
+        console.log(`form values for ${field_name}`, props.form.values[field_name]);
         if (!multiple && !props.form.values[field_name]) setIs_enabled(true);
 
         const all_records = await getPossibleRelatedRecords({
@@ -337,6 +338,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         newValue = [newValue, new_child_record];
       else newValue = [new_child_record];
     } else newValue = new_child_record;
+    console.log('setting field value', props.field.name, newValue);
     props.form.setFieldValue(props.field.name, newValue, true);
     return new_record_id;
   };
@@ -365,7 +367,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       childRecord: selectedRecord,
       parent: current_record,
       relationType: props.relation_type,
-      projectId: project_id,
+      uiSpecId: uiSpecId,
     })
       .then(child_record => {
         if (child_record !== null) {

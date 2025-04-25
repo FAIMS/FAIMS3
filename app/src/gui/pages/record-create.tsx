@@ -295,6 +295,7 @@ export default function RecordCreate() {
     });
   };
 
+  console.log('in RecordCreate with location state', location.state);
   let draft_record_id = generateFAIMSDataID();
   if (recordId !== undefined) draft_record_id = recordId;
   if (location.state && location.state.child_record_id !== undefined)

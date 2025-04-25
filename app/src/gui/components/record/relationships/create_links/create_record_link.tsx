@@ -41,30 +41,32 @@ export function AddNewRecordButton(props: {
     setSubmitting(true);
     // here we make a new record id for the child and populate the form with the
     // relation information
-    const new_child_id = props.save_new_record();
+    const childRecordId = props.save_new_record();
     if (props.handleSubmit !== undefined) {
       props
         .handleSubmit()
         .then((revisionID: RevisionID) => {
           const newState = props.state;
+          console.log('parent link info', props, revisionID);
           newState['parent_link'] = ROUTES.getRecordRoute(
             props.serverId,
             props.project_id,
             (props.state.parent_record_id || '').toString(),
             (revisionID || '').toString()
           );
-          newState['child_record_id'] = new_child_id;
+          newState['child_record_id'] = childRecordId;
           // wait for 300ms and then jump to the new pathname with the new state
           setTimeout(() => {
             // reset local state of component
             setSubmitting(false);
+            console.log('going to ', props.pathname, newState);
             history(props.pathname, {state: newState});
           }, 300);
         })
         .catch((error: Error) => {
           logError(error);
           if (props.handleError !== undefined)
-            props.handleError(new_child_id, new_child_id);
+            props.handleError(childRecordId, childRecordId);
         });
     }
   };
@@ -114,6 +116,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
      *
      * Peter B: what the hell is going on here?? This is cooked.
      */
+    console.log('CRL handleSubmit');
     setSubmitting(true);
     if (props.add_related_child !== undefined) {
       props.add_related_child();

@@ -279,6 +279,7 @@ export default function Record() {
             isDeleted: false,
           });
           if (latest_record !== null) {
+            console.log('latest record', latest_record);
             //add checking for deleted record, so it can be direct to notebook page
             if (latest_record.deleted === true) {
               dispatch(

@@ -919,12 +919,23 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
+    console.log('saving a record', values);
+
     if (closeOption === 'cancel') {
       const relationState = this.props.location?.state;
       console.log('cancelling', relationState);
       // first case is if we have a parent record, there should be
       // some location state passed in
       if (relationState !== undefined && relationState !== null) {
+        // may need to undo a change to the parent record in the case
+        // that we are cancelling creation of a child record
+
+        if (relationState.parent_record_id && relationState.field_id) {
+          // need to edit the value of field_id in the parent
+          // to remove the reference to the child
+
+        }
+
         this.navigateTo(relationState.parent_link);
       } else {
         this.navigateTo(this.getRoute('project'));
@@ -1477,6 +1488,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                 }
               }}
               onSubmit={(values, {setSubmitting}) => {
+                console.log('form onsubmit handler', values);
                 setSubmitting(true);
                 return this.save({
                   values,
