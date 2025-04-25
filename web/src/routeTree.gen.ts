@@ -11,7 +11,6 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as ProtectedImport } from './routes/_protected'
 import { Route as ProtectedIndexImport } from './routes/_protected/index'
 import { Route as ProtectedProfileImport } from './routes/_protected/profile'
@@ -25,12 +24,6 @@ import { Route as ProtectedProjectsProjectIdImport } from './routes/_protected/p
 import { Route as ProtectedAdminUsersImport } from './routes/_protected/_admin/users'
 
 // Create/Update Routes
-
-const ResetPasswordRoute = ResetPasswordImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const ProtectedRoute = ProtectedImport.update({
   id: '/_protected',
@@ -108,13 +101,6 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof ProtectedImport
-      parentRoute: typeof rootRoute
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordImport
       parentRoute: typeof rootRoute
     }
     '/_protected/_admin': {
@@ -234,7 +220,6 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '': typeof ProtectedAdminRouteWithChildren
-  '/reset-password': typeof ResetPasswordRoute
   '/profile': typeof ProtectedProfileRoute
   '/': typeof ProtectedIndexRoute
   '/users': typeof ProtectedAdminUsersRoute
@@ -247,7 +232,6 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
-  '/reset-password': typeof ResetPasswordRoute
   '': typeof ProtectedAdminRouteWithChildren
   '/profile': typeof ProtectedProfileRoute
   '/': typeof ProtectedIndexRoute
@@ -263,7 +247,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_protected': typeof ProtectedRouteWithChildren
-  '/reset-password': typeof ResetPasswordRoute
   '/_protected/_admin': typeof ProtectedAdminRouteWithChildren
   '/_protected/profile': typeof ProtectedProfileRoute
   '/_protected/': typeof ProtectedIndexRoute
@@ -280,7 +263,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | ''
-    | '/reset-password'
     | '/profile'
     | '/'
     | '/users'
@@ -292,7 +274,6 @@ export interface FileRouteTypes {
     | '/templates'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/reset-password'
     | ''
     | '/profile'
     | '/'
@@ -306,7 +287,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_protected'
-    | '/reset-password'
     | '/_protected/_admin'
     | '/_protected/profile'
     | '/_protected/'
@@ -322,12 +302,10 @@ export interface FileRouteTypes {
 
 export interface RootRouteChildren {
   ProtectedRoute: typeof ProtectedRouteWithChildren
-  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   ProtectedRoute: ProtectedRouteWithChildren,
-  ResetPasswordRoute: ResetPasswordRoute,
 }
 
 export const routeTree = rootRoute
@@ -340,8 +318,7 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/_protected",
-        "/reset-password"
+        "/_protected"
       ]
     },
     "/_protected": {
@@ -357,9 +334,6 @@ export const routeTree = rootRoute
         "/_protected/teams/",
         "/_protected/templates/"
       ]
-    },
-    "/reset-password": {
-      "filePath": "reset-password.tsx"
     },
     "/_protected/_admin": {
       "filePath": "_protected/_admin.tsx",

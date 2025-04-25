@@ -27,6 +27,8 @@ import {
   Action,
   addGlobalRole,
   addProjectRole,
+  couchInitialiser,
+  initPeopleDB,
   removeGlobalRole,
   removeProjectRole,
   Role,
@@ -50,9 +52,19 @@ import {addLocalPasswordForUser} from '../src/auth/helpers';
 
 const clearUsers = async () => {
   const usersDB = getUsersDB();
+  await couchInitialiser({
+    db: usersDB,
+    content: initPeopleDB({}),
+    config: {applyPermissions: false, forceWrite: true},
+  });
+
   if (usersDB) {
     const docs = await usersDB.allDocs();
     for (let i = 0; i < docs.rows.length; i++) {
+      // don't delete design docs!
+      if (docs.rows[i].id.startsWith('_')) {
+        continue;
+      }
       await usersDB.remove(docs.rows[i].id, docs.rows[i].value.rev);
     }
   }
@@ -79,7 +91,9 @@ describe('user creation', () => {
     expect(errorEmail).to.equal('');
     if (newUserEmail) {
       expect(newUserEmail.user_id).not.to.equal('');
-      expect(newUserEmail.emails).to.include(email.toLowerCase());
+      expect(newUserEmail.emails.map(e => e.email)).to.include(
+        email.toLowerCase()
+      );
     } else {
       assert.fail('user is null after createUser with valid email');
     }

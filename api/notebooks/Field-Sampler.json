@@ -3,11 +3,7 @@
     "notebook_version": "1.0",
     "schema_version": "1.0",
     "name": "Field Sampler",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "filenames": [],
     "ispublic": false,
     "isrequest": false,
@@ -38,14 +34,7 @@
             "label": "HRID Field"
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -73,11 +62,7 @@
           },
           "name": "Text-Field"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -125,11 +110,7 @@
           },
           "name": "Multi-Select"
         },
-        "validationSchema": [
-          [
-            "yup.array"
-          ]
-        ],
+        "validationSchema": [["yup.array"]],
         "initialValue": [],
         "meta": {
           "annotation": {
@@ -172,11 +153,7 @@
           },
           "name": "Select"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -207,11 +184,7 @@
           },
           "name": "Date-and-Time"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -238,11 +211,7 @@
           "helperText": "Choose a file",
           "required": true
         },
-        "validationSchema": [
-          [
-            "yup.mixed"
-          ]
-        ],
+        "validationSchema": [["yup.mixed"]],
         "initialValue": null,
         "meta": {
           "annotation": {
@@ -273,11 +242,7 @@
           "geoTiff": "",
           "helperText": ""
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -317,11 +282,7 @@
           },
           "helperText": "Make sure you choose the right one!"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -349,11 +310,7 @@
           "type": "checkbox",
           "helperText": "Checkbox help."
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
           "annotation": {
@@ -380,23 +337,9 @@
           "required": true
         },
         "validationSchema": [
-          [
-            "yup.array"
-          ],
-          [
-            "yup.of",
-            [
-              [
-                "yup.object"
-              ],
-              [
-                "yup.nullable"
-              ]
-            ]
-          ],
-          [
-            "yup.nullable"
-          ]
+          ["yup.array"],
+          ["yup.of", [["yup.object"], ["yup.nullable"]]],
+          ["yup.nullable"]
         ],
         "initialValue": null,
         "meta": {
@@ -425,14 +368,7 @@
           "label": "GPS Location",
           "required": true
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
         "meta": {
           "annotation": {
@@ -458,11 +394,7 @@
           "label": "QR",
           "helperText": "Scan QR Code on the sample"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
           "annotation": {
@@ -488,14 +420,7 @@
           "name": "Address",
           "label": "Address"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "meta": {
           "annotation": {
             "include": true,
@@ -539,14 +464,9 @@
     "viewsets": {
       "Main": {
         "label": "Main",
-        "views": [
-          "Main-New-Section",
-          "Main-Section2"
-        ]
+        "views": ["Main-New-Section", "Main-Section2"]
       }
     },
-    "visible_types": [
-      "Main"
-    ]
+    "visible_types": ["Main"]
   }
 }

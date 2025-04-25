@@ -1,5 +1,10 @@
 import {useAuth} from '@/context/auth-provider';
-import {Role, roleDetails, RoleScope} from '@faims3/data-model';
+import {
+  GetListAllUsersResponse,
+  Role,
+  roleDetails,
+  RoleScope,
+} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {ColumnDef} from '@tanstack/react-table';
 import {KeyRound} from 'lucide-react';
@@ -14,7 +19,7 @@ export const getColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
-}): ColumnDef<any>[] => {
+}): ColumnDef<GetListAllUsersResponse[number]>[] => {
   const {user} = useAuth();
   const queryClient = useQueryClient();
 
@@ -30,6 +35,11 @@ export const getColumns = ({
       header: ({column}) => (
         <DataTableColumnHeader column={column} title="Email" />
       ),
+      cell: ({
+        row: {
+          original: {emails},
+        },
+      }) => <p>{emails[0]?.email ?? 'No email address'}</p>,
     },
     {
       accessorKey: 'globalRoles',
@@ -38,7 +48,7 @@ export const getColumns = ({
         row: {
           original: {globalRoles, _id: userId},
         },
-      }: any) => (
+      }) => (
         <div className="flex flex-wrap gap-1 items-center">
           {userId !== user?.user.id && (
             <AddRolePopover

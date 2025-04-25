@@ -11,6 +11,69 @@ import {EncodedUISpecificationSchema} from './types';
 // WIP USERS
 // ==================
 
+// Change Password
+export const PostChangePasswordInputSchema = z
+  .object({
+    username: z.string().trim(),
+    currentPassword: z.string().trim(),
+    newPassword: z
+      .string()
+      .trim()
+      .min(10, 'New password must be at least 10 characters in length.'),
+    confirmPassword: z.string().trim(),
+    redirect: z.string().trim().optional(),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: 'New passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export type PostChangePasswordInput = z.infer<
+  typeof PostChangePasswordInputSchema
+>;
+
+// Forgot password
+export const PostForgotPasswordInputSchema = z.object({
+  email: z.string().trim().email('Please enter a valid email address.'),
+  redirect: z.string().trim().optional(),
+});
+
+export type PostForgotPasswordInput = z.infer<
+  typeof PostForgotPasswordInputSchema
+>;
+
+// Reset Password
+export const PostResetPasswordInputSchema = z
+  .object({
+    code: z.string().trim(),
+    newPassword: z
+      .string()
+      .trim()
+      .min(10, 'Password must be at least 10 characters in length.'),
+    confirmPassword: z.string().trim(),
+    redirect: z.string().trim().optional(),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export type PostResetPasswordInput = z.infer<
+  typeof PostResetPasswordInputSchema
+>;
+
+// Get current user
+export const GetCurrentUserResponseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  isVerified: z.boolean(),
+});
+
+export type GetCurrentUserResponse = z.infer<
+  typeof GetCurrentUserResponseSchema
+>;
+
 export const GetListAllUsersResponseSchema = z.array(
   // Be careful here - do NOT expose any salt info etc
   PeopleDBDocumentSchema.pick({
@@ -326,6 +389,7 @@ export type GetTemplateByIdResponse = z.infer<
 // POST /reset request schema
 export const PostRequestPasswordResetRequestSchema = z.object({
   email: z.string(),
+  redirect: z.string().optional(),
 });
 export type PostRequestPasswordResetRequest = z.infer<
   typeof PostRequestPasswordResetRequestSchema
@@ -604,3 +668,40 @@ export type PostCreateTeamInviteResponse = z.infer<
   typeof PostCreateTeamInviteResponseSchema
 >;
 export type PostUseInviteResponse = z.infer<typeof PostUseInviteResponseSchema>;
+
+// EMAIL VERIFICATION
+
+// POST /verify request schema
+export const PostRequestEmailVerificationRequestSchema = z.object({
+  email: z.string().email('Must be a valid email address'),
+});
+export type PostRequestEmailVerificationRequest = z.infer<
+  typeof PostRequestEmailVerificationRequestSchema
+>;
+
+// POST /verify response schema
+export const PostRequestEmailVerificationResponseSchema = z.object({
+  message: z.string(),
+  email: z.string().email(),
+  expiresAt: z.number(),
+});
+export type PostRequestEmailVerificationResponse = z.infer<
+  typeof PostRequestEmailVerificationResponseSchema
+>;
+
+// PUT /verify request schema
+export const PutConfirmEmailVerificationRequestSchema = z.object({
+  code: z.string(),
+});
+export type PutConfirmEmailVerificationRequest = z.infer<
+  typeof PutConfirmEmailVerificationRequestSchema
+>;
+
+// PUT /verify response schema
+export const PutConfirmEmailVerificationResponseSchema = z.object({
+  message: z.string(),
+  email: z.string().email(),
+});
+export type PutConfirmEmailVerificationResponse = z.infer<
+  typeof PutConfirmEmailVerificationResponseSchema
+>;

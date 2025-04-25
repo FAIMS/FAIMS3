@@ -33,7 +33,9 @@ import {
   validateRedirect,
 } from './helpers';
 
+import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
+import {validateEmailCode} from '../couchdb/emailReset';
 
 // This must occur before express app is used
 patch();
@@ -165,6 +167,173 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
           action: 'register',
         } satisfies AuthContext,
         localAuth: true,
+        messages: req.flash(),
+      });
+    }
+  );
+
+  /**
+   * PAGE: Change password form for local users
+   */
+  app.get(
+    '/change-password',
+    processRequest({
+      query: z.object({
+        // Where should we go once finished?
+        redirect: z.string().optional(),
+        // Require username as query param - this lets us know who the user is
+        username: z.string(),
+      }),
+    }),
+    (req, res) => {
+      const username = req.query.username;
+
+      const {valid, redirect} = validateRedirect(
+        req.query.redirect || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
+      // Render the change password form
+      return res.render('change-password', {
+        // The POST endpoint to handle password change
+        postUrl: '/auth/changePassword',
+        changePasswordPostPayload: {
+          username,
+          redirect,
+        },
+        username,
+        messages: req.flash(),
+      });
+    }
+  );
+
+  /*
+   * PAGE: Email verification landing page
+   * This renders a view showing the result of the email verification process
+   */
+  app.get(
+    '/verify-email',
+    processRequest({
+      query: z.object({
+        code: z.string().optional(),
+        redirect: z.string().optional(),
+      }),
+    }),
+    async (req, res) => {
+      // Check the redirect is valid
+      const {valid, redirect} = validateRedirect(
+        req.query.redirect || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
+      // Pull out the verification code
+      const code = req.query.code;
+
+      // If no code was provided, show an error
+      if (!code) {
+        req.flash('error', 'No verification code was provided.');
+        return res.render('verify-email', {
+          success: false,
+          redirect,
+          messages: req.flash(),
+        });
+      }
+
+      // Call the shared verification function
+      const result = await verifyEmailWithCode({code});
+
+      if (!result.success) {
+        return res.render('verify-email', {
+          success: false,
+          redirect,
+          messages: {
+            error:
+              result.error ||
+              'Failed to verify email. The code may be invalid or expired.',
+          },
+        });
+      }
+
+      // Verification successful
+      return res.render('verify-email', {
+        success: true,
+        email: result.email,
+        redirect: valid ? redirect : DEFAULT_REDIRECT_URL,
+      });
+    }
+  );
+
+  /**
+   * PAGE: Forgot password form
+   * Allows the user to enter their email to receive a password reset link
+   */
+  app.get(
+    '/forgot-password',
+    processRequest({
+      query: z.object({
+        redirect: z.string().optional(),
+      }),
+    }),
+    (req, res) => {
+      const {valid, redirect} = validateRedirect(
+        req.query.redirect || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
+      return res.render('forgot-password', {
+        postUrl: '/auth/forgotPassword',
+        forgotPasswordPostPayload: {
+          redirect,
+        },
+        messages: req.flash(),
+      });
+    }
+  );
+
+  /**
+   * PAGE: Reset password form
+   * Allows the user to set a new password using a reset code
+   */
+  app.get(
+    '/auth/reset-password',
+    processRequest({
+      query: z.object({
+        code: z.string(),
+        redirect: z.string(),
+      }),
+    }),
+    async (req, res) => {
+      const code = req.query.code;
+      const {valid, redirect} = validateRedirect(req.query.redirect);
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
+      // Validate the code
+      const validationResult = await validateEmailCode(code);
+
+      if (!validationResult.valid || !validationResult.user) {
+        return res.render('reset-password-error', {
+          error: validationResult.validationError || 'Invalid reset code.',
+          loginUrl: '/login',
+          forgotPasswordUrl: '/forgot-password',
+        });
+      }
+
+      return res.render('reset-password', {
+        postUrl: '/auth/resetPassword',
+        resetCode: code,
+        redirect,
         messages: req.flash(),
       });
     }

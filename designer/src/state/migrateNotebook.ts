@@ -23,11 +23,15 @@ import {FieldType, Notebook} from './initial';
  * @throws an Error if the notebook is not valid
  */
 export const migrateNotebook = (notebook: Notebook) => {
-  // we should maybe in future have validation against alternate notebook schema versions...
-  validateNotebook(notebook);
-
   // error will be thrown by validateNotebook if invalid, let it go through
   const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook;
+
+  // Remove null conditions before validating
+  removeNullFieldConditions(notebookCopy);
+  removeNullFviewConditions(notebookCopy);
+
+  // we should maybe in future have validation against alternate notebook schema versions...
+  validateNotebook(notebookCopy);
 
   // move field labels from old locations to .label
   updateFieldLabels(notebookCopy);
@@ -66,8 +70,49 @@ export class ValidationError extends Error {
 }
 
 /**
+ * Remove any fview-level condition properties
+ * that are explicitly set to null.
+ */
+function removeNullFviewConditions(notebook: Notebook) {
+  const fviews = notebook['ui-specification']?.fviews;
+  if (!fviews) return;
+
+  for (const viewId of Object.keys(fviews)) {
+    const view = fviews[viewId] as Record<string, unknown>;
+    if ('condition' in view && view.condition === null) {
+      delete view.condition;
+    }
+  }
+}
+
+/**
+ * Remove any fields that are set to null,
+ * and remove null .condition properties.
+ */
+function removeNullFieldConditions(notebook: Notebook) {
+  const fields = notebook['ui-specification']?.fields;
+  if (!fields) return;
+
+  const cleanedFields: {[key: string]: FieldType} = {};
+
+  for (const [fieldName, field] of Object.entries(fields)) {
+    if (field === null) {
+      continue;
+    }
+
+    if ((field as any).condition === null) {
+      delete (field as any).condition;
+    }
+
+    cleanedFields[fieldName] = field;
+  }
+
+  notebook['ui-specification'].fields = cleanedFields;
+}
+
+/**
  *
- * @param pNB - an object that might be a notebook
+ * @param n - an object that might be a notebook
  * @returns a validated Notebook object
  * @throws ValidationError if there is one, `messages` property contains error messages for presentation
  */

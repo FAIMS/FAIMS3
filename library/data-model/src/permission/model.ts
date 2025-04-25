@@ -183,6 +183,7 @@ export enum Action {
   VALIDATE_DBS = 'VALIDATE_DBS',
   RESTORE_FROM_BACKUP = 'RESTORE_FROM_BACKUP',
   SEND_TEST_EMAIL = 'SEND_TEST_EMAIL',
+  VERIFY_EMAIL = 'VERIFY_EMAIL',
 }
 
 /**
@@ -694,6 +695,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
+  [Action.VERIFY_EMAIL]: {
+    name: 'Verify an email address',
+    description: 'Allows the user to generate a verification challenge email.',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
 };
 
 /**
@@ -953,7 +960,7 @@ export const roleActions: Record<
 
   // GLOBAL ROLES
   [Role.GENERAL_USER]: {
-    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES],
+    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES, Action.VERIFY_EMAIL],
   },
   [Role.GENERAL_CREATOR]: {
     actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],

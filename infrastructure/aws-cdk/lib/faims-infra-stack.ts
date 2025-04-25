@@ -143,7 +143,7 @@ export class FaimsInfraStack extends cdk.Stack {
         cacheExpirySeconds: config.smtp.cacheExpirySeconds,
       },
       socialProviders: config.socialProviders,
-      localhostWhitelist: config.conductor.localhostWhitelist
+      localhostWhitelist: config.conductor.localhostWhitelist,
     });
 
     // FRONT-END
