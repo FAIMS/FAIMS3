@@ -1114,7 +1114,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     closeOption,
     setSubmitting = () => {},
   }: {
-    ids: RecordIdentifiers | null;
+    ids: RecordIdentifiers;
     closeOption: FormCloseOptions;
     setSubmitting?: (s: boolean) => void;
   }) {
