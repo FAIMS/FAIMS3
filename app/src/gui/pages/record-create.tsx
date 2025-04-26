@@ -19,17 +19,7 @@
  */
 
 import {generateFAIMSDataID, ProjectID, RecordID} from '@faims3/data-model';
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  Grid,
-  Paper,
-} from '@mui/material';
+import {Box, CircularProgress, Grid, Paper} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -57,6 +47,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {CheckExitDialog} from '../components/record/confirmExitDialog';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -281,9 +272,6 @@ export default function RecordCreate() {
 
   const [openDialog, setOpenDialog] = useState(false);
 
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
   const handleCloseDialog = () => {
     setOpenDialog(false);
   };
@@ -377,62 +365,11 @@ export default function RecordCreate() {
           />
         )}
       </Box>
-      <Dialog
+      <CheckExitDialog
         open={openDialog}
-        onClose={handleCloseDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        PaperProps={{
-          sx: {padding: 2},
-        }}
-        disableScrollLock={true}
-      >
-        <Alert severity="info">
-          <AlertTitle>
-            {' '}
-            Are you sure you want to return to the record list?
-          </AlertTitle>
-          Your response is saved on your device as a draft. You can return to it
-          later to complete this record.{' '}
-        </Alert>
-
-        <DialogActions
-          sx={{
-            justifyContent: 'space-between',
-            padding: theme.spacing(2),
-          }}
-        >
-          <Button
-            onClick={handleCloseDialog}
-            sx={{
-              backgroundColor: theme.palette.dialogButton.cancel,
-              color: theme.palette.dialogButton.dialogText,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-              padding: isMobile ? '6px 12px' : '10px 20px',
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-              },
-            }}
-          >
-            Continue working
-          </Button>
-          <Button
-            onClick={handleConfirmNavigation}
-            // variant={'contained'}
-            sx={{
-              backgroundColor: theme.palette.dialogButton.confirm,
-              color: theme.palette.dialogButton.dialogText,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-              padding: isMobile ? '6px 12px' : '10px 20px',
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-              },
-            }}
-          >
-            Return to record list
-          </Button>
-        </DialogActions>
-      </Dialog>
+        handleClose={handleCloseDialog}
+        handleConfirm={handleConfirmNavigation}
+      />
     </React.Fragment>
   );
 }
