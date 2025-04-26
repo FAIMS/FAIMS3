@@ -83,6 +83,7 @@ import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {ConfirmExitDialog} from '../components/record/confirmExitDialog';
 
 export default function Record() {
   /**
@@ -815,6 +816,7 @@ export default function Record() {
           </TabPanel>
         </TabContext>
       </Paper>
+      <ConfirmExitDialog backLink={backLink} />
     </Box>
   );
 }

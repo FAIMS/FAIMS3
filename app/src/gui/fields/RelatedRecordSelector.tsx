@@ -236,7 +236,8 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           multiple,
           uiSpec
         );
-
+        console.log('field value', field_name, props.form.values[field_name]);
+        console.log('related records', field_name, records_info);
         setRecordsInformation(records_info);
       }
     })();

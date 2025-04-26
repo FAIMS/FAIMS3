@@ -47,7 +47,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {CheckExitDialog} from '../components/record/confirmExitDialog';
+import {ConfirmExitDialog, useConfirmExit} from '../components/record/confirmExitDialog';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -139,7 +139,7 @@ interface DraftRecordEditProps {
   serverId: string;
   state?: any;
   location?: Location;
-  onBack: () => void;
+  backLink: string;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
@@ -195,11 +195,12 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
 
   if (!uiSpec) return <CircularProgress size={12} thickness={4} />;
 
+  const backLink = parentLinks[0] ? parentLinks[0].route : '';
   return (
     <React.Fragment>
       <Grid container justifyContent={'space-between'} spacing={2}>
         <Grid item>
-          <BackButton label="Back" onClick={props.onBack} />
+          <BackButton label="Back" link={backLink} />
         </Grid>
         <Grid item xs>
           <ProgressBar percentage={progress} />
@@ -262,7 +263,6 @@ export default function RecordCreate() {
   }>();
   const {serverId, projectId, typeName, draftId, recordId} = params;
   const location = useLocation();
-  const navigate = useNavigate();
 
   if (!serverId) return <></>;
   const project = useAppSelector(state =>
@@ -270,20 +270,6 @@ export default function RecordCreate() {
   );
   if (!project) return <></>;
 
-  const [openDialog, setOpenDialog] = useState(false);
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  const handleConfirmNavigation = () => {
-    setOpenDialog(false);
-    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId, {
-      replace: true,
-    });
-  };
-
-  console.log('in RecordCreate with location state', location.state);
   let draft_record_id = generateFAIMSDataID();
   if (recordId !== undefined) draft_record_id = recordId;
   if (location.state && location.state.child_record_id !== undefined)
@@ -291,11 +277,12 @@ export default function RecordCreate() {
 
   let showBreadcrumbs = false;
 
+  let backlink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
+      link: backlink,
       title: project !== null ? project.metadata.name : projectId!,
     },
     {title: 'Draft'},
@@ -304,6 +291,7 @@ export default function RecordCreate() {
   // add parent link back for the parent or linked record
   if (location.state && location.state.parent_record_id !== recordId) {
     showBreadcrumbs = true;
+    backlink = location.state.parent_link;
     const type =
       location.state.type === 'Child'
         ? 'Parent'
@@ -317,31 +305,9 @@ export default function RecordCreate() {
     });
   }
 
-  // detect when user click's android back buttn
-  useEffect(() => {
-    const handleBackEvent = (event: Event) => {
-      event.preventDefault();
-      setOpenDialog(true);
-    };
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => {
-      setOpenDialog(true);
-    };
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('beforeunload', handleBackEvent);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('beforeunload', handleBackEvent);
-    };
-  }, []);
-
   return (
     <React.Fragment>
       <Box>
-        {
-          // only show breadcrumbs if we have parent record
-        }
         {showBreadcrumbs && <Breadcrumbs data={breadcrumbs} />}
         {draftId === undefined || recordId === undefined ? (
           <DraftCreateAction
@@ -354,7 +320,6 @@ export default function RecordCreate() {
           />
         ) : (
           <DraftRecordEdit
-            onBack={() => setOpenDialog(true)}
             serverId={serverId}
             project={project}
             type_name={typeName!}
@@ -362,14 +327,11 @@ export default function RecordCreate() {
             record_id={recordId}
             state={location.state}
             location={location}
+            backLink={backlink}
           />
         )}
       </Box>
-      <CheckExitDialog
-        open={openDialog}
-        handleClose={handleCloseDialog}
-        handleConfirm={handleConfirmNavigation}
-      />
+      <ConfirmExitDialog backLink={backlink} />
     </React.Fragment>
   );
 }

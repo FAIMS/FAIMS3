@@ -13,30 +13,55 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: record-create.tsx
  * Description:
- *   TODO
+ *   Defines a dialog to confirm exit from editing a record offering to
+ *   save or delete the current draft.
  */
 
 import {Alert, AlertTitle, Button, Dialog, DialogActions} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router';
 
-export const CheckExitDialog = ({
-  open,
-  handleClose,
-  handleConfirm,
-}: {
-  open: boolean;
-  handleClose: () => void;
-  handleConfirm: () => void;
-}) => {
+export const ConfirmExitDialog = ({backLink}: {backLink: string}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+  const [openDialog, setOpenDialog] = useState(false);
+
+  const handleClose = () => {
+    setOpenDialog(false);
+  };
+
+  const handleConfirm = () => {
+    setOpenDialog(false);
+    navigate(backLink, {
+      replace: true,
+    });
+  };
+
+  useEffect(() => {
+    const handleBackEvent = (event: Event) => {
+      event.preventDefault();
+      setOpenDialog(true);
+    };
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      setOpenDialog(true);
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBackEvent);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBackEvent);
+    };
+  }, []);
 
   return (
     <Dialog
-      open={open}
+      open={openDialog}
       onClose={handleClose}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"

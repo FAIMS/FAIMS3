@@ -1,15 +1,22 @@
 import {IconButton, Typography, Box} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import {useNavigate} from 'react-router';
 
 const BackButton = ({
   label,
-  onClick,
+  link,
   singleLine = false, // control layout for new record / draft record vieww
 }: {
   label?: string;
-  onClick: () => void;
+  link?: string;
   singleLine?: boolean;
 }) => {
+  const navigate = useNavigate();
+  const goBack = () => {
+    if (link) navigate(link);
+    else history.back();
+  };
+
   return (
     <Box
       sx={{
@@ -19,7 +26,7 @@ const BackButton = ({
         gap: singleLine ? 2 : 0,
         cursor: 'pointer',
       }}
-      onClick={onClick}
+      onClick={goBack}
     >
       <IconButton color="primary" aria-label={label} sx={{p: 0}}>
         <ArrowBackIcon sx={{fontSize: 28}} />
