@@ -80,6 +80,7 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+import {deleteDraftsForRecord} from '../../../sync/draft-storage';
 
 type RecordFormProps = {
   setProgress: (progress: number) => void;
@@ -919,28 +920,8 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
 
-    console.log('saving a record', values);
-
     if (closeOption === 'cancel') {
-      const relationState = this.props.location?.state;
-      console.log('cancelling', relationState);
-      // first case is if we have a parent record, there should be
-      // some location state passed in
-      if (relationState !== undefined && relationState !== null) {
-        // may need to undo a change to the parent record in the case
-        // that we are cancelling creation of a child record
-
-        if (relationState.parent_record_id && relationState.field_id) {
-          // need to edit the value of field_id in the parent
-          // to remove the reference to the child
-
-        }
-
-        this.navigateTo(relationState.parent_link);
-      } else {
-        this.navigateTo(this.getRoute('project'));
-      }
-      return new Promise(() => undefined);
+      return this.handleCancel(ui_specification);
     }
 
     //save state into persistent data
@@ -1056,6 +1037,69 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
           logError('Unsaved record error:' + err);
         })
     );
+  }
+
+  private handleCancel(ui_specification: ProjectUIModel) {
+    const relationState = this.props.location?.state;
+    console.log('cancelling', relationState);
+    // first case is if we have a parent record, there should be
+    // some location state passed in
+    if (relationState !== undefined && relationState !== null) {
+      // may need to undo a change to the parent record in the case
+      // that we are cancelling creation of a child record
+      if (relationState.parent_record_id && relationState.field_id) {
+        // need to edit the value of field_id in the parent
+        // to remove the reference to the child
+        const dataDb = localGetDataDb(this.props.project_id);
+        getFirstRecordHead({
+          dataDb,
+          recordId: relationState.parent_record_id,
+        }).then(revisionId => {
+          getFullRecordData({
+            dataDb,
+            projectId: this.props.project_id,
+            recordId: relationState.parent_record_id,
+            revisionId: revisionId,
+          }).then(parentRecord => {
+            // edit the field value to remove refrence to relationState.child_record
+            if (parentRecord) {
+              const fieldValue = parentRecord.data[relationState.field_id];
+              // remove reference to child record
+              // if we have a multiple field, remove from the value list
+              // otherwise just reset the value
+              let newFieldValue = '';
+              if (
+                ui_specification.fields[relationState.field_id][
+                  'component-parameters'
+                ].multiple
+              ) {
+                newFieldValue = fieldValue.filter(
+                  (r: any) => r.record_id !== relationState.child_record_id
+                );
+              }
+              parentRecord.data[relationState.field_id] = newFieldValue;
+              upsertFAIMSData({dataDb, record: parentRecord}).then(
+                revisionId => {
+                  // now parent link will be out of date as it refers to
+                  // the old revsision so we need a new one
+                  const revLink = ROUTES.getRecordRoute(
+                    this.props.serverId,
+                    this.props.project_id,
+                    relationState.parent_record_id,
+                    revisionId
+                  );
+                  this.navigateTo(revLink);
+                }
+              );
+            }
+          });
+        });
+      }
+    } else {
+      this.navigateTo(this.getRoute('project'));
+    }
+    // remove the draft record
+    return deleteDraftsForRecord(this.props.project_id, this.props.record_id);
   }
 
   /**

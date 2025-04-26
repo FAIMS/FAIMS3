@@ -208,7 +208,6 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         )
           setIs_enabled(true);
         // or just no existing value
-        console.log(`form values for ${field_name}`, props.form.values[field_name]);
         if (!multiple && !props.form.values[field_name]) setIs_enabled(true);
 
         const all_records = await getPossibleRelatedRecords({

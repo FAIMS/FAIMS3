@@ -421,18 +421,11 @@ export async function getRelatedRecords(
 
   // Convert to array for processing
   const links = multiple ? fieldValue : [fieldValue];
-  console.log(`links for ${field_name} are`, links);
-  // Validate each link has record_id
-  links.forEach((link: any, index: number) => {
-    if (!link || typeof link !== 'object' || !('record_id' in link)) {
-      console.log('link with error', link, index);
-      throw new Error(
-        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property. Link was ${JSON.stringify(link)}`
-      );
-    }
-  });
-
-  const record_ids = links.map((link: any) => link.record_id);
+  // ensure that all links are well formed and extract the record_id from them
+  // it can be the case that a value is '', eg. as an initial value
+  const record_ids = links
+    .filter((link: any) => typeof link === 'object' && 'record_id' in link)
+    .map((link: any) => link.record_id);
   const records = await getMetadataForSomeRecords({
     dataDb: localGetDataDb(project_id),
     filterDeleted: true,

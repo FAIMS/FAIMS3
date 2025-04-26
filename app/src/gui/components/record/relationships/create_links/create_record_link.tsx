@@ -47,7 +47,6 @@ export function AddNewRecordButton(props: {
         .handleSubmit()
         .then((revisionID: RevisionID) => {
           const newState = props.state;
-          console.log('parent link info', props, revisionID);
           newState['parent_link'] = ROUTES.getRecordRoute(
             props.serverId,
             props.project_id,
@@ -59,7 +58,6 @@ export function AddNewRecordButton(props: {
           setTimeout(() => {
             // reset local state of component
             setSubmitting(false);
-            console.log('going to ', props.pathname, newState);
             history(props.pathname, {state: newState});
           }, 300);
         })
