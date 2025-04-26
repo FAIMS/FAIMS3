@@ -79,6 +79,8 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
     relationLinkedPair:
       (field['component-parameters'].relation_linked_vocabPair as PairList) ||
       [],
+    allowLinkToExisting:
+      (field['component-parameters'].allowLinkToExisting as boolean) ?? false,
   };
 
   type newState = {
@@ -87,6 +89,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
     relatedTypeLabel: string;
     relationType: string;
     relationLinkedPair: PairList;
+    allowLinkToExisting: boolean;
   };
 
   const updateField = (fieldName: string, newField: FieldType) => {
@@ -106,6 +109,8 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
     newField['component-parameters'].relation_type = newState.relationType;
     newField['component-parameters'].relation_linked_vocabPair =
       newState.relationLinkedPair;
+    newField['component-parameters'].allowLinkToExisting =
+      newState.allowLinkToExisting ?? false;
 
     updateField(fieldName, newField);
   };
@@ -186,6 +191,26 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               />
               <FormHelperText>
                 Tick if user can add multiple records for this relationship.
+              </FormHelperText>
+            </Grid>
+
+            {/* ranisa new change  */}
+            <Grid item xs={12} sm={3}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={
+                      field['component-parameters'].allowLinkToExisting ?? false
+                    }
+                    onChange={e =>
+                      updateProperty('allowLinkToExisting', e.target.checked)
+                    }
+                  />
+                }
+                label="Allow linking to existing records"
+              />
+              <FormHelperText>
+                Uncheck to allow creating new records
               </FormHelperText>
             </Grid>
 

@@ -219,6 +219,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
             }}
             value={selectedRecord}
             required={false}
+            noOptionsText={`No ${props.related_type_label ?? 'records'} available to link`}
             renderInput={(params: any) => (
               <TextField
                 {...params}

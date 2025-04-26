@@ -72,6 +72,7 @@ export type ComponentParameters = {
   valuetype?: string;
   protection?: 'protected' | 'allow-hiding' | 'none';
   hidden?: boolean;
+  allowLinkToExisting?: boolean;
 };
 
 export type ValidationSchemaElement = (string | number | unknown[])[];
