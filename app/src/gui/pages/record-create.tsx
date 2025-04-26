@@ -230,13 +230,29 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
             variant={is_mobile ? undefined : 'outlined'}
           >
             {is_link_ready ? (
-              <InheritedDataComponent
-                parentRecords={parentLinks}
-                ui_specification={uiSpec}
-              />
+              parentLinks.length > 0 &&
+              parentLinks.some(record => {
+                if (!record.persistentData) return false;
+                return Object.entries(record.persistentData).some(
+                  ([key, value]) => {
+                    return (
+                      value !== null &&
+                      value !== undefined &&
+                      value !== '' &&
+                      uiSpec?.fields?.[key]?.displayParent === true
+                    );
+                  }
+                );
+              }) ? (
+                <InheritedDataComponent
+                  parentRecords={parentLinks}
+                  ui_specification={uiSpec}
+                />
+              ) : null
             ) : (
               <CircularProgress size={24} />
             )}
+
             <RecordForm
               serverId={project.serverId}
               project_id={project_id}

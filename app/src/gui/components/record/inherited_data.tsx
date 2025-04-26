@@ -28,13 +28,26 @@ import ParentForm, {ParentFormProps} from './relationships/parent_form';
 
 export default function InheritedDataComponent(props: ParentFormProps) {
   const {parentRecords, ui_specification} = props;
-  if (
-    parentRecords === null ||
-    parentRecords.length === 0 ||
-    parentRecords[0]['persistentData'] === undefined ||
-    parentRecords[0].type === undefined
-  )
-    return <></>;
+
+  const hasInheritedData =
+    parentRecords &&
+    parentRecords.length > 0 &&
+    parentRecords.some(record => {
+      if (!record.persistentData) return false;
+      return Object.entries(record.persistentData).some(
+        // addtional check
+        ([fieldName, value]) => {
+          if (value === null || value === undefined || value === '')
+            return false;
+          const fieldSpec = ui_specification?.fields[fieldName];
+          return fieldSpec && fieldSpec.displayParent === true;
+        }
+      );
+    });
+
+  if (!hasInheritedData) {
+    return null;
+  }
   return (
     <Accordion>
       <AccordionSummary
