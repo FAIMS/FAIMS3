@@ -85,7 +85,7 @@ export default function AddRecordButtons({
           sx={{
             maxHeight: '400px',
             justifyContent: mq_above_sm ? 'flex-start' : 'center',
-            gap: mq_above_sm ? '8px' : '0px',
+            gap: mq_above_sm ? '0px' : '0px',
           }}
         >
           {/*If the list of views hasn't loaded yet*/}
@@ -135,24 +135,30 @@ export default function AddRecordButtons({
                     }
                     key={viewset_name}
                     startIcon={<AddIcon />}
-                    sx={{
-                      backgroundColor: 'green',
-                      color: 'white',
-                      borderRadius: '8px',
-                      padding: '10px 15px',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      width: mq_above_sm ? 'auto' : '50%',
-                      '&:hover': {
-                        backgroundColor: 'darkgreen',
-                      },
-                    }}
+                    variant="contained"
+                    color="success"
+                    // sx={{
+                    //   backgroundColor: 'green',
+                    //   color: 'white',
+                    //   borderRadius: '8px',
+                    //   padding: '10px 15px',
+                    //   fontSize: '14px',
+                    //   fontWeight: 'bold',
+                    //   mb: 1,
+                    //   width: mq_above_sm ? 'auto' : '50%',
+                    //   '&:hover': {
+                    //     backgroundColor: 'darkgreen',
+                    //   },
+                    // }}
                   >
                     {viewsets[viewset_name].label || `New ${viewset_name}`}
                   </Button>
                 )
             )
           )}
+        </ButtonGroup>
+
+        <ButtonGroup fullWidth={mq_above_md ? false : true}>
           {/* Show the QR code button if configured for this project */}
           {showQRButton ? (
             <QRCodeButton
@@ -161,9 +167,8 @@ export default function AddRecordButtons({
               onScanResult={handleScanResult}
             />
           ) : (
-            <span />
+            <span></span>
           )}
-
           <Button
             variant="outlined"
             sx={{
@@ -175,7 +180,7 @@ export default function AddRecordButtons({
             key="refreshList"
             onClick={refreshList}
           >
-            Refresh records
+            Refresh Records
           </Button>
         </ButtonGroup>
       </Box>
