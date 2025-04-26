@@ -1041,7 +1041,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
   private handleCancel(ui_specification: ProjectUIModel) {
     const relationState = this.props.location?.state;
-    console.log('cancelling', relationState);
+    console.log('cancelling', relationState, this.state.relationship);
     // first case is if we have a parent record, there should be
     // some location state passed in
     if (relationState !== undefined && relationState !== null) {
@@ -1050,56 +1050,86 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       if (relationState.parent_record_id && relationState.field_id) {
         // need to edit the value of field_id in the parent
         // to remove the reference to the child
-        const dataDb = localGetDataDb(this.props.project_id);
-        getFirstRecordHead({
-          dataDb,
-          recordId: relationState.parent_record_id,
-        }).then(revisionId => {
-          getFullRecordData({
-            dataDb,
-            projectId: this.props.project_id,
-            recordId: relationState.parent_record_id,
-            revisionId: revisionId,
-          }).then(parentRecord => {
-            // edit the field value to remove refrence to relationState.child_record
-            if (parentRecord) {
-              const fieldValue = parentRecord.data[relationState.field_id];
-              // remove reference to child record
-              // if we have a multiple field, remove from the value list
-              // otherwise just reset the value
-              let newFieldValue = '';
-              if (
-                ui_specification.fields[relationState.field_id][
-                  'component-parameters'
-                ].multiple
-              ) {
-                newFieldValue = fieldValue.filter(
-                  (r: any) => r.record_id !== relationState.child_record_id
-                );
-              }
-              parentRecord.data[relationState.field_id] = newFieldValue;
-              upsertFAIMSData({dataDb, record: parentRecord}).then(
-                revisionId => {
-                  // now parent link will be out of date as it refers to
-                  // the old revsision so we need a new one
-                  const revLink = ROUTES.getRecordRoute(
-                    this.props.serverId,
-                    this.props.project_id,
-                    relationState.parent_record_id,
-                    revisionId
-                  );
-                  this.navigateTo(revLink);
-                }
-              );
-            }
-          });
-        });
+        this.handleCancelWithRelation({relationState, ui_specification});
       }
     } else {
-      this.navigateTo(this.getRoute('project'));
+      const relationship = this.state.relationship;
+      if (
+        relationship === undefined ||
+        relationship === null ||
+        relationship.parent === undefined ||
+        relationship.parent === null
+      ) {
+        // there is no relationship, we're good to go
+        this.navigateTo(this.getRoute('project'));
+      } else {
+        generateLocationState(
+          relationship.parent,
+          this.props.project_id,
+          this.props.serverId
+        )
+          .then(locationState => {
+            return this.handleCancelWithRelation({
+              ui_specification,
+              relationState: locationState.location_state,
+            });
+          })
+          .catch(error => logError(error));
+      }
     }
     // remove the draft record
     return deleteDraftsForRecord(this.props.project_id, this.props.record_id);
+  }
+
+  private handleCancelWithRelation({
+    relationState,
+    ui_specification,
+  }: {
+    relationState: any;
+    ui_specification: ProjectUIModel;
+  }) {
+    const dataDb = localGetDataDb(this.props.project_id);
+    getFirstRecordHead({
+      dataDb,
+      recordId: relationState.parent_record_id,
+    }).then(revisionId => {
+      getFullRecordData({
+        dataDb,
+        projectId: this.props.project_id,
+        recordId: relationState.parent_record_id,
+        revisionId: revisionId,
+      }).then(parentRecord => {
+        // edit the field value to remove refrence to relationState.child_record
+        if (parentRecord) {
+          const fieldValue = parentRecord.data[relationState.field_id];
+          // remove reference to child record
+          // if we have a multiple field, remove from the value list
+          // otherwise just reset the value
+          let newFieldValue = '';
+          if (
+            ui_specification.fields[relationState.field_id][
+              'component-parameters'
+            ].multiple
+          ) {
+            newFieldValue = fieldValue.filter(
+              (r: any) => r.record_id !== relationState.child_record_id
+            );
+          }
+          parentRecord.data[relationState.field_id] = newFieldValue;
+          upsertFAIMSData({dataDb, record: parentRecord}).then(revisionId => {
+            // now parent link will be out of date as it refers to
+            // the old revsision so we need a new one
+            const revLink = ROUTES.getRecordRoute(
+              this.props.serverId,
+              this.props.project_id,
+              relationState.parent_record_id,
+              revisionId
+            );
+            this.navigateTo(revLink);
+          });
+        }
+      });
+    });
   }
 
   /**
@@ -1532,7 +1562,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                 }
               }}
               onSubmit={(values, {setSubmitting}) => {
-                console.log('form onsubmit handler', values);
                 setSubmitting(true);
                 return this.save({
                   values,
