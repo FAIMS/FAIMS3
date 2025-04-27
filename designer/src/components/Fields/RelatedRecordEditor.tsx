@@ -209,7 +209,9 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                 label="Allow linking to existing records"
               />
               <FormHelperText>
-                Uncheck to allow creating new records
+                If <b>checked</b>, users can use this field to link to existing
+                records of this type. If <b>un-checked</b>, users can only
+                create new records to link to.
               </FormHelperText>
             </Grid>
 
