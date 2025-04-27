@@ -18,18 +18,18 @@
  *   TODO
  */
 
-import React from 'react';
-import MuiRadioGroup from '@mui/material/RadioGroup';
-import MuiRadio, {RadioProps} from '@mui/material/Radio';
-import FormControl from '@mui/material/FormControl';
 import {
-  FormControlLabel,
-  FormLabelProps,
-  FormHelperTextProps,
-  FormControlLabelProps,
   Box,
+  FormControlLabel,
+  FormControlLabelProps,
+  FormHelperTextProps,
+  FormLabelProps,
 } from '@mui/material';
+import FormControl from '@mui/material/FormControl';
+import MuiRadio, {RadioProps} from '@mui/material/Radio';
+import MuiRadioGroup from '@mui/material/RadioGroup';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
+import React from 'react';
 import FieldWrapper from './fieldWrapper';
 /**
  * Represents a single option in the radio group.
@@ -60,6 +60,7 @@ interface Props {
   FormHelperTextProps?: FormHelperTextProps;
   label?: string; // Heading
   helperText?: string; // Subheading
+  advancedHelperText?: string; // advanced help text
   ElementProps: ElementProps; // Radio options
   disabled?: boolean; // Wheter the field is disabled
   required?: boolean;
@@ -83,14 +84,22 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
   }
 
   render() {
-    const {field, form, ElementProps, label, helperText, ...radioGroupProps} =
-      this.props;
+    const {
+      field,
+      form,
+      ElementProps,
+      label,
+      helperText,
+      advancedHelperText,
+      ...radioGroupProps
+    } = this.props;
 
     return (
       <FieldWrapper
         heading={label}
         subheading={helperText}
         required={this.props.required}
+        advancedHelperText={advancedHelperText}
       >
         <FormControl sx={{mb: 4}} error={Boolean(form.errors?.[field.name])}>
           <MuiRadioGroup

@@ -731,6 +731,7 @@ export const FieldEditor = ({
               <OptionsEditor
                 fieldName={fieldName}
                 showExpandedChecklist={true}
+                showExclusiveOptions={true}
               />
             )) ||
             (fieldComponent === 'AdvancedSelect' && (

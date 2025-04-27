@@ -162,3 +162,156 @@ If you did not request this verification, please ignore this email.
 
   await emailService.sendEmail({options: emailOptions});
 }
+
+/**
+ * Builds a password reset URL with the reset code embedded
+ *
+ * @param code The reset code to embed in the URL
+ * @returns The complete password reset URL
+ */
+export function buildPasswordResetUrl({
+  code,
+  redirect,
+}: {
+  code: string;
+  redirect: string;
+}): string {
+  return `${CONDUCTOR_PUBLIC_URL}/auth/reset-password?code=${encodeURIComponent(code)}&redirect=${redirect}`;
+}
+
+/**
+ * Sends a password reset email to a user.
+ *
+ * @param recipientEmail - The recipient's email address
+ * @param username - The recipient's username or name
+ * @param resetCode - The password reset code
+ * @param expiryTimestampMs - Timestamp in milliseconds when the code expires
+ * @returns A Promise that resolves when the email has been sent
+ */
+export async function sendPasswordResetEmail({
+  recipientEmail,
+  username,
+  resetCode,
+  redirect,
+  expiryTimestampMs,
+}: {
+  recipientEmail: string;
+  username: string;
+  resetCode: string;
+  expiryTimestampMs: number;
+  redirect: string;
+}): Promise<void> {
+  // Calculate expiry in hours from milliseconds
+  const expiryMs = expiryTimestampMs - Date.now();
+  // Convert ms to hours and round up
+  const expiryHours = Math.ceil(expiryMs / (1000 * 60 * 60));
+  const emailService = EMAIL_SERVICE;
+  const resetUrl = buildPasswordResetUrl({code: resetCode, redirect});
+
+  const subject = 'Reset Your Password';
+
+  // Plain text version of the email
+  const textContent = `
+Hello ${username},
+
+We received a request to reset your password. To proceed with the password reset, please click the link below:
+${resetUrl}
+
+This link will expire in ${expiryHours} hours.
+
+If you did not request a password reset, you can safely ignore this email. Your account security has not been compromised.
+  `.trim();
+
+  // HTML version of the email
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Password</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      color: #333333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 30px;
+      border: 1px solid #e0e0e0;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .button {
+      display: block;
+      width: 100%;
+      max-width: 250px;
+      background-color: rgb(216, 220, 231);
+      color: white;
+      text-align: center;
+      padding: 12px 20px;
+      text-decoration: none;
+      border-radius: 4px;
+      font-weight: bold;
+      margin: 25px auto;
+    }
+    .warning {
+      background-color: #fff9e6;
+      border-left: 4px solid #ffcc00;
+      padding: 12px;
+      margin: 20px 0;
+    }
+    .footer {
+      color: #888888;
+      font-size: 14px;
+      margin-top: 30px;
+      text-align: center;
+      border-top: 1px solid #e0e0e0;
+      padding-top: 20px;
+    }
+    @media only screen and (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Reset Your Password</h1>
+    </div>
+    <p>Hello ${username},</p>
+    <p>We received a request to reset your password. To proceed with the password reset, please click the button below:</p>
+    <a href="${resetUrl}" class="button">Reset Password</a>
+    <p>This link will expire in ${expiryHours} hours.</p>
+    <div class="warning">
+      <p><strong>Note:</strong> If you did not request a password reset, you can safely ignore this email. Your account security has not been compromised.</p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message. Please do not reply to this email.</p>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+
+  const emailOptions: EmailOptions = {
+    to: recipientEmail,
+    subject,
+    text: textContent,
+    html: htmlContent,
+  };
+
+  await emailService.sendEmail({options: emailOptions});
+}

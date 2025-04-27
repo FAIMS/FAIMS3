@@ -16,31 +16,12 @@ import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
-// eslint-disable-next-line n/no-extraneous-import
-
-/**
- * Slugify a string, replacing special characters with less special ones
- * @param str input string
- * @returns url safe version of the string
- * https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
- */
-export const slugify = (str: string) => {
-  str = str.trim();
-  //str = str.toLowerCase();
-  // remove accents, swap ñ for n, etc
-  const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
-  const to = 'aaaaaeeeeeiiiiooooouuuunc------';
-  for (let i = 0, l = from.length; i < l; i++) {
-    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-  }
-
-  str = str
-    .replace(/[^A-Za-z0-9 -]/g, '') // remove invalid chars
-    .replace(/\s+/g, '-') // collapse whitespace and replace by -
-    .replace(/-+/g, '-'); // collapse dashes
-
-  return str;
-};
+import {
+  slugify,
+  getViewSetForView,
+  removeFieldFromSummary,
+  removeFieldFromSummaryForViewset,
+} from './helpers/uiSpec-helpers';
 
 const uiSpecInitialState: NotebookUISpec =
   initialState.notebook['ui-specification'].present;
@@ -156,6 +137,15 @@ export const uiSpecificationReducer = createSlice({
 
       // add field to target section
       state.fviews[targetViewId].fields.push(fieldName);
+
+      // Get viewset (form) ids for both fields.
+      const sourceViewSetId = getViewSetForView(state, sourceViewId);
+      const targetViewSetId = getViewSetForView(state, targetViewId);
+      // If the field has moved to a different form or we couldn't find one of the forms,
+      // then remove the field from the form's summary fields.
+      if (sourceViewSetId && sourceViewSetId !== targetViewSetId) {
+        removeFieldFromSummaryForViewset(state, fieldName, sourceViewSetId);
+      }
     },
     fieldRenamed: (
       state,
@@ -241,11 +231,11 @@ export const uiSpecificationReducer = createSlice({
       // add in the meta field
       newField.meta = {
         annotation: {
-          include: true,
+          include: false,
           label: 'annotation',
         },
         uncertainty: {
-          include: true,
+          include: false,
           label: 'uncertainty',
         },
       };
@@ -296,6 +286,7 @@ export const uiSpecificationReducer = createSlice({
         state.fviews[viewId].fields = state.fviews[viewId].fields.filter(
           field => field !== fieldName
         );
+        removeFieldFromSummary(state, fieldName);
       } else {
         throw new Error(
           `Cannot delete unknown field ${fieldName} via fieldDeleted action`
@@ -342,6 +333,20 @@ export const uiSpecificationReducer = createSlice({
       const position =
         state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
       state.fviews[viewId].fields.splice(position, 0, fieldLabel);
+    },
+    fieldConditionChanged: (
+      state,
+      action: PayloadAction<{
+        fieldName: string;
+        condition: ConditionType | null;
+      }>
+    ) => {
+      const {fieldName, condition} = action.payload;
+      const field = state.fields[fieldName];
+      if (!field) throw new Error(`Unknown field ${fieldName}`);
+
+      if (condition === null) delete field.condition;
+      else field.condition = condition;
     },
     sectionRenamed: (
       state,
@@ -525,7 +530,11 @@ export const uiSpecificationReducer = createSlice({
       const {viewId, condition} = action.payload;
 
       if (viewId in state.fviews) {
-        state.fviews[viewId].condition = condition;
+        if (condition === null) {
+          delete state.fviews[viewId].condition;
+        } else {
+          state.fviews[viewId].condition = condition;
+        }
       }
     },
     viewSetAdded: (state, action: PayloadAction<{formName: string}>) => {
@@ -688,6 +697,9 @@ export const {
   fieldAdded,
   fieldDeleted,
   fieldDuplicated,
+  fieldConditionChanged,
+  toggleFieldProtection,
+  toggleFieldHidden,
   sectionRenamed,
   sectionAdded,
   sectionDuplicated,

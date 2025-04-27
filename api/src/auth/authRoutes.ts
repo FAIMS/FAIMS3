@@ -24,22 +24,37 @@ import {
   PeopleDBDocument,
   PostChangePasswordInput,
   PostChangePasswordInputSchema,
+  PostForgotPasswordInputSchema,
   PostLoginInput,
   PostLoginInputSchema,
   PostRegisterInput,
   PostRegisterInputSchema,
+  PostResetPasswordInput,
+  PostResetPasswordInputSchema,
 } from '@faims3/data-model';
 import {NextFunction, Router} from 'express';
 import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
 import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
+  createNewEmailCode,
+  markCodeAsUsed,
+  validateEmailCode,
+} from '../couchdb/emailReset';
+import {
   getCouchUserFromEmailOrUserId,
   saveCouchUser,
   saveExpressUser,
   updateUserPassword,
 } from '../couchdb/users';
+import {createVerificationChallenge} from '../couchdb/verificationChallenges';
+import {TooManyRequestsException} from '../exceptions';
 import {AuthAction, CustomSessionData} from '../types';
+import {
+  sendEmailVerificationChallenge,
+  sendPasswordResetEmail,
+} from '../utils/emailHelpers';
+import patch from '../utils/patchExpressAsync';
 import {
   buildQueryString,
   handleZodErrors,
@@ -50,11 +65,7 @@ import {
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
-
-import patch from '../utils/patchExpressAsync';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {createVerificationChallenge} from '../couchdb/verificationChallenges';
-import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
 
 // This must occur before express app is used
 patch();
@@ -354,7 +365,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
   /**
    * Handle password change for local users
    */
-  app.post('/auth/change-password', async (req, res) => {
+  app.post('/auth/changePassword', async (req, res) => {
     // Parse the body of the payload - we do this here so we can flash err messages
     let payload: PostChangePasswordInput = req.body;
     const errRedirect = `/change-password${buildQueryString({values: {username: payload.username, redirect: payload.redirect}})}`;
@@ -447,6 +458,197 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       req.flash('error', {
         changePasswordError: {
           msg: 'An error occurred while changing password. Contact a system administrator.',
+        },
+      });
+      return res.redirect(errRedirect);
+    }
+  });
+
+  /**
+   * Handle forgot password requests
+   * Generates a password reset code and sends an email to the user
+   * Includes rate limiting to prevent abuse
+   */
+  app.post(
+    '/auth/forgotPassword',
+    processRequest({
+      body: PostForgotPasswordInputSchema,
+    }),
+    async (req, res) => {
+      const {email, redirect} = req.body;
+
+      // Validate the redirect URL
+      const {valid, redirect: validatedRedirect} = validateRedirect(
+        redirect || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect: validatedRedirect});
+      }
+
+      const errRedirect = `/forgot-password${buildQueryString({
+        values: {redirect: validatedRedirect},
+      })}`;
+
+      try {
+        // Get the user by email
+        const user = await getCouchUserFromEmailOrUserId(email);
+
+        if (!user) {
+          // For security reasons, don't reveal if the email exists or not
+          // Just show the success page as if we sent the email
+          req.flash(
+            'success',
+            'If an account exists with that email, you will receive password reset instructions shortly.'
+          );
+          return res.redirect(errRedirect);
+        }
+
+        // Check if the user has a local profile
+        if (!user.profiles.local) {
+          req.flash('error', {
+            forgotPasswordError: {
+              msg: 'This account uses social login. Please sign in with your social provider instead.',
+            },
+          });
+          return res.redirect(errRedirect);
+        }
+
+        try {
+          // Generate reset code with email and purpose for rate limiting
+          const {code, record} = await createNewEmailCode({
+            userId: user.user_id,
+          });
+
+          // Send the password reset email. We don't await to keep response fast.
+          sendPasswordResetEmail({
+            recipientEmail: email,
+            username: user.name || user.user_id,
+            resetCode: code,
+            expiryTimestampMs: record.expiryTimestampMs,
+            redirect: validatedRedirect,
+          });
+
+          // Flash success message
+          req.flash(
+            'success',
+            'If an account exists with that email, you will receive password reset instructions shortly.'
+          );
+        } catch (error) {
+          if (error instanceof TooManyRequestsException) {
+            req.flash('error', {
+              forgotPasswordError: {
+                msg: 'Too many password reset attempts.',
+              },
+            });
+          } else {
+            // For other errors, log but don't reveal details to user
+            console.error('Password reset error:', error);
+            req.flash('error', {
+              forgotPasswordError: {
+                msg: 'An error occurred while processing your request. Please try again later.',
+              },
+            });
+          }
+        }
+
+        return res.redirect(errRedirect);
+      } catch (error) {
+        console.error('Password reset error:', error);
+        req.flash('error', {
+          forgotPasswordError: {
+            msg: 'An error occurred while processing your request. Please try again later.',
+          },
+        });
+        return res.redirect(errRedirect);
+      }
+    }
+  );
+
+  /**
+   * Handle password reset submissions
+   */
+  app.post('/auth/resetPassword', async (req, res) => {
+    // Get redirect and code for error handling redirects
+    const code = req.body.code;
+    let payload: PostResetPasswordInput = req.body;
+    const redirect = payload.redirect || DEFAULT_REDIRECT_URL;
+
+    // Validate the redirect URL
+    const {valid, redirect: validatedRedirect} = validateRedirect(redirect);
+
+    if (!valid) {
+      return res.render('redirect-error', {redirect: validatedRedirect});
+    }
+
+    // Create the error redirect URL
+    const errRedirect = `/auth/reset-password${buildQueryString({
+      values: {code, redirect: validatedRedirect},
+    })}`;
+
+    // Parse and validate the request body
+    try {
+      payload = PostResetPasswordInputSchema.parse(req.body);
+    } catch (validationError) {
+      const handled = handleZodErrors({
+        error: validationError,
+        req: req as unknown as Request,
+        res,
+        formData: {}, // No form data to preserve
+        redirect: errRedirect,
+      });
+
+      if (!handled) {
+        console.error('Reset password validation error:', validationError);
+        req.flash('error', {
+          resetPasswordError: {
+            msg: 'An unexpected error occurred during validation',
+          },
+        });
+        res.status(500).redirect(errRedirect);
+      }
+      return;
+    }
+
+    try {
+      // Validate the reset code
+      const validationResult = await validateEmailCode(payload.code);
+
+      if (!validationResult.valid || !validationResult.user) {
+        req.flash('error', {
+          resetPasswordError: {
+            msg: validationResult.validationError || 'Invalid reset code.',
+          },
+        });
+        return res.redirect(errRedirect);
+      }
+
+      // Update the user's password
+      await updateUserPassword(
+        validationResult.user.user_id,
+        payload.newPassword
+      );
+
+      // Mark the code as used
+      await markCodeAsUsed(payload.code);
+
+      // Flash success message and redirect to login page
+      req.flash(
+        'success',
+        'Your password has been successfully reset. You can now log in with your new password.'
+      );
+
+      // Redirect to login page with the original redirect parameter
+      return res.redirect(
+        `/login${buildQueryString({
+          values: {redirect: validatedRedirect},
+        })}`
+      );
+    } catch (error) {
+      console.error('Password reset error:', error);
+      req.flash('error', {
+        resetPasswordError: {
+          msg: 'An error occurred while resetting your password. Please try again.',
         },
       });
       return res.redirect(errRedirect);

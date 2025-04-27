@@ -28,6 +28,11 @@ interface Props {
 }
 
 export const RichTextField: React.FC<Props> = ({content}) => {
+  if (!content?.trim()) {
+    // Return nothing if content is empty or whitespace
+    return null;
+  }
+
   return (
     <div dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(content)}} />
   );

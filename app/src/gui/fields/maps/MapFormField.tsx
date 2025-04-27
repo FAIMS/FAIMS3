@@ -46,6 +46,7 @@ export interface MapFieldProps extends FieldProps {
   FormLabelProps?: any;
   helperText: string;
   required: boolean;
+  advancedHelperText?: string;
 }
 
 const createPointFeature = (
@@ -179,6 +180,7 @@ export function MapFormField({
       heading={props.label}
       subheading={props.helperText}
       required={props.required}
+      advancedHelperText={props.advancedHelperText}
     >
       {/* if offline and no downloaded map, offer to use current location for point features only */}
 

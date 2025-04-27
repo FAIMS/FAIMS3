@@ -27,3 +27,36 @@ export function iteratorTakeOne<V>(iterator: Iterator<V>): V | undefined {
   const result = iterator.next();
   return result.done ? undefined : result.value;
 }
+
+/**
+ * Either replaces or adds a redirect to a URL query string
+ * @param url
+ * @param redirectTo
+ * @returns
+ */
+export const replaceOrAppendRedirect = ({
+  url,
+  redirectTo,
+}: {
+  url: string;
+  redirectTo: string;
+}): string => {
+  try {
+    // Parse the URL to manipulate its parts
+    const urlObj = new URL(url);
+
+    // Check if redirect parameter exists and replace it
+    if (urlObj.searchParams.has('redirect')) {
+      urlObj.searchParams.set('redirect', redirectTo);
+    } else {
+      // Add redirect parameter if it doesn't exist
+      urlObj.searchParams.append('redirect', redirectTo);
+    }
+
+    return urlObj.toString();
+  } catch (error) {
+    // Return original URL if parsing fails
+    console.error('Error parsing URL:', error);
+    return url;
+  }
+};
