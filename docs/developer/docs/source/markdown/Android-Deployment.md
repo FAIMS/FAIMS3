@@ -175,7 +175,11 @@ where these workflows will run.
 - `vars.TURBO_API_URL` - Turbo cache URL
 - `vars.APP_ID` - the id of the app on the app store, eg. 'au.edu.faims.fieldmark', needs to be unique per deployment
 - `vars.APP_NAME` - the app name that appears in various places
-= `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
+- `vars.ANDROID_RELEASE_STATUS` - the release status, normally 'completed' but for a draft (not yet reviewed) app this could be 'draft'
+- `vars.ENABLE_RECORD_FILTERS` - enable 'filters' in the records table
+- `vars.HEADING_APP_NAME` - The app name displayed in the app main page, defaults to APP_NAME
+- `vars.MAP_SOURCE` - source for map tiles, 'maptiler' or 'osm'
+
 
 Secrets will not be visible once added so we need to keep copies somewhere safe.
 
@@ -185,3 +189,4 @@ Secrets will not be visible once added so we need to keep copies somewhere safe.
 - `secrets.KEYSTORE_FILE` - java key store file, base64 encoded
 - `secrets.JAVA_KEY_PASSWORD` - password for the Java keystore
 - `secrets.JAVA_KEY` - key alias for the Java Keystore
+- `secrets.MAP_SOURCE_KEY` - API key for map tiles
