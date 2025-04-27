@@ -156,6 +156,11 @@ export default function FormButtonGroup({
 }: FormButtonGroupProps) {
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
 
+  // allow finish and new button config
+  const allowFinishAndNewButton = record_type
+    ? ui_specification.viewsets[record_type]?.allowFinishAndNewButton !== false
+    : false;
+
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
       {views.length > 1 && layout !== 'inline' && (
@@ -183,15 +188,17 @@ export default function FormButtonGroup({
                   handleFormSubmit={handleFormSubmit}
                   is_final_view={is_final_view}
                 />
-                <FormSubmitButton
-                  color="secondary"
-                  disabled={disabled}
-                  formProps={formProps}
-                  text={`Finish and new ${record_type}`}
-                  is_close="new"
-                  handleFormSubmit={handleFormSubmit}
-                  is_final_view={is_final_view}
-                />
+                {allowFinishAndNewButton && (
+                  <FormSubmitButton
+                    color="secondary"
+                    disabled={disabled}
+                    formProps={formProps}
+                    text={`Finish and new ${record_type}`}
+                    is_close="new"
+                    handleFormSubmit={handleFormSubmit}
+                    is_final_view={is_final_view}
+                  />
+                )}
               </>
             )}
           </Box>
