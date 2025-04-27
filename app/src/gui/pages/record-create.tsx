@@ -47,10 +47,6 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {
-  ConfirmExitDialog,
-  useConfirmExit,
-} from '../components/record/confirmExitDialog';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
