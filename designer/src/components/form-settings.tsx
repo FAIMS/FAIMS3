@@ -32,6 +32,7 @@ type ViewSetType = {
   layout?: 'inline' | 'tabs';
   hridField?: string;
   publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
+  allowFinishAndNewButton?: boolean;
 };
 
 /**
@@ -87,6 +88,14 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
 
   const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
     React.useState('always');
+
+  const [allowFinishAndNew, setAllowFinishAndNew] = React.useState(true);
+
+  React.useEffect(() => {
+    if (viewSet?.allowFinishAndNewButton !== undefined) {
+      setAllowFinishAndNew(viewSet.allowFinishAndNewButton);
+    }
+  }, [viewSet?.allowFinishAndNewButton]);
 
   // Ensure selected value persists and is updated in the Redux store
   React.useEffect(() => {
@@ -243,6 +252,32 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               <MenuItem value="noErrors">
                 Show Only When No Errors Exist
               </MenuItem>
+            </Select>
+          </SettingSection>
+
+          <SettingSection
+            title="Allow 'Finish and New' Button"
+            description="Toggle whether the 'Finish and New' button is available after publishing a record."
+          >
+            <Select
+              fullWidth
+              value={
+                viewSet.allowFinishAndNewButton === false
+                  ? 'disabled'
+                  : 'enabled'
+              }
+              onChange={event =>
+                dispatch({
+                  type: 'ui-specification/viewSetAllowFinishAndNewButtonUpdated',
+                  payload: {
+                    viewSetId,
+                    allowFinishAndNewButton: event.target.value === 'enabled',
+                  },
+                })
+              }
+            >
+              <MenuItem value="enabled">Enabled</MenuItem>
+              <MenuItem value="disabled">Disabled</MenuItem>
             </Select>
           </SettingSection>
 
