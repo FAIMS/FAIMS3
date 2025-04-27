@@ -78,6 +78,7 @@ export const store: ToolkitStore<AppState> = configureStore({
           'ui-specification/viewSetLayoutUpdated',
           'ui-specification/viewSetSummaryFieldsUpdated',
           'ui-specification/viewSetHridUpdated',
+          'ui-specification/viewSetAllowFinishAndNewButtonUpdated',
         ]),
         clearHistoryType: 'CLEAR_HISTORY',
         initTypes: [],

@@ -672,6 +672,20 @@ export const uiSpecificationReducer = createSlice({
       }
     },
 
+    viewSetAllowFinishAndNewButtonUpdated: (
+      state,
+      action: PayloadAction<{
+        viewSetId: string;
+        allowFinishAndNewButton: boolean;
+      }>
+    ) => {
+      const {viewSetId, allowFinishAndNewButton} = action.payload;
+      if (viewSetId in state.viewsets) {
+        state.viewsets[viewSetId].allowFinishAndNewButton =
+          allowFinishAndNewButton;
+      }
+    },
+
     viewSetPublishButtonBehaviourUpdated: (
       state,
       action: PayloadAction<{
@@ -712,6 +726,7 @@ export const {
   viewSetMoved,
   viewSetRenamed,
   formVisibilityUpdated,
+  viewSetAllowFinishAndNewButtonUpdated,
   viewSetPublishButtonBehaviourUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
