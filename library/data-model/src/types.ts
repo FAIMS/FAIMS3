@@ -400,6 +400,7 @@ export interface ProjectUIViewset {
   // Layout option
   layout?: 'inline' | 'tabs';
   publishButtonBehaviour?: 'always' | 'visited' | 'noErrors';
+  allowFinishAndNewButton?: boolean;
 }
 
 export interface ProjectUIViewsets {

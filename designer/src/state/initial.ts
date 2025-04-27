@@ -120,6 +120,7 @@ export type NotebookUISpec = {
       layout?: 'inline' | 'tabs';
       hridField?: string;
       publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
+      allowFinishAndNewButton?: boolean;
     };
   };
   visible_types: string[];
