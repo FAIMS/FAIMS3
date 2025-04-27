@@ -1639,6 +1639,19 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                     this.state.relationship ?? {}
                   );
 
+                // handle submission of the fall - one of three options
+                // basically just call save after a short pause
+                const handleFormSubmit = (closeOption: FormCloseOptions) => {
+                  formProps.setSubmitting(true);
+                  this.setTimeout(() => {
+                    this.save({
+                      values: formProps.values,
+                      closeOption,
+                      setSubmitting: formProps.setSubmitting,
+                    });
+                  }, 500);
+                };
+
                 if (layout === 'inline')
                   return (
                     <div>
@@ -1731,16 +1744,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         ui_specification={ui_specification}
                         views={views}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(closeOption: FormCloseOptions) => {
-                          formProps.setSubmitting(true);
-                          this.setTimeout(() => {
-                            this.save({
-                              values: formProps.values,
-                              closeOption,
-                              setSubmitting: formProps.setSubmitting,
-                            });
-                          }, 500);
-                        }}
+                        handleFormSubmit={handleFormSubmit}
                         layout={layout}
                       />
                       {/* {UGCReport ONLY for the saved record} */}
@@ -1829,16 +1833,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         ui_specification={ui_specification}
                         views={views}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(closeOption: FormCloseOptions) => {
-                          formProps.setSubmitting(true);
-                          this.setTimeout(() => {
-                            this.save({
-                              values: formProps.values,
-                              closeOption,
-                              setSubmitting: formProps.setSubmitting,
-                            });
-                          }, 500);
-                        }}
+                        handleFormSubmit={handleFormSubmit}
                         layout={layout}
                       />
                       {this.state.revision_cached !== undefined && (

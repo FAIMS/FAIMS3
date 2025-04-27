@@ -21,21 +21,32 @@
 import {Alert, AlertTitle, Button, Dialog, DialogActions} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useEffect, useState} from 'react';
+import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
+import {CloseOptionType} from './formButton';
 
-export const ConfirmExitDialog = ({backLink}: {backLink: string}) => {
+export const ConfirmExitDialog = ({
+  backLink,
+  backIsParent = false,
+  open = false,
+  setOpen,
+}: {
+  backLink: string;
+  backIsParent: boolean;
+  open: boolean;
+  setOpen: (state: boolean) => void;
+}) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
-  const [openDialog, setOpenDialog] = useState(false);
 
   const handleClose = () => {
-    setOpenDialog(false);
+    console.log('handleClose');
+    setOpen(false);
   };
 
   const handleConfirm = () => {
-    setOpenDialog(false);
+    setOpen(false);
     navigate(backLink, {
       replace: true,
     });
@@ -44,11 +55,11 @@ export const ConfirmExitDialog = ({backLink}: {backLink: string}) => {
   useEffect(() => {
     const handleBackEvent = (event: Event) => {
       event.preventDefault();
-      setOpenDialog(true);
+      setOpen(true);
     };
     window.history.pushState(null, '', window.location.href);
     const handlePopState = () => {
-      setOpenDialog(true);
+      setOpen(true);
     };
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('beforeunload', handleBackEvent);
@@ -61,7 +72,7 @@ export const ConfirmExitDialog = ({backLink}: {backLink: string}) => {
 
   return (
     <Dialog
-      open={openDialog}
+      open={open}
       onClose={handleClose}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
@@ -101,6 +112,84 @@ export const ConfirmExitDialog = ({backLink}: {backLink: string}) => {
         </Button>
         <Button
           onClick={handleConfirm}
+          sx={{
+            backgroundColor: theme.palette.dialogButton.confirm,
+            color: theme.palette.dialogButton.dialogText,
+            fontSize: isMobile ? '0.875rem' : '1rem',
+            padding: isMobile ? '6px 12px' : '10px 20px',
+            '&:hover': {
+              backgroundColor: theme.palette.text.primary,
+            },
+          }}
+        >
+          Return to {backIsParent ? 'parent record' : 'record list'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export const ConfirmCancelDialog = ({
+  open,
+  setOpen,
+  confirmAction,
+}: {
+  open: boolean;
+  setOpen: (state: boolean) => void;
+  confirmAction: (close: CloseOptionType) => void;
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleConfirm = () => {
+    setOpen(false);
+    console.log('cancel confirmed');
+    confirmAction('cancel');
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      PaperProps={{
+        sx: {padding: 2},
+      }}
+      disableScrollLock={true}
+    >
+      <Alert severity="info">
+        <AlertTitle> Are you sure you want to cancel?</AlertTitle>
+        This action will delete any changes you have made to this form and
+        cannot be undone.
+      </Alert>
+
+      <DialogActions
+        sx={{
+          justifyContent: 'space-between',
+          padding: theme.spacing(2),
+        }}
+      >
+        <Button
+          onClick={handleClose}
+          sx={{
+            backgroundColor: theme.palette.dialogButton.cancel,
+            color: theme.palette.dialogButton.dialogText,
+            fontSize: isMobile ? '0.875rem' : '1rem',
+            padding: isMobile ? '6px 12px' : '10px 20px',
+            '&:hover': {
+              backgroundColor: theme.palette.text.primary,
+            },
+          }}
+        >
+          Continue working
+        </Button>
+        <Button
+          onClick={handleConfirm}
           // variant={'contained'}
           sx={{
             backgroundColor: theme.palette.dialogButton.confirm,
@@ -112,7 +201,7 @@ export const ConfirmExitDialog = ({backLink}: {backLink: string}) => {
             },
           }}
         >
-          Return to record list
+          Confirm cancel.
         </Button>
       </DialogActions>
     </Dialog>

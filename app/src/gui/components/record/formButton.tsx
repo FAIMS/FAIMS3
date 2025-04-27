@@ -27,11 +27,12 @@ import CircularProgress from '@mui/material/CircularProgress';
 import {CustomMobileStepper} from './recordStepper';
 import {ProjectUIModel} from '@faims3/data-model';
 import {useState} from 'react';
+import {ConfirmCancelDialog} from './confirmExitDialog';
 
 interface FormProps {
   isSubmitting: boolean;
 }
-type CloseOptionType = 'close' | 'new' | 'cancel';
+export type CloseOptionType = 'close' | 'new' | 'cancel';
 
 interface FormSubmitButtonProps {
   /** Whether this is the final view in a multi-step form */
@@ -156,6 +157,7 @@ export default function FormButtonGroup({
   showPublishButton = true,
 }: FormButtonGroupProps) {
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
+  const [openCancelDialog, setOpenCancelDialog] = useState(false);
 
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
@@ -199,13 +201,18 @@ export default function FormButtonGroup({
                   formProps={formProps}
                   text={'Cancel'}
                   is_close="cancel"
-                  handleFormSubmit={handleFormSubmit}
+                  handleFormSubmit={() => setOpenCancelDialog(true)}
                   is_final_view={is_final_view}
                 />
               </>
             )}
           </Box>
         </Grid>
+        <ConfirmCancelDialog
+          open={openCancelDialog}
+          setOpen={setOpenCancelDialog}
+          confirmAction={handleFormSubmit}
+        />
         <Grid
           item
           xs={1.5}

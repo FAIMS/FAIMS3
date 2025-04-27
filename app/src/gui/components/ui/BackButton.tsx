@@ -1,49 +1,63 @@
 import {IconButton, Typography, Box} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {useNavigate} from 'react-router';
+import {ConfirmExitDialog} from '../record/confirmExitDialog';
+import {useState} from 'react';
 
 const BackButton = ({
-  label,
   link,
-  singleLine = false, // control layout for new record / draft record vieww
+  edited = false,
+  backIsParent = false,
+  confirm = true,
 }: {
-  label?: string;
-  link?: string;
-  singleLine?: boolean;
+  link: string;
+  edited?: boolean;
+  backIsParent?: boolean;
+  confirm?: boolean;
 }) => {
+  const [dialogOpen, setDialogOpen] = useState(false);
   const navigate = useNavigate();
   const goBack = () => {
-    if (link) navigate(link);
+    console.log('edited state', edited);
+    if (confirm) {
+      setDialogOpen(true);
+    } else if (link) navigate(link);
     else history.back();
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: singleLine ? 'center' : 'flex-start',
-        flexDirection: singleLine ? 'row' : 'column',
-        gap: singleLine ? 2 : 0,
-        cursor: 'pointer',
-      }}
-      onClick={goBack}
-    >
-      <IconButton color="primary" aria-label={label} sx={{p: 0}}>
-        <ArrowBackIcon sx={{fontSize: 28}} />
-      </IconButton>
-      {label && (
+    <>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          flexDirection: 'column',
+          gap: 0,
+          cursor: 'pointer',
+        }}
+        onClick={goBack}
+      >
+        <IconButton color="primary" aria-label="Back" sx={{p: 0}}>
+          <ArrowBackIcon sx={{fontSize: 28}} />
+        </IconButton>
         <Typography
           variant="h5"
           fontWeight="bold"
           sx={{
             color: 'primary.main',
-            textAlign: singleLine ? 'left' : 'center',
+            textAlign: 'center',
           }}
         >
-          {label}
+          Back
         </Typography>
-      )}
-    </Box>
+      </Box>
+      <ConfirmExitDialog
+        open={dialogOpen}
+        setOpen={setDialogOpen}
+        backLink={link}
+        backIsParent={backIsParent}
+      />
+    </>
   );
 };
 

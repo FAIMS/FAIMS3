@@ -47,7 +47,10 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {ConfirmExitDialog, useConfirmExit} from '../components/record/confirmExitDialog';
+import {
+  ConfirmExitDialog,
+  useConfirmExit,
+} from '../components/record/confirmExitDialog';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -200,7 +203,11 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
     <React.Fragment>
       <Grid container justifyContent={'space-between'} spacing={2}>
         <Grid item>
-          <BackButton label="Back" link={backLink} />
+          <BackButton
+            link={backLink}
+            edited={true}
+            backIsParent={parentLinks.length > 0}
+          />
         </Grid>
         <Grid item xs>
           <ProgressBar percentage={progress} />
@@ -278,6 +285,7 @@ export default function RecordCreate() {
   let showBreadcrumbs = false;
 
   let backlink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+  let backIsParent = false;
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
@@ -292,6 +300,7 @@ export default function RecordCreate() {
   if (location.state && location.state.parent_record_id !== recordId) {
     showBreadcrumbs = true;
     backlink = location.state.parent_link;
+    backIsParent = true;
     const type =
       location.state.type === 'Child'
         ? 'Parent'
@@ -331,7 +340,6 @@ export default function RecordCreate() {
           />
         )}
       </Box>
-      <ConfirmExitDialog backLink={backlink} />
     </React.Fragment>
   );
 }

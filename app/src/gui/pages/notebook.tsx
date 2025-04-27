@@ -27,15 +27,17 @@
  * - React Router: useParams, useNavigate
  * - Material UI: Box, Typography, Chip, IconButton, CircularProgress
  */
-import {CircularProgress, Stack, Typography} from '@mui/material';
+import {CircularProgress, IconButton, Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import NotebookComponent from '../components/notebook';
-import BackButton from '../components/ui/BackButton';
 import {useAppSelector} from '../../context/store';
 import NotFound404 from './404';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import BackButton from '../components/ui/BackButton';
+
 
 export default function Notebook() {
   const theme = useTheme();
@@ -58,7 +60,7 @@ export default function Notebook() {
   return (
     <Stack spacing={2}>
       <Stack direction="row" alignItems={'center'} spacing={2}>
-        <BackButton label="Back" link={backLink}></BackButton>
+        <BackButton link={backLink} confirm={false} />
 
         <Typography
           variant={largerThanMedium ? 'h3' : 'h4'}

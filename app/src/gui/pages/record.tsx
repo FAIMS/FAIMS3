@@ -149,13 +149,17 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const [backLink, setBackLink] = useState('');
   const [breadcrumbs, setBreadcrumbs] = useState<
     {link?: string; title: string}[]
   >([]);
   const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const dataDb = localGetDataDb(projectId);
+
+  const projectLink =
+    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+  const [backLink, setBackLink] = useState<string>(projectLink);
+  const [backIsParent, setBackIsParent] = useState(false);
 
   useEffect(() => {
     const getIni = async () => {
@@ -175,9 +179,6 @@ export default function Record() {
         uiSpecification: uiSpec,
       }).then(hrid => {
         setHrid(hrid);
-        setBackLink(
-          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId
-        );
         setBreadcrumbs([
           // {link: ROUTES.INDEX, title: 'Home'},
           {
@@ -190,6 +191,8 @@ export default function Record() {
           },
           {title: hrid ?? recordId},
         ]);
+        setBackLink(projectLink);
+        setBackIsParent(false);
         setUpdatedRevisionId(revisionId);
         setselectedRevision(revisionId!);
         setValue('1');
@@ -311,26 +314,12 @@ export default function Record() {
               serverId: serverId,
             });
             setParentLinks(newParent);
-            let newBreadcrumbs = [
-              // {link: ROUTES.INDEX, title: 'Home'},
-              {
-                link: ROUTES.NOTEBOOK_LIST_ROUTE,
-                title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-              },
-              {
-                link:
-                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
-                title: project.metadata.name,
-              },
-              {title: hrid! ?? recordId!},
-            ];
             if (
               newParent !== null &&
               newParent.length > 0 &&
               newParent[0].deleted !== true
             ) {
-              newBreadcrumbs = [
-                // {link: ROUTES.INDEX, title: 'Home'},
+              setBreadcrumbs([
                 {
                   link: ROUTES.NOTEBOOK_LIST_ROUTE,
                   title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
@@ -348,10 +337,10 @@ export default function Record() {
                   title: newParent[0]['hrid'],
                 },
                 {title: hrid! ?? recordId!},
-              ];
+              ]);
               setBackLink(newParent[0]['route']);
+              setBackIsParent(true);
             }
-            setBreadcrumbs(newBreadcrumbs);
           }
           // setValue('1');
           setIs_link_ready(true);
@@ -489,11 +478,9 @@ export default function Record() {
       >
         <Grid item>
           <BackButton
-            label="Back"
-            onClick={() => {
-              // Go back to the records list
-              history({pathname: backLink});
-            }}
+            link={backLink}
+            edited={draftId !== undefined}
+            backIsParent={backIsParent}
           />
         </Grid>
         <Grid item xs>
@@ -522,19 +509,6 @@ export default function Record() {
           device only.
         </Alert>
       )}
-      {/**
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}
-      >
-        <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
-          <ArrowDropDown />
-          Jump to end
-        </TransparentButton>
-      </div>
-       */}
       <Box mb={2} pr={1}>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
@@ -816,7 +790,6 @@ export default function Record() {
           </TabPanel>
         </TabContext>
       </Paper>
-      <ConfirmExitDialog backLink={backLink} />
     </Box>
   );
 }
