@@ -194,7 +194,6 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               </FormHelperText>
             </Grid>
 
-            {/* ranisa new change  */}
             <Grid item xs={12} sm={3}>
               <FormControlLabel
                 control={
