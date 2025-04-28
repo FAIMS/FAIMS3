@@ -57,6 +57,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {checkIfParentHasInheritedData} from '../../utils/formUtilities';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -165,6 +166,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [is_link_ready, setIs_link_ready] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  console.log(parentLinks);
+
   const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
   )?.uiSpecificationId;
@@ -230,13 +233,16 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
             variant={is_mobile ? undefined : 'outlined'}
           >
             {is_link_ready ? (
-              <InheritedDataComponent
-                parentRecords={parentLinks}
-                ui_specification={uiSpec}
-              />
+              checkIfParentHasInheritedData({parentLinks, uiSpec}) ? (
+                <InheritedDataComponent
+                  parentRecords={parentLinks}
+                  ui_specification={uiSpec}
+                />
+              ) : null
             ) : (
               <CircularProgress size={24} />
             )}
+
             <RecordForm
               serverId={project.serverId}
               project_id={project_id}
