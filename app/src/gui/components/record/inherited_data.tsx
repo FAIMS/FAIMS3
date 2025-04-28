@@ -18,25 +18,15 @@
  *   TODO
  */
 
-import React from 'react';
-import {Typography, Box} from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
-
+import {Box, Typography} from '@mui/material';
 import CircularLoading from '../ui/circular_loading';
+import {Accordion, AccordionDetails, AccordionSummary} from './accordion';
 import ParentForm, {ParentFormProps} from './relationships/parent_form';
-import {checkIfParentHasInheritedData} from '../../../utils/formUtilities';
 
 export default function InheritedDataComponent(props: ParentFormProps) {
   const {parentRecords, ui_specification} = props;
-  const hasInheritedData = checkIfParentHasInheritedData(
-    parentRecords ?? [],
-    ui_specification
-  );
 
-  if (!hasInheritedData) {
-    return null;
-  }
   return (
     <Accordion>
       <AccordionSummary

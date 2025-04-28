@@ -6,6 +6,7 @@ import {
 } from '@faims3/data-model';
 import Mustache from 'mustache';
 import {RecordContext} from '../gui/components/record/form';
+import {ParentLinkProps} from '../gui/components/record/relationships/types';
 
 /*
 Patch mustache to not escape values.
@@ -359,22 +360,29 @@ export function prettifyFieldName(fieldName: string): string {
  * @param uiSpec - The UI specification defining fields and display rules.
  * @returns True if at least one field qualifies for inherited display, otherwise false.
  */
-export function checkIfParentHasInheritedData(
-  parentRecords: any[],
-  uiSpec: any
-): boolean {
-  if (!parentRecords || parentRecords.length === 0) {
+export function checkIfParentHasInheritedData({
+  parentLinks,
+  uiSpec,
+}: {
+  parentLinks: ParentLinkProps[];
+  uiSpec: ProjectUIModel;
+}): boolean {
+  if (!parentLinks || parentLinks.length === 0) {
     return false;
   }
 
-  return parentRecords.some(record => {
+  return parentLinks.some(record => {
     if (!record.persistentData) return false;
-    return Object.entries(record.persistentData).some(([fieldName, value]) => {
-      if (value === null || value === undefined || value === '') {
-        return false;
+    // The actual data seems to be in the .data field of the persistent data -
+    // this doesn't fit the model but it works
+    return Object.entries(record.persistentData.data ?? {}).some(
+      ([fieldName, value]) => {
+        if (value === null || value === undefined || value === '') {
+          return false;
+        }
+        const fieldSpec = uiSpec?.fields?.[fieldName];
+        return fieldSpec && fieldSpec.displayParent === true;
       }
-      const fieldSpec = uiSpec?.fields?.[fieldName];
-      return fieldSpec && fieldSpec.displayParent === true;
-    });
+    );
   });
 }
