@@ -1330,7 +1330,6 @@ describe('Check form component', () => {
             handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
-            setProgress={null as any}
             // TODO fix missing props
             {...({} as any)}
           />
@@ -1410,7 +1409,6 @@ describe('Check form component', () => {
             handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
-            setProgress={null as any}
             // TODO fix missing props
             {...({} as any)}
           />
@@ -1454,7 +1452,6 @@ describe('Check form component', () => {
             draftLastSaved={new Date(testDraftLastSaved)}
             serverId="todo"
             navigate={vi.fn(() => {})}
-            setProgress={null as any}
             // TODO fix missing props
             {...({} as any)}
           />
@@ -1495,7 +1492,6 @@ describe('Check form component', () => {
             handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
-            setProgress={null as any}
             // TODO fix missing props
             {...({} as any)}
           />
@@ -1539,7 +1535,6 @@ describe('Check form component', () => {
             handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
-            setProgress={null as any}
             // TODO fix missing props
             {...({} as any)}
           />
@@ -1586,7 +1581,6 @@ describe('Check form component', () => {
             handleSetDraftError={vi.fn(() => {})}
             draftLastSaved={new Date(testDraftLastSaved)}
             navigate={vi.fn(() => {})}
-            setProgress={null as any}
             // TODO fix missing props
             {...({} as any)}
           />

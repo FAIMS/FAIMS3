@@ -152,9 +152,10 @@ export default function Record() {
   const [breadcrumbs, setBreadcrumbs] = useState<
     {link?: string; title: string}[]
   >([]);
-  const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const dataDb = localGetDataDb(projectId);
+
+  const progress = useAppSelector(state => state.records.percent);
 
   const projectLink =
     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
@@ -477,11 +478,7 @@ export default function Record() {
         alignItems="center"
       >
         <Grid item>
-          <BackButton
-            link={backLink}
-            edited={draftId !== undefined}
-            backIsParent={backIsParent}
-          />
+          <BackButton link={backLink} backIsParent={backIsParent} />
         </Grid>
         <Grid item xs>
           <Typography

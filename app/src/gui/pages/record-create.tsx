@@ -154,8 +154,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [parentLinks, setParentLinks] = useState<ParentLinkProps[]>([]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const [progress, setProgress] = useState(0);
 
+  const progress = useAppSelector(state => state.records.percent);
   const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
   )?.uiSpecificationId;
@@ -199,11 +199,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
     <React.Fragment>
       <Grid container justifyContent={'space-between'} spacing={2}>
         <Grid item>
-          <BackButton
-            link={props.backLink}
-            edited={true}
-            backIsParent={props.backIsParent}
-          />
+          <BackButton link={props.backLink} backIsParent={props.backIsParent} />
         </Grid>
         <Grid item xs>
           <ProgressBar percentage={progress} />
@@ -246,7 +242,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               mq_above_md={mq_above_md}
               navigate={navigate}
               location={props.location}
-              setProgress={setProgress}
             />
           </Box>
         </Box>

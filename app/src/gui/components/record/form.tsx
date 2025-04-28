@@ -99,7 +99,6 @@ const mapDispatchToProps = (dispatch: AppDispatch) => {
 const connector = connect(null, mapDispatchToProps);
 
 type RecordFormProps = ConnectedProps<typeof connector> & {
-  setProgress: (progress: number) => void;
   navigate: NavigateFunction;
   serverId: string;
   project_id: ProjectID;
@@ -1638,8 +1637,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                   formProps.touched
                 );
 
-                // update the progress bar
-                this.props.setProgress?.(
+                this.props.dispatchSetPercent(
                   percentComplete(
                     requiredFields(
                       this.getViewsetName(),
@@ -1649,6 +1647,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                     formProps.values
                   )
                 );
+
 
                 // This fragment of code is critical to saving drafts, it needs
                 // to be called here on every render and as a side-effect will
