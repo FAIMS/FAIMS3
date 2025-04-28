@@ -3,23 +3,23 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import {useNavigate} from 'react-router';
 import {ConfirmExitDialog} from '../record/confirmExitDialog';
 import {useState} from 'react';
+import {useAppSelector} from '../../../context/store';
 
 const BackButton = ({
   link,
-  edited = false,
   backIsParent = false,
   confirm = true,
 }: {
   link: string;
-  edited?: boolean;
   backIsParent?: boolean;
   confirm?: boolean;
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const formIsEdited = useAppSelector(state => state.records.edited);
+
   const navigate = useNavigate();
   const goBack = () => {
-    console.log('edited state', edited);
-    if (confirm) {
+    if (confirm && formIsEdited) {
       setDialogOpen(true);
     } else if (link) navigate(link);
     else history.back();

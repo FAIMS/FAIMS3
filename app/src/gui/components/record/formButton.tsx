@@ -167,13 +167,13 @@ export default function FormButtonGroup({
       </Typography>
       {publishButtonBehaviour === 'noErrors' && (
         <Typography variant="body1">
-          Buttons are disabled because there are errors in the form.
+          You cannot finish this record because there are errors in the form.
         </Typography>
       )}
       {publishButtonBehaviour === 'visited' && (
         <Typography variant="body1">
-          Buttons are disabled because you have not visited all pages of the
-          form.
+          You cannot finish this record because you have not visited all pages
+          of the form.
         </Typography>
       )}
       <Typography variant="body1">

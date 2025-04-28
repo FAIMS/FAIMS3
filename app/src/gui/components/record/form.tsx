@@ -81,8 +81,24 @@ import {
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
 import {deleteDraftsForRecord} from '../../../sync/draft-storage';
+import {connect, ConnectedProps} from 'react-redux';
+import {AppDispatch} from '../../../context/store';
 
-type RecordFormProps = {
+// Import the actions from recordSlice
+import {setEdited, setPercent} from '../../../context/slices/recordSlice';
+
+// Define mapDispatchToProps
+const mapDispatchToProps = (dispatch: AppDispatch) => {
+  return {
+    dispatchSetEdited: (edited: boolean) => dispatch(setEdited({edited})),
+    dispatchSetPercent: (percent: number) => dispatch(setPercent({percent})),
+  };
+};
+
+// Create connector
+const connector = connect(null, mapDispatchToProps);
+
+type RecordFormProps = ConnectedProps<typeof connector> & {
   setProgress: (progress: number) => void;
   navigate: NavigateFunction;
   serverId: string;
@@ -102,33 +118,33 @@ type RecordFormProps = {
   draftLastSaved?: null | Date;
   mq_above_md?: boolean;
 } & (
-  | {
-      // When editing existing record, we require the caller to know its revision
-      revision_id: RevisionID;
-      // The user can view records without editing them, and to facilitate this,
-      // having a draft id is optional.
-      // In this mode, when the user starts editing, a draft ID is created and
-      // stored as state on RecordForm.
-      draft_id?: string;
+    | {
+        // When editing existing record, we require the caller to know its revision
+        revision_id: RevisionID;
+        // The user can view records without editing them, and to facilitate this,
+        // having a draft id is optional.
+        // In this mode, when the user starts editing, a draft ID is created and
+        // stored as state on RecordForm.
+        draft_id?: string;
 
-      // To avoid 'type' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      // type is the viewSet name - the name of the form that allows editing of this record
-      type?: undefined;
-    }
-  | {
-      // When creating a new record,  revision is not yet created.
-      // the user had to have already been prompted with viewset/type
-      type: string;
+        // To avoid 'type' in this.props, and since in JS when a key is not set,
+        // you get back undefined:
+        // type is the viewSet name - the name of the form that allows editing of this record
+        type?: undefined;
+      }
+    | {
+        // When creating a new record,  revision is not yet created.
+        // the user had to have already been prompted with viewset/type
+        type: string;
 
-      // Draft id, when creating a new record, is created by a redirect
-      draft_id: string;
+        // Draft id, when creating a new record, is created by a redirect
+        draft_id: string;
 
-      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      revision_id?: undefined;
-    }
-);
+        // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
+        // you get back undefined:
+        revision_id?: undefined;
+      }
+  );
 
 export interface RecordContext {
   // timestamp ms created
@@ -305,7 +321,13 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   async componentDidMount() {
     // moved from constructor since it has a side-effect of setting up a global timer
     if (!this.draftState) {
-      this.draftState = new RecordDraftState(this.props as any);
+      this.draftState = new RecordDraftState({
+        project_id: this.props.project_id,
+        record_id: this.props.record_id,
+        revision_id: this.props.revision_id,
+        draft_id: this.props.draft_id,
+        dispatchSetEdited: this.props.dispatchSetEdited,
+      });
     }
     // call formChanged to update the form data, either with
     // the revision_id from state or the one passed in
@@ -1866,4 +1888,4 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   }
 }
 RecordForm.contextType = NotificationContext;
-export default RecordForm;
+export default connector(RecordForm);

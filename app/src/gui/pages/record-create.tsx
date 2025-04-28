@@ -139,6 +139,7 @@ interface DraftRecordEditProps {
   state?: any;
   location?: Location;
   backLink: string;
+  backIsParent: boolean;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
@@ -194,15 +195,14 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
 
   if (!uiSpec) return <CircularProgress size={12} thickness={4} />;
 
-  const backLink = parentLinks[0] ? parentLinks[0].route : '';
   return (
     <React.Fragment>
       <Grid container justifyContent={'space-between'} spacing={2}>
         <Grid item>
           <BackButton
-            link={backLink}
+            link={props.backLink}
             edited={true}
-            backIsParent={parentLinks.length > 0}
+            backIsParent={props.backIsParent}
           />
         </Grid>
         <Grid item xs>
@@ -332,6 +332,7 @@ export default function RecordCreate() {
             state={location.state}
             location={location}
             backLink={backlink}
+            backIsParent={backIsParent}
           />
         )}
       </Box>
