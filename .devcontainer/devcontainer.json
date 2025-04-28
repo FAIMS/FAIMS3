@@ -20,7 +20,7 @@
 		"CONDUCTOR_INTERNAL_PORT": "8080",
 
 		"COUCHDB_EXTERNAL_PORT": "5984",
-		"COUCHDB_INTERNAL_URL": "http://localhost:5984",
+		"COUCHDB_INTERNAL_URL": "http://couchdb:5984",
 		"COUCHDB_PUBLIC_URL": "http://localhost:5984",
   	"NEW_CONDUCTOR_URL": "http://localhost:3001",
 		"WEB_APP_PUBLIC_URL":"http://localhost:3000",
