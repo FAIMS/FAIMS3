@@ -41,7 +41,10 @@ export default function Breadcrumbs(props: BreadcrumbProps) {
             // If it's the root item, use an icon
             if (index === 0 && item.link) {
               return (
-                <RouterLink to={item.link} key={'breadcrumb-item-' + item.title}>
+                <RouterLink
+                  to={item.link}
+                  key={'breadcrumb-item-' + item.title}
+                >
                   <IconButton size="small">
                     <HomeIcon fontSize="inherit" />
                   </IconButton>

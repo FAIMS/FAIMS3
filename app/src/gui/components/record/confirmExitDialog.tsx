@@ -24,7 +24,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
 import {CloseOptionType} from './formButton';
-import {useAppSelector} from '../../../context/store';
 
 export const ConfirmExitDialog = ({
   backLink,

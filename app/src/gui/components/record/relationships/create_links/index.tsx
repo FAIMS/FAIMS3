@@ -82,7 +82,7 @@ export default function CreateLinkComponent(
               aria-expanded={expanded}
               aria-label="show more"
               endIcon={<ExpandMoreIcon />}
-              disabled={ props.form.isSubmitting  ? true : props.disabled }
+              disabled={props.form.isSubmitting ? true : props.disabled}
             >
               {props.relation_type === 'Linked' ? (
                 <span>Add a link to a {props.related_type_label}</span>

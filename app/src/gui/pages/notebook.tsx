@@ -27,17 +27,15 @@
  * - React Router: useParams, useNavigate
  * - Material UI: Box, Typography, Chip, IconButton, CircularProgress
  */
-import {CircularProgress, IconButton, Stack, Typography} from '@mui/material';
+import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
-import NotebookComponent from '../components/notebook';
 import {useAppSelector} from '../../context/store';
-import NotFound404 from './404';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import NotebookComponent from '../components/notebook';
 import BackButton from '../components/ui/BackButton';
-
+import NotFound404 from './404';
 
 export default function Notebook() {
   const theme = useTheme();

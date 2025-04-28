@@ -1648,7 +1648,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                   )
                 );
 
-
                 // This fragment of code is critical to saving drafts, it needs
                 // to be called here on every render and as a side-effect will
                 // save the current draft.

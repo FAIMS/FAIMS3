@@ -1,7 +1,7 @@
 import {getRecordsWithRegex, RecordMetadata} from '@faims3/data-model';
-import AddIcon from '@mui/icons-material/Add';
+import {Refresh} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import {Box, Button, ButtonGroup, CircularProgress, Stack} from '@mui/material';
+import {Button, ButtonGroup, CircularProgress, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
@@ -13,7 +13,6 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
-import {Refresh} from '@mui/icons-material';
 
 type AddRecordButtonsProps = {
   project: Project;
@@ -78,7 +77,7 @@ export default function AddRecordButtons({
     );
   } else {
     return (
-      <Stack direction={{ xs: 'column', sm: 'row' }}>
+      <Stack direction={{xs: 'column', sm: 'row'}}>
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
