@@ -44,6 +44,9 @@ export type ComponentParameters = {
       label: string;
       RadioProps?: unknown;
     }[];
+    // This will always be included for new notebooks - but is also backwards
+    // compatible by not asserting it exists
+    otherOption?: {label?: string; enabled?: boolean};
     optiontree?: unknown;
   };
   InputLabelProps?: {label: string};

@@ -222,6 +222,39 @@ const SortableItem = ({
   );
 };
 
+const RowForOtherOption = ({
+  otherLabel,
+  showExclusiveOptions,
+}: {
+  otherLabel: string;
+  showExclusiveOptions: boolean;
+}) => {
+  return (
+    <TableRow>
+      <TableCell sx={{width: '40px', py: 1}}>
+        <IconButton size="small" disabled={true} sx={{p: 0.5}}>
+          <DragIndicatorIcon />
+        </IconButton>
+      </TableCell>
+      <TableCell sx={{py: 1}}>
+        <Tooltip
+          title={'Automatically included other option, as configured above'}
+        >
+          <Typography noWrap sx={{maxWidth: 400, fontSize: '0.875rem'}}>
+            {otherLabel}
+          </Typography>
+        </Tooltip>
+      </TableCell>
+      {showExclusiveOptions && (
+        <TableCell align="center" sx={{py: 1}}>
+          <Checkbox checked={false} disabled={true} size="small" />
+        </TableCell>
+      )}
+      <TableCell align="right" sx={{py: 1}}></TableCell>
+    </TableRow>
+  );
+};
+
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,
@@ -265,6 +298,15 @@ export const OptionsEditor = ({
   const [editValue, setEditValue] = useState('');
   const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
 
+  // Extract current otherOption values from the field
+  const otherOption = field['component-parameters'].ElementProps
+    ?.otherOption || {enabled: false, label: 'Other'};
+  // State for other option
+  const [otherEnabled, setOtherEnabled] = useState(
+    otherOption.enabled || false
+  );
+  const [otherLabel, setOtherLabel] = useState(otherOption.label || 'Other');
+
   // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
     references: string[];
@@ -295,6 +337,28 @@ export const OptionsEditor = ({
     });
 
     return duplicateExists ? 'This option already exists in the list' : null;
+  };
+
+  /**
+   * Updates the "Other" option settings in the field
+   */
+  const updateOtherOption = (newOtherOption: {
+    enabled: boolean;
+    label: string;
+  }) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    newField['component-parameters'].ElementProps = {
+      ...(newField['component-parameters'].ElementProps ?? {}),
+      otherOption: newOtherOption,
+    };
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+
+    // Update local state as well
+    setOtherEnabled(newOtherOption.enabled);
+    setOtherLabel(newOtherOption.label);
   };
 
   /**
@@ -559,7 +623,7 @@ export const OptionsEditor = ({
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
+      <Paper sx={{p: 3}}>
         <Grid container spacing={2}>
           {/* Info alert and add option form */}
           <Grid item xs={12}>
@@ -639,6 +703,64 @@ export const OptionsEditor = ({
                 sx={{mb: 2}}
               />
             )}
+          </Grid>
+
+          {/* Other Option controls */}
+          <Grid item xs={12}>
+            <Paper sx={{p: 2, backgroundColor: '#f9f9f9'}}>
+              <Typography variant="subtitle2" sx={{mb: 1}}>
+                Other option?
+              </Typography>
+
+              <Stack spacing={2}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={otherEnabled}
+                      onChange={e =>
+                        updateOtherOption({
+                          enabled: e.target.checked,
+                          label: otherLabel,
+                        })
+                      }
+                      size="small"
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography variant="body2">
+                        Enable "Other" input option
+                      </Typography>
+                      <Tooltip title="Allow an 'Other' option allowing for the free input of values not in the options below?">
+                        <InfoIcon color="action" fontSize="small" />
+                      </Tooltip>
+                    </Stack>
+                  }
+                />
+
+                {otherEnabled && (
+                  <TextField
+                    size="small"
+                    label="Other option label"
+                    value={otherLabel}
+                    onChange={e => {
+                      setOtherLabel(e.target.value);
+                    }}
+                    onBlur={() => {
+                      if (otherLabel.trim() === '') {
+                        setOtherLabel('Other');
+                      }
+                      updateOtherOption({
+                        enabled: otherEnabled,
+                        label: otherLabel.trim() || 'Other',
+                      });
+                    }}
+                    helperText="Customize the label for the 'Other' option"
+                    sx={{maxWidth: 300}}
+                  />
+                )}
+              </Stack>
+            </Paper>
           </Grid>
 
           {/* Options table */}
@@ -738,6 +860,12 @@ export const OptionsEditor = ({
                           totalItems={options.length}
                         />
                       ))}
+                      {otherEnabled && (
+                        <RowForOtherOption
+                          otherLabel={otherLabel}
+                          showExclusiveOptions={showExclusiveOptions ?? false}
+                        />
+                      )}
                     </SortableContext>
                   </DndContext>
                 </TableBody>
