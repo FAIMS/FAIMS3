@@ -27,11 +27,14 @@ import {
   ListItemText,
   MenuItem,
   Select,
+  Stack,
+  TextField,
 } from '@mui/material';
 import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
-import {ReactNode} from 'react';
+import React, {ReactNode, useState} from 'react';
 import FieldWrapper from './fieldWrapper';
+import {debounce} from 'lodash';
 
 /**
  * Base properties for multi-select components
@@ -41,6 +44,9 @@ interface ElementProps {
   expandedChecklist?: boolean;
   exclusiveOptions?: Array<string>;
   advancedHelperText?: ReactNode;
+  // This will always be included for new notebooks - but is also backwards
+  // compatible by not asserting it exists
+  otherOption?: {label?: string; enabled?: boolean};
 }
 
 /**
@@ -62,6 +68,9 @@ interface ExpandedChecklistProps {
   label?: ReactNode;
   helperText?: ReactNode;
   exclusiveOptions?: Array<string>;
+  // This will always be included for new notebooks - but is also backwards
+  // compatible by not asserting it exists
+  otherOption?: {label?: string; enabled?: boolean};
 }
 
 /**
@@ -74,6 +83,9 @@ interface MuiMultiSelectProps {
   label?: ReactNode;
   helperText?: ReactNode;
   exclusiveOptions?: Array<string>;
+  // This will always be included for new notebooks - but is also backwards
+  // compatible by not asserting it exists
+  otherOption?: {label?: string; enabled?: boolean};
 }
 
 /**
@@ -84,8 +96,16 @@ export const ExpandedChecklist = ({
   value,
   onChange,
   exclusiveOptions = [],
+  otherOption,
 }: ExpandedChecklistProps) => {
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
+
+  const unknownValues = value.filter(v => !options.some(o => o.value === v));
+  const hasOtherValue = otherOption?.enabled && unknownValues.length > 0;
+  const otherValue = hasOtherValue ? unknownValues[0] : undefined;
+
+  // Checkbox for other
+  const [otherIsChecked, setOtherIsChecked] = useState<boolean>(!!otherValue);
 
   const handleChange = (optionValue: string) => {
     // If the new selection is exclusive, then we either deselect all or select
@@ -104,28 +124,96 @@ export const ExpandedChecklist = ({
     }
   };
 
+  const handleOtherChange = (otherValue: string | undefined) => {
+    // empty or undefined
+    if (!otherValue) {
+      // Filter out to only selections which are valid options
+      onChange(value.filter(v => options.some(o => o.value === v)));
+    } else {
+      // Filter out to only selections which are valid options
+      // Non empty and not undefined
+
+      // Firstly purify
+      let purified = value.filter(v => options.some(o => o.value === v));
+      // then add other option
+      purified.push(otherValue);
+      onChange(purified);
+    }
+  };
+
   return (
-    <FormControl sx={{width: '100%'}}>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
-          borderBottom: '1px solid #eee',
-          pb: 1.5,
-        }}
-      >
-        {options.map(option => (
+    <Stack spacing={2}>
+      <FormControl sx={{width: '100%'}}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+            borderBottom: '1px solid #eee',
+            pb: 1.5,
+          }}
+        >
+          {options.map(option => (
+            <FormControlLabel
+              key={option.key || option.value}
+              control={
+                <Checkbox
+                  checked={value.includes(option.value)}
+                  onChange={() => handleChange(option.value)}
+                  disabled={
+                    selectedExclusiveOption !== undefined &&
+                    option.value !== selectedExclusiveOption
+                  }
+                  sx={{
+                    padding: '4px 8px 0 0',
+                    alignSelf: 'flex-start',
+                  }}
+                />
+              }
+              label={
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'contents',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.8rem',
+                    paddingTop: '4px',
+                  }}
+                >
+                  {option.label}
+                </Box>
+              }
+              sx={{
+                alignItems: 'center',
+                mb: 1.5,
+                m: 0, // reset default margins
+                '& .MuiFormControlLabel-label': {
+                  marginTop: 0,
+                },
+              }}
+            />
+          ))}
+        </Box>
+      </FormControl>
+
+      {otherOption?.enabled && (
+        <>
           <FormControlLabel
-            key={option.key || option.value}
+            key={otherOption.label}
             control={
               <Checkbox
-                checked={value.includes(option.value)}
-                onChange={() => handleChange(option.value)}
-                disabled={
-                  selectedExclusiveOption !== undefined &&
-                  option.value !== selectedExclusiveOption
-                }
+                checked={otherIsChecked}
+                onChange={() => {
+                  if (otherIsChecked) {
+                    // we are unchecking
+                    handleOtherChange(undefined);
+                    setOtherIsChecked(false);
+                  } else {
+                    // we are checking
+                    setOtherIsChecked(true);
+                  }
+                }}
                 sx={{
                   padding: '4px 8px 0 0',
                   alignSelf: 'flex-start',
@@ -143,7 +231,7 @@ export const ExpandedChecklist = ({
                   paddingTop: '4px',
                 }}
               >
-                {option.label}
+                {otherOption.label}
               </Box>
             }
             sx={{
@@ -155,9 +243,22 @@ export const ExpandedChecklist = ({
               },
             }}
           />
-        ))}
-      </Box>
-    </FormControl>
+          {otherIsChecked && (
+            <TextField
+              value={otherValue}
+              placeholder={'Enter other value...'}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                handleOtherChange(event.target.value);
+              }}
+              sx={{
+                padding: '4px 8px 0 0',
+                alignSelf: 'flex-start',
+              }}
+            />
+          )}
+        </>
+      )}
+    </Stack>
   );
 };
 
@@ -169,7 +270,15 @@ export const MuiMultiSelect = ({
   value,
   onChange,
   exclusiveOptions = [],
+  otherOption,
 }: MuiMultiSelectProps) => {
+  const unknownValues = value.filter(v => !options.some(o => o.value === v));
+  const hasOtherValue = otherOption?.enabled && unknownValues.length > 0;
+  const otherValue = hasOtherValue ? unknownValues[0] : undefined;
+
+  // Checkbox for other
+  const [otherIsChecked, setOtherIsChecked] = useState<boolean>(!!otherValue);
+
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
 
@@ -192,53 +301,133 @@ export const MuiMultiSelect = ({
     onChange(selectedValues);
   };
 
+  const handleOtherChange = (otherValue: string | undefined) => {
+    // empty or undefined
+    if (!otherValue) {
+      // Filter out to only selections which are valid options
+      onChange(value.filter(v => options.some(o => o.value === v)));
+    } else {
+      // Filter out to only selections which are valid options
+      // Non empty and not undefined
+
+      // Firstly purify
+      let purified = value.filter(v => options.some(o => o.value === v));
+      // then add other option
+      purified.push(otherValue);
+      onChange(purified);
+    }
+  };
+
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   return (
-    <FormControl
-      sx={{
-        width: '100%',
-        mt: 2,
-        '& .MuiSelect-select': {
-          whiteSpace: 'normal',
-          wordBreak: 'break-word',
-          padding: '12px',
-        },
-      }}
-    >
-      <Select
-        multiple
-        onChange={handleChange}
-        value={value}
-        renderValue={selected => selected.join(', ')}
-        MenuProps={{
-          PaperProps: {
-            style: {
-              maxHeight: 300,
-              marginTop: 8,
-            },
+    <Stack spacing={2}>
+      <FormControl
+        sx={{
+          width: '100%',
+          mt: 2,
+          '& .MuiSelect-select': {
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            padding: '12px',
           },
         }}
       >
-        {options.map(option => (
-          <MenuItem
-            key={option.key ? option.key : option.value}
-            value={option.value}
-            disabled={
-              selectedExclusiveOption !== undefined &&
-              option.value !== selectedExclusiveOption
+        <Select
+          multiple
+          onChange={handleChange}
+          value={value}
+          renderValue={selected => selected.join(', ')}
+          MenuProps={{
+            PaperProps: {
+              style: {
+                maxHeight: 300,
+                marginTop: 8,
+              },
+            },
+          }}
+        >
+          {options.map(option => (
+            <MenuItem
+              key={option.key ? option.key : option.value}
+              value={option.value}
+              disabled={
+                selectedExclusiveOption !== undefined &&
+                option.value !== selectedExclusiveOption
+              }
+              sx={{
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+              }}
+            >
+              <Checkbox checked={value.includes(option.value)} />
+              <ListItemText primary={option.label} />
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      {otherOption?.enabled && (
+        <>
+          <FormControlLabel
+            key={otherOption.label}
+            control={
+              <Checkbox
+                checked={otherIsChecked}
+                onChange={() => {
+                  if (otherIsChecked) {
+                    // we are unchecking
+                    handleOtherChange(undefined);
+                    setOtherIsChecked(false);
+                  } else {
+                    // we are checking
+                    setOtherIsChecked(true);
+                  }
+                }}
+                sx={{
+                  padding: '4px 8px 0 0',
+                  alignSelf: 'flex-start',
+                }}
+              />
+            }
+            label={
+              <Box
+                component="span"
+                sx={{
+                  display: 'contents',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  lineHeight: '1.8rem',
+                  paddingTop: '4px',
+                }}
+              >
+                {otherOption.label}
+              </Box>
             }
             sx={{
-              whiteSpace: 'normal',
-              wordWrap: 'break-word',
+              alignItems: 'center',
+              mb: 1.5,
+              m: 0, // reset default margins
+              '& .MuiFormControlLabel-label': {
+                marginTop: 0,
+              },
             }}
-          >
-            <Checkbox checked={value.includes(option.value)} />
-            <ListItemText primary={option.label} />
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+          />
+          {otherIsChecked && (
+            <TextField
+              value={otherValue}
+              placeholder={'Enter other value...'}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                handleOtherChange(event.target.value);
+              }}
+              sx={{
+                padding: '4px 8px 0 0',
+                alignSelf: 'flex-start',
+              }}
+            />
+          )}
+        </>
+      )}
+    </Stack>
   );
 };
 
@@ -261,6 +450,7 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
     helperText: props.helperText,
     exclusiveOptions: props.ElementProps.exclusiveOptions,
     advancedHelperText: props.ElementProps.advancedHelperText,
+    otherOption: props.ElementProps.otherOption,
   };
 
   return (

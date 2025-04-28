@@ -47,6 +47,9 @@ import {ElementOption} from '@faims3/data-model';
  */
 interface ElementProps {
   options: Array<ElementOption>;
+  // This will always be included for new notebooks - but is also backwards
+  // compatible by not asserting it exists
+  otherOption?: {label?: string; enabled?: boolean};
 }
 
 /**
