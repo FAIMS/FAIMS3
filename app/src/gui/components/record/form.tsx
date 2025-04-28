@@ -1729,6 +1729,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         ui_specification={ui_specification}
                         views={views}
                         showPublishButton={showPublishButton}
+                        formErrors={formProps.errors}
                         handleFormSubmit={(closeOption: FormCloseOptions) => {
                           formProps.setSubmitting(true);
                           this.setTimeout(() => {

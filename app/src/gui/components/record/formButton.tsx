@@ -76,6 +76,7 @@ interface FormButtonGroupProps {
   visitedSteps: Set<string>;
   isRecordSubmitted: boolean;
   showPublishButton?: boolean;
+  formErrors?: {[fieldName: string]: unknown};
 }
 
 /**
@@ -153,12 +154,13 @@ export default function FormButtonGroup({
   ui_specification,
   layout,
   showPublishButton = true,
+  formErrors,
 }: FormButtonGroupProps) {
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
 
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
-      {views.length > 1 && layout !== 'inline' && (
+      {views.length > 1 && (
         <CustomMobileStepper
           views={views}
           view_index={view_index}
@@ -166,6 +168,8 @@ export default function FormButtonGroup({
           ui_specification={ui_specification}
           visitedSteps={visitedSteps || new Set()}
           isRecordSubmitted={isRecordSubmitted || false}
+          isBottom={true}
+          formErrors={formErrors}
         />
       )}
       <Grid container spacing={2}>

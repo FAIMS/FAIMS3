@@ -91,6 +91,26 @@ const useStyles = createUseStyles({
  *     and mobile stepper for smaller screens.
  */
 
+/**
+ * Checks if a section has any validation errors
+ */
+const hasErrorsGlobal = (
+  sectionId: string | undefined,
+  visitedSteps: Set<string>,
+  ui_specification: ProjectUIModel,
+  formErrors?: {[fieldName: string]: unknown}
+) => {
+  if (!sectionId || !visitedSteps || !ui_specification.views[sectionId])
+    return false;
+
+  return (
+    visitedSteps.has(sectionId) &&
+    ui_specification.views[sectionId]?.fields.some(
+      field => formErrors && formErrors[field]
+    )
+  );
+};
+
 export default function RecordStepper(props: RecordStepperProps) {
   const classes = useStyles();
   const {
@@ -102,6 +122,7 @@ export default function RecordStepper(props: RecordStepperProps) {
     formErrors,
     isRecordSubmitted,
   } = props;
+
   const theme = useTheme();
 
   // function to check if stepper has erros
@@ -139,16 +160,20 @@ export default function RecordStepper(props: RecordStepperProps) {
                       width: '94%',
                       '& .MuiStepLabel-label': {
                         color: theme.palette.primary.dark,
-                        fontweight: 'bold',
+                        fontWeight: 'bold',
                         transition: 'color 0.3s ease-in-out',
                         fontSize: '1rem',
                       },
-
                       '& .MuiStepIcon-root': {
                         color: getStepColor(
                           sectionId,
                           views[view_index],
-                          hasErrors(sectionId),
+                          hasErrorsGlobal(
+                            sectionId,
+                            visitedSteps,
+                            ui_specification,
+                            formErrors
+                          ),
                           visitedSteps,
                           isRecordSubmitted
                         ),
@@ -185,20 +210,29 @@ export default function RecordStepper(props: RecordStepperProps) {
         </div>
       </Box>
 
-      <Box display={{xs: 'block', sm: 'none'}}>
-        <CustomMobileStepper
-          views={views}
-          view_index={view_index}
-          onChangeStepper={onChangeStepper}
-          ui_specification={ui_specification}
-          formErrors={formErrors}
-          visitedSteps={visitedSteps}
-          isRecordSubmitted={isRecordSubmitted}
-        />
+      {/* Top step number (Desktop + Mobile common) */}
+      <Box mt={2} mb={2}>
+        <Typography
+          variant="h5"
+          align="center"
+          sx={{
+            fontWeight: 700,
+            fontSize: {xs: '1.4rem', sm: '1.6rem'},
+          }}
+        >
+          {`${view_index + 1} / ${views.length}`}
+        </Typography>
+      </Box>
+
+      {/* Form section title */}
+      <Box mb={2}>
         <Typography
           variant="h4"
           align="center"
-          style={{marginTop: theme.spacing(2)}}
+          sx={{
+            fontWeight: 600,
+            fontSize: {xs: '1.2rem', sm: '1.5rem'},
+          }}
         >
           {ui_specification.views[views[view_index]]?.label}
         </Typography>
@@ -220,30 +254,53 @@ const renderStepperButton = (
   label: 'Next' | 'Back',
   stepIndex: number,
   isDisabled: boolean,
-  onChangeStepper: (view: string, index: number) => void,
+  onChangeStepper: (view_id: string, index: number) => void,
   views: string[],
-  hasErrors: (sectionId: string | undefined) => boolean
-) => (
-  <Button
-    size="small"
-    sx={{
-      px: 2,
-      py: 1,
-      fontWeight: 'bold',
-      color: hasErrors(views[stepIndex]) ? 'red' : 'inherit',
-    }}
-    onClick={() => onChangeStepper(views[stepIndex], stepIndex)}
-    disabled={isDisabled}
-  >
-    <Badge
-      badgeContent={hasErrors(views[stepIndex]) ? '!' : 0}
-      color="error"
-      invisible={!hasErrors(views[stepIndex])}
+  visitedSteps: Set<string>,
+  ui_specification: ProjectUIModel,
+  formErrors?: {[fieldName: string]: unknown}
+) => {
+  const hasError = hasErrorsGlobal(
+    views[stepIndex],
+    visitedSteps,
+    ui_specification,
+    formErrors
+  );
+
+  return (
+    <Button
+      size="small"
+      onClick={() => onChangeStepper(views[stepIndex], stepIndex)}
+      disabled={isDisabled}
+      sx={{
+        fontWeight: 'bold',
+        fontSize: '1rem',
+        textTransform: 'none',
+        border: '1px solid',
+        borderColor: isDisabled ? 'grey.300' : 'grey.500',
+        backgroundColor: isDisabled ? 'grey.100' : 'grey.200',
+        color: isDisabled
+          ? 'grey.500'
+          : hasError
+            ? 'error.main'
+            : 'text.primary',
+        padding: '6px 16px',
+        borderRadius: '8px',
+        '&:hover': {
+          backgroundColor: isDisabled ? 'grey.100' : 'grey.300',
+        },
+      }}
     >
-      {label}
-    </Badge>
-  </Button>
-);
+      <Badge
+        badgeContent={hasError ? '!' : 0}
+        color="error"
+        invisible={!hasError}
+      >
+        {label}
+      </Badge>
+    </Button>
+  );
+};
 
 /**
  * @function CustomMobileStepper
@@ -272,7 +329,9 @@ const renderStepperButton = (
 /**
  * Custom mobile stepper for navigation on smaller screens.
  */
-export function CustomMobileStepper(props: RecordStepperProps) {
+export function CustomMobileStepper(
+  props: RecordStepperProps & {isBottom?: boolean}
+) {
   const {
     views,
     view_index,
@@ -280,48 +339,38 @@ export function CustomMobileStepper(props: RecordStepperProps) {
     visitedSteps,
     formErrors,
     ui_specification,
+    isBottom,
   } = props;
 
-  const hasErrors = (sectionId: string | undefined) => {
-    if (!sectionId || !visitedSteps || !ui_specification.views[sectionId])
-      return false;
+  const totalSteps = views.length;
 
-    return (
-      visitedSteps.has(sectionId) &&
-      ui_specification.views[sectionId]?.fields.some(
-        field => formErrors && formErrors[field]
-      )
-    );
-  };
+  if (!isBottom) {
+    return null;
+  }
 
   return (
     <Box
       sx={{
-        position: 'sticky',
-        top: 0,
-        background: '#fff',
-        zIndex: 10,
-        p: 1,
-        borderBottom: '1px solid #ccc',
+        width: '100%',
+        background: 'transparent',
+        py: 2,
+        mt: 4,
       }}
     >
       <MobileStepper
         variant="text"
-        steps={views.length}
+        steps={totalSteps}
         position="static"
         activeStep={view_index}
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
         nextButton={renderStepperButton(
           'Next',
           view_index + 1,
-          view_index === views.length - 1,
+          view_index === totalSteps - 1,
           onChangeStepper,
           views,
-          hasErrors
+          visitedSteps,
+          ui_specification,
+          formErrors
         )}
         backButton={renderStepperButton(
           'Back',
@@ -329,8 +378,15 @@ export function CustomMobileStepper(props: RecordStepperProps) {
           view_index === 0,
           onChangeStepper,
           views,
-          hasErrors
+          visitedSteps,
+          ui_specification,
+          formErrors
         )}
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
       />
     </Box>
   );
