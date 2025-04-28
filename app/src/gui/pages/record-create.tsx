@@ -57,6 +57,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {checkIfParentHasInheritedData} from '../../utils/checkParentInheritedData';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -230,20 +231,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
             variant={is_mobile ? undefined : 'outlined'}
           >
             {is_link_ready ? (
-              parentLinks.length > 0 &&
-              parentLinks.some(record => {
-                if (!record.persistentData) return false;
-                return Object.entries(record.persistentData).some(
-                  ([key, value]) => {
-                    return (
-                      value !== null &&
-                      value !== undefined &&
-                      value !== '' &&
-                      uiSpec?.fields?.[key]?.displayParent === true
-                    );
-                  }
-                );
-              }) ? (
+              checkIfParentHasInheritedData(parentLinks, uiSpec) ? (
                 <InheritedDataComponent
                   parentRecords={parentLinks}
                   ui_specification={uiSpec}

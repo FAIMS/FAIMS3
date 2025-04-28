@@ -25,25 +25,14 @@ import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
 
 import CircularLoading from '../ui/circular_loading';
 import ParentForm, {ParentFormProps} from './relationships/parent_form';
+import {checkIfParentHasInheritedData} from '../../../utils/checkParentInheritedData';
 
 export default function InheritedDataComponent(props: ParentFormProps) {
   const {parentRecords, ui_specification} = props;
-
-  const hasInheritedData =
-    parentRecords &&
-    parentRecords.length > 0 &&
-    parentRecords.some(record => {
-      if (!record.persistentData) return false;
-      return Object.entries(record.persistentData).some(
-        // addtional check
-        ([fieldName, value]) => {
-          if (value === null || value === undefined || value === '')
-            return false;
-          const fieldSpec = ui_specification?.fields[fieldName];
-          return fieldSpec && fieldSpec.displayParent === true;
-        }
-      );
-    });
+  const hasInheritedData = checkIfParentHasInheritedData(
+    parentRecords ?? [],
+    ui_specification
+  );
 
   if (!hasInheritedData) {
     return null;
