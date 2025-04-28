@@ -94,7 +94,6 @@ type RecordFormProps = {
   conflictfields?: string[] | null;
   handleChangeTab?: Function;
   isSyncing?: string;
-  disabled: boolean;
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
@@ -1684,7 +1683,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                                 conflictfields={this.props.conflictfields}
                                 handleChangeTab={this.props.handleChangeTab}
                                 fieldNames={fieldNames}
-                                disabled={this.props.disabled}
                                 hideErrors={true}
                                 formErrors={formProps.errors}
                                 visitedSteps={this.state.visitedSteps}
@@ -1734,7 +1732,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         )}
                       <FormButtonGroup
                         is_final_view={true}
-                        disabled={this.props.disabled}
                         record_type={this.state.type_cached}
                         onChangeStepper={this.onChangeStepper}
                         visitedSteps={this.state.visitedSteps}
@@ -1743,6 +1740,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        publishButtonBehaviour={publishButtonBehaviour}
                         showPublishButton={showPublishButton}
                         handleFormSubmit={handleFormSubmit}
                         layout={layout}
@@ -1815,7 +1813,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         conflictfields={this.props.conflictfields}
                         handleChangeTab={this.props.handleChangeTab}
                         fieldNames={fieldNames}
-                        disabled={this.props.disabled}
                         visitedSteps={this.state.visitedSteps}
                         currentStepId={this.state.view_cached ?? ''}
                         isRevisiting={this.state.isRevisiting}
@@ -1824,7 +1821,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                       <FormButtonGroup
                         record_type={this.state.type_cached}
                         is_final_view={is_final_view}
-                        disabled={this.props.disabled}
                         onChangeStepper={this.onChangeStepper}
                         visitedSteps={this.state.visitedSteps}
                         isRecordSubmitted={isRecordSubmitted}
@@ -1832,6 +1828,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        publishButtonBehaviour={publishButtonBehaviour}
                         showPublishButton={showPublishButton}
                         handleFormSubmit={handleFormSubmit}
                         layout={layout}

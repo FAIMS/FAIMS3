@@ -247,7 +247,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               navigate={navigate}
               location={props.location}
               setProgress={setProgress}
-              disabled={false}
             />
           </Box>
         </Box>

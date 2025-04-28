@@ -109,7 +109,6 @@ export default function RecordData(props: RecordDataTypes) {
         mq_above_md={props.mq_above_md}
         navigate={navigate}
         setProgress={props.setProgress}
-        disabled={false}
         location={location}
       />
     </Box>
