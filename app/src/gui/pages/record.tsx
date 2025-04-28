@@ -83,7 +83,6 @@ import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {ConfirmExitDialog} from '../components/record/confirmExitDialog';
 
 export default function Record() {
   /**
@@ -673,7 +672,6 @@ export default function Record() {
                                 handleUnlink={handleUnlink}
                                 setRevision_id={setUpdatedRevisionId}
                                 mq_above_md={mq_above_md}
-                                setProgress={setProgress}
                                 buttonRef={buttonRef}
                               />
                             )}
@@ -704,7 +702,6 @@ export default function Record() {
                           handleUnlink={handleUnlink}
                           setRevision_id={setUpdatedRevisionId}
                           mq_above_md={mq_above_md}
-                          setProgress={setProgress}
                           buttonRef={buttonRef}
                         />
                       )}
