@@ -31,6 +31,7 @@ import {
   PostRegisterInputSchema,
   PostResetPasswordInput,
   PostResetPasswordInputSchema,
+  PutLogoutInputSchema,
 } from '@faims3/data-model';
 import {NextFunction, Router} from 'express';
 import passport from 'passport';
@@ -41,6 +42,7 @@ import {
   markCodeAsUsed,
   validateEmailCode,
 } from '../couchdb/emailReset';
+import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 import {
   getCouchUserFromEmailOrUserId,
   saveCouchUser,
@@ -48,7 +50,12 @@ import {
   updateUserPassword,
 } from '../couchdb/users';
 import {createVerificationChallenge} from '../couchdb/verificationChallenges';
-import {TooManyRequestsException} from '../exceptions';
+import {
+  InternalSystemError,
+  TooManyRequestsException,
+  UnauthorizedException,
+} from '../exceptions';
+import {requireAuthenticationAPI} from '../middleware';
 import {AuthAction, CustomSessionData} from '../types';
 import {
   sendEmailVerificationChallenge,
@@ -67,7 +74,6 @@ import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
 
-// This must occur before express app is used
 patch();
 
 // This is the place to go if all else fails - it will have a token!
@@ -465,6 +471,51 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
   });
 
   /**
+   * PUT Logout - logging out is an optional client 'good will' process in which
+   * the client indicates they wish for the specific refresh token to be
+   * invalidated.
+   */
+  app.put(
+    '/auth/logout',
+    requireAuthenticationAPI,
+    processRequest({
+      body: PutLogoutInputSchema,
+    }),
+    async ({user, body: {refreshToken}}, res) => {
+      if (!user) {
+        throw new UnauthorizedException();
+      }
+
+      // token
+      const refresh = await getTokenByToken(refreshToken);
+
+      if (!refresh) {
+        // It's fine - just let client think logout succeeded- this refresh
+        // token is invalid anyway
+        return res.sendStatus(200);
+      }
+
+      // User's should not be able to disable other people's token - but let's
+      // not give info here - just return 200
+      if (refresh.userId !== user._id) {
+        return res.sendStatus(200);
+      }
+
+      try {
+        await invalidateToken(refreshToken);
+      } catch (e) {
+        console.error('Invalidation of token failed unexpectedly. Error: ', e);
+        throw new InternalSystemError(
+          'Unexpected failure to invalidate token.'
+        );
+      }
+
+      // job done
+      return res.sendStatus(200);
+    }
+  );
+
+  /*
    * Handle forgot password requests
    * Generates a password reset code and sends an email to the user
    * Includes rate limiting to prevent abuse
