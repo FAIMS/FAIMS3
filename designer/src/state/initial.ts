@@ -22,6 +22,12 @@ export type PropertyMap = {
   [key: string]: unknown;
 };
 
+export type OtherOption = {
+  optionLabel?: string;
+  enabled?: boolean;
+  inputFieldLabel?: string;
+};
+
 export type ComponentParameters = {
   fullWidth?: boolean;
   name?: string;
@@ -46,7 +52,7 @@ export type ComponentParameters = {
     }[];
     // This will always be included for new notebooks - but is also backwards
     // compatible by not asserting it exists
-    otherOption?: {label?: string; enabled?: boolean};
+    otherOption?: OtherOption;
     optiontree?: unknown;
   };
   InputLabelProps?: {label: string};

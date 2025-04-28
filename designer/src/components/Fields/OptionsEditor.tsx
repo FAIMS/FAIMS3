@@ -58,7 +58,7 @@ import {
 } from '@mui/material';
 import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
+import {FieldType, OtherOption} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {findOptionReferences, updateConditionReferences} from '../condition';
 import {
@@ -299,13 +299,23 @@ export const OptionsEditor = ({
   const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
 
   // Extract current otherOption values from the field
-  const otherOption = field['component-parameters'].ElementProps
-    ?.otherOption || {enabled: false, label: 'Other'};
+  const otherOption: OtherOption = field['component-parameters'].ElementProps
+    ?.otherOption || {
+    enabled: false,
+    inputFieldLabel: 'Other details',
+    optionLabel: 'Other',
+  };
+
   // State for other option
   const [otherEnabled, setOtherEnabled] = useState(
     otherOption.enabled || false
   );
-  const [otherLabel, setOtherLabel] = useState(otherOption.label || 'Other');
+  const [otherOptionLabel, setOtherOptionLabel] = useState(
+    otherOption.optionLabel || 'Other'
+  );
+  const [otherInputFieldLabel, setOtherInputFieldLabel] = useState(
+    otherOption.optionLabel || 'Other details'
+  );
 
   // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
@@ -344,7 +354,8 @@ export const OptionsEditor = ({
    */
   const updateOtherOption = (newOtherOption: {
     enabled: boolean;
-    label: string;
+    optionLabel: string;
+    inputLabel: string;
   }) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     newField['component-parameters'].ElementProps = {
@@ -358,7 +369,8 @@ export const OptionsEditor = ({
 
     // Update local state as well
     setOtherEnabled(newOtherOption.enabled);
-    setOtherLabel(newOtherOption.label);
+    setOtherOptionLabel(newOtherOption.optionLabel);
+    setOtherInputFieldLabel(newOtherOption.inputLabel);
   };
 
   /**
@@ -720,7 +732,8 @@ export const OptionsEditor = ({
                       onChange={e =>
                         updateOtherOption({
                           enabled: e.target.checked,
-                          label: otherLabel,
+                          optionLabel: otherOptionLabel,
+                          inputLabel: otherInputFieldLabel,
                         })
                       }
                       size="small"
@@ -739,25 +752,56 @@ export const OptionsEditor = ({
                 />
 
                 {otherEnabled && (
-                  <TextField
-                    size="small"
-                    label="Other option label"
-                    value={otherLabel}
-                    onChange={e => {
-                      setOtherLabel(e.target.value);
-                    }}
-                    onBlur={() => {
-                      if (otherLabel.trim() === '') {
-                        setOtherLabel('Other');
-                      }
-                      updateOtherOption({
-                        enabled: otherEnabled,
-                        label: otherLabel.trim() || 'Other',
-                      });
-                    }}
-                    helperText="Customize the label for the 'Other' option"
-                    sx={{maxWidth: 300}}
-                  />
+                  <Stack direction="row" spacing={2}>
+                    <TextField
+                      size="small"
+                      label="Other option label"
+                      value={otherOptionLabel}
+                      onChange={e => {
+                        setOtherOptionLabel(e.target.value);
+                      }}
+                      onBlur={() => {
+                        if (otherOptionLabel.trim() === '') {
+                          setOtherOptionLabel('Other');
+                        }
+                        if (otherInputFieldLabel.trim() === '') {
+                          setOtherOptionLabel('Other details');
+                        }
+                        updateOtherOption({
+                          enabled: otherEnabled,
+                          optionLabel: otherOptionLabel.trim() || 'Other',
+                          inputLabel:
+                            otherInputFieldLabel.trim() || 'Other details',
+                        });
+                      }}
+                      helperText="Customize the name for the 'Other' option. This will appear in the list as a selectable option."
+                      sx={{maxWidth: 300}}
+                    />
+                    <TextField
+                      size="small"
+                      label="Other option input field label"
+                      value={otherInputFieldLabel}
+                      onChange={e => {
+                        setOtherInputFieldLabel(e.target.value);
+                      }}
+                      onBlur={() => {
+                        if (otherOptionLabel.trim() === '') {
+                          setOtherOptionLabel('Other');
+                        }
+                        if (otherInputFieldLabel.trim() === '') {
+                          setOtherOptionLabel('Other details');
+                        }
+                        updateOtherOption({
+                          enabled: otherEnabled,
+                          optionLabel: otherOptionLabel.trim() || 'Other',
+                          inputLabel:
+                            otherInputFieldLabel.trim() || 'Other details',
+                        });
+                      }}
+                      helperText="Customise the label on the input field where users can enter the other details/info"
+                      sx={{maxWidth: 300}}
+                    />
+                  </Stack>
                 )}
               </Stack>
             </Paper>
@@ -862,7 +906,7 @@ export const OptionsEditor = ({
                       ))}
                       {otherEnabled && (
                         <RowForOtherOption
-                          otherLabel={otherLabel}
+                          otherLabel={otherOptionLabel}
                           showExclusiveOptions={showExclusiveOptions ?? false}
                         />
                       )}

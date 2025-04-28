@@ -34,7 +34,6 @@ import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
 import React, {ReactNode, useState} from 'react';
 import FieldWrapper from './fieldWrapper';
-import {debounce} from 'lodash';
 
 /**
  * Base properties for multi-select components
@@ -142,14 +141,13 @@ export const ExpandedChecklist = ({
   };
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={1}>
       <FormControl sx={{width: '100%'}}>
         <Box
           sx={{
             display: 'flex',
             flexDirection: 'column',
             gap: 1,
-            borderBottom: '1px solid #eee',
             pb: 1.5,
           }}
         >
@@ -194,69 +192,68 @@ export const ExpandedChecklist = ({
               }}
             />
           ))}
-        </Box>
-      </FormControl>
 
-      {otherOption?.enabled && (
-        <>
-          <FormControlLabel
-            key={otherOption.label}
-            control={
-              <Checkbox
-                checked={otherIsChecked}
-                onChange={() => {
-                  if (otherIsChecked) {
-                    // we are unchecking
-                    handleOtherChange(undefined);
-                    setOtherIsChecked(false);
-                  } else {
-                    // we are checking
-                    setOtherIsChecked(true);
-                  }
-                }}
-                sx={{
-                  padding: '4px 8px 0 0',
-                  alignSelf: 'flex-start',
-                }}
-              />
-            }
-            label={
-              <Box
-                component="span"
-                sx={{
-                  display: 'contents',
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word',
-                  lineHeight: '1.8rem',
-                  paddingTop: '4px',
-                }}
-              >
-                {otherOption.label}
-              </Box>
-            }
-            sx={{
-              alignItems: 'center',
-              mb: 1.5,
-              m: 0, // reset default margins
-              '& .MuiFormControlLabel-label': {
-                marginTop: 0,
-              },
-            }}
-          />
-          {otherIsChecked && (
-            <TextField
-              value={otherValue}
-              placeholder={'Enter other value...'}
-              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                handleOtherChange(event.target.value);
-              }}
+          {otherOption?.enabled && (
+            <FormControlLabel
+              key={otherOption.label}
+              control={
+                <Checkbox
+                  checked={otherIsChecked}
+                  onChange={() => {
+                    if (otherIsChecked) {
+                      // we are unchecking
+                      handleOtherChange(undefined);
+                      setOtherIsChecked(false);
+                    } else {
+                      // we are checking
+                      setOtherIsChecked(true);
+                    }
+                  }}
+                  sx={{
+                    padding: '4px 8px 0 0',
+                    alignSelf: 'flex-start',
+                  }}
+                />
+              }
+              label={
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'contents',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.8rem',
+                    paddingTop: '4px',
+                  }}
+                >
+                  {otherOption.label}
+                </Box>
+              }
               sx={{
-                padding: '4px 8px 0 0',
-                alignSelf: 'flex-start',
+                alignItems: 'center',
+                mb: 1.5,
+                m: 0, // reset default margins
+                '& .MuiFormControlLabel-label': {
+                  marginTop: 0,
+                },
               }}
             />
           )}
-        </>
+        </Box>
+      </FormControl>
+
+      {otherIsChecked && (
+        <TextField
+          value={otherValue}
+          placeholder={'Enter other value...'}
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+            handleOtherChange(event.target.value);
+          }}
+          sx={{
+            padding: '4px 8px 0 0',
+            alignSelf: 'flex-start',
+          }}
+        />
       )}
     </Stack>
   );
@@ -298,7 +295,7 @@ export const MuiMultiSelect = ({
     }
 
     // Otherwise, just update with the raw selection
-    onChange(selectedValues);
+    onChange(selectedValues.filter((v: any) => !!v));
   };
 
   const handleOtherChange = (otherValue: string | undefined) => {
@@ -364,55 +361,30 @@ export const MuiMultiSelect = ({
               <ListItemText primary={option.label} />
             </MenuItem>
           ))}
+          {otherOption?.enabled && (
+            <MenuItem
+              value={undefined}
+              onClick={() => {
+                setOtherIsChecked(old => !old);
+              }}
+              key={otherOption.label}
+              disabled={selectedExclusiveOption !== undefined}
+              sx={{
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+              }}
+            >
+              <Checkbox checked={otherIsChecked} />
+              <ListItemText primary={otherOption.label} />
+            </MenuItem>
+          )}
         </Select>
       </FormControl>
-      {otherOption?.enabled && (
-        <>
-          <FormControlLabel
-            key={otherOption.label}
-            control={
-              <Checkbox
-                checked={otherIsChecked}
-                onChange={() => {
-                  if (otherIsChecked) {
-                    // we are unchecking
-                    handleOtherChange(undefined);
-                    setOtherIsChecked(false);
-                  } else {
-                    // we are checking
-                    setOtherIsChecked(true);
-                  }
-                }}
-                sx={{
-                  padding: '4px 8px 0 0',
-                  alignSelf: 'flex-start',
-                }}
-              />
-            }
-            label={
-              <Box
-                component="span"
-                sx={{
-                  display: 'contents',
-                  whiteSpace: 'normal',
-                  wordBreak: 'break-word',
-                  lineHeight: '1.8rem',
-                  paddingTop: '4px',
-                }}
-              >
-                {otherOption.label}
-              </Box>
-            }
-            sx={{
-              alignItems: 'center',
-              mb: 1.5,
-              m: 0, // reset default margins
-              '& .MuiFormControlLabel-label': {
-                marginTop: 0,
-              },
-            }}
-          />
-          {otherIsChecked && (
+      {otherOption?.enabled && otherIsChecked && (
+        <FieldWrapper
+          heading={otherOption?.label}
+          required={true}
+          children={
             <TextField
               value={otherValue}
               placeholder={'Enter other value...'}
@@ -424,8 +396,8 @@ export const MuiMultiSelect = ({
                 alignSelf: 'flex-start',
               }}
             />
-          )}
-        </>
+          }
+        />
       )}
     </Stack>
   );
