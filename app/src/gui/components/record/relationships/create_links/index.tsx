@@ -32,6 +32,7 @@ export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
 
 interface CreateLinkComponentProps extends CreateRecordLinkProps {
   field_label: string;
+  allowLinkToExisting?: boolean;
 }
 
 export default function CreateLinkComponent(
@@ -81,7 +82,7 @@ export default function CreateLinkComponent(
               aria-expanded={expanded}
               aria-label="show more"
               endIcon={<ExpandMoreIcon />}
-              disabled={props.form.isSubmitting ? true : props.disabled}
+              disabled={ props.form.isSubmitting  ? true : props.disabled }
             >
               {props.relation_type === 'Linked' ? (
                 <span>Add a link to a {props.related_type_label}</span>
@@ -96,9 +97,11 @@ export default function CreateLinkComponent(
       </Grid>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
-            <CreateRecordLink {...props} />
-          </Collapse>
+          {props.allowLinkToExisting !== false && (
+            <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
+              <CreateRecordLink {...props} />
+            </Collapse>
+          )}
         </Grid>
       </Grid>
     </React.Fragment>

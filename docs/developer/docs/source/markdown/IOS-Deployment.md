@@ -79,9 +79,11 @@ Fastlane certificates repository.
 `APPLE_KEY_CONTENT` - Content of the key file (not encoded). You can only download this on creation of the key.
 
 `BROWSERSTACK_USERNAME` - username on BrowserStack (for app testing);
-'BROWSERSTACK_ACCESS_KEY` - api access key for BrowserStack.
+`BROWSERSTACK_ACCESS_KEY` - api access key for BrowserStack.
 
 `MATCH_PASSWORD` - password used to encrypt certificates in fastlane match.
+
+`MAP_SOURCE_KEY` - API key for map tiles
 
 ### Variables
 
@@ -101,6 +103,10 @@ the Fastlane `update_app_identifier` action which can do this
 during the build. For now we will keep the Fieldmark id to the
 one that's been in use so far but when we want a BSS release
 we'll need it to be updated.
+
+- `vars.ENABLE_RECORD_FILTERS` - enable 'filters' in the records table
+- `vars.HEADING_APP_NAME` - The app name displayed in the app main page, defaults to APP_NAME
+- `vars.MAP_SOURCE` - source for map tiles, 'maptiler' or 'osm'
 
 ## Note on Development Team
 
