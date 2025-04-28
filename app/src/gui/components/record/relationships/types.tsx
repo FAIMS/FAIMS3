@@ -111,6 +111,7 @@ export interface CreateRecordLinkProps {
   relation_type: string;
   pathname: string;
   state: any;
+  allowLinkToExisting?: boolean;
 
   field_label: string;
 
