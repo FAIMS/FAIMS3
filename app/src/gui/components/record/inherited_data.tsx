@@ -25,7 +25,7 @@ import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
 
 import CircularLoading from '../ui/circular_loading';
 import ParentForm, {ParentFormProps} from './relationships/parent_form';
-import {checkIfParentHasInheritedData} from '../../../utils/checkParentInheritedData';
+import {checkIfParentHasInheritedData} from '../../../utils/formUtilities';
 
 export default function InheritedDataComponent(props: ParentFormProps) {
   const {parentRecords, ui_specification} = props;
