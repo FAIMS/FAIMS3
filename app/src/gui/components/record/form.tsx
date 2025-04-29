@@ -1061,7 +1061,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
   private handleCancel(ui_specification: ProjectUIModel) {
     const relationState = this.props.location?.state;
-    console.log('cancelling', relationState, this.state.relationship);
     // first case is if we have a parent record, there should be
     // some location state passed in
     if (relationState !== undefined && relationState !== null) {
@@ -1101,6 +1100,14 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     return deleteDraftsForRecord(this.props.project_id, this.props.record_id);
   }
 
+  /**
+   * Deal with the case where we are cancelling out of a form but the form
+   * is a child record.  The parent will have been modified before we
+   * started to add the child link, so we need to remove it.
+   * 
+   * - relationState - the location state passed in to this route containing context info
+   * - ui_specification - the current uiSpec
+   */
   private handleCancelWithRelation({
     relationState,
     ui_specification,
@@ -1138,7 +1145,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
           parentRecord.data[relationState.field_id] = newFieldValue;
           upsertFAIMSData({dataDb, record: parentRecord}).then(revisionId => {
             // now parent link will be out of date as it refers to
-            // the old revsision so we need a new one
+            // the old revision so we need a new one
             const revLink = ROUTES.getRecordRoute(
               this.props.serverId,
               this.props.project_id,
