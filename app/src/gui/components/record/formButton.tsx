@@ -165,7 +165,6 @@ export default function FormButtonGroup({
           onChangeStepper={onChangeStepper}
           ui_specification={ui_specification}
           visitedSteps={visitedSteps || new Set()}
-          isRecordSubmitted={isRecordSubmitted || false}
         />
       )}
       <Grid container spacing={2}>
