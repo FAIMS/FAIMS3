@@ -114,7 +114,6 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
      *
      * Peter B: what the hell is going on here?? This is cooked.
      */
-    console.log('CRL handleSubmit');
     setSubmitting(true);
     if (props.add_related_child !== undefined) {
       props.add_related_child();
