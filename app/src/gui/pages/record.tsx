@@ -676,6 +676,8 @@ export default function Record() {
                             {(isalerting === false ||
                               draftId !== undefined) && (
                               <RecordData
+                                // here we are in an existing record
+                                isExistingRecord={true}
                                 serverId={serverId}
                                 project_id={projectId!}
                                 record_id={recordId!}
@@ -707,6 +709,8 @@ export default function Record() {
                         </Box>
                       ) : (
                         <RecordData
+                          // here we are in an existing record
+                          isExistingRecord={true}
                           serverId={serverId}
                           project_id={projectId!}
                           record_id={recordId!}

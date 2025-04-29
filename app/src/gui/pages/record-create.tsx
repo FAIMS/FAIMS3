@@ -244,6 +244,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
             )}
 
             <RecordForm
+              // Here we are in a new record
+              isExistingRecord={false}
               serverId={project.serverId}
               project_id={project_id}
               record_id={record_id}
