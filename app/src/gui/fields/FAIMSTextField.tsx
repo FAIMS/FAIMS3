@@ -1,23 +1,10 @@
 /**
- * @file FAIMSTextField.tsx
- * @description A reusable MUI TextField component integrated with Formik & FieldWrapper.
- *
- * - Supports Formik's form state handling.
- * - Uses `FieldWrapper` to provide a structured layout (heading & subheading).
- * - Ensures compatibility with FAIMS field system.
- * - Handles both text and number input types dynamically.
- * - Prevents `undefined` values for better stability.
- *
- * @dependencies
- * - MUI `TextField` for input rendering.
- * - Formik's `FieldProps` for form state management.
- * - `FieldWrapper` for consistent label & help text styling.
+ * Simple wrapper of input base field for text
  */
 
-import {ReactNode} from 'react';
-import {TextField as MuiTextField} from '@mui/material';
 import {FieldProps} from 'formik';
-import FieldWrapper from './fieldWrapper';
+import {ReactNode} from 'react';
+import {InputBaseWrapper} from './InputFieldBase';
 
 /**
  * @interface Props
@@ -49,29 +36,5 @@ interface Props {
  * @returns {JSX.Element} The styled text field component.
  */
 export const FAIMSTextField = (props: FieldProps & Props) => {
-  const hasError =
-    props.form.errors[props.field.name] && props.form.touched[props.field.name];
-
-  return (
-    <FieldWrapper
-      heading={props.label}
-      subheading={props.helperText}
-      required={props.required}
-      advancedHelperText={props.advancedHelperText}
-    >
-      <MuiTextField
-        {...props.field}
-        variant="outlined"
-        fullWidth={props.fullWidth ?? true}
-        required={props.required}
-        value={props.field.value ?? ''} //  no undefined values
-        onChange={e => {
-          const newValue = e.target.value.trim() === '' ? '' : e.target.value;
-          props.form.setFieldValue(props.field.name, newValue);
-        }}
-        error={Boolean(hasError)}
-        helperText={hasError ? String(props.form.errors[props.field.name]) : ''}
-      />
-    </FieldWrapper>
-  );
+  return <InputBaseWrapper {...props} type={'text'} />;
 };
