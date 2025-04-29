@@ -331,7 +331,7 @@ const fields: {[key: string]: FieldType} = {
       related_type: '',
       relation_type: 'faims-core::Child',
       multiple: false,
-      allowLinkToExisting: false,
+      allowLinkToExisting: true,
     },
     validationSchema: [['yup.string']],
     initialValue: '',
