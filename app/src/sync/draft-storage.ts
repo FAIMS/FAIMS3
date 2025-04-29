@@ -413,7 +413,6 @@ export async function deleteDraftsForRecord(
         _deleted: true,
       };
     });
-    console.debug('ids_to_delete', ids_to_delete);
     if (ids_to_delete.length > 0) {
       await (draftDb as PouchDB.Database<{}>).bulkDocs(ids_to_delete);
     }

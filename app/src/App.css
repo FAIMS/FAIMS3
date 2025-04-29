@@ -3,6 +3,12 @@
 /* for maps */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 
+/* add safe area padding default 20px to allow for camera notch on some phones */
+body {
+    padding: env(safe-area-inset-top, 20px) env(safe-area-inset-right, 20px)
+      env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 20px);
+  }
+ 
 .recordstepper::-webkit-scrollbar {
     display: none;
 }

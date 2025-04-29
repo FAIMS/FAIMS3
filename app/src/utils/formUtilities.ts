@@ -6,6 +6,7 @@ import {
 } from '@faims3/data-model';
 import Mustache from 'mustache';
 import {RecordContext} from '../gui/components/record/form';
+import {ParentLinkProps} from '../gui/components/record/relationships/types';
 
 /*
 Patch mustache to not escape values.
@@ -346,4 +347,42 @@ export function prettifyFieldName(fieldName: string): string {
     .replace(/-/g, ' ') // Replace all hyphens with spaces
     .replace(/\s+/g, ' ') // Replace multiple spaces with single space
     .trim(); // Remove leading/trailing whitespace
+}
+
+/**
+ * Checks if any parent record has inherited data eligible for display.
+ *
+ * A field is considered eligible if:
+ * - It has a non-null, non-undefined, non-empty value
+ * - It is marked as `displayParent: true` in the UI specification
+ *
+ * @param parentRecords - Array of parent records to check.
+ * @param uiSpec - The UI specification defining fields and display rules.
+ * @returns True if at least one field qualifies for inherited display, otherwise false.
+ */
+export function checkIfParentHasInheritedData({
+  parentLinks,
+  uiSpec,
+}: {
+  parentLinks: ParentLinkProps[];
+  uiSpec: ProjectUIModel;
+}): boolean {
+  if (!parentLinks || parentLinks.length === 0) {
+    return false;
+  }
+
+  return parentLinks.some(record => {
+    if (!record.persistentData) return false;
+    // The actual data seems to be in the .data field of the persistent data -
+    // this doesn't fit the model but it works
+    return Object.entries(record.persistentData.data ?? {}).some(
+      ([fieldName, value]) => {
+        if (value === null || value === undefined || value === '') {
+          return false;
+        }
+        const fieldSpec = uiSpec?.fields?.[fieldName];
+        return fieldSpec && fieldSpec.displayParent === true;
+      }
+    );
+  });
 }

@@ -41,7 +41,7 @@ export function AddNewRecordButton(props: {
     setSubmitting(true);
     // here we make a new record id for the child and populate the form with the
     // relation information
-    const new_child_id = props.save_new_record();
+    const childRecordId = props.save_new_record();
     if (props.handleSubmit !== undefined) {
       props
         .handleSubmit()
@@ -53,7 +53,7 @@ export function AddNewRecordButton(props: {
             (props.state.parent_record_id || '').toString(),
             (revisionID || '').toString()
           );
-          newState['child_record_id'] = new_child_id;
+          newState['child_record_id'] = childRecordId;
           // wait for 300ms and then jump to the new pathname with the new state
           setTimeout(() => {
             // reset local state of component
@@ -64,7 +64,7 @@ export function AddNewRecordButton(props: {
         .catch((error: Error) => {
           logError(error);
           if (props.handleError !== undefined)
-            props.handleError(new_child_id, new_child_id);
+            props.handleError(childRecordId, childRecordId);
         });
     }
   };

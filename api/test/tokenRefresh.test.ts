@@ -573,4 +573,135 @@ describe('token refresh tests', () => {
       } satisfies PostExchangeTokenInput)
       .expect(400);
   });
+
+  //======= LOGOUT TESTS ===========
+  //================================
+
+  it('should successfully invalidate a refresh token on logout', async () => {
+    // Get local user profile and generate a refresh token
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
+    const refreshToken = (await generateUserToken(localUser, true))
+      .refreshToken!;
+
+    // Verify the token is valid before logout
+    const validBefore = await validateRefreshToken(refreshToken);
+    expect(validBefore.valid).to.be.true;
+
+    // Perform logout with the refresh token
+    await requestAuthAndType(
+      request(app).put('/auth/logout').send({refreshToken}),
+      localUserToken
+    ).expect(200);
+
+    // Verify the token is no longer valid after logout
+    const validAfter = await validateRefreshToken(refreshToken);
+    expect(validAfter.valid).to.be.false;
+
+    // Verify refresh token is marked as disabled
+    const tokenDoc = await getTokenByToken(refreshToken);
+    expect(tokenDoc).to.not.be.undefined;
+    expect(tokenDoc!.enabled).to.be.false;
+  });
+
+  it('should reject refresh attempts with a logged out token', async () => {
+    // Get local user profile and generate a refresh token
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
+    const refreshToken = (await generateUserToken(localUser, true))
+      .refreshToken!;
+
+    // First verify we can refresh the token
+    await request(app)
+      .post('/api/auth/refresh')
+      .send({refreshToken} as PostRefreshTokenInput)
+      .expect(200);
+
+    // Logout
+    await requestAuthAndType(
+      request(app).put('/auth/logout').send({refreshToken}),
+      localUserToken
+    ).expect(200);
+
+    // Try to refresh with the invalidated token
+    await request(app)
+      .post('/api/auth/refresh')
+      .send({refreshToken} as PostRefreshTokenInput)
+      .expect(400);
+  });
+
+  it("should not allow users to invalidate other users' tokens", async () => {
+    // Get admin user profile and generate a refresh token
+    const adminUser = (await getExpressUserFromEmailOrUserId(adminUserName))!;
+    const adminRefreshToken = (await generateUserToken(adminUser, true))
+      .refreshToken!;
+
+    // Verify admin's token is valid
+    const validBefore = await validateRefreshToken(adminRefreshToken);
+    expect(validBefore.valid).to.be.true;
+
+    // Try to logout admin's token while authenticated as local user
+    await requestAuthAndType(
+      request(app).put('/auth/logout').send({refreshToken: adminRefreshToken}),
+      localUserToken
+    ).expect(200); // Should return 200 even though it didn't invalidate
+
+    // Verify admin's token is still valid (wasn't invalidated)
+    const validAfter = await validateRefreshToken(adminRefreshToken);
+    expect(validAfter.valid).to.be.true;
+  });
+
+  it('should handle logout with invalid refresh token gracefully', async () => {
+    // Try to logout with a non-existent token
+    await requestAuthAndType(
+      request(app)
+        .put('/auth/logout')
+        .send({refreshToken: 'invalid-token-that-does-not-exist'}),
+      localUserToken
+    ).expect(200); // Should return 200 even though token doesn't exist
+  });
+
+  it('should require authentication for logout', async () => {
+    // Get local user profile and generate a refresh token
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
+    const refreshToken = (await generateUserToken(localUser, true))
+      .refreshToken!;
+
+    // Try to logout without authentication
+    await request(app).put('/auth/logout').send({refreshToken}).expect(401); // Should be unauthorized
+  });
+
+  it('should allow a user to logout all active tokens', async () => {
+    // Get local user profile
+    const localUser = (await getExpressUserFromEmailOrUserId(localUserName))!;
+
+    // Generate multiple refresh tokens for the user
+    const token1 = (await generateUserToken(localUser, true)).refreshToken!;
+    const token2 = (await generateUserToken(localUser, true)).refreshToken!;
+    const token3 = (await generateUserToken(localUser, true)).refreshToken!;
+
+    // Verify all tokens exist and are valid
+    let tokens = await getTokensByUserId(localUser.user_id!);
+    expect(tokens.length).to.equal(3);
+    expect(tokens.every(t => t.enabled)).to.be.true;
+
+    // Logout each token one by one
+    await requestAuthAndType(
+      request(app).put('/auth/logout').send({refreshToken: token1}),
+      localUserToken
+    ).expect(200);
+
+    await requestAuthAndType(
+      request(app).put('/auth/logout').send({refreshToken: token2}),
+      localUserToken
+    ).expect(200);
+
+    await requestAuthAndType(
+      request(app).put('/auth/logout').send({refreshToken: token3}),
+      localUserToken
+    ).expect(200);
+
+    // Verify all tokens are now disabled
+    tokens = await getTokensByUserId(localUser.user_id!);
+    expect(tokens.length).to.equal(3);
+    expect(tokens.every(t => !t.enabled)).to.be.true;
+  });
 });

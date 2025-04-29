@@ -48,31 +48,11 @@ const DRAFT_SAVE_CYCLE = 10000;
 type RelevantProps = {
   project_id: ProjectID;
   record_id: RecordID;
-} & (
-  | {
-      // When editing existing record, we require the caller to know its revision
-      revision_id: RevisionID;
-      // This draft state usually requires a draft to keep
-      // track of, BUT if the user is viewing an existing record,
-      // A draft ID won't exist until edits are made
-      draft_id?: string;
-      // Type is required only because that's otherwise another pouchdb lookup,
-      // when form.tsx already has type cached.
-
-      // To avoid 'type' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      type?: undefined;
-    }
-  | {
-      // Editing a new record. Type required to create the draft
-      draft_id: string;
-      type: string;
-
-      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      revision_id?: undefined;
-    }
-);
+  revision_id?: RevisionID;
+  draft_id?: string;
+  type?: FAIMSTypeName;
+  dispatchSetEdited: (state: boolean) => void;
+};
 
 /**
  * Important properties that might not be present
@@ -318,6 +298,7 @@ class RecordDraftState {
 
       // If anything changed, we create the draft:
       if (this.data.state === 'unedited') {
+        this.props.dispatchSetEdited(true);
         this.data = {
           ...this.data,
           state: 'edited',
@@ -435,6 +416,7 @@ class RecordDraftState {
           draft_id: Promise.resolve(this.props.draft_id),
           relationship: result.relationship,
         };
+        this.props.dispatchSetEdited(true);
         // Resolve any promises waiting for data
         const data_listeners = this.data_listeners;
         this.data_listeners = [];
@@ -459,6 +441,7 @@ class RecordDraftState {
         annotations: null,
         relationship: {},
       };
+      this.props.dispatchSetEdited(false);
       // this.draft_id hasn't needed to be created yet, keep as null
     }
   }
@@ -491,7 +474,6 @@ class RecordDraftState {
     } else if (this.fetch_error !== null) {
       throw this.fetch_error;
     } else {
-      console.log('waiting for data', this.data_listeners);
       return new Promise((resolve, reject) => {
         this.data_listeners.push([resolve, reject]);
       });

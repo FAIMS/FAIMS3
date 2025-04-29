@@ -11,6 +11,10 @@ import {EncodedUISpecificationSchema} from './types';
 // WIP USERS
 // ==================
 
+// logout
+export const PutLogoutInputSchema = z.object({refreshToken: z.string()});
+export type PutLogoutInput = z.infer<typeof PutLogoutInputSchema>;
+
 // Change Password
 export const PostChangePasswordInputSchema = z
   .object({
@@ -217,6 +221,8 @@ export const APINotebookGetSchema = z.object({
   'ui-specification': z.record(z.unknown()),
   ownedByTeamId: z.string().min(1).optional(),
   status: z.nativeEnum(ProjectStatus),
+  // Name of the notebook!
+  name: z.string(),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 

@@ -882,7 +882,7 @@ export const streamNotebookRecordsAsCSV = async (
         Object.keys(outputData).forEach((key: string) => {
           columns.push(key);
         });
-        stringifier = stringify({columns, header: true});
+        stringifier = stringify({columns, header: true, escape_formulas: true});
         // pipe output to the respose
         stringifier.pipe(res);
         header_done = true;

@@ -63,11 +63,7 @@ export default function CreateLinkComponent(
           <ButtonGroup variant={'outlined'} size={'medium'}>
             {props.relation_type === 'Child' && props.disabled !== true && (
               <AddNewRecordButton
-                is_enabled={
-                  props.form.isValid === false || props.form.isSubmitting
-                    ? false
-                    : props.is_enabled
-                }
+                is_enabled={props.form.isSubmitting ? false : props.is_enabled}
                 serverId={props.serverId}
                 pathname={props.pathname}
                 state={props.state}
@@ -79,7 +75,7 @@ export default function CreateLinkComponent(
               />
             )}
 
-            {props.allowLinkToExisting !== false && (
+            {(props.allowLinkToExisting ?? true) && (
               <ExpandMoreButton
                 disableElevation
                 expand={expanded}
@@ -87,11 +83,7 @@ export default function CreateLinkComponent(
                 aria-expanded={expanded}
                 aria-label="show more"
                 endIcon={<ExpandMoreIcon />}
-                disabled={
-                  props.form.isValid === false || props.form.isSubmitting
-                    ? true
-                    : props.disabled
-                } // add to disable add/link record feature
+                disabled={props.form.isSubmitting ? true : props.disabled}
               >
                 {props.relation_type === 'Linked' ? (
                   <span>Add a link to a {props.related_type_label}</span>
@@ -107,7 +99,7 @@ export default function CreateLinkComponent(
       </Grid>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          {props.allowLinkToExisting !== false && (
+          {(props.allowLinkToExisting ?? true) && (
             <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
               <CreateRecordLink {...props} />
             </Collapse>

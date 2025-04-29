@@ -403,6 +403,19 @@ function offline_maps(): boolean {
   return (offline_maps && map_source !== 'osm') || false;
 }
 
+export type NavigationStyleOption = 'none' | 'breadcrumbs';
+function navigation_style(): NavigationStyleOption {
+  const nav_style = import.meta.env.VITE_NAVIGATION;
+  return nav_style || 'none';
+}
+
+/**
+ * Should we show the record links feature?
+ */
+function showRecordLinks(): boolean {
+  return import.meta.env.VITE_SHOW_RECORD_LINKS === 'true';
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -431,3 +444,5 @@ export const OFFLINE_MAPS = offline_maps();
 export const MAP_SOURCE_KEY = get_map_key();
 export const MAP_SOURCE = get_map_source();
 export const MAP_STYLE = get_map_style();
+export const NAVIGATION_STYLE = navigation_style();
+export const SHOW_RECORD_LINKS = showRecordLinks();

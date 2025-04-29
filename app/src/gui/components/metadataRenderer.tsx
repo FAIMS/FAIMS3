@@ -26,17 +26,30 @@ import {RichTextField} from '../fields/RichText';
 
 type MetadataProps = {
   project_id: ProjectID;
-  metadata_key: string;
+  // You can force through an explicit value
+  explicitValue?: string;
+  // OR you can ask for a value by key from the metadata
+  metadata_key?: string;
   metadata_label?: string;
   chips?: boolean;
 };
 
 export default function MetadataRenderer(props: MetadataProps) {
-  const {project_id, metadata_key, metadata_label, chips = true} = props;
+  const {
+    project_id,
+    metadata_key,
+    metadata_label,
+    chips = true,
+    explicitValue,
+  } = props;
   const metadata = useAppSelector(
     state => selectProjectById(state, project_id)?.metadata
   );
-  const possibleValue = metadata?.[metadata_key];
+  const possibleValue = explicitValue
+    ? explicitValue
+    : metadata_key
+      ? metadata?.[metadata_key]
+      : 'Error';
   const value = possibleValue ? (possibleValue as string) : '';
 
   // Use RichTextField for 'pre_description' field

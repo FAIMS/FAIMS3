@@ -41,7 +41,6 @@ type RecordStepperProps = {
   views: string[];
   formErrors?: {[fieldName: string]: unknown};
   visitedSteps: Set<string>;
-  isRecordSubmitted: boolean;
 };
 
 const useStyles = createUseStyles({
@@ -100,14 +99,14 @@ export default function RecordStepper(props: RecordStepperProps) {
     onChangeStepper,
     views,
     formErrors,
-    isRecordSubmitted,
   } = props;
   const theme = useTheme();
 
   // function to check if stepper has erros
   const hasErrors = (sectionId: string | undefined) => {
-    if (!sectionId || !visitedSteps || !ui_specification.views[sectionId])
+    if (!sectionId || !visitedSteps || !ui_specification.views[sectionId]) {
       return false;
+    }
 
     return (
       visitedSteps.has(sectionId) &&
@@ -129,6 +128,7 @@ export default function RecordStepper(props: RecordStepperProps) {
             sx={{padding: '15px 0'}}
           >
             {views.map((sectionId: string, index: number) => {
+              const isCurrent = sectionId === views[view_index];
               return (
                 <Step key={sectionId}>
                   <StepButton
@@ -138,6 +138,11 @@ export default function RecordStepper(props: RecordStepperProps) {
                     sx={{
                       width: '94%',
                       '& .MuiStepLabel-label': {
+                        ...(isCurrent
+                          ? {
+                              transform: 'scale(1.2)',
+                            }
+                          : {}),
                         color: theme.palette.primary.dark,
                         fontweight: 'bold',
                         transition: 'color 0.3s ease-in-out',
@@ -145,12 +150,16 @@ export default function RecordStepper(props: RecordStepperProps) {
                       },
 
                       '& .MuiStepIcon-root': {
+                        ...(isCurrent
+                          ? {
+                              transform: 'scale(1.5)',
+                            }
+                          : {}),
                         color: getStepColor(
                           sectionId,
                           views[view_index],
                           hasErrors(sectionId),
-                          visitedSteps,
-                          isRecordSubmitted
+                          visitedSteps
                         ),
                         borderRadius: '50%',
                         fontSize: '1rem',
@@ -158,7 +167,7 @@ export default function RecordStepper(props: RecordStepperProps) {
                         width: '26px',
                         height: '26px',
                         boxShadow:
-                          sectionId === views[view_index]
+                          isCurrent
                             ? '0px 4px 12px rgba(0, 0, 0, 0.3)'
                             : '0px 2px 4px rgba(0, 0, 0, 0.15)',
                         transition: 'all 0.3s ease-in-out',
@@ -193,7 +202,6 @@ export default function RecordStepper(props: RecordStepperProps) {
           ui_specification={ui_specification}
           formErrors={formErrors}
           visitedSteps={visitedSteps}
-          isRecordSubmitted={isRecordSubmitted}
         />
         <Typography
           variant="h4"
