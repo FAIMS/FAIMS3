@@ -292,7 +292,7 @@ api.put(
     const metadata = req.body.metadata;
     const projectID = req.params.id;
     await updateNotebook(projectID, uiSpec, metadata);
-    res.json({notebook: projectID}).end();
+    return res.json({notebook: projectID});
   }
 );
 
