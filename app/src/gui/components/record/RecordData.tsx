@@ -38,6 +38,7 @@ import {SHOW_RECORD_LINKS} from '../../../buildconfig';
 interface RecordDataTypes {
   project_id: ProjectID;
   serverId: string;
+  isExistingRecord: boolean;
   record_id: RecordID;
   hrid?: string;
   record_type: string;
@@ -102,6 +103,7 @@ export default function RecordData(props: RecordDataTypes) {
       ) : // do not show record links - as it is disabled
       null}
       <RecordForm
+        isExistingRecord={props.isExistingRecord}
         serverId={props.serverId}
         project_id={props.project_id}
         record_id={props.record_id}

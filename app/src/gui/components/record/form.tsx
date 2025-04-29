@@ -100,6 +100,7 @@ const connector = connect(null, mapDispatchToProps);
 
 type RecordFormProps = ConnectedProps<typeof connector> & {
   navigate: NavigateFunction;
+  isExistingRecord: boolean;
   serverId: string;
   project_id: ProjectID;
   record_id: RecordID;
@@ -336,6 +337,11 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
     await this.identifyRecordType(revision_id);
     await this.formChanged(false, revision_id);
+
+    // If this is an existing record, then mark all sections as visited and validate the form
+    if (this.props.isExistingRecord) {
+      this.markAllSectionsAsViewed();
+    }
   }
 
   async componentWillUnmount() {
@@ -846,6 +852,27 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
     allSections.every((section: string) =>
       this.state.visitedSteps.has(section)
+    );
+  }
+
+  /**
+   * Marks all sections as visited and forces revalidation - this allows us to
+   * show errors immediately on existing records.
+   */
+  markAllSectionsAsViewed() {
+    // Get all the sections (views)
+    const sections =
+      this.props.ui_specification.viewsets[this.getViewsetName()].views;
+
+    this.setState(
+      prevState => {
+        return {...prevState, visitedSteps: new Set(sections)};
+      },
+      () => {
+        if (this.formikRef?.current) {
+          this.formikRef.current.validateForm();
+        }
+      }
     );
   }
 
@@ -1816,7 +1843,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                           views={views}
                           formErrors={formProps.errors}
                           visitedSteps={this.state.visitedSteps}
-                          isRecordSubmitted={isRecordSubmitted}
                         />
                       )}
 

@@ -508,7 +508,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
             handleSubmit={() => props.form.submitForm()}
             save_new_record={save_new_record}
             handleCreateError={remove_related_child}
-            allowLinkToExisting={props.allowLinkToExisting ?? false}
+            allowLinkToExisting={props.allowLinkToExisting ?? true}
           />
         </Grid>
         <Grid item xs={12} sm={12} md={12} lg={12}>

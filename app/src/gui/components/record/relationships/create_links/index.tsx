@@ -74,7 +74,8 @@ export default function CreateLinkComponent(
                 handleError={props.handleCreateError}
               />
             )}
-            {props.allowLinkToExisting !== false && (
+
+            {(props.allowLinkToExisting ?? true) && (
               <ExpandMoreButton
                 disableElevation
                 expand={expanded}
@@ -98,7 +99,7 @@ export default function CreateLinkComponent(
       </Grid>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          {props.allowLinkToExisting !== false && (
+          {(props.allowLinkToExisting ?? true) && (
             <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
               <CreateRecordLink {...props} />
             </Collapse>
