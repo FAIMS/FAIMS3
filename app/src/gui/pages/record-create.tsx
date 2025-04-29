@@ -166,8 +166,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const [is_link_ready, setIs_link_ready] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  console.log(parentLinks);
-
   const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
   )?.uiSpecificationId;
