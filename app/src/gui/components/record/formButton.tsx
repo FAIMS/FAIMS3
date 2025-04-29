@@ -85,7 +85,7 @@ interface FormButtonGroupProps {
 
   /** when should we show the publish button? */
   publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
-  /** should we show the publis button(s) */
+  /** should we show the publish button(s) */
   showPublishButton: boolean;
 }
 
