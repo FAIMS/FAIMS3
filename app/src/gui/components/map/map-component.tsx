@@ -19,7 +19,6 @@
  * This component renders an interactive OpenLayers map with support for:
  * - Real-time GPS tracking (blue dot, accuracy circle, direction triangle)
  * - Offline map support using cached tiles
- * - Optional fake GPS simulation for browser testing
  * - Dynamic center control and zooming
  * - Integration with parent component through callback
  */
@@ -47,15 +46,6 @@ import {Geolocation, Position} from '@capacitor/geolocation';
 const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
-
-/**
- * Optional fake GPS mode for browser testing. Enable via:
- * `window.__USE_FAKE_GPS__ = true` in browser console.
- */ declare global {
-  interface Window {
-    __USE_FAKE_GPS__?: boolean;
-  }
-}
 
 /**
  * canShowMapNear - can we show a map near this location?
@@ -102,7 +92,6 @@ export interface MapComponentProps {
  * This is the main map rendering component. It:
  * - Initializes an OpenLayers map with tile support
  * - Renders live GPS location and directional cursor
- * - Supports fake GPS simulation via global flag
  * - Accepts a parent callback to provide the map instance
  */
 export const MapComponent = (props: MapComponentProps) => {
@@ -126,7 +115,6 @@ export const MapComponent = (props: MapComponentProps) => {
 
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
-  const fakeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
 
   /**
@@ -167,9 +155,7 @@ export const MapComponent = (props: MapComponentProps) => {
    * Initializes and updates the live GPS location cursor.
    * Displays:
    * - Blue dot at user location with directional traingular and accuracy circle. which would wokk on rela-time gps location tracking
-   *
-   * Also supports fake GPS simulation for browser testing.
-   */
+   *   */
   const startLiveCursor = (theMap: Map) => {
     // Clean up before re-adding
     if (positionLayerRef.current) {
@@ -178,16 +164,11 @@ export const MapComponent = (props: MapComponentProps) => {
       positionLayerRef.current = undefined;
     }
     if (watchIdRef.current !== null) {
-      Geolocation.clearWatch({id: watchIdRef.current}).then(() => {
-        watchIdRef.current = null;
-      });
+      Geolocation.clearWatch({id: watchIdRef.current}).catch(() =>
+        console.warn('Failed to clear previous GPS watch')
+      );
+      watchIdRef.current = null;
     }
-    // to be removed later after testing @TODO: RG
-    if (fakeIntervalRef.current !== null) {
-      clearInterval(fakeIntervalRef.current);
-      fakeIntervalRef.current = null;
-    }
-
     const view = theMap.getView();
     const projection = view.getProjection();
     const positionSource = new VectorSource();
@@ -258,12 +239,12 @@ export const MapComponent = (props: MapComponentProps) => {
       );
     };
 
-    if (!window.__USE_FAKE_GPS__) {
-      // Add a watch on position, update our live cursor when it changes
-
-      Geolocation.watchPosition({enableHighAccuracy: true}, (position, err) => {
+    // Watch real GPS position and update cursor
+    Geolocation.watchPosition(
+      {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}, // maximum age to avoic using cached postion of the user.
+      (position, err) => {
         if (err) {
-          console.error(err);
+          console.warn('Geolocation error:', err.message || err);
           return;
         }
         if (position) {
@@ -279,30 +260,10 @@ export const MapComponent = (props: MapComponentProps) => {
             position.coords.accuracy ?? 30
           );
         }
-      }).then(id => {
-        watchIdRef.current = id;
-      });
-    } else {
-      /**
-       * Fake GPS Simulation (for browser testing only)
-       * To activate, run this in browser console: window.__USE_FAKE_GPS__ = true, might work in browser if no maptiler/map issues
-       */
-      console.log('Fake GPS mode ON');
-      let angle = 0;
-      const radius = 0.0001;
-      const center = transform([151.231, -33.918], 'EPSG:4326', projection);
-
-      if (watchIdRef.current) clearInterval(watchIdRef.current);
-
-      setInterval(() => {
-        angle += 0.1;
-        const coords = [
-          center[0] + radius * Math.cos(angle),
-          center[1] + radius * Math.sin(angle),
-        ];
-        updateCursor(coords, angle, 20);
-      }, 1000);
-    }
+      }
+    ).then(id => {
+      watchIdRef.current = id;
+    });
   };
 
   // center the map on the current location
@@ -358,9 +319,10 @@ export const MapComponent = (props: MapComponentProps) => {
     [map, createMap]
   );
 
+  // This avoids double-calling and ensures cursor only starts after DOM + map are fully ready
   useEffect(() => {
     if (map) {
-      startLiveCursor(map); //reapply live cursor on map init or remount
+      startLiveCursor(map);
     }
   }, [map]);
 
