@@ -49,13 +49,6 @@ import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
 
-// // To simulate movement for PR: open browser console and set `window.__USE_FAKE_GPS__ = true`
-declare global {
-  interface Window {
-    __USE_FAKE_GPS__?: boolean;
-  }
-}
-
 export type MapAction = 'save' | 'close';
 
 interface MapProps extends ButtonProps {
@@ -193,14 +186,21 @@ function MapWrapper(props: MapProps) {
     setTimeout(() => {
       if (map) {
         map.getLayers().forEach(layer => {
-          if (layer.getZIndex?.() === 999) map.removeLayer(layer); // remove old layer
+          try {
+            // Only remove pin layers, not the GPS livee cursor
+            const zIndex =
+              typeof layer.getZIndex === 'function' ? layer.getZIndex() : -1;
+            if (zIndex === 998) map.removeLayer(layer); // 999 is used by live cursor in mapcomponent.
+          } catch (err) {
+            console.warn('Error while checking/removing layer:', err);
+          }
         });
-        map.updateSize(); // resize in case of fullscreen bug
+
+        map.updateSize(); 
         map.getView().setZoom(props.zoom || 17);
       }
-    }, 300); // delay to ensure DOM is ready
+    }, 300);
   };
-
   // always re-apply draw interaction if maps open.
   useEffect(() => {
     if (mapOpen && map) addDrawInteraction(map, props);
@@ -387,6 +387,7 @@ function MapWrapper(props: MapProps) {
           {/* <div ref={refCallback} style={styles.mapContainer} /> */}
           <Grid container spacing={2} sx={{height: '100%'}}>
             <MapComponent
+              key={mapOpen ? 'map-open' : 'map-closed'}
               parentSetMap={setMap}
               center={props.center}
               extent={featuresExtent}
