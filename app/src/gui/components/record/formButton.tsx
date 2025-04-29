@@ -51,7 +51,7 @@ interface FormSubmitButtonProps {
   /** Callback for form submission */
   handleFormSubmit: (closeType: CloseOptionType) => void;
   /** Determines if form should close or create new after submission */
-  is_close: CloseOptionType;
+  action: CloseOptionType;
   /** Button text */
   text: string;
   /** Button color variant */
@@ -97,7 +97,7 @@ function FormSubmitButton({
   disabled,
   formProps,
   handleFormSubmit,
-  is_close,
+  action,
   text,
   color,
   'data-testid': dataTestId,
@@ -108,10 +108,10 @@ function FormSubmitButton({
       fullWidth
       data-testid={dataTestId}
       color={formProps.isSubmitting ? undefined : color}
-      variant={is_final_view && is_close !== 'new' ? 'contained' : 'outlined'}
+      variant={is_final_view && action !== 'new' ? 'contained' : 'outlined'}
       disableElevation
       disabled={disabled || formProps.isSubmitting}
-      onClick={() => handleFormSubmit(is_close)}
+      onClick={() => handleFormSubmit(action)}
     >
       {formProps.isSubmitting ? 'Working...' : text}
       {formProps.isSubmitting && (
@@ -165,12 +165,12 @@ export default function FormButtonGroup({
         finish, your response will be uploaded once your device has an internet
         connection.
       </Typography>
-      {publishButtonBehaviour === 'noErrors' && (
+      {!showPublishButton && publishButtonBehaviour === 'noErrors' && (
         <Typography variant="body1">
           You cannot finish this record because there are errors in the form.
         </Typography>
       )}
-      {publishButtonBehaviour === 'visited' && (
+      {!showPublishButton && publishButtonBehaviour === 'visited' && (
         <Typography variant="body1">
           You cannot finish this record because you have not visited all pages
           of the form.
@@ -203,7 +203,7 @@ export default function FormButtonGroup({
               disabled={!showPublishButton}
               formProps={formProps}
               text={`Finish and close ${record_type}`}
-              is_close="close"
+              action="close"
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
             />
@@ -212,7 +212,7 @@ export default function FormButtonGroup({
               disabled={!showPublishButton}
               formProps={formProps}
               text={`Finish and new ${record_type}`}
-              is_close="new"
+              action="new"
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
             />
@@ -221,7 +221,7 @@ export default function FormButtonGroup({
               color="warning"
               formProps={formProps}
               text={'Cancel'}
-              is_close="cancel"
+              action="cancel"
               handleFormSubmit={() => setOpenCancelDialog(true)}
               is_final_view={is_final_view}
             />
