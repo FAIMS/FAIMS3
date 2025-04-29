@@ -1,7 +1,8 @@
-import {WEB_URL} from '@/constants';
+import {API_URL, REFRESH_INTERVAL, WEB_URL} from '@/constants';
 import {getCurrentUser} from '@/hooks/queries';
 import {
   decodeAndValidateToken,
+  PutLogoutInput,
   TokenContents,
   TokenPayload,
 } from '@faims3/data-model';
@@ -102,7 +103,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     if (isAuthenticated) {
       refreshToken();
 
-      const intervalId = setInterval(refreshToken, 3 * 60 * 1000);
+      const intervalId = setInterval(refreshToken, REFRESH_INTERVAL);
       return () => clearInterval(intervalId);
     }
   }, [isAuthenticated]);
@@ -110,9 +111,24 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
   /**
    * Logs out the user by removing the stored user object and setting the user to null.
    */
-  const logout = () => {
-    setStoredUser(null);
-    setUser(null);
+  const logout = async () => {
+    if (user) {
+      // Make a PUT to logout endpoint - we don't really care whether this
+      // succeeds or fails - it's a client nicety to invalidate the refresh
+      // token
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          refreshToken: user.refreshToken,
+        } satisfies PutLogoutInput),
+      });
+      setStoredUser(null);
+      setUser(null);
+    }
     window.location.href = WEB_URL;
   };
 

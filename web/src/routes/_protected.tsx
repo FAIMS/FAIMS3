@@ -1,6 +1,7 @@
 import {VerificationAlertComponent} from '@/components/alerts/verification-alert';
 import Breadcrumbs from '@/components/breadcrumbs';
 import {ModeToggle} from '@/components/mode-toggle';
+import {SessionExpiredOverlay} from '@/components/session-expired-overlay';
 import {AppSidebar} from '@/components/side-bar/app-sidebar';
 import {Dialog} from '@/components/ui/dialog';
 import {Separator} from '@/components/ui/separator';
@@ -119,13 +120,18 @@ export const Route = createFileRoute('/_protected')({
 });
 
 function RouteComponent() {
-  const {user} = useAuth();
+  const {user, isAuthenticated} = useAuth();
   const {mutate: verify, isPending: verifyLoading} = useRequestVerify();
 
   const verification = {
     showNeedsVerification: user && !user.user.isVerified,
     email: user?.user.email,
   };
+
+  // Show the SessionExpiredOverlay instead of redirecting immediately
+  if (!isAuthenticated) {
+    return <SessionExpiredOverlay />;
+  }
 
   return (
     <Dialog>

@@ -47,6 +47,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {checkIfParentHasInheritedData} from '../../utils/formUtilities';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -154,8 +155,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [parentLinks, setParentLinks] = useState<ParentLinkProps[]>([]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-
   const progress = useAppSelector(state => state.records.percent);
+
   const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
   )?.uiSpecificationId;
@@ -221,13 +222,16 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
             variant={is_mobile ? undefined : 'outlined'}
           >
             {is_link_ready ? (
-              <InheritedDataComponent
-                parentRecords={parentLinks}
-                ui_specification={uiSpec}
-              />
+              checkIfParentHasInheritedData({parentLinks, uiSpec}) ? (
+                <InheritedDataComponent
+                  parentRecords={parentLinks}
+                  ui_specification={uiSpec}
+                />
+              ) : null
             ) : (
               <CircularProgress size={24} />
             )}
+
             <RecordForm
               serverId={project.serverId}
               project_id={project_id}
@@ -281,7 +285,8 @@ export default function RecordCreate() {
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
       link: backlink,
-      title: project !== null ? project.metadata.name : projectId!,
+      title:
+        project !== null ? (project.name ?? project.metadata.name) : projectId!,
     },
     {title: 'Draft'},
   ];

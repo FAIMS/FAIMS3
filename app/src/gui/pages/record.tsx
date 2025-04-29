@@ -187,7 +187,7 @@ export default function Record() {
           },
           {
             link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
-            title: project.metadata.name,
+            title: project.name ?? project.metadata.name,
           },
           {title: hrid ?? recordId},
         ]);
@@ -330,7 +330,7 @@ export default function Record() {
                     serverId +
                     '/' +
                     projectId,
-                  title: project.metadata.name,
+                  title: project.name ?? project.metadata.name,
                 },
                 {
                   link: newParent[0]['route'],

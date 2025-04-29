@@ -34,6 +34,7 @@ import RecordForm from './form';
 import RelationshipsViewComponent from './relationships';
 import {ParentLinkProps, RecordLinkProps} from './relationships/types';
 import DraftSyncStatus from './sync_status';
+import {SHOW_RECORD_LINKS} from '../../../buildconfig';
 interface RecordDataTypes {
   project_id: ProjectID;
   serverId: string;
@@ -68,6 +69,13 @@ export default function RecordData(props: RecordDataTypes) {
   const [ViewName, setViewName] = React.useState(null);
   const location = useLocation();
 
+  const showRecordLinks = SHOW_RECORD_LINKS;
+  const recordLinksLoading = SHOW_RECORD_LINKS && !props.is_link_ready;
+  const recordLinksViable =
+    SHOW_RECORD_LINKS &&
+    !recordLinksLoading &&
+    props.record_to_field_links.length > 0;
+
   return (
     <Box bgcolor={grey[100]}>
       <DraftSyncStatus
@@ -75,8 +83,12 @@ export default function RecordData(props: RecordDataTypes) {
         is_saving={props.isDraftSaving}
         error={props.draftError}
       />
-      {props.is_link_ready ? (
-        props.record_to_field_links.length > 0 && (
+      {showRecordLinks ? (
+        recordLinksLoading ? (
+          // Show loading as we are waiting but links are enabled
+          <CircularProgress size={24} />
+        ) : recordLinksViable ? (
+          // We have links enabled, not loading, and viable
           <RelationshipsViewComponent
             record_to_field_links={props.record_to_field_links}
             record_id={props.record_id}
@@ -85,10 +97,10 @@ export default function RecordData(props: RecordDataTypes) {
             handleSetSection={setViewName}
             handleUnlink={props.handleUnlink}
           />
-        )
-      ) : (
-        <CircularProgress size={24} />
-      )}
+        ) : // Do not show record links as it is not viable
+        null
+      ) : // do not show record links - as it is disabled
+      null}
       <RecordForm
         serverId={props.serverId}
         project_id={props.project_id}

@@ -8,7 +8,7 @@ import {TeamCellComponent} from '@/components/tables/cells/team-cell';
 import {ProjectStatus} from '@faims3/data-model';
 
 const detailsFields = [
-  {field: 'name', label: 'Name'},
+  {field: 'name', label: 'Name', isMetadata: false},
   {field: 'pre_description', label: 'Description'},
   {field: 'project_lead', label: 'Created by'},
   {field: 'notebook_version', label: 'Version'},
