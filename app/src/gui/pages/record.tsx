@@ -82,6 +82,7 @@ import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 
 export default function Record() {
   /**
@@ -147,11 +148,18 @@ export default function Record() {
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, setBreadcrumbs] = useState<{link?: string; title: string}[]>([]);
-  const [progress, setProgress] = useState<number>(0);
+  const [breadcrumbs, setBreadcrumbs] = useState<
+    {link?: string; title: string}[]
+  >([]);
   const buttonRef = useRef<HTMLDivElement | null>(null);
   const dataDb = localGetDataDb(projectId);
+
+  const progress = useAppSelector(state => state.records.percent);
+
+  const projectLink =
+    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+  const [backLink, setBackLink] = useState<string>(projectLink);
+  const [backIsParent, setBackIsParent] = useState(false);
 
   useEffect(() => {
     const getIni = async () => {
@@ -183,6 +191,8 @@ export default function Record() {
           },
           {title: hrid ?? recordId},
         ]);
+        setBackLink(projectLink);
+        setBackIsParent(false);
         setUpdatedRevisionId(revisionId);
         setselectedRevision(revisionId!);
         setValue('1');
@@ -304,26 +314,12 @@ export default function Record() {
               serverId: serverId,
             });
             setParentLinks(newParent);
-            let newBreadcrumbs = [
-              // {link: ROUTES.INDEX, title: 'Home'},
-              {
-                link: ROUTES.NOTEBOOK_LIST_ROUTE,
-                title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-              },
-              {
-                link:
-                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
-                title: project.name ?? project.metadata.name,
-              },
-              {title: hrid! ?? recordId!},
-            ];
             if (
               newParent !== null &&
               newParent.length > 0 &&
               newParent[0].deleted !== true
             ) {
-              newBreadcrumbs = [
-                // {link: ROUTES.INDEX, title: 'Home'},
+              setBreadcrumbs([
                 {
                   link: ROUTES.NOTEBOOK_LIST_ROUTE,
                   title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
@@ -341,9 +337,10 @@ export default function Record() {
                   title: newParent[0]['hrid'],
                 },
                 {title: hrid! ?? recordId!},
-              ];
+              ]);
+              setBackLink(newParent[0]['route']);
+              setBackIsParent(true);
             }
-            setBreadcrumbs(newBreadcrumbs);
           }
           // setValue('1');
           setIs_link_ready(true);
@@ -480,16 +477,7 @@ export default function Record() {
         alignItems="center"
       >
         <Grid item>
-          <BackButton
-            label="Back"
-            onClick={() => {
-              // Go back to the records list
-              history({
-                pathname:
-                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
-              });
-            }}
-          />
+          <BackButton link={backLink} backIsParent={backIsParent} />
         </Grid>
         <Grid item xs>
           <Typography
@@ -508,30 +496,15 @@ export default function Record() {
       <div style={{padding: '10px'}}>
         <ProgressBar percentage={progress} />
       </div>
-      {/**
       <Grid item xs>
         {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
       </Grid>
-         */}
       {draftId !== undefined && (
         <Alert severity={'warning'}>
           This record is currently a draft. The data is stored locally on your
           device only.
         </Alert>
       )}
-      {/**
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}
-      >
-        <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
-          <ArrowDropDown />
-          Jump to end
-        </TransparentButton>
-      </div>
-       */}
       <Box mb={2} pr={1}>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
@@ -701,7 +674,6 @@ export default function Record() {
                                 handleUnlink={handleUnlink}
                                 setRevision_id={setUpdatedRevisionId}
                                 mq_above_md={mq_above_md}
-                                setProgress={setProgress}
                                 buttonRef={buttonRef}
                               />
                             )}
@@ -734,7 +706,6 @@ export default function Record() {
                           handleUnlink={handleUnlink}
                           setRevision_id={setUpdatedRevisionId}
                           mq_above_md={mq_above_md}
-                          setProgress={setProgress}
                           buttonRef={buttonRef}
                         />
                       )}

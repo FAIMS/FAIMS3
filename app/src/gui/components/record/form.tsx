@@ -80,9 +80,25 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
+import {deleteDraftsForRecord} from '../../../sync/draft-storage';
+import {connect, ConnectedProps} from 'react-redux';
+import {AppDispatch} from '../../../context/store';
 
-type RecordFormProps = {
-  setProgress: (progress: number) => void;
+// Import the actions from recordSlice
+import {setEdited, setPercent} from '../../../context/slices/recordSlice';
+
+// Define mapDispatchToProps
+const mapDispatchToProps = (dispatch: AppDispatch) => {
+  return {
+    dispatchSetEdited: (edited: boolean) => dispatch(setEdited({edited})),
+    dispatchSetPercent: (percent: number) => dispatch(setPercent({percent})),
+  };
+};
+
+// Create connector
+const connector = connect(null, mapDispatchToProps);
+
+type RecordFormProps = ConnectedProps<typeof connector> & {
   navigate: NavigateFunction;
   isExistingRecord: boolean;
   serverId: string;
@@ -94,7 +110,6 @@ type RecordFormProps = {
   conflictfields?: string[] | null;
   handleChangeTab?: Function;
   isSyncing?: string;
-  disabled: boolean;
   handleSetIsDraftSaving: Function;
   handleSetDraftLastSaved: Function;
   handleSetDraftError: Function;
@@ -103,33 +118,33 @@ type RecordFormProps = {
   draftLastSaved?: null | Date;
   mq_above_md?: boolean;
 } & (
-  | {
-      // When editing existing record, we require the caller to know its revision
-      revision_id: RevisionID;
-      // The user can view records without editing them, and to facilitate this,
-      // having a draft id is optional.
-      // In this mode, when the user starts editing, a draft ID is created and
-      // stored as state on RecordForm.
-      draft_id?: string;
+    | {
+        // When editing existing record, we require the caller to know its revision
+        revision_id: RevisionID;
+        // The user can view records without editing them, and to facilitate this,
+        // having a draft id is optional.
+        // In this mode, when the user starts editing, a draft ID is created and
+        // stored as state on RecordForm.
+        draft_id?: string;
 
-      // To avoid 'type' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      // type is the viewSet name - the name of the form that allows editing of this record
-      type?: undefined;
-    }
-  | {
-      // When creating a new record,  revision is not yet created.
-      // the user had to have already been prompted with viewset/type
-      type: string;
+        // To avoid 'type' in this.props, and since in JS when a key is not set,
+        // you get back undefined:
+        // type is the viewSet name - the name of the form that allows editing of this record
+        type?: undefined;
+      }
+    | {
+        // When creating a new record,  revision is not yet created.
+        // the user had to have already been prompted with viewset/type
+        type: string;
 
-      // Draft id, when creating a new record, is created by a redirect
-      draft_id: string;
+        // Draft id, when creating a new record, is created by a redirect
+        draft_id: string;
 
-      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      revision_id?: undefined;
-    }
-);
+        // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
+        // you get back undefined:
+        revision_id?: undefined;
+      }
+  );
 
 export interface RecordContext {
   // timestamp ms created
@@ -171,7 +186,7 @@ type RecordIdentifiers = {
 };
 
 // options for the close action on a form
-export type FormCloseOptions = 'continue' | 'close' | 'new';
+export type FormCloseOptions = 'continue' | 'close' | 'new' | 'cancel';
 
 /*
   Callers of RecordForm
@@ -306,7 +321,13 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   async componentDidMount() {
     // moved from constructor since it has a side-effect of setting up a global timer
     if (!this.draftState) {
-      this.draftState = new RecordDraftState(this.props as any);
+      this.draftState = new RecordDraftState({
+        project_id: this.props.project_id,
+        record_id: this.props.record_id,
+        revision_id: this.props.revision_id,
+        draft_id: this.props.draft_id,
+        dispatchSetEdited: this.props.dispatchSetEdited,
+      });
     }
     // call formChanged to update the form data, either with
     // the revision_id from state or the one passed in
@@ -923,6 +944,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
   /**
    * save a record and navigate to the next location
+   *  - cancel: we don't want to save the record, clear the draft and go back to the record list or parent
    *  - continue: setSubmitting re-enabled, so user can save form for the new revision id
    *  - close: - close the current record and return to project list
    *           - close the current record and back to parent record if record created from parent or if record has parent
@@ -944,6 +966,11 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   }): Promise<RevisionID | void | undefined> {
     const ui_specification = this.props.ui_specification;
     const viewsetName = this.requireViewsetName();
+
+    if (closeOption === 'cancel') {
+      return this.handleCancel(ui_specification);
+    }
+
     //save state into persistent data
     savefieldpersistentSetting(
       this.props.project_id,
@@ -1057,6 +1084,106 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
           logError('Unsaved record error:' + err);
         })
     );
+  }
+
+  private handleCancel(ui_specification: ProjectUIModel) {
+    const relationState = this.props.location?.state;
+    // first case is if we have a parent record, there should be
+    // some location state passed in
+    if (relationState !== undefined && relationState !== null) {
+      // may need to undo a change to the parent record in the case
+      // that we are cancelling creation of a child record
+      if (relationState.parent_record_id && relationState.field_id) {
+        // need to edit the value of field_id in the parent
+        // to remove the reference to the child
+        this.handleCancelWithRelation({relationState, ui_specification});
+      }
+    } else {
+      const relationship = this.state.relationship;
+      if (
+        relationship === undefined ||
+        relationship === null ||
+        relationship.parent === undefined ||
+        relationship.parent === null
+      ) {
+        // there is no relationship, we're good to go
+        this.navigateTo(this.getRoute('project'));
+      } else {
+        generateLocationState(
+          relationship.parent,
+          this.props.project_id,
+          this.props.serverId
+        )
+          .then(locationState => {
+            return this.handleCancelWithRelation({
+              ui_specification,
+              relationState: locationState.location_state,
+            });
+          })
+          .catch(error => logError(error));
+      }
+    }
+    // remove the draft record
+    return deleteDraftsForRecord(this.props.project_id, this.props.record_id);
+  }
+
+  /**
+   * Deal with the case where we are cancelling out of a form but the form
+   * is a child record.  The parent will have been modified before we
+   * started to add the child link, so we need to remove it.
+   * 
+   * - relationState - the location state passed in to this route containing context info
+   * - ui_specification - the current uiSpec
+   */
+  private handleCancelWithRelation({
+    relationState,
+    ui_specification,
+  }: {
+    relationState: any;
+    ui_specification: ProjectUIModel;
+  }) {
+    const dataDb = localGetDataDb(this.props.project_id);
+    getFirstRecordHead({
+      dataDb,
+      recordId: relationState.parent_record_id,
+    }).then(revisionId => {
+      getFullRecordData({
+        dataDb,
+        projectId: this.props.project_id,
+        recordId: relationState.parent_record_id,
+        revisionId: revisionId,
+      }).then(parentRecord => {
+        // edit the field value to remove refrence to relationState.child_record
+        if (parentRecord) {
+          const fieldValue = parentRecord.data[relationState.field_id];
+          // remove reference to child record
+          // if we have a multiple field, remove from the value list
+          // otherwise just reset the value
+          let newFieldValue = '';
+          if (
+            ui_specification.fields[relationState.field_id][
+              'component-parameters'
+            ].multiple
+          ) {
+            newFieldValue = fieldValue.filter(
+              (r: any) => r.record_id !== relationState.child_record_id
+            );
+          }
+          parentRecord.data[relationState.field_id] = newFieldValue;
+          upsertFAIMSData({dataDb, record: parentRecord}).then(revisionId => {
+            // now parent link will be out of date as it refers to
+            // the old revision so we need a new one
+            const revLink = ROUTES.getRecordRoute(
+              this.props.serverId,
+              this.props.project_id,
+              relationState.parent_record_id,
+              revisionId
+            );
+            this.navigateTo(revLink);
+          });
+        }
+      });
+    });
   }
 
   /**
@@ -1544,8 +1671,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                   formProps.touched
                 );
 
-                // update the progress bar
-                this.props.setProgress?.(
+                this.props.dispatchSetPercent(
                   percentComplete(
                     requiredFields(
                       this.getViewsetName(),
@@ -1565,6 +1691,19 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                     this.state.annotation,
                     this.state.relationship ?? {}
                   );
+
+                // handle submission of the fall - one of three options
+                // basically just call save after a short pause
+                const handleFormSubmit = (closeOption: FormCloseOptions) => {
+                  formProps.setSubmitting(true);
+                  this.setTimeout(() => {
+                    this.save({
+                      values: formProps.values,
+                      closeOption,
+                      setSubmitting: formProps.setSubmitting,
+                    });
+                  }, 500);
+                };
 
                 if (layout === 'inline')
                   return (
@@ -1598,7 +1737,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                                 conflictfields={this.props.conflictfields}
                                 handleChangeTab={this.props.handleChangeTab}
                                 fieldNames={fieldNames}
-                                disabled={this.props.disabled}
                                 hideErrors={true}
                                 formErrors={formProps.errors}
                                 visitedSteps={this.state.visitedSteps}
@@ -1648,7 +1786,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         )}
                       <FormButtonGroup
                         is_final_view={true}
-                        disabled={this.props.disabled}
                         record_type={this.state.type_cached}
                         onChangeStepper={this.onChangeStepper}
                         visitedSteps={this.state.visitedSteps}
@@ -1657,17 +1794,9 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        publishButtonBehaviour={publishButtonBehaviour}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(closeOption: FormCloseOptions) => {
-                          formProps.setSubmitting(true);
-                          this.setTimeout(() => {
-                            this.save({
-                              values: formProps.values,
-                              closeOption,
-                              setSubmitting: formProps.setSubmitting,
-                            });
-                          }, 500);
-                        }}
+                        handleFormSubmit={handleFormSubmit}
                         layout={layout}
                       />
                       {/* {UGCReport ONLY for the saved record} */}
@@ -1737,7 +1866,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         conflictfields={this.props.conflictfields}
                         handleChangeTab={this.props.handleChangeTab}
                         fieldNames={fieldNames}
-                        disabled={this.props.disabled}
                         visitedSteps={this.state.visitedSteps}
                         currentStepId={this.state.view_cached ?? ''}
                         isRevisiting={this.state.isRevisiting}
@@ -1746,7 +1874,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                       <FormButtonGroup
                         record_type={this.state.type_cached}
                         is_final_view={is_final_view}
-                        disabled={this.props.disabled}
                         onChangeStepper={this.onChangeStepper}
                         visitedSteps={this.state.visitedSteps}
                         isRecordSubmitted={isRecordSubmitted}
@@ -1754,17 +1881,9 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         formProps={formProps}
                         ui_specification={ui_specification}
                         views={views}
+                        publishButtonBehaviour={publishButtonBehaviour}
                         showPublishButton={showPublishButton}
-                        handleFormSubmit={(closeOption: FormCloseOptions) => {
-                          formProps.setSubmitting(true);
-                          this.setTimeout(() => {
-                            this.save({
-                              values: formProps.values,
-                              closeOption,
-                              setSubmitting: formProps.setSubmitting,
-                            });
-                          }, 500);
-                        }}
+                        handleFormSubmit={handleFormSubmit}
                         layout={layout}
                       />
                       {this.state.revision_cached !== undefined && (
@@ -1800,4 +1919,4 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   }
 }
 RecordForm.contextType = NotificationContext;
-export default RecordForm;
+export default connector(RecordForm);

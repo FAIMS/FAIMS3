@@ -21,16 +21,25 @@
  *  - Publish and Close Record(TBD)
  */
 
-import {Box, Button, Tooltip, IconButton, Grid} from '@mui/material';
+import {
+  Box,
+  Button,
+  Tooltip,
+  IconButton,
+  Grid,
+  Typography,
+} from '@mui/material';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CircularProgress from '@mui/material/CircularProgress';
 import {CustomMobileStepper} from './recordStepper';
 import {ProjectUIModel} from '@faims3/data-model';
 import {useState} from 'react';
+import {ConfirmCancelDialog} from './confirmExitDialog';
 
 interface FormProps {
   isSubmitting: boolean;
 }
+export type CloseOptionType = 'close' | 'new' | 'cancel';
 
 interface FormSubmitButtonProps {
   /** Whether this is the final view in a multi-step form */
@@ -40,13 +49,13 @@ interface FormSubmitButtonProps {
   /** Form state containing submission status */
   formProps: FormProps;
   /** Callback for form submission */
-  handleFormSubmit: (closeType: 'close' | 'new') => void;
+  handleFormSubmit: (closeType: CloseOptionType) => void;
   /** Determines if form should close or create new after submission */
-  is_close: 'close' | 'new';
+  action: CloseOptionType;
   /** Button text */
   text: string;
   /** Button color variant */
-  color?: 'primary' | 'secondary';
+  color?: 'primary' | 'secondary' | 'warning';
   /** Test ID for the button */
   'data-testid'?: string;
 }
@@ -56,8 +65,6 @@ interface FormButtonGroupProps {
   record_type: string | null;
   /** Whether this is the final view in multi-step form */
   is_final_view: boolean;
-  /** Disables all buttons when true */
-  disabled: boolean;
   /** Callback for stepper navigation */
   onChangeStepper: (viewName: string, activeStepIndex: number) => void;
   /** Current view index in multi-step form */
@@ -65,7 +72,7 @@ interface FormButtonGroupProps {
   /** Form state containing submission status */
   formProps: FormProps;
   /** Callback for form submission */
-  handleFormSubmit: (closeType: 'close' | 'new') => void;
+  handleFormSubmit: (closeType: CloseOptionType) => void;
   /** Array of form views for stepper */
   views: Array<any>;
   /** UI configuration object */
@@ -75,22 +82,12 @@ interface FormButtonGroupProps {
 
   visitedSteps: Set<string>;
   isRecordSubmitted: boolean;
-  showPublishButton?: boolean;
-}
 
-/**
- * Tooltip content explaining the publish action
- */
-const tooltipContent = (
-  <div>
-    <Box sx={{fontWeight: 'bold', marginBottom: 1}}>
-      What does publishing mean?
-    </Box>
-    Your response is being saved automatically as a draft. When you click
-    publish, your response will be uploaded once your device has an internet
-    connection.
-  </div>
-);
+  /** when should we show the publish button? */
+  publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
+  /** should we show the publish button(s) */
+  showPublishButton: boolean;
+}
 
 /**
  * Button component for form submission with loading state
@@ -100,23 +97,21 @@ function FormSubmitButton({
   disabled,
   formProps,
   handleFormSubmit,
-  is_close,
+  action,
   text,
   color,
   'data-testid': dataTestId,
 }: FormSubmitButtonProps) {
-  if (disabled) return null;
-
   return (
     <Button
       type="button"
       fullWidth
       data-testid={dataTestId}
       color={formProps.isSubmitting ? undefined : color}
-      variant={is_final_view && is_close === 'close' ? 'contained' : 'outlined'}
+      variant={is_final_view && action !== 'new' ? 'contained' : 'outlined'}
       disableElevation
-      disabled={formProps.isSubmitting}
-      onClick={() => handleFormSubmit(is_close)}
+      disabled={disabled || formProps.isSubmitting}
+      onClick={() => handleFormSubmit(action)}
     >
       {formProps.isSubmitting ? 'Working...' : text}
       {formProps.isSubmitting && (
@@ -142,7 +137,6 @@ function FormSubmitButton({
 export default function FormButtonGroup({
   record_type,
   is_final_view,
-  disabled,
   onChangeStepper,
   view_index,
   formProps,
@@ -152,9 +146,41 @@ export default function FormButtonGroup({
   views,
   ui_specification,
   layout,
-  showPublishButton = true,
+  publishButtonBehaviour,
+  showPublishButton,
 }: FormButtonGroupProps) {
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
+  const [openCancelDialog, setOpenCancelDialog] = useState(false);
+
+  /**
+   * Tooltip content explaining the publish action
+   */
+  const tooltipContent = (
+    <div>
+      <Box sx={{fontWeight: 'bold', marginBottom: 1}}>
+        What does finish mean?
+      </Box>
+      <Typography variant="body1">
+        Your response is being saved automatically as a draft. When you click
+        finish, your response will be uploaded once your device has an internet
+        connection.
+      </Typography>
+      {!showPublishButton && publishButtonBehaviour === 'noErrors' && (
+        <Typography variant="body1">
+          You cannot finish this record because there are errors in the form.
+        </Typography>
+      )}
+      {!showPublishButton && publishButtonBehaviour === 'visited' && (
+        <Typography variant="body1">
+          You cannot finish this record because you have not visited all pages
+          of the form.
+        </Typography>
+      )}
+      <Typography variant="body1">
+        The <b>Cancel</b> button will discard your current changes.
+      </Typography>
+    </div>
+  );
 
   return (
     <Box sx={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
@@ -170,31 +196,41 @@ export default function FormButtonGroup({
       <Grid container spacing={2}>
         <Grid item xs={10.5}>
           <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
-            {showPublishButton && (
-              <>
-                <FormSubmitButton
-                  color="primary"
-                  data-testid="finish-close-record"
-                  disabled={disabled}
-                  formProps={formProps}
-                  text={`Finish and close ${record_type}`}
-                  is_close="close"
-                  handleFormSubmit={handleFormSubmit}
-                  is_final_view={is_final_view}
-                />
-                <FormSubmitButton
-                  color="secondary"
-                  disabled={disabled}
-                  formProps={formProps}
-                  text={`Finish and new ${record_type}`}
-                  is_close="new"
-                  handleFormSubmit={handleFormSubmit}
-                  is_final_view={is_final_view}
-                />
-              </>
-            )}
+            <FormSubmitButton
+              color="primary"
+              data-testid="finish-close-record"
+              disabled={!showPublishButton}
+              formProps={formProps}
+              text={`Finish and close ${record_type}`}
+              action="close"
+              handleFormSubmit={handleFormSubmit}
+              is_final_view={is_final_view}
+            />
+            <FormSubmitButton
+              color="secondary"
+              disabled={!showPublishButton}
+              formProps={formProps}
+              text={`Finish and new ${record_type}`}
+              action="new"
+              handleFormSubmit={handleFormSubmit}
+              is_final_view={is_final_view}
+            />
+
+            <FormSubmitButton
+              color="warning"
+              formProps={formProps}
+              text={'Cancel'}
+              action="cancel"
+              handleFormSubmit={() => setOpenCancelDialog(true)}
+              is_final_view={is_final_view}
+            />
           </Box>
         </Grid>
+        <ConfirmCancelDialog
+          open={openCancelDialog}
+          setOpen={setOpenCancelDialog}
+          confirmAction={handleFormSubmit}
+        />
         <Grid
           item
           xs={1.5}

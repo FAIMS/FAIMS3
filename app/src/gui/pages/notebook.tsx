@@ -30,11 +30,11 @@
 import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
+import {useAppSelector} from '../../context/store';
 import NotebookComponent from '../components/notebook';
 import BackButton from '../components/ui/BackButton';
-import {useAppSelector} from '../../context/store';
 import NotFound404 from './404';
 
 export default function Notebook() {
@@ -45,7 +45,6 @@ export default function Notebook() {
   }>();
   if (!projectId || !serverId) return <NotFound404 />;
 
-  const history = useNavigate();
   const project = useAppSelector(
     state => state.projects.servers[serverId]?.projects[projectId]
   );
@@ -53,13 +52,13 @@ export default function Notebook() {
 
   if (!project) return <CircularProgress data-testid="progressbar" />;
 
+  // back button goes to the notebook list page
+  const backLink = ROUTES.NOTEBOOK_LIST_ROUTE;
+
   return (
     <Stack spacing={2}>
       <Stack direction="row" alignItems={'center'} spacing={2}>
-        <BackButton
-          label="Back"
-          onClick={() => history(ROUTES.INDEX)}
-        ></BackButton>
+        <BackButton link={backLink} confirm={false} />
 
         <Typography
           variant={largerThanMedium ? 'h3' : 'h4'}

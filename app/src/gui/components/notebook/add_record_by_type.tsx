@@ -1,7 +1,7 @@
 import {getRecordsWithRegex, RecordMetadata} from '@faims3/data-model';
-import AddIcon from '@mui/icons-material/Add';
+import {Refresh} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import {Box, Button, ButtonGroup, CircularProgress} from '@mui/material';
+import {Button, ButtonGroup, CircularProgress, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
@@ -13,7 +13,6 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
-import {Refresh} from '@mui/icons-material';
 
 type AddRecordButtonsProps = {
   project: Project;
@@ -78,14 +77,14 @@ export default function AddRecordButtons({
     );
   } else {
     return (
-      <Box>
+      <Stack direction={{xs: 'column', sm: 'row'}}>
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
           sx={{
             maxHeight: '400px',
             justifyContent: mq_above_sm ? 'flex-start' : 'center',
-            gap: mq_above_sm ? '8px' : '0px',
+            gap: '0px',
           }}
         >
           {/*If the list of views hasn't loaded yet*/}
@@ -96,8 +95,6 @@ export default function AddRecordButtons({
               variant="contained"
               color="primary"
               sx={{
-                mb: 1,
-                mt: 1,
                 fontWeight: 'bold',
                 backgroundColor: theme.palette.icon.main,
                 color: theme.palette.primary.light,
@@ -134,17 +131,14 @@ export default function AddRecordButtons({
                       viewset_name
                     }
                     key={viewset_name}
-                    startIcon={<AddIcon />}
+                    startIcon={<AddCircleSharpIcon />}
+                    variant="contained"
                     sx={{
-                      backgroundColor: 'green',
-                      color: 'white',
                       borderRadius: '8px',
-                      padding: '10px 15px',
-                      fontSize: '14px',
                       fontWeight: 'bold',
-                      width: mq_above_sm ? 'auto' : '50%',
+                      backgroundColor: theme.palette.icon.main,
                       '&:hover': {
-                        backgroundColor: 'darkgreen',
+                        backgroundColor: theme.palette.secondary.dark,
                       },
                     }}
                   >
@@ -153,32 +147,37 @@ export default function AddRecordButtons({
                 )
             )
           )}
+        </ButtonGroup>
+
+        <ButtonGroup
+          fullWidth={mq_above_md ? false : true}
+          orientation={mq_above_sm ? 'horizontal' : 'vertical'}
+          sx={{
+            ml: mq_above_sm ? '10px' : '0px',
+            mt: mq_above_sm ? '0px' : '10px',
+          }}
+        >
           {/* Show the QR code button if configured for this project */}
-          {showQRButton ? (
+          {showQRButton && (
             <QRCodeButton
               key="scan-qr"
               label="Scan QR"
               onScanResult={handleScanResult}
             />
-          ) : (
-            <span />
           )}
-
           <Button
             variant="outlined"
             sx={{
-              mb: 1,
-              mt: 1,
               fontWeight: 'bold',
             }}
             startIcon={<Refresh />}
             key="refreshList"
             onClick={refreshList}
           >
-            Refresh records
+            Refresh Records
           </Button>
         </ButtonGroup>
-      </Box>
+      </Stack>
     );
   }
 }

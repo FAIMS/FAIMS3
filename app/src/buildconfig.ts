@@ -403,6 +403,12 @@ function offline_maps(): boolean {
   return (offline_maps && map_source !== 'osm') || false;
 }
 
+export type NavigationStyleOption = 'none' | 'breadcrumbs';
+function navigation_style(): NavigationStyleOption {
+  const nav_style = import.meta.env.VITE_NAVIGATION;
+  return nav_style || 'none';
+}
+
 /**
  * Should we show the record links feature?
  */
@@ -438,4 +444,5 @@ export const OFFLINE_MAPS = offline_maps();
 export const MAP_SOURCE_KEY = get_map_key();
 export const MAP_SOURCE = get_map_source();
 export const MAP_STYLE = get_map_style();
+export const NAVIGATION_STYLE = navigation_style();
 export const SHOW_RECORD_LINKS = showRecordLinks();

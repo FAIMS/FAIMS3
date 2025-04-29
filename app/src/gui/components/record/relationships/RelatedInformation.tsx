@@ -34,8 +34,6 @@ import {
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
-import {selectProjectById} from '../../../../context/slices/projectSlice';
-import {useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
@@ -423,16 +421,11 @@ export async function getRelatedRecords(
 
   // Convert to array for processing
   const links = multiple ? fieldValue : [fieldValue];
-  // Validate each link has record_id
-  links.forEach((link: any, index: number) => {
-    if (!link || typeof link !== 'object' || !('record_id' in link)) {
-      throw new Error(
-        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property. Link was ${JSON.stringify(link)}`
-      );
-    }
-  });
-
-  const record_ids = links.map((link: any) => link.record_id);
+  // ensure that all links are well formed and extract the record_id from them
+  // it can be the case that a value is '', eg. as an initial value
+  const record_ids = links
+    .filter((link: any) => typeof link === 'object' && 'record_id' in link)
+    .map((link: any) => link.record_id);
   const records = await getMetadataForSomeRecords({
     dataDb: localGetDataDb(project_id),
     filterDeleted: true,
@@ -958,22 +951,20 @@ export async function removeRecordLink(
  * @param child_record - the record to be linked to
  * @param parent - a LinkedRelation object including the record being linked from and the link type
  * @param relation_type - 'Child' or 'Linked'
+ * @param uiSpecId - id of the relevant uiSpec for this project
  * @returns the new child record object
  */
 export async function addRecordLink({
   childRecord,
   parent,
   relationType,
-  projectId,
+  uiSpecId,
 }: {
-  projectId: string;
   childRecord: RecordReference;
   parent: LinkedRelation;
   relationType: string;
+  uiSpecId: string | undefined;
 }): Promise<RecordMetadata | null> {
-  const uiSpecId = useAppSelector(state =>
-    selectProjectById(state, projectId)
-  )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   let child_record_meta = null;

@@ -332,7 +332,6 @@ const fields: {[key: string]: FieldType} = {
       allowLinkToExisting: true,
     },
     validationSchema: [['yup.string']],
-    initialValue: '',
   },
   Select: {
     'component-namespace': 'faims-custom',
