@@ -110,7 +110,7 @@ export default function NotebookSyncSwitch({
             <Alert severity={isSyncing ? 'warning' : 'info'}>
               <AlertTitle>Are you sure?</AlertTitle>
               Do you want to {isSyncing ? 'stop' : 'start'} syncing the{' '}
-              {project.metadata.name} {NOTEBOOK_NAME} to your device?
+              {project.name} {NOTEBOOK_NAME} to your device?
             </Alert>
             <DialogActions style={{justifyContent: 'space-between'}}>
               <Button

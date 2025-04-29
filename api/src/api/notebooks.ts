@@ -247,6 +247,8 @@ api.get(
 
     if (metadata && uiSpec) {
       res.json({
+        // include name
+        name: project.name,
         metadata,
         // TODO fully implement a UI Spec zod model, and do runtime validation
         // in all client apps
@@ -290,7 +292,7 @@ api.put(
     const metadata = req.body.metadata;
     const projectID = req.params.id;
     await updateNotebook(projectID, uiSpec, metadata);
-    res.json({notebook: projectID}).end();
+    return res.json({notebook: projectID});
   }
 );
 
