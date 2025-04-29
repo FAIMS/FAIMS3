@@ -101,7 +101,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
     projectListItems.push({
-      title: project_info.metadata.name,
+      title: project_info.name ?? project_info.metadata.name,
       icon: <DescriptionIcon />,
       to:
         ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +

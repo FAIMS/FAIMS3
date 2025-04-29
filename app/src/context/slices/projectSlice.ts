@@ -131,6 +131,9 @@ export type ProjectIdToProjectMap = {[projectId: string]: Project};
 
 /** This is the subset of project information which is modifiable/trivial */
 export interface ProjectInformation {
+  // Name of the project
+  name: string;
+
   // This is metadata information about the project
   metadata: ProjectMetadata;
 
@@ -149,6 +152,9 @@ export interface ProjectInformation {
 export interface Project extends ProjectInformation {
   // the unique project ID (unique within the server)
   projectId: string;
+
+  // the non-unique name of the project
+  name: string;
 
   // Which server is this in? (including here too since it's helpful)
   serverId: string;
@@ -348,6 +354,7 @@ const projectsSlice = createSlice({
 
         // Superficial details
         metadata: payload.metadata,
+        name: payload.name,
 
         uiSpecificationId: compiledSpecId,
         rawUiSpecification: payload.rawUiSpecification,
@@ -596,6 +603,7 @@ const projectsSlice = createSlice({
         uiSpecificationId: project.uiSpecificationId,
         serverId: project.serverId,
         status: project.status,
+        name: project.name,
 
         // These are updated
         isActivated: true,
@@ -699,6 +707,7 @@ const projectsSlice = createSlice({
         uiSpecificationId: project.uiSpecificationId,
         serverId: project.serverId,
         status: project.status,
+        name: project.name,
 
         // These are updated (to indicate de-activation)
         isActivated: false,
@@ -839,6 +848,7 @@ const projectsSlice = createSlice({
         uiSpecificationId: project.uiSpecificationId,
         serverId: project.serverId,
         status: project.status,
+        name: project.name,
 
         // These are updated
         isActivated: true,
@@ -926,6 +936,7 @@ const projectsSlice = createSlice({
         uiSpecificationId: project.uiSpecificationId,
         serverId: project.serverId,
         status: project.status,
+        name: project.name,
 
         // Project remains activated, but syncing is stopped
         isActivated: true,
@@ -1048,6 +1059,7 @@ const projectsSlice = createSlice({
         uiSpecificationId: project.uiSpecificationId,
         serverId: project.serverId,
         status: project.status,
+        name: project.name,
 
         // These are updated
         isActivated: true,
@@ -1174,6 +1186,7 @@ const projectsSlice = createSlice({
         uiSpecificationId: project.uiSpecificationId,
         serverId: project.serverId,
         status: project.status,
+        name: project.name,
 
         // These are updated
         isActivated: true,
@@ -1303,6 +1316,7 @@ const projectsSlice = createSlice({
         uiSpecificationId: project.uiSpecificationId,
         serverId: project.serverId,
         status: project.status,
+        name: project.name,
 
         // These are updated
         isActivated: true,
@@ -1799,6 +1813,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         // create
         appDispatch(
           addProject({
+            // Name is included in the GetNotebookResponse
+            name: meta.name,
             metadata: meta.metadata as ProjectMetadata,
             projectId,
             serverId,
@@ -1811,6 +1827,8 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
         // update existing record
         appDispatch(
           updateProjectDetails({
+            // Name can't change atm but might as well update it if present
+            name: meta?.name ?? project.name,
             metadata:
               (meta?.metadata as ProjectMetadata | undefined) ??
               project.metadata,

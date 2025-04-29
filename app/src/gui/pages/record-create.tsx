@@ -313,7 +313,7 @@ export default function RecordCreate() {
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
       link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
-      title: project !== null ? project.metadata.name : projectId!,
+      title: project !== null ? (project.name ?? project.metadata.name) : projectId!,
     },
     {title: 'Draft'},
   ];

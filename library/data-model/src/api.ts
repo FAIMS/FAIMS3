@@ -221,6 +221,8 @@ export const APINotebookGetSchema = z.object({
   'ui-specification': z.record(z.unknown()),
   ownedByTeamId: z.string().min(1).optional(),
   status: z.nativeEnum(ProjectStatus),
+  // Name of the notebook!
+  name: z.string(),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
