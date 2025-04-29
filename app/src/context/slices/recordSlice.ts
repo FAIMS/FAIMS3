@@ -37,7 +37,6 @@ const recordSlice = createSlice({
   initialState: initialRecordState,
   reducers: {
     setEdited: (state, action: PayloadAction<{edited: boolean}>) => {
-      console.log('setting edited state', action.payload.edited);
       state.edited = action.payload.edited;
     },
     setPercent: (state, action: PayloadAction<{percent: number}>) => {

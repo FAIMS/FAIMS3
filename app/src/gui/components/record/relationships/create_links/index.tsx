@@ -74,24 +74,25 @@ export default function CreateLinkComponent(
                 handleError={props.handleCreateError}
               />
             )}
-
-            <ExpandMoreButton
-              disableElevation
-              expand={expanded}
-              onClick={handleExpandClick}
-              aria-expanded={expanded}
-              aria-label="show more"
-              endIcon={<ExpandMoreIcon />}
-              disabled={props.form.isSubmitting ? true : props.disabled}
-            >
-              {props.relation_type === 'Linked' ? (
-                <span>Add a link to a {props.related_type_label}</span>
-              ) : (
-                <span>
-                  Add a link to an existing {props.related_type_label}
-                </span>
-              )}
-            </ExpandMoreButton>
+            {props.allowLinkToExisting !== false && (
+              <ExpandMoreButton
+                disableElevation
+                expand={expanded}
+                onClick={handleExpandClick}
+                aria-expanded={expanded}
+                aria-label="show more"
+                endIcon={<ExpandMoreIcon />}
+                disabled={props.form.isSubmitting ? true : props.disabled}
+              >
+                {props.relation_type === 'Linked' ? (
+                  <span>Add a link to a {props.related_type_label}</span>
+                ) : (
+                  <span>
+                    Add a link to an existing {props.related_type_label}
+                  </span>
+                )}
+              </ExpandMoreButton>
+            )}
           </ButtonGroup>
         </Grid>
       </Grid>

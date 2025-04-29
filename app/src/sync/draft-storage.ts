@@ -119,7 +119,6 @@ export async function newStagedData(
   field_types: {[field_name: string]: FAIMSTypeName},
   record_id: string
 ): Promise<PouchDB.Core.DocumentId> {
-  console.log('newStagedData', record_id);
   const draftDb = databaseService.getDraftDatabase();
   const _id = 'drf-' + uuidv4();
   const date = new Date();

@@ -337,7 +337,6 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
         newValue = [newValue, new_child_record];
       else newValue = [new_child_record];
     } else newValue = new_child_record;
-    console.log('setting field value', props.field.name, newValue);
     props.form.setFieldValue(props.field.name, newValue, true);
     return new_record_id;
   };

@@ -25,6 +25,14 @@ import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
 import {CloseOptionType} from './formButton';
 
+
+/**
+ * Confirm Exit dialog - checks that we really want to exit the current form
+ * - backLink - the link we'll follow back to the parent record/record list
+ * - backIsParent - true if going back will take us to the parent record
+ * - open - should this dialog be open?
+ * - setOpen - callback to change the open status within the parent
+ */
 export const ConfirmExitDialog = ({
   backLink,
   backIsParent = false,
@@ -41,7 +49,6 @@ export const ConfirmExitDialog = ({
   const navigate = useNavigate();
 
   const handleClose = () => {
-    console.log('handleClose');
     setOpen(false);
   };
 
@@ -129,6 +136,13 @@ export const ConfirmExitDialog = ({
   );
 };
 
+
+/**
+ * Confirm Cancel Dialog - checks that we really want to cancel out of the current form
+ * - open - should this dialog be open
+ * - setOpen - callback to toggle open state in parent
+ * - confirmAction - callback to call once the user confirms they want to cancel, passed the arg 'cancel'
+ */
 export const ConfirmCancelDialog = ({
   open,
   setOpen,
@@ -147,7 +161,6 @@ export const ConfirmCancelDialog = ({
 
   const handleConfirm = () => {
     setOpen(false);
-    console.log('cancel confirmed');
     confirmAction('cancel');
   };
 
@@ -201,7 +214,7 @@ export const ConfirmCancelDialog = ({
             },
           }}
         >
-          Confirm cancel.
+          Confirm cancel
         </Button>
       </DialogActions>
     </Dialog>

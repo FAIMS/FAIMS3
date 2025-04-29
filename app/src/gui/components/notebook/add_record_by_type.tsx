@@ -152,16 +152,18 @@ export default function AddRecordButtons({
         <ButtonGroup
           fullWidth={mq_above_md ? false : true}
           orientation={mq_above_sm ? 'horizontal' : 'vertical'}
+          sx={{
+            ml: mq_above_sm ? '10px' : '0px',
+            mt: mq_above_sm ? '0px' : '10px',
+          }}
         >
           {/* Show the QR code button if configured for this project */}
-          {showQRButton ? (
+          {showQRButton && (
             <QRCodeButton
               key="scan-qr"
               label="Scan QR"
               onScanResult={handleScanResult}
             />
-          ) : (
-            <span></span>
           )}
           <Button
             variant="outlined"
