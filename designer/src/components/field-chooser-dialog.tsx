@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -29,6 +29,8 @@ import {
   CardContent,
   Typography,
   useTheme,
+  Box,
+  Tooltip,
 } from '@mui/material';
 
 import TextFieldsRoundedIcon from '@mui/icons-material/TextFieldsRounded';
@@ -41,7 +43,6 @@ import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 import RemoveRedEyeRoundedIcon from '@mui/icons-material/RemoveRedEyeRounded';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 
-import {useEffect, useMemo, useState} from 'react';
 import {getFieldNames, getFieldSpec} from '../fields';
 import DebouncedTextField from './debounced-text-field';
 
@@ -70,7 +71,20 @@ const CATEGORY_ICONS: {[k: string]: React.ReactElement} = {
   Display: <RemoveRedEyeRoundedIcon />,
 };
 
-const CARD_HEIGHT = 70;
+const CARD_HEIGHT = 80;
+
+const DEPRECATED_FIELDS: string[] = ['Number'];
+
+const CATEGORY_ORDER: string[] = [
+  'Text',
+  'Numbers',
+  'Date & Time',
+  'Media',
+  'Location',
+  'Choice',
+  'Relationship',
+  'Display',
+];
 
 export default function FieldChooserDialog({
   open,
@@ -79,24 +93,32 @@ export default function FieldChooserDialog({
 }: FieldChooserDialogProps) {
   const theme = useTheme();
 
+  // Build the list of all (non-deprecated) field options
   const allOptions: FieldOption[] = useMemo(
     () =>
-      getFieldNames().map(key => {
-        const spec = getFieldSpec(key);
-        return {
-          key,
-          label: spec.displayLabel || spec['component-name'],
-          description:
-            spec['component-parameters']?.advancedHelperText?.toString() || '',
-          category: spec.category || 'Uncategorised',
-        };
-      }),
+      getFieldNames()
+        .filter(key => !DEPRECATED_FIELDS.includes(key))
+        .map(key => {
+          const spec = getFieldSpec(key);
+          return {
+            key,
+            label: spec.displayLabel || spec['component-name'],
+            description:
+              spec['component-parameters']?.advancedHelperText?.toString() ||
+              '',
+            category: spec.category || 'Uncategorised',
+          };
+        }),
     []
   );
 
+  // Compute ordered category tabs
   const categoryTabs = useMemo(() => {
-    const cats = Array.from(new Set(allOptions.map(o => o.category))).sort();
-    return ['All', ...cats];
+    const cats = Array.from(new Set(allOptions.map(o => o.category)));
+    const ordered = CATEGORY_ORDER.filter(c => cats.includes(c)).concat(
+      cats.filter(c => !CATEGORY_ORDER.includes(c))
+    );
+    return ['All', ...ordered];
   }, [allOptions]);
 
   const [fieldName, setFieldName] = useState('New Field');
@@ -127,27 +149,25 @@ export default function FieldChooserDialog({
   }, [allOptions, category, search]);
 
   const handleConfirm = () => {
-    if (selected) onConfirm(fieldName.trim() || 'New Field', selected);
+    if (selected) {
+      onConfirm(fieldName.trim() || 'New Field', selected);
+    }
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      fullWidth
-      maxWidth="md"
-      scroll="paper"
-    >
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" scroll="body">
       <DialogTitle>Select a Field Type</DialogTitle>
 
-      <DialogContent dividers sx={{pt: 2, pb: 2}}>
+      <DialogContent dividers sx={{pt: 2, pb: 0, pl: 3, pr: 3}}>
         <DebouncedTextField
           label="Field name"
           fullWidth
-          variant="standard"
-          margin="dense"
+          variant="outlined"
+          multiline
+          rows={2}
           value={fieldName}
           onChange={e => setFieldName(e.target.value)}
+          sx={{mt: 1, mb: 0}}
           autoFocus
         />
 
@@ -156,7 +176,7 @@ export default function FieldChooserDialog({
           onChange={(_, v: string) => setCategory(v)}
           variant="scrollable"
           allowScrollButtonsMobile
-          sx={{mt: 2, mb: 2}}
+          sx={{mt: 1.7, mb: 2}}
         >
           {categoryTabs.map(tab => (
             <Tab
@@ -179,9 +199,7 @@ export default function FieldChooserDialog({
           onChange={e => setSearch(e.target.value)}
         />
 
-        <Grid
-          container
-          spacing={2}
+        <Box
           sx={{
             maxHeight: '50vh',
             overflowY: 'auto',
@@ -190,83 +208,94 @@ export default function FieldChooserDialog({
             mt: 2,
           }}
         >
-          {filtered.map(opt => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
-              <Card
-                variant="outlined"
-                sx={{
-                  height: CARD_HEIGHT,
-                  borderWidth: 2,
-                  borderColor:
-                    selected === opt.key
-                      ? theme.palette.primary.main
-                      : 'transparent',
-                  boxShadow: theme.shadows[1],
-                  transition: theme.transitions.create(
-                    ['border-color', 'box-shadow'],
-                    {duration: theme.transitions.duration.short}
-                  ),
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <CardActionArea
-                  sx={{flexGrow: 1}}
-                  onClick={() => setSelected(opt.key)}
-                  onDoubleClick={() => {
-                    setSelected(opt.key);
-                    handleConfirm();
-                  }}
+          <Grid container spacing={2}>
+            {filtered.map(opt => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
+                {/* Tooltip shows full description on hover */}
+                <Tooltip
+                  title={opt.description || ''}
+                  arrow
+                  disableHoverListener={!opt.description}
+                  placement="top-start"
                 >
-                  <CardContent
+                  <Card
+                    variant="outlined"
                     sx={{
-                      height: '100%',
-                      p: 1.25,
+                      minHeight: CARD_HEIGHT,
+                      borderWidth: 2,
+                      borderColor:
+                        selected === opt.key
+                          ? theme.palette.primary.main
+                          : theme.palette.divider,
+                      boxShadow: theme.shadows[1],
+                      transition: theme.transitions.create(
+                        ['border-color', 'box-shadow'],
+                        {duration: theme.transitions.duration.short}
+                      ),
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'space-between',
                     }}
                   >
-                    <Stack
-                      direction="row"
-                      spacing={1}
-                      alignItems="center"
-                      sx={{minHeight: 24}}
+                    <CardActionArea
+                      sx={{flexGrow: 1}}
+                      onClick={() => setSelected(opt.key)}
+                      onDoubleClick={() => {
+                        setSelected(opt.key);
+                        handleConfirm();
+                      }}
                     >
-                      {CATEGORY_ICONS[opt.category] ?? (
-                        /* FIX: defensive default */
-                        <ViewModuleRoundedIcon />
-                      )}
-                      <Typography variant="subtitle2">{opt.label}</Typography>
-                    </Stack>
-
-                    {opt.description && (
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        noWrap
+                      <CardContent
+                        sx={{
+                          height: '100%',
+                          p: 1.25,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                        }}
                       >
-                        {opt.description}
-                      </Typography>
-                    )}
-                  </CardContent>
-                </CardActionArea>
-              </Card>
-            </Grid>
-          ))}
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                          sx={{minHeight: 24}}
+                        >
+                          {CATEGORY_ICONS[opt.category] ?? (
+                            <ViewModuleRoundedIcon />
+                          )}
+                          <Typography variant="subtitle2" noWrap>
+                            {opt.label}
+                          </Typography>
+                        </Stack>
 
-          {filtered.length === 0 && (
-            <Grid item xs={12}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{mt: 4, textAlign: 'center'}}
-              >
-                No field types match your search
-              </Typography>
-            </Grid>
-          )}
-        </Grid>
+                        {opt.description && (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            noWrap
+                          >
+                            {opt.description}
+                          </Typography>
+                        )}
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </Tooltip>
+              </Grid>
+            ))}
+
+            {filtered.length === 0 && (
+              <Grid item xs={12}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{mt: 4, textAlign: 'center'}}
+                >
+                  No field types match your search
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </Box>
       </DialogContent>
 
       <DialogActions>
