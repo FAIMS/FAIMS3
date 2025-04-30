@@ -19,7 +19,7 @@
  *   20220620 BBS Adjusted sm to 11 from 8 to get rid of the awful margin reported in FAIMS3-328
  */
 
-import {ProjectUIModel} from '@faims3/data-model';
+import {ProjectUIModel, RevisionID} from '@faims3/data-model';
 import NoteIcon from '@mui/icons-material/Note';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import {
@@ -61,6 +61,7 @@ type ViewProps = {
   currentStepId: string;
   isRevisiting: boolean;
   handleSectionClick: (section: string) => void;
+  forceSave: () => Promise<RevisionID>;
 };
 type SingleComponentProps = {
   fieldName: string;
@@ -74,6 +75,7 @@ type SingleComponentProps = {
   handleChangeTab?: any;
   isSyncing?: string;
   disabled?: boolean; // add for view tab or edit tab
+  forceSave: () => Promise<RevisionID>;
 };
 
 /**
@@ -169,6 +171,7 @@ function SingleComponent(props: SingleComponentProps) {
             fields[fieldName],
             fieldName,
             props.formProps,
+            props.forceSave,
             props.isSyncing,
             props.disabled
           )}
@@ -297,6 +300,7 @@ export function ViewComponent(props: ViewProps) {
           conflictfields={props.conflictfields}
           handleChangeTab={props.handleChangeTab}
           disabled={props.disabled}
+          forceSave={props.forceSave}
         />
       ))}
 

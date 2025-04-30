@@ -32,6 +32,70 @@ const fields: {[key: string]: FieldType} = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
+
+  // DATE FIELDS
+  // ===========
+  DateTimePicker: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'DateTimePicker',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Date time picker',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  },
+  DatePicker: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'DatePicker',
+    'type-returned': 'faims-core::Date',
+    'component-parameters': {
+      label: 'Date time picker',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  },
+  MonthPicker: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'MonthPicker',
+    'type-returned': 'faims-core::Date',
+    'component-parameters': {
+      label: 'Month picker',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  },
+  DateTimeNow: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'DateTimeNow',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Date and Time with Now button',
+      fullWidth: true,
+      helperText: '',
+      variant: 'outlined',
+      required: false,
+      is_auto_pick: false,
+    },
+    validationSchema: [['yup.string']],
+    initialValue: '',
+  },
+
   Email: {
     displayLabel: 'Email',
     category: 'Text',
@@ -367,9 +431,9 @@ const fields: {[key: string]: FieldType} = {
       related_type: '',
       relation_type: 'faims-core::Child',
       multiple: false,
+      allowLinkToExisting: true,
     },
     validationSchema: [['yup.string']],
-    initialValue: '',
   },
   Select: {
     displayLabel: 'Select Field',

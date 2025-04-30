@@ -2,6 +2,9 @@ import {capitalize} from './lib/utils';
 
 export const NOTEBOOK_NAME = import.meta.env.VITE_NOTEBOOK_NAME || 'project';
 
+export const WEBSITE_TITLE =
+  import.meta.env.VITE_WEBSITE_TITLE || 'Control Centre';
+
 export const WEB_URL =
   (import.meta.env.VITE_WEB_URL as string | undefined) ?? '';
 if (WEB_URL === '') {
@@ -43,3 +46,6 @@ export function buildRegisterUrl({
 }) {
   return `${API_URL}/register?redirect=${redirect}&inviteId=${inviteId}`;
 }
+
+// Token refresh interval (every 3 minutes)
+export const REFRESH_INTERVAL = 3 * 60 * 1000;

@@ -11,6 +11,10 @@ import {EncodedUISpecificationSchema} from './types';
 // WIP USERS
 // ==================
 
+// logout
+export const PutLogoutInputSchema = z.object({refreshToken: z.string()});
+export type PutLogoutInput = z.infer<typeof PutLogoutInputSchema>;
+
 // Change Password
 export const PostChangePasswordInputSchema = z
   .object({
@@ -30,6 +34,36 @@ export const PostChangePasswordInputSchema = z
 
 export type PostChangePasswordInput = z.infer<
   typeof PostChangePasswordInputSchema
+>;
+
+// Forgot password
+export const PostForgotPasswordInputSchema = z.object({
+  email: z.string().trim().email('Please enter a valid email address.'),
+  redirect: z.string().trim().optional(),
+});
+
+export type PostForgotPasswordInput = z.infer<
+  typeof PostForgotPasswordInputSchema
+>;
+
+// Reset Password
+export const PostResetPasswordInputSchema = z
+  .object({
+    code: z.string().trim(),
+    newPassword: z
+      .string()
+      .trim()
+      .min(10, 'Password must be at least 10 characters in length.'),
+    confirmPassword: z.string().trim(),
+    redirect: z.string().trim().optional(),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+export type PostResetPasswordInput = z.infer<
+  typeof PostResetPasswordInputSchema
 >;
 
 // Get current user
@@ -187,6 +221,8 @@ export const APINotebookGetSchema = z.object({
   'ui-specification': z.record(z.unknown()),
   ownedByTeamId: z.string().min(1).optional(),
   status: z.nativeEnum(ProjectStatus),
+  // Name of the notebook!
+  name: z.string(),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
@@ -359,6 +395,7 @@ export type GetTemplateByIdResponse = z.infer<
 // POST /reset request schema
 export const PostRequestPasswordResetRequestSchema = z.object({
   email: z.string(),
+  redirect: z.string().optional(),
 });
 export type PostRequestPasswordResetRequest = z.infer<
   typeof PostRequestPasswordResetRequestSchema

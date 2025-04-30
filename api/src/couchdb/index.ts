@@ -449,22 +449,31 @@ export const initialiseDataDb = async ({
 };
 
 /**
- * Critical method which initialises all databases, including remotely on the configured couch instance.
+ * Critical method which initialises all databases, including remotely on the
+ * configured couch instance.
  *
- * This systematically generates a set of initialisation content from the data model, then applies this initialisation using a helper method in the data model.
+ * This systematically generates a set of initialisation content from the data
+ * model, then applies this initialisation using a helper method in the data
+ * model.
  *
- * Some local information is injected as part of the config generation step - e.g. conductor name/description.
+ * Some local information is injected as part of the config generation step -
+ * e.g. conductor name/description.
  *
  * Also initialises keys based on the configured key service.
  *
  * If force = true, documents will always be written, even if it already exists.
  *
+ * If pushKeys = true, will update the public keys
+ *
  * @param force Write on clash
  */
 export const initialiseDbAndKeys = async ({
   force = false,
+  pushKeys = true,
 }: {
   force?: boolean;
+  // Should we push the key configuration?
+  pushKeys?: boolean;
 }) => {
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
@@ -622,15 +631,19 @@ export const initialiseDbAndKeys = async ({
     await initialiseDataDb({projectId, force});
   }
 
-  // Setup keys
-  try {
-    await initialiseJWTKey();
-  } catch (error) {
-    console.log(
-      'something wrong PUTing jwt_keys into the db configuration...',
-      error
-    );
-    throw error;
+  if (pushKeys) {
+    // Setup keys
+    try {
+      await initialiseJWTKey();
+    } catch (error) {
+      console.log(
+        'something wrong PUTing jwt_keys into the db configuration...',
+        error
+      );
+      throw error;
+    }
+  } else {
+    console.log('Not pushing key configuration.');
   }
 };
 
@@ -639,10 +652,13 @@ export const initialiseDbAndKeys = async ({
  */
 export const initialiseAndMigrateDBs = async ({
   force = false,
+  pushKeys = true,
 }: {
   force?: boolean;
+  // Should we push the key configuration?
+  pushKeys?: boolean;
 }) => {
-  await initialiseDbAndKeys({force});
+  await initialiseDbAndKeys({force, pushKeys});
 
   let dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[] = [
     {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},

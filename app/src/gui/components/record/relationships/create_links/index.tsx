@@ -32,6 +32,7 @@ export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
 
 interface CreateLinkComponentProps extends CreateRecordLinkProps {
   field_label: string;
+  allowLinkToExisting?: boolean;
 }
 
 export default function CreateLinkComponent(
@@ -62,11 +63,7 @@ export default function CreateLinkComponent(
           <ButtonGroup variant={'outlined'} size={'medium'}>
             {props.relation_type === 'Child' && props.disabled !== true && (
               <AddNewRecordButton
-                is_enabled={
-                  props.form.isValid === false || props.form.isSubmitting
-                    ? false
-                    : props.is_enabled
-                }
+                is_enabled={props.form.isSubmitting ? false : props.is_enabled}
                 serverId={props.serverId}
                 pathname={props.pathname}
                 state={props.state}
@@ -78,35 +75,35 @@ export default function CreateLinkComponent(
               />
             )}
 
-            <ExpandMoreButton
-              disableElevation
-              expand={expanded}
-              onClick={handleExpandClick}
-              aria-expanded={expanded}
-              aria-label="show more"
-              endIcon={<ExpandMoreIcon />}
-              disabled={
-                props.form.isValid === false || props.form.isSubmitting
-                  ? true
-                  : props.disabled
-              } // add to disable add/link record feature
-            >
-              {props.relation_type === 'Linked' ? (
-                <span>Add a link to a {props.related_type_label}</span>
-              ) : (
-                <span>
-                  Add a link to an existing {props.related_type_label}
-                </span>
-              )}
-            </ExpandMoreButton>
+            {(props.allowLinkToExisting ?? true) && (
+              <ExpandMoreButton
+                disableElevation
+                expand={expanded}
+                onClick={handleExpandClick}
+                aria-expanded={expanded}
+                aria-label="show more"
+                endIcon={<ExpandMoreIcon />}
+                disabled={props.form.isSubmitting ? true : props.disabled}
+              >
+                {props.relation_type === 'Linked' ? (
+                  <span>Add a link to a {props.related_type_label}</span>
+                ) : (
+                  <span>
+                    Add a link to an existing {props.related_type_label}
+                  </span>
+                )}
+              </ExpandMoreButton>
+            )}
           </ButtonGroup>
         </Grid>
       </Grid>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
-            <CreateRecordLink {...props} />
-          </Collapse>
+          {(props.allowLinkToExisting ?? true) && (
+            <Collapse in={expanded} timeout="auto" unmountOnExit sx={{mt: 1}}>
+              <CreateRecordLink {...props} />
+            </Collapse>
+          )}
         </Grid>
       </Grid>
     </React.Fragment>

@@ -219,12 +219,12 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
           {selectedFeature && (
             <Box sx={{padding: '50px'}}>
               <Link
-                to={ROUTES.getRecordRoute(
-                  props.serverId,
-                  props.project_id || 'dummy',
-                  selectedFeature.record_id,
-                  selectedFeature.revision_id
-                )}
+                to={ROUTES.getExistingRecordRoute({
+                  serverId: props.serverId,
+                  projectId: props.project_id,
+                  recordId: selectedFeature.record_id,
+                  revisionId: selectedFeature.revision_id,
+                })}
               >
                 {selectedFeature.name}
               </Link>

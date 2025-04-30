@@ -34,8 +34,6 @@ import {
 } from '@faims3/data-model';
 import * as ROUTES from '../../../../constants/routes';
 import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
-import {selectProjectById} from '../../../../context/slices/projectSlice';
-import {useAppSelector} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
@@ -80,12 +78,12 @@ export async function generateLocationState(
       location_state: {
         field_id: parentLink.field_id,
         parent: latest_record?.relationship?.parent,
-        parent_link: ROUTES.getRecordRoute(
+        parent_link: ROUTES.getExistingRecordRoute({
           serverId,
-          project_id,
-          parentLink.record_id,
-          revision_id
-        ),
+          projectId: project_id,
+          recordId: parentLink.record_id,
+          revisionId: revision_id,
+        }),
         parent_record_id: parentLink.record_id,
         type: 'Child',
         // relation_type_vocabPair: relationship.parent.relation_type_vocabPair,
@@ -423,16 +421,11 @@ export async function getRelatedRecords(
 
   // Convert to array for processing
   const links = multiple ? fieldValue : [fieldValue];
-  // Validate each link has record_id
-  links.forEach((link: any, index: number) => {
-    if (!link || typeof link !== 'object' || !('record_id' in link)) {
-      throw new Error(
-        `Invalid link at ${multiple ? `index ${index}` : 'value'}: must be an object with record_id property. Link was ${JSON.stringify(link)}`
-      );
-    }
-  });
-
-  const record_ids = links.map((link: any) => link.record_id);
+  // ensure that all links are well formed and extract the record_id from them
+  // it can be the case that a value is '', eg. as an initial value
+  const record_ids = links
+    .filter((link: any) => typeof link === 'object' && 'record_id' in link)
+    .map((link: any) => link.record_id);
   const records = await getMetadataForSomeRecords({
     dataDb: localGetDataDb(project_id),
     filterDeleted: true,
@@ -547,12 +540,12 @@ async function get_field_RelatedFields(
             latest_record?.updated_by ?? '',
             latest_record?.updated
           ),
-          ROUTES.getRecordRoute(
+          ROUTES.getExistingRecordRoute({
             serverId,
-            child_record.project_id,
-            child_record.record_id,
-            revision_id
-          ),
+            projectId: child_record.project_id,
+            recordId: child_record.record_id,
+            revisionId: revision_id,
+          }),
           linked_vocab,
           record_id,
           hrid,
@@ -562,12 +555,12 @@ async function get_field_RelatedFields(
           section_label,
           field,
           field_name,
-          ROUTES.getRecordRoute(
+          ROUTES.getExistingRecordRoute({
             serverId,
-            child_record?.project_id,
-            record_id,
-            current_revision_id
-          ),
+            projectId: child_record?.project_id,
+            recordId: record_id,
+            revisionId: current_revision_id,
+          }),
           relation_type,
           latest_record?.deleted ?? false,
           is_deleted
@@ -658,12 +651,12 @@ export async function addLinkedRecord(
         ),
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getRecordRoute(
+          : ROUTES.getExistingRecordRoute({
               serverId,
-              child_record.project_id,
-              child_record.record_id,
-              current_revision_id
-            ),
+              projectId: child_record.project_id,
+              recordId: child_record.record_id,
+              revisionId: current_revision_id,
+            }),
         linked_vocab,
         parent_link.record_id,
         hrid,
@@ -675,12 +668,12 @@ export async function addLinkedRecord(
         field_name,
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getRecordRoute(
+          : ROUTES.getExistingRecordRoute({
               serverId,
-              child_record.project_id,
-              parent_link.record_id,
-              revision_id
-            ),
+              projectId: child_record.project_id,
+              recordId: parent_link.record_id,
+              revisionId: revision_id,
+            }),
         has_parent === true && index === '0' ? 'Child' : 'Linked',
         false,
         is_parent_deleted
@@ -804,12 +797,12 @@ export async function getParentPersistenceData({
           section: '',
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
-          route: ROUTES.getRecordRoute(
+          route: ROUTES.getExistingRecordRoute({
             serverId,
             projectId,
-            parent.parent.record_id,
-            revision_id
-          ),
+            recordId: parent.parent.record_id,
+            revisionId: revision_id,
+          }),
           children: [],
           deleted: latest_record?.deleted,
         },
@@ -958,22 +951,20 @@ export async function removeRecordLink(
  * @param child_record - the record to be linked to
  * @param parent - a LinkedRelation object including the record being linked from and the link type
  * @param relation_type - 'Child' or 'Linked'
+ * @param uiSpecId - id of the relevant uiSpec for this project
  * @returns the new child record object
  */
 export async function addRecordLink({
   childRecord,
   parent,
   relationType,
-  projectId,
+  uiSpecId,
 }: {
-  projectId: string;
   childRecord: RecordReference;
   parent: LinkedRelation;
   relationType: string;
+  uiSpecId: string | undefined;
 }): Promise<RecordMetadata | null> {
-  const uiSpecId = useAppSelector(state =>
-    selectProjectById(state, projectId)
-  )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   let child_record_meta = null;

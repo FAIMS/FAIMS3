@@ -55,7 +55,7 @@ export const MetadataDisplayComponent = (
           <strong>Name:</strong>{' '}
           <MetadataRenderer
             project_id={props.project.projectId}
-            metadata_key={'name'}
+            explicitValue={props.project.name ?? props.project.metadata.name}
             chips={false}
           />
         </Typography>

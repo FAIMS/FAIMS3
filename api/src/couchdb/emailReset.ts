@@ -15,8 +15,13 @@ import {
 } from '@faims3/data-model';
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
-import {EMAIL_CODE_EXPIRY_MINUTES, NEW_CONDUCTOR_URL} from '../buildconfig';
-import {InternalSystemError, ItemNotFoundException} from '../exceptions';
+import {buildQueryString} from '../auth/helpers';
+import {CONDUCTOR_PUBLIC_URL, EMAIL_CODE_EXPIRY_MINUTES} from '../buildconfig';
+import {
+  InternalSystemError,
+  ItemNotFoundException,
+  TooManyRequestsException,
+} from '../exceptions';
 import {generateVerificationCode, hashVerificationCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
@@ -24,13 +29,105 @@ import {getCouchUserFromEmailOrUserId} from './users';
 const CODE_EXPIRY_MS = EMAIL_CODE_EXPIRY_MINUTES * 60 * 1000;
 
 /**
+ * Configuration constants for email code rate limiting
+ */
+
+// Maximum number of email codes a user can request within the rate limit window
+export const MAX_EMAIL_CODE_ATTEMPTS = 5;
+// Rate limit window in milliseconds (30 minutes)
+export const EMAIL_CODE_RATE_LIMIT_WINDOW_MS = 30 * 60 * 1000;
+// Cooldown period in milliseconds (2 hours) after reaching max attempts
+export const EMAIL_CODE_COOLDOWN_MS = 2 * 60 * 60 * 1000;
+
+/**
  * Takes a reset code and embeds into URL
  * @param code The unhashed code to embed into the URL
  * @returns The URL to present to the user
  */
-export function buildCodeIntoUrl(code: string): string {
-  return `${NEW_CONDUCTOR_URL}/auth/resetPassword?code=${code}`;
+export function buildCodeIntoUrl({
+  code,
+  redirect,
+}: {
+  code: string;
+  redirect: string;
+}): string {
+  return `${CONDUCTOR_PUBLIC_URL}/reset-password${buildQueryString({values: {code, redirect}})}`;
 }
+
+/**
+ * Checks if a user can create a new email code based on previous attempts.
+ *
+ * @param userId - The ID of the user requesting the code
+ * @param email - The email address for the code (if applicable)
+ * @param purpose - The purpose of the code (e.g., 'password-reset')
+ * @param maxAttempts - Maximum number of allowed attempts in the rate limit window
+ * @param rateLimitWindowMs - Time window for rate limiting in milliseconds
+ * @param cooldownMs - Cooldown period after max attempts in milliseconds
+ *
+ * @returns A Promise that resolves to an object indicating if the user can create a code
+ */
+export const checkCanCreateEmailCode = async ({
+  userId,
+  maxAttempts = MAX_EMAIL_CODE_ATTEMPTS,
+  rateLimitWindowMs = EMAIL_CODE_RATE_LIMIT_WINDOW_MS,
+  cooldownMs = EMAIL_CODE_COOLDOWN_MS,
+}: {
+  userId: string;
+  maxAttempts?: number;
+  rateLimitWindowMs?: number;
+  cooldownMs?: number;
+}): Promise<{
+  canCreate: boolean;
+  reason?: string;
+  nextAttemptAllowedAt?: number;
+}> => {
+  // Get all email codes for this user within the rate limit window
+  const timeThreshold = Date.now() - rateLimitWindowMs;
+
+  // Get the user's email codes
+  const codes = await getCodesByUserId(userId);
+
+  // Filter codes by purpose and/or email if provided
+  const recentCodes = codes.filter(code => {
+    // Basic time filter
+    return (code.createdTimestampMs || 0) > timeThreshold;
+  });
+
+  // Count the number of attempts
+  const attemptCount = recentCodes.length;
+
+  // If user has not exceeded max attempts, they can create
+  if (attemptCount < maxAttempts) {
+    return {canCreate: true};
+  }
+
+  // Find the most recent code to calculate cooldown
+  if (recentCodes.length === 0) {
+    return {canCreate: true}; // Shouldn't happen but safety check
+  }
+
+  const mostRecentCode = recentCodes.reduce((latest, current) => {
+    const latestCreated = latest.createdTimestampMs || 0;
+    const currentCreated = current.createdTimestampMs || 0;
+    return currentCreated > latestCreated ? current : latest;
+  }, recentCodes[0]);
+
+  // Calculate when the cooldown period ends
+  const mostRecentTimestamp = mostRecentCode.createdTimestampMs || 0;
+  const cooldownEndsAt = mostRecentTimestamp + cooldownMs;
+
+  // If cooldown period has passed, they can create
+  if (Date.now() > cooldownEndsAt) {
+    return {canCreate: true};
+  }
+
+  // User must wait until cooldown ends
+  return {
+    canCreate: false,
+    reason: 'Too many reset requests. Please try again later.',
+    nextAttemptAllowedAt: cooldownEndsAt,
+  };
+};
 
 /**
  * Generates an expiry timestamp for an email verification code.
@@ -48,18 +145,34 @@ function generateExpiryTimestamp(expiryMs: number): number {
 /**
  * Creates a new email verification code for a given user.
  * @param userId The ID of the user for whom the code is being created.
- * @param purpose The purpose of the email code (e.g., 'verification', 'password-reset')
+ * @param expiryMs The duration in milliseconds until the code expires
  * @returns A Promise that resolves to an object containing the AuthRecord and the raw verification code
+ * @throws Error if rate limiting prevents code creation
  */
-export const createNewEmailCode = async (
-  userId: string,
-  expiryMs: number = CODE_EXPIRY_MS
-): Promise<{record: EmailCodeExistingDocument; code: string}> => {
+export const createNewEmailCode = async ({
+  userId,
+  expiryMs = CODE_EXPIRY_MS,
+}: {
+  userId: string;
+  expiryMs?: number;
+}): Promise<{record: EmailCodeExistingDocument; code: string}> => {
+  // Check rate limiting constraints
+  const rateCheckResult = await checkCanCreateEmailCode({
+    userId,
+  });
+
+  if (!rateCheckResult.canCreate) {
+    throw new TooManyRequestsException(
+      rateCheckResult.reason || 'Rate limit exceeded for email code creation.'
+    );
+  }
+
   const authDB = getAuthDB();
   const code = generateVerificationCode();
   const hash = hashVerificationCode(code);
   const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + uuidv4();
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
+  const currentTimestamp = Date.now();
 
   const newEmailCode: EmailCodeFields = {
     documentType: 'emailcode',
@@ -67,6 +180,7 @@ export const createNewEmailCode = async (
     code: hash,
     used: false,
     expiryTimestampMs,
+    createdTimestampMs: currentTimestamp,
   };
 
   const response = await authDB.put({_id: dbId, ...newEmailCode});

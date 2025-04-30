@@ -1,9 +1,26 @@
 /* eslint-disable n/no-process-exit */
 import {initialiseAndMigrateDBs} from '../couchdb';
 
+/**
+ * Main function to run database initialization and migration
+ * Accepts optional --keys flag to control whether public keys should be pushed
+ */
 const main = async () => {
   try {
-    await initialiseAndMigrateDBs({force: true});
+    // Check if --keys flag is present in command line arguments
+    const pushKeys = process.argv.includes('--keys');
+
+    // Log whether keys will be configured
+    console.log(
+      `Public keys will ${pushKeys ? '' : 'not '}be configured during migration`
+    );
+
+    // Run database initialization and migration with force and pushKeys parameters
+    await initialiseAndMigrateDBs({
+      force: true,
+      pushKeys: pushKeys,
+    });
+
     console.log('Migration completed successfully');
     process.exit(0);
   } catch (error) {
@@ -12,4 +29,5 @@ const main = async () => {
   }
 };
 
+// Execute the main function
 main();

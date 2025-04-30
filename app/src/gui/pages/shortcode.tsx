@@ -40,11 +40,11 @@ import {
 } from '../../buildconfig';
 import {useNotification} from '../../context/popup';
 import {addAlert} from '../../context/slices/alertSlice';
+import {Server} from '../../context/slices/projectSlice';
 import {useAppDispatch} from '../../context/store';
-import {isWeb} from '../../utils/helpers';
+import {isWeb, replaceOrAppendRedirect} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
-import {Server} from '../../context/slices/projectSlice';
 
 type ShortCodeProps = {
   servers: Server[];
@@ -236,10 +236,15 @@ export function QRCodeRegistration(props: ShortCodeProps) {
     const valid_re = valid_hosts.join('|') + '/register.*';
 
     if (url.match(valid_re)) {
+      // Process the URL with our new function
+      const finalUrl = replaceOrAppendRedirect({
+        url,
+        redirectTo: `${APP_ID}://auth-return`,
+      });
+
       // Use the capacitor browser plugin in apps
-      // TODO should we replace the redirect query string param here instead of appending
       await Browser.open({
-        url: `${url}&redirect=${APP_ID}://auth-return`,
+        url: finalUrl,
       });
     } else {
       dispatch(

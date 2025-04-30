@@ -25,6 +25,7 @@ import {
   getPossibleRelatedRecords,
   RecordMetadata,
   RecordReference,
+  RevisionID,
 } from '@faims3/data-model';
 import {Grid, SelectChangeEvent, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
@@ -46,6 +47,7 @@ import {DataGridFieldLinksComponent} from '../components/record/relationships/fi
 import {selectAllProjects} from '../../context/slices/projectSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {localGetDataDb} from '../..';
+import {prettifyFieldName} from '../../utils/formUtilities';
 
 function get_default_relation_label(
   multiple: boolean,
@@ -132,13 +134,18 @@ interface RelatedRecordSelectorProps extends FieldProps {
   current_form?: string;
   current_form_label?: string;
   isconflict?: boolean;
+  allowLinkToExisting?: boolean;
+
+  // This is actually passed to all components - but we only need it here
+  // currently
+  forceSave: () => Promise<RevisionID>;
 }
 
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
-  const project_id = props.form.values['_project_id'] as string;
-  const serverId = props.form.values['_server_id'] as string;
-  const record_id = props.form.values['_id'];
+  const project_id: string = props.form.values['_project_id'];
+  const serverId: string = props.form.values['_server_id'];
+  const record_id: string = props.form.values['_id'];
   const field_name = props.field.name;
   const uiSpecId = useAppSelector(selectAllProjects).find(
     p => p.projectId === project_id
@@ -184,6 +191,10 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   )
     search = search.replace(url_split[0] + '&' + url_split[1], '');
   if (search !== '') search = '&' + search;
+
+  const niceFieldLabel = prettifyFieldName(
+    uiSpec?.fields?.[field_name]?.['component-parameters']?.label ?? field_name
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -236,7 +247,6 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           multiple,
           uiSpec
         );
-
         setRecordsInformation(records_info);
       }
     })();
@@ -283,6 +293,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
+
   const disabled = props.disabled ?? false;
   const location_state: any = location.state;
   if (location_state !== undefined && location_state !== null) {
@@ -365,7 +376,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       childRecord: selectedRecord,
       parent: current_record,
       relationType: props.relation_type,
-      projectId: project_id,
+      uiSpecId: uiSpecId,
     })
       .then(child_record => {
         if (child_record !== null) {
@@ -479,7 +490,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
           <CreateLinkComponent
             {...props}
             field_name={field_name}
-            field_label={field_name}
+            field_label={niceFieldLabel}
             relatedRecords={relatedRecords}
             handleChange={handleChange}
             relationshipLabel={relationshipLabel}
@@ -500,18 +511,12 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
               props.related_type
             }
             state={newState}
-            handleSubmit={() => props.form.submitForm()}
+            handleSubmit={props.forceSave}
             save_new_record={save_new_record}
             handleCreateError={remove_related_child}
+            allowLinkToExisting={props.allowLinkToExisting ?? true}
           />
         </Grid>
-        {props.form.isValid === false && (
-          <Grid item xs={12} sm={12} md={12} lg={12}>
-            <Typography variant="caption" color="error">
-              To enable Add record or Link, please make sure form has no errors
-            </Typography>
-          </Grid>
-        )}
         <Grid item xs={12} sm={12} md={12} lg={12}>
           <Typography variant="caption">
             {props.helperText}

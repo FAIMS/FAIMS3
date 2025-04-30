@@ -795,12 +795,12 @@ export function RecordsTable(props: RecordsTableProps) {
   const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
     params => {
       history(
-        ROUTES.getRecordRoute(
+        ROUTES.getExistingRecordRoute({
           serverId,
-          project_id || 'dummy',
-          (params.row.record_id || '').toString(),
-          (params.row.revision_id || '').toString()
-        )
+          projectId: project_id,
+          recordId: (params.row.record_id || '').toString(),
+          revisionId: (params.row.revision_id || '').toString(),
+        })
       );
     },
     [history, project_id]

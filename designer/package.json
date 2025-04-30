@@ -2,7 +2,7 @@
     "name": "@faims3/designer",
     "packageManager": "npm@10.7.0",
     "private": true,
-    "version": "1.0.0",
+    "version": "1.2.0",
     "type": "module",
     "engines": {
         "node": "^20.9.0"

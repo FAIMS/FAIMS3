@@ -132,7 +132,7 @@ export function DraftsTable(props: DraftsRecordProps) {
    */
   const handleRowClick: GridEventListener<'rowClick'> = params => {
     history(
-      ROUTES.getDraftRoute(
+      ROUTES.getNewDraftRoute(
         serverId,
         project_id ?? 'dummy',
         params.row._id as DraftMetadata['_id'],

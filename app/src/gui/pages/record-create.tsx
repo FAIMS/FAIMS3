@@ -19,17 +19,7 @@
  */
 
 import {generateFAIMSDataID, ProjectID, RecordID} from '@faims3/data-model';
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  Grid,
-  Paper,
-} from '@mui/material';
+import {Box, CircularProgress, Grid, Paper} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -57,6 +47,7 @@ import {ParentLinkProps} from '../components/record/relationships/types';
 import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {checkIfParentHasInheritedData} from '../../utils/formUtilities';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;
@@ -148,7 +139,8 @@ interface DraftRecordEditProps {
   serverId: string;
   state?: any;
   location?: Location;
-  onBack: () => void;
+  backLink: string;
+  backIsParent: boolean;
 }
 
 function DraftRecordEdit(props: DraftRecordEditProps) {
@@ -163,7 +155,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [parentLinks, setParentLinks] = useState<ParentLinkProps[]>([]);
   const [is_link_ready, setIs_link_ready] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const progress = useAppSelector(state => state.records.percent);
 
   const uiSpecId = useAppSelector(state =>
     selectProjectById(state, project_id)
@@ -208,7 +200,7 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
     <React.Fragment>
       <Grid container justifyContent={'space-between'} spacing={2}>
         <Grid item>
-          <BackButton label="Back" onClick={props.onBack} />
+          <BackButton link={props.backLink} backIsParent={props.backIsParent} />
         </Grid>
         <Grid item xs>
           <ProgressBar percentage={progress} />
@@ -230,14 +222,19 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
             variant={is_mobile ? undefined : 'outlined'}
           >
             {is_link_ready ? (
-              <InheritedDataComponent
-                parentRecords={parentLinks}
-                ui_specification={uiSpec}
-              />
+              checkIfParentHasInheritedData({parentLinks, uiSpec}) ? (
+                <InheritedDataComponent
+                  parentRecords={parentLinks}
+                  ui_specification={uiSpec}
+                />
+              ) : null
             ) : (
               <CircularProgress size={24} />
             )}
+
             <RecordForm
+              // Here we are in a new record
+              isExistingRecord={false}
               serverId={project.serverId}
               project_id={project_id}
               record_id={record_id}
@@ -251,8 +248,6 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               mq_above_md={mq_above_md}
               navigate={navigate}
               location={props.location}
-              setProgress={setProgress}
-              disabled={false}
             />
           </Box>
         </Box>
@@ -271,29 +266,12 @@ export default function RecordCreate() {
   }>();
   const {serverId, projectId, typeName, draftId, recordId} = params;
   const location = useLocation();
-  const navigate = useNavigate();
 
   if (!serverId) return <></>;
   const project = useAppSelector(state =>
     projectId ? selectProjectById(state, projectId) : undefined
   );
   if (!project) return <></>;
-
-  const [openDialog, setOpenDialog] = useState(false);
-
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-  };
-
-  const handleConfirmNavigation = () => {
-    setOpenDialog(false);
-    navigate(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId, {
-      replace: true,
-    });
-  };
 
   let draft_record_id = generateFAIMSDataID();
   if (recordId !== undefined) draft_record_id = recordId;
@@ -302,12 +280,15 @@ export default function RecordCreate() {
 
   let showBreadcrumbs = false;
 
+  let backlink = ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+  let backIsParent = false;
   const breadcrumbs = [
     // {link: ROUTES.INDEX, title: 'Home'},
     {link: ROUTES.NOTEBOOK_LIST_ROUTE, title: `${NOTEBOOK_NAME_CAPITALIZED}s`},
     {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
-      title: project !== null ? project.metadata.name : projectId!,
+      link: backlink,
+      title:
+        project !== null ? (project.name ?? project.metadata.name) : projectId!,
     },
     {title: 'Draft'},
   ];
@@ -315,12 +296,14 @@ export default function RecordCreate() {
   // add parent link back for the parent or linked record
   if (location.state && location.state.parent_record_id !== recordId) {
     showBreadcrumbs = true;
+    backlink = location.state.parent_link;
+    backIsParent = true;
     const type =
       location.state.type === 'Child'
         ? 'Parent'
         : location.state.relation_type_vocabPair[0];
     breadcrumbs.splice(-1, 0, {
-      link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + location.state.parent_link,
+      link: location.state.parent_link,
       title:
         type! +
         ':' +
@@ -328,31 +311,9 @@ export default function RecordCreate() {
     });
   }
 
-  // detect when user click's android back buttn
-  useEffect(() => {
-    const handleBackEvent = (event: Event) => {
-      event.preventDefault();
-      setOpenDialog(true);
-    };
-    window.history.pushState(null, '', window.location.href);
-    const handlePopState = () => {
-      setOpenDialog(true);
-    };
-    window.addEventListener('popstate', handlePopState);
-    window.addEventListener('beforeunload', handleBackEvent);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      window.removeEventListener('beforeunload', handleBackEvent);
-    };
-  }, []);
-
   return (
     <React.Fragment>
       <Box>
-        {
-          // only show breadcrumbs if we have parent record
-        }
         {showBreadcrumbs && <Breadcrumbs data={breadcrumbs} />}
         {draftId === undefined || recordId === undefined ? (
           <DraftCreateAction
@@ -365,7 +326,6 @@ export default function RecordCreate() {
           />
         ) : (
           <DraftRecordEdit
-            onBack={() => setOpenDialog(true)}
             serverId={serverId}
             project={project}
             type_name={typeName!}
@@ -373,65 +333,11 @@ export default function RecordCreate() {
             record_id={recordId}
             state={location.state}
             location={location}
+            backLink={backlink}
+            backIsParent={backIsParent}
           />
         )}
       </Box>
-      <Dialog
-        open={openDialog}
-        onClose={handleCloseDialog}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        PaperProps={{
-          sx: {padding: 2},
-        }}
-        disableScrollLock={true}
-      >
-        <Alert severity="info">
-          <AlertTitle>
-            {' '}
-            Are you sure you want to return to the record list?
-          </AlertTitle>
-          Your response is saved on your device as a draft. You can return to it
-          later to complete this record.{' '}
-        </Alert>
-
-        <DialogActions
-          sx={{
-            justifyContent: 'space-between',
-            padding: theme.spacing(2),
-          }}
-        >
-          <Button
-            onClick={handleCloseDialog}
-            sx={{
-              backgroundColor: theme.palette.dialogButton.cancel,
-              color: theme.palette.dialogButton.dialogText,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-              padding: isMobile ? '6px 12px' : '10px 20px',
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-              },
-            }}
-          >
-            Continue working
-          </Button>
-          <Button
-            onClick={handleConfirmNavigation}
-            // variant={'contained'}
-            sx={{
-              backgroundColor: theme.palette.dialogButton.confirm,
-              color: theme.palette.dialogButton.dialogText,
-              fontSize: isMobile ? '0.875rem' : '1rem',
-              padding: isMobile ? '6px 12px' : '10px 20px',
-              '&:hover': {
-                backgroundColor: theme.palette.text.primary,
-              },
-            }}
-          >
-            Return to record list
-          </Button>
-        </DialogActions>
-      </Dialog>
     </React.Fragment>
   );
 }
