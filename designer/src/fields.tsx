@@ -16,6 +16,8 @@ import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
   FAIMSTextField: {
+    displayLabel: 'FAIMS Text Field',
+    category: 'Text',
     'component-namespace': 'faims-custom',
     'component-name': 'FAIMSTextField',
     'type-returned': 'faims-core::String',
@@ -31,6 +33,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   Email: {
+    displayLabel: 'Email',
+    category: 'Text',
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Email',
@@ -49,6 +53,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   Number: {
+    displayLabel: 'Number field',
+    category: 'Numbers',
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Integer',
@@ -66,6 +72,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   ControlledNumber: {
+    displayLabel: 'Controlled number',
+    category: 'Numbers',
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Integer',
@@ -88,6 +96,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   BasicAutoIncrementer: {
+    displayLabel: 'Auto Incrementing Field',
+    category: 'Numbers',
     'component-namespace': 'faims-custom',
     'component-name': 'BasicAutoIncrementer',
     'type-returned': 'faims-core::String',
@@ -104,6 +114,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   MultipleTextField: {
+    displayLabel: 'Text Field (multiline)',
+    category: 'Text',
     'component-namespace': 'formik-material-ui',
     'component-name': 'MultipleTextField',
     'type-returned': 'faims-core::String',
@@ -124,6 +136,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   Checkbox: {
+    displayLabel: 'Checkbox',
+    category: 'Choice',
     'component-namespace': 'faims-custom',
     'component-name': 'Checkbox',
     'type-returned': 'faims-core::Bool',
@@ -140,6 +154,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: false,
   },
   DateTimeNow: {
+    displayLabel: 'Date & Time with Now button',
+    category: 'Date & Time',
     'component-namespace': 'faims-custom',
     'component-name': 'DateTimeNow',
     'type-returned': 'faims-core::String',
@@ -155,6 +171,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   DatePicker: {
+    displayLabel: 'Date picker',
+    category: 'Date & Time',
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Date',
@@ -172,6 +190,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   DateTimePicker: {
+    displayLabel: 'Date and Time',
+    category: 'Date & Time',
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Datetime',
@@ -189,6 +209,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   MonthPicker: {
+    displayLabel: 'Month picker',
+    category: 'Date & Time',
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
     'type-returned': 'faims-core::Date',
@@ -206,6 +228,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   FileUploader: {
+    displayLabel: 'Upload a File',
+    category: 'Media',
     'component-namespace': 'faims-custom',
     'component-name': 'FileUploader',
     'type-returned': 'faims-attachment::Files',
@@ -219,6 +243,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: null,
   },
   MapFormField: {
+    displayLabel: 'Select a Point',
+    category: 'Location',
     'component-namespace': 'mapping-plugin',
     'component-name': 'MapFormField',
     'type-returned': 'faims-core::JSON',
@@ -236,6 +262,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   MultiSelect: {
+    displayLabel: 'Select Multiple',
+    category: 'Choice',
     'component-namespace': 'faims-custom',
     'component-name': 'MultiSelect',
     'type-returned': 'faims-core::Array',
@@ -268,6 +296,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: [],
   },
   RadioGroup: {
+    displayLabel: 'Select one option',
+    category: 'Choice',
     'component-namespace': 'faims-custom',
     'component-name': 'RadioGroup',
     'type-returned': 'faims-core::String',
@@ -295,6 +325,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   RandomStyle: {
+    displayLabel: 'Random Style',
+    category: 'Display',
     'component-namespace': 'faims-custom',
     'component-name': 'RandomStyle',
     'type-returned': 'faims-core::String',
@@ -310,6 +342,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   RichText: {
+    displayLabel: 'Rich Text',
+    category: 'Text',
     'component-namespace': 'faims-custom',
     'component-name': 'RichText',
     'type-returned': 'faims-core::String',
@@ -319,6 +353,8 @@ const fields: {[key: string]: FieldType} = {
     },
   },
   RelatedRecordSelector: {
+    displayLabel: 'Select Related',
+    category: 'Relationship',
     'component-namespace': 'faims-custom',
     'component-name': 'RelatedRecordSelector',
     'type-returned': 'faims-core::Relationship',
@@ -336,6 +372,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   Select: {
+    displayLabel: 'Select Field',
+    category: 'Choice',
     'component-namespace': 'faims-custom',
     'component-name': 'Select',
     'type-returned': 'faims-core::String',
@@ -353,6 +391,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   AdvancedSelect: {
+    displayLabel: 'Advanced Select',
+    category: 'Choice',
     'component-namespace': 'faims-custom',
     'component-name': 'AdvancedSelect',
     'type-returned': 'faims-core::String',
@@ -375,6 +415,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   TakePhoto: {
+    displayLabel: 'Take Photo',
+    category: 'Media',
     'component-namespace': 'faims-custom',
     'component-name': 'TakePhoto',
     'type-returned': 'faims-attachment::Files',
@@ -392,6 +434,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: null,
   },
   TakePoint: {
+    displayLabel: 'Take point',
+    category: 'Location',
     'component-namespace': 'faims-custom',
     'component-name': 'TakePoint',
     'type-returned': 'faims-pos::Location',
@@ -404,6 +448,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: null,
   },
   TemplatedStringField: {
+    displayLabel: 'Templated String Field',
+    category: 'Text',
     'component-namespace': 'faims-custom',
     'component-name': 'TemplatedStringField',
     'type-returned': 'faims-core::String',
@@ -420,6 +466,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   QRCodeFormField: {
+    displayLabel: 'Scan QR Code',
+    category: 'Media',
     'component-namespace': 'qrcode',
     'component-name': 'QRCodeFormField',
     'type-returned': 'faims-core::String',
@@ -433,6 +481,8 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
   AddressField: {
+    displayLabel: 'Address',
+    category: 'Location',
     'component-namespace': 'faims-custom',
     'component-name': 'AddressField',
     'type-returned': 'faims-core::JSON',
@@ -446,6 +496,8 @@ const fields: {[key: string]: FieldType} = {
   },
 
   NumberField: {
+    displayLabel: 'Number Input',
+    category: 'Numbers',
     'component-namespace': 'faims-custom',
     'component-name': 'NumberField',
     'type-returned': 'faims-core::Number',
