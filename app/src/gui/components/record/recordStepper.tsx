@@ -166,10 +166,9 @@ export default function RecordStepper(props: RecordStepperProps) {
                         fontWeight: 'bold',
                         width: '26px',
                         height: '26px',
-                        boxShadow:
-                          isCurrent
-                            ? '0px 4px 12px rgba(0, 0, 0, 0.3)'
-                            : '0px 2px 4px rgba(0, 0, 0, 0.15)',
+                        boxShadow: isCurrent
+                          ? '0px 4px 12px rgba(0, 0, 0, 0.3)'
+                          : '0px 2px 4px rgba(0, 0, 0, 0.15)',
                         transition: 'all 0.3s ease-in-out',
                         zIndex: 10,
                       },

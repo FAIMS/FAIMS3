@@ -1,6 +1,11 @@
 import React, {Dispatch, SetStateAction} from 'react';
 
-import {RecordID, RecordReference, ProjectID, RevisionID} from '@faims3/data-model';
+import {
+  RecordID,
+  RecordReference,
+  ProjectID,
+  RevisionID,
+} from '@faims3/data-model';
 import {SelectChangeEvent} from '@mui/material';
 export interface TabPanelProps {
   children?: React.ReactNode;

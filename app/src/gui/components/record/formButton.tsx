@@ -21,20 +21,20 @@
  *  - Publish and Close Record(TBD)
  */
 
+import {ProjectUIModel} from '@faims3/data-model';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import {
   Box,
   Button,
-  Tooltip,
-  IconButton,
   Grid,
+  IconButton,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CircularProgress from '@mui/material/CircularProgress';
-import {CustomMobileStepper} from './recordStepper';
-import {ProjectUIModel} from '@faims3/data-model';
 import {useState} from 'react';
 import {ConfirmCancelDialog} from './confirmExitDialog';
+import {CustomMobileStepper} from './recordStepper';
 
 interface FormProps {
   isSubmitting: boolean;
@@ -142,7 +142,6 @@ export default function FormButtonGroup({
   formProps,
   handleFormSubmit,
   visitedSteps,
-  isRecordSubmitted,
   views,
   ui_specification,
   layout,

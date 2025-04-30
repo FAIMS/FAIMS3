@@ -131,8 +131,8 @@ export default function NoteBooks() {
             }}
           >
             {row.name ??
-            // Just as a backwards compat thing, consider looking for name in
-            // metadata
+              // Just as a backwards compat thing, consider looking for name in
+              // metadata
               row.metadata.name ??
               'Unknown ' + NOTEBOOK_NAME_CAPITALIZED}
           </Typography>

@@ -1094,7 +1094,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
    * succeeding!
    */
   async forceSave(formProps: FormikProps<any>): Promise<RevisionID> {
-    console.error('FORCED');
     formProps.setSubmitting(true);
     // TODO improve type hacking!
     return (await this.save({
