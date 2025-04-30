@@ -2,6 +2,9 @@ import {capitalize} from './lib/utils';
 
 export const NOTEBOOK_NAME = import.meta.env.VITE_NOTEBOOK_NAME || 'project';
 
+export const WEBSITE_TITLE =
+  import.meta.env.VITE_WEBSITE_TITLE || 'Control Centre';
+
 export const WEB_URL =
   (import.meta.env.VITE_WEB_URL as string | undefined) ?? '';
 if (WEB_URL === '') {
