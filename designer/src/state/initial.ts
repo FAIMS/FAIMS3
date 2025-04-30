@@ -93,8 +93,8 @@ export type FieldType = {
     annotation: {include: boolean; label: string};
     uncertainty: {include: boolean; label: string};
   };
-  displayLabel: string;
-  category:
+  displayLabel?: string;
+  category?:
     | 'Text'
     | 'Numbers'
     | 'Date & Time'

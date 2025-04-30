@@ -85,10 +85,10 @@ export default function FieldChooserDialog({
         const spec = getFieldSpec(key);
         return {
           key,
-          label: spec.displayLabel,
+          label: spec.displayLabel || spec['component-name'],
           description:
             spec['component-parameters']?.advancedHelperText?.toString() || '',
-          category: spec.category,
+          category: spec.category || 'Uncategorised',
         };
       }),
     []
