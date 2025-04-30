@@ -33,9 +33,9 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
   },
 
-  // DATE FIELDS
-  // ===========
-  DateTimePicker: {
+  CustomDateTimePicker: {
+    displayLabel: 'Custom Date Time Picker',
+    category: 'Date & Time',
     'component-namespace': 'faims-custom',
     'component-name': 'DateTimePicker',
     'type-returned': 'faims-core::String',
@@ -50,7 +50,9 @@ const fields: {[key: string]: FieldType} = {
     validationSchema: [['yup.string']],
     initialValue: '',
   },
-  DatePicker: {
+  DatePickerCustom: {
+    displayLabel: 'Custom Date Picker',
+    category: 'Date & Time',
     'component-namespace': 'faims-custom',
     'component-name': 'DatePicker',
     'type-returned': 'faims-core::Date',
@@ -61,36 +63,6 @@ const fields: {[key: string]: FieldType} = {
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
-    },
-    validationSchema: [['yup.string']],
-    initialValue: '',
-  },
-  MonthPicker: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'MonthPicker',
-    'type-returned': 'faims-core::Date',
-    'component-parameters': {
-      label: 'Month picker',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-    },
-    validationSchema: [['yup.string']],
-    initialValue: '',
-  },
-  DateTimeNow: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'DateTimeNow',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Date and Time with Now button',
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: false,
-      is_auto_pick: false,
     },
     validationSchema: [['yup.string']],
     initialValue: '',

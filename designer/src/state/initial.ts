@@ -38,7 +38,7 @@ export type ComponentParameters = {
     expandedChecklist?: boolean;
     // These items must correspond to values in the options[]. Only one of such
     // can be selecting, greying out/excluding other options
-    exclusiveOptions?: Array<string>;
+    exclusiveOptions?: string[];
     options?: {
       value: string;
       label: string;
@@ -90,15 +90,19 @@ export type FieldType = {
   persistent?: boolean;
   displayParent?: boolean;
   meta?: {
-    annotation: {
-      include: boolean;
-      label: string;
-    };
-    uncertainty: {
-      include: boolean;
-      label: string;
-    };
+    annotation: {include: boolean; label: string};
+    uncertainty: {include: boolean; label: string};
   };
+  displayLabel: string;
+  category:
+    | 'Text'
+    | 'Numbers'
+    | 'Date & Time'
+    | 'Media'
+    | 'Location'
+    | 'Choice'
+    | 'Relationship'
+    | 'Display';
 };
 
 export type NotebookUISpec = {
