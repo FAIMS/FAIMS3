@@ -1086,6 +1086,23 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     );
   }
 
+  /**
+   * Bypasses the normal formik checks - passed down to related record selector
+   * to force a submission. Overrides the ambiguous save return type by type
+   * casting.
+   * @returns A revision ID as a promise - this is in the case of the save
+   * succeeding!
+   */
+  async forceSave(formProps: FormikProps<any>): Promise<RevisionID> {
+    formProps.setSubmitting(true);
+    // TODO improve type hacking!
+    return (await this.save({
+      values: formProps.values,
+      closeOption: 'continue',
+      setSubmitting: formProps.setSubmitting,
+    })) as RevisionID;
+  }
+
   private handleCancel(ui_specification: ProjectUIModel) {
     const relationState = this.props.location?.state;
     // first case is if we have a parent record, there should be
@@ -1131,7 +1148,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
    * Deal with the case where we are cancelling out of a form but the form
    * is a child record.  The parent will have been modified before we
    * started to add the child link, so we need to remove it.
-   * 
+   *
    * - relationState - the location state passed in to this route containing context info
    * - ui_specification - the current uiSpec
    */
@@ -1173,12 +1190,12 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
           upsertFAIMSData({dataDb, record: parentRecord}).then(revisionId => {
             // now parent link will be out of date as it refers to
             // the old revision so we need a new one
-            const revLink = ROUTES.getRecordRoute(
-              this.props.serverId,
-              this.props.project_id,
-              relationState.parent_record_id,
-              revisionId
-            );
+            const revLink = ROUTES.getExistingRecordRoute({
+              serverId: this.props.serverId,
+              projectId: this.props.project_id,
+              recordId: relationState.parent_record_id,
+              revisionId,
+            });
             this.navigateTo(revLink);
           });
         }
@@ -1423,12 +1440,12 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
               })
                 .then(new_revision_id => {
                   // update location state to point to the parent record
-                  locationState['parent_link'] = ROUTES.getRecordRoute(
-                    this.props.serverId,
-                    this.props.project_id,
-                    (locationState.parent_record_id || '').toString(),
-                    (new_revision_id || '').toString()
-                  );
+                  locationState['parent_link'] = ROUTES.getExistingRecordRoute({
+                    serverId: this.props.serverId,
+                    projectId: this.props.project_id,
+                    recordId: (locationState.parent_record_id || '').toString(),
+                    revisionId: (new_revision_id || '').toString(),
+                  });
                   // and add the reference ot the child record id
                   locationState['child_record_id'] = new_record_id;
                   // navigate to the page to create a new record with the updated state
@@ -1743,6 +1760,9 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                                 currentStepId={this.state.view_cached ?? ''}
                                 isRevisiting={this.state.isRevisiting}
                                 handleSectionClick={this.handleSectionClick}
+                                forceSave={async () => {
+                                  return await this.forceSave(formProps);
+                                }}
                               />
                             </Form>
                           </div>
@@ -1870,6 +1890,9 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         currentStepId={this.state.view_cached ?? ''}
                         isRevisiting={this.state.isRevisiting}
                         handleSectionClick={this.handleSectionClick}
+                        forceSave={async () => {
+                          return await this.forceSave(formProps);
+                        }}
                       />
                       <FormButtonGroup
                         record_type={this.state.type_cached}

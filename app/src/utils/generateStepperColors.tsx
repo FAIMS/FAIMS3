@@ -19,7 +19,7 @@ export const getStepColor = (
   sectionId: string,
   currentStepId: string,
   hasError: boolean,
-  visitedSteps: Set<string>,
+  visitedSteps: Set<string>
 ): string => {
   const colors = theme.stepperColors;
   if (sectionId === currentStepId) return colors.current; // Current step color

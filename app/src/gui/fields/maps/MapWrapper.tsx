@@ -196,7 +196,7 @@ function MapWrapper(props: MapProps) {
           }
         });
 
-        map.updateSize(); 
+        map.updateSize();
         map.getView().setZoom(props.zoom || 17);
       }
     }, 300);

@@ -1,6 +1,11 @@
 import React, {Dispatch, SetStateAction} from 'react';
 
-import {RecordID, RecordReference, ProjectID} from '@faims3/data-model';
+import {
+  RecordID,
+  RecordReference,
+  ProjectID,
+  RevisionID,
+} from '@faims3/data-model';
 import {SelectChangeEvent} from '@mui/material';
 export interface TabPanelProps {
   children?: React.ReactNode;
@@ -126,7 +131,7 @@ export interface CreateRecordLinkProps {
   handleChange: (e: SelectChangeEvent) => void;
   SetSelectedRecord: Dispatch<SetStateAction<RecordReference | null>>;
   add_related_child?: () => void;
-  handleSubmit: () => void;
+  handleSubmit: () => Promise<RevisionID>;
   save_new_record: () => void;
   handleCreateError: (id: any, hrid: any) => Promise<any>;
 }

@@ -69,6 +69,10 @@ export default function ParentForm(props: ParentFormProps) {
               isRevisiting={false}
               handleSectionClick={() => {}}
               handleChangeTab={() => {}}
+              // FAKE
+              forceSave={async () => {
+                return '';
+              }}
             />
           </Form>
         );

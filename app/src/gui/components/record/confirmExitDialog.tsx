@@ -25,7 +25,6 @@ import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
 import {CloseOptionType} from './formButton';
 
-
 /**
  * Confirm Exit dialog - checks that we really want to exit the current form
  * - backLink - the link we'll follow back to the parent record/record list
@@ -135,7 +134,6 @@ export const ConfirmExitDialog = ({
     </Dialog>
   );
 };
-
 
 /**
  * Confirm Cancel Dialog - checks that we really want to cancel out of the current form

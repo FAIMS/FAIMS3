@@ -231,6 +231,7 @@ export function FieldWithAnnotation(props: FieldWithAnnotationProp) {
               fieldConfig,
               fieldName,
               formProps,
+              undefined,
               isSyncing,
               true
             )}
