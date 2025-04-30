@@ -29,7 +29,7 @@ export function AddNewRecordButton(props: {
   pathname: string;
   state: LocationState;
   text: string;
-  handleSubmit: Function;
+  handleSubmit: () => Promise<RevisionID>;
   project_id: string;
   serverId: string;
   save_new_record: Function;
@@ -47,12 +47,12 @@ export function AddNewRecordButton(props: {
         .handleSubmit()
         .then((revisionID: RevisionID) => {
           const newState = props.state;
-          newState['parent_link'] = ROUTES.getRecordRoute(
-            props.serverId,
-            props.project_id,
-            (props.state.parent_record_id || '').toString(),
-            (revisionID || '').toString()
-          );
+          newState['parent_link'] = ROUTES.getExistingRecordRoute({
+            serverId: props.serverId,
+            projectId: props.project_id,
+            recordId: (props.state.parent_record_id || '').toString(),
+            revisionId: (revisionID || '').toString(),
+          });
           newState['child_record_id'] = childRecordId;
           // wait for 300ms and then jump to the new pathname with the new state
           setTimeout(() => {
@@ -273,6 +273,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                     pathname={props.pathname}
                     state={props.state}
                     text={'Add Record'}
+                    // This is just form submit - which saves the record
                     handleSubmit={props.handleSubmit}
                     project_id={props.project_id}
                     save_new_record={props.save_new_record}

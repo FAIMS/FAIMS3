@@ -78,12 +78,12 @@ export async function generateLocationState(
       location_state: {
         field_id: parentLink.field_id,
         parent: latest_record?.relationship?.parent,
-        parent_link: ROUTES.getRecordRoute(
+        parent_link: ROUTES.getExistingRecordRoute({
           serverId,
-          project_id,
-          parentLink.record_id,
-          revision_id
-        ),
+          projectId: project_id,
+          recordId: parentLink.record_id,
+          revisionId: revision_id,
+        }),
         parent_record_id: parentLink.record_id,
         type: 'Child',
         // relation_type_vocabPair: relationship.parent.relation_type_vocabPair,
@@ -540,12 +540,12 @@ async function get_field_RelatedFields(
             latest_record?.updated_by ?? '',
             latest_record?.updated
           ),
-          ROUTES.getRecordRoute(
+          ROUTES.getExistingRecordRoute({
             serverId,
-            child_record.project_id,
-            child_record.record_id,
-            revision_id
-          ),
+            projectId: child_record.project_id,
+            recordId: child_record.record_id,
+            revisionId: revision_id,
+          }),
           linked_vocab,
           record_id,
           hrid,
@@ -555,12 +555,12 @@ async function get_field_RelatedFields(
           section_label,
           field,
           field_name,
-          ROUTES.getRecordRoute(
+          ROUTES.getExistingRecordRoute({
             serverId,
-            child_record?.project_id,
-            record_id,
-            current_revision_id
-          ),
+            projectId: child_record?.project_id,
+            recordId: record_id,
+            revisionId: current_revision_id,
+          }),
           relation_type,
           latest_record?.deleted ?? false,
           is_deleted
@@ -651,12 +651,12 @@ export async function addLinkedRecord(
         ),
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getRecordRoute(
+          : ROUTES.getExistingRecordRoute({
               serverId,
-              child_record.project_id,
-              child_record.record_id,
-              current_revision_id
-            ),
+              projectId: child_record.project_id,
+              recordId: child_record.record_id,
+              revisionId: current_revision_id,
+            }),
         linked_vocab,
         parent_link.record_id,
         hrid,
@@ -668,12 +668,12 @@ export async function addLinkedRecord(
         field_name,
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getRecordRoute(
+          : ROUTES.getExistingRecordRoute({
               serverId,
-              child_record.project_id,
-              parent_link.record_id,
-              revision_id
-            ),
+              projectId: child_record.project_id,
+              recordId: parent_link.record_id,
+              revisionId: revision_id,
+            }),
         has_parent === true && index === '0' ? 'Child' : 'Linked',
         false,
         is_parent_deleted
@@ -797,12 +797,12 @@ export async function getParentPersistenceData({
           section: '',
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
-          route: ROUTES.getRecordRoute(
+          route: ROUTES.getExistingRecordRoute({
             serverId,
             projectId,
-            parent.parent.record_id,
-            revision_id
-          ),
+            recordId: parent.parent.record_id,
+            revisionId: revision_id,
+          }),
           children: [],
           deleted: latest_record?.deleted,
         },

@@ -18,15 +18,16 @@
  *   TODO
  */
 
-import React from 'react';
+import {RevisionID} from '@faims3/data-model';
 import {Field, FormikProps} from 'formik';
-
+import React from 'react';
 import {getComponentByName} from '../../component_registry';
 
 export function getComponentFromFieldConfig(
   fieldConfig: any,
   fieldName: string,
   formProps: FormikProps<{[key: string]: unknown}>,
+  forceSave?: () => Promise<RevisionID>,
   isSyncing = 'false',
   disabled = false
 ) {
@@ -63,6 +64,7 @@ export function getComponentFromFieldConfig(
         formProps.handleChange(event);
       }}
       disabled={disabled}
+      forceSave={forceSave}
     />
   ) : (
     <Field
@@ -81,6 +83,7 @@ export function getComponentFromFieldConfig(
       }}
       issyncing={isSyncing}
       disabled={disabled}
+      forceSave={forceSave}
     />
   );
 }

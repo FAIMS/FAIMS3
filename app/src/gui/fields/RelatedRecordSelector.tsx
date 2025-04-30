@@ -25,6 +25,7 @@ import {
   getPossibleRelatedRecords,
   RecordMetadata,
   RecordReference,
+  RevisionID,
 } from '@faims3/data-model';
 import {Grid, SelectChangeEvent, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
@@ -134,13 +135,17 @@ interface RelatedRecordSelectorProps extends FieldProps {
   current_form_label?: string;
   isconflict?: boolean;
   allowLinkToExisting?: boolean;
+
+  // This is actually passed to all components - but we only need it here
+  // currently
+  forceSave: () => Promise<RevisionID>;
 }
 
 export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
   const activeToken = useAppSelector(selectActiveToken)!.parsedToken;
-  const project_id = props.form.values['_project_id'] as string;
-  const serverId = props.form.values['_server_id'] as string;
-  const record_id = props.form.values['_id'];
+  const project_id: string = props.form.values['_project_id'];
+  const serverId: string = props.form.values['_server_id'];
+  const record_id: string = props.form.values['_id'];
   const field_name = props.field.name;
   const uiSpecId = useAppSelector(selectAllProjects).find(
     p => p.projectId === project_id
@@ -288,6 +293,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
   };
+
   const disabled = props.disabled ?? false;
   const location_state: any = location.state;
   if (location_state !== undefined && location_state !== null) {
@@ -505,7 +511,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
               props.related_type
             }
             state={newState}
-            handleSubmit={() => props.form.submitForm()}
+            handleSubmit={props.forceSave}
             save_new_record={save_new_record}
             handleCreateError={remove_related_child}
             allowLinkToExisting={props.allowLinkToExisting ?? true}

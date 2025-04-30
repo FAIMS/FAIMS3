@@ -46,64 +46,88 @@ export const HELP = '/help';
 export const CREATE_NEW_SURVEY = '/create-new-survey';
 export const USER_ACTIVE_TESTR = '/test';
 
-export function getRecordRoute(
-  serverId: string,
-  project_id: ProjectID,
-  record_id: RecordID,
-  revision_id: RevisionID
-) {
-  if (!!serverId && !!project_id && !!record_id && !!revision_id) {
+/**
+ * Generates a route to a record in the format
+ *
+ * @returns /surveys/<server>/<project>/records/<recordId>/revision/<revisionId>
+ */
+export function getExistingRecordRoute({
+  serverId,
+  projectId,
+  recordId,
+  revisionId,
+}: {
+  serverId: string;
+  projectId: ProjectID;
+  recordId: RecordID;
+  revisionId: RevisionID;
+}) {
+  if (!!serverId && !!projectId && !!recordId && !!revisionId) {
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
       serverId +
       '/' +
-      project_id +
+      projectId +
       RECORD_EXISTING +
-      record_id +
+      recordId +
       REVISION +
-      revision_id
+      revisionId
     );
   }
+  console.error('Trying to create record route with missing details!');
+  console.error({serverId, projectId, recordId, revisionId});
   throw Error(
     'project_id, record_id and revision_id are required for this route'
   );
 }
 
-// this function is to get route for draft-- depend on edit draft or created draft??? TODO need to check created draft route
-export function getDraftRoute(
+/**
+ * Generates a route for a new draft
+ * @param serverId the server
+ * @param projectId the project
+ * @param draftId the ID of the draft - this is pre-seeded
+ * @param existingRecordInformation existing record? If provided instead returns the existing record route
+ * @param formId the ID of the form
+ * @param recordId the ID of the record
+ * @returns The route to navigate to
+ */
+export function getNewDraftRoute(
   serverId: string,
-  project_id: ProjectID,
-  draft_id: string,
-  existing: null | {record_id: RecordID; revision_id: RevisionID},
-  type_name: string,
-  record_id: string
+  projectId: ProjectID,
+  draftId: string,
+  existingRecordInformation: null | {
+    record_id: RecordID;
+    revision_id: RevisionID;
+  },
+  formId: string,
+  recordId: string
 ) {
-  if (existing !== null)
+  if (existingRecordInformation !== null)
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
       serverId +
       '/' +
-      project_id +
+      projectId +
       RECORD_EXISTING +
       // existing+
-      existing.record_id +
+      existingRecordInformation.record_id +
       REVISION +
-      existing.revision_id +
+      existingRecordInformation.revision_id +
       RECORD_DRAFT +
-      draft_id
+      draftId
     );
   else {
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
       serverId +
       '/' +
-      project_id +
+      projectId +
       RECORD_CREATE +
-      type_name +
+      formId +
       RECORD_DRAFT +
-      draft_id +
+      draftId +
       RECORD_RECORD +
-      record_id
+      recordId
     );
   }
 }

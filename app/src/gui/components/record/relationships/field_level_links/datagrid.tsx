@@ -39,7 +39,7 @@ import {
   GridRowParams,
 } from '@mui/x-data-grid';
 import React, {useEffect, useState} from 'react';
-import {getRecordRoute} from '../../../../../constants/routes';
+import {getExistingRecordRoute} from '../../../../../constants/routes';
 import {selectProjectById} from '../../../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../../../context/store';
 import {
@@ -217,12 +217,12 @@ export function DataGridFieldLinksComponent(
       fn();
     }, [props.child_record]);
 
-    const route = getRecordRoute(
-      props.serverId,
-      props.child_record.project_id,
-      props.child_record.record_id,
-      props.child_record.revision_id
-    );
+    const route = getExistingRecordRoute({
+      serverId: props.serverId,
+      projectId: props.child_record.project_id,
+      recordId: props.child_record.record_id,
+      revisionId: props.child_record.revision_id,
+    });
 
     if (props.child_record.record_id === props.current_record_id) {
       return <RecordRouteDisplay>This record</RecordRouteDisplay>;

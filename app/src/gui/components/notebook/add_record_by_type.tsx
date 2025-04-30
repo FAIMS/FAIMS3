@@ -67,12 +67,12 @@ export default function AddRecordButtons({
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
       <Navigate
-        to={ROUTES.getRecordRoute(
-          serverId,
-          projectId || 'dummy',
-          (selectedRecord.record_id || '').toString(),
-          (selectedRecord.revision_id || '').toString()
-        )}
+        to={ROUTES.getExistingRecordRoute({
+          serverId: serverId,
+          projectId: projectId || 'dummy',
+          recordId: (selectedRecord.record_id || '').toString(),
+          revisionId: (selectedRecord.revision_id || '').toString(),
+        })}
       />
     );
   } else {
