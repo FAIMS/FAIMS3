@@ -37,6 +37,7 @@ export function AddNewRecordButton(props: {
 }) {
   const [submitting, setSubmitting] = React.useState(false);
   const history = useNavigate();
+  const dispatch = useAppDispatch();
   const handleSubmit = () => {
     setSubmitting(true);
     // here we make a new record id for the child and populate the form with the
@@ -63,6 +64,14 @@ export function AddNewRecordButton(props: {
         })
         .catch((error: Error) => {
           logError(error);
+          dispatch(
+            addAlert({
+              message: 'Error saving this record before adding a link.',
+              severity: 'error',
+            })
+          );
+          // so that the display resets and we don't have a spinner
+          setSubmitting(false);
           if (props.handleError !== undefined)
             props.handleError(childRecordId, childRecordId);
         });
