@@ -95,10 +95,11 @@ function MapWrapper(props: MapProps) {
     (theMap: Map, props: MapProps) => {
       const vectorSource = new VectorSource();
       // @TODO: RG - Strech goal to show a popup on click of any point with lat-long info
+      // icon downloaded from https://freepngimg.com/png/66934-map-google-pin-icons-maps-computer-maker
       const pinIcon = new Icon({
-        src: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+        src: '/static/map-pin.png',
         anchor: [0.5, 1],
-        scale: 0.07,
+        scale: 0.25,
       });
 
       const pinStyle = new Style({
