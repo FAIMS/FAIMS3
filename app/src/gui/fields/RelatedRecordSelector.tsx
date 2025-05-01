@@ -48,6 +48,7 @@ import {selectAllProjects} from '../../context/slices/projectSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {localGetDataDb} from '../..';
 import {prettifyFieldName} from '../../utils/formUtilities';
+import FieldWrapper from './fieldWrapper';
 
 function get_default_relation_label(
   multiple: boolean,
@@ -128,6 +129,7 @@ interface RelatedRecordSelectorProps extends FieldProps {
   InputLabelProps: {label: string};
   required: boolean;
   helperText?: string;
+  advancedHelperText?: string;
   disabled?: boolean;
   relation_linked_vocabPair: Array<Array<string>>;
   related_type_label?: string;
@@ -485,74 +487,81 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
 
   return (
     <div id={field_name}>
-      <Grid container spacing={1} direction="row" justifyContent="flex-start">
-        <Grid item xs={12} sm={12} md={12} lg={12}>
-          <CreateLinkComponent
-            {...props}
-            field_name={field_name}
-            field_label={niceFieldLabel}
-            relatedRecords={relatedRecords}
-            handleChange={handleChange}
-            relationshipLabel={relationshipLabel}
-            SetSelectedRecord={SetSelectedRecord}
-            selectedRecord={selectedRecord}
-            disabled={disabled}
-            is_enabled={is_enabled}
-            project_id={project_id}
-            relation_type={type}
-            serverId={serverId}
-            add_related_child={add_related_child}
-            pathname={
-              ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-              serverId +
-              '/' +
-              project_id +
-              ROUTES.RECORD_CREATE +
-              props.related_type
-            }
-            state={newState}
-            handleSubmit={props.forceSave}
-            save_new_record={save_new_record}
-            handleCreateError={remove_related_child}
-            allowLinkToExisting={props.allowLinkToExisting ?? true}
-          />
-        </Grid>
-        <Grid item xs={12} sm={12} md={12} lg={12}>
-          <Typography variant="caption">
-            {props.helperText}
-            {'   '}
-          </Typography>
-        </Grid>
+      <FieldWrapper
+        advancedHelperText={props.advancedHelperText}
+        heading={props.label}
+        required={props.required}
+        subheading={props.helperText}
+        children={
+          <Grid
+            container
+            spacing={1}
+            direction="row"
+            justifyContent="flex-start"
+          >
+            <Grid item xs={12} sm={12} md={12} lg={12}>
+              <CreateLinkComponent
+                {...props}
+                field_name={field_name}
+                field_label={niceFieldLabel}
+                relatedRecords={relatedRecords}
+                handleChange={handleChange}
+                relationshipLabel={relationshipLabel}
+                SetSelectedRecord={SetSelectedRecord}
+                selectedRecord={selectedRecord}
+                disabled={disabled}
+                is_enabled={is_enabled}
+                project_id={project_id}
+                relation_type={type}
+                serverId={serverId}
+                add_related_child={add_related_child}
+                pathname={
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                  serverId +
+                  '/' +
+                  project_id +
+                  ROUTES.RECORD_CREATE +
+                  props.related_type
+                }
+                state={newState}
+                handleSubmit={props.forceSave}
+                save_new_record={save_new_record}
+                handleCreateError={remove_related_child}
+                allowLinkToExisting={props.allowLinkToExisting ?? true}
+              />
+            </Grid>
 
-        {!is_enabled && (
-          <Grid item xs={12} sm={12} md={12} lg={12}>
-            <Typography variant="caption" color="error">
-              Only one related record allowed. Remove existing link to enable
-              Add record or Link
-            </Typography>
+            {!is_enabled && (
+              <Grid item xs={12} sm={12} md={12} lg={12}>
+                <Typography variant="caption" color="error">
+                  Only one related record allowed. Remove existing link to
+                  enable Add record or Link
+                </Typography>
+              </Grid>
+            )}
+
+            <Grid item xs={12} sm={12} md={12} lg={12}>
+              {!!recordsInformation && recordsInformation.length > 0 ? (
+                <DataGridFieldLinksComponent
+                  project_id={project_id}
+                  serverId={serverId}
+                  links={recordsInformation}
+                  record_id={record_id}
+                  record_hrid={props.form.values['_id']}
+                  record_type={props.form.values['type']}
+                  field_name={field_name}
+                  handleUnlink={remove_related_child}
+                  handleReset={() => {}}
+                  disabled={disabled}
+                  relation_type={type}
+                />
+              ) : (
+                <></>
+              )}
+            </Grid>
           </Grid>
-        )}
-
-        <Grid item xs={12} sm={12} md={12} lg={12}>
-          {!!recordsInformation && recordsInformation.length > 0 ? (
-            <DataGridFieldLinksComponent
-              project_id={project_id}
-              serverId={serverId}
-              links={recordsInformation}
-              record_id={record_id}
-              record_hrid={props.form.values['_id']}
-              record_type={props.form.values['type']}
-              field_name={field_name}
-              handleUnlink={remove_related_child}
-              handleReset={() => {}}
-              disabled={disabled}
-              relation_type={type}
-            />
-          ) : (
-            <></>
-          )}
-        </Grid>
-      </Grid>
+        }
+      ></FieldWrapper>
     </div>
   );
 }

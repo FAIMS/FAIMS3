@@ -37,7 +37,7 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useIsOnline} from '../../../utils/customHooks';
 import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
 import {createCenterControl} from '../map/center-control';
-import {VectorTileStore} from './tile-source';
+import {failedURLs, VectorTileStore} from './tile-source';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
 import CircleStyle from 'ol/style/Circle';
@@ -345,6 +345,14 @@ export const MapComponent = (props: MapComponentProps) => {
                 <p dangerouslySetInnerHTML={{__html: attribution}} />
               )}
             </Box>
+            {failedURLs.size > 0 && (
+              <details>
+                <summary>Style Cache Misses</summary>
+                {Array.from(failedURLs).map((url, i) => (
+                  <p key={i}>{url}</p>
+                ))}
+              </details>
+            )}
           </Box>
         )}
       </Grid>
