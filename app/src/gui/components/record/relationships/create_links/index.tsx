@@ -1,17 +1,10 @@
-import React from 'react';
-import {
-  Button,
-  Grid,
-  Typography,
-  ButtonProps,
-  Collapse,
-  ButtonGroup,
-} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {Button, ButtonGroup, ButtonProps, Collapse, Grid} from '@mui/material';
 import {styled} from '@mui/material/styles';
+import React from 'react';
 
-import {CreateRecordLink, AddNewRecordButton} from './create_record_link';
 import {CreateRecordLinkProps} from '../types';
+import {AddNewRecordButton, CreateRecordLink} from './create_record_link';
 interface ExpandMoreProps extends ButtonProps {
   expand: boolean;
 }
@@ -31,14 +24,12 @@ export const ExpandMoreButton = styled((props: ExpandMoreProps) => {
 }));
 
 interface CreateLinkComponentProps extends CreateRecordLinkProps {
-  field_label: string;
   allowLinkToExisting?: boolean;
 }
 
 export default function CreateLinkComponent(
   props: CreateLinkComponentProps & CreateRecordLinkProps
 ) {
-  const {field_label} = props;
   // is the new link functionality visible
   const [expanded, setExpanded] = React.useState(false);
 
@@ -55,10 +46,6 @@ export default function CreateLinkComponent(
         alignItems="left"
         spacing={1}
       >
-        <Grid item xs={'auto'}>
-          <Typography variant={'h3'}>{field_label}</Typography>
-        </Grid>
-
         <Grid item>
           <ButtonGroup variant={'outlined'} size={'medium'}>
             {props.relation_type === 'Child' && props.disabled !== true && (

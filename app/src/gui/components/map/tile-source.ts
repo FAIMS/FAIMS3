@@ -35,6 +35,7 @@ import VectorTile from 'ol/VectorTile';
 import {MAP_SOURCE, MAP_SOURCE_KEY, MAP_STYLE} from '../../../buildconfig';
 import {IDBObjectStore} from './IDBObjectStore';
 import {getMapStylesheet} from './styles';
+import {logError} from '../../../logging';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -568,6 +569,10 @@ export class ImageTileStore extends TileStoreBase {
 
 // A vector tile source
 
+// For debugging the map style problem we'll keep track of any failed
+// URL requests from map styling.
+export const failedURLs = new Set<string>();
+
 export class VectorTileStore extends TileStoreBase {
   declare source: VectorTileSource;
   declare tileLayer: VectorTileLayer;
@@ -616,7 +621,8 @@ export class VectorTileStore extends TileStoreBase {
       Object.defineProperty(response, 'url', {value: fullURL});
       return response;
     } else {
-      console.error('transformRequest fail', fullURL);
+      logError(`transformRequest fail: ${fullURL}`);
+      failedURLs.add(fullURL);
       return fullURL;
     }
   }
