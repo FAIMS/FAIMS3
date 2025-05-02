@@ -93,7 +93,6 @@ export default function FieldChooserDialog({
 }: FieldChooserDialogProps) {
   const theme = useTheme();
 
-  // Build the list of all (non-deprecated) field options
   const allOptions: FieldOption[] = useMemo(
     () =>
       getFieldNames()
@@ -112,7 +111,6 @@ export default function FieldChooserDialog({
     []
   );
 
-  // Compute ordered category tabs
   const categoryTabs = useMemo(() => {
     const cats = Array.from(new Set(allOptions.map(o => o.category)));
     const ordered = CATEGORY_ORDER.filter(c => cats.includes(c)).concat(
@@ -159,12 +157,10 @@ export default function FieldChooserDialog({
       <DialogTitle>Select a Field Type</DialogTitle>
 
       <DialogContent dividers sx={{pt: 2, pb: 0, pl: 3, pr: 3}}>
-        <DebouncedTextField
+        <TextField
           label="Field name"
           fullWidth
           variant="outlined"
-          multiline
-          rows={2}
           value={fieldName}
           onChange={e => setFieldName(e.target.value)}
           sx={{mt: 1, mb: 0}}
@@ -211,7 +207,6 @@ export default function FieldChooserDialog({
           <Grid container spacing={2}>
             {filtered.map(opt => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
-                {/* Tooltip shows full description on hover */}
                 <Tooltip
                   title={opt.description || ''}
                   arrow
@@ -262,20 +257,18 @@ export default function FieldChooserDialog({
                           {CATEGORY_ICONS[opt.category] ?? (
                             <ViewModuleRoundedIcon />
                           )}
-                          <Typography variant="subtitle2" noWrap>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              display: '-webkit-box',
+                              overflow: 'hidden',
+                              WebkitBoxOrient: 'vertical',
+                              WebkitLineClamp: 2,
+                            }}
+                          >
                             {opt.label}
                           </Typography>
                         </Stack>
-
-                        {opt.description && (
-                          <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            noWrap
-                          >
-                            {opt.description}
-                          </Typography>
-                        )}
                       </CardContent>
                     </CardActionArea>
                   </Card>
