@@ -57,6 +57,8 @@ type FieldOption = {
   label: string;
   description: string;
   category: string;
+  order: number;
+  showInChooser: boolean;
 };
 
 const CATEGORY_ICONS: {[k: string]: React.ReactElement} = {
@@ -93,24 +95,28 @@ export default function FieldChooserDialog({
 }: FieldChooserDialogProps) {
   const theme = useTheme();
 
+  // Gather all field options, filter by showInChooser, exclude deprecated,
+  // then sort by the `order` property.
   const allOptions: FieldOption[] = useMemo(
     () =>
       getFieldNames()
-        .filter(key => !DEPRECATED_FIELDS.includes(key))
         .map(key => {
           const spec = getFieldSpec(key);
           return {
             key,
-            label: spec.displayLabel || spec['component-name'],
-            description:
-              spec['component-parameters']?.advancedHelperText?.toString() ||
-              '',
+            label: spec.humanReadableName || spec['component-name'],
+            description: spec.humanReadableDescription || '',
             category: spec.category || 'Uncategorised',
+            order: spec.order ?? Number.MAX_SAFE_INTEGER,
+            showInChooser: spec.showInChooser !== false,
           };
-        }),
+        })
+        .filter(o => !DEPRECATED_FIELDS.includes(o.key) && o.showInChooser)
+        .sort((a, b) => a.order - b.order),
     []
   );
 
+  // Build the tabs in a consistent order
   const categoryTabs = useMemo(() => {
     const cats = Array.from(new Set(allOptions.map(o => o.category)));
     const ordered = CATEGORY_ORDER.filter(c => cats.includes(c)).concat(
@@ -208,7 +214,7 @@ export default function FieldChooserDialog({
             {filtered.map(opt => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
                 <Tooltip
-                  title={opt.description || ''}
+                  title={opt.description}
                   arrow
                   disableHoverListener={!opt.description}
                   placement="top-start"

@@ -89,20 +89,24 @@ export type FieldType = {
   condition?: ConditionType | null;
   persistent?: boolean;
   displayParent?: boolean;
+
+  humanReadableName?: string;
+  category?: string;
+
+  humanReadableDescription?: string;
+  showInChooser?: boolean;
+  order?: number;
+
   meta?: {
-    annotation: {include: boolean; label: string};
-    uncertainty: {include: boolean; label: string};
+    annotation: {
+      include: boolean;
+      label: string;
+    };
+    uncertainty: {
+      include: boolean;
+      label: string;
+    };
   };
-  displayLabel?: string;
-  category?:
-    | 'Text'
-    | 'Numbers'
-    | 'Date & Time'
-    | 'Media'
-    | 'Location'
-    | 'Choice'
-    | 'Relationship'
-    | 'Display';
 };
 
 export type NotebookUISpec = {
