@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -32,18 +32,14 @@ import {
   Box,
   Tooltip,
 } from '@mui/material';
-
-import TextFieldsRoundedIcon from '@mui/icons-material/TextFieldsRounded';
-import LooksOneRoundedIcon from '@mui/icons-material/LooksOneRounded';
-import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
-import InsertPhotoRoundedIcon from '@mui/icons-material/InsertPhotoRounded';
-import PlaceRoundedIcon from '@mui/icons-material/PlaceRounded';
-import ListAltRoundedIcon from '@mui/icons-material/ListAltRounded';
-import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
-import RemoveRedEyeRoundedIcon from '@mui/icons-material/RemoveRedEyeRounded';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 
 import {getFieldNames, getFieldSpec} from '../fields';
+import {
+  ALL_CATEGORIES,
+  CategoryConfigMap,
+  CategoryKey,
+} from '../field-categories';
 
 type FieldChooserDialogProps = {
   open: boolean;
@@ -55,34 +51,12 @@ type FieldOption = {
   key: string;
   label: string;
   description: string;
-  category: string;
+  category: CategoryKey;
   order: number;
   showInChooser: boolean;
 };
 
-const CATEGORY_ICONS: {[k: string]: React.ReactElement} = {
-  All: <ViewModuleRoundedIcon />,
-  Text: <TextFieldsRoundedIcon />,
-  Numbers: <LooksOneRoundedIcon />,
-  'Date & Time': <CalendarMonthRoundedIcon />,
-  Media: <InsertPhotoRoundedIcon />,
-  Location: <PlaceRoundedIcon />,
-  Choice: <ListAltRoundedIcon />,
-  Relationship: <ShareRoundedIcon />,
-  Display: <RemoveRedEyeRoundedIcon />,
-};
-
 const CARD_HEIGHT = 80;
-const CATEGORY_ORDER: string[] = [
-  'Text',
-  'Numbers',
-  'Date & Time',
-  'Media',
-  'Location',
-  'Choice',
-  'Relationship',
-  'Display',
-];
 
 export default function FieldChooserDialog({
   open,
@@ -92,11 +66,15 @@ export default function FieldChooserDialog({
   const theme = useTheme();
 
   const [tooltipOpenKey, setTooltipOpenKey] = useState<string | false>(false);
+  const [fieldName, setFieldName] = useState('New Field');
+  const [category, setCategory] = useState<CategoryKey>(CategoryKey.ALL);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
       setFieldName('New Field');
-      setCategory('All');
+      setCategory(CategoryKey.ALL);
       setSearch('');
       setSelected(null);
       setTooltipOpenKey(false);
@@ -112,7 +90,7 @@ export default function FieldChooserDialog({
             key,
             label: spec.humanReadableName || spec['component-name'],
             description: spec.humanReadableDescription || '',
-            category: spec.category || 'Uncategorised',
+            category: (spec.category as CategoryKey) || CategoryKey.ALL,
             order: spec.order ?? Number.MAX_SAFE_INTEGER,
             showInChooser: spec.showInChooser !== false,
           };
@@ -122,22 +100,11 @@ export default function FieldChooserDialog({
     []
   );
 
-  const categoryTabs = useMemo(() => {
-    const cats = Array.from(new Set(allOptions.map(o => o.category)));
-    const ordered = CATEGORY_ORDER.filter(c => cats.includes(c)).concat(
-      cats.filter(c => !CATEGORY_ORDER.includes(c))
-    );
-    return ['All', ...ordered];
-  }, [allOptions]);
-
-  const [fieldName, setFieldName] = useState('New Field');
-  const [category, setCategory] = useState<string>('All');
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<string | null>(null);
+  const categoryTabs = ALL_CATEGORIES;
 
   const filtered = useMemo(() => {
     return allOptions
-      .filter(o => category === 'All' || o.category === category)
+      .filter(o => category === CategoryKey.ALL || o.category === category)
       .filter(o => {
         if (!search.trim()) return true;
         const needle = search.toLowerCase();
@@ -190,7 +157,7 @@ export default function FieldChooserDialog({
 
         <Tabs
           value={category}
-          onChange={(_, v: string) => setCategory(v)}
+          onChange={(_, v: CategoryKey) => setCategory(v)}
           variant="scrollable"
           allowScrollButtonsMobile
           sx={{
@@ -202,12 +169,12 @@ export default function FieldChooserDialog({
             zIndex: 1,
           }}
         >
-          {categoryTabs.map(tab => (
+          {categoryTabs.map(key => (
             <Tab
-              key={tab}
-              value={tab}
-              icon={CATEGORY_ICONS[tab] ?? <ViewModuleRoundedIcon />}
-              label={tab}
+              key={key}
+              value={key}
+              icon={CategoryConfigMap[key]?.icon ?? <ViewModuleRoundedIcon />}
+              label={CategoryConfigMap[key]?.displayName ?? key}
               iconPosition="start"
             />
           ))}
@@ -295,7 +262,7 @@ export default function FieldChooserDialog({
                           alignItems="center"
                           sx={{minHeight: 24}}
                         >
-                          {CATEGORY_ICONS[opt.category] ?? (
+                          {CategoryConfigMap[opt.category]?.icon ?? (
                             <ViewModuleRoundedIcon />
                           )}
                           <Typography
