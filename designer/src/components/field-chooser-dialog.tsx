@@ -154,7 +154,7 @@ export default function FieldChooserDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" scroll="body">
-      <DialogTitle>Select a Field Type</DialogTitle>
+      <DialogTitle>Add a field</DialogTitle>
 
       <DialogContent dividers sx={{pt: 2, pb: 0, pl: 3, pr: 3}}>
         <TextField
