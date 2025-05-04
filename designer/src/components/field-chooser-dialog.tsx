@@ -73,7 +73,6 @@ const CATEGORY_ICONS: {[k: string]: React.ReactElement} = {
 };
 
 const CARD_HEIGHT = 80;
-const DEPRECATED_FIELDS: string[] = ['Number'];
 const CATEGORY_ORDER: string[] = [
   'Text',
   'Numbers',
@@ -118,7 +117,7 @@ export default function FieldChooserDialog({
             showInChooser: spec.showInChooser !== false,
           };
         })
-        .filter(o => !DEPRECATED_FIELDS.includes(o.key) && o.showInChooser)
+        .filter(o => o.showInChooser)
         .sort((a, b) => a.order - b.order),
     []
   );
