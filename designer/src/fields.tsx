@@ -383,8 +383,8 @@ const fields: {[key: string]: FieldType} = {
     humanReadableName: 'Title',
     humanReadableDescription: 'Stylised heading or HTML content',
     category: 'Display',
-    showInChooser: true,
-    order: 16,
+    showInChooser: false,
+    order: 1000,
   },
 
   RichText: {
