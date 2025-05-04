@@ -44,7 +44,6 @@ import RemoveRedEyeRoundedIcon from '@mui/icons-material/RemoveRedEyeRounded';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 
 import {getFieldNames, getFieldSpec} from '../fields';
-import DebouncedTextField from './debounced-text-field';
 
 type FieldChooserDialogProps = {
   open: boolean;
@@ -74,9 +73,7 @@ const CATEGORY_ICONS: {[k: string]: React.ReactElement} = {
 };
 
 const CARD_HEIGHT = 80;
-
 const DEPRECATED_FIELDS: string[] = ['Number'];
-
 const CATEGORY_ORDER: string[] = [
   'Text',
   'Numbers',
@@ -95,8 +92,18 @@ export default function FieldChooserDialog({
 }: FieldChooserDialogProps) {
   const theme = useTheme();
 
-  // Gather all field options, filter by showInChooser, exclude deprecated,
-  // then sort by the `order` property.
+  const [tooltipOpenKey, setTooltipOpenKey] = useState<string | false>(false);
+
+  useEffect(() => {
+    if (open) {
+      setFieldName('New Field');
+      setCategory('All');
+      setSearch('');
+      setSelected(null);
+      setTooltipOpenKey(false);
+    }
+  }, [open]);
+
   const allOptions: FieldOption[] = useMemo(
     () =>
       getFieldNames()
@@ -116,7 +123,6 @@ export default function FieldChooserDialog({
     []
   );
 
-  // Build the tabs in a consistent order
   const categoryTabs = useMemo(() => {
     const cats = Array.from(new Set(allOptions.map(o => o.category)));
     const ordered = CATEGORY_ORDER.filter(c => cats.includes(c)).concat(
@@ -129,15 +135,6 @@ export default function FieldChooserDialog({
   const [category, setCategory] = useState<string>('All');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      setFieldName('New Field');
-      setCategory('All');
-      setSearch('');
-      setSelected(null);
-    }
-  }, [open]);
 
   const filtered = useMemo(() => {
     return allOptions
@@ -159,17 +156,36 @@ export default function FieldChooserDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" scroll="body">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      maxWidth="md"
+      sx={{
+        '& .MuiDialog-paper': {
+          maxHeight: '75vh',
+        },
+      }}
+    >
       <DialogTitle>Add a field</DialogTitle>
 
-      <DialogContent dividers sx={{pt: 2, pb: 0, pl: 3, pr: 3}}>
+      <DialogContent
+        dividers
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          px: 3,
+          pt: 2,
+          pb: 0,
+        }}
+      >
         <TextField
           label="Field name"
           fullWidth
           variant="outlined"
           value={fieldName}
           onChange={e => setFieldName(e.target.value)}
-          sx={{mt: 1, mb: 0}}
+          sx={{mb: 2, flexShrink: 0}}
           autoFocus
         />
 
@@ -178,7 +194,14 @@ export default function FieldChooserDialog({
           onChange={(_, v: string) => setCategory(v)}
           variant="scrollable"
           allowScrollButtonsMobile
-          sx={{mt: 1.7, mb: 2}}
+          sx={{
+            mb: 2,
+            flexShrink: 0,
+            position: 'sticky',
+            top: 0,
+            bgcolor: theme.palette.background.paper,
+            zIndex: 1,
+          }}
         >
           {categoryTabs.map(tab => (
             <Tab
@@ -196,18 +219,22 @@ export default function FieldChooserDialog({
           fullWidth
           variant="outlined"
           size="small"
-          sx={{mb: 2}}
+          sx={{mb: 2, flexShrink: 0}}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
 
         <Box
           sx={{
-            maxHeight: '50vh',
+            flex: 1,
             overflowY: 'auto',
             pr: 1,
             pb: 2,
-            mt: 2,
+          }}
+          onScroll={() => {
+            if (tooltipOpenKey) {
+              setTooltipOpenKey(false);
+            }
           }}
         >
           <Grid container spacing={2}>
@@ -216,8 +243,17 @@ export default function FieldChooserDialog({
                 <Tooltip
                   title={opt.description}
                   arrow
-                  disableHoverListener={!opt.description}
                   placement="top-start"
+                  disableHoverListener={!opt.description}
+                  disableFocusListener={!opt.description}
+                  disableTouchListener={!opt.description}
+                  open={tooltipOpenKey === opt.key}
+                  onOpen={() => {
+                    if (opt.description) {
+                      setTooltipOpenKey(opt.key);
+                    }
+                  }}
+                  onClose={() => setTooltipOpenKey(false)}
                 >
                   <Card
                     variant="outlined"
