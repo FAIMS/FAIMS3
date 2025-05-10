@@ -11,29 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  MenuItem,
-  Select,
-  Stack,
-} from '@mui/material';
+import {Button, Stack, Typography} from '@mui/material';
 
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
 import UnfoldLessDoubleRoundedIcon from '@mui/icons-material/UnfoldLessDoubleRounded';
 import UnfoldMoreDoubleRoundedIcon from '@mui/icons-material/UnfoldMoreDoubleRounded';
 
-import Typography from '@mui/material/Typography';
 import {useEffect, useState} from 'react';
-import {getFieldNames} from '../fields';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
-import DebouncedTextField from './debounced-text-field';
 import {FieldEditor} from './field-editor';
+import FieldChooserDialog from './field-chooser-dialog';
 
 type Props = {
   viewSetId: string;
@@ -53,8 +40,6 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const dispatch = useAppDispatch();
 
   const [hiddenExpanded, setHiddenExpanded] = useState(true);
-
-  // Updated to check 'component-parameters.hidden'
   const hiddenFields = fView.fields.filter(
     fieldName => fields[fieldName]?.['component-parameters']?.hidden
   );
@@ -64,13 +49,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   );
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogState, setDialogState] = useState({
-    name: 'New Text Field',
-    type: 'TextField',
-  });
   const [addAfterField, setAddAfterField] = useState('');
-
-  const allFieldNames = getFieldNames();
 
   const openDialog = () => {
     setDialogOpen(true);
@@ -85,14 +64,14 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     setDialogOpen(true);
   };
 
-  const addField = () => {
+  const handleDialogConfirm = (fieldName: string, fieldType: string) => {
     dispatch({
       type: 'ui-specification/fieldAdded',
       payload: {
-        fieldName: dialogState.name,
-        fieldType: dialogState.type,
-        viewId: viewId,
-        viewSetId: viewSetId,
+        fieldName,
+        fieldType,
+        viewId,
+        viewSetId,
         addAfter: addAfterField,
       },
     });
@@ -232,53 +211,11 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         </Typography>
       )}
 
-      <Dialog open={dialogOpen} onClose={closeDialog}>
-        <DialogTitle>New Field</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Create a new field in your form.
-          </DialogContentText>
-          <DebouncedTextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Field Name"
-            value={dialogState.name}
-            fullWidth
-            variant="standard"
-            onChange={e => {
-              setDialogState({
-                ...dialogState,
-                name: e.target.value,
-              });
-            }}
-          />
-          <Select
-            name="type"
-            label="Field Type"
-            fullWidth
-            value={dialogState.type}
-            onChange={e => {
-              setDialogState({
-                ...dialogState,
-                type: e.target.value,
-              });
-            }}
-          >
-            {allFieldNames.map((fieldName: string) => {
-              return (
-                <MenuItem key={fieldName} value={fieldName}>
-                  {fieldName}
-                </MenuItem>
-              );
-            })}
-          </Select>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDialog}>Cancel</Button>
-          <Button onClick={addField}>Add Field</Button>
-        </DialogActions>
-      </Dialog>
+      <FieldChooserDialog
+        open={dialogOpen}
+        onClose={closeDialog}
+        onConfirm={handleDialogConfirm}
+      />
     </>
   );
 };

@@ -38,7 +38,7 @@ export type ComponentParameters = {
     expandedChecklist?: boolean;
     // These items must correspond to values in the options[]. Only one of such
     // can be selecting, greying out/excluding other options
-    exclusiveOptions?: Array<string>;
+    exclusiveOptions?: string[];
     options?: {
       value: string;
       label: string;
@@ -89,6 +89,14 @@ export type FieldType = {
   condition?: ConditionType | null;
   persistent?: boolean;
   displayParent?: boolean;
+
+  humanReadableName?: string;
+  category?: string;
+
+  humanReadableDescription?: string;
+  showInChooser?: boolean;
+  order?: number;
+
   meta?: {
     annotation: {
       include: boolean;
