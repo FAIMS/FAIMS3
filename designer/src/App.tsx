@@ -13,16 +13,17 @@
 // limitations under the License.
 
 import './App.css';
+import {createBrowserRouter, RouterProvider} from 'react-router-dom';
 import {NotebookEditor} from './components/notebook-editor';
-import {store} from './state/store';
-import {Provider} from 'react-redux';
-import {ThemeProvider} from '@mui/material/styles';
-import globalTheme from './theme/index';
-import {RouterProvider, createBrowserRouter} from 'react-router-dom';
+import {NotebookLoader} from './components/notebook-loader';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
 import {ReviewPanel} from './components/review-panel';
-import {NotebookLoader} from './components/notebook-loader';
+import {Box, Button, Typography} from '@mui/material';
+
+interface AppProps {
+  onClose?: () => void;
+}
 
 const router = createBrowserRouter([
   {
@@ -49,14 +50,30 @@ const router = createBrowserRouter([
   },
 ]);
 
-function App() {
-  return (
-    <ThemeProvider theme={globalTheme}>
-      <Provider store={store}>
-        <RouterProvider router={router} />
-      </Provider>
-    </ThemeProvider>
-  );
-}
+export default function App({onClose}: AppProps) {
+  if (onClose) {
+    return (
+      <Box display="flex" flexDirection="column" height="100%">
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          p={2}
+          borderBottom={1}
+          borderColor="divider"
+        >
+          <Typography variant="subtitle1">Designer</Typography>
+          <Button variant="contained" onClick={onClose}>
+            Done
+          </Button>
+        </Box>
 
-export default App;
+        <Box flexGrow={1} minHeight={0}>
+          <NotebookEditor />
+        </Box>
+      </Box>
+    );
+  }
+
+  return <RouterProvider router={router} />;
+}
