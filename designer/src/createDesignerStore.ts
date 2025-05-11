@@ -27,7 +27,7 @@ export function createDesignerStore(
         metadata: metadataReducer,
         'ui-specification': undoable(uiSpecificationReducer.reducer, {
           limit: 10,
-          filter: includeAction(/^ui-specification\//),
+          // TODO: add back the filter eventually
           clearHistoryType: 'CLEAR_HISTORY',
           initTypes: [],
         }),
