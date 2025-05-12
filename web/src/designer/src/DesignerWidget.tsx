@@ -45,7 +45,7 @@ export function DesignerWidget({
     if (!onChange) return;
     const unsub = store.subscribe(() => {
       const {modified, notebook: nbState} = store.getState();
-      if (modified) onChange(nbState);
+      if (modified) onChange(nbState as NotebookWithHistory);
     });
     return unsub;
   }, [store, onChange]);
