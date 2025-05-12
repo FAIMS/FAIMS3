@@ -9,11 +9,11 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {DesignerWidget} from '../../../../../designer/src/DesignerWidget';
+import {DesignerWidget} from '@/designer/src/DesignerWidget';
 import type {
   NotebookWithHistory,
   NotebookUISpec,
-} from '../../../../../designer/src/state/initial';
+} from '@/designer/src/state/initial';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,
