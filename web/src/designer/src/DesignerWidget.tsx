@@ -6,6 +6,13 @@ import {
   Box,
   Button,
   Typography,
+  AppBar,
+  Toolbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   createMemoryRouter,
@@ -24,7 +31,7 @@ import {DesignPanel} from './components/design-panel';
 
 export interface DesignerWidgetProps {
   notebook?: NotebookWithHistory;
-  onClose: (notebookJsonFile: File) => void;
+  onClose: (notebookJsonFile: File | undefined) => void;
   themeOverride?: Parameters<typeof ThemeProvider>[0]['theme'];
   debug?: boolean;
 }
@@ -36,6 +43,9 @@ export function DesignerWidget({
   debug = false,
 }: DesignerWidgetProps) {
   const store = useMemo(() => createDesignerStore(notebook), [notebook, debug]);
+
+  // State for confirmation dialog
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   const handleDone = () => {
     const {metadata, 'ui-specification': historyState} =
@@ -59,6 +69,19 @@ export function DesignerWidget({
     onClose(file);
   };
 
+  const handleCancel = () => {
+    setCancelDialogOpen(false);
+    onClose(undefined);
+  };
+
+  const openCancelDialog = () => {
+    setCancelDialogOpen(true);
+  };
+
+  const closeCancelDialog = () => {
+    setCancelDialogOpen(false);
+  };
+
   const mergedTheme = useMemo(() => {
     if (typeof themeOverride === 'function') {
       return themeOverride(globalTheme);
@@ -73,12 +96,8 @@ export function DesignerWidget({
         element: <NotebookEditor />,
         children: [
           {index: true, element: <Navigate to="/design/0" replace />},
-
           {path: 'info', element: <InfoPanel />},
-          {
-            path: 'design/*',
-            element: <DesignPanel />,
-          },
+          {path: 'design/*', element: <DesignPanel />},
         ],
       },
     ],
@@ -96,24 +115,52 @@ export function DesignerWidget({
       <ThemeProvider theme={mergedTheme}>
         <CssBaseline />
         <Box display="flex" flexDirection="column" height="100%">
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            p={2}
-            borderBottom={1}
-            borderColor="divider"
+          <AppBar position="static" color="default" elevation={1}>
+            <Toolbar sx={{justifyContent: 'space-between'}}>
+              <Typography variant="h6" fontWeight="bold">
+                Notebook Editor
+              </Typography>
+              <Box>
+                <Button onClick={openCancelDialog} sx={{mr: 1}}>
+                  Cancel
+                </Button>
+                <Button variant="contained" onClick={handleDone}>
+                  Save
+                </Button>
+              </Box>
+            </Toolbar>
+          </AppBar>
+
+          {/* Confirmation Dialog */}
+          <Dialog
+            open={cancelDialogOpen}
+            onClose={closeCancelDialog}
+            aria-labelledby="cancel-dialog-title"
+            aria-describedby="cancel-dialog-description"
           >
-            <Typography variant="subtitle1">Designer</Typography>
-            <Button variant="contained" onClick={handleDone}>
-              Done
-            </Button>
-          </Box>
+            <DialogTitle id="cancel-dialog-title">
+              Are you sure you want to cancel?
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText id="cancel-dialog-description">
+                Any changes you’ve made will be lost. If you’re sure, hit “Yes,
+                cancel”. Otherwise, choose “No, keep editing”.
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={closeCancelDialog} autoFocus>
+                No, keep editing
+              </Button>
+              <Button onClick={handleCancel} variant="contained">
+                Yes, cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+
           <Box flexGrow={1} minHeight={0} sx={{overflow: 'auto'}}>
             <RouterProvider router={memoryRouterInstance} />
           </Box>
         </Box>
-        )
       </ThemeProvider>
     </ReduxProvider>
   );

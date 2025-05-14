@@ -82,7 +82,11 @@ const TemplateActions = () => {
 
   const archived = data?.metadata.project_status === 'archived';
 
-  const handleDesignerClose = (file: File) => {
+  const handleDesignerClose = (file: File | undefined) => {
+    if (!file) {
+      setEditing(false);
+      return;
+    }
     saveFile.mutate(file);
     setEditing(false);
   };
@@ -95,7 +99,7 @@ const TemplateActions = () => {
             <ListItem>
               <ListLabel>Edit Template</ListLabel>
               <ListDescription>
-                Edit the current template in Designer.
+                Edit this template in the Notebook Editor.
               </ListDescription>
             </ListItem>
             <ListItem>
@@ -104,7 +108,7 @@ const TemplateActions = () => {
                 disabled={isLoading}
                 onClick={() => setEditing(true)}
               >
-                Open in Designer
+                Open in Editor
               </Button>
             </ListItem>
           </List>

@@ -60,8 +60,8 @@ const ProjectActions = (): JSX.Element => {
       <Card className="flex-1">
         <List className="flex flex-col gap-4">
           <ListItem>
-            <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-            <ListDescription>Edit the current {NOTEBOOK_NAME}.</ListDescription>
+            <ListLabel>Replace Project</ListLabel>
+            <ListDescription>Replace the JSON project file.</ListDescription>
           </ListItem>
           <ListItem>
             <EditProjectDialog />

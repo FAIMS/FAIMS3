@@ -14,7 +14,7 @@
 // limitations under the License.
 
 import {TabContext, TabList} from '@mui/lab';
-import {Box, Tab, Typography, AppBar, Toolbar} from '@mui/material';
+import {Box, Tab} from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 
 export const NotebookEditor = () => {
