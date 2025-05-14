@@ -29,9 +29,13 @@ const TemplateActions = () => {
   const [editing, setEditing] = useState(false);
   const queryClient = useQueryClient();
 
-  const saveMutation = useMutation<unknown, Error, NotebookWithHistory>({
-    mutationFn: async notebook => {
+  const saveFile = useMutation<unknown, Error, File>({
+    mutationFn: async file => {
+      console.log('Saving template', file);
+
       if (!user) throw new Error('Not authenticated');
+
+      const jsonText = await file.text();
 
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/templates/${templateId}`,
@@ -41,20 +45,26 @@ const TemplateActions = () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
           },
-          body: JSON.stringify({
-            metadata: notebook.metadata,
-            'ui-specification': notebook['ui-specification'].present,
-          }),
+          body: jsonText,
         }
       );
+
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`Save failed: ${res.status} ${text}`);
       }
+
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({queryKey: ['template', templateId]});
+    onSuccess: updatedTemplate => {
+      queryClient.setQueryData(
+        ['templates', templateId],
+        () => updatedTemplate
+      );
+
+      queryClient.invalidateQueries({queryKey: ['templates', templateId]});
+
+      setEditing(false);
     },
   });
 
@@ -71,6 +81,11 @@ const TemplateActions = () => {
   }, [data]);
 
   const archived = data?.metadata.project_status === 'archived';
+
+  const handleDesignerClose = (file: File) => {
+    saveFile.mutate(file);
+    setEditing(false);
+  };
 
   return (
     <>
@@ -132,7 +147,6 @@ const TemplateActions = () => {
             </ListItem>
           </List>
         </Card>
-
         <Card>
           <List>
             {archived ? (
@@ -164,8 +178,7 @@ const TemplateActions = () => {
           >
             <DesignerWidget
               notebook={initialNotebook}
-              onChange={nb => saveMutation.mutate(nb)}
-              onClose={() => setEditing(false)}
+              onClose={handleDesignerClose}
             />
           </div>
         </div>

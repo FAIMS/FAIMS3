@@ -1,4 +1,4 @@
-import {useMemo, useEffect, useState} from 'react'; // Added useState
+import {useMemo, useState} from 'react';
 import {Provider as ReduxProvider} from 'react-redux';
 import {
   ThemeProvider,
@@ -16,7 +16,7 @@ import {
 
 import {createDesignerStore} from './createDesignerStore';
 import globalTheme from './theme';
-import type {NotebookWithHistory} from './state/initial';
+import type {Notebook, NotebookWithHistory} from './state/initial';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
@@ -24,29 +24,40 @@ import {DesignPanel} from './components/design-panel';
 
 export interface DesignerWidgetProps {
   notebook?: NotebookWithHistory;
-  onChange?: (nb: NotebookWithHistory) => void;
-  onClose: () => void;
+  onClose: (notebookJsonFile: File) => void;
   themeOverride?: Parameters<typeof ThemeProvider>[0]['theme'];
   debug?: boolean;
 }
 
 export function DesignerWidget({
   notebook,
-  onChange,
   onClose,
   themeOverride,
   debug = false,
 }: DesignerWidgetProps) {
   const store = useMemo(() => createDesignerStore(notebook), [notebook, debug]);
 
-  useEffect(() => {
-    if (!onChange) return;
-    const unsub = store.subscribe(() => {
-      const {modified, notebook: nbState} = store.getState();
-      if (modified) onChange(nbState as NotebookWithHistory);
+  const handleDone = () => {
+    const {metadata, 'ui-specification': historyState} =
+      store.getState().notebook;
+
+    const actualNotebook: Notebook = {
+      metadata,
+      'ui-specification': historyState.present,
+    };
+
+    const blob = new Blob([JSON.stringify(actualNotebook, null, 2)], {
+      type: 'application/json',
     });
-    return unsub;
-  }, [store, onChange]);
+    const filename =
+      String(actualNotebook.metadata.name ?? 'notebook').replace(/\s+/g, '_') +
+      '.json';
+    const file = new File([blob], filename, {
+      type: 'application/json',
+    });
+
+    onClose(file);
+  };
 
   const mergedTheme = useMemo(() => {
     if (typeof themeOverride === 'function') {
@@ -94,7 +105,7 @@ export function DesignerWidget({
             borderColor="divider"
           >
             <Typography variant="subtitle1">Designer</Typography>
-            <Button variant="contained" onClick={onClose}>
+            <Button variant="contained" onClick={handleDone}>
               Done
             </Button>
           </Box>
