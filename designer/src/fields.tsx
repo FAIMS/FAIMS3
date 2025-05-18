@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import {FieldType} from './state/initial';
+import {CategoryKey} from './field-categories';
 
 const fields: {[key: string]: FieldType} = {
   FAIMSTextField: {
@@ -29,10 +30,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'FAIMS Text Field',
+    humanReadableDescription: 'Single-line text input for free-form entries',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 1,
   },
 
-  // DATE FIELDS
-  // ===========
   DateTimePicker: {
     'component-namespace': 'faims-custom',
     'component-name': 'DateTimePicker',
@@ -47,13 +51,19 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Date time picker',
+    humanReadableDescription: 'Select a calendar date and precise time',
+    category: CategoryKey.DATETIME,
+    showInChooser: true,
+    order: 2,
   },
+
   DatePicker: {
     'component-namespace': 'faims-custom',
     'component-name': 'DatePicker',
     'type-returned': 'faims-core::Date',
     'component-parameters': {
-      label: 'Date time picker',
+      label: 'Date picker',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
@@ -62,7 +72,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Date picker',
+    humanReadableDescription: 'Choose a calendar date (no time)',
+    category: CategoryKey.DATETIME,
+    showInChooser: true,
+    order: 3,
   },
+
   MonthPicker: {
     'component-namespace': 'faims-custom',
     'component-name': 'MonthPicker',
@@ -77,7 +93,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Month picker',
+    humanReadableDescription: 'Pick a month and year only',
+    category: CategoryKey.DATETIME,
+    showInChooser: true,
+    order: 4,
   },
+
   DateTimeNow: {
     'component-namespace': 'faims-custom',
     'component-name': 'DateTimeNow',
@@ -92,6 +114,11 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Date and Time with Now button',
+    humanReadableDescription: 'Date-time input with “Now” quick-fill',
+    category: CategoryKey.DATETIME,
+    showInChooser: true,
+    order: 5,
   },
 
   Email: {
@@ -111,7 +138,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string'], ['yup.email', 'Enter a valid email']],
     initialValue: '',
+    humanReadableName: 'Email',
+    humanReadableDescription: 'Validates and captures an e-mail address',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 6,
   },
+
   Number: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
@@ -128,7 +161,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.number']],
     initialValue: '',
+    humanReadableName: 'Number field',
+    humanReadableDescription: 'Plain numeric input without limits',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 7,
   },
+
   ControlledNumber: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
@@ -150,7 +189,13 @@ const fields: {[key: string]: FieldType} = {
       ['yup.max', 20, 'Must be 20 or less'],
     ],
     initialValue: '',
+    humanReadableName: 'Controlled number',
+    humanReadableDescription: 'Numeric input with min/max validation',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 8,
   },
+
   BasicAutoIncrementer: {
     'component-namespace': 'faims-custom',
     'component-name': 'BasicAutoIncrementer',
@@ -161,12 +206,18 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: true,
       num_digits: 5,
-      form_id: 'default', // will be set to the viewId when inserted into the form
+      form_id: 'default',
       label: 'Auto Incrementing Field',
     },
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
+    humanReadableName: 'Auto Incrementing Field',
+    humanReadableDescription: 'Generates sequential IDs automatically',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 9,
   },
+
   MultipleTextField: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'MultipleTextField',
@@ -186,7 +237,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Text Field',
+    humanReadableDescription: 'Multi-line text area for longer notes',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 10,
   },
+
   Checkbox: {
     'component-namespace': 'faims-custom',
     'component-name': 'Checkbox',
@@ -202,7 +259,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.bool']],
     initialValue: false,
+    humanReadableName: 'Checkbox',
+    humanReadableDescription: 'Boolean yes/no toggle box',
+    category: CategoryKey.CHOICE,
+    showInChooser: true,
+    order: 11,
   },
+
   FileUploader: {
     'component-namespace': 'faims-custom',
     'component-name': 'FileUploader',
@@ -215,7 +278,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.mixed']],
     initialValue: null,
+    humanReadableName: 'Upload a File',
+    humanReadableDescription: 'Attach one or more files to the record',
+    category: CategoryKey.MEDIA,
+    showInChooser: true,
+    order: 12,
   },
+
   MapFormField: {
     'component-namespace': 'mapping-plugin',
     'component-name': 'MapFormField',
@@ -227,12 +296,18 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       featureType: 'Point',
       zoom: 12,
-      label: 'Select a Point',
+      label: 'Map Field',
       geoTiff: '',
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Map Field',
+    humanReadableDescription: 'Interactive map for selecting a point, line or polygon',
+    category: CategoryKey.LOCATION,
+    showInChooser: true,
+    order: 13,
   },
+
   MultiSelect: {
     'component-namespace': 'faims-custom',
     'component-name': 'MultiSelect',
@@ -251,20 +326,20 @@ const fields: {[key: string]: FieldType} = {
       ElementProps: {
         expandedChecklist: false,
         options: [
-          {
-            value: 'Default',
-            label: 'Default',
-          },
-          {
-            value: 'Default2',
-            label: 'Default2',
-          },
+          {value: 'Default', label: 'Default'},
+          {value: 'Default2', label: 'Default2'},
         ],
       },
     },
     validationSchema: [['yup.array']],
     initialValue: [],
+    humanReadableName: 'Select Multiple',
+    humanReadableDescription: 'Pick several options from a list',
+    category: CategoryKey.CHOICE,
+    showInChooser: true,
+    order: 14,
   },
+
   RadioGroup: {
     'component-namespace': 'faims-custom',
     'component-name': 'RadioGroup',
@@ -278,20 +353,20 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       ElementProps: {
         options: [
-          {
-            value: '1',
-            label: '1',
-            RadioProps: {
-              id: 'radio-group-field-1',
-            },
-          },
+          {value: '1', label: '1', RadioProps: {id: 'radio-group-field-1'}},
         ],
       },
       helperText: '',
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Select one option',
+    humanReadableDescription: 'Single-choice radio button set',
+    category: CategoryKey.CHOICE,
+    showInChooser: true,
+    order: 15,
   },
+
   RandomStyle: {
     'component-namespace': 'faims-custom',
     'component-name': 'RandomStyle',
@@ -306,7 +381,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Title',
+    humanReadableDescription: 'Stylised heading or HTML content',
+    category: CategoryKey.DISPLAY,
+    showInChooser: false,
+    order: 1000,
   },
+
   RichText: {
     'component-namespace': 'faims-custom',
     'component-name': 'RichText',
@@ -315,7 +396,13 @@ const fields: {[key: string]: FieldType} = {
       label: 'Unused',
       content: 'Hello __World__',
     },
+    humanReadableName: 'RichText',
+    humanReadableDescription: 'Add formatted text to your form',
+    category: CategoryKey.DISPLAY,
+    showInChooser: true,
+    order: 17,
   },
+
   RelatedRecordSelector: {
     'component-namespace': 'faims-custom',
     'component-name': 'RelatedRecordSelector',
@@ -332,7 +419,13 @@ const fields: {[key: string]: FieldType} = {
       allowLinkToExisting: true,
     },
     validationSchema: [['yup.string']],
+    humanReadableName: 'Add Related Record',
+    humanReadableDescription: 'Add a child or other linked record',
+    category: CategoryKey.RELATIONSHIP,
+    showInChooser: true,
+    order: 18,
   },
+
   Select: {
     'component-namespace': 'faims-custom',
     'component-name': 'Select',
@@ -343,13 +436,17 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
       required: false,
-      ElementProps: {
-        options: [],
-      },
+      ElementProps: {options: []},
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Select Field',
+    humanReadableDescription: 'Dropdown list allowing one selection',
+    category: CategoryKey.CHOICE,
+    showInChooser: true,
+    order: 19,
   },
+
   AdvancedSelect: {
     'component-namespace': 'faims-custom',
     'component-name': 'AdvancedSelect',
@@ -360,18 +457,19 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       required: false,
       ElementProps: {
-        optiontree: [
-          {
-            name: 'Default',
-            children: [],
-          },
-        ],
+        optiontree: [{name: 'Default', children: []}],
       },
       valuetype: 'full',
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Select Field (Hierarchical)',
+    humanReadableDescription: 'Hierarchical dropdown supporting nested options',
+    category: CategoryKey.CHOICE,
+    showInChooser: true,
+    order: 20,
   },
+
   TakePhoto: {
     'component-namespace': 'faims-custom',
     'component-name': 'TakePhoto',
@@ -388,7 +486,13 @@ const fields: {[key: string]: FieldType} = {
       ['yup.nullable'],
     ],
     initialValue: null,
+    humanReadableName: 'Take Photo',
+    humanReadableDescription: 'Capture and attach an image via camera',
+    category: CategoryKey.MEDIA,
+    showInChooser: true,
+    order: 21,
   },
+
   TakePoint: {
     'component-namespace': 'faims-custom',
     'component-name': 'TakePoint',
@@ -400,7 +504,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
     initialValue: null,
+    humanReadableName: 'Take point',
+    humanReadableDescription: 'Record GPS location coordinates',
+    category: CategoryKey.LOCATION,
+    showInChooser: true,
+    order: 22,
   },
+
   TemplatedStringField: {
     'component-namespace': 'faims-custom',
     'component-name': 'TemplatedStringField',
@@ -416,7 +526,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string'], ['yup.required']],
     initialValue: '',
+    humanReadableName: 'Templated String Field',
+    humanReadableDescription: 'Auto-generates text from a template',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 23,
   },
+
   QRCodeFormField: {
     'component-namespace': 'qrcode',
     'component-name': 'QRCodeFormField',
@@ -429,7 +545,13 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.string']],
     initialValue: '',
+    humanReadableName: 'Scan QR Code',
+    humanReadableDescription: 'Scan and store a QR-code value',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 24,
   },
+
   AddressField: {
     'component-namespace': 'faims-custom',
     'component-name': 'AddressField',
@@ -441,6 +563,11 @@ const fields: {[key: string]: FieldType} = {
       label: 'Address',
     },
     validationSchema: [['yup.object'], ['yup.nullable']],
+    humanReadableName: 'Address',
+    humanReadableDescription: 'Structured street address input',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 25,
   },
 
   NumberField: {
@@ -459,6 +586,11 @@ const fields: {[key: string]: FieldType} = {
     },
     validationSchema: [['yup.number'], ['yup.nullable']],
     initialValue: null,
+    humanReadableName: 'Number Input',
+    humanReadableDescription: 'Floating-point number entry field',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 26,
   },
 };
 
