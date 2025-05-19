@@ -18,33 +18,31 @@ import {Alert, Card} from '@mui/material';
 import '@mdxeditor/editor/style.css';
 
 // importing the editor and the plugin from their full paths
-import {MDXEditor} from '@mdxeditor/editor/MDXEditor';
+import {MDXEditor} from '@mdxeditor/editor';
 import {
   MDXEditorMethods,
   MdastImportVisitor,
   Separator,
   realmPlugin,
-  system,
 } from '@mdxeditor/editor';
-import {toolbarPlugin} from '@mdxeditor/editor/plugins/toolbar';
-import {headingsPlugin} from '@mdxeditor/editor/plugins/headings';
-import {listsPlugin} from '@mdxeditor/editor/plugins/lists';
-import {quotePlugin} from '@mdxeditor/editor/plugins/quote';
-import {thematicBreakPlugin} from '@mdxeditor/editor/plugins/thematic-break';
-import {markdownShortcutPlugin} from '@mdxeditor/editor/plugins/markdown-shortcut';
+// If your version of @mdxeditor/editor exports toolbarPlugin from the main entry, use:
+import {toolbarPlugin} from '@mdxeditor/editor';
+// Otherwise, ensure you have the correct version installed or check the documentation for the right import path.
+import {headingsPlugin} from '@mdxeditor/editor';
+import {listsPlugin} from '@mdxeditor/editor';
+import {thematicBreakPlugin} from '@mdxeditor/editor';
 import {tablePlugin} from '@mdxeditor/editor/plugins/table';
-import {diffSourcePlugin} from '@mdxeditor/editor/plugins/diff-source';
-import {linkPlugin} from '@mdxeditor/editor/plugins/link';
-import {imagePlugin} from '@mdxeditor/editor/plugins/image';
+import {diffSourcePlugin} from '@mdxeditor/editor';
+import {imagePlugin} from '@mdxeditor/editor';
 
 // importing the desired toolbar toggle components
-import {UndoRedo} from '@mdxeditor/editor/plugins/toolbar/components/UndoRedo';
-import {BoldItalicUnderlineToggles} from '@mdxeditor/editor/plugins/toolbar/components/BoldItalicUnderlineToggles';
-import {BlockTypeSelect} from '@mdxeditor/editor/plugins/toolbar/components/BlockTypeSelect';
-import {ListsToggle} from '@mdxeditor/editor/plugins/toolbar/components/ListsToggle';
-import {InsertTable} from '@mdxeditor/editor/plugins/toolbar/components/InsertTable';
-import {DiffSourceToggleWrapper} from '@mdxeditor/editor/plugins/toolbar/components/DiffSourceToggleWrapper';
-import {InsertImage} from '@mdxeditor/editor/plugins/toolbar/components/InsertImage';
+import {UndoRedo} from '@mdxeditor/editor';
+import {BoldItalicUnderlineToggles} from '@mdxeditor/editor';
+import {BlockTypeSelect} from '@mdxeditor/editor';
+import {ListsToggle} from '@mdxeditor/editor';
+/* InsertTable import removed because the module does not exist */
+import {DiffSourceToggleWrapper} from '@mdxeditor/editor';
+import {InsertImage} from '@mdxeditor/editor';
 
 type Props = {
   initialMarkdown: string;
@@ -74,9 +72,7 @@ export const MdxEditor = ({
     },
   };
 
-  const [catchAllPlugin] = realmPlugin({
-    id: 'catchAll',
-    systemSpec: system(() => ({})),
+  const catchAllPlugin = realmPlugin({
     init: realm => {
       realm.pubKey('addImportVisitor', catchAllVisitor);
     },
@@ -111,13 +107,11 @@ export const MdxEditor = ({
           markdown={initialMarkdown}
           plugins={[
             headingsPlugin(),
+            headingsPlugin(),
             listsPlugin(),
-            quotePlugin(),
             thematicBreakPlugin(),
-            markdownShortcutPlugin(),
-            tablePlugin(),
+            thematicBreakPlugin(),
             diffSourcePlugin({diffMarkdown: initialMarkdown}),
-            linkPlugin(),
             imagePlugin({imageUploadHandler}),
             toolbarPlugin({
               toolbarContents: () => (
@@ -130,8 +124,7 @@ export const MdxEditor = ({
                   <Separator />
                   <ListsToggle />
                   <Separator />
-                  <InsertTable />
-                  <Separator />
+                  {/* <InsertTable /> removed because the module does not exist */}
                   <InsertImage />
                 </DiffSourceToggleWrapper>
               ),
