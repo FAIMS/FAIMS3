@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateTemplateForm} from '../forms/create-template-form';
-import {Plus} from 'lucide-react';
+import {Plus, Info} from 'lucide-react';
 import {useGetTeam} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {ErrorComponent} from '@tanstack/react-router';
@@ -34,22 +34,24 @@ export const CreateTemplateDialog = ({
       <DialogTrigger asChild className="w-fit">
         <Button
           variant="outline"
-          className="bg-primary text-primary-foreground"
+          className="flex items-center space-x-2 bg-primary text-primary-foreground"
         >
-          <Plus />
-          Create Template
+          <Plus size={16} />
+          <span>Create Template</span>
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-w-lg space-y-6">
         <DialogHeader>
-          <DialogTitle>
-            Create Template{specifiedTeam && <> in '{team?.name ?? 'Team'}'</>}
+          <DialogTitle className="text-lg font-medium">
+            Create Template
+            {specifiedTeam && <> in “{team?.name ?? 'Team'}”</>}
           </DialogTitle>
-          <DialogTitle></DialogTitle>
-          <DialogDescription>
-            Create a new template by uploading a JSON template file.
+          <DialogDescription className="text-sm text-muted-foreground">
+            Upload a JSON file to pre-populate, or leave blank to start from
+            scratch.
           </DialogDescription>
         </DialogHeader>
+
         <CreateTemplateForm
           setDialogOpen={setOpen}
           defaultValues={defaultValues}
