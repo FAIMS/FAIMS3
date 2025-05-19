@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateTemplateForm} from '../forms/create-template-form';
-import {Plus, Info} from 'lucide-react';
+import {Plus} from 'lucide-react';
 import {useGetTeam} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {ErrorComponent} from '@tanstack/react-router';

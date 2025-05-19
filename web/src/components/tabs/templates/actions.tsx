@@ -1,4 +1,4 @@
-import React, {useState, useMemo} from 'react';
+import React, {useState, useMemo, useEffect} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
@@ -26,45 +26,51 @@ const TemplateActions = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
   const {data, isLoading} = useGetTemplate(user, templateId);
-  const [editing, setEditing] = useState(false);
   const queryClient = useQueryClient();
+
+  const [showModal, setShowModal] = useState(false);
+  const [animateIn, setAnimateIn] = useState(false);
+  const [animateOut, setAnimateOut] = useState(false);
+
+  const animationDuration = 300;
+  const animationScale = 0.95;
+
+  useEffect(() => {
+    if (!showModal) return;
+    const tid = window.setTimeout(() => setAnimateIn(true), 50);
+    return () => window.clearTimeout(tid);
+  }, [showModal]);
+
+  const openEditor = () => {
+    if (isLoading || !data) return;
+    setShowModal(true);
+  };
 
   const saveFile = useMutation<unknown, Error, File>({
     mutationFn: async file => {
-      console.log('Saving template', file);
-
-      if (!user) throw new Error('Not authenticated');
-
       const jsonText = await file.text();
-
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/templates/${templateId}`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
+            Authorization: `Bearer ${user?.token}`,
           },
           body: jsonText,
         }
       );
-
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Save failed: ${res.status} ${text}`);
+        const err = await res.text();
+        throw new Error(`Save failed: ${res.status} ${err}`);
       }
-
       return res.json();
     },
-    onSuccess: updatedTemplate => {
-      queryClient.setQueryData(
-        ['templates', templateId],
-        () => updatedTemplate
-      );
-
-      queryClient.invalidateQueries({queryKey: ['templates', templateId]});
-
-      setEditing(false);
+    onSuccess: updated => {
+      queryClient.setQueryData(['templates', templateId], () => updated);
+      queryClient.invalidateQueries({
+        queryKey: ['templates', templateId],
+      });
     },
   });
 
@@ -80,15 +86,14 @@ const TemplateActions = () => {
     };
   }, [data]);
 
-  const archived = data?.metadata.project_status === 'archived';
-
-  const handleDesignerClose = (file: File | undefined) => {
-    if (!file) {
-      setEditing(false);
-      return;
-    }
-    saveFile.mutate(file);
-    setEditing(false);
+  const handleClose = (file?: File) => {
+    setAnimateOut(true);
+    setAnimateIn(false);
+    window.setTimeout(() => {
+      if (file) saveFile.mutate(file);
+      setShowModal(false);
+      setAnimateOut(false);
+    }, animationDuration);
   };
 
   return (
@@ -106,7 +111,7 @@ const TemplateActions = () => {
               <Button
                 variant="outline"
                 disabled={isLoading}
-                onClick={() => setEditing(true)}
+                onClick={openEditor}
               >
                 Open in Editor
               </Button>
@@ -153,7 +158,7 @@ const TemplateActions = () => {
         </Card>
         <Card>
           <List>
-            {archived ? (
+            {data?.metadata.project_status === 'archived' ? (
               <ListItem>
                 <ListLabel>Un-archive Template</ListLabel>
                 <ListDescription>
@@ -166,23 +171,41 @@ const TemplateActions = () => {
                 <ListDescription>Archive the current template.</ListDescription>
               </ListItem>
             )}
-            <ArchiveTemplateDialog archived={archived} />
+            <ArchiveTemplateDialog
+              archived={data?.metadata.project_status === 'archived'}
+            />
           </List>
         </Card>
       </div>
 
-      {editing && initialNotebook && (
+      {showModal && initialNotebook && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20"
-          onClick={() => setEditing(false)}
+          onClick={() => handleClose()}
+          style={{
+            opacity: animateIn && !animateOut ? 1 : 0,
+            transform:
+              animateIn && !animateOut
+                ? 'scale(1)'
+                : `scale(${animationScale})`,
+            transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
+          }}
         >
           <div
             className="bg-white w-[95vw] h-[95vh] rounded-lg overflow-hidden shadow-xl"
             onClick={e => e.stopPropagation()}
+            style={{
+              opacity: animateIn && !animateOut ? 1 : 0,
+              transform:
+                animateIn && !animateOut
+                  ? 'scale(1)'
+                  : `scale(${animationScale})`,
+              transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
+            }}
           >
             <DesignerWidget
               notebook={initialNotebook}
-              onClose={handleDesignerClose}
+              onClose={file => handleClose(file)}
             />
           </div>
         </div>

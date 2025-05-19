@@ -1,18 +1,20 @@
-import {useMemo, useState} from 'react';
+import React, {useMemo, useState, useEffect} from 'react';
 import {Provider as ReduxProvider} from 'react-redux';
 import {
   ThemeProvider,
-  CssBaseline,
+  ScopedCssBaseline,
   Box,
   Button,
   Typography,
   AppBar,
   Toolbar,
   Dialog,
+  Grow,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import {
   createMemoryRouter,
@@ -34,6 +36,9 @@ export interface DesignerWidgetProps {
   onClose: (notebookJsonFile: File | undefined) => void;
   themeOverride?: Parameters<typeof ThemeProvider>[0]['theme'];
   debug?: boolean;
+  loadingDuration?: number;
+  animationDuration?: number;
+  animationScale?: number;
 }
 
 export function DesignerWidget({
@@ -41,11 +46,37 @@ export function DesignerWidget({
   onClose,
   themeOverride,
   debug = false,
+  loadingDuration = 1000,
+  animationDuration = 300,
+  animationScale = 0.95,
 }: DesignerWidgetProps) {
   const store = useMemo(() => createDesignerStore(notebook), [notebook, debug]);
 
-  // State for confirmation dialog
+  const [loading, setLoading] = useState(true);
+  const [animateIn, setAnimateIn] = useState(false);
+  const [animateOut, setAnimateOut] = useState(false);
+
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setLoading(false);
+
+      window.setTimeout(() => setAnimateIn(true), 50);
+    }, loadingDuration);
+    return () => window.clearTimeout(timer);
+  }, [loadingDuration]);
+
+  const mergedTheme = useMemo(() => {
+    if (typeof themeOverride === 'function') {
+      return themeOverride(globalTheme);
+    }
+    return {...globalTheme, ...themeOverride};
+  }, [themeOverride]);
+
+  const doClose = (file: File | undefined) => {
+    onClose(file);
+  };
 
   const handleDone = () => {
     const {metadata, 'ui-specification': historyState} =
@@ -66,28 +97,20 @@ export function DesignerWidget({
       type: 'application/json',
     });
 
-    onClose(file);
+    setAnimateOut(true);
+    setAnimateIn(false);
+    window.setTimeout(() => doClose(file), animationDuration);
   };
 
   const handleCancel = () => {
     setCancelDialogOpen(false);
-    onClose(undefined);
+    setAnimateOut(true);
+    setAnimateIn(false);
+    window.setTimeout(() => doClose(undefined), animationDuration);
   };
 
-  const openCancelDialog = () => {
-    setCancelDialogOpen(true);
-  };
-
-  const closeCancelDialog = () => {
-    setCancelDialogOpen(false);
-  };
-
-  const mergedTheme = useMemo(() => {
-    if (typeof themeOverride === 'function') {
-      return themeOverride(globalTheme);
-    }
-    return {...globalTheme, ...themeOverride};
-  }, [themeOverride]);
+  const openCancelDialog = () => setCancelDialogOpen(true);
+  const closeCancelDialog = () => setCancelDialogOpen(false);
 
   const routes: RouteObject[] = useMemo(
     () => [
@@ -103,18 +126,45 @@ export function DesignerWidget({
     ],
     []
   );
-
   const [memoryRouterInstance] = useState(() =>
-    createMemoryRouter(routes, {
-      initialEntries: ['/design/0'],
-    })
+    createMemoryRouter(routes, {initialEntries: ['/design/0']})
   );
+
+  if (loading) {
+    return (
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        height="100%"
+        width="100%"
+      >
+        <Typography variant="h4" fontWeight="bold" sx={{mb: 2}}>
+          Notebook Editor
+        </Typography>
+        <CircularProgress sx={{color: '#669911'}} />
+      </Box>
+    );
+  }
+
+  const isVisible = animateIn && !animateOut;
 
   return (
     <ReduxProvider store={store}>
       <ThemeProvider theme={mergedTheme}>
-        <CssBaseline />
-        <Box display="flex" flexDirection="column" height="100%">
+        <ScopedCssBaseline />
+
+        <Box
+          sx={{
+            opacity: isVisible ? 1 : 0,
+            transform: isVisible ? 'scale(1)' : `scale(${animationScale})`,
+            transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+          }}
+        >
           <AppBar position="static" color="default" elevation={1}>
             <Toolbar sx={{justifyContent: 'space-between'}}>
               <Typography variant="h6" fontWeight="bold">
@@ -130,13 +180,14 @@ export function DesignerWidget({
               </Box>
             </Toolbar>
           </AppBar>
-
-          {/* Confirmation Dialog */}
           <Dialog
             open={cancelDialogOpen}
             onClose={closeCancelDialog}
+            TransitionComponent={Grow}
+            transitionDuration={animationDuration}
             aria-labelledby="cancel-dialog-title"
             aria-describedby="cancel-dialog-description"
+            PaperProps={{sx: {transformOrigin: 'top center'}}}
           >
             <DialogTitle id="cancel-dialog-title">
               Are you sure you want to cancel?
