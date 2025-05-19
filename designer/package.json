@@ -22,7 +22,7 @@
         "@emotion/react": "^11.11.1",
         "@emotion/styled": "^11.11.0",
         "@lexical/react": "^0.12.4",
-        "@mdxeditor/editor": "^1.13.5",
+        "@mdxeditor/editor": "^2.8.1",
         "@mui/icons-material": "^5.14.3",
         "@mui/lab": "^5.0.0-alpha.137",
         "@mui/material": "^5.14.2",
