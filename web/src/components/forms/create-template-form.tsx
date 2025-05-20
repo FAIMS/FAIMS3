@@ -7,7 +7,7 @@ import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 
-import sampleNotebook from '../../../notebooks/sample_notebook.json';
+import blankNotebook from '../../../notebooks/blank-notebook.json';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -48,7 +48,7 @@ export function CreateTemplateForm({
     },
     {
       name: 'file',
-      label: 'JSON File (optional — leave blank to use default sample)',
+      label: 'JSON File (optional — leave blank to create a blank template)',
       description:
         'Upload a .json notebook file to pre-fill your template, or leave blank to use our built-in sample.',
       type: 'file',
@@ -97,8 +97,8 @@ export function CreateTemplateForm({
     } else {
       // pull in the sample's metadata + ui-spec
       jsonPayload = {
-        metadata: (sampleNotebook as any).metadata,
-        'ui-specification': (sampleNotebook as any)['ui-specification'],
+        metadata: (blankNotebook as any).metadata,
+        'ui-specification': (blankNotebook as any)['ui-specification'],
       };
     }
 
