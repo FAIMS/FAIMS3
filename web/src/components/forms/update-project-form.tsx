@@ -59,7 +59,9 @@ export function UpdateProjectForm({
       onSubmit={onSubmit}
       submitButtonText={`Update ${NOTEBOOK_NAME}`}
       submitButtonVariant="destructive"
-      warningMessage={`Editing the ${NOTEBOOK_NAME} may result in inconsistencies between responses.`}
+      warningMessage={
+        "If the project's response format has changed, there will be inconsistences in responses."
+      }
     />
   );
 }

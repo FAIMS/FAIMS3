@@ -302,7 +302,8 @@ const fields: {[key: string]: FieldType} = {
     validationSchema: [['yup.string']],
     initialValue: '',
     humanReadableName: 'Map Field',
-    humanReadableDescription: 'Interactive map for selecting a point, line or polygon',
+    humanReadableDescription:
+      'Interactive map for selecting a point, line or polygon',
     category: CategoryKey.LOCATION,
     showInChooser: true,
     order: 13,

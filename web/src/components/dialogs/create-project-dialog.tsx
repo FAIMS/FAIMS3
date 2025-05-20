@@ -50,7 +50,8 @@ export const CreateProjectDialog = ({
           </DialogTitle>
           <DialogDescription>
             Create a new {NOTEBOOK_NAME_CAPITALIZED} by selecting an existing
-            template or uploading a JSON notebook specification file.
+            template, uploading a JSON notebook file, or leaving both blank to
+            use a blank notebook you can edit.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectForm

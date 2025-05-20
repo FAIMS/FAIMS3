@@ -1,3 +1,4 @@
+/* eslint-disable n/no-extraneous-import */
 // Copyright 2023 FAIMS Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +14,7 @@
 // limitations under the License.
 
 import {TabContext, TabList} from '@mui/lab';
-import {Box, Tab, Typography, AppBar, Toolbar} from '@mui/material';
+import {Box, Tab} from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 
 export const NotebookEditor = () => {
@@ -25,39 +26,18 @@ export const NotebookEditor = () => {
 
   return (
     <>
-      <Box sx={{flexGrow: 1}}>
-        <AppBar position="static">
-          <Toolbar>
-            <img
-              src="/static/Fieldmark-Short-Green-NoBorder.png"
-              style={{maxWidth: '140px', flex: 1}}
-            />
-            <Box sx={{flexGrow: 1}} />
-          </Toolbar>
-        </AppBar>
-      </Box>
-
       <Box p={3}>
-        <Typography variant="h1">Notebook Editor</Typography>
-
-        <Box pt={2}>
+        <Box pt={0}>
           <TabContext value={pathname}>
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
               <TabList aria-label="lab API tabs example">
-                <Tab label="Start" component={Link} to="/" value="/" />
-                <Tab label="Info" component={Link} to="/info" value="/info" />
                 <Tab
                   label="Design"
                   component={Link}
                   to={`/design/${tabIndex}`}
                   value={`/design/${tabIndex}`}
                 />
-                <Tab
-                  label="Export"
-                  component={Link}
-                  to="/export"
-                  value="/export"
-                />
+                <Tab label="Info" component={Link} to="/info" value="/info" />
               </TabList>
             </Box>
             <Box p={3}>

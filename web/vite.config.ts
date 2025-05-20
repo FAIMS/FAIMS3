@@ -14,7 +14,9 @@ export default defineConfig({
   server: {
     port: 3001,
     host: true,
+    fs: {allow: ['..']},
   },
+  optimizeDeps: {include: ['designer']},
   // Polyfill global in case of weird importing going on!
   define: {
     global: 'globalThis',
