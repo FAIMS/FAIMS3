@@ -15,6 +15,7 @@ import type {
   NotebookWithHistory,
   NotebookUISpec,
 } from '@/designer/state/initial';
+import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -159,11 +160,15 @@ const ProjectActions = (): JSX.Element => {
         <Card className="flex-1">
           <List className="flex flex-col gap-4">
             <ListItem>
-              <ListLabel>Replace Project</ListLabel>
-              <ListDescription>Replace the JSON project file.</ListDescription>
+              <ListLabel>
+                Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
+              </ListLabel>
+              <ListDescription>
+                Replace the {NOTEBOOK_NAME} JSON file.
+              </ListDescription>
             </ListItem>
             <ListItem>
-              <ProjectStatusDialog projectId={projectId} />
+              <EditProjectDialog />
             </ListItem>
           </List>
         </Card>

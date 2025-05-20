@@ -59,7 +59,9 @@ export function UpdateProjectForm({
       onSubmit={onSubmit}
       submitButtonText={`Update ${NOTEBOOK_NAME}`}
       submitButtonVariant="destructive"
-      warningMessage={"If the project's response format has chnged"}
+      warningMessage={
+        "If the project's response format has changed, there will be inconsistences in responses."
+      }
     />
   );
 }
