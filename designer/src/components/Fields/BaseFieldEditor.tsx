@@ -109,11 +109,18 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
     allowHiding: allowHidingEnabled,
   };
 
-  const hasAdvancedSupport = 'advancedHelperText' in cParams;
+  // const hasAdvancedSupport =
+  //   'advancedHelperText' in field['component-parameters'] ||
+  //   typeof field['component-parameters'].advancedHelperText === 'string';
 
-  const [showAdvanced, setShowAdvanced] = useState(
-    hasAdvancedSupport && !!cParams.advancedHelperText
-  );
+  const hasAdvancedSupport =
+    Object.prototype.hasOwnProperty.call(
+      field['component-parameters'],
+      'advancedHelperText'
+    ) || typeof field['component-parameters'].advancedHelperText === 'string';
+
+  const showAdvanced = !!state.advancedHelperText?.trim();
+
   const [expanded, setExpanded] = useState(true);
 
   const updateFieldFromState = (newState: StateType) => {
@@ -195,8 +202,9 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                         <Checkbox
                           checked={showAdvanced}
                           onChange={e => {
-                            setShowAdvanced(e.target.checked);
                             if (!e.target.checked) {
+                              updateProperty('advancedHelperText', '');
+                            } else {
                               updateProperty('advancedHelperText', '');
                             }
                           }}
