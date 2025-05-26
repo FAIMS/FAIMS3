@@ -29,7 +29,7 @@ import {
   Typography,
 } from '@mui/material';
 import {debounce} from 'lodash';
-import {useEffect, useRef, useState} from 'react';
+import {useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
