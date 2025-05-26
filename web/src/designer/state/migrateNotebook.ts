@@ -121,7 +121,6 @@ export const validateNotebook = (n: unknown) => {
   const validate = ajv.compile<Notebook>(schema);
 
   const valid = validate(n);
-  console.log('valid? ', valid);
   if (!valid) {
     if (validate.errors) {
       console.log('Validation Errors:', validate.errors);

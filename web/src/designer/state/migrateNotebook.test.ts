@@ -15,9 +15,9 @@
 import {describe, expect, test} from 'vitest';
 import {migrateNotebook, validateNotebook} from './migrateNotebook';
 import {sampleNotebook} from '../test-notebook';
-import campusDemo from '../../notebooks/Campus-Survey-Demo.json';
-import f3Demo from '../../notebooks/Campus-Survey-Demo.json';
-import sampleNB from '../../notebooks/sample_notebook.json';
+import campusDemo from '../../../notebooks/Campus-Survey-Demo.json';
+import f3Demo from '../../../notebooks/FAIMS3-Beta-Demo-Notebook.json';
+import sampleNB from '../../../notebooks/sample_notebook.json';
 import {Notebook} from './initial';
 
 describe('Migrate Notebook Tests', () => {

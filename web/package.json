@@ -12,7 +12,8 @@
     "clean": "gts clean",
     "lint": "gts lint",
     "compile": "tsc",
-    "fix": "gts fix"
+    "fix": "gts fix",
+    "test": "vitest"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
