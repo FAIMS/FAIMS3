@@ -30,6 +30,7 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {
   DataGrid,
@@ -50,6 +51,7 @@ import RecordRouteDisplay from '../../../ui/record_link';
 import {gridParamsDataType} from '../record_links';
 import {RecordLinksToolbar} from '../toolbars';
 import {compiledSpecService} from '../../../../../context/slices/helpers/compiledSpecService';
+import {useDataGridStyles} from '../../../../../utils/useDataGridStyles';
 
 const style = {
   position: 'absolute' as const,
@@ -60,6 +62,9 @@ const style = {
   bgcolor: 'background.paper',
   p: 1,
 };
+
+const theme = useTheme();
+const styles = useDataGridStyles(theme);
 
 // Unused component - referenced in RelatedRecordSelector and commented out
 // because it is unreachable (I think - SC)
@@ -97,35 +102,97 @@ export function DataGridNoLink(props: {
     },
     {
       field: 'record_id',
-      headerName: 'Updated',
+      headerName: 'rrrUpdated',
       headerClassName: 'faims-record-link--header',
       minWidth: 100,
       valueGetter: () => '',
       flex: 0.4,
     },
   ];
+
+  // const columns: GridColDef[] = [
+  //   {
+  //     field: 'type',
+  //     headerName: 'Assessment Type',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>{params.row.type || '-'}</Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'data.damage_rating',
+  //     headerName: 'Damage Rating',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>{params.row.data?.damage_rating || '-'}</Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'created',
+  //     headerName: 'Created',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>
+  //         {params.row.created
+  //           ? getLocalDate(params.row.created).replace('T', ' ')
+  //           : '-'}
+  //       </Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'created_by',
+  //     headerName: 'Created By',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>{params.row.created_by || '-'}</Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'updated',
+  //     headerName: 'Last Updated',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>
+  //         {params.row.updated
+  //           ? getLocalDate(params.row.updated).replace('T', ' ')
+  //           : '-'}
+  //       </Typography>
+  //     ),
+  //   },
+  //   {
+  //     field: 'updated_by',
+  //     headerName: 'Last Updated By',
+  //     flex: 1,
+  //     renderCell: (params: GridCellParams) => (
+  //       <Typography>{params.row.updated_by || '-'}</Typography>
+  //     ),
+  //   },
+  // ];
+
   // remove any invalid entries in links (due to a bug elsewhere)
   const links = props.links.filter(link => link.record_id);
   return props.links !== null && props.links.length > 0 ? (
-    <DataGrid
-      autoHeight
-      density={'compact'}
-      rowCount={5}
-      pageSizeOptions={[5, 10, 20]} // 100 here to disable an error thrown by MUI
-      disableRowSelectionOnClick
-      slotProps={{
-        filterPanel: {sx: {maxWidth: '96vw'}},
-      }}
-      columns={columns}
-      initialState={{
-        sorting: {
-          sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
-        },
-        pagination: {paginationModel: {pageSize: 5}},
-      }}
-      rows={links}
-      getRowId={r => r.record_id}
-    />
+    <Box component={Paper} elevation={3} sx={styles.wrapper}>
+      <DataGrid
+        autoHeight
+        density={'compact'}
+        rowCount={5}
+        pageSizeOptions={[5, 10, 20]} // 100 here to disable an error thrown by MUI
+        disableRowSelectionOnClick
+        slotProps={{
+          filterPanel: {sx: {maxWidth: '96vw'}},
+        }}
+        columns={columns}
+        initialState={{
+          sorting: {
+            sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
+          },
+          pagination: {paginationModel: {pageSize: 5}},
+        }}
+        rows={links}
+        getRowId={r => r.record_id}
+      />
+    </Box>
   ) : (
     <Box></Box>
   );
