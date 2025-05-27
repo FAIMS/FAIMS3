@@ -98,7 +98,6 @@
   },
   "domains": {
     "baseDomain": "your-domain.com",
-    "designer": "designer",
     "conductor": "conductor",
     "couch": "couchdb",
     "faims": "faims",

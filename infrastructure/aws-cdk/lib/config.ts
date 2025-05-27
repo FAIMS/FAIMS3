@@ -136,8 +136,6 @@ const CouchConfigSchema = z.object({
 const DomainsConfigSchema = z.object({
   /** The base domain for all services. Note: Apex domains are not currently supported. */
   baseDomain: z.string(),
-  /** The subdomain prefix for the designer service */
-  designer: z.string().default('designer'),
   /** The subdomain prefix for the conductor service */
   conductor: z.string().default('conductor'),
   /** The subdomain prefix for the CouchDB service */
