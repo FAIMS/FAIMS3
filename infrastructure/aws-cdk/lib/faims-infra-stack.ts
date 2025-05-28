@@ -41,7 +41,6 @@ export class FaimsInfraStack extends cdk.Stack {
       couch: `${config.domains.couch}.${config.domains.baseDomain}`,
       conductor: `${config.domains.conductor}.${config.domains.baseDomain}`,
       faims: `${config.domains.faims}.${config.domains.baseDomain}`,
-      designer: `${config.domains.designer}.${config.domains.baseDomain}`,
       web: `${config.domains.web}.${config.domains.baseDomain}`,
     };
 
@@ -157,9 +156,6 @@ export class FaimsInfraStack extends cdk.Stack {
       faimsDomainNames: [domains.faims],
       faimsHz: hz,
       faimsUsEast1Certificate: cfnCert,
-      designerDomainNames: [domains.designer],
-      designerHz: hz,
-      designerUsEast1Certificate: cfnCert,
       conductorUrl: conductor.conductorEndpoint,
       uiTheme: config.uiConfiguration.uiTheme,
       notebookListType: config.uiConfiguration.notebookListType,

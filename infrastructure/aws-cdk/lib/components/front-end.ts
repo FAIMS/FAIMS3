@@ -43,11 +43,6 @@ export interface FaimsFrontEndProps {
   // Used for mobile app builds etc
   appId: string;
 
-  // Designer standalone website
-  designerHz: IHostedZone;
-  designerUsEast1Certificate: ICertificate;
-  designerDomainNames: Array<string>;
-
   // e.g. db.domain.com
   couchDbDomainOnly: string;
   // e.g. 443
@@ -77,15 +72,9 @@ export class FaimsFrontEnd extends Construct {
   webBucketArnCfnOutput: CfnOutput;
   webBucketNameCfnOutput: CfnOutput;
 
-  designerBucket: aws_s3.IBucket;
-  designerDistribution: IDistribution;
-  designerBucketArnCfnOutput: CfnOutput;
-  designerBucketNameCfnOutput: CfnOutput;
-
   private debugMode: boolean;
 
   // derived property
-  designerUrl: string;
   faimsAppUrl: string;
 
   constructor(scope: Construct, id: string, props: FaimsFrontEndProps) {
@@ -95,16 +84,12 @@ export class FaimsFrontEnd extends Construct {
     this.debugMode = props.debugMode ?? false;
 
     // use the first domain name to form canonical URL
-    this.designerUrl = `https://${props.designerDomainNames[0]}`;
     this.faimsAppUrl = `https://${props.faimsDomainNames[0]}`;
 
     // Main Faims frontend
     this.deployFaims(props);
 
-    // Designer standalone
-    this.deployDesigner(props);
-
-    // Designer standalone
+    // Web deployment
     this.deployWeb(props);
   }
 
@@ -348,7 +333,6 @@ export class FaimsFrontEnd extends Construct {
       VITE_API_URL: props.conductorUrl,
       // FAIMS /app URL (uses first domain if multiple provided)
       VITE_APP_URL: this.faimsAppUrl,
-      VITE_DESIGNER_URL: this.designerUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
     };
 
@@ -401,135 +385,6 @@ export class FaimsFrontEnd extends Construct {
                   `cd ${buildPath}`,
                   'npm i && npm run build-web',
                   `cd ${appPath}`,
-                  `cp -R ${outputPath}/* ${outputDir}`,
-                ];
-                console.log(commands);
-                exec(commands.join('&& '), {stdio: 'inherit'});
-                // Return true because bundling is complete
-                return true;
-              },
-            },
-          },
-        }),
-      ],
-    });
-  }
-
-  deployDesigner(props: FaimsFrontEndProps) {
-    // setup distribution and static bucket hosting
-    this.setupDesignerDistribution(props);
-
-    // Deploy into this bucket
-    this.setupDesignerBundling();
-
-    // Bucket arn
-    this.designerBucketArnCfnOutput = new CfnOutput(this, 'DesignerBucketArn', {
-      value: this.designerBucket.bucketArn,
-      description:
-        'The ARN of S3 bucket used to deploy the website static contents.',
-    });
-
-    // Bucket name
-    this.designerBucketNameCfnOutput = new CfnOutput(
-      this,
-      'DesignerBucketName',
-      {
-        value: this.designerBucket.bucketName,
-        description:
-          'The name of S3 bucket used to deploy the website static contents.',
-      }
-    );
-  }
-
-  setupDesignerDistribution(props: FaimsFrontEndProps) {
-    const website = new StaticWebsite(this, 'faims-designer', {
-      hostedZone: props.designerHz,
-      domainNames: props.designerDomainNames,
-      removalPolicy: RemovalPolicy.DESTROY,
-      // Add custom header response overriding CSP to allow unsafe script
-      // execution due to parsing - also allow images/blobs for rich text
-      // editing
-      securityHeadersBehavior: {
-        contentSecurityPolicy: {
-          contentSecurityPolicy:
-            "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:;",
-          override: true,
-        },
-      },
-      errorResponses: [
-        {
-          httpStatus: 404,
-          responseHttpStatus: 200,
-          ttl: Duration.seconds(300),
-          responsePagePath: '/index.html',
-        },
-        // 403 should go 200 to index.html so that react router can work!
-        {
-          httpStatus: 403,
-          responseHttpStatus: 200,
-          ttl: Duration.seconds(300),
-          responsePagePath: '/index.html',
-        },
-      ],
-      certificate: props.designerUsEast1Certificate,
-    });
-
-    this.designerBucket = website.bucket;
-    this.designerDistribution = website.distribution;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  setupDesignerBundling() {
-    const buildScript = 'build.sh';
-    // need to build from root because requires context in docker bundling from
-    // monorepo root
-    // TODO consider approaches here to improve build time and
-    // hashing
-    const buildPath = getPathToRoot();
-    const appPath = 'designer';
-    const outputPath = 'build';
-
-    // Setup a deployment into this bucket with static files
-    new aws_s3_deployment.BucketDeployment(this, 'designer-deploy', {
-      destinationBucket: this.designerBucket,
-      // Setup with distribution so that the deployment will invalidate
-      // distribution cache when the files are redeployed
-      distribution: this.designerDistribution,
-      distributionPaths: ['/*'],
-      sources: [
-        Source.asset(buildPath, {
-          // TODO optimise
-          exclude: ['infrastructure'],
-          // Hash the app folder source files only
-          assetHash: getPathHash(`${getPathToRoot()}/${appPath}`, [outputPath]),
-          assetHashType: AssetHashType.CUSTOM,
-
-          bundling: {
-            // Use node image for non local bundling
-            image: aws_lambda.Runtime.NODEJS_20_X.bundlingImage,
-            // Docker build expects input/output of asset-input/output
-            command: [
-              'bash',
-              '-c',
-              `
-            cd /asset-input
-            cd ${appPath}
-            ./${buildScript}
-            cp -R ${outputPath}/* /asset-output
-            `,
-            ],
-            // Local bundling is faster for quick local deploy
-            local: {
-              tryBundle(outputDir: string) {
-                // Implement the logic to check if Docker is available
-                console.log('Trying local bundling of build files.');
-
-                // Perform the same bundling operations performed in the Docker container
-                const exec = require('child_process').execSync;
-                const commands = [
-                  `cd ${buildPath}`,
-                  `cd ${appPath}`,
-                  `./${buildScript}`,
                   `cp -R ${outputPath}/* ${outputDir}`,
                 ];
                 console.log(commands);
