@@ -31,6 +31,8 @@ import MuiRadioGroup from '@mui/material/RadioGroup';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import React from 'react';
 import FieldWrapper from './fieldWrapper';
+import MarkdownIt from 'markdown-it';
+
 /**
  * Represents a single option in the radio group.
  */
@@ -65,6 +67,11 @@ interface Props {
   disabled?: boolean; // Wheter the field is disabled
   required?: boolean;
 }
+
+const md = new MarkdownIt({
+  breaks: true,
+  html: false,
+});
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
   /**
@@ -121,9 +128,8 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                   />
                 }
                 label={
-                  <Box
-                    component="span"
-                    sx={{
+                  <span
+                    style={{
                       display: 'contents',
                       whiteSpace: 'normal',
                       wordBreak: 'break-word',
@@ -131,9 +137,10 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                       paddingTop: '2px',
                       paddingLeft: '0px',
                     }}
-                  >
-                    {option.label}
-                  </Box>
+                    dangerouslySetInnerHTML={    {
+                      __html: md.renderInline(option.label),
+                    }}
+                  />
                 }
                 {...option.FormControlProps}
                 disabled={this.props.disabled ?? false}
