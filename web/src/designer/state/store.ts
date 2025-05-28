@@ -86,8 +86,8 @@ export const store: ToolkitStore<AppState> = configureStore({
     modified: modifiedStatusReducer,
   },
   preloadedState: persistedState,
-  middleware: getDefaultMiddleware =>
-    getDefaultMiddleware().concat(loggerMiddleware),
+  // middleware: getDefaultMiddleware =>
+  //   getDefaultMiddleware().concat(loggerMiddleware),
 });
 
 // Write to localStorage at most once per second

@@ -79,18 +79,11 @@ export const EditTemplateDialog = () => {
                 </Button>
               </ListItem>
               <ListItem>
+                {
+                  //TODO Update this view to link directly into designer
+                }
                 <ListDescription>
-                  2. Edit the template either using a text editor or uploading
-                  the template file to{' '}
-                  <a
-                    className="underline text-primary"
-                    href={import.meta.env.VITE_DESIGNER_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Fieldmark Designer
-                  </a>
-                  .
+                  2. Edit the template using Designer.
                 </ListDescription>
               </ListItem>
               <ListItem className="space-y-2">
