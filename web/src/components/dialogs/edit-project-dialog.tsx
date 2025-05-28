@@ -10,6 +10,7 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {UpdateProjectForm} from '../forms/update-project-form';
 import {Pencil} from 'lucide-react';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 /**
  * EditProjectDialog component renders a dialog for editing a project.
@@ -24,7 +25,7 @@ export const EditProjectDialog = () => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
         <Button variant="outline">
-          Replace Project File
+          Replace {NOTEBOOK_NAME_CAPITALIZED} File
           <Pencil />
         </Button>
       </DialogTrigger>
@@ -32,8 +33,8 @@ export const EditProjectDialog = () => {
         <DialogHeader>
           <DialogTitle>Replace Project File</DialogTitle>
           <DialogDescription>
-            Upload a new project file to replace the current one. The new file
-            must be a valid JSON file.
+            Upload a new {NOTEBOOK_NAME} file to replace the current one. The
+            new file must be a valid JSON file.
           </DialogDescription>
         </DialogHeader>
         <UpdateProjectForm setDialogOpen={setOpen} />

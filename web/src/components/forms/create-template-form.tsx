@@ -8,6 +8,7 @@ import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
+import {NOTEBOOK_NAME} from '@/constants';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -40,8 +41,7 @@ export function CreateTemplateForm({
     {
       name: 'name',
       label: 'Template Name',
-      description:
-        'Pick something clear—you can always rename it later in the designer.',
+      description: 'A short display name for the template',
       schema: z.string().min(5, {
         message: 'Template name must be at least 5 characters.',
       }),
@@ -49,8 +49,7 @@ export function CreateTemplateForm({
     {
       name: 'file',
       label: 'JSON File (optional — leave blank to create a blank template)',
-      description:
-        'Upload a .json notebook file to pre-fill your template, or leave blank to use our built-in sample.',
+      description: `Upload a .json ${NOTEBOOK_NAME} file to pre-fill your template, or leave blank to use our built-in sample.`,
       type: 'file',
       schema: z
         .instanceof(File)
