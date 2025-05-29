@@ -12,6 +12,9 @@ import {
   createProjectFromTemplate,
 } from '@/hooks/project-hooks';
 
+// Import the default sample notebook JSON
+import blankNotebook from '../../../notebooks/blank-notebook.json';
+
 interface CreateProjectFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   defaultValues?: {teamId?: string};
@@ -31,7 +34,7 @@ export function CreateProjectForm({
   specifiedTeam = undefined,
 }: CreateProjectFormProps) {
   const {user} = useAuth();
-  const QueryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
@@ -50,7 +53,7 @@ export function CreateProjectForm({
     },
     {
       name: 'template',
-      label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template`,
+      label: `Existing ${NOTEBOOK_NAME_CAPITALIZED} Template (optional)`,
       options: templates?.map(({_id, name}: GetTemplateByIdResponse) => ({
         label: name,
         value: _id,
@@ -60,7 +63,7 @@ export function CreateProjectForm({
     },
     {
       name: 'file',
-      label: `${NOTEBOOK_NAME_CAPITALIZED} File`,
+      label: 'JSON File (optional)',
       type: 'file',
       schema: z
         .instanceof(File)
@@ -71,30 +74,23 @@ export function CreateProjectForm({
   ];
 
   const dividers = [
-    {
-      index: 1,
-      component: <div className="h-5" />,
-    },
-    {
-      index: 2,
-      component: <Divider word="OR" />,
-    },
+    {index: 1, component: <div className="h-5" />},
+    {index: 2, component: <Divider word="OR" />},
   ];
 
   if (!specifiedTeam) {
     fields.push({
       name: 'team',
-      label: `Create ${NOTEBOOK_NAME} in this team${canCreateGlobally && ' (optional)'}`,
+      label: `Create ${NOTEBOOK_NAME} in this team${
+        canCreateGlobally ? ' (optional)' : ''
+      }`,
       options: teams?.teams.map(({_id, name}) => ({
         label: name,
         value: _id,
       })),
       schema: canCreateGlobally ? z.string().optional() : z.string(),
     });
-    dividers.push({
-      index: 3,
-      component: <div className="h-5" />,
-    });
+    dividers.push({index: 3, component: <div className="h-5" />});
   }
 
   interface onSubmitProps {
@@ -111,34 +107,49 @@ export function CreateProjectForm({
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
   const onSubmit = async ({name, template, file, team}: onSubmitProps) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
+    if (!user) {
+      return {type: 'submit', message: 'User not authenticated'};
+    }
 
-    if (!template && !file)
-      return {type: 'submit', message: 'No file or template selected'};
-
-    const response = file
-      ? await createProjectFromFile({
-          user,
-          name,
-          file,
-          teamId: specifiedTeam ?? team,
-        })
-      : await createProjectFromTemplate({
-          user,
-          name,
-          template: template || '',
-          teamId: specifiedTeam ?? team,
+    let response;
+    if (template) {
+      // Create from selected template
+      response = await createProjectFromTemplate({
+        user,
+        name,
+        template,
+        teamId: specifiedTeam ?? team,
+      });
+    } else {
+      // No template chosen: either use uploaded file or default blank notebook
+      let fileToUpload = file;
+      if (!fileToUpload) {
+        // Construct a File object
+        const blob = new Blob([JSON.stringify(blankNotebook)], {
+          type: 'application/json',
         });
+        fileToUpload = new File([blob], 'sample_notebook.json', {
+          type: 'application/json',
+        });
+      }
+      response = await createProjectFromFile({
+        user,
+        name,
+        file: fileToUpload,
+        teamId: specifiedTeam ?? team,
+      });
+    }
 
-    if (!response.ok)
+    if (!response.ok) {
       return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}`};
+    }
 
     if (specifiedTeam || team) {
-      QueryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: ['projectsbyteam', specifiedTeam || team],
       });
     }
-    QueryClient.invalidateQueries({queryKey: ['projects']});
+    queryClient.invalidateQueries({queryKey: ['projects']});
 
     setDialogOpen(false);
   };
