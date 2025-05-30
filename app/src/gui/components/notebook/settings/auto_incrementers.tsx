@@ -14,7 +14,6 @@ interface AutoIncrementerSettingsListProps {
 export default function AutoIncrementerSettingsList(
   props: AutoIncrementerSettingsListProps
 ) {
-  const [open, setOpen] = useState(false);
   const [references, setReferences] = useState([] as AutoIncrementReference[]);
   useEffect(() => {
     getAutoincrementReferencesForProject(props.project_info.project_id)
@@ -52,25 +51,12 @@ export default function AutoIncrementerSettingsList(
                   'autoincrementer_range_' + ai.form_id + ai.field_id + ai.label
                 }
               >
-                <Box mt={1}>
-                  <AutoIncrementEditForm
-                    project_id={props.project_info.project_id}
-                    form_id={ai.form_id}
-                    field_id={ai.field_id}
-                    label={label}
-                    open={open}
-                    handleClose={() => setOpen(false)}
-                  />
-                  <Button
-                    variant="outlined"
-                    color={'primary'}
-                    onClick={() => {
-                      setOpen(true);
-                    }}
-                  >
-                    {label}
-                  </Button>
-                </Box>
+                <AutoIncrementerButton
+                  project_info={props.project_info}
+                  form_id={ai.form_id}
+                  field_id={ai.field_id}
+                  label={label}
+                />
               </Grid>
             );
           })}
@@ -79,3 +65,35 @@ export default function AutoIncrementerSettingsList(
     </>
   );
 }
+interface AutoIncrementerButtonProps {
+  project_info: ProjectInformation;
+  form_id: string;
+  field_id: string;
+  label: string;
+}
+
+const AutoIncrementerButton = (props: AutoIncrementerButtonProps) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Box mt={1}>
+      <AutoIncrementEditForm
+        project_id={props.project_info.project_id}
+        form_id={props.form_id}
+        field_id={props.field_id}
+        label={props.label}
+        open={open}
+        handleClose={() => setOpen(false)}
+      />
+      <Button
+        variant="outlined"
+        color={'primary'}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {props.label}
+      </Button>
+    </Box>
+  );
+};
