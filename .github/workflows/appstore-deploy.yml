@@ -74,6 +74,10 @@ jobs:
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
           npm ci --python=python3.10
           npm run build
+      - name: Set up XCode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
       - name: Update IOS Build
         run: |
           cd app
