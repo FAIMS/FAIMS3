@@ -57,7 +57,7 @@ fi
 #version=$(grep '"version":' $PROJECT_DIR/package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
 # since we previously published 1.0.0 on app store we need a higher version
 # number, set that here until we get the main version above this
-version=1.0.5
+version=1.0.6
 buildNumber=$(date -u "+%Y%m%d%H%M")
 
 if test -f /usr/libexec/PlistBuddy; then
