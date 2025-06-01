@@ -33,6 +33,7 @@ import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
 import FieldWrapper from './fieldWrapper';
 import MarkdownIt from 'markdown-it';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
 
 const md = new MarkdownIt({breaks: true, html: false});
 
@@ -145,7 +146,7 @@ export const ExpandedChecklist = ({
                   paddingTop: '4px',
                 }}
                 dangerouslySetInnerHTML={{
-                  __html: md.renderInline(option.label),
+                  __html: contentToSanitizedHtml(option.label),
                 }}
               />
             }
@@ -245,7 +246,7 @@ export const MuiMultiSelect = ({
                     wordBreak: 'break-word',
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: md.renderInline(option.label),
+                    __html: contentToSanitizedHtml(option.label),
                   }}
                 />
               }

@@ -32,6 +32,7 @@ import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import React from 'react';
 import FieldWrapper from './fieldWrapper';
 import MarkdownIt from 'markdown-it';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
 
 /**
  * Represents a single option in the radio group.
@@ -137,8 +138,8 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                       paddingTop: '2px',
                       paddingLeft: '0px',
                     }}
-                    dangerouslySetInnerHTML={    {
-                      __html: md.renderInline(option.label),
+                    dangerouslySetInnerHTML={{
+                      __html: contentToSanitizedHtml(option.label),
                     }}
                   />
                 }
