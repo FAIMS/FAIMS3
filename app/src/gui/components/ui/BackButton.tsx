@@ -4,6 +4,7 @@ import {useNavigate} from 'react-router';
 import {ConfirmExitDialog} from '../record/confirmExitDialog';
 import {useState} from 'react';
 import {useAppSelector} from '../../../context/store';
+import {useParentLink} from '../../../utils/useParentLink';
 
 const BackButton = ({
   link,
@@ -18,12 +19,13 @@ const BackButton = ({
   const formIsEdited = useAppSelector(state => state.records.edited);
 
   const navigate = useNavigate();
+
   const goBack = () => {
-    if (confirm && formIsEdited) {
-      setDialogOpen(true);
-    } else if (link) navigate(link);
+    if (backlink?.parent_link) navigate(backlink.parent_link);
     else history.back();
   };
+
+  const backlink = useParentLink();
 
   return (
     <>
