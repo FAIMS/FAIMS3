@@ -54,11 +54,6 @@
     --secondary-foreground: 0 0% 98%;
   }
 
-  .theme-red {
-    --primary: 0 84% 60%;
-    --primary-foreground: 0 0% 98%;
-  }
-
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
