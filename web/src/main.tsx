@@ -9,6 +9,7 @@ import {AuthProvider, useAuth} from './context/auth-provider';
 import {BreadcrumbProvider} from './context/breadcrumb-provider';
 import './index.css';
 import {routeTree} from './routeTree.gen';
+import {getThemeClass} from './lib/theme';
 /**
  * App component renders the main application layout.
  * It includes the main navigation and the main content.
@@ -41,6 +42,7 @@ function App() {
   // Set the website title
   useEffect(() => {
     document.title = WEBSITE_TITLE ?? 'Control Centre';
+    document.documentElement.className = getThemeClass();
   }, []);
 
   return <RouterProvider router={router} context={{auth}} />;
