@@ -44,6 +44,7 @@ import {
   Role,
   userHasProjectRole,
   PROJECT_METADATA_PREFIX,
+  Annotations,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -756,9 +757,29 @@ const csvFormatValue = (
   return result;
 };
 
+type FieldSummary = {
+  name: string;
+  type: string;
+  annotation?: string;
+  uncertainty?: string;
+};
+
+const csvFormatAnnotation = (
+  field: FieldSummary,
+  {annotation, uncertainty}: Annotations
+) => {
+  const result: {[key: string]: any} = {};
+  if (field.annotation !== '')
+    result[field.name + '_' + field.annotation] = annotation;
+  if (field.uncertainty !== '')
+    result[field.name + '_' + field.uncertainty] = uncertainty;
+  return result;
+};
+
 const convertDataForOutput = (
   fields: {name: string; type: string}[],
   data: any,
+  annotations: {[name: string]: Annotations},
   hrid: string,
   filenames: string[]
 ) => {
@@ -772,34 +793,16 @@ const convertDataForOutput = (
         hrid,
         filenames
       );
-      result = {...result, ...formattedValue};
+      const formattedAnnotation = csvFormatAnnotation(
+        field,
+        annotations[field.name]
+      );
+      result = {...result, ...formattedValue, ...formattedAnnotation};
     } else {
       console.error('field missing in data', field.name, data);
     }
   });
   return result;
-};
-
-export const getNotebookFields = async (
-  project_id: ProjectID,
-  viewID: string
-) => {
-  // work out what fields we're going to output from the uiSpec
-  const uiSpec = await getEncodedNotebookUISpec(project_id);
-  if (!uiSpec) {
-    throw new Error("can't find project " + project_id);
-  }
-  if (!(viewID in uiSpec.viewsets)) {
-    throw new Error(`invalid form ${viewID} not found in notebook`);
-  }
-  const views = uiSpec.viewsets[viewID].views;
-  const fields: string[] = [];
-  views.forEach((view: any) => {
-    uiSpec.fviews[view].fields.forEach((field: any) => {
-      fields.push(field);
-    });
-  });
-  return fields;
 };
 
 const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
@@ -811,12 +814,19 @@ const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
     throw new Error(`invalid form ${viewID} not found in notebook`);
   }
   const views = uiSpec.viewsets[viewID].views;
-  const fields: any[] = [];
+  const fields: FieldSummary[] = [];
   views.forEach((view: any) => {
     uiSpec.fviews[view].fields.forEach((field: any) => {
+      const fieldInfo = uiSpec.fields[field];
       fields.push({
         name: field,
-        type: uiSpec.fields[field]['type-returned'],
+        type: fieldInfo['type-returned'],
+        annotation: fieldInfo.meta.annotation.include
+          ? fieldInfo.meta.annotation.label
+          : '',
+        uncertainty: fieldInfo.meta.uncertainty.include
+          ? fieldInfo.meta.uncertainty.label
+          : '',
       });
     });
   });
@@ -859,6 +869,7 @@ export const streamNotebookRecordsAsCSV = async (
       const outputData = convertDataForOutput(
         fields,
         record.data,
+        record.annotations,
         hrid,
         filenames
       );
