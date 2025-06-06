@@ -772,7 +772,9 @@ const csvFormatAnnotation = (
   if (field.annotation !== '')
     result[field.name + '_' + field.annotation] = annotation;
   if (field.uncertainty !== '')
-    result[field.name + '_' + field.uncertainty] = uncertainty;
+    result[field.name + '_' + field.uncertainty] = uncertainty
+      ? 'true'
+      : 'false';
   return result;
 };
 
@@ -822,10 +824,10 @@ const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
         name: field,
         type: fieldInfo['type-returned'],
         annotation: fieldInfo.meta.annotation.include
-          ? fieldInfo.meta.annotation.label
+          ? slugify(fieldInfo.meta.annotation.label)
           : '',
         uncertainty: fieldInfo.meta.uncertainty.include
-          ? fieldInfo.meta.uncertainty.label
+          ? slugify(fieldInfo.meta.uncertainty.label)
           : '',
       });
     });

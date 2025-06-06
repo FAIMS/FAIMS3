@@ -648,9 +648,9 @@ describe('API tests', () => {
             expect(response.text).to.contain('identifier');
             expect(response.text).to.contain('take-photo');
             // uncertainty label on asset number
-            expect(response.text).to.contain('asset-number_Questionable');
+            expect(response.text).to.contain('asset-number_questionable');
             // annotation label for asset number
-            expect(response.text).to.contain('asset-number_Difficulties');
+            expect(response.text).to.contain('asset-number_difficulties');
 
             const lines = response.text.split('\n');
             lines.forEach(line => {
