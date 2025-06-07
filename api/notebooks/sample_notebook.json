@@ -2,7 +2,11 @@
   "metadata": {
     "project_status": "New",
     "test_key": "test_value",
-    "accesses": ["admin", "moderator", "team"],
+    "accesses": [
+      "admin",
+      "moderator",
+      "team"
+    ],
     "forms": {
       "FORM1": {
         "submitActionFORM1": "Save and New",
@@ -26,12 +30,17 @@
         "visibleFORM3": true
       }
     },
-    "sections": {},
     "meta": {},
     "access": {
-      "accessFORM1": ["admin"],
-      "accessFORM2": ["admin"],
-      "accessFORM3": ["admin"]
+      "accessFORM1": [
+        "admin"
+      ],
+      "accessFORM2": [
+        "admin"
+      ],
+      "accessFORM3": [
+        "admin"
+      ]
     },
     "ispublic": false,
     "isrequest": false,
@@ -56,15 +65,36 @@
           "id": "take-photo",
           "helperText": "Take a photo",
           "variant": "outlined",
-          "label": "Take Photo",
-          "helpertext": "Take an overview photo"
+          "label": "Take Photo"
         },
-        "validationSchema": [["yup.object"], ["yup.nullable"]],
+        "validationSchema": [
+          [
+            "yup.array"
+          ],
+          [
+            "yup.of",
+            [
+              [
+                "yup.object"
+              ],
+              [
+                "yup.nullable"
+              ]
+            ]
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
         "initialValue": null,
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -83,12 +113,23 @@
           "variant": "outlined",
           "label": "Take GPS Point"
         },
-        "validationSchema": [["yup.object"], ["yup.nullable"]],
+        "validationSchema": [
+          [
+            "yup.object"
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
         "initialValue": null,
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -135,18 +176,24 @@
               }
             ]
           },
-          "InputLabelProps": {
-            "label": "Feature Type"
-          },
           "id": "feature-type",
-          "name": "feature-type"
+          "name": "feature-type",
+          "label": "Feature Type"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -168,19 +215,24 @@
             "rows": 4
           },
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Feature Description"
-          },
-          "FormHelperTextProps": {},
           "id": "feature-description",
-          "name": "feature-description"
+          "name": "feature-description",
+          "label": "Feature Description"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -203,19 +255,24 @@
           },
           "multiple": true,
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Artefacts"
-          },
-          "FormHelperTextProps": {},
           "id": "artefacts",
-          "name": "artefacts"
+          "name": "artefacts",
+          "label": "Artefacts"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": [],
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -238,19 +295,24 @@
           },
           "multiple": false,
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Measurements"
-          },
-          "FormHelperTextProps": {},
           "id": "measurements",
-          "name": "measurements"
+          "name": "measurements",
+          "label": "Measurements"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -313,18 +375,27 @@
               }
             ]
           },
-          "InputLabelProps": {
-            "label": "Dimension"
-          },
           "id": "dimension",
-          "name": "dimension"
+          "name": "dimension",
+          "label": "Dimension"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": true,
             "label": "uncertainty"
@@ -344,19 +415,28 @@
             "type": "number"
           },
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Measurement"
-          },
-          "FormHelperTextProps": {},
           "id": "measurement",
-          "name": "measurement"
+          "name": "measurement",
+          "label": "Measurement"
         },
-        "validationSchema": [["yup.number"], ["yup.min", 1]],
+        "validationSchema": [
+          [
+            "yup.number"
+          ],
+          [
+            "yup.min",
+            1
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -403,18 +483,24 @@
               }
             ]
           },
-          "InputLabelProps": {
-            "label": "Material"
-          },
           "id": "material",
-          "name": "material"
+          "name": "material",
+          "label": "Material"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -433,12 +519,34 @@
           "variant": "outlined",
           "label": "Take Photo"
         },
-        "validationSchema": [["yup.object"], ["yup.nullable"]],
+        "validationSchema": [
+          [
+            "yup.array"
+          ],
+          [
+            "yup.of",
+            [
+              [
+                "yup.object"
+              ],
+              [
+                "yup.nullable"
+              ]
+            ]
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
         "initialValue": null,
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -461,20 +569,28 @@
             "type": "text",
             "readOnly": true
           },
-          "InputLabelProps": {
-            "label": "ArtefactID"
-          },
-          "hrid": true,
           "fieldselect10": "html-text",
           "numberfield": 2,
-          "fieldselect11": "artefactid-counter"
+          "fieldselect11": "artefactid-counter",
+          "label": "ArtefactID"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -497,21 +613,29 @@
             "type": "text",
             "readOnly": true
           },
-          "InputLabelProps": {
-            "label": "ArtefactID"
-          },
-          "hrid": true,
           "linked": "artefactid",
           "fieldselect10": "html-text",
           "numberfield": 2,
-          "fieldselect11": "artefactid-counter"
+          "fieldselect11": "artefactid-counter",
+          "label": "ArtefactID"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -533,19 +657,24 @@
             "rows": 4
           },
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Interpretation"
-          },
-          "FormHelperTextProps": {},
           "id": "interpretation",
-          "name": "interpretation"
+          "name": "interpretation",
+          "label": "Interpretation"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -567,19 +696,24 @@
             "rows": 4
           },
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Comments"
-          },
-          "FormHelperTextProps": {},
           "id": "comments",
-          "name": "comments"
+          "name": "comments",
+          "label": "Comments"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -599,12 +733,23 @@
           "form_id": "FORM1SECTION1",
           "label": "FeatureIDincrementor"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
-        "initialValue": null,
-        "access": ["admin"],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -624,12 +769,23 @@
           "form_id": "FORM2SECTION1",
           "label": "ArtefactID_counter"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
-        "initialValue": null,
-        "access": ["admin"],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
+        "initialValue": "",
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -652,20 +808,28 @@
             "type": "text",
             "readOnly": true
           },
-          "InputLabelProps": {
-            "label": "FeatureID"
-          },
-          "hrid": true,
           "numberfield": 2,
           "fieldselect10": "feature-type",
-          "fieldselect11": "featureidincrementor"
+          "fieldselect11": "featureidincrementor",
+          "label": "FeatureID"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -688,21 +852,29 @@
             "type": "text",
             "readOnly": true
           },
-          "InputLabelProps": {
-            "label": "FeatureID"
-          },
-          "hrid": true,
           "linked": "featureid",
           "numberfield": 2,
           "fieldselect10": "feature-type",
-          "fieldselect11": "featureidincrementor"
+          "fieldselect11": "featureidincrementor",
+          "label": "FeatureID"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -723,12 +895,20 @@
           "id": "html-text",
           "name": "html-text"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -754,17 +934,28 @@
           "InputLabelProps": {
             "label": ""
           },
-          "hrid": true,
           "numberfield": 2,
           "fieldselect10": "measurement",
-          "fieldselect11": "dimension"
+          "fieldselect11": "dimension",
+          "label": "templatedstringfield"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -790,18 +981,29 @@
           "InputLabelProps": {
             "label": ""
           },
-          "hrid": true,
           "linked": "templatedstringfield",
           "numberfield": 2,
           "fieldselect10": "measurement",
-          "fieldselect11": "dimension"
+          "fieldselect11": "dimension",
+          "label": "hridFORM3"
         },
-        "validationSchema": [["yup.string"], ["yup.required"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ],
+          [
+            "yup.required"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -823,19 +1025,24 @@
             "rows": 4
           },
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Artefact Comment"
-          },
-          "FormHelperTextProps": {},
           "id": "artefact-comment",
-          "name": "artefact-comment"
+          "name": "artefact-comment",
+          "label": "Artefact Comment"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
-        "access": ["admin"],
+        "access": [
+          "admin"
+        ],
         "meta": {
-          "annotation_label": "annotation",
-          "annotation": true,
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
           "uncertainty": {
             "include": false,
             "label": "uncertainty"
@@ -861,7 +1068,11 @@
         "label": "SECTION1"
       },
       "FORM3SECTION1": {
-        "fields": ["hridFORM3", "dimension", "measurement"],
+        "fields": [
+          "hridFORM3",
+          "dimension",
+          "measurement"
+        ],
         "uidesign": "form",
         "label": "Dimension"
       },
@@ -880,18 +1091,31 @@
     },
     "viewsets": {
       "FORM1": {
-        "views": ["FORM1SECTION1"],
-        "label": "Feature"
+        "views": [
+          "FORM1SECTION1"
+        ],
+        "label": "Feature",
+        "hridField": "hridFORM1"
       },
       "FORM2": {
-        "views": ["FORM2SECTION1"],
-        "label": "Artefact"
+        "views": [
+          "FORM2SECTION1"
+        ],
+        "label": "Artefact",
+        "hridField": "hridFORM2"
       },
       "FORM3": {
-        "views": ["FORM3SECTION1"],
-        "label": "Measurements"
+        "views": [
+          "FORM3SECTION1"
+        ],
+        "label": "Measurements",
+        "hridField": "hridFORM3"
       }
     },
-    "visible_types": ["FORM1", "FORM2", "FORM3"]
+    "visible_types": [
+      "FORM1",
+      "FORM2",
+      "FORM3"
+    ]
   }
 }
