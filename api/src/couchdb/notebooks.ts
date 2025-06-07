@@ -764,6 +764,9 @@ type FieldSummary = {
   uncertainty?: string;
 };
 
+/**
+ * Convert annotations on a field to a format suitable for CSV export
+ */
 const csvFormatAnnotation = (
   field: FieldSummary,
   {annotation, uncertainty}: Annotations
@@ -778,8 +781,13 @@ const csvFormatAnnotation = (
   return result;
 };
 
+/**
+ * Format the data for a single record for CSV export
+ *
+ * @returns a map of column headings to values
+ */
 const convertDataForOutput = (
-  fields: {name: string; type: string}[],
+  fields: FieldSummary[],
   data: any,
   annotations: {[name: string]: Annotations},
   hrid: string,
@@ -797,7 +805,7 @@ const convertDataForOutput = (
       );
       const formattedAnnotation = csvFormatAnnotation(
         field,
-        annotations[field.name]
+        annotations[field.name] || {}
       );
       result = {...result, ...formattedValue, ...formattedAnnotation};
     } else {
@@ -807,6 +815,14 @@ const convertDataForOutput = (
   return result;
 };
 
+/**
+ * Get a list of fields for a notebook with relevant information
+ * on each for the export
+ *
+ * @param project_id Project ID
+ * @param viewID View ID
+ * @returns an array of FieldSummary objects
+ */
 const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
   const uiSpec = await getEncodedNotebookUISpec(project_id);
   if (!uiSpec) {
@@ -835,6 +851,13 @@ const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
   return fields;
 };
 
+/**
+ * Stream the records in a notebook as a CSV file
+ *
+ * @param projectId Project ID
+ * @param viewID View ID
+ * @param res writeable stream
+ */
 export const streamNotebookRecordsAsCSV = async (
   projectId: ProjectID,
   viewID: string,
