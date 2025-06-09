@@ -785,6 +785,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
         <TextField
           variant="outlined"
           label="Value"
+          data-testid="value-input"
           value={condition.value ?? ''}
           onChange={e => updateValue(e.target.value)}
           sx={{minWidth: 200}}
@@ -802,6 +803,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           <FormControl sx={{minWidth: 200}} error={!isValidOption}>
             <InputLabel>Value</InputLabel>
             <Select
+              data-testid="value-input"
               label="Value"
               value={isValidOption ? condition.value : (condition.value ?? '')}
               onChange={e => updateValue(e.target.value)}
@@ -832,6 +834,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             <InputLabel>Value</InputLabel>
             <Select
               multiple
+              data-testid="value-input"
               label="Value"
               value={selectedValues}
               onChange={e => updateValue(e.target.value)}
@@ -868,6 +871,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             <InputLabel>Value</InputLabel>
             <Select
               label="Value"
+              data-testid="value-input"
               value={booleanValue ? 'true' : 'false'}
               onChange={e => updateValue(e.target.value === 'true')}
             >
@@ -882,6 +886,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           return (
             <TextField
               variant="outlined"
+              data-testid="value-input"
               label="Value"
               value={condition.value ?? ''}
               onChange={e => updateValue(e.target.value)}
@@ -896,6 +901,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             <TextField
               variant="outlined"
               label="Value"
+              data-testid="value-input"
               value={condition.value ?? ''}
               onChange={e => updateValue(e.target.value)}
               sx={{minWidth: 200}}
@@ -979,6 +985,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           onChange={(_, newValue) => {
             updateField(newValue || '');
           }}
+          data-testid="field-input"
           renderInput={params => (
             <TextField {...params} label="Field" variant="outlined" />
           )}

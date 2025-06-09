@@ -50,11 +50,6 @@ The `FaimsFrontEnd` construct manages the web applications:
 - **Build Process**: Uses a custom build script with environment variable injection.
 - **Content Security Policy**: Configures CSP headers for connecting to CouchDB and Conductor.
 
-#### Designer Frontend
-
-- Similar setup to the main frontend, but with a separate S3 bucket and CloudFront distribution.
-- Uses a different build process tailored for the designer application.
-
 #### Web (New-conductor) Frontend
 
 - Similar setup to the main frontend, but with a separate S3 bucket and CloudFront distribution.
@@ -352,7 +347,6 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `scaleOutCooldown`: The cooldown period (in seconds) before allowing another scale out action
 - `domains`: Domain configuration for all services. Note: Apex domains are not currently supported.
   - `baseDomain`: The base domain for all services
-  - `designer`: The subdomain prefix for the designer service
   - `conductor`: The subdomain prefix for the conductor service
   - `couch`: The subdomain prefix for the CouchDB service
   - `faims`: The subdomain prefix for the main FAIMS web application

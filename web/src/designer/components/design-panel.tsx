@@ -31,6 +31,8 @@ export const DesignPanel = () => {
   const navigate = useNavigate();
   const {pathname} = useLocation();
 
+  const basePath = pathname.split('/').slice(0, 2).join('/');
+
   const viewSets = useAppSelector(
     state => state.notebook['ui-specification'].present.viewsets,
     shallowEqual
@@ -42,11 +44,18 @@ export const DesignPanel = () => {
 
   const startTabIndex = pathname.split('/')[2];
   const [tabIndex, setTabIndex] = useState(startTabIndex);
-  const [newFormName, setNewFormName] = useState('New Form');
   const [alertMessage, setAlertMessage] = useState<string>('');
   const [untickedForms, setUntickedForms] = useState<string[]>(
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
   );
+
+  const [newFormName, setNewFormName] = useState(
+    () => `Form ${Object.keys(viewSets).length + 1}`
+  );
+
+  useEffect(() => {
+    setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
+  }, [viewSets]);
 
   const maxKeys = Object.keys(viewSets).length;
 
@@ -72,7 +81,7 @@ export const DesignPanel = () => {
   };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setTabIndex(newValue.toString());
+    setIndexAndNavigate(newValue.toString());
   };
 
   const handleCheckboxTabChange = (viewSetID: string, ticked: boolean) => {
@@ -164,7 +173,7 @@ export const DesignPanel = () => {
 
   const setIndexAndNavigate = (index: string) => {
     setTabIndex(index);
-    navigate(index);
+    navigate(`${basePath}/${index}`);
   };
 
   const handleSectionMove = (targetViewSetId: string) => {
@@ -179,7 +188,7 @@ export const DesignPanel = () => {
 
       // update the form index and navigate
       setTabIndex(targetIndex.toString());
-      navigate(`${targetIndex}?section=${targetSectionIndex}`);
+      navigate(`${basePath}/${targetIndex}?section=${targetSectionIndex}`);
     }
   };
 
@@ -194,10 +203,9 @@ export const DesignPanel = () => {
         if (targetIndex >= 0) {
           // find the target section's index in the target form
           const targetSectionIndex = form.views.indexOf(targetViewId);
-
           // Update the form index and navigate
           setTabIndex(targetIndex.toString());
-          navigate(`${targetIndex}?section=${targetSectionIndex}`);
+          navigate(`${basePath}/${targetIndex}?section=${targetSectionIndex}`);
         }
         break;
       }
@@ -307,7 +315,7 @@ export const DesignPanel = () => {
             {visibleTypes.map((form: string, index: number) => (
               <Tab
                 component={Link}
-                to={`${index}`}
+                to={`${basePath}/${index}`}
                 key={index}
                 value={`${index}`}
                 label={`Form: ${viewSets[form].label}`}
@@ -337,7 +345,7 @@ export const DesignPanel = () => {
               return (
                 <Tab
                   component={Link}
-                  to={`${startIndex}`}
+                  to={`${basePath}/${startIndex}`}
                   key={startIndex}
                   value={`${startIndex}`}
                   label={`Form: ${viewSets[form].label}`}
@@ -366,7 +374,7 @@ export const DesignPanel = () => {
             })}
             <Tab
               component={Link}
-              to={maxKeys.toString()}
+              to={`${basePath}/${maxKeys}`}
               key={maxKeys}
               value={maxKeys.toString()}
               icon={<AddIcon />}

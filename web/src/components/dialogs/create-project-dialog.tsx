@@ -9,7 +9,7 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {CreateProjectForm} from '../forms/create-project-form';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {Plus} from 'lucide-react';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTeam} from '@/hooks/queries';
@@ -50,7 +50,8 @@ export const CreateProjectDialog = ({
           </DialogTitle>
           <DialogDescription>
             Create a new {NOTEBOOK_NAME_CAPITALIZED} by selecting an existing
-            template or uploading a JSON notebook specification file.
+            template, uploading a JSON {NOTEBOOK_NAME} file, or leaving both 
+            blank to use a blank notebook you can edit.
           </DialogDescription>
         </DialogHeader>
         <CreateProjectForm

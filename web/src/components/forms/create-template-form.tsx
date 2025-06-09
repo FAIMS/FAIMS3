@@ -7,6 +7,9 @@ import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 
+import blankNotebook from '../../../notebooks/blank-notebook.json';
+import {NOTEBOOK_NAME} from '@/constants';
+
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   defaultValues?: {teamId?: string};
@@ -26,33 +29,41 @@ export function CreateTemplateForm({
   specifiedTeam = undefined,
 }: CreateTemplateFormProps) {
   const {user} = useAuth();
-  const QueryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const {data: teams} = useGetTeams(user);
 
   // can they create projects outside team?
-  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_TEMPLATE});
+  const canCreateGlobally = useIsAuthorisedTo({
+    action: Action.CREATE_TEMPLATE,
+  });
 
   const fields: Field[] = [
     {
       name: 'name',
-      label: 'Name',
+      label: 'Template Name',
+      description: 'A short display name for the template',
       schema: z.string().min(5, {
         message: 'Template name must be at least 5 characters.',
       }),
     },
     {
       name: 'file',
-      label: 'Template File',
+      label: 'JSON File (optional — leave blank to create a blank template)',
+      description: `Upload a .json ${NOTEBOOK_NAME} file to pre-fill your template, or leave blank to use our built-in sample.`,
       type: 'file',
       schema: z
         .instanceof(File)
-        .refine(file => file.type === 'application/json'),
+        .refine(f => f.type === 'application/json', {
+          message: 'Only JSON files are allowed.',
+        })
+        .optional(),
     },
   ];
+
   if (!specifiedTeam) {
     fields.push({
       name: 'team',
-      label: `Create template in this team${canCreateGlobally && ' (optional)'}`,
+      label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
       options: teams?.teams.map(({_id, name}) => ({
         label: name,
         value: _id,
@@ -61,30 +72,37 @@ export function CreateTemplateForm({
     });
   }
 
-  const onSubmit = async ({
-    file,
-    team,
-    name,
-  }: {
-    // Doesn't currently do anything!
+  const onSubmit = async (values: {
     name: string;
-    file: File;
+    file?: File;
     team?: string;
   }) => {
-    if (!user) return {type: 'submit', message: 'User not authenticated'};
+    if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const jsonString = await readFileAsText(file);
+    const {name, file, team} = values;
+    let jsonPayload: Record<string, any> = {};
 
-    if (!jsonString) return {type: 'submit', message: 'Error reading file'};
-
-    let json;
-    try {
-      json = JSON.parse(jsonString);
-    } catch (e) {
-      return {type: 'submit', message: 'Error parsing file'};
+    if (file) {
+      // parse the user-uploaded file
+      const text = await readFileAsText(file);
+      if (!text) {
+        return {type: 'submit', message: 'Error reading file'};
+      }
+      try {
+        jsonPayload = JSON.parse(text);
+      } catch {
+        return {type: 'submit', message: 'Invalid JSON file'};
+      }
+    } else {
+      // pull in the sample's metadata + ui-spec
+      jsonPayload = {
+        metadata: (blankNotebook as any).metadata,
+        'ui-specification': (blankNotebook as any)['ui-specification'],
+      };
     }
+
     try {
-      const response = await fetch(
+      const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/templates/`,
         {
           method: 'POST',
@@ -92,23 +110,25 @@ export function CreateTemplateForm({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
           },
-          body: JSON.stringify({teamId: team ?? specifiedTeam, ...json, name}),
+          body: JSON.stringify({
+            teamId: team ?? specifiedTeam,
+            name,
+            ...jsonPayload,
+          }),
         }
       );
-
-      if (!response.ok) throw Error(response.statusText);
-    } catch (e) {
-      return {type: 'submit', message: 'Error creating template'};
+      if (!res.ok) throw new Error(res.statusText);
+    } catch {
+      return {type: 'submit', message: 'Failed to create template'};
     }
 
     // query invals
     if (specifiedTeam || team) {
-      QueryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: ['templatesbyteam', specifiedTeam || team],
       });
     }
-    QueryClient.invalidateQueries({queryKey: ['templates', undefined]});
-
+    queryClient.invalidateQueries({queryKey: ['templates', undefined]});
     setDialogOpen(false);
   };
 
