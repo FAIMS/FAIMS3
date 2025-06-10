@@ -49,6 +49,7 @@ import {
   RevisionID,
   UnhydratedRecord,
 } from '../types';
+import {createHash} from './utils';
 
 // INDEX NAMES
 
@@ -801,6 +802,73 @@ export async function getRecord({
     id: recordId,
     typeField: RECORD_TYPE_FIELD,
   });
+}
+
+/**
+ * Creates a canonical hash from the record audit data for efficient sync checking.
+ *
+ * @param audit - Array of {id, rev} objects from getRecordAudit
+ * @returns SHA-256 hash of the canonical representation
+ */
+async function createAuditHash(
+  audit: Array<{id: string; rev: string}>
+): Promise<string> {
+  // The audit is already sorted by ID in getRecordAudit, but ensure consistency
+  const sortedAudit = audit
+    .slice() // Don't mutate original
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  // Create canonical JSON representation
+  const canonicalJson = JSON.stringify(sortedAudit);
+
+  // Return SHA-256 hash
+  return await createHash(canonicalJson);
+}
+
+/**
+ * Generate an audit for a record.
+ * This returns a list of all document ids and revision ids for documents
+ * making up this record.  All frevs, avps and attachment documents.
+ *
+ * We can then use this in the client to verify that we have a complete and
+ * up to date copy of the record on the server.
+ *
+ */
+export async function getRecordAudit({
+  recordId,
+  dataDb,
+}: {
+  recordId: RecordID;
+  dataDb: DataDbType;
+}) {
+  // need to get the record itself and then query for all
+  // documents that reference this record ID
+  const record = await getCouchDocument<EncodedRecord>({
+    db: dataDb,
+    id: recordId,
+    typeField: RECORD_TYPE_FIELD,
+  });
+  if (record) {
+    const parts = await dataDb.find({
+      selector: {
+        record_id: recordId,
+      },
+      fields: ['_id', '_rev'],
+      limit: 1000,
+    });
+    const audit = [
+      {
+        id: recordId,
+        rev: record._rev,
+      },
+      ...parts.docs.map(doc => ({
+        id: doc._id,
+        rev: doc._rev,
+      })),
+    ];
+    return createAuditHash(audit);
+  }
+  return [];
 }
 
 /**
