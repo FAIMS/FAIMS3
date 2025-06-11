@@ -205,23 +205,6 @@ export async function createHash(data: string): Promise<string> {
       console.warn('Node.js crypto not available, falling back to simple hash');
     }
   }
-  // Fallback: Simple hash function (not cryptographically secure)
-  return simpleHash(data);
-}
-
-/**
- * Simple hash function fallback (not cryptographically secure, but deterministic)
- */
-function simpleHash(str: string): string {
-  let hash = 0;
-  if (str.length === 0) return hash.toString(16);
-
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-
-  // Convert to positive hex string
-  return Math.abs(hash).toString(16).padStart(8, '0');
+  // If we can't load a module, throw an error
+  throw new Error('Could not load crypto module for hashing');
 }

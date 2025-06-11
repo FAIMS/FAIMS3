@@ -867,8 +867,29 @@ export async function getRecordAudit({
       })),
     ];
     return createAuditHash(audit);
+  } else {
+    throw new Error(`Record ${recordId} not found`);
   }
-  return [];
+}
+
+export type RecordAuditMap = {
+  [recordId: string]: string;
+};
+
+export async function getRecordListAudit({
+  recordIds,
+  dataDb,
+}: {
+  recordIds: RecordID[];
+  dataDb: DataDbType;
+}) {
+  const result: RecordAuditMap = {};
+  for (const recordId of recordIds) {
+    result[recordId] = await getRecordAudit({
+      recordId,
+      dataDb,
+    });
+  }
 }
 
 /**

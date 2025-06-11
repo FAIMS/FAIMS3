@@ -141,7 +141,6 @@ describe('test internals', () => {
           });
         })
         .then(audit => {
-          console.log(audit);
           expect(audit.length).toBeGreaterThan(1);
 
           // now update the record and recompute the audit
