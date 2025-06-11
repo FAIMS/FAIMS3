@@ -32,6 +32,10 @@ import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
 import FieldWrapper from './fieldWrapper';
+import MarkdownIt from 'markdown-it';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
+
+const md = new MarkdownIt({breaks: true, html: false});
 
 /**
  * Base properties for multi-select components
@@ -133,18 +137,18 @@ export const ExpandedChecklist = ({
               />
             }
             label={
-              <Box
-                component="span"
-                sx={{
+              <span
+                style={{
                   display: 'contents',
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
                   lineHeight: '1.8rem',
                   paddingTop: '4px',
                 }}
-              >
-                {option.label}
-              </Box>
+                dangerouslySetInnerHTML={{
+                  __html: contentToSanitizedHtml(option.label),
+                }}
+              />
             }
             sx={{
               alignItems: 'center',
@@ -234,7 +238,19 @@ export const MuiMultiSelect = ({
             }}
           >
             <Checkbox checked={value.includes(option.value)} />
-            <ListItemText primary={option.label} />
+            <ListItemText
+              primary={
+                <span
+                  style={{
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: contentToSanitizedHtml(option.label),
+                  }}
+                />
+              }
+            />{' '}
           </MenuItem>
         ))}
       </Select>
