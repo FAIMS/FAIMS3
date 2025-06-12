@@ -27,6 +27,7 @@ import {
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getRecordListAudit,
   getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
@@ -34,6 +35,7 @@ import {
   PostCreateNotebookResponse,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
+  PostSyncedInputSchema,
   projectRoleToAction,
   ProjectUIModel,
   PutChangeNotebookStatusInputSchema,
@@ -45,7 +47,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
-import {z} from 'zod';
+import {record, z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
@@ -314,6 +316,45 @@ api.put(
     await changeNotebookStatus({projectId, status});
     res.sendStatus(200);
     return;
+  }
+);
+
+// POST to check sync status of a set of records
+api.post(
+  '/:id/sync-status/',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_MY_PROJECT_RECORDS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PostSyncedInputSchema,
+  }),
+  async (req, res) => {
+    const {id: projectId} = req.params;
+    const {record_map} = req.body;
+
+    const dataDb = await getDataDb(projectId);
+
+    // compute hashes from our database for these records
+    const recordIds = Object.getOwnPropertyNames(record_map);
+    const localHashes = await getRecordListAudit({
+      recordIds,
+      dataDb,
+    });
+    // compare these hashes with the payload
+    const result: Record<string, boolean> = {};
+    for (const recordId of recordIds) {
+      const localHash = localHashes[recordId];
+      result[recordId] = record_map[recordId] === localHash;
+    }
+
+    res.json({
+      synced: result,
+    });
   }
 );
 

@@ -890,6 +890,7 @@ export async function getRecordListAudit({
       dataDb,
     });
   }
+  return result;
 }
 
 /**
