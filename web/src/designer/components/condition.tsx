@@ -17,12 +17,14 @@ import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import {
   Button,
+  Checkbox,
   Dialog,
   Divider,
   FormControl,
   Grid,
   IconButton,
   InputLabel,
+  ListItemText,
   MenuItem,
   Select,
   Stack,
@@ -838,10 +840,22 @@ export const FieldConditionControl = (props: ConditionProps) => {
               label="Value"
               value={selectedValues}
               onChange={e => updateValue(e.target.value)}
+              // Render selected values as labels
+              renderValue={selected => {
+                const selectedLabels = (selected as string[]).map(value => {
+                  const option = possibleOptions.find(
+                    (opt: any) => opt.value === value
+                  );
+                  return option ? option.label : value;
+                });
+                return selectedLabels.join(', ');
+              }}
             >
+              // Render option with a checkbox
               {possibleOptions.map((opt: any) => (
                 <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
+                  <Checkbox checked={selectedValues.indexOf(opt.value) > -1} />
+                  <ListItemText primary={opt.label} />
                 </MenuItem>
               ))}
             </Select>
