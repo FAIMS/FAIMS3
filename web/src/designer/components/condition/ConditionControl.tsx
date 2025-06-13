@@ -235,20 +235,38 @@ export const FieldConditionControl = (props: ConditionProps) => {
 
   const updateField = (value: string) => {
     const newFieldDef = allFields[value] ?? null;
-    if (newFieldDef && newFieldDef['component-name'] === 'Checkbox') {
-      updateCondition({
-        field: value,
-        operator: 'equal',
-        value: true,
-      });
-    } else {
-      const isPredefinedOptionsField =
-        newFieldDef && isPredefinedOptions(newFieldDef);
 
-      let newValue: string | string[] = '';
-      if (isPredefinedOptionsField) {
+    const allowedOperators = newFieldDef
+      ? (() => {
+          const cName = newFieldDef['component-name'];
+          if (cName === 'MultiSelect')
+            return [
+              'contains-one-of',
+              'does-not-contain-any-of',
+              'contains-all-of',
+              'does-not-contain-all-of',
+            ];
+          if (cName === 'Checkbox') return ['equal'];
+          if (isPredefinedOptions(newFieldDef)) return ['equal', 'not-equal'];
+          return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
+        })()
+      : [];
+
+    let newOperator = condition.operator;
+    if (
+      allowedOperators.length > 0 &&
+      !allowedOperators.includes(newOperator)
+    ) {
+      newOperator = allowedOperators[0];
+    }
+
+    let newValue: any = '';
+    if (newFieldDef) {
+      if (newFieldDef['component-name'] === 'Checkbox') {
+        newValue = true;
+      } else if (isPredefinedOptions(newFieldDef)) {
         const options =
-          newFieldDef?.['component-parameters']?.ElementProps?.options ?? [];
+          newFieldDef['component-parameters']?.ElementProps?.options ?? [];
         if (options.length > 0) {
           if (newFieldDef['component-name'] === 'MultiSelect') {
             newValue = [options[0].value];
@@ -257,13 +275,13 @@ export const FieldConditionControl = (props: ConditionProps) => {
           }
         }
       }
-
-      updateCondition({
-        field: value,
-        operator: isPredefinedOptionsField ? 'equal' : condition.operator,
-        value: newValue,
-      });
     }
+
+    updateCondition({
+      field: value,
+      operator: newOperator,
+      value: newValue,
+    });
   };
 
   const updateOperator = (value: string) => {
