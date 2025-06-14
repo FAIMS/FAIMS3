@@ -383,7 +383,6 @@ export const FieldConditionControl = (props: ConditionProps) => {
                 return selectedLabels.join(', ');
               }}
             >
-              // Render option with a checkbox
               {possibleOptions.map((opt: any) => (
                 <MenuItem key={opt.value} value={opt.value}>
                   <Checkbox checked={selectedValues.indexOf(opt.value) > -1} />
