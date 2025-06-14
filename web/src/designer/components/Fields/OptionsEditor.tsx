@@ -60,7 +60,11 @@ import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
-import {findOptionReferences, updateConditionReferences} from '../condition';
+import {
+  findOptionReferences,
+  updateConditionReferences,
+} from '../condition/utils';
+
 import {
   fieldUpdated,
   sectionConditionChanged,
