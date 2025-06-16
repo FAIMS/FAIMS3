@@ -22,6 +22,7 @@ if test -f /usr/libexec/PlistBuddy; then
   /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" ./ios/App/App/Info.plist
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLSchemes:0 $VITE_APP_ID" ./ios/App/App/Info.plist
   /usr/libexec/PlistBuddy -c "Set :CFBundleURLTypes:0:CFBundleURLName $VITE_APP_ID" ./ios/App/App/Info.plist
+  /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $VITE_APP_NAME" ./ios/App/App/Info.plist
 fi
 
 
