@@ -49,7 +49,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
   findFieldCondtionUsage,
   findInvalidConditionReferences,
-} from './condition';
+} from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
 import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';

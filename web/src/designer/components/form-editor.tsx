@@ -47,7 +47,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
 import {useLocation} from 'react-router-dom';
-import {findFormExternalUsage} from './condition';
+import {findFormExternalUsage} from './condition/utils';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import DebouncedTextField from './debounced-text-field';
 

@@ -40,12 +40,12 @@ import {
 import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {sectionDuplicated} from '../state/uiSpec-reducer';
-import {
-  ConditionModal,
-  ConditionTranslation,
-  ConditionType,
-  findSectionExternalUsage,
-} from './condition';
+
+import {ConditionModal} from './condition/ConditionModal';
+import {ConditionTranslation} from './condition/ConditionTranslation';
+import {findSectionExternalUsage} from './condition/utils';
+import {ConditionType} from './condition/types';
+
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FieldList} from './field-list';
