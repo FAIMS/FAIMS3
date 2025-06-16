@@ -47,7 +47,7 @@ import {
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
-import {record, z} from 'zod';
+import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
@@ -352,6 +352,7 @@ api.post(
       result[recordId] = record_map[recordId] === localHash;
     }
 
+    // TODO type this...
     res.json({
       synced: result,
     });

@@ -29,7 +29,6 @@ import {
   GetListAllUsersResponseSchema,
   GetNotebookResponse,
   getRecordListAudit,
-  getRecords,
   ProjectStatus,
   queryCouch,
   RECORDS_INDEX,
