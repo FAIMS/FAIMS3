@@ -328,11 +328,18 @@ export type PostAddNotebookUserInput = z.infer<
 >;
 
 // POST check record sync status
-export const PostSyncedInputSchema = z.object({
+export const PostRecordStatusInputSchema = z.object({
   // a map from record ids to hashes
   record_map: z.record(z.string(), z.string()),
 });
-export type PostSyncedInput = z.infer<typeof PostSyncedInputSchema>;
+export type PostRecordStatusInput = z.infer<typeof PostRecordStatusInputSchema>;
+
+export const PostRecordStatusResponseSchema = z.object({
+  status: z.record(z.string(), z.boolean()),
+});
+export type PostRecordStatusResponse = z.infer<
+  typeof PostRecordStatusResponseSchema
+>;
 
 // Post generate random records RandomRecords input
 export const PostRandomRecordsInputSchema = z.object({count: z.number()});

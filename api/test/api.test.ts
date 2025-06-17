@@ -624,7 +624,7 @@ describe('API tests', () => {
       .expect(200)
       .then(response => {
         for (const recordId of recordIds) {
-          expect(response.body.synced[recordId]).to.be.true;
+          expect(response.body.status[recordId]).to.be.true;
         }
       });
 
@@ -639,8 +639,8 @@ describe('API tests', () => {
       })
       .expect(200)
       .then(response => {
-        expect(response.body.synced[recordIds[0]]).to.be.false;
-        expect(response.body.synced[recordIds[1]]).to.be.true;
+        expect(response.body.status[recordIds[0]]).to.be.false;
+        expect(response.body.status[recordIds[1]]).to.be.true;
       });
   });
 

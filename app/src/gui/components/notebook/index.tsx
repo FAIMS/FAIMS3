@@ -35,6 +35,8 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -147,6 +149,16 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   if (!uiSpecification) {
     return <CircularLoading label="Loading" />;
   }
+
+  const activeUser = useAppSelector(selectActiveUser);
+
+  // get the sync status of records in this project
+  const recordStatus = useRecordAudit({
+    projectId: project.projectId,
+    listingId: project.serverId,
+    username: activeUser?.username ?? '',
+  });
+  console.log('recordStatus', recordStatus.data);
 
   // This manages the tab using a query string arg
   const {params, setParam} = useQueryParams<{tab: TabIndexLabel}>({
@@ -356,6 +368,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}
             recordLabel={recordLabel}
+            recordStatus={recordStatus.data}
           />
         </TabPanel>
         {
@@ -387,6 +400,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
             handleQueryFunction={setQuery}
             handleRefresh={forceRecordRefresh}
             recordLabel={recordLabel}
+            recordStatus={recordStatus.data}
           />
         </TabPanel>
 

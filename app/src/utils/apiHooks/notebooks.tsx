@@ -1,6 +1,6 @@
-import {PostCreateNotebookResponse} from '@faims3/data-model';
-import {useMutation, UseMutationOptions} from '@tanstack/react-query';
-import {createNotebookFromTemplate} from '../apiOperations/notebooks';
+import {getRecordListAudit, PostCreateNotebookResponse} from '@faims3/data-model';
+import {useMutation, UseMutationOptions, useQuery} from '@tanstack/react-query';
+import {createNotebookFromTemplate, validateSyncStatus} from '../apiOperations/notebooks';
 import {checkAllRequired} from '../helpers';
 
 export interface UseCreateNotebookFromTemplateProps {
@@ -51,4 +51,28 @@ export const useCreateNotebookFromTemplate = (
     ready: true,
     mutation,
   };
+};
+
+export const useRecordAudit = ({
+  projectId,
+  listingId,
+  username,
+}: {
+  projectId: string;
+  listingId: string;
+  username: string;
+}) => {
+  const N = 1; // refetch time in minutes - maybe configure in env?
+  return useQuery({
+    queryKey: ['record-audit', projectId, listingId, username],
+    queryFn: async () => {
+      return await validateSyncStatus({
+        projectId,
+        listingId,
+        username,
+      });
+    },
+    // refetch every N minutes
+    refetchInterval: N * 60000,
+  });
 };

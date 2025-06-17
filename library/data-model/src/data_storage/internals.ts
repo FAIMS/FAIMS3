@@ -819,8 +819,9 @@ async function createAuditHash(
     .sort((a, b) => a.id.localeCompare(b.id));
 
   // Create canonical JSON representation
-  const canonicalJson = JSON.stringify(sortedAudit);
+  const canonicalJson = JSON.stringify(sortedAudit, null, 2);
 
+  //console.log('canonical json', canonicalJson);
   // Return SHA-256 hash
   return await createHash(canonicalJson);
 }
@@ -849,9 +850,14 @@ export async function getRecordAudit({
     typeField: RECORD_TYPE_FIELD,
   });
   if (record) {
+    // get all documents relating to this record except
+    // attachments since they may not be present on the client
     const parts = await dataDb.find({
       selector: {
         record_id: recordId,
+        attach_format_version: {
+          $exists: false,
+        },
       },
       fields: ['_id', '_rev'],
       limit: 1000,
@@ -868,7 +874,8 @@ export async function getRecordAudit({
     ];
     return createAuditHash(audit);
   } else {
-    throw new Error(`Record ${recordId} not found`);
+    // record not found, so we generate a fixed hash which will not match
+    return 'record not found';
   }
 }
 

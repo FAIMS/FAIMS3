@@ -35,7 +35,7 @@ import {
   PostCreateNotebookResponse,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
-  PostSyncedInputSchema,
+  PostRecordStatusInputSchema,
   projectRoleToAction,
   ProjectUIModel,
   PutChangeNotebookStatusInputSchema,
@@ -331,7 +331,7 @@ api.post(
   }),
   processRequest({
     params: z.object({id: z.string()}),
-    body: PostSyncedInputSchema,
+    body: PostRecordStatusInputSchema,
   }),
   async (req, res) => {
     const {id: projectId} = req.params;
@@ -349,12 +349,13 @@ api.post(
     const result: Record<string, boolean> = {};
     for (const recordId of recordIds) {
       const localHash = localHashes[recordId];
+      console.log('#', recordId, localHash, record_map[recordId]);
       result[recordId] = record_map[recordId] === localHash;
     }
 
     // TODO type this...
     res.json({
-      synced: result,
+      status: result,
     });
   }
 );
