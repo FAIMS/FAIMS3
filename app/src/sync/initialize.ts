@@ -28,7 +28,8 @@ import {
   rebuildDbs,
 } from '../context/slices/projectSlice';
 import {MapTileDatabase} from '../gui/components/map/tile-source';
-
+import pouchdbDebug from 'pouchdb-debug';
+PouchDB.plugin(pouchdbDebug);
 /**
  *
  * @returns creates all project PouchDB objects and metadata
