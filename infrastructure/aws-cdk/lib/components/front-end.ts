@@ -335,6 +335,8 @@ export class FaimsFrontEnd extends Construct {
       // FAIMS /app URL (uses first domain if multiple provided)
       VITE_APP_URL: this.faimsAppUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
+      VITE_THEME: props.uiTheme,
+      VITE_WEBSITE_TITLE: 'Control Centre',
     };
 
     // Setup a deployment into this bucket with static files
