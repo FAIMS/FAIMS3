@@ -331,6 +331,7 @@ export class FaimsFrontEnd extends Construct {
     const environment: {[key: string]: string} = {
       VITE_WEB_URL: `https://${props.webDomainName}`,
       VITE_API_URL: props.conductorUrl,
+      VITE_APP_NAME: props.appName,
       // FAIMS /app URL (uses first domain if multiple provided)
       VITE_APP_URL: this.faimsAppUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
