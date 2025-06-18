@@ -821,7 +821,7 @@ async function createAuditHash(
   // Create canonical JSON representation
   const canonicalJson = JSON.stringify(sortedAudit, null, 2);
 
-  //console.log('canonical json', canonicalJson);
+  // console.log('canonical json', canonicalJson);
   // Return SHA-256 hash
   return await createHash(canonicalJson);
 }

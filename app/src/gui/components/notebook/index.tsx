@@ -158,7 +158,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     listingId: project.serverId,
     username: activeUser?.username ?? '',
   });
-  console.log('recordStatus', recordStatus.data);
 
   // This manages the tab using a query string arg
   const {params, setParam} = useQueryParams<{tab: TabIndexLabel}>({

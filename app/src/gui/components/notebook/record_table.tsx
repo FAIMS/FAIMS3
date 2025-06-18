@@ -22,7 +22,6 @@ import {
   PostRecordStatusResponse,
   ProjectUIModel,
   ProjectUIViewsets,
-  RecordAuditMap,
   RecordMetadata,
 } from '@faims3/data-model';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -872,7 +871,6 @@ export function RecordsTable(props: RecordsTableProps) {
     },
     [history, project_id]
   );
-  console.log('visible Rows', visibleRows);
 
   return (
     <Box component={Paper} elevation={3} sx={styles.wrapper}>

@@ -63,7 +63,6 @@ export const validateSyncStatus = async ({
   const recordIds = records.map(r => r._id);
   const audit = await getRecordListAudit({recordIds, dataDb});
 
-  console.log('fetched audit');
   const response = await FetchManager.post<PostRecordStatusResponse>(
     listingId,
     username,
