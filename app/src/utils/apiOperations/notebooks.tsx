@@ -59,6 +59,11 @@ export const validateSyncStatus = async ({
 }): Promise<RecordStatus> => {
   // get the list of record ids from the project
   const dataDb = await getDataDB(projectId);
+  const isOnline = window.navigator.onLine;
+  const emptyStatus = {
+    status: {},
+    recordHashes: {},
+  };
 
   // get a list of record ids from the project
   const records = await queryCouch({
@@ -85,30 +90,50 @@ export const validateSyncStatus = async ({
     filteredAudit = audit;
   }
 
-  if (Object.getOwnPropertyNames(audit).length > 0) {
-    const response = await FetchManager.post<PostRecordStatusResponse>(
-      listingId,
-      username,
-      `/api/notebooks/${projectId}/sync-status/`,
-      {record_map: filteredAudit} as PostRecordStatusInput
-    );
-
-    // we need to merge the returned value with the
-    // current status
-    const status = {
-      ...response.status,
-      ...currentStatus?.status,
-    };
-    return {
-      status: status,
-      recordHashes: audit,
-    };
-  } else if (currentStatus) {
-    return currentStatus;
+  console.log('filtered audit', filteredAudit);
+  console.log('online', isOnline);
+  // if we're online, do the request
+  if (isOnline) {
+    if (Object.getOwnPropertyNames(audit).length > 0) {
+      const response = await FetchManager.post<PostRecordStatusResponse>(
+        listingId,
+        username,
+        `/api/notebooks/${projectId}/sync-status/`,
+        {record_map: filteredAudit} as PostRecordStatusInput
+      );
+      console.log('response', response);
+      // we need to merge the returned value with the
+      // current status
+      const status = {
+        ...response.status,
+        ...currentStatus?.status,
+      };
+      console.log('status', status);
+      return {
+        status: status,
+        recordHashes: audit,
+      };
+    } else if (currentStatus) {
+      return currentStatus;
+    } else {
+      return emptyStatus;
+    }
   } else {
-    return {
-      status: {},
-      recordHashes: {},
-    };
+    // not online
+    console.log('not online so...');
+    if (currentStatus) {
+      // take the current status and for any record that doesn't now
+      // have the same hash, set the status to false
+      const offlineStatus = Object.assign({}, currentStatus.status);
+      for (const recordId of recordIds) {
+        if (audit[recordId] !== currentStatus.recordHashes[recordId]) {
+          offlineStatus[recordId] = false;
+        }
+      }
+      return {
+        status: offlineStatus,
+        recordHashes: audit,
+      };
+    } else return emptyStatus;
   }
 };

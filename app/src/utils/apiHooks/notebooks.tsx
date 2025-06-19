@@ -89,6 +89,8 @@ export const useRecordAudit = ({
         currentStatus,
       });
     },
+    // always try even if we're offline
+    networkMode: 'always',
     // refetch every N minutes
     refetchInterval: N * 60000,
   });
