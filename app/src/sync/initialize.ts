@@ -37,6 +37,8 @@ PouchDB.plugin(pouchdbDebug);
  */
 export async function initialize() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
+  else PouchDB.debug.disable();
+
   // Get current state/dispatch const state = store.getState();
 
   // Rebuild all of the databases (synchronously)
