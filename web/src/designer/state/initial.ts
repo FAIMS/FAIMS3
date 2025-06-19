@@ -89,7 +89,7 @@ export type FieldType = {
   condition?: ConditionType | null;
   persistent?: boolean;
   displayParent?: boolean;
-
+  designerIdentifier?: string;
   humanReadableName?: string;
   category?: string;
 
