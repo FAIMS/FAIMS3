@@ -615,7 +615,8 @@ describe('API tests', () => {
     const myAudit = await getRecordListAudit({recordIds, dataDb});
 
     // now we send a request to the api
-    await request(app).post(`/api/notebooks/${projectId}/sync-status`)
+    await request(app)
+      .post(`/api/notebooks/${projectId}/sync-status`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({
@@ -631,7 +632,8 @@ describe('API tests', () => {
     // change one of the audit hashes to get a mismatch
     myAudit[recordIds[0]] = '1234567890';
 
-    await request(app).post(`/api/notebooks/${projectId}/sync-status`)
+    await request(app)
+      .post(`/api/notebooks/${projectId}/sync-status`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .send({

@@ -1,7 +1,4 @@
-import {
-  getRecordListAudit,
-  PostCreateNotebookResponse,
-} from '@faims3/data-model';
+import {PostCreateNotebookResponse} from '@faims3/data-model';
 import {
   QueryFunctionContext,
   useMutation,
@@ -15,7 +12,6 @@ import {
   validateSyncStatus,
 } from '../apiOperations/notebooks';
 import {checkAllRequired} from '../helpers';
-
 export interface UseCreateNotebookFromTemplateProps {
   // Template to create notebook from
   templateId?: string;

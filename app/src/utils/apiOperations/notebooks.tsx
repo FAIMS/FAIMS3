@@ -2,7 +2,6 @@
  * This module is responsible for interacting with notebooks in the API.
  */
 
-
 import {
   getDataDB,
   getRecordListAudit,
@@ -68,7 +67,7 @@ export const validateSyncStatus = async ({
   });
   const recordIds = records.map(r => r._id);
   const audit = await getRecordListAudit({recordIds, dataDb});
-  let filteredAudit: Record<string, string>= {};
+  let filteredAudit: Record<string, string> = {};
 
   // now filter any records that we know are good from the last
   // audit
