@@ -1,6 +1,19 @@
-import {getRecordListAudit, PostCreateNotebookResponse} from '@faims3/data-model';
-import {useMutation, UseMutationOptions, useQuery} from '@tanstack/react-query';
-import {createNotebookFromTemplate, validateSyncStatus} from '../apiOperations/notebooks';
+import {
+  getRecordListAudit,
+  PostCreateNotebookResponse,
+} from '@faims3/data-model';
+import {
+  QueryFunctionContext,
+  useMutation,
+  UseMutationOptions,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import {
+  createNotebookFromTemplate,
+  RecordStatus,
+  validateSyncStatus,
+} from '../apiOperations/notebooks';
 import {checkAllRequired} from '../helpers';
 
 export interface UseCreateNotebookFromTemplateProps {
@@ -53,6 +66,10 @@ export const useCreateNotebookFromTemplate = (
   };
 };
 
+/**
+ * Query hook to get the sync status of a set of records
+ * from a project
+ */
 export const useRecordAudit = ({
   projectId,
   listingId,
@@ -62,17 +79,44 @@ export const useRecordAudit = ({
   listingId: string;
   username: string;
 }) => {
-  const N = 1; // refetch time in minutes - maybe configure in env?
+  const N = 2; // refetch time in minutes - maybe configure in env?
+  const queryKey = ['record-audit', projectId, listingId, username];
   return useQuery({
-    queryKey: ['record-audit', projectId, listingId, username],
-    queryFn: async () => {
+    queryKey,
+    queryFn: async (context: QueryFunctionContext) => {
+      const currentStatus: RecordStatus | undefined =
+        context.client.getQueryData(queryKey);
       return await validateSyncStatus({
         projectId,
         listingId,
         username,
+        currentStatus,
       });
     },
     // refetch every N minutes
     refetchInterval: N * 60000,
   });
+};
+
+/**
+ * Invalidate the record audit cache to force a re-fetch
+ * of the record audit status
+ * Needs to be called from inside a functional component
+ * so not easy to use just now
+ * TODO find where to call this when we save a record
+ */
+export const invalidateRecordAudit = ({
+  projectId,
+  listingId,
+  username,
+}: {
+  projectId: string;
+  listingId: string;
+  username: string;
+}) => {
+  // Get QueryClient from the context
+  const queryClient = useQueryClient();
+
+  const queryKey = ['record-audit', projectId, listingId, username];
+  return queryClient.invalidateQueries({queryKey});
 };
