@@ -349,7 +349,6 @@ api.post(
     const result: Record<string, boolean> = {};
     for (const recordId of recordIds) {
       const localHash = localHashes[recordId];
-      console.log('#', recordId, localHash, record_map[recordId]);
       result[recordId] = record_map[recordId] === localHash;
     }
 
