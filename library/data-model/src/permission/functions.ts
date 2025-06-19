@@ -1,3 +1,4 @@
+import {COUCH_ADMIN_ROLE_NAME} from '../constants';
 import {roleGrantsAction} from './helpers';
 import {
   Action,
@@ -443,6 +444,8 @@ export function necessaryActionToCouchRoleList({
       );
     }
   });
-
+  // Finally, add the global admin role
+  roles.push(COUCH_ADMIN_ROLE_NAME);
+  console.log('roles', roles);
   return roles;
 }
