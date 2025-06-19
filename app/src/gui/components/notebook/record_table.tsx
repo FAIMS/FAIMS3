@@ -807,7 +807,7 @@ const useTableRows = (
         return r.conflicts;
       }),
     };
-  }, [rows, visibleTypes]);
+  }, [rows, visibleTypes, recordStatus]);
 };
 
 // ============================================================================
