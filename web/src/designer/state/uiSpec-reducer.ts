@@ -16,7 +16,7 @@ import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
-import {uuidv4} from '@mdxeditor/editor';
+import {v4 as uuidv4} from 'uuid';
 import {
   slugify,
   getViewSetForView,
@@ -164,7 +164,7 @@ export const uiSpecificationReducer = createSlice({
         let fieldLabel = slugify(newFieldName);
         let N = 1;
         while (fieldLabel in state.fields) {
-          fieldLabel = slugify(fieldName + ' ' + N);
+          fieldLabel = slugify(newFieldName + ' ' + N);
           N += 1;
         }
 

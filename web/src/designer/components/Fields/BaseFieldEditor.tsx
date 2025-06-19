@@ -25,14 +25,16 @@ import {
   FormControlLabel,
   Grid,
   IconButton,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import {debounce} from 'lodash';
-import {useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {
   ConditionModal,
   ConditionTranslation,
@@ -66,10 +68,45 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
   );
+  const uiSpec = useAppSelector(
+    state => state.notebook['ui-specification'].present
+  );
   const dispatch = useAppDispatch();
-  const ref = useRef<MDXEditorMethods>(null);
+  const mdxEditorRef = useRef<MDXEditorMethods>(null);
 
-  // Derive the field label from possible alternatives
+  const idInputRef = useRef<HTMLInputElement>(null);
+  const isMounted = useRef(false);
+  const [localFieldName, setLocalFieldName] = useState(fieldName);
+
+  const debouncedRename = useCallback(
+    debounce((newFieldName: string) => {
+      const viewId = getViewIDForField(uiSpec, fieldName);
+      if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
+        dispatch({
+          type: 'ui-specification/fieldRenamed',
+          payload: {viewId, fieldName, newFieldName},
+        });
+      }
+    }, 500),
+    [dispatch, uiSpec, fieldName]
+  );
+
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalFieldName(e.target.value);
+    debouncedRename(e.target.value);
+  };
+
+  // Restore focus on the ID input when the field id changes
+  useEffect(() => {
+    if (isMounted.current) {
+      idInputRef.current?.focus();
+    } else {
+      isMounted.current = true;
+    }
+
+    setLocalFieldName(fieldName);
+  }, [fieldName]);
+
   const getFieldLabel = () => {
     return (
       field['component-parameters']?.label ?? field['component-parameters'].name
@@ -170,7 +207,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
       <Grid item xs={12}>
         <Card variant="outlined" sx={{p: 2}}>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
               <DebouncedTextField
                 fullWidth
                 label="Label"
@@ -178,7 +215,16 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 onChange={e => updateProperty('label', e.target.value)}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                label="Field ID"
+                value={localFieldName}
+                onChange={handleIdChange}
+                inputRef={idInputRef}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
               <DebouncedTextField
                 fullWidth
                 label="Helper Text"
@@ -235,7 +281,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                               500,
                               {leading: false, trailing: true}
                             )}
-                            editorRef={ref}
+                            editorRef={mdxEditorRef}
                           />
                           <Alert severity="info" sx={{mt: 2}}>
                             This markdown-based helper will appear in a dialog
