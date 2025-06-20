@@ -35,6 +35,9 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import CloudIcon from '@mui/icons-material/Cloud';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
+import PendingIcon from '@mui/icons-material/Pending';
 import {useTheme} from '@mui/material/styles';
 import {
   DataGrid,
@@ -181,7 +184,7 @@ function getDataForColumn({
         return uiSpecification.viewsets[record.type]?.label ?? record.type;
 
       case 'SYNC_STATUS':
-        return record.synced ? '✅' : '❌';
+        return record.synced ? 'synced' : 'pending';
 
       default:
         return undefined;
@@ -300,15 +303,15 @@ function buildColumnFromSystemField({
         ...baseColumn,
         type: 'string',
         renderCell: (params: GridCellParams) => {
-          const value = getDataForColumn({
+          const sync = getDataForColumn({
             record: params.row,
             column: columnType,
             uiSpecification,
           });
-          return (
-            <Typography>
-              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
-            </Typography>
+          return sync === 'synced' ? (
+            <CloudDoneIcon color="success"></CloudDoneIcon>
+          ) : (
+            <PendingIcon color="warning"></PendingIcon>
           );
         },
       };
@@ -528,7 +531,12 @@ function buildVerticalStackColumn({
           record: params.row,
           uiSpecification,
         });
-        kvp['Sync Status'] = sync ?? CONSTANTS.MISSING_DATA_PLACEHOLDER;
+        kvp['Sync Status'] =
+          sync === 'synced' ? (
+            <CloudDoneIcon color="success"></CloudDoneIcon>
+          ) : (
+            <PendingIcon color="warning"></PendingIcon>
+          );
 
         return <KeyValueTable data={kvp} />;
       } catch (e) {
