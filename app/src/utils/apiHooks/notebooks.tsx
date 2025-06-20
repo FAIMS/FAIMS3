@@ -6,12 +6,9 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import {
-  createNotebookFromTemplate,
-  RecordStatus,
-  validateSyncStatus,
-} from '../apiOperations/notebooks';
+import {createNotebookFromTemplate} from '../apiOperations/notebooks';
 import {checkAllRequired} from '../helpers';
+import {RecordStatus, validateSyncStatus} from '../recordAudit';
 export interface UseCreateNotebookFromTemplateProps {
   // Template to create notebook from
   templateId?: string;
@@ -73,7 +70,7 @@ export const useRecordAudit = ({
 }: {
   projectId: string;
   listingId: string;
-  username: string;
+  username: string | undefined;
 }) => {
   const N = 2; // refetch time in minutes - maybe configure in env?
   const queryKey = ['record-audit', projectId, listingId, username];

@@ -36,6 +36,7 @@ import {
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
   PostRecordStatusInputSchema,
+  PostRecordStatusResponse,
   projectRoleToAction,
   ProjectUIModel,
   PutChangeNotebookStatusInputSchema,
@@ -326,7 +327,7 @@ api.post(
   '/:id/sync-status/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
-    action: Action.READ_MY_PROJECT_RECORDS,
+    action: Action.AUDIT_ALL_PROJECT_RECORDS,
     getResourceId(req) {
       return req.params.id;
     },
@@ -335,7 +336,7 @@ api.post(
     params: z.object({id: z.string()}),
     body: PostRecordStatusInputSchema,
   }),
-  async (req, res) => {
+  async (req, res: Response<PostRecordStatusResponse>) => {
     const {id: projectId} = req.params;
     const {record_map} = req.body;
 
@@ -354,7 +355,6 @@ api.post(
       result[recordId] = record_map[recordId] === localHash;
     }
 
-    // TODO type this...
     res.json({
       status: result,
     });

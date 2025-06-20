@@ -41,6 +41,9 @@ export enum Action {
   // Read records for the project which are not mine
   READ_ALL_PROJECT_RECORDS = 'READ_ALL_PROJECT_RECORDS',
 
+  // Create checksums of records for sync audit
+  AUDIT_ALL_PROJECT_RECORDS = 'AUDIT_ALL_PROJECT_RECORDS',
+
   // Write a new record
   CREATE_PROJECT_RECORD = 'CREATE_PROJECT_RECORD',
 
@@ -252,6 +255,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     name: 'Read My Project Records',
     description:
       'View records for a project which were created by the current user',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.AUDIT_ALL_PROJECT_RECORDS]: {
+    name: 'Audit All Project Records',
+    description: 'Create an audit record of all records for a project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -894,6 +903,7 @@ export const roleActions: Record<
       Action.READ_MY_PROJECT_RECORDS,
       Action.EDIT_MY_PROJECT_RECORDS,
       Action.DELETE_MY_PROJECT_RECORDS,
+      Action.AUDIT_ALL_PROJECT_RECORDS,
     ],
   },
   [Role.PROJECT_CONTRIBUTOR]: {
