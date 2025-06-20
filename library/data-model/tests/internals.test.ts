@@ -25,6 +25,7 @@ import {
   getHRID,
   getRecord,
   getRecordAudit,
+  getRecordListAudit,
   getRevision,
 } from '../src/data_storage/internals';
 import {callbackObject, cleanDataDBS, sampleUiSpecForViewId} from './mocks';
@@ -132,30 +133,32 @@ describe('test internals', () => {
 
     const dataDb = await getDataDB(project_id);
 
+    let recordId = '';
     return upsertFAIMSData({dataDb, record: doc}).then(revisionId => {
       return getRevision({dataDb, revisionId})
         .then(revision => {
-          return getRecordAudit({
+          recordId = revision.record_id;
+          return getRecordListAudit({
             dataDb: dataDb,
-            recordId: revision.record_id,
+            recordIds: [revision.record_id],
           });
         })
         .then(audit => {
-          expect(audit.length).toBeGreaterThan(1);
+          expect(audit[recordId]).toBeDefined();
 
           // now update the record and recompute the audit
           doc.data['age'] = 11;
           return upsertFAIMSData({dataDb, record: doc}).then(revisionId => {
             return getRevision({dataDb, revisionId})
               .then(revision => {
-                return getRecordAudit({
+                return getRecordListAudit({
                   dataDb: dataDb,
-                  recordId: revision.record_id,
+                  recordIds: [revision.record_id],
                 });
               })
               .then(second_audit => {
-                expect(second_audit.length).toBeGreaterThan(1);
-                expect(second_audit).not.toEqual(audit);
+                expect(second_audit[recordId]).toBeDefined();
+                expect(second_audit[recordId]).not.toEqual(audit[recordId]);
               });
           });
         });

@@ -223,6 +223,8 @@ export const APINotebookGetSchema = z.object({
   status: z.nativeEnum(ProjectStatus),
   // Name of the notebook!
   name: z.string(),
+  // optional count of number of records
+  recordCount: z.number().optional(),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 

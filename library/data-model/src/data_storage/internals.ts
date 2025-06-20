@@ -827,58 +827,16 @@ async function createAuditHash(
 }
 
 /**
- * Generate an audit for a record.
- * This returns a list of all document ids and revision ids for documents
- * making up this record.  All frevs, avps and attachment documents.
+ * Generate an audit for a set of records.
+ * Based on a list of all document ids and revision ids for documents
+ * making up each record.  All frevs, avps but not attachment documents since
+ * they may not be present on the client.
+ * We then create a hash of the audit data to use for sync checking.
  *
  * We can then use this in the client to verify that we have a complete and
  * up to date copy of the record on the server.
  *
  */
-export async function getRecordAudit({
-  recordId,
-  dataDb,
-}: {
-  recordId: RecordID;
-  dataDb: DataDbType;
-}) {
-  // need to get the record itself and then query for all
-  // documents that reference this record ID
-  const record = await getCouchDocument<EncodedRecord>({
-    db: dataDb,
-    id: recordId,
-    typeField: RECORD_TYPE_FIELD,
-  });
-  if (record) {
-    // get all documents relating to this record except
-    // attachments since they may not be present on the client
-    const parts = await dataDb.find({
-      selector: {
-        record_id: recordId,
-        attach_format_version: {
-          $exists: false,
-        },
-      },
-      fields: ['_id', '_rev'],
-      limit: 1000,
-    });
-    const audit = [
-      {
-        id: recordId,
-        rev: record._rev,
-      },
-      ...parts.docs.map(doc => ({
-        id: doc._id,
-        rev: doc._rev,
-      })),
-    ];
-    return createAuditHash(audit);
-  } else {
-    // record not found, so we generate a fixed hash which will not match
-    return 'record not found';
-  }
-}
-
 export type RecordAuditMap = {
   [recordId: string]: string;
 };
@@ -889,14 +847,80 @@ export async function getRecordListAudit({
 }: {
   recordIds: RecordID[];
   dataDb: DataDbType;
-}) {
-  const result: RecordAuditMap = {};
-  for (const recordId of recordIds) {
-    result[recordId] = await getRecordAudit({
-      recordId,
-      dataDb,
+}): Promise<RecordAuditMap> {
+  // Early return for empty input
+  if (!recordIds || recordIds.length === 0) {
+    return {};
+  }
+
+  // Batch fetch all records at once
+  const recordsResult = await dataDb.find({
+    selector: {
+      _id: {
+        $in: recordIds,
+      },
+    },
+    fields: ['_id', '_rev'],
+    limit: recordIds.length + 10,
+  });
+
+  // Batch fetch all related documents (revisions, AVPs) in one query
+  const relatedDocsResult = await dataDb.find({
+    selector: {
+      record_id: {
+        $in: recordIds,
+      },
+      attach_format_version: {
+        $exists: false,
+      },
+    },
+    fields: ['_id', '_rev', 'record_id'],
+    limit: recordIds.length * 100, // Adjust based on expected documents per record
+  });
+
+  // Group related documents by record_id
+  const relatedDocsByRecord = new Map<
+    string,
+    Array<{id: string; rev: string}>
+  >();
+
+  // Type assertion for the partial documents
+  type PartialDoc = {
+    _id: string;
+    _rev: string;
+    record_id: string;
+  };
+
+  const docs = relatedDocsResult.docs as PartialDoc[];
+
+  for (const doc of docs) {
+    const recordId = doc.record_id;
+    if (!relatedDocsByRecord.has(recordId)) {
+      relatedDocsByRecord.set(recordId, []);
+    }
+    relatedDocsByRecord.get(recordId)!.push({
+      id: doc._id,
+      rev: doc._rev,
     });
   }
+
+  // Build audit map
+  const result: RecordAuditMap = {};
+
+  for (const row of recordsResult.docs) {
+    const recordId = row._id;
+
+    const audit = [
+      {
+        id: recordId,
+        rev: row._rev,
+      },
+      ...(relatedDocsByRecord.get(recordId) || []),
+    ];
+
+    result[recordId] = await createAuditHash(audit);
+  }
+
   return result;
 }
 

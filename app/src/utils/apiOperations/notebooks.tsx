@@ -90,11 +90,9 @@ export const validateSyncStatus = async ({
     filteredAudit = audit;
   }
 
-  console.log('filtered audit', filteredAudit);
-  console.log('online', isOnline);
   // if we're online, do the request
   if (isOnline) {
-    if (Object.getOwnPropertyNames(audit).length > 0) {
+    if (Object.getOwnPropertyNames(filteredAudit).length > 0) {
       const response = await FetchManager.post<PostRecordStatusResponse>(
         listingId,
         username,
