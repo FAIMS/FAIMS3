@@ -27,6 +27,8 @@ export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
   ? capitalize(import.meta.env.VITE_NOTEBOOK_NAME)
   : 'Project';
 
+export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
+
 export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
 
 // this is where the /app will accept a ?token query string
