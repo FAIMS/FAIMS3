@@ -695,6 +695,12 @@ describe('API tests', () => {
           .expect(response => {
             // response body should be csv data
             expect(response.text).to.contain('identifier');
+            expect(response.text).to.contain('take-photo');
+            // uncertainty label on asset number
+            expect(response.text).to.contain('asset-number_questionable');
+            // annotation label for asset number
+            expect(response.text).to.contain('asset-number_difficulties');
+
             const lines = response.text.split('\n');
             lines.forEach(line => {
               if (line !== '' && !line.startsWith('identifier')) {
@@ -708,6 +714,14 @@ describe('API tests', () => {
           });
     }
   });
+
+  //identifier,record_id,revision_id,type,created_by,created,updated_by,updated,
+  // hridFORM2,hridFORM2_uncertainty,autoincrementer,autoincrementer_uncertainty,
+  // asset-number,asset-number_Questionable,element-type,
+  // take-gps-point,take-gps-point_latitude,take-gps-point_longitude,take-gps-point_accuracy,
+  // nearest-building,nearest-building_Uncertain,
+  // checkbox,condition,
+  // take-photo,element-notes,element-notes_uncertainty
 
   it('can download files as zip', async () => {
     // pull in some test data
