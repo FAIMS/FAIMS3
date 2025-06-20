@@ -446,6 +446,5 @@ export function necessaryActionToCouchRoleList({
   });
   // Finally, add the global admin role
   roles.push(COUCH_ADMIN_ROLE_NAME);
-  console.log('roles', roles);
   return roles;
 }
