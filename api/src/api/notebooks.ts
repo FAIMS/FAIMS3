@@ -54,6 +54,7 @@ import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   changeNotebookStatus,
+  countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
   generateFilenameForAttachment,
@@ -257,6 +258,7 @@ api.get(
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
         ownedByTeamId: project.ownedByTeamId,
         status: project.status,
+        recordCount: await countRecordsInNotebook(projectId),
       } satisfies GetNotebookResponse);
     } else {
       throw new Exceptions.ItemNotFoundException(
