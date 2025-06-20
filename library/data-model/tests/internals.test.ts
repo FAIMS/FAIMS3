@@ -24,7 +24,6 @@ import {Record} from '../src/types';
 import {
   getHRID,
   getRecord,
-  getRecordAudit,
   getRecordListAudit,
   getRevision,
 } from '../src/data_storage/internals';
