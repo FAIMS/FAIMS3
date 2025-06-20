@@ -81,3 +81,29 @@ export const removeInviteForProject = async ({
       },
     }
   );
+
+export const generateTestRecordsForProject = async ({
+  projectId,
+  count,
+  user,
+}: {
+  projectId: string;
+  count: number;
+  user: User;
+}) => {
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/generate`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user?.token}`,
+      },
+      body: JSON.stringify({count}),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Save failed: ${res.status} ${err}`);
+  }
+};

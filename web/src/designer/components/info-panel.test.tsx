@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import {describe, expect, test} from 'vitest';
-import {render, screen, fireEvent, act} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {InfoPanel} from './info-panel';
 
 import {store} from '../state/store';
@@ -37,7 +37,7 @@ describe('Info Panel', () => {
     );
 
     expect(screen.getByText('General Information')).toBeDefined();
-    const name = screen.getByTestId('name').querySelector('input');
+    //const name = screen.getByTestId('name').querySelector('input');
     // TODO: this is unreliable - fails on first run but passes on repeat...
     // if (name) {
     //   fireEvent.change(name, {target: {value: 'Different Name'}});

@@ -27,6 +27,7 @@ import {
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getRecordListAudit,
   getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
@@ -34,6 +35,8 @@ import {
   PostCreateNotebookResponse,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
+  PostRecordStatusInputSchema,
+  PostRecordStatusResponse,
   projectRoleToAction,
   ProjectUIModel,
   PutChangeNotebookStatusInputSchema,
@@ -52,6 +55,7 @@ import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   changeNotebookStatus,
+  countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
   generateFilenameForAttachment,
@@ -255,6 +259,7 @@ api.get(
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
         ownedByTeamId: project.ownedByTeamId,
         status: project.status,
+        recordCount: await countRecordsInNotebook(projectId),
       } satisfies GetNotebookResponse);
     } else {
       throw new Exceptions.ItemNotFoundException(
@@ -314,6 +319,45 @@ api.put(
     await changeNotebookStatus({projectId, status});
     res.sendStatus(200);
     return;
+  }
+);
+
+// POST to check sync status of a set of records
+api.post(
+  '/:id/sync-status/',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.AUDIT_ALL_PROJECT_RECORDS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: PostRecordStatusInputSchema,
+  }),
+  async (req, res: Response<PostRecordStatusResponse>) => {
+    const {id: projectId} = req.params;
+    const {record_map} = req.body;
+
+    const dataDb = await getDataDb(projectId);
+
+    // compute hashes from our database for these records
+    const recordIds = Object.getOwnPropertyNames(record_map);
+    const localHashes = await getRecordListAudit({
+      recordIds,
+      dataDb,
+    });
+    // compare these hashes with the payload
+    const result: Record<string, boolean> = {};
+    for (const recordId of recordIds) {
+      const localHash = localHashes[recordId];
+      result[recordId] = record_map[recordId] === localHash;
+    }
+
+    res.json({
+      status: result,
+    });
   }
 );
 

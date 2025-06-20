@@ -53,6 +53,7 @@ const detailsFields = [
     },
     isMetadata: false,
   },
+  {field: 'recordCount', label: 'Current Record Count', isMetadata: false},
 ];
 
 /**

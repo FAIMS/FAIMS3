@@ -488,6 +488,7 @@ export interface RecordMetadata {
   avps: AttributeValuePairIDMap;
   relationship?: Relationship;
   data?: {[key: string]: any};
+  synced?: boolean; // optional sync status
 }
 
 export type UnhydratedRecord = Omit<RecordMetadata, 'data' | 'hrid'>;

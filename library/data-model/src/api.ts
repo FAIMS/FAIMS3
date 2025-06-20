@@ -223,6 +223,8 @@ export const APINotebookGetSchema = z.object({
   status: z.nativeEnum(ProjectStatus),
   // Name of the notebook!
   name: z.string(),
+  // optional count of number of records
+  recordCount: z.number().optional(),
 });
 export type APINotebookGet = z.infer<typeof APINotebookGetSchema>;
 
@@ -325,6 +327,20 @@ export const PostAddNotebookUserInputSchema = z.object({
 
 export type PostAddNotebookUserInput = z.infer<
   typeof PostAddNotebookUserInputSchema
+>;
+
+// POST check record sync status
+export const PostRecordStatusInputSchema = z.object({
+  // a map from record ids to hashes
+  record_map: z.record(z.string(), z.string()),
+});
+export type PostRecordStatusInput = z.infer<typeof PostRecordStatusInputSchema>;
+
+export const PostRecordStatusResponseSchema = z.object({
+  status: z.record(z.string(), z.boolean()),
+});
+export type PostRecordStatusResponse = z.infer<
+  typeof PostRecordStatusResponseSchema
 >;
 
 // Post generate random records RandomRecords input

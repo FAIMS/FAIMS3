@@ -2,7 +2,11 @@ import React, {useState, useMemo, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  DEVELOPER_MODE,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
@@ -16,6 +20,8 @@ import type {
   NotebookUISpec,
 } from '@/designer/state/initial';
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
+import {generateTestRecordsForProject} from '@/hooks/project-hooks';
+import {Input} from '@mui/material';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -38,6 +44,9 @@ const ProjectActions = (): JSX.Element => {
   const [animateOut, setAnimateOut] = useState(false);
   const animationDuration = 300;
   const animationScale = 0.95;
+
+  // State for generating test records
+  const [generateCount, setGenerateCount] = useState('10');
 
   // Prepare notebook data for the Designer
   const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
@@ -108,9 +117,45 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
+  const handleCreateTestRecords = async () => {
+    if (user)
+      await generateTestRecordsForProject({
+        projectId,
+        count: parseInt(generateCount),
+        user,
+      });
+  };
+
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
+        {DEVELOPER_MODE && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Generate Test Records</ListLabel>
+                <ListDescription>
+                  Generate test records for this {NOTEBOOK_NAME}
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <Input
+                  type="number"
+                  value={generateCount}
+                  onChange={e => setGenerateCount(e.target.value)}
+                />
+                <Button
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={handleCreateTestRecords}
+                >
+                  Generate Records
+                </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         <Card className="flex-1">
           <List className="flex flex-col gap-4">
             <ListItem>

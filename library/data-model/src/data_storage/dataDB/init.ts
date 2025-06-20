@@ -16,6 +16,7 @@ export function initDataDB({
       dataDbDesignDocuments.attachmentFilterDocument,
       dataDbDesignDocuments.indexDocument,
       dataDbDesignDocuments.permissionsDocument(projectId),
+      dataDbDesignDocuments.recordAuditDocument,
     ],
     securityDocument: DataDBSecurityDocument({projectId}),
   };
