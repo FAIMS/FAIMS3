@@ -75,11 +75,13 @@ const allOperators = new Map([
   ['does-not-contain-all-of', 'List does not contain all of these values'],
 ]);
 
-const getFieldLabel = (f: FieldType) => {
+const getFieldLabel = (f: FieldType | undefined): string => {
+  if (!f) return '<unknown>';
   return (
-    (f['component-parameters'].InputLabelProps &&
-      f['component-parameters'].InputLabelProps.label) ||
-    f['component-parameters'].name
+    f['component-parameters']?.label ||
+    f['component-parameters']?.InputLabelProps?.label ||
+    f['component-parameters']?.name ||
+    '<unlabeled>'
   );
 };
 
@@ -765,10 +767,15 @@ export const FieldConditionControl = (props: ConditionProps) => {
     }
   };
 
-  const getFieldLabel = (f: FieldType) =>
-    f?.['component-parameters']?.InputLabelProps?.label ||
-    f?.['component-parameters']?.name ||
-    '<unlabeled>';
+  const getFieldLabel = (f: FieldType | undefined): string => {
+    if (!f) return '<unknown>';
+    return (
+      f['component-parameters']?.label ||
+      f['component-parameters']?.InputLabelProps?.label ||
+      f['component-parameters']?.name ||
+      '<unlabeled>'
+    );
+  };
 
   const renderValueEditor = (fieldDef: FieldType) => {
     const cName = fieldDef['component-name'];
