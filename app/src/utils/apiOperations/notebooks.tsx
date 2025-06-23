@@ -3,16 +3,12 @@
  */
 
 import {
-  getRecordListAudit,
-  ProjectID,
-  queryCouch,
-  RECORDS_INDEX,
   PostCreateNotebookInput,
   PostCreateNotebookResponse,
   PostRecordStatusInput,
   PostRecordStatusResponse,
+  ProjectID,
 } from '@faims3/data-model';
-import {localGetDataDb} from '../..';
 
 import FetchManager from './client';
 
@@ -36,7 +32,6 @@ export const createNotebookFromTemplate = async (input: {
     {template_id: input.templateId, name: input.name} as PostCreateNotebookInput
   );
 };
-
 
 /**
  * Submit a record audit to the api for validation

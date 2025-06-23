@@ -35,7 +35,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import CloudIcon from '@mui/icons-material/Cloud';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import PendingIcon from '@mui/icons-material/Pending';
 import {useTheme} from '@mui/material/styles';

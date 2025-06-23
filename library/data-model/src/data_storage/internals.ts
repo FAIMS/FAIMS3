@@ -849,13 +849,6 @@ export type RecordAuditMap = {
   [recordId: string]: string;
 };
 
-// Type assertion for the partial documents
-type PartialDoc = {
-  _id: string;
-  _rev: string;
-  record_id: string;
-};
-
 export async function getRecordListAudit({
   recordIds,
   dataDb,
