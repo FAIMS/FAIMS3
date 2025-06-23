@@ -1,5 +1,5 @@
 import {configureStore, combineReducers, Middleware} from '@reduxjs/toolkit';
-import undoable, {includeAction} from 'redux-undo';
+import undoable from 'redux-undo';
 import {
   AppState,
   NotebookWithHistory,

@@ -28,7 +28,8 @@ import {
   rebuildDbs,
 } from '../context/slices/projectSlice';
 import {MapTileDatabase} from '../gui/components/map/tile-source';
-
+import pouchdbDebug from 'pouchdb-debug';
+PouchDB.plugin(pouchdbDebug);
 /**
  *
  * @returns creates all project PouchDB objects and metadata
@@ -36,6 +37,8 @@ import {MapTileDatabase} from '../gui/components/map/tile-source';
  */
 export async function initialize() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
+  else PouchDB.debug.disable();
+
   // Get current state/dispatch const state = store.getState();
 
   // Rebuild all of the databases (synchronously)
