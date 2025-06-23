@@ -16,6 +16,7 @@ import {MDXEditorMethods} from '@mdxeditor/editor';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import SyncIcon from '@mui/icons-material/Sync';
 import {
   Alert,
   Box,
@@ -25,6 +26,7 @@ import {
   FormControlLabel,
   Grid,
   IconButton,
+  InputAdornment,
   TextField,
   Tooltip,
   Typography,
@@ -34,7 +36,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
+import {getViewIDForField, slugify} from '../../state/helpers/uiSpec-helpers';
 import {
   ConditionModal,
   ConditionTranslation,
@@ -84,7 +86,11 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
       if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
         dispatch({
           type: 'ui-specification/fieldRenamed',
-          payload: {viewId, fieldName, newFieldName},
+          payload: {
+            viewId,
+            fieldName,
+            newFieldName: newFieldName.trim(),
+          },
         });
       }
     }, 500),
@@ -94,6 +100,19 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalFieldName(e.target.value);
     debouncedRename(e.target.value);
+  };
+
+  // Handler for the sync field id with name button
+  const syncFieldID = () => {
+    const desired = slugify(state.label || '');
+    const viewId = getViewIDForField(uiSpec, fieldName);
+    if (viewId && desired && desired !== fieldName) {
+      setLocalFieldName(desired);
+      dispatch({
+        type: 'ui-specification/fieldRenamed',
+        payload: {viewId, fieldName, newFieldName: desired},
+      });
+    }
   };
 
   // Restore focus on the ID input when the field id changes
@@ -222,6 +241,22 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 value={localFieldName}
                 onChange={handleIdChange}
                 inputRef={idInputRef}
+                InputProps={{
+                  endAdornment:
+                    state.label && slugify(state.label) !== localFieldName ? (
+                      <InputAdornment position="end">
+                        <Tooltip title="Sync with field name">
+                          <IconButton
+                            size="small"
+                            onClick={syncFieldID}
+                            edge="end"
+                          >
+                            <SyncIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ) : undefined,
+                }}
               />
             </Grid>
             <Grid item xs={12} md={4}>
