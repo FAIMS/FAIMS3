@@ -221,10 +221,45 @@ export const indexDocument = {
 };
 
 /**
+ * Design document for record audit optimization
+ */
+export const recordAuditDocument = {
+  _id: '_design/record_audit',
+  views: {
+    by_record_id: {
+      map: convertToCouchDBString(doc => {
+        // Only emit documents that have record_id and are not attachments
+        if (doc.record_id && doc.attach_format_version === undefined) {
+          emit(doc.record_id, {
+            _id: doc._id,
+            _rev: doc._rev,
+          });
+        }
+      }),
+    },
+    by_record_id_with_attachments: {
+      map: convertToCouchDBString(doc => {
+        // Emit all documents with record_id, including attachment status
+        if (doc.record_id) {
+          emit(
+            [doc.record_id, doc.attach_format_version ? 'attachment' : 'data'],
+            {
+              _id: doc._id,
+              _rev: doc._rev,
+            }
+          );
+        }
+      }),
+    },
+  },
+};
+
+/**
  * Exports all design documents for the notebook database
  */
 export const dataDbDesignDocuments = {
   attachmentFilterDocument,
   permissionsDocument,
   indexDocument,
+  recordAuditDocument,
 };
