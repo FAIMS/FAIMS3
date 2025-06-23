@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Middleware, combineReducers, configureStore} from '@reduxjs/toolkit';
+import {combineReducers, configureStore} from '@reduxjs/toolkit';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {throttle} from 'lodash';
 import undoable, {includeAction} from 'redux-undo';
@@ -32,12 +32,12 @@ if (
   persistedState.notebook['ui-specification'].future = [];
 }
 
-const loggerMiddleware: Middleware<object, AppState> =
-  storeAPI => next => action => {
-    console.log('dispatching', action);
-    next(action);
-    console.log('next state', storeAPI.getState());
-  };
+// const loggerMiddleware: Middleware<object, AppState> =
+//   storeAPI => next => action => {
+//     console.log('dispatching', action);
+//     next(action);
+//     console.log('next state', storeAPI.getState());
+//   };
 
 export const store: ToolkitStore<AppState> = configureStore({
   reducer: {

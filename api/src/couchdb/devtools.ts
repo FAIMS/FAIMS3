@@ -35,7 +35,6 @@ export const createManyRandomRecords = async (
   project_id: ProjectID,
   count: number
 ): Promise<string[]> => {
-  console.log('creating', count, 'random records');
   const record_ids = [];
 
   for (let i = 0; i < count; i++) {
