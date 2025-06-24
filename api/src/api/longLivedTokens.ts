@@ -141,9 +141,9 @@ api.get(
     try {
       let tokens;
       if (all) {
-        tokens = await getTokensByUserId(user.user_id);
-      } else {
         tokens = await getAllTokens();
+      } else {
+        tokens = await getTokensByUserId(user.user_id);
       }
 
       const tokenList = tokens.map(token => ({
