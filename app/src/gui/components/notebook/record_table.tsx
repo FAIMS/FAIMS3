@@ -19,6 +19,7 @@
  */
 
 import {
+  PostRecordStatusResponse,
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
@@ -34,6 +35,8 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
+import PendingIcon from '@mui/icons-material/Pending';
 import {useTheme} from '@mui/material/styles';
 import {
   DataGrid,
@@ -71,7 +74,8 @@ type ColumnType =
   | 'CONFLICTS'
   | 'CREATED'
   | 'CREATED_BY'
-  | 'KIND';
+  | 'KIND'
+  | 'SYNC_STATUS';
 
 /** Props for the RecordsTable component */
 interface RecordsTableProps {
@@ -91,6 +95,8 @@ interface RecordsTableProps {
   handleRefresh: () => void;
   /** Label for the record type */
   recordLabel: string;
+  /** Record Sync status data if available */
+  recordStatus?: PostRecordStatusResponse;
 }
 
 // Column definition type
@@ -108,6 +114,7 @@ const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
   ['CREATED', 'Created'],
   ['CREATED_BY', 'Created By'],
   ['KIND', 'Type'],
+  ['SYNC_STATUS', 'Sync'],
 ]);
 
 /** Columns that must always be shown */
@@ -174,6 +181,9 @@ function getDataForColumn({
 
       case 'KIND':
         return uiSpecification.viewsets[record.type]?.label ?? record.type;
+
+      case 'SYNC_STATUS':
+        return record.synced ? 'synced' : 'pending';
 
       default:
         return undefined;
@@ -284,6 +294,23 @@ function buildColumnFromSystemField({
             <Typography>
               {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
             </Typography>
+          );
+        },
+      };
+    case 'SYNC_STATUS':
+      return {
+        ...baseColumn,
+        type: 'string',
+        renderCell: (params: GridCellParams) => {
+          const sync = getDataForColumn({
+            record: params.row,
+            column: columnType,
+            uiSpecification,
+          });
+          return sync === 'synced' ? (
+            <CloudDoneIcon color="success"></CloudDoneIcon>
+          ) : (
+            <PendingIcon color="warning"></PendingIcon>
           );
         },
       };
@@ -497,6 +524,19 @@ function buildVerticalStackColumn({
           }
         }
 
+        // Add sync status field
+        const sync = getDataForColumn({
+          column: 'SYNC_STATUS',
+          record: params.row,
+          uiSpecification,
+        });
+        kvp['Sync Status'] =
+          sync === 'synced' ? (
+            <CloudDoneIcon color="success"></CloudDoneIcon>
+          ) : (
+            <PendingIcon color="warning"></PendingIcon>
+          );
+
         return <KeyValueTable data={kvp} />;
       } catch (e) {
         console.warn(
@@ -566,6 +606,14 @@ function buildColumnDefinitions({
   } else if (width === 'md') {
     // For medium width, show summary fields or HRID, plus mandatory columns
 
+    // Add sync status field
+    columnList.push(
+      buildColumnFromSystemField({
+        columnType: 'SYNC_STATUS',
+        uiSpecification,
+      })
+    );
+
     // Add kind column (if needed)
     if (includeKind) {
       columnList.push(
@@ -611,6 +659,14 @@ function buildColumnDefinitions({
         })
       );
     }
+
+    // Add sync status field
+    columnList.push(
+      buildColumnFromSystemField({
+        columnType: 'SYNC_STATUS',
+        uiSpecification,
+      })
+    );
 
     // For large width, include all columns
     if (summaryFields.length > 0) {
@@ -729,7 +785,8 @@ const useTableColumns = ({
  */
 const useTableRows = (
   rows: RecordMetadata[] | undefined,
-  visibleTypes: string[]
+  visibleTypes: string[],
+  recordStatus: PostRecordStatusResponse | undefined
 ) => {
   return useMemo(() => {
     let relevantRows: RecordMetadata[] = [];
@@ -740,13 +797,24 @@ const useTableRows = (
     } else {
       relevantRows = rows.filter(row => visibleTypes.includes(row.type));
     }
+    // add status information if available
+    if (recordStatus) {
+      relevantRows = relevantRows.map(row => {
+        const synced = recordStatus.status[row.record_id];
+        return {
+          ...row,
+          synced,
+        };
+      });
+    }
+
     return {
       rows: relevantRows,
       hasConflict: relevantRows.some(r => {
         return r.conflicts;
       }),
     };
-  }, [rows, visibleTypes]);
+  }, [rows, visibleTypes, recordStatus]);
 };
 
 // ============================================================================
@@ -764,6 +832,7 @@ export function RecordsTable(props: RecordsTableProps) {
     rows,
     loading,
     viewsets,
+    recordStatus,
     project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
   } = props;
   const theme = useTheme();
@@ -782,7 +851,11 @@ export function RecordsTable(props: RecordsTableProps) {
   const {currentSize, pageSize} = useScreenSize();
 
   // Column and row management
-  const {rows: visibleRows, hasConflict} = useTableRows(rows, visibleTypes);
+  const {rows: visibleRows, hasConflict} = useTableRows(
+    rows,
+    visibleTypes,
+    recordStatus
+  );
   const columns = useTableColumns({
     uiSpec,
     visibleTypes,

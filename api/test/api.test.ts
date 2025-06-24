@@ -28,7 +28,10 @@ import {
   getDataDB,
   GetListAllUsersResponseSchema,
   GetNotebookResponse,
+  getRecordListAudit,
   ProjectStatus,
+  queryCouch,
+  RECORDS_INDEX,
   registerClient,
   resourceRoles,
   Role,
@@ -66,6 +69,7 @@ import {
   notebookUserName,
   notebookUserToken,
 } from './utils';
+import {getDataDb} from '../src/couchdb';
 
 export const NOTEBOOKS_API_BASE = '/api/notebooks';
 
@@ -597,6 +601,51 @@ describe('API tests', () => {
     }
   });
 
+  it('can check sync status of records', async () => {
+    // pull in some test data
+    await restoreFromBackup('test/backup.jsonl');
+    const projectId = '1693291182736-campus-survey-demo';
+    const dataDb = await getDataDb(projectId);
+    // get a list of record ids from the project
+    const records = await queryCouch({
+      db: dataDb,
+      index: RECORDS_INDEX,
+    });
+    const recordIds = records.map(r => r._id);
+    const myAudit = await getRecordListAudit({recordIds, dataDb});
+
+    // now we send a request to the api
+    await request(app)
+      .post(`/api/notebooks/${projectId}/sync-status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .send({
+        record_map: myAudit,
+      })
+      .expect(200)
+      .then(response => {
+        for (const recordId of recordIds) {
+          expect(response.body.status[recordId]).to.be.true;
+        }
+      });
+
+    // change one of the audit hashes to get a mismatch
+    myAudit[recordIds[0]] = '1234567890';
+
+    await request(app)
+      .post(`/api/notebooks/${projectId}/sync-status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Content-Type', 'application/json')
+      .send({
+        record_map: myAudit,
+      })
+      .expect(200)
+      .then(response => {
+        expect(response.body.status[recordIds[0]]).to.be.false;
+        expect(response.body.status[recordIds[1]]).to.be.true;
+      });
+  });
+
   it('can download records as json', async () => {
     // pull in some test data
     await restoreFromBackup('test/backup.jsonl');
@@ -646,6 +695,12 @@ describe('API tests', () => {
           .expect(response => {
             // response body should be csv data
             expect(response.text).to.contain('identifier');
+            expect(response.text).to.contain('take-photo');
+            // uncertainty label on asset number
+            expect(response.text).to.contain('asset-number_questionable');
+            // annotation label for asset number
+            expect(response.text).to.contain('asset-number_difficulties');
+
             const lines = response.text.split('\n');
             lines.forEach(line => {
               if (line !== '' && !line.startsWith('identifier')) {
@@ -659,6 +714,14 @@ describe('API tests', () => {
           });
     }
   });
+
+  //identifier,record_id,revision_id,type,created_by,created,updated_by,updated,
+  // hridFORM2,hridFORM2_uncertainty,autoincrementer,autoincrementer_uncertainty,
+  // asset-number,asset-number_Questionable,element-type,
+  // take-gps-point,take-gps-point_latitude,take-gps-point_longitude,take-gps-point_accuracy,
+  // nearest-building,nearest-building_Uncertain,
+  // checkbox,condition,
+  // take-photo,element-notes,element-notes_uncertainty
 
   it('can download files as zip', async () => {
     // pull in some test data

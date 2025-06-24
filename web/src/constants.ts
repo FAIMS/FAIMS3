@@ -1,31 +1,28 @@
 import {capitalize} from './lib/utils';
 
-export const NOTEBOOK_NAME = import.meta.env.VITE_NOTEBOOK_NAME || 'project';
 
+const getConfigValue = (key: string) => {
+  const value = (import.meta.env[key] as string | undefined) ?? '';
+  if (value === '') {
+    throw new Error(`Missing required env variable ${key}`);
+  }
+  return value;
+};
+
+export const NOTEBOOK_NAME = import.meta.env.VITE_NOTEBOOK_NAME || 'project';
 export const WEBSITE_TITLE =
   import.meta.env.VITE_WEBSITE_TITLE || 'Control Centre';
-
-export const WEB_URL =
-  (import.meta.env.VITE_WEB_URL as string | undefined) ?? '';
-if (WEB_URL === '') {
-  throw new Error('Missing required env variable VITE_WEB_URL');
-}
-
-export const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-if (API_URL === '') {
-  throw new Error('Missing required env variable VITE_API_URL');
-}
-
-export const APP_URL =
-  (import.meta.env.VITE_APP_URL as string | undefined) ?? '';
-if (APP_URL === '') {
-  throw new Error('Missing required env variable VITE_APP_URL');
-}
+export const APP_NAME = getConfigValue('VITE_APP_NAME');
+export const WEB_URL = getConfigValue('VITE_WEB_URL');
+export const API_URL = getConfigValue('VITE_API_URL');
+export const APP_URL = getConfigValue('VITE_APP_URL');
+export const APP_THEME = import.meta.env.VITE_APP_THEME || 'default';
 
 export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
   ? capitalize(import.meta.env.VITE_NOTEBOOK_NAME)
   : 'Project';
+
+export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
 
 export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
 
