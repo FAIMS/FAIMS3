@@ -49,6 +49,8 @@ import {
   RevisionID,
   UnhydratedRecord,
 } from '../types';
+import {createHash} from './utils';
+import {chunk} from 'lodash';
 
 // INDEX NAMES
 
@@ -60,6 +62,8 @@ export const REVISIONS_INDEX = 'index/revision';
 export const AVP_INDEX = 'index/avp';
 // ID = record id, emitted = revision - use include_docs
 export const RECORD_REVISIONS_INDEX = 'index/recordRevisions';
+// Index emits _id and _rev for record, revision and avp docs
+export const RECORD_AUDIT_INDEX = 'record_audit/by_record_id';
 
 // TYPE FIELDS
 
@@ -801,6 +805,127 @@ export async function getRecord({
     id: recordId,
     typeField: RECORD_TYPE_FIELD,
   });
+}
+
+/**
+ * Creates a canonical hash from the record audit data for efficient sync checking.
+ *
+ * @param audit - Array of {id, rev} objects from getRecordAudit
+ * @returns SHA-256 hash of the canonical representation
+ */
+async function createAuditHash(
+  audit: Array<{id: string; rev: string}>
+): Promise<string> {
+  // The audit is already sorted by ID in getRecordAudit, but ensure consistency
+  const sortedAudit = audit
+    .slice() // Don't mutate original
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  // Create canonical string representation
+  // (a json version is good for debugging)
+  //const canonicalString = JSON.stringify(sortedAudit, null, 2);
+  // but this is shorter so the hash will be a bit faster
+  const canonicalString = sortedAudit
+    .map(item => `${item.id}:${item.rev}`)
+    .join('|');
+
+  // console.log('canonical json', canonicalString);
+  // Return SHA-256 hash
+  return await createHash(canonicalString);
+}
+
+/**
+ * Generate an audit for a set of records.
+ * Based on a list of all document ids and revision ids for documents
+ * making up each record.  All frevs, avps but not attachment documents since
+ * they may not be present on the client.
+ * We then create a hash of the audit data to use for sync checking.
+ *
+ * We can then use this in the client to verify that we have a complete and
+ * up to date copy of the record on the server.
+ *
+ */
+export type RecordAuditMap = {
+  [recordId: string]: string;
+};
+
+export async function getRecordListAudit({
+  recordIds,
+  dataDb,
+}: {
+  recordIds: RecordID[];
+  dataDb: DataDbType;
+}): Promise<RecordAuditMap> {
+  // Early return for empty input
+  if (!recordIds || recordIds.length === 0) {
+    return {};
+  }
+
+  const result: RecordAuditMap = {};
+
+  // Fetch records in batches to construct the audit
+  const BATCH_SIZE = 5000;
+  for (const batch of chunk(recordIds, BATCH_SIZE)) {
+    const recordsResult = await dataDb.find({
+      selector: {
+        _id: {
+          $in: batch,
+        },
+      },
+      // we'll only fetch _id and _rev to compute the audit hash
+      fields: ['_id', '_rev'],
+      limit: batch.length + 10,
+    });
+
+    // Group related documents by record_id
+    const relatedDocsByRecord = new Map<
+      string,
+      Array<{id: string; rev: string}>
+    >();
+
+    // fetch all related documents (revisions, AVPs)
+    // do this in batches to make sure we don't have too big a query
+    // but nice big batches for speed
+    const VIEW_BATCH_SIZE = 20000;
+
+    for (let i = 0; i < batch.length; i += VIEW_BATCH_SIZE) {
+      const viewBatch = batch.slice(i, i + VIEW_BATCH_SIZE);
+
+      const relatedDocsResult = await dataDb.query(RECORD_AUDIT_INDEX, {
+        keys: viewBatch,
+        include_docs: false,
+      });
+
+      for (const doc of relatedDocsResult.rows) {
+        const recordId = doc.key;
+        const docInfo = doc.value as {_id: string; _rev: string};
+
+        if (!relatedDocsByRecord.has(recordId)) {
+          relatedDocsByRecord.set(recordId, []);
+        }
+        relatedDocsByRecord.get(recordId)!.push({
+          id: docInfo._id,
+          rev: docInfo._rev,
+        });
+      }
+
+      // build audit hashes for this batch
+      for (const row of recordsResult.docs) {
+        const recordId = row._id;
+
+        const audit = [
+          {
+            id: recordId,
+            rev: row._rev,
+          },
+          ...(relatedDocsByRecord.get(recordId) || []),
+        ];
+
+        result[recordId] = await createAuditHash(audit);
+      }
+    }
+  }
+  return result;
 }
 
 /**
