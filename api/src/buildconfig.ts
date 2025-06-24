@@ -698,3 +698,41 @@ function getRedirectWhitelist(): string[] {
 // Export the redirect whitelist
 export const REDIRECT_WHITELIST = getRedirectWhitelist();
 export const CONDUCTOR_SERVER_ID = slugify(CONDUCTOR_INSTANCE_NAME);
+
+// Long Lived Token Configuration
+const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
+
+/**
+ * Gets the maximum duration in days for long-lived tokens from environment variables.
+ * @returns Maximum number of days, or undefined for unlimited duration
+ */
+function maximumLongLivedDurationDays(): number | undefined {
+  const maxDays = process.env.MAXIMUM_LONG_LIVED_DURATION_DAYS;
+  
+  if (maxDays === '' || maxDays === undefined) {
+    console.log(
+      'MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
+        DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS
+    );
+    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+  }
+
+  // Check for explicit "unlimited" or "infinite" values
+  if (['unlimited', 'infinite', 'none'].includes(maxDays.toLowerCase())) {
+    console.log('Long-lived tokens configured for unlimited duration');
+    return undefined;
+  }
+
+  const parsedDays = parseInt(maxDays, 10);
+  if (isNaN(parsedDays) || parsedDays <= 0) {
+    console.warn(
+      `Invalid value "${maxDays}" for MAXIMUM_LONG_LIVED_DURATION_DAYS. Must be a positive integer or "unlimited".`
+    );
+    console.log('Falling back to default configuration.');
+    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+  }
+
+  return parsedDays;
+}
+
+export const MAXIMUM_LONG_LIVED_DURATION_DAYS = maximumLongLivedDurationDays();

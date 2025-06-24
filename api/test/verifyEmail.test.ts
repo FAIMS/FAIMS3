@@ -24,7 +24,7 @@ import {
   validateVerificationChallenge,
 } from '../src/couchdb/verificationChallenges';
 import {app} from '../src/expressSetup';
-import {hashVerificationCode} from '../src/utils';
+import {hashChallengeCode} from '../src/utils';
 import {
   beforeApiTests,
   localEmail,
@@ -245,7 +245,7 @@ describe('Email Verification Tests', () => {
       });
 
       // Verify it's not used
-      const hashedCode = hashVerificationCode(code);
+      const hashedCode = hashChallengeCode(code);
       let challenge = await getVerificationChallengeByCode({
         code: hashedCode,
       });
@@ -385,7 +385,7 @@ describe('Email Verification Tests', () => {
         .be.true;
 
       // Verify the code is now marked as used
-      const hashedCode = hashVerificationCode(code);
+      const hashedCode = hashChallengeCode(code);
       const challenge = await getVerificationChallengeByCode({
         code: hashedCode,
       });
