@@ -37,8 +37,8 @@ export interface Field {
   type?: string;
   options?: {label: string; value: string}[];
   excludes?: string;
-  min?: number;
-  max?: number;
+  min?: number | string;
+  max?: number | string;
   step?: number;
   placeholder?: string;
 }
@@ -167,8 +167,16 @@ export function Form<
                             <Input
                               {...field}
                               type={type || 'text'}
-                              min={type === 'number' ? min : undefined}
-                              max={type === 'number' ? max : undefined}
+                              min={
+                                type === 'number' || type === 'datetime-local'
+                                  ? min
+                                  : undefined
+                              }
+                              max={
+                                type === 'number' || type === 'datetime-local'
+                                  ? max
+                                  : undefined
+                              }
                               step={type === 'number' ? step : undefined}
                               disabled={isDisabled}
                               className={

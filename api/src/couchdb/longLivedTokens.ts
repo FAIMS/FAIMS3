@@ -26,6 +26,9 @@ import {getCouchUserFromEmailOrUserId} from './users';
 
 // Convert days to milliseconds
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+// We want this pretty long as these tokens are used for long-term access - need
+// higher security to avoid brute forcing
+const LONG_LIVED_TOKEN_LENGTH = 64;
 
 /**
  * Validates if the provided expiry date is allowed based on configuration
@@ -88,7 +91,7 @@ export const createNewLongLivedToken = async ({
   }
 
   const authDB = getAuthDB();
-  const token = generateVerificationCode();
+  const token = generateVerificationCode(LONG_LIVED_TOKEN_LENGTH);
   const tokenHash = hashChallengeCode(token);
   const dbId = AUTH_RECORD_ID_PREFIXES.longlived + uuidv4();
   const currentTimestamp = Date.now();
