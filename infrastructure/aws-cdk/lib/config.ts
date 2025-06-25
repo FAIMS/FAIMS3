@@ -229,7 +229,8 @@ export const UiConfiguration = z.object({
 });
 
 export const SecurityConfigSchema = z.object({
-  maximumLongLivedTokenDurationDays: z.number().int().min(1).default(90),
+  /** Maximum number of days for long lived tokens */
+  maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
 });
 
 // Define the schema
