@@ -59,6 +59,9 @@ export interface FaimsFrontEndProps {
 
   // Offline maps settings -> env variables in faims
   offlineMaps: OfflineMapsConfig;
+
+  /** Maximum long-lived token duration in days (undefined = infinite) */
+  maximumLongLivedDurationDays?: number;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -337,6 +340,8 @@ export class FaimsFrontEnd extends Construct {
       VITE_NOTEBOOK_NAME: props.notebookName,
       VITE_THEME: props.uiTheme,
       VITE_WEBSITE_TITLE: 'Control Centre',
+      VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
+        props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
     };
 
     // Setup a deployment into this bucket with static files

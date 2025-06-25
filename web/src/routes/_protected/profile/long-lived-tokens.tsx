@@ -3,10 +3,17 @@ import {CreateLongLivedTokenDialog} from '@/components/dialogs/long-lived-tokens
 import {UpdateLongLivedTokenDialog} from '@/components/dialogs/long-lived-tokens/update-long-lived-token-dialog';
 import {useGetLongLivedTokensColumns} from '@/components/tables/long-lived-tokens';
 import {Button} from '@/components/ui/button';
-import {Card, CardContent} from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
 import {Separator} from '@/components/ui/separator';
 import {Switch} from '@/components/ui/switch';
+import {LONG_LIVED_TOKEN_HELP_LINK} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {revokeLongLivedToken, useGetLongLivedTokens} from '@/hooks/queries';
@@ -14,7 +21,7 @@ import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {Action, GetLongLivedTokensResponse} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {createFileRoute, ErrorComponent} from '@tanstack/react-router';
-import {RefreshCw} from 'lucide-react';
+import {RefreshCw, AlertTriangle, ExternalLink} from 'lucide-react';
 import {useMemo, useState} from 'react';
 
 export const Route = createFileRoute('/_protected/profile/long-lived-tokens')({
@@ -101,6 +108,44 @@ function RouteComponent() {
 
   return (
     <div className="space-y-4">
+      {/* Information Card */}
+      <Card className="border-slate-200 bg-slate-50/30 p-1">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 text-slate-800 text-lg">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            Long-Lived API Tokens
+          </CardTitle>
+          <CardDescription className="text-slate-600 text-sm">
+            Secure authentication for automated system access
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm text-slate-700 space-y-3">
+            <p>
+              <span className="font-medium text-slate-800">Purpose:</span> These
+              tokens enable programmatic access to system APIs. They must be
+              exchanged for short-lived access tokens before use.
+            </p>
+            <p>
+              <span className="font-medium text-slate-800">Security:</span>{' '}
+              Long-lived tokens grant full account access. Store securely, never
+              share, and revoke immediately if compromised.
+            </p>
+          </div>
+          <div className="pt-3 border-t border-slate-200">
+            <a
+              href={LONG_LIVED_TOKEN_HELP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-slate-800 hover:underline"
+            >
+              Learn more about implementation and security
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Control Panel */}
       <Card>
         <CardContent className="pt-4">

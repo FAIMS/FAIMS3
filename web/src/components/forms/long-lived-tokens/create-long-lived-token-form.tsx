@@ -7,7 +7,10 @@ import {useState, useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {Alert, AlertTitle, AlertDescription} from '@/components/ui/alert';
 import {Copy, CheckCircle, AlertTriangle} from 'lucide-react';
-import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '@/constants';
+import {
+  LONG_LIVED_TOKEN_HELP_LINK,
+  MAXIMUM_LONG_LIVED_DURATION_DAYS,
+} from '@/constants';
 
 interface CreateLongLivedTokenFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -247,7 +250,7 @@ export function CreateLongLivedTokenForm({
               Authorization: Bearer &lt;access_token&gt;
             </code>
             <a
-              href="https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md"
+              href={LONG_LIVED_TOKEN_HELP_LINK}
               className="inline-flex items-center mt-2 text-sm text-blue-600 hover:text-blue-800 underline"
               target="_blank"
               rel="noopener noreferrer"

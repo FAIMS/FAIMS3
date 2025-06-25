@@ -1,6 +1,5 @@
 import {capitalize} from './lib/utils';
 
-
 const getConfigValue = (key: string) => {
   const value = (import.meta.env[key] as string | undefined) ?? '';
   if (value === '') {
@@ -56,7 +55,7 @@ const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
  */
 function getMaximumLongLivedDurationDays(): number | undefined {
   const maxDays = import.meta.env.VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS;
-  
+
   if (maxDays === '' || maxDays === undefined) {
     console.log(
       'VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
@@ -64,13 +63,13 @@ function getMaximumLongLivedDurationDays(): number | undefined {
     );
     return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
   }
-  
+
   // Check for explicit "unlimited" or "infinite" values
   if (['unlimited', 'infinite', 'none'].includes(maxDays.toLowerCase())) {
     console.log('Long-lived tokens configured for unlimited duration');
     return undefined;
   }
-  
+
   const parsedDays = parseInt(maxDays, 10);
   if (isNaN(parsedDays) || parsedDays <= 0) {
     console.warn(
@@ -79,8 +78,13 @@ function getMaximumLongLivedDurationDays(): number | undefined {
     console.log('Falling back to default configuration.');
     return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
   }
-  
+
   return parsedDays;
 }
 
-export const MAXIMUM_LONG_LIVED_DURATION_DAYS = getMaximumLongLivedDurationDays();
+export const MAXIMUM_LONG_LIVED_DURATION_DAYS =
+  getMaximumLongLivedDurationDays();
+
+// Help link to use for the long lived token docs
+export const LONG_LIVED_TOKEN_HELP_LINK =
+  'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
