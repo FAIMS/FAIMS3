@@ -25,26 +25,25 @@ PouchDB.plugin(PouchDBFind);
 
 import {
   PostCreateLongLivedTokenRequest,
-  PutUpdateLongLivedTokenRequest,
-  PutRevokeLongLivedTokenRequest,
   PostLongLivedTokenExchangeInput,
+  PutRevokeLongLivedTokenRequest,
+  PutUpdateLongLivedTokenRequest,
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
+import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../src/buildconfig';
+import {getAuthDB} from '../src/couchdb';
 import {
   createNewLongLivedToken,
-  getAllTokens,
+  getMaxAllowedExpiryTimestamp,
   getTokenById,
   getTokenByTokenHash,
-  getTokensByUserId,
   revokeLongLivedToken,
   validateLongLivedToken,
-  getMaxAllowedExpiryTimestamp,
 } from '../src/couchdb/longLivedTokens';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
-import {getAuthDB} from '../src/couchdb';
-import {MAXIMUM_LONG_LIVED_DURATION_DAYS} from '../src/buildconfig';
+import {hashChallengeCode} from '../src/utils';
 import {
   adminToken,
   adminUserName,
@@ -53,7 +52,6 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
-import { hashChallengeCode } from '../src/utils';
 
 describe('Long-Lived Token Tests', () => {
   beforeEach(beforeApiTests);
@@ -88,9 +86,10 @@ describe('Long-Lived Token Tests', () => {
 
     it('enforces expiry limits', async () => {
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-      
+
       if (MAXIMUM_LONG_LIVED_DURATION_DAYS !== undefined) {
-        const tooFarInFuture = getMaxAllowedExpiryTimestamp()! + 24 * 60 * 60 * 1000;
+        const tooFarInFuture =
+          getMaxAllowedExpiryTimestamp()! + 24 * 60 * 60 * 1000;
 
         try {
           await createNewLongLivedToken({
@@ -152,14 +151,16 @@ describe('Long-Lived Token Tests', () => {
     it('GET / returns user tokens only', async () => {
       // Create tokens for both users
       await createNewLongLivedToken({
-        userId: (await getExpressUserFromEmailOrUserId(localUserName))!.user_id!,
+        userId: (await getExpressUserFromEmailOrUserId(localUserName))!
+          .user_id!,
         title: 'Local Token',
         description: 'Local user token',
         expiryTimestampMs: DEFAULT_EXPIRY,
       });
 
       await createNewLongLivedToken({
-        userId: (await getExpressUserFromEmailOrUserId(adminUserName))!.user_id!,
+        userId: (await getExpressUserFromEmailOrUserId(adminUserName))!
+          .user_id!,
         title: 'Admin Token',
         description: 'Admin user token',
         expiryTimestampMs: DEFAULT_EXPIRY,
@@ -283,7 +284,7 @@ describe('Long-Lived Token Tests', () => {
         .expect(401);
 
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
-      
+
       // Revoked token
       const {record, token: validToken} = await createNewLongLivedToken({
         userId: localUser!.user_id!,
@@ -510,7 +511,8 @@ describe('Long-Lived Token Tests', () => {
 
     it('rejects expiry beyond configured limits', async () => {
       if (MAXIMUM_LONG_LIVED_DURATION_DAYS !== undefined) {
-        const tooFarInFuture = getMaxAllowedExpiryTimestamp()! + 24 * 60 * 60 * 1000;
+        const tooFarInFuture =
+          getMaxAllowedExpiryTimestamp()! + 24 * 60 * 60 * 1000;
 
         await requestAuthAndType(
           request(app).post('/api/long-lived-tokens').send({

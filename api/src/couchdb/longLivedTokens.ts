@@ -213,7 +213,7 @@ export const revokeLongLivedToken = async (
  */
 export const validateLongLivedToken = async (
   tokenHash: string,
-  updateLastUsed: boolean = true
+  updateLastUsed = true
 ): Promise<{
   valid: boolean;
   user?: ExistingPeopleDBDocument;

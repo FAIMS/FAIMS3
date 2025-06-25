@@ -7,7 +7,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {GetLongLivedTokensResponse} from '@faims3/data-model';
-import {useEffect} from 'react';
 
 interface UpdateLongLivedTokenDialogProps {
   open: boolean;

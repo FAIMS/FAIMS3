@@ -708,7 +708,7 @@ const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
  */
 function maximumLongLivedDurationDays(): number | undefined {
   const maxDays = process.env.MAXIMUM_LONG_LIVED_DURATION_DAYS;
-  
+
   if (maxDays === '' || maxDays === undefined) {
     console.log(
       'MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
