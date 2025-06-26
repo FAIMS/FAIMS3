@@ -320,6 +320,17 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
+
+/**
+ * Rerieves the configured support email address
+ * @returns {string} - the support email address
+ */
+function get_support_email(): string {
+  const support_email = import.meta.env.VITE_SUPPORT_EMAIL;
+  return support_email || 'support@fieldmark.au';
+}
+
+
 // Consider a refresh every 15 seconds
 const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
 
@@ -446,3 +457,4 @@ export const MAP_SOURCE = get_map_source();
 export const MAP_STYLE = get_map_style();
 export const NAVIGATION_STYLE = navigation_style();
 export const SHOW_RECORD_LINKS = showRecordLinks();
+export const SUPPORT_EMAIL = get_support_email();
