@@ -189,6 +189,8 @@ export class FaimsFrontEnd extends Construct {
       VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
       VITE_SUPPORT_EMAIL: props.supportEmail,
+      VITE_APP_PRIVACY_POLICY_URL: props.privacyPolicyUrl,
+      VITE_APP_CONTACT_URL: props.contactUrl,
 
       // Theme: default or bubble
       VITE_THEME: props.uiTheme,

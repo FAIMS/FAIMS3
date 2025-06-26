@@ -215,9 +215,9 @@ const AppSupportLinksSchema = z.object({
   /** The support email address */
   supportEmail: z.string().default('support@fieldmark.au'),
   /** The URL for the privacy policy */
-  privacyPolicyUrl: z.string().url(),
+  privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
   /** The URL for the contact page */
-  contactUrl: z.string().url(),
+  contactUrl: z.string().url().default(''),
 });
 
 export const UiConfiguration = z.object({
