@@ -320,7 +320,6 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
-
 /**
  * Return the configured privacy policy URL link
  *  defaults to the EFN privacy policy url
@@ -342,7 +341,6 @@ function get_app_contact_url(): string {
   const appid = import.meta.env.VITE_APP_CONTACT_URL;
   return appid || '';
 }
-
 
 /**
  * Retrieves the configured support email address
