@@ -209,7 +209,7 @@ describe('Long-Lived Token Tests', () => {
       // Local user can't revoke admin's token
       await requestAuthAndType(
         request(app)
-          .delete(`/api/long-lived-tokens/${record._id}/revoke`)
+          .delete(`/api/long-lived-tokens/${record._id}`)
           .send({} as PutRevokeLongLivedTokenRequest),
         localUserToken
       ).expect(401);
@@ -345,7 +345,7 @@ describe('Long-Lived Token Tests', () => {
       // Revoke the long-lived token
       await requestAuthAndType(
         request(app)
-          .delete(`/api/long-lived-tokens/${tokenId}/revoke`)
+          .delete(`/api/long-lived-tokens/${tokenId}`)
           .send({} as PutRevokeLongLivedTokenRequest),
         localUserToken
       ).expect(200);

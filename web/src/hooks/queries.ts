@@ -487,7 +487,7 @@ export const revokeLongLivedToken = async ({
   user: User;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/long-lived-tokens/${tokenId}/revoke`,
+    `${import.meta.env.VITE_API_URL}/api/long-lived-tokens/${tokenId}`,
     {
       method: 'DELETE',
       headers: {

@@ -250,7 +250,7 @@ api.put(
 );
 
 /**
- * PUT /:tokenId/revoke
+ * DELETE /:tokenId
  * Revokes (disables) an existing long-lived token.
  * Users can only revoke their own tokens unless they have EDIT_ALL_TOKENS permission.
  *
@@ -261,7 +261,7 @@ api.put(
  * @returns 404 - Token not found
  */
 api.delete(
-  '/:tokenId/revoke',
+  '/:tokenId',
   processRequest({
     body: PutRevokeLongLivedTokenRequestSchema,
   }),
