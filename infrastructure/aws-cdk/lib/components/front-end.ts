@@ -43,6 +43,9 @@ export interface FaimsFrontEndProps {
   // Used for mobile app builds etc
   appId: string;
 
+  // support email address
+  supportEmail: string;
+
   // e.g. db.domain.com
   couchDbDomainOnly: string;
   // e.g. 443
@@ -183,6 +186,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_APP_NAME: props.appName,
       VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
+      VITE_SUPPORT_EMAIL: props.supportEmail,
 
       // Theme: default or bubble
       VITE_THEME: props.uiTheme,

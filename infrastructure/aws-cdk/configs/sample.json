@@ -22,6 +22,7 @@
     "notebookName": "notebook",
     "appName": "FAIMS Mobile",
     "appId": "FAIMS",
+    "supportEmail": "support@your-domain.com",
     "offlineMaps": {
       "mapSource": "maptiler",
       "mapSourceKey": "your-maptiler-api-key",
