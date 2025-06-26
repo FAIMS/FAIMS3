@@ -93,3 +93,21 @@ export const removeFieldFromSummary = (
     removeFieldFromSummaryForViewset(state, fieldName, viewSetId);
   }
 };
+
+/**
+ * Finds the view ID for a given field name.
+ * @param uiSpec The UI specification object.
+ * @param fieldName The name of the field to find.
+ * @returns The ID of the view containing the field, or null if not found.
+ */
+export const getViewIDForField = (
+  uiSpec: NotebookUISpec,
+  fieldName: string
+): string | null => {
+  for (const viewId in uiSpec.fviews) {
+    if (uiSpec.fviews[viewId].fields.includes(fieldName)) {
+      return viewId;
+    }
+  }
+  return null;
+};

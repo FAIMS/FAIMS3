@@ -26,6 +26,7 @@ import {
 import {createDesignerStore} from './createDesignerStore';
 import globalTheme from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
+import {migrateNotebook} from './state/migrateNotebook';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
@@ -50,7 +51,30 @@ export function DesignerWidget({
   animationDuration = 300,
   animationScale = 0.95,
 }: DesignerWidgetProps) {
-  const store = useMemo(() => createDesignerStore(notebook), [notebook, debug]);
+  const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
+    if (!notebook) return undefined;
+
+    const flat: Notebook = {
+      metadata: notebook.metadata,
+      'ui-specification': notebook['ui-specification'].present,
+    };
+
+    const migrated: Notebook = migrateNotebook(flat);
+
+    return {
+      metadata: migrated.metadata,
+      'ui-specification': {
+        present: migrated['ui-specification'],
+        past: [],
+        future: [],
+      },
+    };
+  }, [notebook]);
+
+  const store = useMemo(
+    () => createDesignerStore(processedNotebook),
+    [processedNotebook, debug]
+  );
 
   const [loading, setLoading] = useState(true);
   const [animateIn, setAnimateIn] = useState(false);

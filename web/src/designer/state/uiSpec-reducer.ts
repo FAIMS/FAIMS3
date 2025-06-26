@@ -16,6 +16,7 @@ import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
 import {ConditionType} from '../components/condition';
+import {v4 as uuidv4} from 'uuid';
 import {
   slugify,
   getViewSetForView,
@@ -163,7 +164,7 @@ export const uiSpecificationReducer = createSlice({
         let fieldLabel = slugify(newFieldName);
         let N = 1;
         while (fieldLabel in state.fields) {
-          fieldLabel = slugify(fieldName + ' ' + N);
+          fieldLabel = slugify(newFieldName + ' ' + N);
           N += 1;
         }
 
@@ -198,6 +199,8 @@ export const uiSpecificationReducer = createSlice({
         action.payload;
 
       const newField: FieldType = getFieldSpec(fieldType);
+
+      newField.designerIdentifier = uuidv4();
 
       let fieldLabel = slugify(fieldName);
 
@@ -313,6 +316,7 @@ export const uiSpecificationReducer = createSlice({
       // create a deep copy of the original field
       const originalField = state.fields[originalFieldName];
       const newField: FieldType = JSON.parse(JSON.stringify(originalField));
+      newField.designerIdentifier = uuidv4();
 
       // generate a unique field label/name
       let fieldLabel = slugify(newFieldName);
@@ -442,6 +446,8 @@ export const uiSpecificationReducer = createSlice({
         const newField: FieldType = JSON.parse(JSON.stringify(originalField));
         newField['component-parameters'].label = newFieldLabel;
         newField['component-parameters'].name = fieldSlug;
+        newField.designerIdentifier = uuidv4();
+
         // Add the new field to the state and record it in the new section.
         state.fields[fieldSlug] = newField;
         newSection.fields.push(fieldSlug);
