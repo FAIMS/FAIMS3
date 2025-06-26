@@ -18,7 +18,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {Alert, AlertTitle, AlertDescription} from './ui/alert';
 import {
   Select,
@@ -72,6 +72,7 @@ export function Form<
   submitButtonVariant = 'default',
   warningMessage,
   defaultValues,
+  footer = undefined,
 }: {
   fields: TFields;
   dividers?: Divider[];
@@ -80,6 +81,7 @@ export function Form<
   submitButtonVariant?: ButtonProps['variant'];
   warningMessage?: string;
   defaultValues?: DefaultValues<TSchema>;
+  footer?: React.ReactNode;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -208,6 +210,7 @@ export function Form<
             }
           )}
         </div>
+        {footer ?? null}
         {warningMessage && (
           <Alert variant="destructive">
             <AlertTitle>Warning</AlertTitle>

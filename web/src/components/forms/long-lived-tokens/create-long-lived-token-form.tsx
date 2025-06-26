@@ -10,7 +10,9 @@ import {Copy, CheckCircle, AlertTriangle} from 'lucide-react';
 import {
   LONG_LIVED_TOKEN_HELP_LINK,
   MAXIMUM_LONG_LIVED_DURATION_DAYS,
+  LONG_LIVED_TOKEN_DURATION_HINTS,
 } from '@/constants';
+import {ExpirySelector} from '@/components/expiry-selector';
 
 interface CreateLongLivedTokenFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -26,56 +28,20 @@ export function CreateLongLivedTokenForm({
 }: CreateLongLivedTokenFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
-  const [createdToken, setCreatedToken] = useState<string | null>(null);
+  const [createdToken, setCreatedToken] = useState<string | undefined>(
+    undefined
+  );
   const [copied, setCopied] = useState(false);
+  const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
+    undefined
+  );
 
   // Set up close interception when token is displayed
   useEffect(() => {
     if (createdToken && onInterceptClose) {
-      // Call the intercept handler to set up the warning
       onInterceptClose();
     }
   }, [createdToken, onInterceptClose]);
-
-  // Calculate min and max dates for the datetime input
-  const now = new Date();
-  const minDate = new Date(now.getTime() + 60 * 1000); // 1 minute from now
-  const maxDate = MAXIMUM_LONG_LIVED_DURATION_DAYS
-    ? new Date(
-        now.getTime() + MAXIMUM_LONG_LIVED_DURATION_DAYS * 24 * 60 * 60 * 1000
-      )
-    : undefined;
-
-  // Format dates for datetime-local input (YYYY-MM-DDTHH:MM)
-  const formatDateTimeLocal = (date: Date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  const minDateString = formatDateTimeLocal(minDate);
-  const maxDateString = maxDate ? formatDateTimeLocal(maxDate) : undefined;
-
-  // Create custom validation for expiry date
-  const expirySchema = z
-    .string()
-    .min(1, 'Please select an expiry for the token')
-    .refine(value => {
-      const selectedDate = new Date(value);
-      const now = new Date();
-      return selectedDate > now;
-    }, 'Expiry date must be in the future')
-    .refine(value => {
-      if (!MAXIMUM_LONG_LIVED_DURATION_DAYS) return true; // No limit
-      const selectedDate = new Date(value);
-      const now = new Date();
-      const daysDiff =
-        (selectedDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-      return daysDiff <= MAXIMUM_LONG_LIVED_DURATION_DAYS;
-    }, `Expiry date cannot be more than ${MAXIMUM_LONG_LIVED_DURATION_DAYS} days from now`);
 
   const fields = [
     {
@@ -92,23 +58,11 @@ export function CreateLongLivedTokenForm({
         message: 'Description must be at least 10 characters',
       }),
     },
-    {
-      name: 'expiryDatetime',
-      label: 'Token expiry date',
-      description: MAXIMUM_LONG_LIVED_DURATION_DAYS
-        ? `Token can be valid for a maximum of ${MAXIMUM_LONG_LIVED_DURATION_DAYS} days`
-        : 'Set when this token should expire',
-      type: 'datetime-local',
-      schema: expirySchema,
-      min: minDateString,
-      max: maxDateString,
-    },
   ];
 
   interface onSubmitProps {
     title: string;
     description: string;
-    expiryDatetime: string;
   }
 
   /**
@@ -120,17 +74,17 @@ export function CreateLongLivedTokenForm({
     try {
       await navigator.clipboard.writeText(createdToken);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy token:', err);
     }
   };
 
   /**
-   * Handles closing the dialog (only shown when user confirms)
+   * Handles closing the dialog
    */
   const handleConfirmedClose = () => {
-    setCreatedToken(null);
+    setCreatedToken(undefined);
     setCopied(false);
     setDialogOpen(false);
   };
@@ -138,29 +92,39 @@ export function CreateLongLivedTokenForm({
   /**
    * Handles the form submission
    */
-  const onSubmit = async ({
-    title,
-    description,
-    expiryDatetime,
-  }: onSubmitProps) => {
+  const onSubmit = async ({title, description}: onSubmitProps) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
-    // Convert the expiry datetime to milliseconds timestamp
-    const expiryTimestampMs = new Date(expiryDatetime).getTime();
-    if (isNaN(expiryTimestampMs)) {
-      return {type: 'submit', message: 'Invalid expiry date'};
+    // Validate expiry selection
+    if (!selectedDateTime) {
+      return {type: 'submit', message: 'Please select an expiry date'};
     }
 
-    // Additional validation for maximum duration
-    if (MAXIMUM_LONG_LIVED_DURATION_DAYS) {
-      const now = new Date();
-      const daysDiff =
-        (expiryTimestampMs - now.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysDiff > MAXIMUM_LONG_LIVED_DURATION_DAYS) {
-        return {
-          type: 'submit',
-          message: `Token expiry cannot be more than ${MAXIMUM_LONG_LIVED_DURATION_DAYS} days from now`,
-        };
+    // Get expiry timestamp
+    let expiryTimestampMs: number | undefined = undefined;
+
+    if (selectedDateTime === 'never') {
+      // Never expires - we'll pass undefined
+      expiryTimestampMs = undefined;
+    } else {
+      const expiryDate = new Date(selectedDateTime);
+      expiryTimestampMs = expiryDate.getTime();
+
+      if (isNaN(expiryTimestampMs)) {
+        return {type: 'submit', message: 'Invalid expiry date'};
+      }
+
+      // Additional validation for maximum duration
+      if (MAXIMUM_LONG_LIVED_DURATION_DAYS) {
+        const now = new Date();
+        const daysDiff =
+          (expiryTimestampMs - now.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysDiff > MAXIMUM_LONG_LIVED_DURATION_DAYS) {
+          return {
+            type: 'submit',
+            message: `Token expiry cannot be more than ${MAXIMUM_LONG_LIVED_DURATION_DAYS} days from now`,
+          };
+        }
       }
     }
 
@@ -172,10 +136,8 @@ export function CreateLongLivedTokenForm({
         expiryTimestampMs,
       });
 
-      // Set the created token to display it
       setCreatedToken(response.token);
 
-      // Invalidate the long-lived tokens query to refresh the list
       QueryClient.invalidateQueries({
         queryKey: ['long-lived-tokens'],
       });
@@ -259,7 +221,6 @@ export function CreateLongLivedTokenForm({
             </a>
           </AlertDescription>
         </Alert>
-
         <Button
           onClick={handleConfirmedClose}
           variant="destructive"
@@ -271,13 +232,27 @@ export function CreateLongLivedTokenForm({
     );
   }
 
-  // Otherwise, show the creation form
+  // Show the creation form
   return (
-    <Form
-      fields={fields}
-      onSubmit={onSubmit}
-      submitButtonText={'Create Long-Lived Token'}
-      submitButtonVariant={'outline'}
-    />
+    <div className="space-y-6">
+      {/* Form Fields */}
+      <Form
+        fields={fields}
+        onSubmit={onSubmit}
+        submitButtonText="Create Long-Lived Token"
+        submitButtonVariant="outline"
+        footer={
+          <ExpirySelector
+            hints={LONG_LIVED_TOKEN_DURATION_HINTS}
+            maxDurationDays={MAXIMUM_LONG_LIVED_DURATION_DAYS}
+            selectedDateTime={selectedDateTime}
+            setSelectedDateTime={setSelectedDateTime}
+            title="Token Duration"
+            subtitle="Choose how long this token should remain valid"
+            showMaxDurationInfo={true}
+          />
+        }
+      />
+    </div>
   );
 }

@@ -260,7 +260,7 @@ api.put(
  * @returns 403 - Forbidden
  * @returns 404 - Token not found
  */
-api.put(
+api.delete(
   '/:tokenId/revoke',
   processRequest({
     body: PutRevokeLongLivedTokenRequestSchema,

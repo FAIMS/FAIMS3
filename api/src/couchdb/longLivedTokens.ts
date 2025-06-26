@@ -96,19 +96,6 @@ export const createNewLongLivedToken = async ({
   const dbId = AUTH_RECORD_ID_PREFIXES.longlived + uuidv4();
   const currentTimestamp = Date.now();
 
-  // If no expiry specified and unlimited is allowed, set to far future; otherwise use provided value
-  let finalExpiryTimestamp: number;
-  if (expiryTimestampMs === undefined) {
-    if (MAXIMUM_LONG_LIVED_DURATION_DAYS === undefined) {
-      // Set to 100 years in the future for "infinite" tokens
-      finalExpiryTimestamp = Date.now() + 100 * 365 * DAY_IN_MS;
-    } else {
-      throw new InvalidRequestException('Infinite expiry is not allowed');
-    }
-  } else {
-    finalExpiryTimestamp = expiryTimestampMs;
-  }
-
   const newLongLivedToken: LongLivedTokenFields = {
     documentType: 'longlived',
     userId,
@@ -118,7 +105,7 @@ export const createNewLongLivedToken = async ({
     enabled: true,
     createdTimestampMs: currentTimestamp,
     updatedTimestampMs: currentTimestamp,
-    expiryTimestampMs: finalExpiryTimestamp,
+    expiryTimestampMs: expiryTimestampMs,
     lastUsedTimestampMs: undefined,
   };
 
