@@ -9,7 +9,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getDaysDifference, formatDisplayDate, formatDateTimeLocal } from '@/lib/utils';
+import {
+  getDaysDifference,
+  formatDisplayDate,
+  formatDateTimeLocal,
+} from '@/lib/utils';
 import {AlertTriangle, Calendar, Clock} from 'lucide-react';
 import React, {useState} from 'react';
 
@@ -82,7 +86,6 @@ export const ExpirySelector: React.FC<ExpirySelectorProps> = ({
   const maxDate = maxDurationDays
     ? new Date(now.getTime() + maxDurationDays * 24 * 60 * 60 * 1000)
     : undefined;
-
 
   // Get current expiry date based on selection
   const getCurrentExpiryDate = (): Date | undefined => {
