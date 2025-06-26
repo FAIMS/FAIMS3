@@ -19,7 +19,6 @@
  */
 
 import {
-  Box,
   FormControlLabel,
   FormControlLabelProps,
   FormHelperTextProps,
@@ -68,11 +67,6 @@ interface Props {
   disabled?: boolean; // Wheter the field is disabled
   required?: boolean;
 }
-
-const md = new MarkdownIt({
-  breaks: true,
-  html: false,
-});
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
   /**

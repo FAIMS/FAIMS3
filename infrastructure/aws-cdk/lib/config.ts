@@ -226,6 +226,8 @@ export const UiConfiguration = z.object({
   headingAppName: z.string().optional(),
   /** Offline maps settings */
   offlineMaps: OfflineMapsConfigSchema,
+  /** support email */
+  supportEmail: z.string().default('support@fieldmark.au'),
 });
 
 // Define the schema

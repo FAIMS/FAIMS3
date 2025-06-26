@@ -7,7 +7,6 @@ import SupportEmail from './supportEmail';
 const SlimFooter = () => {
   /**
    * Slim footer with minimal necessary links to reduce user distraction
-   * Switch the contact email based on VITE_COMMIT_VERSION
    * Obfuscate email address
    */
   const theme = useTheme();

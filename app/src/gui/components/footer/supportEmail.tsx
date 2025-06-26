@@ -2,6 +2,7 @@ import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
 import {
+  APP_NAME,
   COMMIT_VERSION,
   CONDUCTOR_URLS,
   SUPPORT_EMAIL,
@@ -36,7 +37,7 @@ export default function SupportEmail() {
         className={'support-link'}
         email={SUPPORT_EMAIL}
         headers={{
-          subject: 'Fieldmark Support',
+          subject: `${APP_NAME} Support`,
           body: bodyContent,
         }}
       />

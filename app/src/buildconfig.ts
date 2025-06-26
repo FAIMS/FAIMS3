@@ -320,16 +320,14 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
-
 /**
- * Rerieves the configured support email address
+ * Retrieves the configured support email address
  * @returns {string} - the support email address
  */
 function get_support_email(): string {
   const support_email = import.meta.env.VITE_SUPPORT_EMAIL;
   return support_email || 'support@fieldmark.au';
 }
-
 
 // Consider a refresh every 15 seconds
 const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
