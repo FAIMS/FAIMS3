@@ -33,11 +33,11 @@ import {useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-import {
-  ConditionModal,
-  ConditionTranslation,
-  ConditionType,
-} from '../condition';
+
+import {ConditionModal} from '../condition/ConditionModal';
+import {ConditionTranslation} from '../condition/ConditionTranslation';
+import {ConditionType} from '../condition/types';
+
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 
