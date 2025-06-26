@@ -178,6 +178,31 @@ export enum Action {
   DELETE_USER = 'DELETE_USER',
 
   // ============================================================
+  // LONG LIVED TOKEN ACTIONS
+  // ============================================================
+
+  // Create a new long-lived token for yourself
+  CREATE_LONG_LIVED_TOKEN = 'CREATE_LONG_LIVED_TOKEN',
+
+  // Read your own long-lived tokens
+  READ_MY_LONG_LIVED_TOKENS = 'READ_MY_LONG_LIVED_TOKENS',
+
+  // Read all long-lived tokens in the system (admin)
+  READ_ANY_LONG_LIVED_TOKENS = 'READ_ANY_LONG_LIVED_TOKENS',
+
+  // Edit your own long-lived tokens (metadata only)
+  EDIT_MY_LONG_LIVED_TOKEN = 'EDIT_MY_LONG_LIVED_TOKEN',
+
+  // Edit any long-lived token in the system (admin)
+  EDIT_ANY_LONG_LIVED_TOKEN = 'EDIT_ANY_LONG_LIVED_TOKEN',
+
+  // Revoke your own long-lived tokens
+  REVOKE_MY_LONG_LIVED_TOKEN = 'REVOKE_MY_LONG_LIVED_TOKEN',
+
+  // Revoke any long-lived token in the system (admin)
+  REVOKE_ANY_LONG_LIVED_TOKEN = 'REVOKE_ANY_LONG_LIVED_TOKEN',
+
+  // ============================================================
   // SYSTEM ACTIONS
   // ============================================================
 
@@ -710,6 +735,53 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
+
+  // ============================================================
+  // LONG LIVED TOKEN ACTIONS
+  // ============================================================
+  [Action.CREATE_LONG_LIVED_TOKEN]: {
+    name: 'Create Long-Lived Token',
+    description: 'Create a new long-lived token for API usage',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.READ_MY_LONG_LIVED_TOKENS]: {
+    name: 'Read My Long-Lived Tokens',
+    description: 'View your own long-lived API tokens',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.EDIT_MY_LONG_LIVED_TOKEN]: {
+    name: 'Edit My Long-Lived Token',
+    description: 'Modify the metadata of your own long-lived API tokens',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.REVOKE_MY_LONG_LIVED_TOKEN]: {
+    name: 'Revoke My Long-Lived Token',
+    description: 'Revoke/disable your own long-lived API tokens',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.READ_ANY_LONG_LIVED_TOKENS]: {
+    name: 'Read Any Long-Lived Tokens',
+    description: 'View all long-lived API tokens in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.EDIT_ANY_LONG_LIVED_TOKEN]: {
+    name: 'Edit Any Long-Lived Token',
+    description:
+      'Modify the metadata of any long-lived API token in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.REVOKE_ANY_LONG_LIVED_TOKEN]: {
+    name: 'Revoke Any Long-Lived Token',
+    description: 'Revoke/disable any long-lived API token in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
 };
 
 /**
@@ -970,7 +1042,17 @@ export const roleActions: Record<
 
   // GLOBAL ROLES
   [Role.GENERAL_USER]: {
-    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES, Action.VERIFY_EMAIL],
+    actions: [
+      Action.LIST_PROJECTS,
+      Action.LIST_TEMPLATES,
+      Action.VERIFY_EMAIL,
+
+      // Long-lived token actions for own tokens (CRUD)
+      Action.CREATE_LONG_LIVED_TOKEN,
+      Action.READ_MY_LONG_LIVED_TOKENS,
+      Action.EDIT_MY_LONG_LIVED_TOKEN,
+      Action.REVOKE_MY_LONG_LIVED_TOKEN,
+    ],
   },
   [Role.GENERAL_CREATOR]: {
     actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
@@ -995,6 +1077,11 @@ export const roleActions: Record<
       Action.CREATE_ADMIN_TEAM_INVITE,
       Action.EDIT_ADMIN_TEAM_INVITE,
       Action.DELETE_ADMIN_TEAM_INVITE,
+
+      // Long-lived token admin actions
+      Action.READ_ANY_LONG_LIVED_TOKENS,
+      Action.EDIT_ANY_LONG_LIVED_TOKEN,
+      Action.REVOKE_ANY_LONG_LIVED_TOKEN,
     ],
     inheritedRoles: [
       // God role

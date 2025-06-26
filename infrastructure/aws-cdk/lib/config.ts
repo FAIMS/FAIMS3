@@ -237,6 +237,11 @@ export const UiConfiguration = z.object({
   offlineMaps: OfflineMapsConfigSchema,
 });
 
+export const SecurityConfigSchema = z.object({
+  /** Maximum number of days for long lived tokens */
+  maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
+});
+
 // Define the schema
 export const ConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
@@ -290,6 +295,10 @@ export const ConfigSchema = z.object({
   smtp: SMTPConfigSchema,
   /** Social sign in providers */
   socialProviders: SocialProvidersConfigSchema.optional(),
+  /** Security parameters */
+  security: SecurityConfigSchema.optional().default({
+    maximumLongLivedTokenDurationDays: 90,
+  }),
 });
 
 // Infer the types from the schemas

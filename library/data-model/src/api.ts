@@ -705,7 +705,7 @@ export type PostRequestEmailVerificationRequest = z.infer<
 export const PostRequestEmailVerificationResponseSchema = z.object({
   message: z.string(),
   email: z.string().email(),
-  expiresAt: z.number(),
+  expiresAt: z.number().optional(),
 });
 export type PostRequestEmailVerificationResponse = z.infer<
   typeof PostRequestEmailVerificationResponseSchema
@@ -726,4 +726,94 @@ export const PutConfirmEmailVerificationResponseSchema = z.object({
 });
 export type PutConfirmEmailVerificationResponse = z.infer<
   typeof PutConfirmEmailVerificationResponseSchema
+>;
+
+// ============================
+// LONG LIVED TOKENS API ROUTES
+// ============================
+
+// Request Schemas
+export const PostCreateLongLivedTokenRequestSchema = z.object({
+  title: z.string().min(1).max(100),
+  description: z.string().min(1).max(500),
+  expiryTimestampMs: z.number().int().positive().optional(),
+});
+
+export const PutUpdateLongLivedTokenRequestSchema = z.object({
+  title: z.string().min(1).max(100).optional(),
+  description: z.string().min(1).max(500).optional(),
+});
+
+export const PutRevokeLongLivedTokenRequestSchema = z.object({
+  // Empty body for revoke operation
+});
+
+// Response Schemas
+export const LongLivedTokenResponseSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+  expiresAt: z.number().optional(),
+  lastUsedAt: z.number().optional(),
+  userId: z.string(),
+});
+
+export const PostCreateLongLivedTokenResponseSchema =
+  LongLivedTokenResponseSchema.extend({
+    token: z.string(), // Only included on creation
+  });
+
+export const PutUpdateLongLivedTokenResponseSchema =
+  LongLivedTokenResponseSchema;
+
+export const PutRevokeLongLivedTokenResponseSchema =
+  LongLivedTokenResponseSchema.extend({
+    message: z.string(),
+  });
+
+export const GetLongLivedTokensResponseSchema = z.object({
+  tokens: z.array(LongLivedTokenResponseSchema),
+  maxAllowedExpiryTimestamp: z.number().optional(),
+  maxDurationDays: z.number().optional(),
+});
+
+export const PostLongLivedTokenExchangeInputSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+});
+
+export const PostLongLivedTokenExchangeResponseSchema = z.object({
+  token: z.string(),
+});
+
+// Type exports
+export type PostCreateLongLivedTokenRequest = z.infer<
+  typeof PostCreateLongLivedTokenRequestSchema
+>;
+export type PostCreateLongLivedTokenResponse = z.infer<
+  typeof PostCreateLongLivedTokenResponseSchema
+>;
+export type PutUpdateLongLivedTokenRequest = z.infer<
+  typeof PutUpdateLongLivedTokenRequestSchema
+>;
+export type PutUpdateLongLivedTokenResponse = z.infer<
+  typeof PutUpdateLongLivedTokenResponseSchema
+>;
+export type PutRevokeLongLivedTokenRequest = z.infer<
+  typeof PutRevokeLongLivedTokenRequestSchema
+>;
+export type PutRevokeLongLivedTokenResponse = z.infer<
+  typeof PutRevokeLongLivedTokenResponseSchema
+>;
+export type GetLongLivedTokensResponse = z.infer<
+  typeof GetLongLivedTokensResponseSchema
+>;
+
+export type PostLongLivedTokenExchangeInput = z.infer<
+  typeof PostLongLivedTokenExchangeInputSchema
+>;
+export type PostLongLivedTokenExchangeResponse = z.infer<
+  typeof PostLongLivedTokenExchangeResponseSchema
 >;

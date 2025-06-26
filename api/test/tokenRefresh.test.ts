@@ -45,7 +45,7 @@ import {
 } from '../src/couchdb/refreshTokens';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
-import {hashVerificationCode} from '../src/utils';
+import {hashChallengeCode} from '../src/utils';
 import {listTemplates} from './template.test';
 import {
   adminToken,
@@ -312,7 +312,7 @@ describe('token refresh tests', () => {
 
     // Verify we can find the token by the exchange token hash
     // Use the hash verification code function to check hash lookup
-    const hash = hashVerificationCode(exchangeToken);
+    const hash = hashChallengeCode(exchangeToken);
     const tokensByExchangeHash = await getTokensByExchangeTokenHash({
       exchangeTokenHash: hash,
     });

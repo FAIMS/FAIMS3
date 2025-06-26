@@ -347,59 +347,202 @@ export type VerificationChallengeV4ExistingDocument = z.infer<
   typeof VerificationChallengeV4ExistingDocumentSchema
 >;
 
+// =============
+// V5 Definition
+// =============
+
+// V5 - Refresh token schema remains the same as V4
+export const RefreshRecordV5FieldsSchema = RefreshRecordV4FieldsSchema;
+
+// V5 - Email code schema remains the same as V4
+export const EmailCodeV5FieldsSchema = EmailCodeV4FieldsSchema;
+
+// V5 - Verification challenge schema remains the same as V4
+export const VerificationChallengeV5FieldsSchema =
+  VerificationChallengeV4FieldsSchema;
+
+// V5 - New Long Lived Token schema
+export const LongLivedTokenV5FieldsSchema = z.object({
+  // When was it created? unix timestamp in ms
+  createdTimestampMs: z.number(),
+  // When was it last updated? unix timestamp in ms
+  updatedTimestampMs: z.number(),
+  // When was it last used? unix timestamp in ms
+  lastUsedTimestampMs: z.number().optional(),
+  // When does it expire? unix timestamp in ms (undefined means no expiry!)
+  expiryTimestampMs: z.number().optional(),
+  // Discriminator field
+  documentType: z.literal('longlived'),
+  // Which user ID owns this token
+  userId: z.string(),
+  // Hash of the actual token (this is used to look up the token without storing
+  // it in plain text)
+  tokenHash: z.string(),
+  // Human readable title for the token
+  title: z.string(),
+  // Description of what this token is used for
+  description: z.string(),
+  // Is this token enabled/active
+  enabled: z.boolean(),
+});
+
+export const AuthRecordV5FieldsSchema = z.discriminatedUnion('documentType', [
+  RefreshRecordV5FieldsSchema,
+  EmailCodeV5FieldsSchema,
+  VerificationChallengeV5FieldsSchema,
+  LongLivedTokenV5FieldsSchema,
+]);
+
+export const AuthRecordV5DocumentSchema = z.discriminatedUnion('documentType', [
+  CouchDocumentSchema.extend(RefreshRecordV5FieldsSchema.shape),
+  CouchDocumentSchema.extend(EmailCodeV5FieldsSchema.shape),
+  CouchDocumentSchema.extend(VerificationChallengeV5FieldsSchema.shape),
+  CouchDocumentSchema.extend(LongLivedTokenV5FieldsSchema.shape),
+]);
+export type AuthRecordV5Document = z.infer<typeof AuthRecordV5DocumentSchema>;
+
+export const AuthRecordV5ExistingDocumentSchema = z.discriminatedUnion(
+  'documentType',
+  [
+    CouchExistingDocumentSchema.extend(RefreshRecordV5FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(EmailCodeV5FieldsSchema.shape),
+    CouchExistingDocumentSchema.extend(
+      VerificationChallengeV5FieldsSchema.shape
+    ),
+    CouchExistingDocumentSchema.extend(LongLivedTokenV5FieldsSchema.shape),
+  ]
+);
+export type AuthRecordV5ExistingDocument = z.infer<
+  typeof AuthRecordV5ExistingDocumentSchema
+>;
+
+export type RefreshRecordV5Fields = z.infer<typeof RefreshRecordV5FieldsSchema>;
+export type EmailCodeV5Fields = z.infer<typeof EmailCodeV5FieldsSchema>;
+export type VerificationChallengeV5Fields = z.infer<
+  typeof VerificationChallengeV5FieldsSchema
+>;
+export type LongLivedTokenV5Fields = z.infer<
+  typeof LongLivedTokenV5FieldsSchema
+>;
+export type AuthRecordV5Fields = z.infer<typeof AuthRecordV5FieldsSchema>;
+
+// refresh token
+export const RefreshRecordV5DocumentSchema = CouchDocumentSchema.extend(
+  RefreshRecordV5FieldsSchema.shape
+);
+export type RefreshRecordV5Document = z.infer<
+  typeof RefreshRecordV5DocumentSchema
+>;
+
+export const RefreshRecordV5ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(RefreshRecordV5FieldsSchema.shape);
+export type RefreshRecordV5ExistingDocument = z.infer<
+  typeof RefreshRecordV5ExistingDocumentSchema
+>;
+
+// email code
+export const EmailCodeV5DocumentSchema = CouchDocumentSchema.extend(
+  EmailCodeV5FieldsSchema.shape
+);
+export type EmailCodeV5Document = z.infer<typeof EmailCodeV5DocumentSchema>;
+
+export const EmailCodeV5ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(EmailCodeV5FieldsSchema.shape);
+export type EmailCodeV5ExistingDocument = z.infer<
+  typeof EmailCodeV5ExistingDocumentSchema
+>;
+
+// verification challenge
+export const VerificationChallengeV5DocumentSchema = CouchDocumentSchema.extend(
+  VerificationChallengeV5FieldsSchema.shape
+);
+export type VerificationChallengeV5Document = z.infer<
+  typeof VerificationChallengeV5DocumentSchema
+>;
+
+export const VerificationChallengeV5ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(VerificationChallengeV5FieldsSchema.shape);
+export type VerificationChallengeV5ExistingDocument = z.infer<
+  typeof VerificationChallengeV5ExistingDocumentSchema
+>;
+
+// long lived token
+export const LongLivedTokenV5DocumentSchema = CouchDocumentSchema.extend(
+  LongLivedTokenV5FieldsSchema.shape
+);
+export type LongLivedTokenV5Document = z.infer<
+  typeof LongLivedTokenV5DocumentSchema
+>;
+
+export const LongLivedTokenV5ExistingDocumentSchema =
+  CouchExistingDocumentSchema.extend(LongLivedTokenV5FieldsSchema.shape);
+export type LongLivedTokenV5ExistingDocument = z.infer<
+  typeof LongLivedTokenV5ExistingDocumentSchema
+>;
+
 // CURRENT EXPORTS
 // ===============
 
 // Fields
-export const AuthRecordFieldsSchema = AuthRecordV4FieldsSchema;
-export type AuthRecordFields = AuthRecordV4Fields;
+export const AuthRecordFieldsSchema = AuthRecordV5FieldsSchema;
+export type AuthRecordFields = AuthRecordV5Fields;
 
 // possibly existing document schemas
-export const AuthRecordDocumentSchema = AuthRecordV4DocumentSchema;
-export type AuthRecordDocument = AuthRecordV4Document;
+export const AuthRecordDocumentSchema = AuthRecordV5DocumentSchema;
+export type AuthRecordDocument = AuthRecordV5Document;
 
 // existing document schemas
 export const AuthRecordExistingDocumentSchema =
-  AuthRecordV4ExistingDocumentSchema;
-export type AuthRecordExistingDocument = AuthRecordV4ExistingDocument;
+  AuthRecordV5ExistingDocumentSchema;
+export type AuthRecordExistingDocument = AuthRecordV5ExistingDocument;
 
 // Helper types for specific record documents
-export type RefreshRecordFields = RefreshRecordV4Fields;
-export type EmailCodeFields = EmailCodeV4Fields;
-export type VerificationChallengeFields = VerificationChallengeV4Fields;
+export type RefreshRecordFields = RefreshRecordV5Fields;
+export type EmailCodeFields = EmailCodeV5Fields;
+export type VerificationChallengeFields = VerificationChallengeV5Fields;
+export type LongLivedTokenFields = LongLivedTokenV5Fields;
 
 // refresh token
-export const RefreshRecordDocumentSchema = RefreshRecordV4DocumentSchema;
-export type RefreshRecordDocument = RefreshRecordV4Document;
+export const RefreshRecordDocumentSchema = RefreshRecordV5DocumentSchema;
+export type RefreshRecordDocument = RefreshRecordV5Document;
 export const RefreshRecordExistingDocumentSchema =
-  RefreshRecordV4ExistingDocumentSchema;
-export type RefreshRecordExistingDocument = RefreshRecordV4ExistingDocument;
+  RefreshRecordV5ExistingDocumentSchema;
+export type RefreshRecordExistingDocument = RefreshRecordV5ExistingDocument;
 
 // email code
-export const EmailCodeDocumentSchema = EmailCodeV4DocumentSchema;
-export type EmailCodeDocument = EmailCodeV4Document;
+export const EmailCodeDocumentSchema = EmailCodeV5DocumentSchema;
+export type EmailCodeDocument = EmailCodeV5Document;
 export const EmailCodeExistingDocumentSchema =
-  EmailCodeV4ExistingDocumentSchema;
-export type EmailCodeExistingDocument = EmailCodeV4ExistingDocument;
+  EmailCodeV5ExistingDocumentSchema;
+export type EmailCodeExistingDocument = EmailCodeV5ExistingDocument;
 
 // verification challenge
 export const VerificationChallengeDocumentSchema =
-  VerificationChallengeV4DocumentSchema;
-export type VerificationChallengeDocument = VerificationChallengeV4Document;
+  VerificationChallengeV5DocumentSchema;
+export type VerificationChallengeDocument = VerificationChallengeV5Document;
 export const VerificationChallengeExistingDocumentSchema =
-  VerificationChallengeV4ExistingDocumentSchema;
+  VerificationChallengeV5ExistingDocumentSchema;
 export type VerificationChallengeExistingDocument =
-  VerificationChallengeV4ExistingDocument;
+  VerificationChallengeV5ExistingDocument;
+
+// long lived token
+export const LongLivedTokenDocumentSchema = LongLivedTokenV5DocumentSchema;
+export type LongLivedTokenDocument = LongLivedTokenV5Document;
+export const LongLivedTokenExistingDocumentSchema =
+  LongLivedTokenV5ExistingDocumentSchema;
+export type LongLivedTokenExistingDocument = LongLivedTokenV5ExistingDocument;
 
 // ID prefix map
 export const AUTH_RECORD_ID_PREFIXES = {
   refresh: 'refresh_',
   emailcode: 'emailcode_',
   verification: 'verification_',
+  longlived: 'longlived_',
 } as const;
 
 // Database
 export type GetRefreshTokenIndex = 'id' | 'token';
 export type GetEmailCodeIndex = 'id' | 'code';
 export type GetVerificationChallengeIndex = 'id' | 'code';
+export type GetLongLivedTokenIndex = 'id' | 'tokenHash';
 export type AuthDatabase = PouchDB.Database<AuthRecordFields>;

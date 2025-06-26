@@ -120,6 +120,8 @@ export class FaimsInfraStack extends cdk.Stack {
       domainName: domains.conductor,
       privateKeySecretArn: config.secrets.privateKey,
       hz: hz,
+      maximumLongLivedDurationDays:
+        config.security.maximumLongLivedTokenDurationDays,
       couchDbAdminSecret: couchDb.passwordSecret,
       couchDBEndpoint: couchDb.couchEndpoint,
       couchDBPort: couchDb.exposedPort,
@@ -168,6 +170,8 @@ export class FaimsInfraStack extends cdk.Stack {
       supportEmail: config.supportLinks.supportEmail,
       privacyPolicyUrl: config.supportLinks.privacyPolicyUrl,
       contactUrl: config.supportLinks.contactUrl,
+      maximumLongLivedDurationDays:
+        config.security.maximumLongLivedTokenDurationDays,
     });
 
     // Backup setup

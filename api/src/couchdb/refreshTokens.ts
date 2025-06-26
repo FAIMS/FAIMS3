@@ -17,7 +17,7 @@ import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
-import {generateVerificationCode, hashVerificationCode} from '../utils';
+import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in hours
@@ -69,7 +69,7 @@ export const createNewRefreshToken = async ({
 
   // Create the exchange token
   const code = generateVerificationCode();
-  const hash = hashVerificationCode(code);
+  const hash = hashChallengeCode(code);
   const newRefreshToken: RefreshRecordFields = {
     documentType: 'refresh',
     userId,
@@ -110,7 +110,7 @@ export const consumeExchangeTokenForRefreshToken = async ({
   refreshDocument?: RefreshRecordExistingDocument;
   user?: ExistingPeopleDBDocument;
 }> => {
-  const exchangeTokenHash = hashVerificationCode(exchangeToken);
+  const exchangeTokenHash = hashChallengeCode(exchangeToken);
   try {
     const tokenDocs = await getTokensByExchangeTokenHash({
       exchangeTokenHash,

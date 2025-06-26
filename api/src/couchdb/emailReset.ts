@@ -22,7 +22,7 @@ import {
   ItemNotFoundException,
   TooManyRequestsException,
 } from '../exceptions';
-import {generateVerificationCode, hashVerificationCode} from '../utils';
+import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds
@@ -169,7 +169,7 @@ export const createNewEmailCode = async ({
 
   const authDB = getAuthDB();
   const code = generateVerificationCode();
-  const hash = hashVerificationCode(code);
+  const hash = hashChallengeCode(code);
   const dbId = AUTH_RECORD_ID_PREFIXES.emailcode + uuidv4();
   const expiryTimestampMs = generateExpiryTimestamp(expiryMs);
   const currentTimestamp = Date.now();
@@ -206,7 +206,7 @@ export const validateEmailCode = async (
 }> => {
   try {
     // Hash the code
-    const hashedCode = hashVerificationCode(code);
+    const hashedCode = hashChallengeCode(code);
 
     // Try to find the code (hashed)
     const codeDoc = await getCodeByCode(hashedCode);
@@ -265,7 +265,7 @@ export const validateEmailCode = async (
 export const markCodeAsUsed = async (
   code: string
 ): Promise<EmailCodeExistingDocument> => {
-  const hashedCode = hashVerificationCode(code);
+  const hashedCode = hashChallengeCode(code);
   const codeDoc = await getCodeByCode(hashedCode);
 
   if (!codeDoc) {

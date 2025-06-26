@@ -62,6 +62,7 @@ const indexContent = readFileSync(
 
 import markdownit from 'markdown-it';
 import {api as resetPasswordApi} from './api/emailReset';
+import {api as longLivedApi} from './api/longLivedTokens';
 import {api as invitesApi} from './api/invites';
 import {api as notebookApi} from './api/notebooks';
 import {api as teamsApi} from './api/teams';
@@ -172,6 +173,7 @@ app.use('/api/teams', teamsApi);
 app.use('/api/users', usersApi);
 app.use('/api/verify', emailVerifyApi);
 app.use('/api/reset', resetPasswordApi);
+app.use('/api/long-lived-tokens', longLivedApi);
 app.use('/api/invites', invitesApi);
 app.use('/api', utilityApi);
 
