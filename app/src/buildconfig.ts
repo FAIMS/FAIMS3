@@ -320,6 +320,37 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
+/**
+ * Return the configured privacy policy URL link
+ *  defaults to the EFN privacy policy url
+ *
+ * @returns {string} - the app privacy policy url link
+ */
+function get_app_privacy_policy_url(): string {
+  const appid = import.meta.env.VITE_APP_PRIVACY_POLICY_URL;
+  return appid || 'https://fieldnote.au/privacy';
+}
+
+/**
+ * Return the configured app contact url link
+ *  if this is falsy, the contact link will not be shown
+ *
+ * @returns {string} - the app contact url link, defaults to empty string
+ */
+function get_app_contact_url(): string {
+  const appid = import.meta.env.VITE_APP_CONTACT_URL;
+  return appid || '';
+}
+
+/**
+ * Retrieves the configured support email address
+ * @returns {string} - the support email address
+ */
+function get_support_email(): string {
+  const support_email = import.meta.env.VITE_SUPPORT_EMAIL;
+  return support_email || 'support@fieldmark.au';
+}
+
 // Consider a refresh every 15 seconds
 const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
 
@@ -446,3 +477,6 @@ export const MAP_SOURCE = get_map_source();
 export const MAP_STYLE = get_map_style();
 export const NAVIGATION_STYLE = navigation_style();
 export const SHOW_RECORD_LINKS = showRecordLinks();
+export const SUPPORT_EMAIL = get_support_email();
+export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
+export const CONTACT_URL = get_app_contact_url();

@@ -211,6 +211,15 @@ const BackupConfigSchema = z
     }
   );
 
+const AppSupportLinksSchema = z.object({
+  /** The support email address */
+  supportEmail: z.string().default('support@fieldmark.au'),
+  /** The URL for the privacy policy */
+  privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
+  /** The URL for the contact page */
+  contactUrl: z.string().url().default(''),
+});
+
 export const UiConfiguration = z.object({
   /** The UI Theme for the app */
   uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
@@ -258,6 +267,8 @@ export const ConfigSchema = z.object({
   }),
   /** UI Configuration values */
   uiConfiguration: UiConfiguration,
+  /** The support links for the app */
+  supportLinks: AppSupportLinksSchema,
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /** Backup configuration */
