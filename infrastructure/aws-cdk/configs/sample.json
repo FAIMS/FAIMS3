@@ -22,13 +22,17 @@
     "notebookName": "notebook",
     "appName": "FAIMS Mobile",
     "appId": "FAIMS",
-    "supportEmail": "support@your-domain.com",
     "offlineMaps": {
       "mapSource": "maptiler",
       "mapSourceKey": "your-maptiler-api-key",
       "offlineMaps": true,
       "mapStyle": "basic"
     }
+  },
+  "supportLinks": {
+    "supportEmail": "support@your-domain.com",
+    "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
+    "contactUrl": "https://your-domain.com/contact",
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",

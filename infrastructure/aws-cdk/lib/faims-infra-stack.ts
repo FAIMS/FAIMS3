@@ -165,7 +165,9 @@ export class FaimsInfraStack extends cdk.Stack {
       headingAppName: config.uiConfiguration.headingAppName,
       webDomainName: domains.web,
       offlineMaps: config.uiConfiguration.offlineMaps,
-      supportEmail: config.uiConfiguration.supportEmail,
+      supportEmail: config.supportLinks.supportEmail,
+      privacyPolicyUrl: config.supportLinks.privacyPolicyUrl,
+      contactUrl: config.supportLinks.contactUrl,
     });
 
     // Backup setup

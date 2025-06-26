@@ -3,6 +3,7 @@ import {useTheme} from '@mui/material/styles';
 import React from 'react';
 
 import SupportEmail from './supportEmail';
+import {CONTACT_URL, PRIVACY_POLICY_URL} from '../../../buildconfig';
 
 const SlimFooter = () => {
   /**
@@ -38,23 +39,25 @@ const SlimFooter = () => {
               variant="subtitle2"
               color={theme.palette.grey[900]}
               component={Link}
-              href="https://faims.edu.au/privacy"
+              href={PRIVACY_POLICY_URL}
               target="_blank"
               underline="none"
             >
               Privacy Policy
             </Typography>
             <SupportEmail />
-            <Typography
-              variant="subtitle2"
-              color={theme.palette.grey[900]}
-              component={Link}
-              href="https://faims.edu.au/contact/"
-              target="_blank"
-              underline="none"
-            >
-              Contact
-            </Typography>
+            {CONTACT_URL && (
+              <Typography
+                variant="subtitle2"
+                color={theme.palette.grey[900]}
+                component={Link}
+                href={CONTACT_URL}
+                target="_blank"
+                underline="none"
+              >
+                Contact
+              </Typography>
+            )}
           </Stack>
         </Stack>
       </Container>

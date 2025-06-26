@@ -43,8 +43,10 @@ export interface FaimsFrontEndProps {
   // Used for mobile app builds etc
   appId: string;
 
-  // support email address
+  // support links
   supportEmail: string;
+  privacyPolicyUrl: string;
+  contactUrl: string;
 
   // e.g. db.domain.com
   couchDbDomainOnly: string;
