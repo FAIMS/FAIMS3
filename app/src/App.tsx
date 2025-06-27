@@ -35,6 +35,7 @@ import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import {SignIn} from './gui/pages/signin';
 import Workspace from './gui/pages/workspace';
+import '@capacitor-community/safe-area';
 
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
