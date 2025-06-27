@@ -8,7 +8,7 @@ interface TemplateCellComponentProps {
 }
 
 /**
- * Component: TeamCellComponent
+ * Component: TemplateCellComponent
  * Renders a team name as a clickable link in a table cell
  */
 export const TemplateCellComponent = ({

@@ -32,6 +32,7 @@ export interface AuthContext {
   }>;
   logout: () => void;
   user: User | null;
+  refreshToken: () => Promise<{status: string; message: string}>;
 }
 
 const AuthContext = createContext<AuthContext | null>(null);
@@ -209,13 +210,14 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
     setStoredUser(updatedUser);
     setUser(updatedUser);
+    console.log('user is updated now');
 
     return {status: 'success', message: ''};
   };
 
   return (
     <AuthContext.Provider
-      value={{isAuthenticated, user, getUserDetails, logout}}
+      value={{isAuthenticated, user, getUserDetails, logout, refreshToken}}
     >
       {children}
     </AuthContext.Provider>
