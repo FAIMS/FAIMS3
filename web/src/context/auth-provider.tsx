@@ -51,7 +51,7 @@ function decodeToken(token: string): TokenContents | null {
 
     // Minute buffer is considered expired
     if (payload.exp * 1000 < Date.now() - 60 * 1000) {
-      console.log('Access token has expired.');
+      console.error('Access token has expired.');
       return null;
     }
 
@@ -210,7 +210,6 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
     setStoredUser(updatedUser);
     setUser(updatedUser);
-    console.log('user is updated now');
 
     return {status: 'success', message: ''};
   };

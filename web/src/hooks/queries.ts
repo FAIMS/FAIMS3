@@ -121,7 +121,7 @@ export const useGetProject = ({
  */
 export const useGetProjects = (user: User | null) =>
   useQuery({
-    queryKey: ['projects'],
+    queryKey: ['projects', user?.token],
     queryFn: () => get<GetNotebookListResponse>('/api/notebooks/', user),
     enabled: !!user,
   });
@@ -154,7 +154,7 @@ export const useGetProjectsForTeam = ({
   teamId: string;
 }) =>
   useQuery({
-    queryKey: ['projectsbyteam', teamId],
+    queryKey: ['projectsbyteam', teamId, user?.token],
     queryFn: () =>
       get<GetNotebookListResponse>(`/api/notebooks?teamId=${teamId}`, user),
   });

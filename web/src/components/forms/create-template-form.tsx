@@ -127,7 +127,6 @@ export function CreateTemplateForm({
           message: `template created but failed to refresh user token: ${message}`,
         };
       }
-      console.log('refreshed user token');
     } catch {
       return {type: 'submit', message: 'Failed to create template'};
     }
@@ -139,7 +138,6 @@ export function CreateTemplateForm({
       });
     }
     await queryClient.invalidateQueries({queryKey: ['templates', undefined]});
-    console.log('templates query invalidated');
     setDialogOpen(false);
   };
 
