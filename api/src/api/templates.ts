@@ -158,7 +158,6 @@ api.post(
     });
     await saveExpressUser(req.user);
 
-    console.log('saving user', req.user);
     res.json(newTemplate);
   }
 );

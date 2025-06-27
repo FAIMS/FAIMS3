@@ -9,7 +9,6 @@ import {Action} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
-import {json} from 'stream/consumers';
 
 interface CreateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
