@@ -1,6 +1,6 @@
 import {IconButton, Typography, Box} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import {useNavigate} from 'react-router';
+import {useLocation, useNavigate} from 'react-router';
 import {ConfirmExitDialog} from '../record/confirmExitDialog';
 import {useState} from 'react';
 import {useAppSelector} from '../../../context/store';
@@ -16,13 +16,24 @@ const BackButton = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const formIsEdited = useAppSelector(state => state.records.edited);
+  const location = useLocation();
+  // our “step” field_id comes from RelatedRecordSelector → AddNewRecordButton → navigate(...)
+  const fieldId = (location.state as any)?.field_id as string | undefined;
+  console.log('fieldid for reference: ', fieldId);
 
   const navigate = useNavigate();
+
   const goBack = () => {
     if (confirm && formIsEdited) {
       setDialogOpen(true);
-    } else if (link) navigate(link);
-    else history.back();
+    } else if (link) {
+      navigate(link, {
+        replace: true,
+        state: fieldId ? {fromFieldId: fieldId} : undefined,
+      });
+    } else {
+      history.back();
+    }
   };
 
   return (
@@ -56,6 +67,7 @@ const BackButton = ({
         setOpen={setDialogOpen}
         backLink={link}
         backIsParent={backIsParent}
+        fieldId={fieldId}
       />
     </>
   );
