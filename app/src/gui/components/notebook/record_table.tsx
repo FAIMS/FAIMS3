@@ -107,7 +107,7 @@ type GridColumnType = GridColDef<RecordMetadata>;
 // ============================================================================
 
 /** Maps column types to their display labels */
-const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
+export const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
   ['LAST_UPDATED', 'Last Updated'],
   ['LAST_UPDATED_BY', 'Last Updated By'],
   ['CONFLICTS', 'Conflicts'],
@@ -118,16 +118,16 @@ const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
 ]);
 
 /** Columns that must always be shown */
-const MANDATORY_COLUMNS: ColumnType[] = ['CREATED', 'CREATED_BY'];
+export const MANDATORY_COLUMNS: ColumnType[] = ['CREATED', 'CREATED_BY'];
 
 /** Columns to show in large view */
-const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
+export const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
   'LAST_UPDATED',
   'LAST_UPDATED_BY',
 ]);
 
 /** Default values for text display and other constants */
-const CONSTANTS = {
+export const CONSTANTS = {
   MISSING_DATA_PLACEHOLDER: '-',
   HRID_COLUMN_LABEL: 'Field ID',
   VERTICAL_STACK_COLUMN_LABEL: 'Details',
@@ -203,7 +203,7 @@ function getDataForColumn({
  *
  * @returns {GridColumnType[]} Array of column definitions for the DataGrid
  */
-function buildColumnsFromSummaryFields({
+export function buildColumnsFromSummaryFields({
   summaryFields,
   uiSpecification,
 }: {
@@ -238,7 +238,7 @@ function buildColumnsFromSummaryFields({
  * @param columnType Type of column
  * @param uiSpecification The ui spec
  */
-function buildColumnFromSystemField({
+export function buildColumnFromSystemField({
   columnType,
   uiSpecification,
 }: {
@@ -444,7 +444,7 @@ function buildHridColumn(): GridColumnType {
  * @returns A single column definition which renders a vertical stack of key
  * value pairs nicely
  */
-function buildVerticalStackColumn({
+export function buildVerticalStackColumn({
   summaryFields,
   columnLabel,
   uiSpecification,
