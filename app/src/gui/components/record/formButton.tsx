@@ -35,6 +35,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import {useState} from 'react';
 import {ConfirmCancelDialog} from './confirmExitDialog';
 import {CustomMobileStepper} from './recordStepper';
+import {useLocation, useNavigate} from 'react-router';
 
 interface FormProps {
   isSubmitting: boolean;
@@ -150,7 +151,13 @@ export default function FormButtonGroup({
 }: FormButtonGroupProps) {
   const [tooltipOpen, setTooltipOpen] = useState<boolean>(false);
   const [openCancelDialog, setOpenCancelDialog] = useState(false);
-
+  const location = useLocation();
+  const navigate = useNavigate();
+  const fieldId =
+    (location.state as any)?.fieldId ||
+    (location.state as any)?.field_id ||
+    undefined;
+  const backLink = (location.state as any)?.backLink || '/records'; // fallback route
   /**
    * Tooltip content explaining the publish action
    */
@@ -229,6 +236,8 @@ export default function FormButtonGroup({
           open={openCancelDialog}
           setOpen={setOpenCancelDialog}
           confirmAction={handleFormSubmit}
+          backLink={backLink}
+          fieldId={fieldId}
         />
         <Grid
           item
