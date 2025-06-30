@@ -28,7 +28,7 @@ export function CreateTemplateForm({
   defaultValues,
   specifiedTeam = undefined,
 }: CreateTemplateFormProps) {
-  const {user} = useAuth();
+  const {user, refreshToken} = useAuth();
   const queryClient = useQueryClient();
   const {data: teams} = useGetTeams(user);
 
@@ -118,17 +118,25 @@ export function CreateTemplateForm({
         }
       );
       if (!res.ok) throw new Error(res.statusText);
+      // need to refresh our auth token to get permissions on this new template
+      const {message, status} = await refreshToken();
+      if (status === 'error') {
+        return {
+          type: 'submit',
+          message: `template created but failed to refresh user token: ${message}`,
+        };
+      }
     } catch {
       return {type: 'submit', message: 'Failed to create template'};
     }
 
-    // query invals
+    // query invalidations
     if (specifiedTeam || team) {
-      queryClient.invalidateQueries({
+      await queryClient.invalidateQueries({
         queryKey: ['templatesbyteam', specifiedTeam || team],
       });
     }
-    queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+    await queryClient.invalidateQueries({queryKey: ['templates', undefined]});
     setDialogOpen(false);
   };
 
