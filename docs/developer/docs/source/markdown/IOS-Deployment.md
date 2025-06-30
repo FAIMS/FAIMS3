@@ -285,11 +285,11 @@ Once your build is uploaded to App Store Connect via Fastlane or Xcode, follow t
 
 9. **Submit for Review** at the top right
 
-> ✅ Once submitted, Apple will begin the review process. Check back for status and feedback.
+> Once submitted, Apple will begin the review process. Check back for status and feedback.
 
 ---
 
-## 🧪 Setting Up TestFlight for Internal Testing
+## Setting Up TestFlight for Internal Testing
 
 TestFlight allows you to distribute test versions of your app to internal or external testers.
 
