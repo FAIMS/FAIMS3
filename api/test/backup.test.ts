@@ -52,7 +52,7 @@ describe('Backup and restore', () => {
     await cleanDataDBS();
     await initialiseDbAndKeys({});
 
-    await restoreFromBackup('test/backup.jsonl');
+    await restoreFromBackup({filename: 'test/backup.jsonl'});
 
     // should now have the notebooks from the backup defined
     const user = await getExpressUserFromEmailOrUserId('admin');

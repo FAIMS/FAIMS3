@@ -603,7 +603,7 @@ describe('API tests', () => {
 
   it('can check sync status of records', async () => {
     // pull in some test data
-    await restoreFromBackup('test/backup.jsonl');
+    await restoreFromBackup({filename: 'test/backup.jsonl'});
     const projectId = '1693291182736-campus-survey-demo';
     const dataDb = await getDataDb(projectId);
     // get a list of record ids from the project
@@ -648,7 +648,7 @@ describe('API tests', () => {
 
   it('can download records as json', async () => {
     // pull in some test data
-    await restoreFromBackup('test/backup.jsonl');
+    await restoreFromBackup({filename: 'test/backup.jsonl'});
 
     const admin = await getExpressUserFromEmailOrUserId('admin');
     if (!admin) {
@@ -668,7 +668,7 @@ describe('API tests', () => {
 
   it('can download records as csv', async () => {
     // pull in some test data
-    await restoreFromBackup('test/backup.jsonl');
+    await restoreFromBackup({filename: 'test/backup.jsonl'});
 
     const url =
       '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
@@ -725,7 +725,7 @@ describe('API tests', () => {
 
   it('can download files as zip', async () => {
     // pull in some test data
-    await restoreFromBackup('test/backup.jsonl');
+    await restoreFromBackup({filename: 'test/backup.jsonl'});
 
     const adminUser = await getExpressUserFromEmailOrUserId('admin');
     if (adminUser) {
