@@ -2,7 +2,7 @@
 
 This document explains in full detail how to deploy an iOS app to the **Apple App Store** using GitHub Actions and Fastlane. It includes prerequisites, setup instructions, permission roles in App Store Connect, Fastlane Match usage, environment settings, and per-org deployment structure.
 
-## 🛠️ Table of Contents
+## Table of Contents
 
 1. [Prerequisites](#️-prerequisites)
 2. [Apple App Store Roles & Permissions](#-apple-app-store-connect-roles--permissions)
@@ -11,7 +11,9 @@ This document explains in full detail how to deploy an iOS app to the **Apple Ap
 5. [Environment Configuration](#-environment-configuration)
 6. [Appfile & Fastfile Logic](#-appfile--fastfile-logic)
 7. [Multi-Org Deployment Setup](#-multi-org-deployment-setup-example-csiro--fieldmark)
-8. [Best Practices & Notes](#-best-practices--notes)
+8. [Submitting the App for Review (App Store Connect)](#-submitting-the-app-for-review-app-store-connect)
+9. [Setting Up TestFlight for Internal Testing](#-setting-up-testflight-for-internal-testing)
+10. [Best Practices & Notes](#-best-practices--notes)
 
 ## Prerequisites
 
@@ -237,3 +239,76 @@ value. We've not yet verified that this works.
 
 It may be necessary to change the value of DEVELOPMENT_TEAM in the project file
 if you want to deploy from a different team.
+
+## Submitting the App for Review (App Store Connect)
+
+Once your build is uploaded to App Store Connect via Fastlane or Xcode, follow these steps to submit it for review:
+
+### 🔹 Step-by-Step Guide
+
+1. **Log in to [App Store Connect](https://appstoreconnect.apple.com)**
+
+2. Go to **My Apps → [Your App] → iOS App Version** (e.g., 1.2.0)
+
+3. Under the **Previews and Screenshots** section:
+
+   - Upload at least 3 screenshots for the required devices (6.5” and 6.9” iPhones)
+   - These will appear in your App Store listing.
+
+4. Fill in:
+
+   - **Promotional Text**
+   - **Description** of the app (clear, concise, informative)
+   - **Keywords** (comma-separated list)
+   - **Support URL**, **Marketing URL**
+   - **Copyright**
+   - **Version Number** (must match the one in Xcode/Fastlane build)
+
+5. Under **App Review Information**:
+
+   - Provide **login credentials** if your app requires authentication
+   - Add **Contact Name**, **Phone**, and **Email**
+
+6. Under **App Privacy**:
+
+   - Add your **Privacy Policy URL**
+   - Choose **Data types** collected and **how they’re linked** (if at all)
+
+7. Under **Build Section**:
+
+   - Select the correct uploaded build (e.g., 202506160659)
+   - Wait for the build to finish processing if it hasn’t yet
+
+8. Under **App Store Version Release**:
+
+   - Choose **Manual** or **Automatic** release after approval
+
+9. **Submit for Review** at the top right
+
+> ✅ Once submitted, Apple will begin the review process. Check back for status and feedback.
+
+---
+
+## 🧪 Setting Up TestFlight for Internal Testing
+
+TestFlight allows you to distribute test versions of your app to internal or external testers.
+
+### 🔹 Internal Testing Setup
+
+1. Go to **App Store Connect → TestFlight**
+2. Locate your uploaded build under the correct version (e.g., 1.2.0)
+3. Click on the build and fill in:
+   - **Test information** (what to test, known issues)
+   - **Demo Account Info** if needed
+4. Under **Internal Testing**, add users/groups (e.g., the BV group)
+5. Enable toggle for the build → Status changes to **“Ready to Submit”**
+
+> Internal testers must be added under App Store Connect → Users and Access → Internal Users
+
+### 🔹 External Testing (Optional)
+
+Requires Apple review. If needed:
+
+1. Add a new **External Group**
+2. Invite testers via email or TestFlight public link
+3. Submit the build for external testing review
