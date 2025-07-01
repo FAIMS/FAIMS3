@@ -63,13 +63,12 @@ export const VERIFICATION_CODE_CHARSET =
   '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
 /**
- * Creates a cryptographic hash of a verification code.
- * Uses SHA-256 with a random salt for secure storage.
+ * Creates a cryptographic hash of a verification/challenge code.
  *
- * @param code The verification code to hash
+ * @param code The code to hash
  * @returns An object containing the hash and salt
  */
-export function hashVerificationCode(code: string): string {
+export function hashChallengeCode(code: string): string {
   return crypto.createHash('sha256').update(code).digest('hex');
 }
 

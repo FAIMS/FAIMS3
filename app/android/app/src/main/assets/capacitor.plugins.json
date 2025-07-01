@@ -4,6 +4,10 @@
 		"classpath": "com.ryltsov.alex.plugins.exif.ExifPlugin"
 	},
 	{
+		"pkg": "@capacitor-community/safe-area",
+		"classpath": "com.getcapacitor.community.safearea.SafeAreaPlugin"
+	},
+	{
 		"pkg": "@capacitor-mlkit/barcode-scanning",
 		"classpath": "io.capawesome.capacitorjs.plugins.mlkit.barcodescanning.BarcodeScannerPlugin"
 	},

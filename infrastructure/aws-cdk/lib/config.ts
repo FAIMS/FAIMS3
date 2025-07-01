@@ -211,6 +211,15 @@ const BackupConfigSchema = z
     }
   );
 
+const AppSupportLinksSchema = z.object({
+  /** The support email address */
+  supportEmail: z.string().default('support@fieldmark.au'),
+  /** The URL for the privacy policy */
+  privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
+  /** The URL for the contact page */
+  contactUrl: z.string().url().default(''),
+});
+
 export const UiConfiguration = z.object({
   /** The UI Theme for the app */
   uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
@@ -226,6 +235,11 @@ export const UiConfiguration = z.object({
   headingAppName: z.string().optional(),
   /** Offline maps settings */
   offlineMaps: OfflineMapsConfigSchema,
+});
+
+export const SecurityConfigSchema = z.object({
+  /** Maximum number of days for long lived tokens */
+  maximumLongLivedTokenDurationDays: z.number().int().min(1).optional(),
 });
 
 // Define the schema
@@ -258,6 +272,8 @@ export const ConfigSchema = z.object({
   }),
   /** UI Configuration values */
   uiConfiguration: UiConfiguration,
+  /** The support links for the app */
+  supportLinks: AppSupportLinksSchema,
   /** CouchDB configuration */
   couch: CouchConfigSchema,
   /** Backup configuration */
@@ -279,6 +295,10 @@ export const ConfigSchema = z.object({
   smtp: SMTPConfigSchema,
   /** Social sign in providers */
   socialProviders: SocialProvidersConfigSchema.optional(),
+  /** Security parameters */
+  security: SecurityConfigSchema.optional().default({
+    maximumLongLivedTokenDurationDays: 90,
+  }),
 });
 
 // Infer the types from the schemas

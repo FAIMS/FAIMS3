@@ -110,3 +110,30 @@ export function displayUnixTimestampMs({
     })
   );
 }
+
+// Format dates for datetime-local input (YYYY-MM-DDTHH:MM)
+export const formatDateTimeLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+// Format date for display (DD/MM/YY HH:MM)
+export const formatDisplayDate = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes} on ${day}/${month}/${year}`;
+};
+
+// Calculate days difference
+export const getDaysDifference = (date: Date): number => {
+  const diffMs = date.getTime() - Date.now();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return diffDays;
+};

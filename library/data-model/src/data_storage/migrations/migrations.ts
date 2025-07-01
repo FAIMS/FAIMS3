@@ -4,6 +4,7 @@ import {
   AuthRecordV2ExistingDocumentSchema,
   AuthRecordV3ExistingDocumentSchema,
   AuthRecordV4ExistingDocument,
+  AuthRecordV4ExistingDocumentSchema,
   RefreshRecordV2ExistingDocument,
 } from '../authDB';
 import {
@@ -360,10 +361,29 @@ export const authV1toV2Migration: MigrationFunc = doc => {
   }
 };
 
+/**
+ * Migration from V4 to V5 of the Auth database
+ *
+ * This is a no-op migration since V5 only adds a new document type
+ * (long lived tokens) which won't exist in the V4 database, and doesn't
+ * modify the structure of existing types
+ */
+export const authV4toV5Migration: MigrationFunc = doc => {
+  // Parse the document to ensure it's a valid V4 document
+  try {
+    AuthRecordV4ExistingDocumentSchema.parse(doc);
+  } catch (e) {
+    console.warn(
+      `Auth v4 to v5 migration detected an unparseable document. Doc: ${doc}. Id: ${doc._id}. Error: ${e}.`
+    );
+  }
+  return {action: 'none'};
+};
+
 // If we want to promote a database for migration- increment the targetVersion
 // and ensure a migration is defined.
 export const DB_TARGET_VERSIONS: DBTargetVersions = {
-  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 4},
+  [DatabaseType.AUTH]: {defaultVersion: 1, targetVersion: 5},
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v3
@@ -454,5 +474,13 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds a created timestamp to email codes such that we can determine rate limiting',
     migrationFunction: authV3toV4Migration,
+  },
+  {
+    dbType: DatabaseType.AUTH,
+    from: 4,
+    to: 5,
+    description:
+      'No-op migration to prompt V5 of schema which includes the new long lived token document.',
+    migrationFunction: authV4toV5Migration,
   },
 ];

@@ -3,12 +3,13 @@ import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {API_URL, WEB_URL} from '@/constants';
 import {useAuth, User} from '@/context/auth-provider';
-import {createFileRoute} from '@tanstack/react-router';
+import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
+import {createFileRoute, Link} from '@tanstack/react-router';
 import {CheckCircle, Key, ShieldAlert, XCircle} from 'lucide-react';
-import React from 'react';
+import React, {useMemo} from 'react';
 import {toast} from 'sonner';
 
-export const Route = createFileRoute('/_protected/profile')({
+export const Route = createFileRoute('/_protected/profile/')({
   component: RouteComponent,
 });
 
@@ -50,6 +51,22 @@ const userFields: {
  */
 function RouteComponent() {
   const {user} = useAuth();
+
+  // breadcrumbs addition
+  const paths = useMemo(
+    () => [
+      {
+        path: '/profile',
+        label: 'User Profile',
+      },
+    ],
+    []
+  );
+
+  useBreadcrumbUpdate({
+    isLoading: false,
+    paths,
+  });
 
   /**
    * Redirects to the change password page with the appropriate username and redirect URL
@@ -131,6 +148,23 @@ function RouteComponent() {
           >
             Copy Bearer Token to Clipboard
           </Button>
+        </ListItem>
+      </Card>
+      <Card className="flex-1">
+        <ListItem className="flex flex-col gap-2">
+          <ListLabel className="flex items-center gap-2">
+            <ShieldAlert size={18} />
+            <span>Long-Lived API Tokens</span>
+          </ListLabel>
+          <ListDescription>
+            Click below to manage your long-lived API tokens. A long-lived token
+            can be used for programmatic access to the system APIs.
+          </ListDescription>
+          <Link to="/profile/long-lived-tokens">
+            <Button variant="outline" className="mt-2">
+              Manage Long-Lived Tokens
+            </Button>
+          </Link>
         </ListItem>
       </Card>
     </div>

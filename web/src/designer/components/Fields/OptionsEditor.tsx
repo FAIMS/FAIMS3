@@ -60,7 +60,11 @@ import {useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
-import {findOptionReferences, updateConditionReferences} from '../condition';
+import {
+  findOptionReferences,
+  updateConditionReferences,
+} from '../condition/utils';
+
 import {
   fieldUpdated,
   sectionConditionChanged,
@@ -573,6 +577,9 @@ export const OptionsEditor = ({
                 },
               }}
             >
+              You can use <strong>Markdown syntax</strong> in option text (e.g.{' '}
+              <code>**bold**</code> or <code>*italic*</code>).
+              <br />
               Add and remove options as needed. Drag items or use arrows to
               reorder them.
             </Alert>
@@ -589,6 +596,7 @@ export const OptionsEditor = ({
                       onChange={e => setNewOption(e.target.value)}
                     />
                   </Grid>
+
                   <Grid item>
                     <Button
                       color="primary"
