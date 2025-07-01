@@ -86,7 +86,6 @@ jobs:
           # could make these configurable but enable by default for now
           export VITE_OFFLINE_MAPS=true
           export VITE_MAP_STYLE=basic
-          export VITE_BUILD_TYPE=production
           
           npm ci --python=python3.10
           # we install these here because of a bug in npm with platform specific
