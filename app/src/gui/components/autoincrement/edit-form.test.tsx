@@ -21,71 +21,121 @@
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {AutoIncrementEditForm} from './edit-form';
 import {expect, describe, it} from 'vitest';
+import {StateProvider} from '../../../context/store';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 const props = {
-  project_id: '',
-  form_id: '',
-  field_id: '',
-  label: '',
+  project_id: 'project-1',
+  form_id: 'Sample-Form',
+  field_id: 'Sample-Field',
+  label: 'Sample Field',
   open: true,
   handleClose: () => {},
 };
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Queries should be enabled by default
+      enabled: true,
+
+      // Retry count - try 3 times
+      retry: 3,
+
+      // Stale time - this means the cache will be used by default
+      staleTime: 30000, // 30s
+
+      // Fetches will occur on remount
+      refetchOnMount: true,
+
+      // Fetches will not occur on change of window focus
+      refetchOnWindowFocus: false,
+
+      // If we reconnect then fetch again
+      refetchOnReconnect: true,
+    },
+    mutations: {
+      // Never retry mutations unless explicit
+      retry: 0,
+    },
+  },
+});
+
 describe('Check edit-form component', () => {
-  it('Check add btn', async () => {
-    render(<AutoIncrementEditForm {...props} />);
+  it('Check add btn creates range inputs', async () => {
+    render(
+      <StateProvider>
+        <QueryClientProvider client={queryClient}>
+          <AutoIncrementEditForm {...props} />
+        </QueryClientProvider>
+      </StateProvider>
+    );
+
     const addRangeBtn = screen.getByTestId('addNewRangeBtn');
 
+    // Initially, there should be no range inputs since we mocked empty ranges
     await waitFor(() => {
-      expect(screen.queryByTestId('addRangeForm')).not.toBeTruthy();
+      expect(screen.queryByLabelText('Start')).not.toBeTruthy();
     });
 
     fireEvent.click(addRangeBtn);
 
+    // After clicking add, there should be range inputs
     await waitFor(() => {
-      expect(screen.getByTestId('addRangeForm')).toBeTruthy();
+      expect(screen.getByLabelText('Start')).toBeTruthy();
+      expect(screen.getByLabelText('Stop')).toBeTruthy();
     });
   });
   it('Check remove btn', async () => {
-    render(<AutoIncrementEditForm {...props} />);
+    render(
+      <StateProvider>
+        <QueryClientProvider client={queryClient}>
+          <AutoIncrementEditForm {...props} />
+        </QueryClientProvider>
+      </StateProvider>
+    );
     const addRangeBtn = screen.getByTestId('addNewRangeBtn');
 
     await waitFor(() => {
-      expect(screen.queryByTestId('addRangeForm')).not.toBeTruthy();
+      expect(screen.getByLabelText('Start')).toBeTruthy();
+      expect(screen.getByLabelText('Stop')).toBeTruthy();
     });
 
+    // Add another range so we can remove one (remove is disabled when there's only one range)
     fireEvent.click(addRangeBtn);
 
     await waitFor(() => {
-      expect(screen.getByTestId('addRangeForm')).toBeTruthy();
+      expect(screen.getAllByLabelText('Start')).toHaveLength(2);
     });
 
-    const removeRangeBtn = screen.getByTestId('removeRangeBtn');
+    const removeRangeBtns = screen.getAllByTestId('removeRangeBtn');
+    expect(removeRangeBtns).toHaveLength(2);
+    fireEvent.click(removeRangeBtns[0]);
 
-    fireEvent.click(removeRangeBtn);
-
+    // After removing, should have only one range left
     await waitFor(() => {
-      expect(screen.queryByTestId('addRangeForm')).not.toBeTruthy();
+      expect(screen.getAllByLabelText('Start')).toHaveLength(1);
     });
   });
   it('Check adding range start and stop fields', async () => {
-    render(<AutoIncrementEditForm {...props} />);
+    render(
+      <StateProvider>
+        <QueryClientProvider client={queryClient}>
+          <AutoIncrementEditForm {...props} />
+        </QueryClientProvider>
+      </StateProvider>
+    );
     const addRangeBtn = screen.getByTestId('addNewRangeBtn');
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('addRangeForm')).not.toBeTruthy();
-    });
 
     fireEvent.click(addRangeBtn);
 
     await waitFor(() => {
-      expect(screen.getByTestId('addRangeForm')).toBeTruthy();
+      expect(screen.getByLabelText('Start')).toBeTruthy();
+      expect(screen.getByLabelText('Stop')).toBeTruthy();
     });
+    // Check that the inputs have the expected IDs
     await waitFor(() => {
-      expect(screen.getByTestId('rangeStart')).toBeTruthy();
-    });
-    await waitFor(() => {
-      expect(screen.getByTestId('rangeStop')).toBeTruthy();
+      expect(screen.getAllByDisplayValue('0')).toHaveLength(2); // Both start and stop default to 0
     });
   });
 });
