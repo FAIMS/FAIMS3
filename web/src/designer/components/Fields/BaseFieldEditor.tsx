@@ -43,6 +43,10 @@ import {ConditionType} from '../condition/types';
 
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
+import {
+  getViewIDForField,
+  slugify,
+} from '@/designer/state/helpers/uiSpec-helpers';
 
 type Props = {
   fieldName: string;
