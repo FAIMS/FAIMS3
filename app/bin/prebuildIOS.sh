@@ -12,7 +12,7 @@ APP_ID_PLACEHOLDER=org.fedarch.faims3
 # https://pgu.dev/2020/12/16/ios-build-versioning.html
 
 version=$(grep '"version":' $PROJECT_DIR/package.json | cut -d: -f 2 | sed -e 's/[", ]//g')
-buildNumber=$(date -u "+%Y%m%d%H%M")
+buildNumber="${version}-$(git rev-parse --short HEAD)-$(date -u "+%Y%m%d%H%M")-$VITE_BUILD_TYPE"
 
 # create Info.plist
 cp ./ios/App/App/Info.plist.dist ./ios/App/App/Info.plist

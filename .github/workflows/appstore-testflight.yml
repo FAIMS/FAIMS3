@@ -106,6 +106,7 @@ jobs:
           # could make these configurable but enable by default for now
           export VITE_OFFLINE_MAPS=true
           export VITE_MAP_STYLE=basic
+          export VITE_BUILD_TYPE=testing
 
           printenv
           npm ci --python=python3.10
