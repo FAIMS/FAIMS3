@@ -19,7 +19,6 @@
  */
 
 import {
-  Box,
   FormControlLabel,
   FormControlLabelProps,
   FormHelperTextProps,
@@ -31,6 +30,9 @@ import MuiRadioGroup from '@mui/material/RadioGroup';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import React from 'react';
 import FieldWrapper from './fieldWrapper';
+import MarkdownIt from 'markdown-it';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
+
 /**
  * Represents a single option in the radio group.
  */
@@ -121,9 +123,8 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                   />
                 }
                 label={
-                  <Box
-                    component="span"
-                    sx={{
+                  <span
+                    style={{
                       display: 'contents',
                       whiteSpace: 'normal',
                       wordBreak: 'break-word',
@@ -131,9 +132,10 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                       paddingTop: '2px',
                       paddingLeft: '0px',
                     }}
-                  >
-                    {option.label}
-                  </Box>
+                    dangerouslySetInnerHTML={{
+                      __html: contentToSanitizedHtml(option.label),
+                    }}
+                  />
                 }
                 {...option.FormControlProps}
                 disabled={this.props.disabled ?? false}

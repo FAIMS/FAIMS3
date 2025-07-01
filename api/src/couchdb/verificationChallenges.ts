@@ -15,7 +15,7 @@ import {
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
-import {generateVerificationCode, hashVerificationCode} from '../utils';
+import {generateVerificationCode, hashChallengeCode} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds - 24 hours by default
@@ -61,7 +61,7 @@ export const createVerificationChallenge = async ({
 
   // Generate verification code and its hash
   const code = generateVerificationCode();
-  const hash = hashVerificationCode(code);
+  const hash = hashChallengeCode(code);
 
   // Create a unique document ID with the verification prefix
   const dbId = AUTH_RECORD_ID_PREFIXES.verification + uuidv4();
@@ -189,7 +189,7 @@ export const validateVerificationChallenge = async ({
 }> => {
   try {
     // Hash the code
-    const hashedCode = hashVerificationCode(code);
+    const hashedCode = hashChallengeCode(code);
 
     // Find the verification challenge
     const challenge = await getVerificationChallengeByCode({code: hashedCode});
@@ -281,7 +281,7 @@ export const consumeVerificationChallenge = async ({
   isHashed?: boolean;
 }): Promise<VerificationChallengeExistingDocument> => {
   // Hash the code if not already hashed
-  const hashedCode = isHashed ? code : hashVerificationCode(code);
+  const hashedCode = isHashed ? code : hashChallengeCode(code);
 
   // Find the challenge
   const challenge = await getVerificationChallengeByCode({code: hashedCode});

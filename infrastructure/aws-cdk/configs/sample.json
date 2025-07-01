@@ -29,6 +29,11 @@
       "mapStyle": "basic"
     }
   },
+  "supportLinks": {
+    "supportEmail": "support@your-domain.com",
+    "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
+    "contactUrl": "https://your-domain.com/contact",
+  },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
     "volumeSize": 20,

@@ -18,7 +18,7 @@ import {
 } from '../src/couchdb/emailReset';
 import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
 import {app} from '../src/expressSetup';
-import {hashVerificationCode} from '../src/utils';
+import {hashChallengeCode} from '../src/utils';
 import {
   adminToken,
   adminUserName,
@@ -95,7 +95,7 @@ describe('password reset tests', () => {
       .expect(200);
 
     // Verify the code is now marked as used
-    const hashedCode = hashVerificationCode(code);
+    const hashedCode = hashChallengeCode(code);
     const codeDoc = await getCodeByCode(hashedCode);
     expect(codeDoc?.used).to.be.true;
 

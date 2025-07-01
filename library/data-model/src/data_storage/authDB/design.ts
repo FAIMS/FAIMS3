@@ -222,6 +222,64 @@ export const viewsDocument = {
         }
       }),
     },
+
+    // LONG LIVED TOKENS
+    // =================
+
+    // All long lived tokens by _id
+    longLivedTokens: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'longlived';
+        const ID_PREFIX = 'longlived_';
+
+        // Check that document type is defined and that the type is longlived and the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0
+        ) {
+          // Emit the whole long lived token object indexed by the _id
+          emit(doc._id, doc);
+        }
+      }),
+    },
+    // Long lived tokens for a specific user (by user id)
+    longLivedTokensByUserId: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'longlived';
+        const ID_PREFIX = 'longlived_';
+
+        // Check that document type is defined and that the type is longlived and
+        // the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0 &&
+          doc.userId
+        ) {
+          // Emit the record by userId
+          emit(doc.userId, doc);
+        }
+      }),
+    },
+    // Long lived tokens by token hash
+    longLivedTokensByTokenHash: {
+      map: convertToCouchDBString(doc => {
+        const DOCUMENT_TYPE = 'longlived';
+        const ID_PREFIX = 'longlived_';
+
+        // Check that document type is defined and that the type is longlived and the prefix is correct
+        if (
+          doc.documentType &&
+          doc.documentType === DOCUMENT_TYPE &&
+          doc._id.indexOf(ID_PREFIX) === 0 &&
+          doc.tokenHash
+        ) {
+          // Emit the record by tokenHash
+          emit(doc.tokenHash, doc);
+        }
+      }),
+    },
   },
 };
 

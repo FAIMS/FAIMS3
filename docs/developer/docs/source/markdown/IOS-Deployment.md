@@ -107,6 +107,9 @@ we'll need it to be updated.
 - `vars.ENABLE_RECORD_FILTERS` - enable 'filters' in the records table
 - `vars.HEADING_APP_NAME` - The app name displayed in the app main page, defaults to APP_NAME
 - `vars.MAP_SOURCE` - source for map tiles, 'maptiler' or 'osm'
+- `vars.APP_PRIVACY_POLICY_URL` - URL for the app privacy policy link in the app footer
+- `vars.SUPPORT_EMAIL` - Support email address displayed in the app
+- `vars.APP_CONTACT_URL` - URL for the 'Contact' link in the app footer
 
 ## Note on Development Team
 

@@ -13,14 +13,15 @@
 import { Route as rootRoute } from './routes/__root'
 import { Route as ProtectedImport } from './routes/_protected'
 import { Route as ProtectedIndexImport } from './routes/_protected/index'
-import { Route as ProtectedProfileImport } from './routes/_protected/profile'
 import { Route as ProtectedAdminImport } from './routes/_protected/_admin'
 import { Route as ProtectedTemplatesIndexImport } from './routes/_protected/templates/index'
 import { Route as ProtectedTeamsIndexImport } from './routes/_protected/teams/index'
 import { Route as ProtectedProjectsIndexImport } from './routes/_protected/projects/index'
+import { Route as ProtectedProfileIndexImport } from './routes/_protected/profile/index'
 import { Route as ProtectedTemplatesTemplateIdImport } from './routes/_protected/templates/$templateId'
 import { Route as ProtectedTeamsTeamIdImport } from './routes/_protected/teams/$teamId'
 import { Route as ProtectedProjectsProjectIdImport } from './routes/_protected/projects/$projectId'
+import { Route as ProtectedProfileLongLivedTokensImport } from './routes/_protected/profile/long-lived-tokens'
 import { Route as ProtectedAdminUsersImport } from './routes/_protected/_admin/users'
 
 // Create/Update Routes
@@ -33,12 +34,6 @@ const ProtectedRoute = ProtectedImport.update({
 const ProtectedIndexRoute = ProtectedIndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ProtectedRoute,
-} as any)
-
-const ProtectedProfileRoute = ProtectedProfileImport.update({
-  id: '/profile',
-  path: '/profile',
   getParentRoute: () => ProtectedRoute,
 } as any)
 
@@ -65,6 +60,12 @@ const ProtectedProjectsIndexRoute = ProtectedProjectsIndexImport.update({
   getParentRoute: () => ProtectedRoute,
 } as any)
 
+const ProtectedProfileIndexRoute = ProtectedProfileIndexImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+
 const ProtectedTemplatesTemplateIdRoute =
   ProtectedTemplatesTemplateIdImport.update({
     id: '/templates/$templateId',
@@ -85,6 +86,13 @@ const ProtectedProjectsProjectIdRoute = ProtectedProjectsProjectIdImport.update(
     getParentRoute: () => ProtectedRoute,
   } as any,
 )
+
+const ProtectedProfileLongLivedTokensRoute =
+  ProtectedProfileLongLivedTokensImport.update({
+    id: '/profile/long-lived-tokens',
+    path: '/profile/long-lived-tokens',
+    getParentRoute: () => ProtectedRoute,
+  } as any)
 
 const ProtectedAdminUsersRoute = ProtectedAdminUsersImport.update({
   id: '/users',
@@ -110,13 +118,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAdminImport
       parentRoute: typeof ProtectedImport
     }
-    '/_protected/profile': {
-      id: '/_protected/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProtectedProfileImport
-      parentRoute: typeof ProtectedImport
-    }
     '/_protected/': {
       id: '/_protected/'
       path: '/'
@@ -130,6 +131,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/users'
       preLoaderRoute: typeof ProtectedAdminUsersImport
       parentRoute: typeof ProtectedAdminImport
+    }
+    '/_protected/profile/long-lived-tokens': {
+      id: '/_protected/profile/long-lived-tokens'
+      path: '/profile/long-lived-tokens'
+      fullPath: '/profile/long-lived-tokens'
+      preLoaderRoute: typeof ProtectedProfileLongLivedTokensImport
+      parentRoute: typeof ProtectedImport
     }
     '/_protected/projects/$projectId': {
       id: '/_protected/projects/$projectId'
@@ -150,6 +158,13 @@ declare module '@tanstack/react-router' {
       path: '/templates/$templateId'
       fullPath: '/templates/$templateId'
       preLoaderRoute: typeof ProtectedTemplatesTemplateIdImport
+      parentRoute: typeof ProtectedImport
+    }
+    '/_protected/profile/': {
+      id: '/_protected/profile/'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProtectedProfileIndexImport
       parentRoute: typeof ProtectedImport
     }
     '/_protected/projects/': {
@@ -192,11 +207,12 @@ const ProtectedAdminRouteWithChildren = ProtectedAdminRoute._addFileChildren(
 
 interface ProtectedRouteChildren {
   ProtectedAdminRoute: typeof ProtectedAdminRouteWithChildren
-  ProtectedProfileRoute: typeof ProtectedProfileRoute
   ProtectedIndexRoute: typeof ProtectedIndexRoute
+  ProtectedProfileLongLivedTokensRoute: typeof ProtectedProfileLongLivedTokensRoute
   ProtectedProjectsProjectIdRoute: typeof ProtectedProjectsProjectIdRoute
   ProtectedTeamsTeamIdRoute: typeof ProtectedTeamsTeamIdRoute
   ProtectedTemplatesTemplateIdRoute: typeof ProtectedTemplatesTemplateIdRoute
+  ProtectedProfileIndexRoute: typeof ProtectedProfileIndexRoute
   ProtectedProjectsIndexRoute: typeof ProtectedProjectsIndexRoute
   ProtectedTeamsIndexRoute: typeof ProtectedTeamsIndexRoute
   ProtectedTemplatesIndexRoute: typeof ProtectedTemplatesIndexRoute
@@ -204,11 +220,12 @@ interface ProtectedRouteChildren {
 
 const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedAdminRoute: ProtectedAdminRouteWithChildren,
-  ProtectedProfileRoute: ProtectedProfileRoute,
   ProtectedIndexRoute: ProtectedIndexRoute,
+  ProtectedProfileLongLivedTokensRoute: ProtectedProfileLongLivedTokensRoute,
   ProtectedProjectsProjectIdRoute: ProtectedProjectsProjectIdRoute,
   ProtectedTeamsTeamIdRoute: ProtectedTeamsTeamIdRoute,
   ProtectedTemplatesTemplateIdRoute: ProtectedTemplatesTemplateIdRoute,
+  ProtectedProfileIndexRoute: ProtectedProfileIndexRoute,
   ProtectedProjectsIndexRoute: ProtectedProjectsIndexRoute,
   ProtectedTeamsIndexRoute: ProtectedTeamsIndexRoute,
   ProtectedTemplatesIndexRoute: ProtectedTemplatesIndexRoute,
@@ -220,12 +237,13 @@ const ProtectedRouteWithChildren = ProtectedRoute._addFileChildren(
 
 export interface FileRoutesByFullPath {
   '': typeof ProtectedAdminRouteWithChildren
-  '/profile': typeof ProtectedProfileRoute
   '/': typeof ProtectedIndexRoute
   '/users': typeof ProtectedAdminUsersRoute
+  '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/profile': typeof ProtectedProfileIndexRoute
   '/projects': typeof ProtectedProjectsIndexRoute
   '/teams': typeof ProtectedTeamsIndexRoute
   '/templates': typeof ProtectedTemplatesIndexRoute
@@ -233,12 +251,13 @@ export interface FileRoutesByFullPath {
 
 export interface FileRoutesByTo {
   '': typeof ProtectedAdminRouteWithChildren
-  '/profile': typeof ProtectedProfileRoute
   '/': typeof ProtectedIndexRoute
   '/users': typeof ProtectedAdminUsersRoute
+  '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/profile': typeof ProtectedProfileIndexRoute
   '/projects': typeof ProtectedProjectsIndexRoute
   '/teams': typeof ProtectedTeamsIndexRoute
   '/templates': typeof ProtectedTemplatesIndexRoute
@@ -248,12 +267,13 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_protected': typeof ProtectedRouteWithChildren
   '/_protected/_admin': typeof ProtectedAdminRouteWithChildren
-  '/_protected/profile': typeof ProtectedProfileRoute
   '/_protected/': typeof ProtectedIndexRoute
   '/_protected/_admin/users': typeof ProtectedAdminUsersRoute
+  '/_protected/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/_protected/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/_protected/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/_protected/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/_protected/profile/': typeof ProtectedProfileIndexRoute
   '/_protected/projects/': typeof ProtectedProjectsIndexRoute
   '/_protected/teams/': typeof ProtectedTeamsIndexRoute
   '/_protected/templates/': typeof ProtectedTemplatesIndexRoute
@@ -263,24 +283,26 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | ''
-    | '/profile'
     | '/'
     | '/users'
+    | '/profile/long-lived-tokens'
     | '/projects/$projectId'
     | '/teams/$teamId'
     | '/templates/$templateId'
+    | '/profile'
     | '/projects'
     | '/teams'
     | '/templates'
   fileRoutesByTo: FileRoutesByTo
   to:
     | ''
-    | '/profile'
     | '/'
     | '/users'
+    | '/profile/long-lived-tokens'
     | '/projects/$projectId'
     | '/teams/$teamId'
     | '/templates/$templateId'
+    | '/profile'
     | '/projects'
     | '/teams'
     | '/templates'
@@ -288,12 +310,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_protected'
     | '/_protected/_admin'
-    | '/_protected/profile'
     | '/_protected/'
     | '/_protected/_admin/users'
+    | '/_protected/profile/long-lived-tokens'
     | '/_protected/projects/$projectId'
     | '/_protected/teams/$teamId'
     | '/_protected/templates/$templateId'
+    | '/_protected/profile/'
     | '/_protected/projects/'
     | '/_protected/teams/'
     | '/_protected/templates/'
@@ -325,11 +348,12 @@ export const routeTree = rootRoute
       "filePath": "_protected.tsx",
       "children": [
         "/_protected/_admin",
-        "/_protected/profile",
         "/_protected/",
+        "/_protected/profile/long-lived-tokens",
         "/_protected/projects/$projectId",
         "/_protected/teams/$teamId",
         "/_protected/templates/$templateId",
+        "/_protected/profile/",
         "/_protected/projects/",
         "/_protected/teams/",
         "/_protected/templates/"
@@ -342,10 +366,6 @@ export const routeTree = rootRoute
         "/_protected/_admin/users"
       ]
     },
-    "/_protected/profile": {
-      "filePath": "_protected/profile.tsx",
-      "parent": "/_protected"
-    },
     "/_protected/": {
       "filePath": "_protected/index.tsx",
       "parent": "/_protected"
@@ -353,6 +373,10 @@ export const routeTree = rootRoute
     "/_protected/_admin/users": {
       "filePath": "_protected/_admin/users.tsx",
       "parent": "/_protected/_admin"
+    },
+    "/_protected/profile/long-lived-tokens": {
+      "filePath": "_protected/profile/long-lived-tokens.tsx",
+      "parent": "/_protected"
     },
     "/_protected/projects/$projectId": {
       "filePath": "_protected/projects/$projectId.tsx",
@@ -364,6 +388,10 @@ export const routeTree = rootRoute
     },
     "/_protected/templates/$templateId": {
       "filePath": "_protected/templates/$templateId.tsx",
+      "parent": "/_protected"
+    },
+    "/_protected/profile/": {
+      "filePath": "_protected/profile/index.tsx",
       "parent": "/_protected"
     },
     "/_protected/projects/": {

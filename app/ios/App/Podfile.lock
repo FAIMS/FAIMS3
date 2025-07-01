@@ -11,6 +11,8 @@ PODS:
     - Capacitor
   - CapacitorCommunityExif (7.0.0):
     - Capacitor
+  - CapacitorCommunitySafeArea (7.0.0-alpha.1):
+    - Capacitor
   - CapacitorCordova (7.2.0)
   - CapacitorDevice (7.0.1):
     - Capacitor
@@ -81,6 +83,7 @@ DEPENDENCIES:
   - "CapacitorBrowser (from `../../../node_modules/@capacitor/browser`)"
   - "CapacitorCamera (from `../../../node_modules/@capacitor/camera`)"
   - "CapacitorCommunityExif (from `../../../node_modules/@capacitor-community/exif`)"
+  - "CapacitorCommunitySafeArea (from `../../../node_modules/@capacitor-community/safe-area`)"
   - "CapacitorCordova (from `../../../node_modules/@capacitor/ios`)"
   - "CapacitorDevice (from `../../../node_modules/@capacitor/device`)"
   - "CapacitorFilesystem (from `../../../node_modules/@capacitor/filesystem`)"
@@ -117,6 +120,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/@capacitor/camera"
   CapacitorCommunityExif:
     :path: "../../../node_modules/@capacitor-community/exif"
+  CapacitorCommunitySafeArea:
+    :path: "../../../node_modules/@capacitor-community/safe-area"
   CapacitorCordova:
     :path: "../../../node_modules/@capacitor/ios"
   CapacitorDevice:
@@ -139,6 +144,7 @@ SPEC CHECKSUMS:
   CapacitorBrowser: 6299776d496e968505464884d565992faa20444a
   CapacitorCamera: 6e73f1fc6c629a672658705a02409b60854bc0f1
   CapacitorCommunityExif: de91ef8d7277b627af991117e06c9271fbfe59ac
+  CapacitorCommunitySafeArea: 3f049619072ab5d0da2529bcb05b358ff6c13dc1
   CapacitorCordova: 5967b9ba03915ef1d585469d6e31f31dc49be96f
   CapacitorDevice: c6f6d587dd310527f8a48bf09c4e7b4a4cf14329
   CapacitorFilesystem: e6261c410436f54908c11f94336c5b58286b1db0
@@ -159,6 +165,6 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: 32d4e4c33477340d99ad99bf78b028ef3d486b43
+PODFILE CHECKSUM: a17d4cfb936495db4b9731a3fb66b62eb91f5250
 
 COCOAPODS: 1.15.2

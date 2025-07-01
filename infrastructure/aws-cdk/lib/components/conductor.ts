@@ -111,6 +111,8 @@ export interface FaimsConductorProps {
   /** If true, adds typical localhost addresses to the allowable redirect
    * whitelist (DEV ONLY) */
   localhostWhitelist: boolean;
+  /** Maximum long-lived token duration in days (undefined = infinite) */
+  maximumLongLivedDurationDays?: number;
 }
 
 /**
@@ -226,6 +228,11 @@ export class FaimsConductor extends Construct {
         KEY_SOURCE: 'AWS_SM',
         AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         NEW_CONDUCTOR_URL: props.webUrl,
+
+        // Security configurations
+        MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
+          ? props.maximumLongLivedDurationDays.toString()
+          : 'infinite',
 
         // Email Service Configuration
         EMAIL_SERVICE_TYPE: props.smtpConfig.emailServiceType,
