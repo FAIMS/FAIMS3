@@ -23,8 +23,6 @@ import {act, cleanup, render, screen} from '@testing-library/react';
 import Notebook from './notebook';
 import {expect, vi, afterEach, it, describe} from 'vitest';
 
-import {useNavigate} from 'react-router-dom';
-
 afterEach(() => {
   cleanup();
 });

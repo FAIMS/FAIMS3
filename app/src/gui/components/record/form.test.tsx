@@ -30,10 +30,8 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import RecordForm from './form';
-import {BrowserRouter} from 'react-router-dom';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import {compileUiSpecConditionals} from '../../../uiSpecification';
-import {localGetDataDb} from '../../..';
 
 const testProjectId = 'default||1685527104147-campus-survey-demo';
 
@@ -1321,7 +1319,7 @@ vi.mock('../../../users', () => ({
 
 // jest.setTimeout(20000);
 
-// this has been painful to try to get working but it just doesn't, too many 
+// this has been painful to try to get working but it just doesn't, too many
 // dependencies need to be mocked to get any kind of test running
 // in the end it probably isn't too useful anyway
 // we need to rewrite the form component along with useful tests

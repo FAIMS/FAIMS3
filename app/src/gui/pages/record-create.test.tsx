@@ -23,7 +23,6 @@ import {expect, vi, test, afterEach} from 'vitest';
 
 import RecordCreate from './record-create';
 import React from 'react';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../constants/routes';
 
 const testProjectInfo = {
   created: 'Unknown',

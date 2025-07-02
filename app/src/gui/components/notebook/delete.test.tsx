@@ -43,7 +43,8 @@ test('Check delete component', async () => {
   render(
     <TestWrapper>
       <RecordDelete serverId={'todo'} {...testDeleteData} />
-    </TestWrapper>);
+    </TestWrapper>
+  );
   expect(screen.getByTestId('delete-btn')).toBeTruthy();
 
   fireEvent.click(screen.getByTestId('delete-btn'));
