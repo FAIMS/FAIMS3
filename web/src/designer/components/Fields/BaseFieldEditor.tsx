@@ -171,7 +171,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   const hasAdvancedSupport = 'advancedHelperText' in cParams;
 
   const [showAdvanced, setShowAdvanced] = useState(
-    hasAdvancedSupport && !!cParams.advancedHelperText
+    hasAdvancedSupport && 'advancedHelperText' in cParams
   );
   const [expanded, setExpanded] = useState(true);
 
@@ -280,8 +280,16 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                           checked={showAdvanced}
                           onChange={e => {
                             setShowAdvanced(e.target.checked);
-                            if (!e.target.checked) {
+                            if (
+                              e.target.checked &&
+                              cParams.advancedHelperText === undefined
+                            ) {
                               updateProperty('advancedHelperText', '');
+                            } else if (!e.target.checked) {
+                              updateProperty(
+                                'advancedHelperText',
+                                undefined as any
+                              );
                             }
                           }}
                         />
