@@ -15,13 +15,14 @@
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
-import {ConditionType} from '../components/condition';
+import {ConditionType} from '../components/condition/types';
 import {v4 as uuidv4} from 'uuid';
 import {
   slugify,
   getViewSetForView,
   removeFieldFromSummary,
   removeFieldFromSummaryForViewset,
+  replaceFieldInCondition,
 } from './helpers/uiSpec-helpers';
 
 const uiSpecInitialState: NotebookUISpec =
@@ -157,33 +158,73 @@ export const uiSpecificationReducer = createSlice({
       }>
     ) => {
       const {viewId, fieldName, newFieldName} = action.payload;
-      if (fieldName in state.fields) {
-        const field = state.fields[fieldName];
-
-        // ensure newFieldName is unique
-        let fieldLabel = slugify(newFieldName);
-        let N = 1;
-        while (fieldLabel in state.fields) {
-          fieldLabel = slugify(newFieldName + ' ' + N);
-          N += 1;
-        }
-
-        field['component-parameters'].name = fieldLabel;
-        state.fields[fieldLabel] = field;
-        delete state.fields[fieldName];
-        // replace reference in the view
-        const viewFields = state.fviews[viewId].fields;
-        for (let i = 0; i < viewFields.length; i++) {
-          if (viewFields[i] === fieldName) {
-            viewFields[i] = fieldLabel;
-            break;
-          }
-        }
-      } else {
+      if (!(fieldName in state.fields)) {
         throw new Error(
           `Cannot rename unknown field ${fieldName} via fieldRenamed action`
         );
       }
+
+      const field = state.fields[fieldName];
+
+      // ======================= original logic ==========================
+      // ensure newFieldName is unique
+      let fieldLabel = slugify(newFieldName);
+      let N = 1;
+      while (fieldLabel in state.fields) {
+        fieldLabel = slugify(newFieldName + ' ' + N);
+        N += 1;
+      }
+
+      field['component-parameters'].name = fieldLabel;
+      state.fields[fieldLabel] = field;
+      delete state.fields[fieldName];
+      // replace reference in the view
+      const viewFields = state.fviews[viewId].fields;
+      for (let i = 0; i < viewFields.length; i++) {
+        if (viewFields[i] === fieldName) {
+          viewFields[i] = fieldLabel;
+          break;
+        }
+      }
+      // =======================   new logic   ===========================
+
+      /* 1️⃣  Update every condition (fields AND sections) that mentions the old ID. */
+      Object.values(state.fields).forEach(f => {
+        if (f.condition) {
+          f.condition = replaceFieldInCondition(
+            f.condition,
+            fieldName,
+            fieldLabel
+          );
+        }
+      });
+
+      Object.values(state.fviews).forEach(v => {
+        if (v.condition) {
+          const newCondition = replaceFieldInCondition(
+            v.condition,
+            fieldName,
+            fieldLabel
+          );
+          if (newCondition === null) {
+            delete v.condition;
+          } else {
+            v.condition = newCondition;
+          }
+        }
+      });
+
+      /* 2️⃣  Update summary_fields and hridField in each form. */
+      Object.values(state.viewsets).forEach(vs => {
+        if (vs.summary_fields) {
+          vs.summary_fields = vs.summary_fields.map(f =>
+            f === fieldName ? fieldLabel : f
+          );
+        }
+        if (vs.hridField === fieldName) {
+          vs.hridField = fieldLabel;
+        }
+      });
     },
     fieldAdded: (
       state,
