@@ -14,7 +14,8 @@
 
 import {vi, describe, expect, test} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
-import {ConditionControl, ConditionType} from './condition';
+import {ConditionType} from './condition/types';
+import {ConditionControl} from './condition/ConditionControl';
 import {sampleNotebook} from '../test-notebook';
 import {store} from '../state/store';
 import {Provider} from 'react-redux';

@@ -9,7 +9,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {DesignerDialog} from '@/designer/DesignerDialog';
+import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {
   NotebookWithHistory,
   NotebookUISpec,

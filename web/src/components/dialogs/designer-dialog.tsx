@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import {DesignerWidget} from './DesignerWidget';
-import type {NotebookWithHistory} from './state/initial';
+import {DesignerWidget} from '../../designer/DesignerWidget';
+import type {NotebookWithHistory} from '../../designer/state/initial';
 
 interface DesignerDialogProps {
   open: boolean;

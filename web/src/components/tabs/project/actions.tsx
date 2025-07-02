@@ -14,7 +14,7 @@ import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-di
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {DesignerDialog} from '@/designer/DesignerDialog';
+import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {
   NotebookWithHistory,
   NotebookUISpec,
