@@ -58,9 +58,6 @@ export const migrateNotebook = (notebook: Notebook) => {
   // ensure visible_types exists in the ui-specification
   updateVisibleTypes(notebookCopy);
 
-  // ensure every field has a designerIdentifier
-  updateDesignerIdentifiers(notebookCopy);
-
   return notebookCopy;
 };
 
@@ -370,19 +367,5 @@ const updateVisibleTypes = (notebook: Notebook) => {
   if (!notebook['ui-specification'].visible_types) {
     notebook['ui-specification'].visible_types =
       Object.keys(notebook['ui-specification'].viewsets) || [];
-  }
-};
-
-/**
- * Ensure every field has a stable designerIdentifier
- * (fall back to the field key if none existed).
- */
-const updateDesignerIdentifiers = (notebook: Notebook) => {
-  const fields = notebook['ui-specification'].fields;
-  for (const fieldName in fields) {
-    const field = fields[fieldName];
-    if (!field.designerIdentifier) {
-      field.designerIdentifier = uuidv4();
-    }
   }
 };
