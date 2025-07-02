@@ -33,33 +33,7 @@ const props = {
   handleClose: () => {},
 };
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Queries should be enabled by default
-      enabled: true,
-
-      // Retry count - try 3 times
-      retry: 3,
-
-      // Stale time - this means the cache will be used by default
-      staleTime: 30000, // 30s
-
-      // Fetches will occur on remount
-      refetchOnMount: true,
-
-      // Fetches will not occur on change of window focus
-      refetchOnWindowFocus: false,
-
-      // If we reconnect then fetch again
-      refetchOnReconnect: true,
-    },
-    mutations: {
-      // Never retry mutations unless explicit
-      retry: 0,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 describe('Check edit-form component', () => {
   it('Check add btn creates range inputs', async () => {

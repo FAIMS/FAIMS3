@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import {TestWrapper} from '../../fields/utils';
 import RecordDelete from './delete';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {deleteStagedData} from '../../../sync/draft-storage';
@@ -34,28 +35,15 @@ const testDeleteData = {
   }),
 };
 
-function mockGetCurrentUserId() {
-  return new Promise(resolve => {
-    resolve('test-user-id');
-  });
-}
-
-vi.mock('../../../users', () => ({
-  getCurrentUserId: mockGetCurrentUserId,
-}));
-
-vi.mock('react-router-dom', () => ({
-  useNavigate: vi.fn(() => {}),
-  Link: vi.fn(() => {}), // this prevents the project name appearing
-  RouterLink: vi.fn(() => {}),
-}));
-
 vi.mock('../../../sync/draft-storage', () => ({
   deleteStagedData: vi.fn(() => {}),
 }));
 
 test('Check delete component', async () => {
-  render(<RecordDelete serverId={'todo'} {...testDeleteData} />);
+  render(
+    <TestWrapper>
+      <RecordDelete serverId={'todo'} {...testDeleteData} />
+    </TestWrapper>);
   expect(screen.getByTestId('delete-btn')).toBeTruthy();
 
   fireEvent.click(screen.getByTestId('delete-btn'));

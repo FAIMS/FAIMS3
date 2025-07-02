@@ -55,6 +55,8 @@ export default function Notebook() {
   // back button goes to the notebook list page
   const backLink = ROUTES.NOTEBOOK_LIST_ROUTE;
 
+  console.log('project', project);
+
   return (
     <Stack spacing={2}>
       <Stack direction="row" alignItems={'center'} spacing={2}>

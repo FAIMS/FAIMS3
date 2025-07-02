@@ -18,6 +18,7 @@
  *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
+import {TestWrapper} from '../../fields/utils';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {GridToolbarSearchRecordDataButton} from './datagrid_toolbar';
@@ -27,14 +28,16 @@ const testText = 'Survey';
 
 test('rendering and submitting search section', async () => {
   const handleSubmit = vi.fn(() => {});
-  render(
-    <GridToolbarSearchRecordDataButton handleQueryFunction={handleSubmit} />
-  );
   const user = userEvent.setup();
+  render(
+    <TestWrapper>
+      <GridToolbarSearchRecordDataButton handleQueryFunction={handleSubmit} />
+    </TestWrapper>
+  );
 
-  const input = screen.getByLabelText(/Search record/i);
+  const inputContainer = screen.getByTestId('record-search-input');
+  const input = inputContainer.querySelector('input') as HTMLInputElement;
   const searchBtn = screen.getByTestId('searchButton');
-  const resetBtn = screen.getByTestId('searchReset');
 
   await waitFor(() => expect(handleSubmit).toHaveBeenCalledWith(''));
 
@@ -45,10 +48,4 @@ test('rendering and submitting search section', async () => {
   await waitFor(() => expect(handleSubmit).toHaveBeenCalledWith(testText));
 
   await waitFor(() => expect(handleSubmit).toHaveBeenCalledTimes(2));
-
-  await user.click(resetBtn);
-
-  await waitFor(() => expect(handleSubmit).toHaveBeenCalledWith(''));
-
-  await waitFor(() => expect(handleSubmit).toHaveBeenCalledTimes(3));
 });

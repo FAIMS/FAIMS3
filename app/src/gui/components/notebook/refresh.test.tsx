@@ -13,26 +13,31 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: datagrid_toolbar.tsx
- * Description:
- *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
 import {render, screen, waitFor} from '@testing-library/react';
 import RefreshNotebook from './refresh';
 import userEvent from '@testing-library/user-event';
 import {vi, test, expect} from 'vitest';
+import {StateProvider} from '../../../context/store';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 const testProjectName = 'Campus Survey Demo';
 const testText = 'a few seconds ago';
 
+const queryClient = new QueryClient();
+
 test('Check refresh button', async () => {
   const handleRefresh = vi.fn(() => Promise.resolve());
   render(
-    <RefreshNotebook
-      project_name={testProjectName}
-      handleRefresh={handleRefresh}
-    />
+    <StateProvider>
+      <QueryClientProvider client={queryClient}>
+        <RefreshNotebook
+          project_name={testProjectName}
+          handleRefresh={handleRefresh}
+        />
+      </QueryClientProvider>
+    </StateProvider>
   );
   const user = userEvent.setup();
 
