@@ -230,39 +230,39 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
         <Card variant="outlined" sx={{p: 2}}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
-              <DebouncedTextField
-                fullWidth
-                label="Label"
-                value={state.label}
-                onChange={e => updateProperty('label', e.target.value)}
-              />
+              <Box display="flex" flexDirection="column" gap={2}>
+                <DebouncedTextField
+                  fullWidth
+                  label="Label"
+                  value={state.label}
+                  onChange={e => updateProperty('label', e.target.value)}
+                />
+                <TextField
+                  fullWidth
+                  label="Field ID"
+                  value={localFieldName}
+                  onChange={handleIdChange}
+                  inputRef={idInputRef}
+                  InputProps={{
+                    endAdornment:
+                      state.label && slugify(state.label) !== localFieldName ? (
+                        <InputAdornment position="end">
+                          <Tooltip title="Sync with field name">
+                            <IconButton
+                              size="small"
+                              onClick={syncFieldID}
+                              edge="end"
+                            >
+                              <SyncIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ) : undefined,
+                  }}
+                />
+              </Box>
             </Grid>
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Field ID"
-                value={localFieldName}
-                onChange={handleIdChange}
-                inputRef={idInputRef}
-                InputProps={{
-                  endAdornment:
-                    state.label && slugify(state.label) !== localFieldName ? (
-                      <InputAdornment position="end">
-                        <Tooltip title="Sync with field name">
-                          <IconButton
-                            size="small"
-                            onClick={syncFieldID}
-                            edge="end"
-                          >
-                            <SyncIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ) : undefined,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={8}>
               <DebouncedTextField
                 fullWidth
                 label="Helper Text"
@@ -341,6 +341,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 </>
               )}
             </Grid>
+
             {children && (
               <Grid item xs={12}>
                 {children}
@@ -350,6 +351,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
         </Card>
       </Grid>
 
+      {/* --- REMAINDER OF THE FORM CONFIG --- */}
       <Grid item xs={12}>
         <Card variant="outlined" sx={{p: 2}}>
           <Grid container spacing={2}>
@@ -472,7 +474,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
             {VITE_TEMPLATE_PROTECTIONS && (
               <>
                 <Grid item xs={12} sm={3}>
-                  <div style={{display: 'flex', alignItems: 'center'}}>
+                  <Box display="flex" alignItems="center">
                     <FormControlLabel
                       control={
                         <Checkbox
@@ -487,10 +489,10 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                     <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
                       <InfoOutlinedIcon
                         fontSize="small"
-                        style={{marginLeft: 0, color: '#757575'}}
+                        sx={{marginLeft: 0, color: '#757575'}}
                       />
                     </Tooltip>
-                  </div>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   {state.protection ? (
