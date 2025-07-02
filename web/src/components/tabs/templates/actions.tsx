@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useMemo, useState} from 'react';
 import {ArchiveTemplateDialog} from '@/components/dialogs/archive-template-dialog';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
@@ -9,7 +9,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {DesignerWidget} from '@/designer/DesignerWidget';
+import {DesignerDialog} from '@/designer/DesignerDialog';
 import type {
   NotebookWithHistory,
   NotebookUISpec,
@@ -27,24 +27,7 @@ const TemplateActions = () => {
   const {templateId} = Route.useParams();
   const {data, isLoading} = useGetTemplate(user, templateId);
   const queryClient = useQueryClient();
-
-  const [showModal, setShowModal] = useState(false);
-  const [animateIn, setAnimateIn] = useState(false);
-  const [animateOut, setAnimateOut] = useState(false);
-
-  const animationDuration = 300;
-  const animationScale = 0.95;
-
-  useEffect(() => {
-    if (!showModal) return;
-    const tid = window.setTimeout(() => setAnimateIn(true), 50);
-    return () => window.clearTimeout(tid);
-  }, [showModal]);
-
-  const openEditor = () => {
-    if (isLoading || !data) return;
-    setShowModal(true);
-  };
+  const [editorOpen, setEditorOpen] = useState(false);
 
   const saveFile = useMutation<unknown, Error, File>({
     mutationFn: async file => {
@@ -86,14 +69,9 @@ const TemplateActions = () => {
     };
   }, [data]);
 
-  const handleClose = (file?: File) => {
-    setAnimateOut(true);
-    setAnimateIn(false);
-    window.setTimeout(() => {
-      if (file) saveFile.mutate(file);
-      setShowModal(false);
-      setAnimateOut(false);
-    }, animationDuration);
+  const handleEditorClose = (file?: File) => {
+    if (file) saveFile.mutate(file);
+    setEditorOpen(false);
   };
 
   return (
@@ -111,7 +89,7 @@ const TemplateActions = () => {
               <Button
                 variant="outline"
                 disabled={isLoading}
-                onClick={openEditor}
+                onClick={() => setEditorOpen(true)}
               >
                 Open in Editor
               </Button>
@@ -177,39 +155,11 @@ const TemplateActions = () => {
           </List>
         </Card>
       </div>
-
-      {showModal && initialNotebook && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20"
-          onClick={() => handleClose()}
-          style={{
-            opacity: animateIn && !animateOut ? 1 : 0,
-            transform:
-              animateIn && !animateOut
-                ? 'scale(1)'
-                : `scale(${animationScale})`,
-            transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
-          }}
-        >
-          <div
-            className="bg-white w-[95vw] h-[95vh] rounded-lg overflow-hidden shadow-xl"
-            onClick={e => e.stopPropagation()}
-            style={{
-              opacity: animateIn && !animateOut ? 1 : 0,
-              transform:
-                animateIn && !animateOut
-                  ? 'scale(1)'
-                  : `scale(${animationScale})`,
-              transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
-            }}
-          >
-            <DesignerWidget
-              notebook={initialNotebook}
-              onClose={file => handleClose(file)}
-            />
-          </div>
-        </div>
-      )}
+      <DesignerDialog
+        open={editorOpen}
+        notebook={initialNotebook}
+        onClose={handleEditorClose}
+      />
     </>
   );
 };
