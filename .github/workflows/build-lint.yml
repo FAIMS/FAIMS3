@@ -66,5 +66,5 @@ jobs:
           cp .env.dist .env
           ./keymanagement/makeInstanceKeys.sh
           cd ..
-          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model --filter=@faims3/data-model-test --filter=@faims3/data-model-test-data --filter=@faims3/data-model-test-data-test --filter=@faims3/data-model-test-data-test-data --filter=@faims3/data-model-test-data-test-data-test --filter=@faims3/data-model-test-data-test-data-test-data --filter=@faims3/data-model-test-data-test-data-test-data-test --filter=@faims3/data-model-test-data-test-data-test-data-test-data-test --filter=@faims3/data-model-test-data-test-data-test-data-test-data-test-data-test --filter=@faims3/data-model-test-data-test-data-test-data-test-data-test-data-test-data-test --filter=@faims3/app
+          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model  --filter=@faims3/app
  
