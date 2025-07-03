@@ -65,6 +65,8 @@ jobs:
           cd api
           cp .env.dist .env
           ./keymanagement/makeInstanceKeys.sh
-          cd ..
+          cd ../app
+          cp .env.dist .env
+          cd ../
           npx turbo run test --filter=@faims3/api --filter=@faims3/data-model  --filter=@faims3/app
  
