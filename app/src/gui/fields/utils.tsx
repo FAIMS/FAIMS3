@@ -145,6 +145,7 @@ import {ThemeProvider} from '@mui/material/styles';
 import testTheme from '../../gui/themes/default';
 import {ActiveUser} from '../../context/slices/authSlice';
 import {Router} from 'react-router-dom';
+import {FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER} from 'redux-persist';
 
 // Mock notification context
 const mockNotificationContext = {
@@ -163,9 +164,18 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
 }) => {
   const testStore = configureStore({
     reducer: {
-      // Add the reducers your components actually need
-      // Check your main store configuration for reference
+      auth: () => null,
+      projects: () => null,
+      alerts: () => null,
+      records: () => null,
     },
+    middleware: getDefaultMiddleware =>
+      getDefaultMiddleware({
+        serializableCheck: {
+          ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+        },
+      }),
+    devTools: process.env.NODE_ENV !== 'production',
   });
 
   const queryClient = new QueryClient();

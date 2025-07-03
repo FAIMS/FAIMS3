@@ -21,6 +21,7 @@ import userEvent from '@testing-library/user-event';
 import {vi, test, expect} from 'vitest';
 import {StateProvider} from '../../../context/store';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {act} from '@testing-library/react';
 
 const testProjectName = 'Campus Survey Demo';
 const testText = 'a few seconds ago';
@@ -39,23 +40,26 @@ test('Check refresh button', async () => {
       </QueryClientProvider>
     </StateProvider>
   );
-  const user = userEvent.setup();
 
-  const refreshAlert = screen.getByTestId('refreshAlert');
+  await act(async () => {
+    const user = userEvent.setup();
 
-  await waitFor(() => expect(refreshAlert.textContent).toContain(testText));
+    const refreshAlert = screen.getByTestId('refreshAlert');
 
-  const resetBtn = screen.getByTestId('refreshRecords');
+    await waitFor(() => expect(refreshAlert.textContent).toContain(testText));
 
-  await user.click(resetBtn);
+    const resetBtn = screen.getByTestId('refreshRecords');
 
-  await waitFor(() => expect(refreshAlert.textContent).toContain(testText));
+    await user.click(resetBtn);
 
-  await waitFor(() => expect(handleRefresh).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(refreshAlert.textContent).toContain(testText));
 
-  vi.useFakeTimers();
-  setTimeout(() => {
-    expect(refreshAlert.textContent).toContain(testText);
-  }, 2000);
-  vi.runAllTimers();
+    await waitFor(() => expect(handleRefresh).toHaveBeenCalledTimes(1));
+
+    vi.useFakeTimers();
+    setTimeout(() => {
+      expect(refreshAlert.textContent).toContain(testText);
+    }, 2000);
+    vi.runAllTimers();
+});
 });

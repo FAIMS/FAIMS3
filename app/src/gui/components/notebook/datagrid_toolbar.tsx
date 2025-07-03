@@ -53,7 +53,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
    * @param {React.ChangeEvent<HTMLInputElement>} event - The event for the search input field.
    */
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('handleChange', event.target.value);
     setValue(event.target.value);
   };
 
@@ -61,7 +60,6 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
    * Handles search submission by invoking the query function with the current value.
    */
   const handleSubmit = () => {
-    console.log('handleSubmit', value);
     props.handleQueryFunction(value);
   };
 
