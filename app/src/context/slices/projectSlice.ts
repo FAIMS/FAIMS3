@@ -700,63 +700,17 @@ const projectsSlice = createSlice({
       };
     },
 
-    /**
-     * A syncing database is one where the sync object exists between the local
-     * and remote pouch DBs. This stops this sync by destroying this sync
-     * object. Updates databaseService registrations and store states.
-     */
-    stopSyncingProject: (state, action: PayloadAction<ProjectIdentity>) => {
+
+    // update the state after we have turned off sync for a project
+    stopSyncingProjectSuccess: (state, action: PayloadAction<Project>) => {
       // check project/server exists
-      const payload = action.payload;
+      const project = action.payload;
 
-      // Check the server exists
-      const server = serverById(state, payload.serverId);
-      if (!server) {
-        // abort
-        throw new Error(
-          `You cannot stop syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-        );
-      }
-
-      // check the project exists
-      const project = projectByIdentity(state, payload);
-      if (!project) {
-        // abort
-        throw new Error(
-          `You cannot stop syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-        );
-      }
-
-      // check it's already active
-      if (!project.isActivated) {
-        throw new Error(
-          `You cannot stop syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-        );
-      }
-
-      // check database and remote are defined
-      if (!project.database || !project.database.remote) {
-        throw new Error(
-          `You cannot stop syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
-        );
-      }
-
-      // If already not syncing, nothing to do
-      if (!project.database.isSyncing) {
-        return;
-      }
-
-      // cleanup existing sync
-      const syncId = project.database.remote.syncId;
-      if (!syncId) {
-        throw new Error(
-          `Failed to stop syncing project due to missing sync. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-        );
-      }
-      databaseService.closeAndRemoveSync(syncId);
+      if (!project.database)
+        throw new Error('Project database not properly initialised');
 
       // updates the state to indicate no syncing
-      state.servers[payload.serverId].projects[payload.projectId] = {
+      state.servers[project.serverId].projects[project.projectId] = {
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
@@ -787,100 +741,20 @@ const projectsSlice = createSlice({
           },
         },
       };
+      console.log('Stopped sync for project', state.servers[project.serverId].projects[project.projectId]);
     },
 
-    /**
-     * A syncing database is one where the sync object exists between the local
-     * and remote pouch DBs. This stops resumes this sync by establishing this
-     * sync object. Updates databaseService registrations and store states.
-     */
-    resumeSyncingProject: (state, action: PayloadAction<ProjectIdentity>) => {
+    // update the state after we have turned sync back on for a project
+    resumeSyncingProjectSuccess: (state, action: PayloadAction<Project>) => {
       // check project/server exists
-      const payload = action.payload;
+      const project = action.payload;
 
-      // Check the server exists
-      const server = serverById(state, payload.serverId);
-      if (!server) {
-        // abort
-        throw new Error(
-          `You cannot resume syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-        );
-      }
+      if (!project.database)
+        throw new Error('Project database not properly initialised');
 
-      // check the project exists
-      const project = projectByIdentity(state, payload);
-      if (!project) {
-        // abort
-        throw new Error(
-          `You cannot resume syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-        );
-      }
-
-      // check it's already active
-      if (!project.isActivated) {
-        throw new Error(
-          `You cannot resume syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
-        );
-      }
-
-      // check database and remote are defined
-      if (!project.database || !project.database.remote) {
-        throw new Error(
-          `You cannot resume syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
-        );
-      }
-
-      // If already syncing, nothing to do
-      if (project.database.isSyncing) {
-        return;
-      }
-
-      // fetch the existing local DB
-      const localDb = databaseService.getLocalDatabase(
-        project.database.localDbId
-      );
-      if (!localDb) {
-        throw new Error(
-          `The local DB with ID ${project.database.localDbId} does not exist, so cannot resume syncing.`
-        );
-      }
-
-      // fetch the existing remote DB
-      const remoteDb = databaseService.getRemoteDatabase(
-        project.database.remote.remoteDbId
-      );
-      if (!remoteDb) {
-        throw new Error(
-          `The remote DB with ID ${project.database.remote.remoteDbId} does not exist, so cannot resume syncing.`
-        );
-      }
-
-      const handlers = createSyncStateHandlers(
-        payload.projectId,
-        payload.serverId,
-        store.dispatch
-      );
-      // creates the sync object (PouchDB.Replication.Sync)
-      const sync = createPouchDbSync({
-        // Use existing setting for attachments
-        attachmentDownload: project.database.isSyncingAttachments,
-        // Use existing local DB
-        localDb,
-        // Use existing remote DB
-        remoteDb,
-        eventHandlers: handlers,
-      });
-
-      // Register the sync
-      const syncId = buildSyncId({
-        localId: project.database.localDbId,
-        remoteId: project.database.remote.remoteDbId,
-      });
-      // TODO: this is async
-      databaseService.registerSync(syncId, sync);
-
+      console.log('resumeSyncingProjectSuccess', project);
       // updates the state with all of this new information
-      state.servers[payload.serverId].projects[payload.projectId] = {
+      state.servers[project.serverId].projects[project.projectId] = {
         // These are retained
         metadata: project.metadata,
         projectId: project.projectId,
@@ -906,7 +780,7 @@ const projectsSlice = createSlice({
             remoteDbId: project.database.remote.remoteDbId,
             syncState: project.database.remote.syncState,
             // Set new sync ID
-            syncId: syncId,
+            syncId: project.database.remote.syncId,
           },
         },
       };
@@ -1891,6 +1765,191 @@ export const initialiseAllProjects = createAsyncThunk<void>(
 );
 
 /**
+ * A syncing database is one where the sync object exists between the local
+ * and remote pouch DBs. This stops this sync by destroying this sync
+ * object. Updates databaseService registrations and store states.
+ */
+export const stopSyncingProject = createAsyncThunk<void, ProjectIdentity>(
+  'projects/stopSyncingProject',
+  async (payload, {dispatch, getState}) => {
+    const state = getState() as RootState;
+    const projectState = state.projects;
+
+    // Check the server exists
+    const server = serverById(projectState, payload.serverId);
+    if (!server) {
+      // abort
+      throw new Error(
+        `You cannot stop syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+      );
+    }
+
+    // check the project exists
+    const project = projectByIdentity(projectState, payload);
+    if (!project) {
+      // abort
+      throw new Error(
+        `You cannot stop syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+      );
+    }
+
+    // check it's already active
+    if (!project.isActivated) {
+      throw new Error(
+        `You cannot stop syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+      );
+    }
+
+    // check database and remote are defined
+    if (!project.database || !project.database.remote) {
+      throw new Error(
+        `You cannot stop syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
+      );
+    }
+
+    // If already not syncing, nothing to do
+    if (!project.database.isSyncing) {
+      return;
+    }
+
+    // cleanup existing sync
+    const syncId = project.database.remote.syncId;
+    if (!syncId) {
+      throw new Error(
+        `Failed to stop syncing project due to missing sync. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+      );
+    }
+    // async...
+    await databaseService.closeAndRemoveSync(syncId);
+
+    // Create updated project with new sync state
+    const updatedProject: Project = {
+      ...project,
+      database: {
+        ...project.database,
+        isSyncing: false,
+        remote: {
+          ...project.database.remote,
+        },
+      },
+    };
+
+    // update store
+    dispatch(stopSyncingProjectSuccess(updatedProject));
+  }
+);
+
+/**
+ * A syncing database is one where the sync object exists between the local
+ * and remote pouch DBs. This stops resumes this sync by establishing this
+ * sync object. Updates databaseService registrations and store states.
+ */
+export const resumeSyncingProject = createAsyncThunk<void, ProjectIdentity>(
+  'projects/resumeSyncingProject',
+  async (payload, {dispatch, getState}) => {
+    const state = getState() as RootState;
+    const projectState = state.projects;
+
+    console.log('resumeSyncingProject', payload);
+
+    // Check the server exists
+    const server = serverById(projectState, payload.serverId);
+    if (!server) {
+      // abort
+      throw new Error(
+        `You cannot resume syncing a project for a server which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+      );
+    }
+
+    // check the project exists
+    const project = projectByIdentity(projectState, payload);
+    if (!project) {
+      // abort
+      throw new Error(
+        `You cannot resume syncing a project which does not exist. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+      );
+    }
+
+    // check it's already active
+    if (!project.isActivated) {
+      throw new Error(
+        `You cannot resume syncing an inactive project. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}`
+      );
+    }
+
+    // check database and remote are defined
+    if (!project.database || !project.database.remote) {
+      throw new Error(
+        `You cannot resume syncing a project which has no database object and/or remote connection. Server ID: ${payload.serverId}. Project ID: ${payload.projectId}.`
+      );
+    }
+
+    // If already syncing, nothing to do
+    if (project.database.isSyncing) {
+      return;
+    }
+
+    // fetch the existing local DB
+    const localDb = databaseService.getLocalDatabase(
+      project.database.localDbId
+    );
+    if (!localDb) {
+      throw new Error(
+        `The local DB with ID ${project.database.localDbId} does not exist, so cannot resume syncing.`
+      );
+    }
+
+    // fetch the existing remote DB
+    const remoteDb = databaseService.getRemoteDatabase(
+      project.database.remote.remoteDbId
+    );
+    if (!remoteDb) {
+      throw new Error(
+        `The remote DB with ID ${project.database.remote.remoteDbId} does not exist, so cannot resume syncing.`
+      );
+    }
+
+    const handlers = createSyncStateHandlers(
+      payload.projectId,
+      payload.serverId,
+      store.dispatch
+    );
+    // creates the sync object (PouchDB.Replication.Sync)
+    const sync = createPouchDbSync({
+      // Use existing setting for attachments
+      attachmentDownload: project.database.isSyncingAttachments,
+      // Use existing local DB
+      localDb,
+      // Use existing remote DB
+      remoteDb,
+      eventHandlers: handlers,
+    });
+
+    // Register the sync
+    const syncId = buildSyncId({
+      localId: project.database.localDbId,
+      remoteId: project.database.remote.remoteDbId,
+    });
+    await databaseService.registerSync(syncId, sync);
+
+    // Create updated project with new sync state
+    const updatedProject: Project = {
+      ...project,
+      database: {
+        ...project.database,
+        isSyncing: true,
+        remote: {
+          ...project.database.remote,
+          syncId: syncId,
+        },
+      },
+    };
+
+    dispatch(resumeSyncingProjectSuccess(updatedProject));
+  }
+);
+
+/**
  * As part of initialisation, rebuilds and registers all databases (local,
  * remote) and sync objects, based on the current store configuration.
  *
@@ -2096,7 +2155,11 @@ export function createSyncStateHandlers(
 }
 
 // Private reducers
-const {activateProjectSuccess} = projectsSlice.actions;
+const {
+  activateProjectSuccess,
+  stopSyncingProjectSuccess,
+  resumeSyncingProjectSuccess,
+} = projectsSlice.actions;
 
 // Public reducers
 export const {
@@ -2104,8 +2167,6 @@ export const {
   addServer,
   startSyncingAttachments,
   stopSyncingAttachments,
-  stopSyncingProject,
-  resumeSyncingProject,
   removeProject,
   updateDatabaseAuthSuccess,
   updateProjectDetails,
