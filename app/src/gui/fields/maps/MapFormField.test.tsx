@@ -1,9 +1,9 @@
 import React from 'react';
+import {renderForm, instantiateField} from '../utils';
 import {fireEvent} from '@testing-library/react';
 import {it, expect} from 'vitest';
 import {Field} from 'formik';
 import {MapFormField} from './MapFormField';
-import {renderForm, instantiateField} from '../utils';
 
 it('renders as a button', async () => {
   const {container} = renderForm(
