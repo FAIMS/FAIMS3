@@ -256,6 +256,29 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       )
         this.updateView(this.props.ViewName);
     }
+    // Handle derived field updates when form values change (moved from render method)
+    if (this.formikRef.current) {
+      const currentValues = this.formikRef.current.values;
+      const valuesChanged =
+        JSON.stringify(currentValues) !==
+        JSON.stringify(this.state.lastProcessedValues);
+
+      if (valuesChanged) {
+        console.log('values have changed...');
+        const changed = recomputeDerivedFields({
+          context: this.state.recordContext,
+          values: currentValues,
+          uiSpecification: this.props.ui_specification,
+        });
+
+        if (changed) {
+          this.formikRef.current.setValues(currentValues);
+        }
+
+        this.setState({lastProcessedValues: currentValues});
+      }
+    }
+
     if (prevState.view_cached !== this.state.view_cached) {
       window.scrollTo(0, 200);
     }
@@ -1652,31 +1675,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                   (publishButtonBehaviour === 'visited' &&
                     allSectionsVisited) ||
                   (publishButtonBehaviour === 'noErrors' && !hasErrors);
-
-                // Recompute derived values if something has changed
-                const {values, setValues} = formProps;
-                // Compare current values with last processed values
-                const valuesChanged =
-                  JSON.stringify(values) !==
-                  JSON.stringify(this.state.lastProcessedValues);
-
-                if (valuesChanged) {
-                  // Process the derive fields updates
-                  const changed = recomputeDerivedFields({
-                    context: this.state.recordContext,
-                    values: values,
-                    uiSpecification: this.props.ui_specification,
-                  });
-
-                  // Only update if processing actually changed something
-                  if (changed) {
-                    // Update form values
-                    setValues(values);
-                  }
-
-                  // Store the processed values
-                  this.setState({lastProcessedValues: values});
-                }
 
                 const layout =
                   this.props.ui_specification.viewsets[viewsetName]?.layout;
