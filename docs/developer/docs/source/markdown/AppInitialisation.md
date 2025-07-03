@@ -2,7 +2,6 @@
 
 Documents how the app initialisers itself, setting up database connections etc.
 
-
 Application state is stored in a redux store that is persisted in local storage.  This has
 four 'slices' for different parts of the state:
 
@@ -29,7 +28,7 @@ the local and remote Dbs (both PouchDB instances) and flags for whether we are
 syncing documents and attachments.  This is our main entry point to the PouchDB databases.
 
 The `addProject` action on the project slice creates a new project, at this point, no
-databases are created. 
+databases are created.
 
 The `activateProjectSync` action does the work of setting up databases for a project.
 From the comments on that action, this involves:
@@ -43,11 +42,11 @@ From the comments on that action, this involves:
 - registering the above non-serialisable objects into databaseService
 - marking the project as activated and updating store state
 
-`activateProjects` is the exported function that is used to activate projects from
+`activateProject` is the exported function that is used to activate projects from
 the app.  It runs the above action and then calls `couchInitialiser` on the local DB
 which makes sure that design documents and security are up to date in the database.
 
-`activateProjects` is called from the ProjectCard component which presents the UI for
+`activateProject` is called from the ProjectCard component which presents the UI for
 a project if the project has not already been activated.   It's also called from
 the `ActivationSwitch` component when the user explicitly activates a project from the UI.
 This last one only happens once at the moment since we don't have a 'deactivate' UI action.
@@ -55,27 +54,29 @@ This last one only happens once at the moment since we don't have a 'deactivate'
 Note that when a local PouchDB instance is created, it will connect to an existing
 database if present or create a new one if not.
 
+The sync status of a project can be updated with the `stopSyncingProject` and
+`resumeSyncingProject` actions.  These actions leave the database connections
+alone but operate on the sync object (created with `createPouchDBSync`).
+
+Lower level database connection management happens in [databaseService.ts](../../../../../app/src/context/slices/databaseService.ts)
+via the singleton `DatabaseService` class.  This class maintains a register of
+database connections to be re-used through the app.  It manages opening and closing
+of databases and the sync settings to remote databases.
+
 ## App Initialisation
 
-The function [initialize()](../../../../../app/src/sync/initialize.ts) defines the 
+The function [initialize()](../../../../../app/src/sync/initialize.ts) defines the
 startup procedure and is called on startup from the `InitialiseGate` component that wraps
 the entire application.
 
 As the first action in `initialize`, `rebuildDbs` is passed the current projects state.
 For every active project, it will re-create the database connections, doing the same
-work as activateProjects does when the project is first activated. 
+work as activateProjects does when the project is first activated.
 
+Following this, the uiSpec for each project is re-compiled (this might be redundant
+given the initialise projects step below).
 
-These become async:
-
-registerLocalDatabase
-registerRemoteDatabase
-registerSync
-closeAndRemoveLocalDatabase xx
-closeAndRemoveRemoteDatabase xx
-closeAndRemoveSync xx
-
-projectSlice reducers that need to be moved to thunks
-
-resumeSyncingProject
-activateProjectSync
+The intialisation then calls `initialiseServers` which sends a request to each
+configured server for its details.  It then calls `initialiseProjects` to
+get up to date details of all projects - this will compile the uiSpec if it
+is updated.
