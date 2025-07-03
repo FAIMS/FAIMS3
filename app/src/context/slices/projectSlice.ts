@@ -700,7 +700,6 @@ const projectsSlice = createSlice({
       };
     },
 
-
     // update the state after we have turned off sync for a project
     stopSyncingProjectSuccess: (state, action: PayloadAction<Project>) => {
       // check project/server exists
