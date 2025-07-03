@@ -76,8 +76,8 @@ export const validateSyncStatus = async ({
       // we need to merge the returned value with the
       // current status
       const status = {
-        ...response.status,
         ...currentStatus?.status,
+        ...response.status,
       };
       return {
         status: status,
