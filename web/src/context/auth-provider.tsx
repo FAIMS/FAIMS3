@@ -32,6 +32,7 @@ export interface AuthContext {
   }>;
   logout: () => void;
   user: User | null;
+  refreshToken: () => Promise<{status: string; message: string}>;
 }
 
 const AuthContext = createContext<AuthContext | null>(null);
@@ -50,7 +51,7 @@ function decodeToken(token: string): TokenContents | null {
 
     // Minute buffer is considered expired
     if (payload.exp * 1000 < Date.now() - 60 * 1000) {
-      console.log('Access token has expired.');
+      console.error('Access token has expired.');
       return null;
     }
 
@@ -215,7 +216,7 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   return (
     <AuthContext.Provider
-      value={{isAuthenticated, user, getUserDetails, logout}}
+      value={{isAuthenticated, user, getUserDetails, logout, refreshToken}}
     >
       {children}
     </AuthContext.Provider>
