@@ -32,10 +32,7 @@ import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
 import FieldWrapper from './fieldWrapper';
-import MarkdownIt from 'markdown-it';
 import {contentToSanitizedHtml} from '../../utils/DomPurifier';
-
-const md = new MarkdownIt({breaks: true, html: false});
 
 /**
  * Base properties for multi-select components

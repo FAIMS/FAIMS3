@@ -122,5 +122,5 @@ jobs:
           JAVA_KEY: ${{ secrets.JAVA_KEY}}
           JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
-          serverprefix: "fieldmark"
+          serverprefix: ${{vars.APP_NAME}}
           prnum:  ${{env.version_string}}

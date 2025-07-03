@@ -1007,7 +1007,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     // properly and consider implications if the active user is no longer
     // defined
     const currentUser = selectActiveUser(store.getState())?.username;
-
     // TODO no idea how to handle errors appropriately here!
     if (!currentUser) {
       const message =

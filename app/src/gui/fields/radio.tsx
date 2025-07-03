@@ -30,7 +30,6 @@ import MuiRadioGroup from '@mui/material/RadioGroup';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import React from 'react';
 import FieldWrapper from './fieldWrapper';
-import MarkdownIt from 'markdown-it';
 import {contentToSanitizedHtml} from '../../utils/DomPurifier';
 
 /**

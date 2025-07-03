@@ -64,7 +64,8 @@ registerClient({
 });
 
 // Change the page title to configured app name
-document.getElementsByTagName('title')[0].innerText = APP_NAME;
+if (document.getElementsByTagName('title')[0])
+  document.getElementsByTagName('title')[0].innerText = APP_NAME;
 // and the meta description tag
 document
   .querySelector('meta[name=description]')
