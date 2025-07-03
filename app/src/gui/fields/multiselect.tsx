@@ -269,6 +269,11 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
 
   const isExpandedChecklist = props.ElementProps.expandedChecklist ?? false;
 
+  // force value to be an array if it isn't already
+  if (!Array.isArray(props.field.value)) {
+    props.field.value = [props.field.value];
+  }
+
   const commonProps = {
     options: props.ElementProps.options,
     value: props.field.value,
