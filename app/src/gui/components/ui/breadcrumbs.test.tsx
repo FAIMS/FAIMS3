@@ -32,7 +32,6 @@ const testData2 = [{title: 'Workspace'}, {title: NOTEBOOK_NAME_CAPITALIZED}];
 
 // Can only check this if breadcrumbs are enabled
 if (NAVIGATION_STYLE === 'breadcrumbs') {
-
   describe('Check breadcrumbs component', () => {
     it('Check with one element in array', async () => {
       render(

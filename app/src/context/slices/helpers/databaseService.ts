@@ -89,7 +89,7 @@ class DatabaseService {
     const db = this.remoteDatabases.get(id);
     if (db) {
       try {
-          await db.close();
+        await db.close();
       } catch (e) {
         logError(`Error closing remote database ${id}: ${e}`);
       } finally {
