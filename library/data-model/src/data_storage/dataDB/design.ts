@@ -237,20 +237,6 @@ export const recordAuditDocument = {
         }
       }),
     },
-    by_record_id_with_attachments: {
-      map: convertToCouchDBString(doc => {
-        // Emit all documents with record_id, including attachment status
-        if (doc.record_id) {
-          emit(
-            [doc.record_id, doc.attach_format_version ? 'attachment' : 'data'],
-            {
-              _id: doc._id,
-              _rev: doc._rev,
-            }
-          );
-        }
-      }),
-    },
   },
 };
 
