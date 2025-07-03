@@ -61,5 +61,5 @@ test('Check refresh button', async () => {
       expect(refreshAlert.textContent).toContain(testText);
     }, 2000);
     vi.runAllTimers();
-});
+  });
 });
