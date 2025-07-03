@@ -741,7 +741,6 @@ const projectsSlice = createSlice({
           },
         },
       };
-      console.log('Stopped sync for project', state.servers[project.serverId].projects[project.projectId]);
     },
 
     // update the state after we have turned sync back on for a project
@@ -752,7 +751,6 @@ const projectsSlice = createSlice({
       if (!project.database)
         throw new Error('Project database not properly initialised');
 
-      console.log('resumeSyncingProjectSuccess', project);
       // updates the state with all of this new information
       state.servers[project.serverId].projects[project.projectId] = {
         // These are retained
