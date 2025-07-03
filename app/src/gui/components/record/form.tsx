@@ -264,7 +264,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
         JSON.stringify(this.state.lastProcessedValues);
 
       if (valuesChanged) {
-        console.log('values have changed...');
         const changed = recomputeDerivedFields({
           context: this.state.recordContext,
           values: currentValues,
