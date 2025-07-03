@@ -4,7 +4,7 @@ import {grey} from '@mui/material/colors';
 
 type BoxTabProps = {
   title: string;
-  bgcolor: string;
+  bgcolor?: string;
 };
 export default function BoxTab(props: BoxTabProps) {
   return (
