@@ -30,11 +30,13 @@ import {
   Paper,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
   GridCellParams,
+  GridColDef,
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
@@ -50,6 +52,15 @@ import RecordRouteDisplay from '../../../ui/record_link';
 import {gridParamsDataType} from '../record_links';
 import {RecordLinksToolbar} from '../toolbars';
 import {compiledSpecService} from '../../../../../context/slices/helpers/compiledSpecService';
+import {useDataGridStyles} from '../../../../../utils/useDataGridStyles';
+import {
+  buildColumnFromSystemField,
+  buildVerticalStackColumn,
+  CONSTANTS,
+} from '../../../notebook/record_table';
+import {useScreenSize} from '../../../../../utils/useScreenSize';
+
+type ColumnType = 'CREATED' | 'CREATED_BY' | 'LAST_UPDATED' | 'LAST_UPDATED_BY';
 
 const style = {
   position: 'absolute' as const,
@@ -113,9 +124,6 @@ export function DataGridNoLink(props: {
       rowCount={5}
       pageSizeOptions={[5, 10, 20]} // 100 here to disable an error thrown by MUI
       disableRowSelectionOnClick
-      slotProps={{
-        filterPanel: {sx: {maxWidth: '96vw'}},
-      }}
       columns={columns}
       initialState={{
         sorting: {
@@ -148,6 +156,7 @@ interface DataGridLinksComponentProps {
 export function DataGridFieldLinksComponent(
   props: DataGridLinksComponentProps
 ) {
+  const {currentSize} = useScreenSize();
   /**
    * Display the linked records in a MUI Datagrid.
    * Datagrid is set to autoHeight (grid will size according to its content) up to 5 rows
@@ -163,6 +172,9 @@ export function DataGridFieldLinksComponent(
     selectProjectById(state, props.project_id)
   )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+
+  const theme = useTheme();
+  const styles = useDataGridStyles(theme); // Add this
 
   function getRowId(row: any) {
     /***
@@ -279,12 +291,11 @@ export function DataGridFieldLinksComponent(
     },
   };
 
-  const record_column = {
+  const record_column: GridColDef = {
     field: 'record',
-    headerName: 'Record',
-    headerClassName: 'faims-record-link--header',
-    minWidth: 200,
-    flex: 0.4,
+    headerName: 'Field Id',
+    minWidth: 140,
+    flex: 1,
     valueGetter: (params: GridCellParams) =>
       params.row.type + ' ' + params.row.hrid,
     renderCell: (params: GridCellParams) => (
@@ -296,6 +307,30 @@ export function DataGridFieldLinksComponent(
     ),
   };
 
+  const smallScreenColumn: GridColDef | null =
+    uiSpec && (currentSize === 'xs' || currentSize === 'sm')
+      ? buildVerticalStackColumn({
+          summaryFields: [],
+          columnLabel: CONSTANTS.VERTICAL_STACK_COLUMN_LABEL,
+          uiSpecification: uiSpec,
+          includeKind: false,
+          hasConflict: false,
+        })
+      : null;
+
+  const systemColumns: GridColDef[] = uiSpec
+    ? (
+        [
+          'CREATED',
+          'CREATED_BY',
+          'LAST_UPDATED',
+          'LAST_UPDATED_BY',
+        ] as ColumnType[]
+      ).map(col =>
+        buildColumnFromSystemField({columnType: col, uiSpecification: uiSpec})
+      )
+    : [];
+
   const updated_by_column = {
     field: 'lastUpdatedBy',
     headerName: 'Updated',
@@ -305,18 +340,25 @@ export function DataGridFieldLinksComponent(
     valueGetter: (params: GridCellParams) => params.row.updated_by,
   };
 
-  const columns: any =
-    props.relation_type === 'Child'
-      ? [record_column, updated_by_column]
-      : [relation_column, record_column, updated_by_column];
+  const columns: GridColDef[] = [];
+
+  if (props.relation_type !== 'Child') columns.push(relation_column); // keep relationship column
+
+  if (smallScreenColumn) {
+    // XS / SM: 1-column stack view + (optional) relation + actions
+    columns.push(smallScreenColumn);
+  } else {
+    // MD / LG: detailed tabular view
+    columns.push(record_column, ...systemColumns);
+  }
 
   if (!props.disabled)
     columns.push({
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
-      headerClassName: 'faims-record-link--header',
-      flex: 0.2,
+      flex: 0.15,
+      minWidth: 90,
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
           icon={<LinkOffIcon color={'error'} />}
@@ -328,7 +370,11 @@ export function DataGridFieldLinksComponent(
     });
 
   return (
-    <Box component={Paper} elevation={0}>
+    <Box
+      component={Paper}
+      elevation={0}
+      sx={{...styles.wrapper, overflowX: 'auto', overflowY: 'hidden'}}
+    >
       {props.links !== null && (
         <Box>
           <Modal
@@ -385,18 +431,30 @@ export function DataGridFieldLinksComponent(
             slots={{
               footer: RecordLinksToolbar,
             }}
-            slotProps={{
-              filterPanel: {sx: {maxWidth: '96vw'}},
-            }}
             columns={columns}
+            disableColumnFilter
             initialState={{
               sorting: {
-                sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
+                sortModel: [{field: 'last_updated', sort: 'desc'}],
               },
               pagination: {paginationModel: {pageSize: 5}},
             }}
             rows={props.links}
             getRowId={getRowId}
+            sx={{
+              ...styles.grid,
+              '& .MuiDataGrid-columnHeaders': {
+                width: '100%',
+                minHeight: '70px !important',
+              },
+              /* Hide horizontal scroll & arrows on md / lg screens */
+              [theme.breakpoints.up('md')]: {
+                '& .MuiDataGrid-virtualScroller': {
+                  overflowX: 'hidden !important',
+                },
+                '& .MuiDataGrid-scrollArea': {display: 'none'},
+              },
+            }}
           />
         </Box>
       )}
