@@ -86,6 +86,7 @@ import {AppDispatch} from '../../../context/store';
 
 // Import the actions from recordSlice
 import {setEdited, setPercent} from '../../../context/slices/recordSlice';
+import {isEqual} from 'lodash';
 
 // Define mapDispatchToProps
 const mapDispatchToProps = (dispatch: AppDispatch) => {
@@ -259,9 +260,10 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     // Handle derived field updates when form values change (moved from render method)
     if (this.formikRef.current) {
       const currentValues = this.formikRef.current.values;
-      const valuesChanged =
-        JSON.stringify(currentValues) !==
-        JSON.stringify(this.state.lastProcessedValues);
+      const valuesChanged = isEqual(
+        currentValues,
+        this.state.lastProcessedValues
+      );
 
       if (valuesChanged) {
         const changed = recomputeDerivedFields({
