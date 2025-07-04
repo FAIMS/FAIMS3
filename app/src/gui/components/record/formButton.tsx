@@ -207,6 +207,7 @@ export default function FormButtonGroup({
             />
             <FormSubmitButton
               color="secondary"
+              data-testid="finish-new-record"
               disabled={!showPublishButton}
               formProps={formProps}
               text={`Finish and new ${record_type}`}

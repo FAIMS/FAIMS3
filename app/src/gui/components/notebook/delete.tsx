@@ -198,6 +198,3 @@ export default function RecordDelete(props: RecordDeleteProps) {
     </div>
   );
 }
-RecordDelete.defaultProps = {
-  show_label: true,
-};

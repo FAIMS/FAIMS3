@@ -101,6 +101,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
             value={value}
             onChange={handleChange}
             onKeyDown={handleKeyPress}
+            data-testid="record-search-input"
             variant="outlined"
             size="small"
             fullWidth
