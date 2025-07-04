@@ -51,4 +51,5 @@ async function mockGetTokenForCluster(listing_id: string) {
 
 vi.mock('./users', () => ({
   getTokenForCluster: mockGetTokenForCluster,
+  shouldDisplayRecord: () => true,
 }));
