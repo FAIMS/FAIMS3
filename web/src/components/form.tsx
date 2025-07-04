@@ -151,7 +151,7 @@ export function Form<
                           {options ? (
                             <Select
                               onValueChange={field.onChange}
-                              value={field.value}
+                              value={field.value || ''}
                               disabled={isDisabled}
                             >
                               <SelectTrigger>
@@ -165,6 +165,20 @@ export function Form<
                                 ))}
                               </SelectContent>
                             </Select>
+                          ) : type === 'file' ? (
+                            <Input
+                              type="file"
+                              min={min}
+                              max={max}
+                              step={step}
+                              disabled={isDisabled}
+                              className="cursor-pointer"
+                              placeholder={placeholder}
+                              onChange={event =>
+                                event.target.files &&
+                                field.onChange(event.target.files[0])
+                              }
+                            />
                           ) : (
                             <Input
                               {...field}
@@ -181,22 +195,16 @@ export function Form<
                               }
                               step={type === 'number' ? step : undefined}
                               disabled={isDisabled}
-                              className={
-                                type === 'file' ? 'cursor-pointer' : ''
-                              }
-                              value={type === 'file' ? undefined : field.value}
+                              value={field.value ?? ''}
                               placeholder={placeholder}
                               onChange={event =>
-                                type === 'file'
-                                  ? event.target.files &&
-                                    field.onChange(event.target.files[0])
-                                  : type === 'number'
-                                    ? field.onChange(
-                                        event.target.value === ''
-                                          ? undefined
-                                          : Number(event.target.value)
-                                      )
-                                    : field.onChange(event)
+                                type === 'number'
+                                  ? field.onChange(
+                                      event.target.value === ''
+                                        ? ''
+                                        : Number(event.target.value)
+                                    )
+                                  : field.onChange(event)
                               }
                             />
                           )}
