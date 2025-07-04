@@ -15,6 +15,7 @@
 import {Ajv} from 'ajv';
 import {schema} from '../notebook-schema';
 import {FieldType, Notebook} from './initial';
+import {v4 as uuidv4} from 'uuid';
 
 /**
  * Migrate a notebook to the most recent notebook format

@@ -78,20 +78,18 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     setDialogOpen(false);
   };
 
-  const allClosed: {[key: string]: boolean} = {};
-  const allOpen: {[key: string]: boolean} = {};
-
-  const [isExpanded, setIsExpanded] = useState(allClosed);
+  const [isExpanded, setIsExpanded] = useState<{[key: string]: boolean}>({});
   const [showCollapseButton, setShowCollapseButton] = useState(false);
 
-  const updateAllToggles = () => {
-    fView.fields.forEach((fieldName: string) => {
-      allClosed[fieldName] = false;
-      allOpen[fieldName] = true;
-    });
-  };
-
-  updateAllToggles();
+  const allClosed: {[key: string]: boolean} = {};
+  const allOpen: {[key: string]: boolean} = {};
+  fView.fields.forEach((fieldName: string) => {
+    const designerIdentifier = fields[fieldName]?.designerIdentifier;
+    if (designerIdentifier) {
+      allClosed[designerIdentifier] = false;
+      allOpen[designerIdentifier] = true;
+    }
+  });
 
   useEffect(() => {
     // if fView.label changes we are viewing a different
@@ -99,11 +97,11 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     setIsExpanded(allClosed);
   }, [fView.label]);
 
-  const handleExpandChange = (fieldName: string) => {
+  const handleExpandChange = (designerIdentifier: string) => {
     return (_event: React.SyntheticEvent, expanded: boolean) => {
       setIsExpanded(prevState => ({
         ...prevState,
-        [fieldName]: expanded,
+        [designerIdentifier]: expanded,
       }));
     };
   };
@@ -153,20 +151,25 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           Visible fields will appear in the survey.
         </Typography>
       </Stack>
-      {visibleFields.map((fieldName: string) => (
-        <FieldEditor
-          key={fieldName}
-          fieldName={fieldName}
-          viewSetId={viewSetId}
-          viewId={viewId}
-          expanded={isExpanded[fieldName] ?? false}
-          addFieldCallback={addFieldAfterCallback}
-          handleExpandChange={handleExpandChange(fieldName)}
-          moveFieldCallback={(targetViewId: string) =>
-            moveFieldCallback(targetViewId)
-          }
-        />
-      ))}
+      {visibleFields.map((fieldName: string) => {
+        const field = fields[fieldName];
+        const designerIdentifier = field?.designerIdentifier;
+
+        if (!field || !designerIdentifier) return null;
+
+        return (
+          <FieldEditor
+            key={designerIdentifier}
+            fieldName={fieldName}
+            viewSetId={viewSetId}
+            viewId={viewId}
+            expanded={isExpanded[designerIdentifier] ?? false}
+            addFieldCallback={addFieldAfterCallback}
+            handleExpandChange={handleExpandChange(designerIdentifier)}
+            moveFieldCallback={moveFieldCallback}
+          />
+        );
+      })}
 
       <Typography variant="h6" mt={2}>
         Hidden Fields
@@ -192,18 +195,25 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             </Button>
           </div>
           {hiddenExpanded &&
-            hiddenFields.map((fieldName: string) => (
-              <FieldEditor
-                key={fieldName}
-                fieldName={fieldName}
-                viewSetId={viewSetId}
-                viewId={viewId}
-                expanded={isExpanded[fieldName] ?? false}
-                addFieldCallback={addFieldAfterCallback}
-                moveFieldCallback={moveFieldCallback}
-                handleExpandChange={handleExpandChange(fieldName)}
-              />
-            ))}
+            hiddenFields.map((fieldName: string) => {
+              const field = fields[fieldName];
+              const designerIdentifier = field?.designerIdentifier;
+
+              if (!field || !designerIdentifier) return null;
+
+              return (
+                <FieldEditor
+                  key={designerIdentifier}
+                  fieldName={fieldName}
+                  viewSetId={viewSetId}
+                  viewId={viewId}
+                  expanded={isExpanded[designerIdentifier] ?? false}
+                  addFieldCallback={addFieldAfterCallback}
+                  moveFieldCallback={moveFieldCallback}
+                  handleExpandChange={handleExpandChange(designerIdentifier)}
+                />
+              );
+            })}
         </>
       ) : (
         <Typography variant="body2" color="textSecondary">

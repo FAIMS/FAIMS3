@@ -19,7 +19,7 @@ export const getFieldLabel = (f: FieldType) => {
   return (
     (f['component-parameters'].InputLabelProps &&
       f['component-parameters'].InputLabelProps.label) ||
-    f['component-parameters'].name
+    f['component-parameters'].label
   );
 };
 
