@@ -151,7 +151,7 @@ export function Form<
                           {options ? (
                             <Select
                               onValueChange={field.onChange}
-                              value={field.value || ''}
+                              value={field.value ?? ''}
                               disabled={isDisabled}
                             >
                               <SelectTrigger>
@@ -201,7 +201,7 @@ export function Form<
                                 type === 'number'
                                   ? field.onChange(
                                       event.target.value === ''
-                                        ? ''
+                                        ? undefined
                                         : Number(event.target.value)
                                     )
                                   : field.onChange(event)
