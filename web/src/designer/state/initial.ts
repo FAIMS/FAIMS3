@@ -14,7 +14,7 @@
 
 // eslint-disable-next-line n/no-extraneous-import
 import {StateWithHistory} from 'redux-undo';
-import {ConditionType} from '../components/condition';
+import {ConditionType} from '../components/condition/types';
 
 export type NotebookMetadata = PropertyMap;
 

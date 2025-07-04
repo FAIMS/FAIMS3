@@ -15,7 +15,7 @@
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
-import {ConditionType} from '../components/condition';
+import {ConditionType} from '../components/condition/types';
 import {
   slugify,
   getViewSetForView,
