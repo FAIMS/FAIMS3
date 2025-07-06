@@ -10,7 +10,14 @@ const main = async () => {
     console.log(
       `Restoring from ${filename} with pattern ${pattern}, force=${force}`
     );
-    restoreFromBackup({filename, pattern, force});
+    try {
+      await restoreFromBackup({filename, pattern, force});
+    } catch (err) {
+      console.error('Error restoring backup:', err);
+      process.exit(1);
+    }
+    console.log('Backup restore completed successfully.');
+    process.exit(0);
   } else {
     console.log('Usage: node restoreBackup.ts <filename> <pattern> ?<force>');
     console.log(' * pattern is a regex pattern to filter databases to restore');

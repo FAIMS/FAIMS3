@@ -165,9 +165,6 @@ export async function batchWriteDocuments<T extends {}>({
       }
     }
 
-    // Clear chunk references
-    chunk.length = 0;
-
     // Allow garbage collection between chunks
     if (i % (CHUNK_SIZE * 10) === 0) {
       await new Promise(resolve => setTimeout(resolve, 1));
