@@ -267,7 +267,6 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
 
   const isExpandedChecklist = props.ElementProps.expandedChecklist ?? false;
 
-  console.log('multi select value', props.field.value);
   // force value to be an array if it isn't already, but empty string becomes []
   if (!Array.isArray(props.field.value)) {
     if (props.field.value === '') props.field.value = [];
