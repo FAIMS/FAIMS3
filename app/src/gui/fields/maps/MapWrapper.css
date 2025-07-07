@@ -7,6 +7,9 @@
   display: grid;
   grid-template-rows: 1fr 100px;
   z-index: 100;
+  /* padding to allow for camera notch on some phones */
+  padding: var(--safe-area-inset-top) var(--safe-area-inset-right)
+           var(--safe-area-inset-bottom) var(--safe-area-inset-left);
 }
 
 .mapContainer {
