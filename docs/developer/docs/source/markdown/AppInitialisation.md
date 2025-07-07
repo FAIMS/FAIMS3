@@ -49,7 +49,8 @@ which makes sure that design documents and security are up to date in the databa
 `activateProject` is called from the ProjectCard component which presents the UI for
 a project if the project has not already been activated.   It's also called from
 the `ActivationSwitch` component when the user explicitly activates a project from the UI.
-This last one only happens once at the moment since we don't have a 'deactivate' UI action.
+There is a corresponding `deactivateProject` action which removes the project from
+the active list but does not delete any databases.
 
 Note that when a local PouchDB instance is created, it will connect to an existing
 database if present or create a new one if not.
@@ -73,8 +74,7 @@ As the first action in `initialize`, `rebuildDbs` is passed the current projects
 For every active project, it will re-create the database connections, doing the same
 work as activateProjects does when the project is first activated.
 
-Following this, the uiSpec for each project is re-compiled (this might be redundant
-given the initialise projects step below).
+Following this, the uiSpec for each project is re-compiled.
 
 The intialisation then calls `initialiseServers` which sends a request to each
 configured server for its details.  It then calls `initialiseProjects` to
