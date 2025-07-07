@@ -56,7 +56,7 @@ import {useDataGridStyles} from '../../../../../utils/useDataGridStyles';
 import {
   buildColumnFromSystemField,
   buildVerticalStackColumn,
-  CONSTANTS,
+  RECORD_GRID_LABELS,
 } from '../../../notebook/record_table';
 import {useScreenSize} from '../../../../../utils/useScreenSize';
 
@@ -311,7 +311,7 @@ export function DataGridFieldLinksComponent(
     uiSpec && (currentSize === 'xs' || currentSize === 'sm')
       ? buildVerticalStackColumn({
           summaryFields: [],
-          columnLabel: CONSTANTS.VERTICAL_STACK_COLUMN_LABEL,
+          columnLabel: RECORD_GRID_LABELS.VERTICAL_STACK_COLUMN_LABEL,
           uiSpecification: uiSpec,
           includeKind: false,
           hasConflict: false,
