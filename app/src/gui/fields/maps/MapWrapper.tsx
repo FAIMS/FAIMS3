@@ -296,7 +296,15 @@ function MapWrapper(props: MapProps) {
           </Box>
         )}
 
-        <Dialog fullScreen open={mapOpen} onClose={() => setMapOpen(false)}>
+        <Dialog
+          sx={{
+            top: 'var(--safe-area-inset-top)',
+            left: 'var(--safe-area-inset-left)',
+          }}
+          fullScreen
+          open={mapOpen}
+          onClose={() => setMapOpen(false)}
+        >
           <AppBar
             sx={{
               position: 'relative',
@@ -394,7 +402,6 @@ function MapWrapper(props: MapProps) {
             </Toolbar>
           </AppBar>
 
-          {/* <div ref={refCallback} style={styles.mapContainer} /> */}
           <Grid container spacing={2} sx={{height: '100%'}}>
             <MapComponent
               key={mapOpen ? 'map-open' : 'map-closed'}
@@ -461,15 +468,3 @@ function MapWrapper(props: MapProps) {
 // added forward rendering..
 export default MapWrapper;
 
-// <div style={styles.mapInputWidget}>
-// <div ref={mapElement} style={styles.mapContainer} />
-// <Button
-//   type='button'
-//   variant='outlined'
-//   color='primary'
-//   style={styles.mapSubmitButton}
-//   onClick={submitAction}
-// >
-//   Submit
-// </Button>
-// </div>
