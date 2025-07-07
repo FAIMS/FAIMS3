@@ -262,9 +262,9 @@ export const wipeAllDatabases = async () => {
         await localDb?.destroy();
         // Then remove
         localDb &&
-          databaseService.closeAndRemoveLocalDatabase(
+          (await databaseService.closeAndRemoveLocalDatabase(
             project.database.localDbId
-          );
+          ));
       }
     }
   }
