@@ -107,7 +107,7 @@ type GridColumnType = GridColDef<RecordMetadata>;
 // ============================================================================
 
 /** Maps column types to their display labels */
-export const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
+const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
   ['LAST_UPDATED', 'Last Updated'],
   ['LAST_UPDATED_BY', 'Last Updated By'],
   ['CONFLICTS', 'Conflicts'],
