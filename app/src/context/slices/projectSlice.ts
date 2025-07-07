@@ -1504,7 +1504,7 @@ export const activateProject = createAsyncThunk<
     })
   );
 
-  // Perform async initialization outside of reducer
+  // Perform async initialisation outside of reducer
   await couchInitialiser({
     db: localDb,
     config: {forceWrite: true, applyPermissions: false},

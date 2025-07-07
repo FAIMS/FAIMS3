@@ -2,7 +2,7 @@
 import {initialiseAndMigrateDBs} from '../couchdb';
 
 /**
- * Main function to run database initialization and migration
+ * Main function to run database initialisation and migration
  * Accepts optional --keys flag to control whether public keys should be pushed
  */
 const main = async () => {
@@ -15,7 +15,7 @@ const main = async () => {
       `Public keys will ${pushKeys ? '' : 'not '}be configured during migration`
     );
 
-    // Run database initialization and migration with force and pushKeys parameters
+    // Run database initialisation and migration with force and pushKeys parameters
     await initialiseAndMigrateDBs({
       force: true,
       pushKeys: pushKeys,

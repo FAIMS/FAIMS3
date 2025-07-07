@@ -35,7 +35,7 @@ PouchDB.plugin(pouchdbDebug);
  * @returns creates all project PouchDB objects and metadata
  * DBs synced
  */
-export async function initialize() {
+export async function initialise() {
   if (DEBUG_POUCHDB) PouchDB.debug.enable('*');
   else PouchDB.debug.disable();
 
