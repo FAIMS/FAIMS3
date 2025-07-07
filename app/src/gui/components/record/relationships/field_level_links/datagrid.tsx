@@ -117,6 +117,7 @@ export function DataGridNoLink(props: {
   ];
   // remove any invalid entries in links (due to a bug elsewhere)
   const links = props.links.filter(link => link.record_id);
+
   return props.links !== null && props.links.length > 0 ? (
     <DataGrid
       autoHeight
@@ -318,6 +319,7 @@ export function DataGridFieldLinksComponent(
         })
       : null;
 
+  // System fields for medium+ screens
   const systemColumns: GridColDef[] = uiSpec
     ? (
         [
@@ -326,8 +328,8 @@ export function DataGridFieldLinksComponent(
           'LAST_UPDATED',
           'LAST_UPDATED_BY',
         ] as ColumnType[]
-      ).map(col =>
-        buildColumnFromSystemField({columnType: col, uiSpecification: uiSpec})
+      ).map(c =>
+        buildColumnFromSystemField({columnType: c, uiSpecification: uiSpec!})
       )
     : [];
 
@@ -342,17 +344,34 @@ export function DataGridFieldLinksComponent(
 
   const columns: GridColDef[] = [];
 
-  if (props.relation_type !== 'Child') columns.push(relation_column); // keep relationship column
-
   if (smallScreenColumn) {
-    // XS / SM: 1-column stack view + (optional) relation + actions
-    columns.push(smallScreenColumn);
+    // S/SM: relationship into the Details stack
+    columns.push({
+      ...smallScreenColumn,
+      renderCell: params => (
+        <Box>
+          {/*  relationship above the stacked details */}
+          {props.relation_type !== 'Child' && (
+            <Typography variant="body2" sx={{mb: 1}}>
+              <strong>Relationship:</strong>{' '}
+              {relation_column.valueGetter!(params as any)}
+            </Typography>
+          )}
+          {/* vertical-stack cell under  */}
+          {smallScreenColumn.renderCell!(params)}
+        </Box>
+      ),
+    });
   } else {
-    // MD / LG: detailed tabular view
+    // MD/LG:  relationship in its own column, tghen record + system columns
+    if (props.relation_type !== 'Child') {
+      columns.push(relation_column);
+    }
     columns.push(record_column, ...systemColumns);
   }
 
-  if (!props.disabled)
+  //  “remove link” actions menu
+  if (!props.disabled) {
     columns.push({
       field: 'actions',
       type: 'actions',
@@ -361,13 +380,14 @@ export function DataGridFieldLinksComponent(
       minWidth: 90,
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
-          icon={<LinkOffIcon color={'error'} />}
+          icon={<LinkOffIcon color="error" />}
           onClick={handleModalOpen(params.row)}
           label="Remove link"
           showInMenu
         />,
       ],
     });
+  }
 
   return (
     <Box
@@ -375,7 +395,7 @@ export function DataGridFieldLinksComponent(
       elevation={0}
       sx={{...styles.wrapper, overflowX: 'auto', overflowY: 'hidden'}}
     >
-      {props.links !== null && (
+      {props.links && (
         <Box>
           <Modal
             open={modalOpen}
