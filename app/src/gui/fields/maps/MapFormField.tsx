@@ -29,7 +29,6 @@ import {canShowMapNear} from '../../components/map/map-component';
 import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
 import {theme} from '../../themes';
 import FieldWrapper from '../fieldWrapper';
-import './MapFormField.css';
 import MapWrapper, {MapAction} from './MapWrapper';
 
 // If no center is available - pass this through
