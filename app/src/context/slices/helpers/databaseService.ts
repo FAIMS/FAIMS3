@@ -79,11 +79,9 @@ class DatabaseService {
         logError(`Error closing database ${id}: ${e}`);
       } finally {
         this.localDatabases.delete(id);
-        this.cleanupInProgress.delete(id);
       }
-    } else {
-      this.cleanupInProgress.delete(id);
     }
+    this.cleanupInProgress.delete(id);
   }
   async closeAndRemoveRemoteDatabase(id: string): Promise<void> {
     const db = this.remoteDatabases.get(id);
