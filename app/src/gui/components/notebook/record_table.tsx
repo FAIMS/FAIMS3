@@ -118,10 +118,10 @@ const COLUMN_TO_LABEL_MAP: Map<ColumnType, string> = new Map([
 ]);
 
 /** Columns that must always be shown */
-export const MANDATORY_COLUMNS: ColumnType[] = ['CREATED', 'CREATED_BY'];
+const MANDATORY_COLUMNS: ColumnType[] = ['CREATED', 'CREATED_BY'];
 
 /** Columns to show in large view */
-export const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
+const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
   'LAST_UPDATED',
   'LAST_UPDATED_BY',
 ]);
