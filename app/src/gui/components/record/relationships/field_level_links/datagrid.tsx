@@ -205,13 +205,11 @@ export function DataGridFieldLinksComponent(
     valueGetter: (params: gridParamsDataType) => {
       const rel = params.row.relationship;
       if (rel.linked && rel.linked.length > 0) {
-        console.log('relationship', rel);
         // if the relationship has a linked record, return the type
         // find the link that is back to us
         const links_to_us = rel.linked.filter(
           (link: any) => link.record_id === params.id
         );
-        console.log('links_to_us', links_to_us);
         if (links_to_us && links_to_us.length > 0) {
           const rvp = links_to_us[0].relation_type_vocabPair;
           return (rvp && rvp.length > 0 && rvp[1]) || 'linked';
