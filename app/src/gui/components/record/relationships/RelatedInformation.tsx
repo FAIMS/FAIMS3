@@ -52,6 +52,7 @@ export type LocationState = {
   relation_type_vocabPair?: string[] | null; //pass the parent information to child
   child_record_id?: RecordID; //child/linked record ID created from parent
   parent_hrid?: string;
+  step_anchor?: string;
 };
 
 /**

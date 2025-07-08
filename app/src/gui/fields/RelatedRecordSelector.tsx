@@ -137,6 +137,7 @@ interface RelatedRecordSelectorProps extends FieldProps {
   current_form_label?: string;
   isconflict?: boolean;
   allowLinkToExisting?: boolean;
+  step_anchor?: string;
 
   // This is actually passed to all components - but we only need it here
   // currently
@@ -294,6 +295,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     parent_link: location.pathname,
     parent: {},
     relation_type_vocabPair: relationshipPair, //pass the value of vocalPair
+    step_anchor: `step-${props.field.name}`,
   };
 
   const disabled = props.disabled ?? false;
