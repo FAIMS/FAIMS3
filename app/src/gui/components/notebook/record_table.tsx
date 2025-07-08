@@ -129,7 +129,7 @@ const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
 /** Default values for text display , record grid labels */
 export const RECORD_GRID_LABELS = {
   MISSING_DATA_PLACEHOLDER: '-',
-  HRID_COLUMN_LABEL: 'Field ID',
+  HRID_COLUMN_LABEL: 'ID',
   VERTICAL_STACK_COLUMN_LABEL: 'Details',
 } as const;
 
@@ -706,7 +706,11 @@ function buildColumnDefinitions({
  * layout
  * @returns
  */
-const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
+export const KeyValueTable = ({
+  data,
+}: {
+  data: {[key: string]: string | ReactNode};
+}) => {
   return (
     <TableContainer>
       <Table size="small">
@@ -715,19 +719,21 @@ const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
             <TableRow key={key}>
               <TableCell
                 sx={{
-                  width: '40%',
+                  minWidth: '40%',
                   borderBottom: 'none',
                   padding: '4px 8px',
+                  textAlign: 'right',
                 }}
               >
                 {key}
               </TableCell>
               <TableCell
                 sx={{
-                  width: '60%',
+                  maxWidth: '60%',
                   borderBottom: 'none',
                   padding: '4px 8px',
                   fontWeight: 'bold',
+                  textAlign: 'left',
                 }}
               >
                 {val}
@@ -767,6 +773,7 @@ const useTableColumns = ({
     // Should the kind property be included?
     const includeKind = visibleTypes.length > 1;
     const viewsetId = visibleTypes.length === 1 ? visibleTypes[0] : '';
+
     return cols.concat(
       buildColumnDefinitions({
         uiSpecification: uiSpec,
