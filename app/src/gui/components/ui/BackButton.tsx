@@ -20,6 +20,7 @@ const BackButton = ({
   // our “step” field_id comes from RelatedRecordSelector → AddNewRecordButton → navigate(...)
   const fieldId = (location.state as any)?.field_id as string | undefined;
   console.log('fieldid for reference: ', fieldId);
+  const stepAnchor = (location.state as any)?.step_anchor as string | undefined;
 
   const navigate = useNavigate();
 
@@ -27,10 +28,9 @@ const BackButton = ({
     if (confirm && formIsEdited) {
       setDialogOpen(true);
     } else if (link) {
-      navigate(link, {
-        replace: true,
-        state: fieldId ? {fromFieldId: fieldId} : undefined,
-      });
+      // the link already includes "#step-..." if stepAnchor was set,
+      // so navigating to it will scroll you back to the correct step
+      navigate(link, {replace: true});
     } else {
       history.back();
     }
@@ -59,7 +59,7 @@ const BackButton = ({
             textAlign: 'center',
           }}
         >
-          Back
+          RABackRNIA
         </Typography>
       </Box>
       <ConfirmExitDialog
@@ -67,7 +67,7 @@ const BackButton = ({
         setOpen={setDialogOpen}
         backLink={link}
         backIsParent={backIsParent}
-        fieldId={fieldId}
+        fieldId={(location.state as any)?.step_anchor as string}
       />
     </>
   );

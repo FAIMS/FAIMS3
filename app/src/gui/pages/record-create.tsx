@@ -266,6 +266,24 @@ export default function RecordCreate() {
   }>();
   const {serverId, projectId, typeName, draftId, recordId} = params;
   const location = useLocation();
+  const step_anchor = (location.state as any)?.step_anchor ?? null;
+  console.log('step_anchor', step_anchor);
+
+  // ✅ Auto-scroll to step after navigating back to parent
+  useEffect(() => {
+    if (step_anchor) {
+      const scrollToStep = () => {
+        const anchor = document.querySelector(`#step-${step_anchor}`);
+        if (anchor) {
+          anchor.scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
+      };
+      // Delay to allow the stepper to mount first
+      setTimeout(scrollToStep, 300);
+    }
+  }, [step_anchor]);
+
+  // ✅ Pass step_anchor into props if needed below (optional depending on structure)
 
   if (!serverId) return <></>;
   const project = useAppSelector(state =>
@@ -294,20 +312,45 @@ export default function RecordCreate() {
   ];
 
   // add parent link back for the parent or linked record
+  // if (location.state && location.state.parent_record_id !== recordId) {
+  //   showBreadcrumbs = true;
+  //   backlink = location.state.parent_link;
+  //   backIsParent = true;
+  //   const type =
+  //     location.state.type === 'Child'
+  //       ? 'Parent'
+  //       : location.state.relation_type_vocabPair[0];
+  //   breadcrumbs.splice(-1, 0, {
+  //     link: location.state.parent_link,
+  //     title:
+  //       type! +
+  //       ':' +
+  //       (location.state.parent_hrid! ?? location.state.parent_record_id!),
+  //   });
+  // }
+
   if (location.state && location.state.parent_record_id !== recordId) {
     showBreadcrumbs = true;
-    backlink = location.state.parent_link;
+    // Append step ID or field name as hash
+    const anchor = (location.state as any).step_anchor as string | undefined;
+    backlink = location.state.parent_link + (anchor ? `#${anchor}` : '');
     backIsParent = true;
+
+    console.log('backlintttt', backlink);
+    console.log('location.state', location.state);
+    console.log('backisparent', backIsParent);
+
     const type =
       location.state.type === 'Child'
         ? 'Parent'
-        : location.state.relation_type_vocabPair[0];
+        : location.state.relation_type_vocabPair?.[0];
+
     breadcrumbs.splice(-1, 0, {
-      link: location.state.parent_link,
+      link: backlink,
       title:
-        type! +
+        type +
         ':' +
-        (location.state.parent_hrid! ?? location.state.parent_record_id!),
+        (location.state.parent_hrid ?? location.state.parent_record_id),
     });
   }
 
