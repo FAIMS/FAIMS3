@@ -574,7 +574,24 @@ async function get_field_RelatedFields(
   return newfields;
 }
 
-export async function addLinkedRecord(
+/**
+ * Retrieves and processes relationship information from a record's parent and linked relationships,
+ * converting them into RecordLinkProps objects for UI display. This function examines the
+ * relationship structure of a record and creates display objects for each parent and linked
+ * relationship, including metadata like HRIDs, routes, and relationship types.
+ * 
+ * @param ui_specification - The UI specification for the project
+ * @param newfields - Existing array of RecordLinkProps to append to
+ * @param project_id - The project identifier
+ * @param parent - The relationship object containing parent and linked relationships
+ * @param record_id - The current record ID
+ * @param form_type - The form type/viewset name
+ * @param child_hrid - The HRID of the current record
+ * @param current_revision_id - The revision ID of the current record
+ * @param serverId - The server identifier for generating routes
+ * @returns Promise<Array<RecordLinkProps>> - Array of relationship display objects
+ */
+export async function getRelationshipDisplayData(
   ui_specification: ProjectUIModel,
   newfields: Array<RecordLinkProps>,
   project_id: string,
@@ -681,7 +698,6 @@ export async function addLinkedRecord(
       newfields.push(child);
     }
   }
-
   return newfields;
 }
 
@@ -860,7 +876,7 @@ export async function getDetailRelatedInformation(
       serverId
     );
     // get parent linked information
-    record_to_field_links = await addLinkedRecord(
+    record_to_field_links = await getRelationshipDisplayData(
       ui_specification,
       record_to_field_links,
       project_id,

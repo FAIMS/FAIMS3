@@ -202,7 +202,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
           md={props.relation_type === 'Linked' ? 3 : 6}
           lg={props.relation_type === 'Linked' ? 3 : 6}
         >
-          <Field name={field_name + 'select'}>
+          <Field name={field_name + '-select'}>
             {({field, form}: any) => (
               <Autocomplete
                 size={'small'}

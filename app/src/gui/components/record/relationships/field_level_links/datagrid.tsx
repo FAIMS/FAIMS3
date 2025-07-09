@@ -200,7 +200,7 @@ export function DataGridFieldLinksComponent(
   const relation_column = {
     field: 'relation_type_vocabPair',
     headerName: 'Relationship',
-    minWidth: 100,
+    minWidth: 150,
     flex: 0.2,
     valueGetter: (params: gridParamsDataType) => {
       const rel = params.row.relationship;
@@ -208,7 +208,7 @@ export function DataGridFieldLinksComponent(
         // if the relationship has a linked record, return the type
         // find the link that is back to us
         const links_to_us = rel.linked.filter(
-          (link: any) => link.record_id === params.id
+          (link: any) => link.record_id === props.record_id
         );
         if (links_to_us && links_to_us.length > 0) {
           const rvp = links_to_us[0].relation_type_vocabPair;
@@ -273,8 +273,8 @@ export function DataGridFieldLinksComponent(
           {/*  relationship above the stacked details */}
           {props.relation_type !== 'Child' && (
             <Typography variant="body2" sx={{mb: 1}}>
-              <strong>Relationship:</strong>{' '}
-              {relation_column.valueGetter!(params as any)}
+              Relationship:{' '}
+              <strong>{relation_column.valueGetter!(params as any)}</strong>
             </Typography>
           )}
           {/* vertical-stack cell under  */}
