@@ -261,10 +261,17 @@ export const MuiMultiSelect = ({
  */
 export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
   const handleChange = (value: string[]) => {
+    // remove stray empty strings from values if present
     props.form.setFieldValue(props.field.name, value, true);
   };
 
   const isExpandedChecklist = props.ElementProps.expandedChecklist ?? false;
+
+  // force value to be an array if it isn't already, but empty string becomes []
+  if (!Array.isArray(props.field.value)) {
+    if (props.field.value === '') props.field.value = [];
+    else props.field.value = [props.field.value];
+  }
 
   const commonProps = {
     options: props.ElementProps.options,

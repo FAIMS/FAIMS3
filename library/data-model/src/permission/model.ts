@@ -705,9 +705,9 @@ export const actionDetails: Record<Action, ActionDetails> = {
   // SYSTEM ACTIONS
   // ============================================================
   [Action.INITIALISE_SYSTEM_API]: {
-    name: 'Initialize System API',
+    name: 'Initialise System API',
     description:
-      'Perform system initialization tasks like database migrations and key setup',
+      'Perform system initialisation tasks like database migrations and key setup',
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },

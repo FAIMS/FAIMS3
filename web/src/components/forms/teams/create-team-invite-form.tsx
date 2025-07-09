@@ -11,6 +11,7 @@ import {
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {ErrorComponent} from '@tanstack/react-router';
+import {useMemo} from 'react';
 import {z} from 'zod';
 
 interface UpdateTemplateFormProps {
@@ -36,6 +37,26 @@ export function CreateTeamInviteForm({
     return <ErrorComponent error="Not authenticated" />;
   }
 
+  // Memoize the role options to prevent re-computation on each render
+  const roleOptions = useMemo(() => {
+    if (!user) return [];
+    return Object.entries(roleDetails)
+      .filter(
+        ([role, {scope, resource}]) =>
+          scope === RoleScope.RESOURCE_SPECIFIC &&
+          resource === Resource.TEAM &&
+          userCanDo({
+            user,
+            resourceId: teamId,
+            action: teamInviteToAction({
+              action: 'create',
+              role: role as Role,
+            }),
+          })
+      )
+      .map(([value, {name: label}]) => ({label, value}));
+  }, [user, teamId]);
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -45,21 +66,7 @@ export function CreateTeamInviteForm({
     {
       name: 'role',
       label: 'Role',
-      options: Object.entries(roleDetails)
-        .filter(
-          ([role, {scope, resource}]) =>
-            scope === RoleScope.RESOURCE_SPECIFIC &&
-            resource === Resource.TEAM &&
-            userCanDo({
-              user,
-              resourceId: teamId,
-              action: teamInviteToAction({
-                action: 'create',
-                role: role as Role,
-              }),
-            })
-        )
-        .map(([value, {name: label}]) => ({label, value})),
+      options: roleOptions,
       schema: z.nativeEnum(Role),
     },
     {

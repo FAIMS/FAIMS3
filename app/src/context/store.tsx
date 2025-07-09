@@ -20,7 +20,7 @@ import {PersistGate} from 'redux-persist/integration/react';
 import {TOKEN_REFRESH_INTERVAL_MS} from '../buildconfig';
 import LoadingApp from '../gui/components/loadingApp';
 import {logError} from '../logging';
-import {initialize} from '../sync/initialize';
+import {initialise} from '../sync/initialize';
 import alertsReducer, {addAlert} from './slices/alertSlice';
 import authReducer, {
   refreshAllUsers,
@@ -203,12 +203,12 @@ export const InitialiseGate: React.FC<{children: React.ReactNode}> = ({
     mounted.current = true;
 
     const init = async () => {
-      await initialize().catch(err => {
-        console.error('Could not initialize: ', err);
+      await initialise().catch(err => {
+        console.error('Could not initialise: ', err);
         dispatch(
           addAlert({
             message:
-              err instanceof Error ? err.message : 'Initialization failed',
+              err instanceof Error ? err.message : 'Initialisation failed',
             severity: 'error',
           })
         );
@@ -262,9 +262,9 @@ export const wipeAllDatabases = async () => {
         await localDb?.destroy();
         // Then remove
         localDb &&
-          databaseService.closeAndRemoveLocalDatabase(
+          (await databaseService.closeAndRemoveLocalDatabase(
             project.database.localDbId
-          );
+          ));
       }
     }
   }

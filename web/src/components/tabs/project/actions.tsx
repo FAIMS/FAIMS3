@@ -1,4 +1,4 @@
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useMemo, useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {List, ListDescription, ListItem, ListLabel} from '@/components/ui/list';
@@ -14,7 +14,7 @@ import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-di
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {DesignerWidget} from '@/designer/DesignerWidget';
+import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {
   NotebookWithHistory,
   NotebookUISpec,
@@ -38,16 +38,10 @@ const ProjectActions = (): JSX.Element => {
   const {data, isLoading} = useGetProject({user, projectId});
   const queryClient = useQueryClient();
 
-  // State for editor modal animation
-  const [showModal, setShowModal] = useState(false);
-  const [animateIn, setAnimateIn] = useState(false);
-  const [animateOut, setAnimateOut] = useState(false);
-  const animationDuration = 300;
-  const animationScale = 0.95;
+  const [editorOpen, setEditorOpen] = useState(false);
 
   // State for generating test records
   const [generateCount, setGenerateCount] = useState('10');
-
   // Prepare notebook data for the Designer
   const initialNotebook = useMemo<NotebookWithHistory | undefined>(() => {
     if (!data) return undefined;
@@ -88,28 +82,9 @@ const ProjectActions = (): JSX.Element => {
     },
   });
 
-  // Open the editor
-  const openEditor = () => {
-    if (isLoading || !data) return;
-    setShowModal(true);
-  };
-
-  // Animate in when modal opens
-  useEffect(() => {
-    if (!showModal) return;
-    const tid = window.setTimeout(() => setAnimateIn(true), 50);
-    return () => window.clearTimeout(tid);
-  }, [showModal]);
-
-  // Handle modal close and save
-  const handleClose = (file?: File) => {
-    setAnimateOut(true);
-    setAnimateIn(false);
-    window.setTimeout(() => {
-      if (file) saveFile.mutate(file);
-      setShowModal(false);
-      setAnimateOut(false);
-    }, animationDuration);
+  const handleEditorClose = (file?: File) => {
+    if (file) saveFile.mutate(file);
+    setEditorOpen(false);
   };
 
   const canChangeProjectStatus = useIsAuthorisedTo({
@@ -155,7 +130,6 @@ const ProjectActions = (): JSX.Element => {
             </List>
           </Card>
         )}
-
         <Card className="flex-1">
           <List className="flex flex-col gap-4">
             <ListItem>
@@ -168,7 +142,7 @@ const ProjectActions = (): JSX.Element => {
               <Button
                 variant="outline"
                 disabled={isLoading}
-                onClick={openEditor}
+                onClick={() => setEditorOpen(true)}
               >
                 Open in Editor
               </Button>
@@ -224,39 +198,11 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
       </div>
-
-      {showModal && initialNotebook && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-20"
-          onClick={() => handleClose()}
-          style={{
-            opacity: animateIn && !animateOut ? 1 : 0,
-            transform:
-              animateIn && !animateOut
-                ? 'scale(1)'
-                : `scale(${animationScale})`,
-            transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
-          }}
-        >
-          <div
-            className="bg-white w-[95vw] h-[95vh] rounded-lg overflow-hidden shadow-xl"
-            onClick={e => e.stopPropagation()}
-            style={{
-              opacity: animateIn && !animateOut ? 1 : 0,
-              transform:
-                animateIn && !animateOut
-                  ? 'scale(1)'
-                  : `scale(${animationScale})`,
-              transition: `opacity ${animationDuration}ms ease, transform ${animationDuration}ms ease`,
-            }}
-          >
-            <DesignerWidget
-              notebook={initialNotebook}
-              onClose={file => handleClose(file)}
-            />
-          </div>
-        </div>
-      )}
+      <DesignerDialog
+        open={editorOpen}
+        notebook={initialNotebook}
+        onClose={handleEditorClose}
+      />
     </>
   );
 };

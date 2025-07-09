@@ -18,14 +18,10 @@
  *   Wrapper around local databases to preform a device-level dump.
  */
 import {Directory, Encoding, Filesystem} from '@capacitor/filesystem';
-import {jsonStringifyStream} from '@worker-tools/json-stream';
-
 import {Share} from '@capacitor/share';
 import {databaseService} from '../context/slices/helpers/databaseService';
-import {getAllDataDbs} from '../context/slices/projectSlice';
-import {store} from '../context/store';
-
-const PREFIX = 'faims3-';
+// eslint-disable-next-line n/no-extraneous-import
+import PouchDB from 'pouchdb';
 
 /**
  * progressiveDump - dump a database in chunks
@@ -142,16 +138,25 @@ export async function progressiveSaveFiles(
     };
   };
 
-  if (keepDumping)
-    keepDumping = await progressiveDump(
-      databaseService.getLocalStateDatabase(),
-      writer(10, 12)
-    );
-  if (keepDumping)
-    keepDumping = await progressiveDump(
-      databaseService.getDraftDatabase(),
-      writer(15, 20)
-    );
+  try {
+    if (keepDumping)
+      keepDumping = await progressiveDump(
+        databaseService.getLocalStateDatabase(),
+        writer(10, 12)
+      );
+  } catch {
+    console.log('error dumping local state database');
+  }
+
+  try {
+    if (keepDumping)
+      keepDumping = await progressiveDump(
+        databaseService.getDraftDatabase(),
+        writer(15, 20)
+      );
+  } catch {
+    console.log('error dumping draft database');
+  }
 
   // TODO dump the redux store projects here
   /*
@@ -169,15 +174,21 @@ export async function progressiveSaveFiles(
   let end;
 
   // List out all of the data DBs
-  const state = store.getState();
-  const dataDbs = getAllDataDbs(state);
+  //const state = store.getState();
+  const dataDbs = await getDataDbsPrimitive(); // getAllDataDbs(state);
+
+  console.log('dumping', dataDbs);
 
   const size = Object.keys(dataDbs).length;
   for (const db of dataDbs) {
-    end = start + 60 / size;
-    if (keepDumping)
-      keepDumping = await progressiveDump(db, writer(start, end));
-    start = end;
+    try {
+      end = start + 60 / size;
+      if (keepDumping)
+        keepDumping = await progressiveDump(db, writer(start, end));
+      start = end;
+    } catch {
+      console.log('error dumping database', db.name);
+    }
   }
 
   // early exit if we were aborted
@@ -210,77 +221,22 @@ export async function progressiveSaveFiles(
   progressCallback(110);
 }
 
-//*************** Streaming download of a database dump   ****************/
-
-// TODO: change the format to match that of the progressive download above
-//  also make this progressive and interruptible
-
-/**
- * downloadBlob - download a blob as a file onto a user's device
- * @param b - blob to download
- * @param filename - filename for the downloaded file
- */
-function downloadBlob(b: Blob, filename: string) {
-  const u = URL.createObjectURL(b);
-  const a = document.createElement('a');
-  a.href = u;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(u);
-}
-
-async function streamedDumpDownload(filename: string, obj: any) {
-  const stream = jsonStringifyStream(obj);
-  const chunks: any[] = [];
-  const reader = stream.pipeThrough(new TextEncoderStream()).getReader();
-  while (true) {
-    const {done, value} = await reader.read();
-    if (done) {
-      break;
-    }
-    chunks.push(value);
-  }
-  const b = new Blob(chunks, {
-    type: 'application/json',
+// Get all pouchDB data DBs by looking directly at the IDB
+// databases on the device rather than using our active state
+// this ensures that we can dump databases even if our own internal
+// structures are broken
+const getDataDbsPrimitive = async () => {
+  const PREFIX = '_pouch_';
+  const dbList = await indexedDB.databases();
+  const dbs = dbList.filter(
+    db => db.name && db.name.startsWith(PREFIX) && db.name.endsWith('_data')
+  );
+  return dbs.map(db => {
+    const name =
+      db.name ||
+      'this will never happen because we filter out undefined names above, but typescript...';
+    // get the pouchdb database name from the IDB name
+    const dbName = name.replace(PREFIX, '');
+    return new PouchDB<any>(dbName);
   });
-  downloadBlob(b, PREFIX + filename + '.json');
-}
-
-async function dumpDatabase(db: PouchDB.Database<any>) {
-  return db.allDocs({
-    attachments: true, // We want base64 strings so we can get JSON
-    conflicts: true, // We want to see conflict information
-    include_docs: true, // We want the actual data
-    update_seq: true,
-  });
-}
-
-export async function doDumpDownload() {
-  console.debug('Starting browser system dump');
-
-  // Get all data Dbs
-  const dataDbs = getAllDataDbs(store.getState());
-
-  // Fix this
-  /*
-  await streamedDumpDownload(
-    'directory',
-    await dumpDatabase(directory_db.local)
-  );
-  await streamedDumpDownload('active', await dumpDatabase(active_db));
-  */
-  await streamedDumpDownload(
-    'local_state',
-    await dumpDatabase(databaseService.getLocalStateDatabase())
-  );
-  await streamedDumpDownload(
-    'draft',
-    await dumpDatabase(databaseService.getDraftDatabase())
-  );
-
-  for (const db of dataDbs) {
-    await streamedDumpDownload('data' + name, await dumpDatabase(db));
-  }
-}
+};

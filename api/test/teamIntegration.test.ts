@@ -489,6 +489,7 @@ describe('Team integration with templates and projects', () => {
     const template1 = await createTemplate({
       payload: {
         ...notebook,
+        name: 'tempalate1',
         teamId: team1._id,
       },
     });
@@ -497,6 +498,7 @@ describe('Team integration with templates and projects', () => {
     const template2 = await createTemplate({
       payload: {
         ...notebook,
+        name: 'tempalate2',
         teamId: team2._id,
       },
     });
@@ -505,6 +507,7 @@ describe('Team integration with templates and projects', () => {
     const template3 = await createTemplate({
       payload: {
         ...notebook,
+        name: 'tempalate3',
         teamId: team1._id,
       },
     });
@@ -513,6 +516,7 @@ describe('Team integration with templates and projects', () => {
     await createTemplate({
       payload: {
         ...notebook,
+        name: 'tempalate4',
       },
     });
 
@@ -598,6 +602,7 @@ describe('Team integration with templates and projects', () => {
     const template = await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'sample template',
         teamId: team._id,
       },
     });
@@ -919,12 +924,14 @@ describe('Team integration with templates and projects', () => {
     const template1 = await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'template 1',
         teamId: team._id,
       },
     });
     const template2 = await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'template 2',
         teamId: team._id,
       },
     });
@@ -1033,6 +1040,7 @@ describe('Team integration with templates and projects', () => {
     await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'template 1',
         teamId: team1._id,
       },
     });
@@ -1055,6 +1063,7 @@ describe('Team integration with templates and projects', () => {
     await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'template 1',
         teamId: team2._id,
       },
     });
@@ -1169,6 +1178,7 @@ describe('Team integration with templates and projects', () => {
     const template = await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'template 1',
         teamId: team._id,
       },
     });
@@ -1364,6 +1374,7 @@ describe('Team integration with templates and projects', () => {
     const template1 = await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'template 1',
         teamId: team1._id,
       },
     });
@@ -1379,6 +1390,7 @@ describe('Team integration with templates and projects', () => {
     await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'template 2',
         teamId: team2._id,
       },
     });
@@ -1393,6 +1405,7 @@ describe('Team integration with templates and projects', () => {
     const independentTemplate = await createTemplate({
       payload: {
         ...getSampleNotebook(),
+        name: 'independant template',
       },
     });
 
