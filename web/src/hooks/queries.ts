@@ -154,7 +154,7 @@ export const useGetProjectsForTeam = ({
   teamId: string;
 }) =>
   useQuery({
-    queryKey: ['projectsbyteam', teamId, user?.token],
+    queryKey: ['projectsbyteam', user?.token, teamId],
     queryFn: () =>
       get<GetNotebookListResponse>(`/api/notebooks?teamId=${teamId}`, user),
   });
@@ -173,7 +173,7 @@ export const useGetTemplatesForTeam = ({
   teamId: string;
 }) =>
   useQuery({
-    queryKey: ['templatesbyteam', teamId, user?.token],
+    queryKey: ['templatesbyteam', user?.token, teamId],
     queryFn: async () =>
       get<GetListTemplatesResponse>(`/api/templates?teamId=${teamId}`, user),
     enabled: !!user,
