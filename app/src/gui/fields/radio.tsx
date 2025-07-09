@@ -122,14 +122,15 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                   />
                 }
                 label={
-                  <span
+                  <div
                     style={{
-                      display: 'contents',
+                      display: 'block',
                       whiteSpace: 'normal',
                       wordBreak: 'break-word',
                       lineHeight: '1.5',
-                      paddingTop: '2px',
+                      paddingTop: '6px',
                       paddingLeft: '0px',
+                      marginTop: '0px',
                     }}
                     dangerouslySetInnerHTML={{
                       __html: contentToSanitizedHtml(option.label),
@@ -143,7 +144,21 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                   marginBottom: 1,
                   '& .MuiFormControlLabel-label': {
                     display: 'block',
-                    marginTop: '5px',
+                    marginTop: '0px',
+                    alignSelf: 'flex-start',
+                    // markdown formatted text will be wrapped in a <p> tag
+                    // so we need to remove the default margin
+                    // and padding from the <p> tag
+                    '& p': {
+                      margin: 0,
+                      padding: 0,
+                    },
+                    '& p:first-child': {
+                      marginTop: 0,
+                    },
+                    '& p:last-child': {
+                      marginBottom: 0,
+                    },
                   },
                 }}
               />
