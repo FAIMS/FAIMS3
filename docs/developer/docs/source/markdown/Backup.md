@@ -35,15 +35,19 @@ might be useful in diagnosing problems at some point.
 The dump can only be restored on a server via a command line script:
 
 ```shell
-npm run restore-backup fieldmark-backup-2025-06-19-1750363850254.jsonl pattern
+npm run restore-backup fieldmark-backup-2025-06-19-1750363850254.jsonl
 ```
 
-This would restore records from the backup file to any databases matching the
-regular expression `pattern`.  
-
-By default, existing records will not be overwritten when the backup is restored.
-To overwrite existing records, add `true` to the end of the command line:
+This would restore records from the backup file to all databases.  To limit the
+databases restored to those matching the regular expression `mybackup.*`:
 
 ```shell
-npm run restore-backup fieldmark-backup-2025-06-19-1750363850254.jsonl pattern true
+npm run restore-backup -- --pattern 'mybackup.*' fieldmark-backup-2025-06-19-1750363850254.jsonl
+```
+
+By default, existing records will not be overwritten when the backup is restored.
+To overwrite existing records, add the `--force` flag to the command line:
+
+```shell
+npm run restore-backup -- --force fieldmark-backup-2025-06-19-1750363850254.jsonl
 ```
