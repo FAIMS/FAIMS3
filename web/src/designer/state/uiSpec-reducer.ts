@@ -166,7 +166,6 @@ export const uiSpecificationReducer = createSlice({
 
       const field = state.fields[fieldName];
 
-      // ======================= original logic ==========================
       // ensure newFieldName is unique
       let fieldLabel = slugify(newFieldName);
       let N = 1;
@@ -186,9 +185,8 @@ export const uiSpecificationReducer = createSlice({
           break;
         }
       }
-      // =======================   new logic   ===========================
 
-      /* 1️⃣  Update every condition (fields AND sections) that mentions the old ID. */
+      /* Update every condition (fields AND sections) that mentions the old ID. */
       Object.values(state.fields).forEach(f => {
         if (f.condition) {
           f.condition = replaceFieldInCondition(
@@ -214,7 +212,7 @@ export const uiSpecificationReducer = createSlice({
         }
       });
 
-      /* 2️⃣  Update summary_fields and hridField in each form. */
+      /* Update summary_fields and hridField in each form. */
       Object.values(state.viewsets).forEach(vs => {
         if (vs.summary_fields) {
           vs.summary_fields = vs.summary_fields.map(f =>
