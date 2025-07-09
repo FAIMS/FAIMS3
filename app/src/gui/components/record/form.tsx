@@ -627,10 +627,10 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       const database_data = fromdb ? fromdb.data : {};
       const database_annotations = fromdb ? fromdb.annotations : {};
 
-      // this doesn't resolve when the draftState is 'uninitialized'
+      // this doesn't resolve when the draftState is 'uninitialised'
       // which happens when we redirect here from a child record
       const [staged_data, staged_annotations] =
-        this.draftState.data.state === 'uninitialized'
+        this.draftState.data.state === 'uninitialised'
           ? [{}, {}]
           : await this.draftState.getInitialValues();
 
@@ -737,7 +737,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       const related: Relationship = {};
       let parent = null;
       if (
-        this.draftState.data.state !== 'uninitialized' &&
+        this.draftState.data.state !== 'uninitialised' &&
         this.draftState.data.relationship !== undefined
       )
         parent = fromdb?.relationship?.parent;
@@ -752,7 +752,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
       let linked = null;
       if (
-        this.draftState.data.state !== 'uninitialized' &&
+        this.draftState.data.state !== 'uninitialised' &&
         this.draftState.data.relationship !== undefined
       )
         linked = fromdb?.relationship?.linked;
