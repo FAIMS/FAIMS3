@@ -136,7 +136,7 @@ export const createTemplate = async ({
   const templatesDb = getTemplatesDb();
 
   // Get a unique id for the template Id
-  const templateId = generateTemplateId(payload.metadata.name);
+  const templateId = generateTemplateId(payload.name);
 
   // inject templateId into the metadata
   // TODO see BSS-343

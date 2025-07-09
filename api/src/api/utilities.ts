@@ -208,6 +208,7 @@ api.post(
     // existing user.
     // From the db user, drill and generate permissions
     const expressUser = await upgradeCouchUserToExpressUser({dbUser: user!});
+
     const {token} = await generateUserToken(expressUser, false);
 
     // return the token
