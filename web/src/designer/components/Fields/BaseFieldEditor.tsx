@@ -16,6 +16,7 @@ import {MDXEditorMethods} from '@mdxeditor/editor';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import SyncIcon from '@mui/icons-material/Sync';
 import {
   Alert,
   Box,
@@ -25,11 +26,13 @@ import {
   FormControlLabel,
   Grid,
   IconButton,
+  InputAdornment,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 import {debounce} from 'lodash';
-import {useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
@@ -40,6 +43,10 @@ import {ConditionType} from '../condition/types';
 
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
+import {
+  getViewIDForField,
+  slugify,
+} from '@/designer/state/helpers/uiSpec-helpers';
 
 type Props = {
   fieldName: string;
@@ -66,10 +73,62 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
   );
+  const uiSpec = useAppSelector(
+    state => state.notebook['ui-specification'].present
+  );
   const dispatch = useAppDispatch();
-  const ref = useRef<MDXEditorMethods>(null);
+  const mdxEditorRef = useRef<MDXEditorMethods>(null);
 
-  // Derive the field label from possible alternatives
+  const idInputRef = useRef<HTMLInputElement>(null);
+  const isMounted = useRef(false);
+  const [localFieldName, setLocalFieldName] = useState(fieldName);
+
+  const debouncedRename = useCallback(
+    debounce((newFieldName: string) => {
+      const viewId = getViewIDForField(uiSpec, fieldName);
+      if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
+        dispatch({
+          type: 'ui-specification/fieldRenamed',
+          payload: {
+            viewId,
+            fieldName,
+            newFieldName: newFieldName.trim(),
+          },
+        });
+      }
+    }, 500),
+    [dispatch, uiSpec, fieldName]
+  );
+
+  const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalFieldName(e.target.value);
+    debouncedRename(e.target.value);
+  };
+
+  // Handler for the sync field id with name button
+  const syncFieldID = () => {
+    const desired = slugify(state.label || '');
+    const viewId = getViewIDForField(uiSpec, fieldName);
+    if (viewId && desired && desired !== fieldName) {
+      setLocalFieldName(desired);
+      dispatch({
+        type: 'ui-specification/fieldRenamed',
+        payload: {viewId, fieldName, newFieldName: desired},
+      });
+    }
+  };
+
+  // Restore focus on the ID input when the field id changes
+  useEffect(() => {
+    if (isMounted.current) {
+      idInputRef.current?.focus();
+    } else {
+      isMounted.current = true;
+    }
+
+    setLocalFieldName(fieldName);
+  }, [fieldName]);
+
   const getFieldLabel = () => {
     return (
       field['component-parameters']?.label ?? field['component-parameters'].name
@@ -109,10 +168,13 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
     allowHiding: allowHidingEnabled,
   };
 
-  const hasAdvancedSupport = 'advancedHelperText' in cParams;
+  // we'll offer to add advanced helper text if the existing value is not
+  // undefined in the field (meaning that the field supports this property)
+  const hasAdvancedSupport = cParams.advancedHelperText !== undefined;
 
+  // by default, we'll show the advanced help text form if the value is not empty
   const [showAdvanced, setShowAdvanced] = useState(
-    hasAdvancedSupport && !!cParams.advancedHelperText
+    hasAdvancedSupport && cParams.advancedHelperText !== ''
   );
   const [expanded, setExpanded] = useState(true);
 
@@ -170,15 +232,40 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
       <Grid item xs={12}>
         <Card variant="outlined" sx={{p: 2}}>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}>
-              <DebouncedTextField
-                fullWidth
-                label="Label"
-                value={state.label}
-                onChange={e => updateProperty('label', e.target.value)}
-              />
+            <Grid item xs={12} md={4}>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <DebouncedTextField
+                  fullWidth
+                  label="Label"
+                  value={state.label}
+                  onChange={e => updateProperty('label', e.target.value)}
+                />
+                <TextField
+                  fullWidth
+                  label="Field ID"
+                  value={localFieldName}
+                  onChange={handleIdChange}
+                  inputRef={idInputRef}
+                  InputProps={{
+                    endAdornment:
+                      state.label && slugify(state.label) !== localFieldName ? (
+                        <InputAdornment position="end">
+                          <Tooltip title="Sync with field name">
+                            <IconButton
+                              size="small"
+                              onClick={syncFieldID}
+                              edge="end"
+                            >
+                              <SyncIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ) : undefined,
+                  }}
+                />
+              </Box>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={8}>
               <DebouncedTextField
                 fullWidth
                 label="Helper Text"
@@ -196,9 +283,6 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                           checked={showAdvanced}
                           onChange={e => {
                             setShowAdvanced(e.target.checked);
-                            if (!e.target.checked) {
-                              updateProperty('advancedHelperText', '');
-                            }
                           }}
                         />
                       }
@@ -235,7 +319,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                               500,
                               {leading: false, trailing: true}
                             )}
-                            editorRef={ref}
+                            editorRef={mdxEditorRef}
                           />
                           <Alert severity="info" sx={{mt: 2}}>
                             This markdown-based helper will appear in a dialog
@@ -249,6 +333,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 </>
               )}
             </Grid>
+
             {children && (
               <Grid item xs={12}>
                 {children}
@@ -258,6 +343,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
         </Card>
       </Grid>
 
+      {/* --- REMAINDER OF THE FORM CONFIG --- */}
       <Grid item xs={12}>
         <Card variant="outlined" sx={{p: 2}}>
           <Grid container spacing={2}>
@@ -380,7 +466,7 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
             {VITE_TEMPLATE_PROTECTIONS && (
               <>
                 <Grid item xs={12} sm={3}>
-                  <div style={{display: 'flex', alignItems: 'center'}}>
+                  <Box display="flex" alignItems="center">
                     <FormControlLabel
                       control={
                         <Checkbox
@@ -395,10 +481,10 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                     <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
                       <InfoOutlinedIcon
                         fontSize="small"
-                        style={{marginLeft: 0, color: '#757575'}}
+                        sx={{marginLeft: 0, color: '#757575'}}
                       />
                     </Tooltip>
-                  </div>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   {state.protection ? (
