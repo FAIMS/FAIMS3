@@ -158,6 +158,10 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     return <p>Error... could not find ui specification.</p>;
   }
 
+  // State containing the list of available records that can be linked to the current record.
+  // This list excludes any records that are already linked (for single-value fields) or
+  // already present in the current field value (for multi-value fields). Used to populate
+  // the dropdown/selector for choosing which record to link to.
   const [relatedRecords, setRelatedRecords] = React.useState<RecordReference[]>(
     []
   );
@@ -351,6 +355,7 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
       else newValue = [new_child_record];
     } else newValue = new_child_record;
     props.form.setFieldValue(props.field.name, newValue, true);
+    console.log('set field value', props.field.name, newValue);
     return new_record_id;
   };
 
@@ -368,7 +373,11 @@ export function RelatedRecordSelector(props: RelatedRecordSelectorProps) {
     else newValue = selectedRecord;
 
     props.form.setFieldValue(props.field.name, newValue, true);
-    props.form.submitForm();
+
+    if (record_id !== selectedRecord.record_id) {
+      props.form.submitForm(); // this will update the record currently being edited
+    }
+
     const current_record = {
       record_id: record_id,
       field_id: field_name,
