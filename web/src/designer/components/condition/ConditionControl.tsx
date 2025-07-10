@@ -129,10 +129,15 @@ const BooleanConditionControl = (props: ConditionProps) => {
   const addCondition = () => {
     if (condition) {
       const existing = condition.conditions || [];
-      // construct a condition with a new empty field condition
+      // Duplicate the first existing condition (or use empty condition if none)
+      const template =
+        existing.length > 0
+          ? JSON.parse(JSON.stringify(existing[0]))
+          : {...EMPTY_FIELD_CONDITION};
+
       const newCondition = {
         ...condition,
-        conditions: [...existing, EMPTY_FIELD_CONDITION],
+        conditions: [...existing, template],
       };
       updateCondition(newCondition);
     }
@@ -484,9 +489,10 @@ export const FieldConditionControl = (props: ConditionProps) => {
 
   const handleSplitCondition = () => {
     if (props.onChange) {
+      // turns the single condition into an AND group with a duplicate,
       props.onChange({
         operator: 'and',
-        conditions: [condition, {field: '', operator: 'equal', value: ''}],
+        conditions: [condition, JSON.parse(JSON.stringify(condition))],
       });
     }
   };
