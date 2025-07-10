@@ -113,7 +113,8 @@ export default function Record() {
   const history = useNavigate();
 
   if (!serverId) return <></>;
-  const [value, setValue] = React.useState('1');
+  const [tabValue, setTabValue] = React.useState('1');
+
   if (!projectId) return <></>;
   const project = useAppSelector(state => selectProjectById(state, projectId));
   if (!project) return <></>;
@@ -144,7 +145,7 @@ export default function Record() {
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [open, setOpen] = React.useState(false);
-  const [pressedvalue, setpressedvalue] = useState(value);
+  const [pressedvalue, setpressedvalue] = useState(tabValue);
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
@@ -160,6 +161,16 @@ export default function Record() {
     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
   const [backLink, setBackLink] = useState<string>(projectLink);
   const [backIsParent, setBackIsParent] = useState(false);
+
+  // if there are no conflicts and the tab value is 4 then default back to tab 1
+  useEffect(() => {
+    if (
+      conflicts === null ||
+      conflicts['available_heads'] === undefined ||
+      Object.keys(conflicts['available_heads']).length === 1
+    )
+      setTabValue('1');
+  }, [conflicts]);
 
   useEffect(() => {
     const getIni = async () => {
@@ -195,7 +206,7 @@ export default function Record() {
         setBackIsParent(false);
         setUpdatedRevisionId(revisionId);
         setselectedRevision(revisionId!);
-        setValue('1');
+        setTabValue('1');
       });
     };
 
@@ -356,14 +367,14 @@ export default function Record() {
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
-      value === '4' &&
+      tabValue === '4' &&
       conflicts !== null &&
       conflicts['available_heads'] !== undefined &&
       Object.keys(conflicts['available_heads']).length > 1
     ) {
       setOpen(true);
       setpressedvalue(newValue);
-    } else setValue(newValue);
+    } else setTabValue(newValue);
   };
 
   const handleUnlink = (
@@ -418,7 +429,7 @@ export default function Record() {
   };
 
   const handleConfirm = () => {
-    setValue(pressedvalue);
+    setTabValue(pressedvalue);
     setOpen(false);
   };
 
@@ -532,7 +543,7 @@ export default function Record() {
           )}
       </Box>
       <Paper square elevation={0} variant={'outlined'}>
-        <TabContext value={value}>
+        <TabContext value={tabValue}>
           <AppBar
             position="static"
             sx={{

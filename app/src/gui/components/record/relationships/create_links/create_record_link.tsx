@@ -202,45 +202,58 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
           md={props.relation_type === 'Linked' ? 3 : 6}
           lg={props.relation_type === 'Linked' ? 3 : 6}
         >
-          <Field
-            size={'small'}
-            // multiple={multiple}
-            id={props.id ?? 'asynchronous-demo'}
-            name={field_name + 'select'}
-            component={Autocomplete}
-            isOptionEqualToValue={(
-              option: RecordReference,
-              value: RecordReference
-            ) =>
-              value !== undefined
-                ? option.project_id === value.project_id &&
-                  option.record_id === value.record_id
-                : false
-            }
-            getOptionLabel={(option: RecordReference) =>
-              option.record_label ?? ''
-            }
-            options={relatedRecords}
-            defaultValue={undefined}
-            disabled={disabled}
-            onChange={(event: any, values: any) => {
-              SetSelectedRecord(values);
-            }}
-            value={selectedRecord}
-            required={false}
-            noOptionsText={`No ${props.related_type_label ?? 'records'} available to link`}
-            renderInput={(params: any) => (
-              <TextField
-                {...params}
-                label={props.related_type_label}
-                error={props.form.errors[props.id] === undefined ? false : true}
-                variant="outlined"
-                InputProps={{
-                  ...params.InputProps,
+          <Field name={field_name + '-select'}>
+            {({field, form}: any) => (
+              <Autocomplete
+                size={'small'}
+                id={props.id ?? 'related-record'}
+                isOptionEqualToValue={(
+                  option: RecordReference,
+                  value: RecordReference
+                ) =>
+                  value !== undefined
+                    ? option.project_id === value.project_id &&
+                      option.record_id === value.record_id
+                    : false
+                }
+                getOptionLabel={(option: RecordReference) =>
+                  option.record_label ?? ''
+                }
+                // here we avoid spreading the 'key' option into the list as it
+                // triggers a warning, key isn't supposed to be there according to the
+                // type but it is passed in by the Autocomplete component
+                renderOption={(props, option) => {
+                  const {key, ...optionProps} = props as any;
+                  return (
+                    <li key={key} {...optionProps}>
+                      {option.record_label ?? ''}
+                    </li>
+                  );
                 }}
+                options={relatedRecords}
+                value={selectedRecord}
+                disabled={disabled}
+                onChange={(event: any, values: any) => {
+                  SetSelectedRecord(values);
+                  form.setFieldValue(field.name, values);
+                }}
+                noOptionsText={`No ${props.related_type_label ?? 'records'} available to link`}
+                renderInput={(params: any) => (
+                  <TextField
+                    {...params}
+                    label={props.related_type_label}
+                    error={
+                      props.form.errors[props.id] === undefined ? false : true
+                    }
+                    variant="outlined"
+                    InputProps={{
+                      ...params.InputProps,
+                    }}
+                  />
+                )}
               />
             )}
-          />
+          </Field>
         </Grid>
         {project_id !== undefined && disabled === false && (
           <Grid

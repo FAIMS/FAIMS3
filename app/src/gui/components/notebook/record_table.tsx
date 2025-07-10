@@ -126,10 +126,10 @@ const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
   'LAST_UPDATED_BY',
 ]);
 
-/** Default values for text display and other constants */
-const CONSTANTS = {
+/** Default values for text display , record grid labels */
+export const RECORD_GRID_LABELS = {
   MISSING_DATA_PLACEHOLDER: '-',
-  HRID_COLUMN_LABEL: 'Field ID',
+  HRID_COLUMN_LABEL: 'ID',
   VERTICAL_STACK_COLUMN_LABEL: 'Details',
 } as const;
 
@@ -203,7 +203,7 @@ function getDataForColumn({
  *
  * @returns {GridColumnType[]} Array of column definitions for the DataGrid
  */
-function buildColumnsFromSummaryFields({
+export function buildColumnsFromSummaryFields({
   summaryFields,
   uiSpecification,
 }: {
@@ -225,7 +225,7 @@ function buildColumnsFromSummaryFields({
       });
       return (
         <Typography>
-          {displayValue || CONSTANTS.MISSING_DATA_PLACEHOLDER}
+          {displayValue || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
         </Typography>
       );
     },
@@ -238,7 +238,7 @@ function buildColumnsFromSummaryFields({
  * @param columnType Type of column
  * @param uiSpecification The ui spec
  */
-function buildColumnFromSystemField({
+export function buildColumnFromSystemField({
   columnType,
   uiSpecification,
 }: {
@@ -274,7 +274,7 @@ function buildColumnFromSystemField({
           });
           return (
             <Typography>
-              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
+              {value || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
             </Typography>
           );
         },
@@ -292,7 +292,7 @@ function buildColumnFromSystemField({
           });
           return (
             <Typography>
-              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
+              {value || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
             </Typography>
           );
         },
@@ -328,7 +328,7 @@ function buildColumnFromSystemField({
           });
           return (
             <Typography>
-              {value || CONSTANTS.MISSING_DATA_PLACEHOLDER}
+              {value || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
             </Typography>
           );
         },
@@ -444,7 +444,7 @@ function buildHridColumn(): GridColumnType {
  * @returns A single column definition which renders a vertical stack of key
  * value pairs nicely
  */
-function buildVerticalStackColumn({
+export function buildVerticalStackColumn({
   summaryFields,
   columnLabel,
   uiSpecification,
@@ -477,7 +477,7 @@ function buildVerticalStackColumn({
           });
           // And a pretty key
           kvp[COLUMN_TO_LABEL_MAP.get('KIND') ?? 'Type'] =
-            val ?? CONSTANTS.MISSING_DATA_PLACEHOLDER;
+            val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
         }
 
         // Use the summary fields if present
@@ -490,12 +490,12 @@ function buildVerticalStackColumn({
             });
             // And a pretty key
             const key = prettifyFieldName(summaryField);
-            kvp[key] = val ?? CONSTANTS.MISSING_DATA_PLACEHOLDER;
+            kvp[key] = val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
           }
         } else {
           // Add the HRID if available
-          kvp[CONSTANTS.HRID_COLUMN_LABEL] =
-            params.row.hrid ?? CONSTANTS.MISSING_DATA_PLACEHOLDER;
+          kvp[RECORD_GRID_LABELS.HRID_COLUMN_LABEL] =
+            params.row.hrid ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
         }
 
         for (const mandatoryField of MANDATORY_COLUMNS) {
@@ -505,7 +505,7 @@ function buildVerticalStackColumn({
               record: params.row,
               column: mandatoryField,
               uiSpecification,
-            }) ?? CONSTANTS.MISSING_DATA_PLACEHOLDER;
+            }) ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
         }
 
         // Add the conflict field if there is a conflict
@@ -596,7 +596,7 @@ function buildColumnDefinitions({
     // For small width, use vertical stack layout
     columnList.push(
       buildVerticalStackColumn({
-        columnLabel: CONSTANTS.VERTICAL_STACK_COLUMN_LABEL,
+        columnLabel: RECORD_GRID_LABELS.VERTICAL_STACK_COLUMN_LABEL,
         summaryFields,
         uiSpecification,
         includeKind,
@@ -706,7 +706,11 @@ function buildColumnDefinitions({
  * layout
  * @returns
  */
-const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
+export const KeyValueTable = ({
+  data,
+}: {
+  data: {[key: string]: string | ReactNode};
+}) => {
   return (
     <TableContainer>
       <Table size="small">
@@ -715,19 +719,21 @@ const KeyValueTable = ({data}: {data: {[key: string]: string | ReactNode}}) => {
             <TableRow key={key}>
               <TableCell
                 sx={{
-                  width: '40%',
+                  minWidth: '40%',
                   borderBottom: 'none',
                   padding: '4px 8px',
+                  textAlign: 'right',
                 }}
               >
                 {key}
               </TableCell>
               <TableCell
                 sx={{
-                  width: '60%',
+                  maxWidth: '60%',
                   borderBottom: 'none',
                   padding: '4px 8px',
                   fontWeight: 'bold',
+                  textAlign: 'left',
                 }}
               >
                 {val}
@@ -767,6 +773,7 @@ const useTableColumns = ({
     // Should the kind property be included?
     const includeKind = visibleTypes.length > 1;
     const viewsetId = visibleTypes.length === 1 ? visibleTypes[0] : '';
+
     return cols.concat(
       buildColumnDefinitions({
         uiSpecification: uiSpec,
