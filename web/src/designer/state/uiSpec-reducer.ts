@@ -23,6 +23,7 @@ import {
   removeFieldFromSummaryForViewset,
   replaceFieldInCondition,
 } from './helpers/uiSpec-helpers';
+import {v4 as uuidv4} from 'uuid';
 
 const uiSpecInitialState: NotebookUISpec =
   initialState.notebook['ui-specification'].present;
