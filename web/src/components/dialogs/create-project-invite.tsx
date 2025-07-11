@@ -20,7 +20,7 @@ export const CreateProjectInvite = () => {
   const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogTrigger asChild className="w-fit">
         <Button
           variant="outline"
