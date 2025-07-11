@@ -19,10 +19,7 @@ export const CreateTeamInvite = ({teamId}: {teamId: string}) => {
   const [open, setOpen] = useState(false);
 
   return (
-    // modal is false here because of a bug in radix-ui that leads to
-    // an infinite recursion in Firefox when the select control in the form
-    // is clicked.
-    <Dialog open={open} onOpenChange={setOpen} modal={false}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild className="w-fit">
         <Button
           variant="outline"
