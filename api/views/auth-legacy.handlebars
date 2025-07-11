@@ -1,0 +1,13 @@
+{{#if messages.message}}
+  <div class='alert alert-warning'>{{messages.message}}</div>
+{{/if}}
+{{#if messages.success}}
+  <div class='alert alert-success'>{{messages.success}}</div>
+{{/if}}
+<div class='auth-header'>
+  <h2>Please Update</h2>
+  <p>You are using an older version of the app. Please visit 
+    your app store and update to the latest version to continue using the app.
+  </p>
+  <button class='btn btn-primary' type="button" onclick="window.history.back()">Return to the App</button>
+</div>
