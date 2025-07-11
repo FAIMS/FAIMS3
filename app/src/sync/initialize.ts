@@ -29,6 +29,7 @@ import {
 } from '../context/slices/projectSlice';
 import {MapTileDatabase} from '../gui/components/map/tile-source';
 import pouchdbDebug from 'pouchdb-debug';
+import {logError} from '../logging';
 PouchDB.plugin(pouchdbDebug);
 
 /**
@@ -43,6 +44,12 @@ PouchDB.plugin(pouchdbDebug);
  * their data.
  */
 const migrateOldDatabases = async () => {
+  if (indexedDB.databases === undefined) {
+    console.warn(
+      'IndexedDB databases API not supported, cannot migrate old databases'
+    );
+    return;
+  }
   const getDataDbsPrimitive = async () => {
     const PREFIX = '_pouch_data_';
     const dbList = await indexedDB.databases();
@@ -50,39 +57,40 @@ const migrateOldDatabases = async () => {
       db => db.name && db.name.startsWith(PREFIX) && db.name.includes('||')
     );
     return dbs.map(db => {
-      const name =
-        db.name ||
-        'this will never happen because we filter out undefined names above, but typescript...';
+      const name = db.name!;
       // get the pouchdb database name from the IDB name
       const dbName = name.replace(PREFIX, '');
-      const result = dbName.split('||');
-      result.push('data_' + dbName); // name of old PouchDB database
-      return result;
+      const [projectId, serverId] = dbName.split('||');
+      return {
+        projectId,
+        serverId,
+        dbName: 'data_' + dbName, // name of old PouchDB database
+      };
     });
   };
 
   const dbNames = await getDataDbsPrimitive();
 
   // Migrate each of the old databases and then delete it
-  for (const [serverId, projectId, oldDbName] of dbNames) {
+  for (const {serverId, projectId, dbName: oldDbName} of dbNames) {
     // If it matches, we need to rename it
     const newDbName = `${serverId}_${projectId}_data`;
     const oldDb = new PouchDB(oldDbName);
     const newDb = new PouchDB(newDbName);
     console.log(`Migrating old database ${oldDbName} to new name ${newDbName}`);
-    PouchDB.replicate(oldDb, newDb, {
-      live: false,
-    })
-      .on('complete', () => {
-        console.log(
-          `Migrated old database ${oldDbName} to new name ${newDbName}`
-        );
-        console.log('Deleting old database:', oldDbName);
-        indexedDB.deleteDatabase('_pouch_' + oldDbName);
-      })
-      .on('error', err => {
-        console.error(`Error migrating old database ${oldDbName}:`, err);
+    try {
+      await PouchDB.replicate(oldDb, newDb, {
+        live: false,
       });
+      console.log(
+        `Migrated old database ${oldDbName} to new name ${newDbName}`
+      );
+      console.log('Deleting old database:', oldDbName);
+      indexedDB.deleteDatabase('_pouch_' + oldDbName);
+    } catch (err) {
+      console.error(err);
+      logError(`Error migrating old database ${oldDbName}`);
+    }
   }
 };
 

@@ -453,12 +453,8 @@ function showRecordLinks(): boolean {
  */
 function migrateOldDatabases(): boolean {
   const migrateOldDatabases = import.meta.env.VITE_MIGRATE_OLD_DATABASES;
-  if (migrateOldDatabases === '' || migrateOldDatabases === undefined) {
-    return false; // default to false
-  }
-  return migrateOldDatabases.toLowerCase() === 'true';
+  return TRUTHY_STRINGS.includes(migrateOldDatabases.toLowerCase());
 }
-
 
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
