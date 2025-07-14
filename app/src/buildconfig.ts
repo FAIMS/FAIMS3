@@ -447,6 +447,15 @@ function showRecordLinks(): boolean {
   return import.meta.env.VITE_SHOW_RECORD_LINKS === 'true';
 }
 
+
+/**
+ * Should we automatically migrate old v1.0 style databases on startup?
+ */
+function migrateOldDatabases(): boolean {
+  const migrateOldDatabases = import.meta.env.VITE_MIGRATE_OLD_DATABASES;
+  return TRUTHY_STRINGS.includes(migrateOldDatabases.toLowerCase());
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -480,3 +489,4 @@ export const SHOW_RECORD_LINKS = showRecordLinks();
 export const SUPPORT_EMAIL = get_support_email();
 export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
 export const CONTACT_URL = get_app_contact_url();
+export const MIGRATE_OLD_DATABASES = migrateOldDatabases();
