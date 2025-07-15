@@ -48,7 +48,7 @@ import {useAppDispatch} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {theme} from '../../../themes';
 import {
-  addLinkedRecord,
+  getRelationshipDisplayData,
   check_if_record_relationship,
   update_child_records_conflict,
 } from '../relationships/RelatedInformation';
@@ -303,7 +303,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       if (result !== null) {
         const type = result['type'];
         // get the parent and linked item
-        const newLinks: RecordLinkProps[] = await addLinkedRecord(
+        const newLinks: RecordLinkProps[] = await getRelationshipDisplayData(
           ui_specification,
           [],
           project_id,
@@ -315,7 +315,7 @@ export default function ConflictForm(props: ConflictFormProps) {
           serverId
         );
         setLinks(newLinks);
-        const newMergedLinks: RecordLinkProps[] = await addLinkedRecord(
+        const newMergedLinks: RecordLinkProps[] = await getRelationshipDisplayData(
           ui_specification,
           [],
           project_id,
@@ -352,7 +352,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       if (comparedrevision.charAt(0) === '1') {
         //get the linksA for first loading
         if (linksA === null) {
-          const newLinks: RecordLinkProps[] = await addLinkedRecord(
+          const newLinks: RecordLinkProps[] = await getRelationshipDisplayData(
             ui_specification,
             [],
             project_id,
@@ -759,8 +759,6 @@ export default function ConflictForm(props: ConflictFormProps) {
     conflictfields.length > numResolved
       ? conflictfields.length - numResolved
       : 0;
-
-  console.log(conflictA);
 
   return (
     <React.Fragment>

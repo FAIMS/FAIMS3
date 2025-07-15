@@ -12,6 +12,7 @@ import {
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {ErrorComponent} from '@tanstack/react-router';
+import {useMemo} from 'react';
 import {z} from 'zod';
 
 interface UpdateTemplateFormProps {
@@ -36,6 +37,24 @@ export function CreateProjectInviteForm({
   const {projectId} = Route.useParams();
   const QueryClient = useQueryClient();
 
+  const roleOptions = useMemo(() => {
+    return Object.entries(roleDetails)
+      .filter(
+        ([role, {scope, resource}]) =>
+          scope === RoleScope.RESOURCE_SPECIFIC &&
+          resource === Resource.PROJECT &&
+          userCanDo({
+            user,
+            resourceId: projectId,
+            action: projectInviteToAction({
+              action: 'create',
+              role: role as Role,
+            }),
+          })
+      )
+      .map(([value, {name: label}]) => ({label, value}));
+  }, [user, projectId]);
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -45,21 +64,7 @@ export function CreateProjectInviteForm({
     {
       name: 'role',
       label: 'Role',
-      options: Object.entries(roleDetails)
-        .filter(
-          ([role, {scope, resource}]) =>
-            scope === RoleScope.RESOURCE_SPECIFIC &&
-            resource === Resource.PROJECT &&
-            userCanDo({
-              user,
-              resourceId: projectId,
-              action: projectInviteToAction({
-                action: 'create',
-                role: role as Role,
-              }),
-            })
-        )
-        .map(([value, {name: label}]) => ({label, value})),
+      options: roleOptions,
       schema: z.nativeEnum(Role),
     },
     {

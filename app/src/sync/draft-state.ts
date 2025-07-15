@@ -90,7 +90,7 @@ type StagedAnnotations = {
 class RecordDraftState {
   data:
     | {
-        state: 'uninitialized';
+        state: 'uninitialised';
       }
     | {
         state: 'unedited';
@@ -130,7 +130,7 @@ class RecordDraftState {
         // async, so the promise serves as a way to wait for the draft to be
         // created
         draft_id: Promise<string>;
-      } = {state: 'uninitialized'};
+      } = {state: 'uninitialised'};
 
   // NOTE: When data === 'unedited_existing', then draft_id is null.
   // When draft_id is null, data may be null or 'unedited_existing', depending
@@ -241,7 +241,7 @@ class RecordDraftState {
     annotations: StagedAnnotations,
     relationship: Relationship
   ) {
-    if (this.fetch_error === null && this.data.state !== 'uninitialized') {
+    if (this.fetch_error === null && this.data.state !== 'uninitialised') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being
       // triggered before any code gets to renderHook(), but
@@ -393,7 +393,7 @@ class RecordDraftState {
    */
   async _fetchData(loadedprops: LoadableProps): Promise<void> {
     const uninterrupted_fetch_sequence = this.fetch_sequence;
-    this.data = {state: 'uninitialized'};
+    this.data = {state: 'uninitialised'};
 
     if (this.props.draft_id !== undefined) {
       // Editing an existing draft
@@ -595,7 +595,7 @@ class RecordDraftState {
    * This may trigger a change of state of the RecordForm
    */
   recordChangeHook(newProps: RelevantProps, loadedProps: LoadableProps) {
-    this.data = {state: 'uninitialized'};
+    this.data = {state: 'uninitialised'};
     this.last_revision = null;
     this.touched_fields.clear();
 
@@ -618,7 +618,7 @@ class RecordDraftState {
       console.info('Draft not edited, so not being cleared');
     }
 
-    this.data = {state: 'uninitialized'};
+    this.data = {state: 'uninitialised'};
     this.touched_fields.clear();
 
     this.last_revision = null;

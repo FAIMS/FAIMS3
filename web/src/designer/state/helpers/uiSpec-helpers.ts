@@ -1,3 +1,4 @@
+import {ConditionType} from '@/designer/components/condition/types';
 import {NotebookUISpec} from '../initial';
 
 /**
@@ -92,4 +93,59 @@ export const removeFieldFromSummary = (
   for (const viewSetId in state.viewsets) {
     removeFieldFromSummaryForViewset(state, fieldName, viewSetId);
   }
+};
+
+/**
+ * Finds the view ID for a given field name.
+ * @param uiSpec The UI specification object.
+ * @param fieldName The name of the field to find.
+ * @returns The ID of the view containing the field, or null if not found.
+ */
+export const getViewIDForField = (
+  uiSpec: NotebookUISpec,
+  fieldName: string
+): string | null => {
+  for (const viewId in uiSpec.fviews) {
+    if (uiSpec.fviews[viewId].fields.includes(fieldName)) {
+      return viewId;
+    }
+  }
+  return null;
+};
+
+export const replaceFieldInCondition = (
+  condition: ConditionType | null | undefined,
+  oldId: string,
+  newId: string
+): ConditionType | null | undefined => {
+  if (!condition) return condition;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const node: any = condition;
+
+  if (
+    typeof node === 'object' &&
+    !Array.isArray(node) &&
+    node !== null &&
+    'field' in node &&
+    node.field === oldId
+  ) {
+    // Shallow-clone to preserve Immer draft semantics.
+    return {...node, field: newId};
+  }
+
+  if (
+    typeof node === 'object' &&
+    'conditions' in node &&
+    Array.isArray(node.conditions)
+  ) {
+    return {
+      ...node,
+      conditions: node.conditions.map((c: ConditionType) =>
+        replaceFieldInCondition(c, oldId, newId)
+      ),
+    };
+  }
+
+  return node as ConditionType;
 };

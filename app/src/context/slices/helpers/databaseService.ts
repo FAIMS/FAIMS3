@@ -7,7 +7,7 @@
  * This class also contains a static reference to the draft DB.
  */
 
-import {ProjectDataObject} from '@faims3/data-model';
+import {logError, ProjectDataObject} from '@faims3/data-model';
 import {DraftDB} from '../../../sync/draft-storage';
 import {LOCAL_POUCH_OPTIONS} from './databaseHelpers';
 import PouchDB from 'pouchdb-browser';
@@ -23,6 +23,8 @@ export interface RegisterDbOptions {
 // Singleton service to manage database instances
 class DatabaseService {
   private static instance: DatabaseService;
+  // track databases that we're in the process of closing down
+  private cleanupInProgress: Set<string> = new Set();
   private localDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
   private databaseSyncs: Map<
@@ -55,47 +57,69 @@ class DatabaseService {
   }
 
   // Clean up database instances
-  closeAndRemoveLocalDatabase(
+  async closeAndRemoveLocalDatabase(
     id: string,
     // Clean will also remove entries/fully destroy
     {clean = false}: {clean?: boolean} = {}
-  ): void {
+  ): Promise<void> {
+    if (this.cleanupInProgress.has(id)) {
+      console.warn(`Cleanup already in progress for database ${id}`);
+      return;
+    }
+    this.cleanupInProgress.add(id);
+
     const db = this.localDatabases.get(id);
     if (db) {
-      if (clean) {
-        db.destroy();
+      try {
+        if (clean) {
+          await db.destroy();
+        }
+        await db.close();
+      } catch (e) {
+        logError(`Error closing database ${id}: ${e}`);
+      } finally {
+        this.localDatabases.delete(id);
       }
-      db.close();
-      this.localDatabases.delete(id);
     }
+    this.cleanupInProgress.delete(id);
   }
-  closeAndRemoveRemoteDatabase(id: string): void {
+  async closeAndRemoveRemoteDatabase(id: string): Promise<void> {
     const db = this.remoteDatabases.get(id);
     if (db) {
-      db.close();
-      this.remoteDatabases.delete(id);
+      try {
+        await db.close();
+      } catch (e) {
+        logError(`Error closing remote database ${id}: ${e}`);
+      } finally {
+        this.remoteDatabases.delete(id);
+      }
     }
   }
-  closeAndRemoveSync(id: string): void {
+  async closeAndRemoveSync(id: string): Promise<void> {
     const sync = this.databaseSyncs.get(id);
     if (sync) {
-      // Remove all listeners
-      sync.removeAllListeners();
-      // Cancel the connection
-      sync.cancel();
-      this.databaseSyncs.delete(id);
+      try {
+        // Remove all listeners
+        sync.removeAllListeners();
+        // Cancel the connection
+        await sync.cancel();
+      } catch (e) {
+        logError(`Error closing sync ${id}: ${e}`);
+      } finally {
+        this.databaseSyncs.delete(id);
+      }
     }
   }
 
   // Create or get existing database instance
-  registerLocalDatabase(
+  async registerLocalDatabase(
     id: string,
     db: PouchDB.Database<ProjectDataObject>,
     {tolerant = false}: RegisterDbOptions = {}
   ) {
     if (this.localDatabases.has(id)) {
       if (tolerant) {
-        this.closeAndRemoveLocalDatabase(id);
+        await this.closeAndRemoveLocalDatabase(id);
         console.warn(
           'Tolerant re-creation of existing DB closes the previous and updates with new.'
         );
@@ -105,14 +129,14 @@ class DatabaseService {
     }
     this.localDatabases.set(id, db);
   }
-  registerRemoteDatabase(
+  async registerRemoteDatabase(
     id: string,
     db: PouchDB.Database<ProjectDataObject>,
     {tolerant = true}: RegisterDbOptions = {}
   ) {
     if (this.remoteDatabases.has(id)) {
       if (tolerant) {
-        this.closeAndRemoveRemoteDatabase(id);
+        await this.closeAndRemoveRemoteDatabase(id);
         console.warn(
           'Tolerant re-creation of existing DB closes the previous and updates with new.'
         );
@@ -122,14 +146,14 @@ class DatabaseService {
     }
     this.remoteDatabases.set(id, db);
   }
-  registerSync(
+  async registerSync(
     id: string,
     sync: PouchDB.Replication.Sync<ProjectDataObject>,
     {tolerant = true}: RegisterDbOptions = {}
   ) {
     if (this.databaseSyncs.has(id)) {
       if (tolerant) {
-        this.closeAndRemoveSync(id);
+        await this.closeAndRemoveSync(id);
         console.warn(
           'Tolerant re-creation of existing sync closes the previous and updates with new.'
         );

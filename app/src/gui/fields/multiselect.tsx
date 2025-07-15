@@ -32,10 +32,7 @@ import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
 import FieldWrapper from './fieldWrapper';
-import MarkdownIt from 'markdown-it';
 import {contentToSanitizedHtml} from '../../utils/DomPurifier';
-
-const md = new MarkdownIt({breaks: true, html: false});
 
 /**
  * Base properties for multi-select components
@@ -264,10 +261,17 @@ export const MuiMultiSelect = ({
  */
 export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
   const handleChange = (value: string[]) => {
+    // remove stray empty strings from values if present
     props.form.setFieldValue(props.field.name, value, true);
   };
 
   const isExpandedChecklist = props.ElementProps.expandedChecklist ?? false;
+
+  // force value to be an array if it isn't already, but empty string becomes []
+  if (!Array.isArray(props.field.value)) {
+    if (props.field.value === '') props.field.value = [];
+    else props.field.value = [props.field.value];
+  }
 
   const commonProps = {
     options: props.ElementProps.options,

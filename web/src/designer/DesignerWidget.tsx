@@ -1,3 +1,17 @@
+// Copyright 2023 FAIMS Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import React, {useMemo, useState, useEffect} from 'react';
 import {Provider as ReduxProvider} from 'react-redux';
 import {
@@ -26,10 +40,13 @@ import {
 import {createDesignerStore} from './createDesignerStore';
 import globalTheme from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
+import {migrateNotebook} from './state/migrateNotebook';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
 import {DesignPanel} from './components/design-panel';
+
+import {v4 as uuidv4} from 'uuid';
 
 export interface DesignerWidgetProps {
   notebook?: NotebookWithHistory;
@@ -41,6 +58,19 @@ export interface DesignerWidgetProps {
   animationScale?: number;
 }
 
+/**
+ * Remove designerIdentifier keys just before export,
+ * so the external schema remains clean.
+ */
+const stripDesignerIdentifiers = (notebook: Notebook): Notebook => {
+  const clone = JSON.parse(JSON.stringify(notebook)) as Notebook;
+  const fields = clone['ui-specification']?.fields ?? {};
+  Object.keys(fields).forEach(fieldName => {
+    delete fields[fieldName].designerIdentifier;
+  });
+  return clone;
+};
+
 export function DesignerWidget({
   notebook,
   onClose,
@@ -50,23 +80,78 @@ export function DesignerWidget({
   animationDuration = 300,
   animationScale = 0.95,
 }: DesignerWidgetProps) {
-  const store = useMemo(() => createDesignerStore(notebook), [notebook, debug]);
+  // 1. Migrate + inject designerIdentifiers + reset undo history on each new notebook
+  const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
+    if (!notebook) return undefined;
 
+    const flat: Notebook = {
+      metadata: notebook.metadata,
+      'ui-specification': notebook['ui-specification'].present,
+    };
+
+    const migrated: Notebook = migrateNotebook(flat);
+
+    // Inject in-memory designerIdentifier if missing
+    Object.values(migrated['ui-specification'].fields).forEach(field => {
+      if (!field.designerIdentifier) {
+        field.designerIdentifier = uuidv4();
+      }
+    });
+
+    return {
+      metadata: migrated.metadata,
+      'ui-specification': {
+        present: migrated['ui-specification'],
+        past: [],
+        future: [],
+      },
+    };
+  }, [notebook]);
+
+  // 2. Create a fresh Redux store whenever processedNotebook or debug flag changes
+  const store = useMemo(
+    () => createDesignerStore(processedNotebook),
+    [processedNotebook, debug]
+  );
+
+  // 3. Build routes once
+  const routes: RouteObject[] = useMemo(
+    () => [
+      {
+        path: '/',
+        element: <NotebookEditor />,
+        children: [
+          {index: true, element: <Navigate to="/design/0" replace />},
+          {path: 'info', element: <InfoPanel />},
+          {path: 'design/*', element: <DesignPanel />},
+        ],
+      },
+    ],
+    []
+  );
+
+  // 4. Recreate router on notebook change to wipe any internal routing state
+  const memoryRouterInstance = useMemo(
+    () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
+    [notebook]
+  );
+
+  // Local UI state
   const [loading, setLoading] = useState(true);
   const [animateIn, setAnimateIn] = useState(false);
   const [animateOut, setAnimateOut] = useState(false);
-
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
+  // Kick off loading animation
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setLoading(false);
-
       window.setTimeout(() => setAnimateIn(true), 50);
     }, loadingDuration);
     return () => window.clearTimeout(timer);
   }, [loadingDuration]);
 
+  // Merge external theme override
   const mergedTheme = useMemo(() => {
     if (typeof themeOverride === 'function') {
       return themeOverride(globalTheme);
@@ -74,9 +159,7 @@ export function DesignerWidget({
     return {...globalTheme, ...themeOverride};
   }, [themeOverride]);
 
-  const doClose = (file: File | undefined) => {
-    onClose(file);
-  };
+  const doClose = (file: File | undefined) => onClose(file);
 
   const handleDone = () => {
     const {metadata, 'ui-specification': historyState} =
@@ -87,11 +170,14 @@ export function DesignerWidget({
       'ui-specification': historyState.present,
     };
 
-    const blob = new Blob([JSON.stringify(actualNotebook, null, 2)], {
+    // Remove internal IDs before serialisation
+    const exportNotebook = stripDesignerIdentifiers(actualNotebook);
+
+    const blob = new Blob([JSON.stringify(exportNotebook, null, 2)], {
       type: 'application/json',
     });
     const filename =
-      String(actualNotebook.metadata.name ?? 'notebook').replace(/\s+/g, '_') +
+      String(exportNotebook.metadata.name ?? 'notebook').replace(/\s+/g, '_') +
       '.json';
     const file = new File([blob], filename, {
       type: 'application/json',
@@ -108,27 +194,6 @@ export function DesignerWidget({
     setAnimateIn(false);
     window.setTimeout(() => doClose(undefined), animationDuration);
   };
-
-  const openCancelDialog = () => setCancelDialogOpen(true);
-  const closeCancelDialog = () => setCancelDialogOpen(false);
-
-  const routes: RouteObject[] = useMemo(
-    () => [
-      {
-        path: '/',
-        element: <NotebookEditor />,
-        children: [
-          {index: true, element: <Navigate to="/design/0" replace />},
-          {path: 'info', element: <InfoPanel />},
-          {path: 'design/*', element: <DesignPanel />},
-        ],
-      },
-    ],
-    []
-  );
-  const [memoryRouterInstance] = useState(() =>
-    createMemoryRouter(routes, {initialEntries: ['/design/0']})
-  );
 
   if (loading) {
     return (
@@ -154,7 +219,6 @@ export function DesignerWidget({
     <ReduxProvider store={store}>
       <ThemeProvider theme={mergedTheme}>
         <ScopedCssBaseline />
-
         <Box
           sx={{
             opacity: isVisible ? 1 : 0,
@@ -171,7 +235,7 @@ export function DesignerWidget({
                 Notebook Editor
               </Typography>
               <Box>
-                <Button onClick={openCancelDialog} sx={{mr: 1}}>
+                <Button onClick={() => setCancelDialogOpen(true)} sx={{mr: 1}}>
                   Cancel
                 </Button>
                 <Button variant="contained" onClick={handleDone}>
@@ -180,9 +244,10 @@ export function DesignerWidget({
               </Box>
             </Toolbar>
           </AppBar>
+
           <Dialog
             open={cancelDialogOpen}
-            onClose={closeCancelDialog}
+            onClose={() => setCancelDialogOpen(false)}
             TransitionComponent={Grow}
             transitionDuration={animationDuration}
             aria-labelledby="cancel-dialog-title"
@@ -199,10 +264,10 @@ export function DesignerWidget({
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={closeCancelDialog} autoFocus>
+              <Button onClick={() => setCancelDialogOpen(false)} autoFocus>
                 No, keep editing
               </Button>
-              <Button onClick={handleCancel} variant="contained">
+              <Button variant="contained" onClick={handleCancel}>
                 Yes, cancel
               </Button>
             </DialogActions>

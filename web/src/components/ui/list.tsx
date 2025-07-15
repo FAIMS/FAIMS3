@@ -36,7 +36,7 @@ const ListDescription = React.forwardRef<
   React.HTMLAttributes<HTMLParagraphElement>
 >(({className, ...props}, ref) => {
   return (
-    <p
+    <div
       ref={ref}
       className={cn('text-sm text-muted-foreground', className)}
       {...props}

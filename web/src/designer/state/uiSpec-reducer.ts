@@ -15,12 +15,13 @@
 import {PayloadAction, createSlice} from '@reduxjs/toolkit';
 import {NotebookUISpec, FieldType, initialState} from './initial';
 import {getFieldSpec} from '../fields';
-import {ConditionType} from '../components/condition';
+import {ConditionType} from '../components/condition/types';
 import {
   slugify,
   getViewSetForView,
   removeFieldFromSummary,
   removeFieldFromSummaryForViewset,
+  replaceFieldInCondition,
 } from './helpers/uiSpec-helpers';
 
 const uiSpecInitialState: NotebookUISpec =
@@ -156,33 +157,71 @@ export const uiSpecificationReducer = createSlice({
       }>
     ) => {
       const {viewId, fieldName, newFieldName} = action.payload;
-      if (fieldName in state.fields) {
-        const field = state.fields[fieldName];
-
-        // ensure newFieldName is unique
-        let fieldLabel = slugify(newFieldName);
-        let N = 1;
-        while (fieldLabel in state.fields) {
-          fieldLabel = slugify(fieldName + ' ' + N);
-          N += 1;
-        }
-
-        field['component-parameters'].name = fieldLabel;
-        state.fields[fieldLabel] = field;
-        delete state.fields[fieldName];
-        // replace reference in the view
-        const viewFields = state.fviews[viewId].fields;
-        for (let i = 0; i < viewFields.length; i++) {
-          if (viewFields[i] === fieldName) {
-            viewFields[i] = fieldLabel;
-            break;
-          }
-        }
-      } else {
+      if (!(fieldName in state.fields)) {
         throw new Error(
           `Cannot rename unknown field ${fieldName} via fieldRenamed action`
         );
       }
+
+      const field = state.fields[fieldName];
+
+      // ensure newFieldName is unique
+      let fieldLabel = slugify(newFieldName);
+      let N = 1;
+      while (fieldLabel in state.fields) {
+        fieldLabel = slugify(newFieldName + ' ' + N);
+        N += 1;
+      }
+
+      field['component-parameters'].name = fieldLabel;
+      state.fields[fieldLabel] = field;
+      delete state.fields[fieldName];
+      // replace reference in the view
+      const viewFields = state.fviews[viewId].fields;
+      for (let i = 0; i < viewFields.length; i++) {
+        if (viewFields[i] === fieldName) {
+          viewFields[i] = fieldLabel;
+          break;
+        }
+      }
+
+      /* Update every condition (fields AND sections) that mentions the old ID. */
+      Object.values(state.fields).forEach(f => {
+        if (f.condition) {
+          f.condition = replaceFieldInCondition(
+            f.condition,
+            fieldName,
+            fieldLabel
+          );
+        }
+      });
+
+      Object.values(state.fviews).forEach(v => {
+        if (v.condition) {
+          const newCondition = replaceFieldInCondition(
+            v.condition,
+            fieldName,
+            fieldLabel
+          );
+          if (newCondition === null) {
+            delete v.condition;
+          } else {
+            v.condition = newCondition;
+          }
+        }
+      });
+
+      /* Update summary_fields and hridField in each form. */
+      Object.values(state.viewsets).forEach(vs => {
+        if (vs.summary_fields) {
+          vs.summary_fields = vs.summary_fields.map(f =>
+            f === fieldName ? fieldLabel : f
+          );
+        }
+        if (vs.hridField === fieldName) {
+          vs.hridField = fieldLabel;
+        }
+      });
     },
     fieldAdded: (
       state,
@@ -198,6 +237,8 @@ export const uiSpecificationReducer = createSlice({
         action.payload;
 
       const newField: FieldType = getFieldSpec(fieldType);
+
+      newField.designerIdentifier = uuidv4();
 
       let fieldLabel = slugify(fieldName);
 
@@ -313,6 +354,7 @@ export const uiSpecificationReducer = createSlice({
       // create a deep copy of the original field
       const originalField = state.fields[originalFieldName];
       const newField: FieldType = JSON.parse(JSON.stringify(originalField));
+      newField.designerIdentifier = uuidv4();
 
       // generate a unique field label/name
       let fieldLabel = slugify(newFieldName);
@@ -442,6 +484,8 @@ export const uiSpecificationReducer = createSlice({
         const newField: FieldType = JSON.parse(JSON.stringify(originalField));
         newField['component-parameters'].label = newFieldLabel;
         newField['component-parameters'].name = fieldSlug;
+        newField.designerIdentifier = uuidv4();
+
         // Add the new field to the state and record it in the new section.
         state.fields[fieldSlug] = newField;
         newSection.fields.push(fieldSlug);

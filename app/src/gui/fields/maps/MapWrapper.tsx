@@ -42,7 +42,7 @@ import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
-import {Icon, Style} from 'ol/style';
+import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
 import {useNotification} from '../../../context/popup';
@@ -94,7 +94,7 @@ function MapWrapper(props: MapProps) {
   const addDrawInteraction = useCallback(
     (theMap: Map, props: MapProps) => {
       const vectorSource = new VectorSource();
-      // @TODO: RG - Strech goal to show a popup on click of any point with lat-long info
+      // @TODO: RG - Stretch goal to show a popup on click of any point with lat-long info
       // icon downloaded from https://freepngimg.com/png/66934-map-google-pin-icons-maps-computer-maker
       const pinIcon = new Icon({
         src: '/static/map-pin.png',
@@ -102,8 +102,17 @@ function MapWrapper(props: MapProps) {
         scale: 0.25,
       });
 
+      const fill = new Fill({
+        color: 'rgba(255,255,255,0.4)',
+      });
+      const stroke = new Stroke({
+        color: '#3399CC',
+        width: 2,
+      });
       const pinStyle = new Style({
         image: pinIcon,
+        fill,
+        stroke,
       });
 
       const layer = new VectorLayer({
@@ -141,7 +150,7 @@ function MapWrapper(props: MapProps) {
     [geoJson, setFeaturesExtent]
   );
 
-  // save cleanr and close
+  // save clear and close
   const handleClose = (action: MapAction | 'clear') => {
     if (!map) return;
 
@@ -176,7 +185,7 @@ function MapWrapper(props: MapProps) {
     }
   };
 
-  // ppen map
+  // open map
   const handleClickOpen = () => {
     if (props.fallbackCenter) {
       notify.showWarning(
@@ -188,7 +197,7 @@ function MapWrapper(props: MapProps) {
       if (map) {
         map.getLayers().forEach(layer => {
           try {
-            // Only remove pin layers, not the GPS livee cursor
+            // Only remove pin layers, not the GPS live cursor
             const zIndex =
               typeof layer.getZIndex === 'function' ? layer.getZIndex() : -1;
             if (zIndex === 998) map.removeLayer(layer); // 999 is used by live cursor in mapcomponent.
@@ -287,7 +296,15 @@ function MapWrapper(props: MapProps) {
           </Box>
         )}
 
-        <Dialog fullScreen open={mapOpen} onClose={() => setMapOpen(false)}>
+        <Dialog
+          sx={{
+            top: 'var(--safe-area-inset-top)',
+            left: 'var(--safe-area-inset-left)',
+          }}
+          fullScreen
+          open={mapOpen}
+          onClose={() => setMapOpen(false)}
+        >
           <AppBar
             sx={{
               position: 'relative',
@@ -385,7 +402,6 @@ function MapWrapper(props: MapProps) {
             </Toolbar>
           </AppBar>
 
-          {/* <div ref={refCallback} style={styles.mapContainer} /> */}
           <Grid container spacing={2} sx={{height: '100%'}}>
             <MapComponent
               key={mapOpen ? 'map-open' : 'map-closed'}
@@ -452,15 +468,3 @@ function MapWrapper(props: MapProps) {
 // added forward rendering..
 export default MapWrapper;
 
-// <div style={styles.mapInputWidget}>
-// <div ref={mapElement} style={styles.mapContainer} />
-// <Button
-//   type='button'
-//   variant='outlined'
-//   color='primary'
-//   style={styles.mapSubmitButton}
-//   onClick={submitAction}
-// >
-//   Submit
-// </Button>
-// </div>

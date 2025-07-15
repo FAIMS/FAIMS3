@@ -9,7 +9,6 @@ import {useNavigate} from '@tanstack/react-router';
 
 const TeamTemplates = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
-
   const {isPending, data} = useGetTemplatesForTeam({user, teamId});
 
   // can the user see the add button?

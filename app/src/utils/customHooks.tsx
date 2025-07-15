@@ -517,6 +517,7 @@ export const useRecordList = ({
           hridFieldMap: hridFieldMap,
         });
       },
+      networkMode: 'always',
       refetchOnMount: false,
       gcTime: 0,
       refetchInterval: hydrationRefreshIntervalMs,

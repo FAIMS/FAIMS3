@@ -432,7 +432,7 @@ export const dataV2toV3Migration: MigrationFunc = doc => {
 
 ## Migration Process Workflow
 
-1. **Initialization**: The system checks if migration documents exist for each database, creating them if needed
+1. **Initialisation**: The system checks if migration documents exist for each database, creating them if needed
 2. **Version Check**: Each database's current version is compared to its target version
 3. **Migration Planning**: Required migration steps are identified in sequence
 4. **Execution**: Migrations are applied one at a time, with detailed logging

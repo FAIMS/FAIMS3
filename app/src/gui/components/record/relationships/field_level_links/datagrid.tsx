@@ -18,38 +18,50 @@
  *   TODO
  */
 
-import {RecordID, RecordMetadata, RecordReference} from '@faims3/data-model';
+import {RecordID, RecordMetadata} from '@faims3/data-model';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {
   Alert,
   Box,
   Button,
   ButtonGroup,
-  CircularProgress,
   Modal,
   Paper,
-  Stack,
   Typography,
+  useTheme
 } from '@mui/material';
 import {
   DataGrid,
   GridActionsCellItem,
   GridCellParams,
+  GridColDef,
+  GridEventListener,
   GridRow,
   GridRowParams,
 } from '@mui/x-data-grid';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import {getExistingRecordRoute} from '../../../../../constants/routes';
+import {compiledSpecService} from '../../../../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../../../context/store';
 import {
   getFieldLabel,
   getSummaryFieldInformation,
 } from '../../../../../uiSpecification';
+import {useDataGridStyles} from '../../../../../utils/useDataGridStyles';
+import {useScreenSize} from '../../../../../utils/useScreenSize';
+import {
+  buildColumnFromSystemField,
+  buildVerticalStackColumn,
+  KeyValueTable,
+  RECORD_GRID_LABELS,
+} from '../../../notebook/record_table';
 import RecordRouteDisplay from '../../../ui/record_link';
 import {gridParamsDataType} from '../record_links';
 import {RecordLinksToolbar} from '../toolbars';
-import {compiledSpecService} from '../../../../../context/slices/helpers/compiledSpecService';
+
+type ColumnType = 'CREATED' | 'CREATED_BY' | 'LAST_UPDATED' | 'LAST_UPDATED_BY';
 
 const style = {
   position: 'absolute' as const,
@@ -60,76 +72,6 @@ const style = {
   bgcolor: 'background.paper',
   p: 1,
 };
-
-// Unused component - referenced in RelatedRecordSelector and commented out
-// because it is unreachable (I think - SC)
-export function DataGridNoLink(props: {
-  links: RecordReference[];
-  relation_linked_vocab: string;
-  relation_type: string;
-}) {
-  const columns: any = [
-    {
-      field: 'relation_type_vocabPair',
-      headerName: 'Relationship',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.2,
-      valueGetter: (params: gridParamsDataType) =>
-        params.value !== undefined
-          ? params.value[0]
-          : props.relation_linked_vocab,
-    },
-    {
-      field: 'record_label',
-      headerName: 'Record',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 200,
-      flex: 0.4,
-      valueGetter: (params: GridCellParams) =>
-        params.row.record_label ?? params.row.record_id,
-      renderCell: (params: GridCellParams) => (
-        <>
-          {params.value}
-          <CircularProgress size={12} thickness={5} />
-        </>
-      ),
-    },
-    {
-      field: 'record_id',
-      headerName: 'Updated',
-      headerClassName: 'faims-record-link--header',
-      minWidth: 100,
-      valueGetter: () => '',
-      flex: 0.4,
-    },
-  ];
-  // remove any invalid entries in links (due to a bug elsewhere)
-  const links = props.links.filter(link => link.record_id);
-  return props.links !== null && props.links.length > 0 ? (
-    <DataGrid
-      autoHeight
-      density={'compact'}
-      rowCount={5}
-      pageSizeOptions={[5, 10, 20]} // 100 here to disable an error thrown by MUI
-      disableRowSelectionOnClick
-      slotProps={{
-        filterPanel: {sx: {maxWidth: '96vw'}},
-      }}
-      columns={columns}
-      initialState={{
-        sorting: {
-          sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
-        },
-        pagination: {paginationModel: {pageSize: 5}},
-      }}
-      rows={links}
-      getRowId={r => r.record_id}
-    />
-  ) : (
-    <Box></Box>
-  );
-}
 
 interface DataGridLinksComponentProps {
   project_id: string;
@@ -148,6 +90,7 @@ interface DataGridLinksComponentProps {
 export function DataGridFieldLinksComponent(
   props: DataGridLinksComponentProps
 ) {
+  const {currentSize} = useScreenSize();
   /**
    * Display the linked records in a MUI Datagrid.
    * Datagrid is set to autoHeight (grid will size according to its content) up to 5 rows
@@ -163,6 +106,9 @@ export function DataGridFieldLinksComponent(
     selectProjectById(state, props.project_id)
   )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  const history = useNavigate();
+  const theme = useTheme();
+  const styles = useDataGridStyles(theme); // Add this
 
   function getRowId(row: any) {
     /***
@@ -200,6 +146,20 @@ export function DataGridFieldLinksComponent(
       });
   }
 
+  const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
+    params => {
+      history(
+        getExistingRecordRoute({
+          serverId: props.serverId,
+          projectId: props.project_id,
+          recordId: (params.row.record_id || '').toString(),
+          revisionId: (params.row.revision_id || '').toString(),
+        })
+      );
+    },
+    [history, props.serverId, props.project_id]
+  );
+
   function ChildRecordDisplay(props: {
     current_record_id: RecordID;
     child_record: RecordMetadata;
@@ -217,58 +177,38 @@ export function DataGridFieldLinksComponent(
       fn();
     }, [props.child_record]);
 
-    const route = getExistingRecordRoute({
-      serverId: props.serverId,
-      projectId: props.child_record.project_id,
-      recordId: props.child_record.record_id,
-      revisionId: props.child_record.revision_id,
-    });
-
     if (props.child_record.record_id === props.current_record_id) {
       return <RecordRouteDisplay>This record</RecordRouteDisplay>;
     } else {
-      return (
-        <Stack>
-          <Typography variant={'body2'} fontWeight={'bold'}>
-            <RecordRouteDisplay
-              link={props.child_record.deleted ? '' : route}
-              deleted={props.child_record.deleted}
-            >
-              {props.child_record.type + ': ' + props.child_record.hrid}
-            </RecordRouteDisplay>
-          </Typography>
-          {displayFields.map(fieldName => {
-            if (props.child_record.data) {
-              const value = props.child_record.data[fieldName];
-              if (typeof value === 'string')
-                return (
-                  <Typography key={fieldName} variant={'body2'}>
-                    {uiSpec ? getFieldLabel(uiSpec, fieldName) : fieldName}:{' '}
-                    {props.child_record.data
-                      ? props.child_record.data[fieldName]
-                      : ''}
-                  </Typography>
-                );
-            }
-            return <></>;
-          })}
-        </Stack>
-      );
+      const data: {[key: string]: string} = {
+        ID: props.child_record.hrid,
+      };
+      displayFields.forEach(fieldName => {
+        if (props.child_record.data) {
+          const value = props.child_record.data[fieldName];
+          if (typeof value === 'string') {
+            const label = uiSpec ? getFieldLabel(uiSpec, fieldName) : fieldName;
+            data[label] = value;
+          }
+        }
+      });
+
+      return <KeyValueTable data={data} />;
     }
   }
 
   const relation_column = {
     field: 'relation_type_vocabPair',
     headerName: 'Relationship',
-    headerClassName: 'faims-record-link--header',
-    minWidth: 200,
+    minWidth: 150,
     flex: 0.2,
     valueGetter: (params: gridParamsDataType) => {
       const rel = params.row.relationship;
       if (rel.linked && rel.linked.length > 0) {
+        // if the relationship has a linked record, return the type
         // find the link that is back to us
         const links_to_us = rel.linked.filter(
-          (link: any) => link.record_id === params.id
+          (link: any) => link.record_id === props.record_id
         );
         if (links_to_us && links_to_us.length > 0) {
           const rvp = links_to_us[0].relation_type_vocabPair;
@@ -279,12 +219,11 @@ export function DataGridFieldLinksComponent(
     },
   };
 
-  const record_column = {
+  const record_column: GridColDef = {
     field: 'record',
-    headerName: 'Record',
-    headerClassName: 'faims-record-link--header',
+    headerName: 'Details',
     minWidth: 200,
-    flex: 0.4,
+    flex: 2,
     valueGetter: (params: GridCellParams) =>
       params.row.type + ' ' + params.row.hrid,
     renderCell: (params: GridCellParams) => (
@@ -296,40 +235,87 @@ export function DataGridFieldLinksComponent(
     ),
   };
 
-  const updated_by_column = {
-    field: 'lastUpdatedBy',
-    headerName: 'Updated',
-    headerClassName: 'faims-record-link--header',
-    minWidth: 150,
-    flex: 0.2,
-    valueGetter: (params: GridCellParams) => params.row.updated_by,
-  };
+  const smallScreenColumn: GridColDef | null =
+    uiSpec && currentSize === 'xs'
+      ? buildVerticalStackColumn({
+          summaryFields: [],
+          columnLabel: RECORD_GRID_LABELS.VERTICAL_STACK_COLUMN_LABEL,
+          uiSpecification: uiSpec,
+          includeKind: false,
+          hasConflict: false,
+        })
+      : null;
 
-  const columns: any =
-    props.relation_type === 'Child'
-      ? [record_column, updated_by_column]
-      : [relation_column, record_column, updated_by_column];
+  /** Columns that must always be shown */
+  const SYSTEM_COLUMNS: ColumnType[] = ['CREATED', 'CREATED_BY'];
 
-  if (!props.disabled)
+  /** Columns to show in large view */
+  if (currentSize === 'lg') {
+    SYSTEM_COLUMNS.push('LAST_UPDATED');
+    SYSTEM_COLUMNS.push('LAST_UPDATED_BY');
+  }
+
+  // System fields for medium+ screens
+  const systemColumns: GridColDef[] = uiSpec
+    ? SYSTEM_COLUMNS.map(c =>
+        buildColumnFromSystemField({columnType: c, uiSpecification: uiSpec!})
+      )
+    : [];
+
+  const columns: GridColDef[] = [];
+
+  if (smallScreenColumn) {
+    // S/SM: relationship into the Details stack
+    columns.push({
+      ...smallScreenColumn,
+      renderCell: params => (
+        <Box>
+          {/*  relationship above the stacked details */}
+          {props.relation_type !== 'Child' && (
+            <Typography variant="body2" sx={{mb: 1}}>
+              Relationship:{' '}
+              <strong>{relation_column.valueGetter!(params as any)}</strong>
+            </Typography>
+          )}
+          {/* vertical-stack cell under  */}
+          {smallScreenColumn.renderCell!(params)}
+        </Box>
+      ),
+    });
+  } else {
+    // MD/LG:  relationship in its own column, tghen record + system columns
+    if (props.relation_type !== 'Child') {
+      columns.push(relation_column);
+    }
+    columns.push(record_column, ...systemColumns);
+  }
+
+  //  “remove link” actions menu
+  if (!props.disabled) {
     columns.push({
       field: 'actions',
       type: 'actions',
       headerName: 'Actions',
-      headerClassName: 'faims-record-link--header',
-      flex: 0.2,
+      flex: 0.15,
+      minWidth: 90,
       getActions: (params: GridRowParams) => [
         <GridActionsCellItem
-          icon={<LinkOffIcon color={'error'} />}
+          icon={<LinkOffIcon color="error" />}
           onClick={handleModalOpen(params.row)}
           label="Remove link"
           showInMenu
         />,
       ],
     });
+  }
 
   return (
-    <Box component={Paper} elevation={0}>
-      {props.links !== null && (
+    <Box
+      component={Paper}
+      elevation={0}
+      sx={{...styles.wrapper, overflowX: 'auto', overflowY: 'hidden'}}
+    >
+      {props.links && (
         <Box>
           <Modal
             open={modalOpen}
@@ -382,21 +368,34 @@ export function DataGridFieldLinksComponent(
             density={'compact'}
             pageSizeOptions={[5, 10, 20]}
             disableRowSelectionOnClick
+            onRowClick={handleRowClick}
             slots={{
               footer: RecordLinksToolbar,
             }}
-            slotProps={{
-              filterPanel: {sx: {maxWidth: '96vw'}},
-            }}
             columns={columns}
+            disableColumnFilter
             initialState={{
               sorting: {
-                sortModel: [{field: 'lastUpdatedBy', sort: 'desc'}],
+                sortModel: [{field: 'last_updated', sort: 'desc'}],
               },
               pagination: {paginationModel: {pageSize: 5}},
             }}
             rows={props.links}
             getRowId={getRowId}
+            sx={{
+              ...styles.grid,
+              '& .MuiDataGrid-columnHeaders': {
+                width: '100%',
+                minHeight: '70px !important',
+              },
+              /* Hide horizontal scroll & arrows on md / lg screens */
+              [theme.breakpoints.up('md')]: {
+                '& .MuiDataGrid-virtualScroller': {
+                  overflowX: 'hidden !important',
+                },
+                '& .MuiDataGrid-scrollArea': {display: 'none'},
+              },
+            }}
           />
         </Box>
       )}

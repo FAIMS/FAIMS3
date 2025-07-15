@@ -121,7 +121,7 @@ export const useGetProject = ({
  */
 export const useGetProjects = (user: User | null) =>
   useQuery({
-    queryKey: ['projects'],
+    queryKey: ['projects', user?.token],
     queryFn: () => get<GetNotebookListResponse>('/api/notebooks/', user),
     enabled: !!user,
   });
@@ -154,7 +154,7 @@ export const useGetProjectsForTeam = ({
   teamId: string;
 }) =>
   useQuery({
-    queryKey: ['projectsbyteam', teamId],
+    queryKey: ['projectsbyteam', user?.token, teamId],
     queryFn: () =>
       get<GetNotebookListResponse>(`/api/notebooks?teamId=${teamId}`, user),
   });
@@ -173,7 +173,7 @@ export const useGetTemplatesForTeam = ({
   teamId: string;
 }) =>
   useQuery({
-    queryKey: ['templatesbyteam', teamId],
+    queryKey: ['templatesbyteam', user?.token, teamId],
     queryFn: async () =>
       get<GetListTemplatesResponse>(`/api/templates?teamId=${teamId}`, user),
     enabled: !!user,
@@ -203,7 +203,7 @@ export const useGetUsersForTeam = ({
  * Gets a particular team
  *
  * @param {User} user - The user object.
- * @returns {Query} A query for fetching projects.
+ * @returns {Query} A query for fetching a team.
  */
 export const useGetTeam = (user: User | null, teamId: string | undefined) =>
   useQuery({
@@ -233,7 +233,7 @@ export const useGetTeams = (user: User | null) =>
  */
 export const useGetTemplates = (user: User | null) =>
   useQuery({
-    queryKey: ['templates'],
+    queryKey: ['templates', user?.token],
     queryFn: async () => {
       const data = await get<GetListTemplatesResponse>('/api/templates/', user);
       return data.templates;

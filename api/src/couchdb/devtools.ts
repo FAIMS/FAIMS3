@@ -128,6 +128,15 @@ const generateValue = (field: any) => {
     );
     return options[randomInt(options.length)];
   }
+
+  if (field['component-name'] === 'MultiSelect') {
+    const options = field['component-parameters'].ElementProps.options.map(
+      (o: any) => o.value
+    );
+    // value is an array
+    return [options[randomInt(options.length)]];
+  }
+
   // TODO: use 'faker' to generate more realistic data
   switch (fieldType) {
     case 'faims-core::String':
