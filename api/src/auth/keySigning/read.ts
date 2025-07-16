@@ -64,7 +64,7 @@ export const validateToken = async (
     // overwrite user details with the token permissions!
     return {...user, ...validatedToken};
   } catch (error) {
-    console.error(error);
+    // this isn't an error, just an expired or invalid token
     return undefined;
   }
 };
