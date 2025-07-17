@@ -19,7 +19,7 @@
  */
 
 import {decodeAndValidateToken} from '@faims3/data-model';
-import {jwtVerify} from 'jose';
+import {jwtVerify, errors as joseErrors} from 'jose';
 import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../../buildconfig';
 import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 
@@ -64,7 +64,15 @@ export const validateToken = async (
     // overwrite user details with the token permissions!
     return {...user, ...validatedToken};
   } catch (error) {
-    console.error(error);
+    // expired token is ok, we just return undefined
+    if (
+      error instanceof joseErrors.JWTExpired &&
+      error.code === 'ERR_JWT_EXPIRED'
+    ) {
+      return undefined;
+    }
+    // otherwise we log the error and return undefined
+    console.error('Error validating token:', error);
     return undefined;
   }
 };
