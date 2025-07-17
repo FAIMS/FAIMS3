@@ -37,9 +37,9 @@
       "get": {
         "summary": "Say hello",
         "description": "Return a hello message as JSON",
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "produces": ["application/json"],
         "responses": {
           "200": {
@@ -89,9 +89,9 @@
         "description": "Get a list of the notebooks managed by this server",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "responses": {
           "200": {
             "description": "successful operation",
@@ -112,9 +112,9 @@
         "description": "Create a new notebook by uploading JSON metadata and ui-specification",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "requestBody": {
           "description": "Notebook metadata and ui-specification",
           "required": true,
@@ -154,9 +154,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "responses": {
           "200": {
             "description": "successful operation",
@@ -187,9 +187,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "requestBody": {
           "description": "Notebook metadata and ui-specification",
           "required": true,
@@ -233,9 +233,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "responses": {
           "200": {
             "description": "successful operation",
@@ -252,76 +252,91 @@
         }
       }
     },
-    "/notebooks/{id}/records/{viewID}.csv": {
+    "/notebooks/{id}/records/{viewID}.{format}": {
       "get": {
-        "summary": "Get records as CSV",
-        "description": "Export notebook records as CSV for one form",
-        "tags": ["Export"],
+        "summary": "Generate download token for notebook records",
+        "description": "Generates a signed JWT token and redirects to download endpoint for exporting notebook records in specified format",
+        "tags": ["Notebooks"],
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Notebook identifier",
             "required": true,
-            "type": "string"
+            "schema": {"type": "string"},
+            "description": "Notebook identifier"
           },
           {
             "name": "viewID",
-            "in": "path",
-            "description": "view (form) identifier",
+            "in": "path", 
             "required": true,
-            "type": "string"
+            "schema": {"type": "string"},
+            "description": "Form/view identifier"
+          },
+          {
+            "name": "format",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["csv", "zip"]
+            },
+            "description": "Export format"
           }
         ],
-        "produces": ["text/csv"],
-        "security": {
-          "Auth": []
-        },
+        "security": [{"Auth": []}],
         "responses": {
-          "200": {
-            "description": "successful operation"
+          "302": {
+            "description": "Redirect to download endpoint with JWT token"
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "404": {
+            "description": "Notebook or form not found"
           }
         }
       }
     },
-    "/notebooks/{id}/records/{viewID}.zip": {
+    "/notebooks/download/{downloadToken}": {
       "get": {
-        "summary": "Get all record attachments as a zip file",
-        "description": "Export all attachments (photos, files) for a form as a zip file",
-        "tags": ["Export"],
+        "summary": "Download notebook records using JWT token",
+        "description": "Downloads notebook records in the format specified by the JWT token. Token expires in 5 minutes.",
+        "tags": ["Notebooks"],
         "parameters": [
           {
-            "name": "id",
+            "name": "downloadToken",
             "in": "path",
-            "description": "Notebook id",
             "required": true,
-            "type": "string"
-          },
-          {
-            "name": "viewID",
-            "in": "path",
-            "description": "view (form) identifier",
-            "required": true,
-            "type": "string"
+            "schema": {"type": "string"},
+            "description": "JWT download token containing download parameters"
           }
         ],
-        "produces": ["application/zip"],
-        "security": {
-          "Auth": []
-        },
         "responses": {
           "200": {
-            "description": "successful operation",
-            "schema": {
-              "type": "string",
-              "format": "binary"
+            "description": "File download",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Attachment filename"
+              }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
+          "404": {
+            "description": "Invalid token or form not found"
           }
         }
       }
@@ -341,9 +356,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "responses": {
           "200": {
             "description": "successful operation",
@@ -373,9 +388,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "requestBody": {
           "description": "User Information",
           "required": true,
@@ -417,9 +432,9 @@
         "description": "Creates a new notebook based on an existing template. Requires permission to create notebooks.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "requestBody": {
           "description": "Template ID and project name for the new notebook",
           "required": true,
@@ -466,9 +481,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "requestBody": {
           "description": "User Information",
           "required": true,
@@ -515,9 +530,9 @@
         "description": "Gets a list of templates from the templates DB.",
         "tags": ["Templates"],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "responses": {
           "200": {
             "description": "successful operation",
@@ -539,9 +554,9 @@
         "description": "Creates a new template. The payload is validated before processing. Requires appropriate permissions.",
         "tags": ["Templates"],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "requestBody": {
           "description": "Template details",
           "required": true,
@@ -587,9 +602,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "responses": {
           "200": {
             "description": "successful operation",
@@ -622,9 +637,9 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "requestBody": {
           "description": "Template details",
           "required": true,
@@ -670,15 +685,325 @@
           }
         ],
         "produces": ["application/json"],
-        "security": {
+        "security": [{
           "Auth": []
-        },
+        }],
         "responses": {
           "200": {
             "description": "successful operation"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/teams/": {
+      "get": {
+        "summary": "Get a list of teams",
+        "description": "Gets a list of all teams from the teams DB",
+        "tags": ["Teams"],
+        "security": [{"Auth": []}],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetListTeamsResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
+        }
+      },
+      "post": {
+        "summary": "Create a new team", 
+        "description": "Creates a new team. Requires authentication.",
+        "tags": ["Teams"],
+        "security": [{"Auth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/definitions/PostCreateTeamInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/PostCreateTeamResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
+        }
+      }
+    },
+    "/teams/{id}": {
+      "get": {
+        "summary": "Get a team by ID",
+        "tags": ["Teams"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "security": [{"Auth": []}],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetTeamByIdResponse"}
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update an existing team",
+        "tags": ["Teams"],
+        "parameters": [
+          {
+            "name": "id", 
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "security": [{"Auth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/definitions/PutUpdateTeamInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/PutUpdateTeamResponse"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invites/notebook/{projectId}": {
+      "get": {
+        "summary": "Get all project invites",
+        "tags": ["Invites"],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path", 
+            "required": true,
+            "schema": {"type": "string"}
+          }
+        ],
+        "security": [{"Auth": []}],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetProjectInvitesResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
+        }
+      },
+      "post": {
+        "summary": "Create a project invite",
+        "description": "Creates a new invite for a project/notebook. Requires appropriate permissions.",
+        "tags": ["Invites"],
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Project/notebook identifier"
+          }
+        ],
+        "security": [{"Auth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/definitions/PostCreateInviteInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/PostCreateProjectInviteResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
+        }
+      }
+    },
+    "/invites/team/{teamId}": {
+      "get": {
+        "summary": "Get all team invites", 
+        "tags": ["Invites"],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true, 
+            "schema": {"type": "string"}
+          }
+        ],
+        "security": [{"Auth": []}],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetTeamInvitesResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
+        }
+      },
+      "post": {
+        "summary": "Create a team invite",
+        "description": "Creates a new invite for a team. Requires appropriate permissions.",
+        "tags": ["Invites"],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Team identifier"
+          }
+        ],
+        "security": [{"Auth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/definitions/PostCreateInviteInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/PostCreateTeamInviteResponse"}
+              }
+            }
+          },
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
+        }
+      }
+    },
+    "/long-lived-tokens/": {
+      "get": {
+        "summary": "Get long-lived tokens",
+        "description": "Get tokens for the authenticated user or all tokens (admin only)",
+        "tags": ["Long-Lived Tokens"],
+        "security": [{"Auth": []}],
+        "responses": {
+          "200": {
+            "description": "successful operation", 
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/GetLongLivedTokensResponse"}
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new long-lived token",
+        "tags": ["Long-Lived Tokens"],
+        "security": [{"Auth": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/definitions/PostCreateLongLivedTokenRequest"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/PostCreateLongLivedTokenResponse"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Refresh access token",
+        "description": "Get a new JWT using a refresh token",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/definitions/PostRefreshTokenInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/PostRefreshTokenResponse"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/exchange": {
+      "post": {
+        "summary": "Exchange token for access/refresh token pair",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/definitions/PostExchangeTokenInput"}
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {"$ref": "#/definitions/PostExchangeTokenResponse"}
+              }
+            }
           }
         }
       }
@@ -844,13 +1169,25 @@
       "$ref": "#/definitions/TemplateDocument"
     },
     "PostCreateTemplateInput": {
-      "$ref": "#/definitions/TemplateEditableDetails"
+      "type": "object",
+      "properties": {
+        "template_name": {"type": "string", "minLength": 1},
+        "metadata": {"type": "object"},
+        "ui_specification": {"type": "object"},
+        "teamId": {"type": "string", "description": "Optional team ID"}
+      },
+      "required": ["template_name", "metadata", "ui_specification"]
     },
     "PostCreateTemplateResponse": {
       "$ref": "#/definitions/TemplateDocument"
     },
     "PutUpdateTemplateInput": {
-      "$ref": "#/definitions/TemplateEditableDetails"
+      "type": "object", 
+      "properties": {
+        "metadata": {"type": "object"},
+        "ui-specification": {"type": "object"}
+      },
+      "required": ["metadata", "ui-specification"]
     },
     "PutUpdateTemplateResponse": {
       "$ref": "#/definitions/TemplateDocument"
@@ -943,6 +1280,394 @@
           "type": "string"
         }
       }
+    },
+    "GetListTeamsResponse": {
+      "type": "object",
+      "properties": {
+        "teams": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TeamDocument"
+          }
+        }
+      }
+    },
+    "GetTeamByIdResponse": {
+      "$ref": "#/definitions/TeamDocument"
+    },
+    "PostCreateTeamInput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the team"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the team"
+        }
+      },
+      "required": ["name"]
+    },
+    "PostCreateTeamResponse": {
+      "$ref": "#/definitions/TeamDocument"
+    },
+    "PutUpdateTeamInput": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the team"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the team"
+        }
+      }
+    },
+    "PutUpdateTeamResponse": {
+      "$ref": "#/definitions/TeamDocument"
+    },
+    "TeamDocument": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "description": "Unique identifier for the team"
+        },
+        "_rev": {
+          "type": "string",
+          "description": "CouchDB revision identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the team"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the team"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "User ID who created the team"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Unix timestamp when team was created"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Unix timestamp when team was last updated"
+        }
+      },
+      "required": ["_id", "name", "createdBy", "createdAt", "updatedAt"]
+    },
+    "GetProjectInvitesResponse": {
+      "type": "object",
+      "properties": {
+        "invites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ProjectInviteDocument"
+          }
+        }
+      }
+    },
+    "GetTeamInvitesResponse": {
+      "type": "object",
+      "properties": {
+        "invites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TeamInviteDocument"
+          }
+        }
+      }
+    },
+    "ProjectInviteDocument": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "description": "Unique identifier for the invite"
+        },
+        "_rev": {
+          "type": "string",
+          "description": "CouchDB revision identifier"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Project/notebook identifier"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the invitee"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role to be assigned to the user"
+        },
+        "invitedBy": {
+          "type": "string",
+          "description": "User ID who created the invite"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Unix timestamp when invite was created"
+        },
+        "expiresAt": {
+          "type": "number",
+          "description": "Unix timestamp when invite expires"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "accepted", "expired", "revoked"],
+          "description": "Status of the invite"
+        }
+      },
+      "required": ["_id", "projectId", "email", "role", "invitedBy", "createdAt", "status"]
+    },
+    "TeamInviteDocument": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "description": "Unique identifier for the invite"
+        },
+        "_rev": {
+          "type": "string",
+          "description": "CouchDB revision identifier"
+        },
+        "teamId": {
+          "type": "string",
+          "description": "Team identifier"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the invitee"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role to be assigned to the user in the team"
+        },
+        "invitedBy": {
+          "type": "string",
+          "description": "User ID who created the invite"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Unix timestamp when invite was created"
+        },
+        "expiresAt": {
+          "type": "number",
+          "description": "Unix timestamp when invite expires"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "accepted", "expired", "revoked"],
+          "description": "Status of the invite"
+        }
+      },
+      "required": ["_id", "teamId", "email", "role", "invitedBy", "createdAt", "status"]
+    },
+    "PostCreateInviteInput": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Role to assign to the invited user"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name/email of the person being invited"
+        },
+        "expiry": {
+          "type": "number",
+          "description": "Unix timestamp when invite expires (optional)"
+        },
+        "uses": {
+          "type": "number",
+          "description": "Number of times the invite can be used (optional)"
+        }
+      },
+      "required": ["role", "name"]
+    },
+    "PostCreateProjectInviteResponse": {
+      "$ref": "#/definitions/ProjectInviteDocument"
+    },
+    "PostCreateTeamInviteResponse": {
+      "$ref": "#/definitions/TeamInviteDocument"
+    },
+    "GetLongLivedTokensResponse": {
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LongLivedTokenDocument"
+          }
+        }
+      }
+    },
+    "PostCreateLongLivedTokenRequest": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name/description for the token"
+        },
+        "expiresAt": {
+          "type": "number",
+          "description": "Unix timestamp when token expires (optional)"
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scopes/permissions for the token (optional)"
+        }
+      },
+      "required": ["name"]
+    },
+    "PostCreateLongLivedTokenResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "The generated token string"
+        },
+        "tokenDoc": {
+          "$ref": "#/definitions/LongLivedTokenDocument"
+        }
+      },
+      "required": ["token", "tokenDoc"]
+    },
+    "LongLivedTokenDocument": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "description": "Unique identifier for the token"
+        },
+        "_rev": {
+          "type": "string",
+          "description": "CouchDB revision identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name/description of the token"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User ID who owns the token"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Unix timestamp when token was created"
+        },
+        "expiresAt": {
+          "type": "number",
+          "description": "Unix timestamp when token expires"
+        },
+        "lastUsed": {
+          "type": "number",
+          "description": "Unix timestamp when token was last used"
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the token is currently active"
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Scopes/permissions associated with the token"
+        }
+      },
+      "required": ["_id", "name", "userId", "createdAt", "isActive"]
+    },
+    "PostRefreshTokenInput": {
+      "type": "object",
+      "properties": {
+        "refreshToken": {
+          "type": "string",
+          "description": "The refresh token to exchange for a new access token"
+        }
+      },
+      "required": ["refreshToken"]
+    },
+    "PostRefreshTokenResponse": {
+      "type": "object",
+      "properties": {
+        "accessToken": {
+          "type": "string",
+          "description": "New JWT access token"
+        },
+        "refreshToken": {
+          "type": "string",
+          "description": "New refresh token"
+        },
+        "expiresIn": {
+          "type": "number",
+          "description": "Token expiration time in seconds"
+        }
+      },
+      "required": ["accessToken", "refreshToken", "expiresIn"]
+    },
+    "PostExchangeTokenInput": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "Token to exchange (e.g., OAuth token, invite token)"
+        },
+        "tokenType": {
+          "type": "string",
+          "enum": ["oauth", "invite", "long-lived"],
+          "description": "Type of token being exchanged"
+        }
+      },
+      "required": ["token"]
+    },
+    "PostExchangeTokenResponse": {
+      "type": "object",
+      "properties": {
+        "accessToken": {
+          "type": "string",
+          "description": "JWT access token"
+        },
+        "refreshToken": {
+          "type": "string",
+          "description": "Refresh token for obtaining new access tokens"
+        },
+        "expiresIn": {
+          "type": "number",
+          "description": "Token expiration time in seconds"
+        },
+        "user": {
+          "type": "object",
+          "description": "User information",
+          "properties": {
+            "user_id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": ["accessToken", "refreshToken", "expiresIn"]
     }
   }
 }
