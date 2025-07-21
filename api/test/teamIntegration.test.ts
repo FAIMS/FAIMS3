@@ -830,6 +830,45 @@ describe('Team integration with templates and projects', () => {
     expect(updatedProjectDoc.ownedByTeamId).to.equal(team1._id);
   });
 
+  it('can assign a project to a team after creation', async () => {
+    // Create a team
+    const team = await createTeam(app, {
+      teamName: 'Assign Team',
+      description: 'Team for assigning projects',
+    });
+
+    // Create a project without teamId
+    const project = await requestAuthAndType(
+      request(app)
+        .post(`${NOTEBOOKS_API_BASE}`)
+        .send({
+          name: 'Project to Assign',
+          'ui-specification': uispec,
+          metadata: {test_key: 'test_value'},
+        }),
+      adminToken
+    )
+      .expect(200)
+      .then(res => res.body);
+
+    // Verify project is created without teamId
+    const projectsDb = localGetProjectsDb();
+    const projectDoc = await projectsDb.get(project.notebook);
+    expect(projectDoc.ownedByTeamId).to.be.undefined;
+
+    // Assign the project to the team
+    await requestAuthAndType(
+      request(app).put(`${NOTEBOOKS_API_BASE}/${project.notebook}/team`).send({
+        teamId: team._id,
+      }),
+      adminToken
+    ).expect(200);
+
+    // Verify the project now has the teamId assigned
+    const updatedProjectDoc = await projectsDb.get(project.notebook);
+    expect(updatedProjectDoc.ownedByTeamId).to.equal(team._id);
+  });
+
   it('getRelevantUserAssociations with no teams returns empty array', async () => {
     // Create test user with no team roles
     const [user, err] = await createUser({

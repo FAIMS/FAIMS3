@@ -286,6 +286,15 @@ export type PutChangeNotebookStatusInput = z.infer<
   typeof PutChangeNotebookStatusInputSchema
 >;
 
+// PUT :/id change project team
+export const PutChangeNotebookTeamInputSchema = z.object({
+  teamId: z.string().min(1, 'Team ID is required'),
+});
+
+export type PutChangeNotebookTeamInput = z.infer<
+  typeof PutChangeNotebookTeamInputSchema
+>;
+
 // POST create new notebook from template response
 export const PostCreateNotebookResponseSchema = z.object({
   notebook: z.string(),
