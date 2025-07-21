@@ -22,6 +22,7 @@ import type {
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
+import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -92,6 +93,12 @@ const ProjectActions = (): JSX.Element => {
     resourceId: projectId,
   });
 
+  // can we change the project team?
+  const canAddProjectToTeam = useIsAuthorisedTo({
+    action: Action.CHANGE_PROJECT_TEAM,
+    resourceId: projectId,
+  });
+
   const handleCreateTestRecords = async () => {
     if (user)
       await generateTestRecordsForProject({
@@ -150,6 +157,21 @@ const ProjectActions = (): JSX.Element => {
           </List>
         </Card>
 
+        {canAddProjectToTeam && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListDescription>
+                  Assign this {NOTEBOOK_NAME} to a team.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <AddProjectToTeamDialog projectId={projectId} />
+              </ListItem>
+            </List>
+          </Card>
+        )}
         <Card className="flex-1">
           <List className="flex flex-col gap-4">
             <ListItem>
