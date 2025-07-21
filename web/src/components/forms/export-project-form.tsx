@@ -3,6 +3,7 @@ import {Form} from '../form';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
+import {ProjectUIViewsets, UISpecification} from '@faims3/data-model';
 
 /**
  * ExportProjectForm component renders a form for downloading a project's data.
@@ -15,6 +16,12 @@ const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
 
+  if (!data) {
+    return [];
+  }
+
+  const viewSets = data['ui-specification'].viewsets as ProjectUIViewsets;
+
   const fields = [
     {
       name: 'form',
@@ -22,8 +29,8 @@ const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
       schema: z.string().nonempty(),
       options:
         data && data['ui-specification']?.viewsets
-          ? Object.keys(data['ui-specification']?.viewsets).map(name => ({
-              label: name,
+          ? Object.keys(viewSets).map(name => ({
+              label: viewSets[name].label || name,
               value: name,
             }))
           : [],
