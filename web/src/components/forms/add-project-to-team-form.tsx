@@ -13,6 +13,10 @@ interface AddProjectToTeamFormProps {
 }
 
 /**
+ * A form component that allows assigning a project to a team.
+ *
+ * @param setDialogOpen - A function to control the dialog's open state.
+ * @param projectId - The ID of the project to be assigned to a team.
  */
 export function AddProjectToTeamForm({
   setDialogOpen,
