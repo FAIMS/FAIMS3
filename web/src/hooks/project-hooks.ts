@@ -62,6 +62,27 @@ export const createProjectFromFile = async ({
   });
 };
 
+export const modifyTeamForProject = async ({
+  projectId,
+  teamId,
+  user,
+}: {
+  projectId: string;
+  teamId: string;
+  user: User;
+}) =>
+  await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/team`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({teamId}),
+    }
+  );
+
 export const removeInviteForProject = async ({
   inviteId,
   projectId,
