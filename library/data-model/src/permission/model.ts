@@ -60,6 +60,9 @@ export enum Action {
   // Change open/closed status
   CHANGE_PROJECT_STATUS = 'CHANGE_PROJECT_STATUS',
 
+  // Change team of a project
+  CHANGE_PROJECT_TEAM = 'CHANGE_PROJECT_TEAM',
+
   // Delete the project
   DELETE_PROJECT = 'DELETE_PROJECT',
 
@@ -333,6 +336,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.CHANGE_PROJECT_STATUS]: {
     name: 'Change Project Status',
     description: 'Modify the open/closed status of a project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.CHANGE_PROJECT_TEAM]: {
+    name: 'Change Project Team',
+    description: 'Change the team associated with a project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -991,6 +1000,7 @@ export const roleActions: Record<
       Action.UPDATE_PROJECT_DETAILS,
       Action.UPDATE_PROJECT_UISPEC,
       Action.CHANGE_PROJECT_STATUS,
+      Action.CHANGE_PROJECT_TEAM,
       Action.EXPORT_PROJECT_DATA,
 
       Action.VIEW_PROJECT_INVITES,

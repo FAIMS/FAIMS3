@@ -486,6 +486,26 @@ export const changeNotebookStatus = async ({
 };
 
 /**
+ * Updates the team associated with a notebook
+ */
+export const changeNotebookTeam = async ({
+  projectId,
+  teamId,
+}: {
+  projectId: string;
+  teamId: string;
+}) => {
+  // get existing project record
+  const project = await getProjectById(projectId);
+
+  // update team
+  const updated = {...project, ownedByTeamId: teamId};
+
+  // write it back
+  await putProjectDoc(updated);
+};
+
+/**
  * deleteNotebook - DANGER!! Delete a notebook and all its data
  * @param project_id - project identifier
  */

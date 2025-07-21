@@ -40,6 +40,7 @@ import {
   projectRoleToAction,
   ProjectUIModel,
   PutChangeNotebookStatusInputSchema,
+  PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
   removeProjectRole,
@@ -55,6 +56,7 @@ import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   changeNotebookStatus,
+  changeNotebookTeam,
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
@@ -317,6 +319,27 @@ api.put(
   }),
   async ({body: {status}, params: {projectId}}, res) => {
     await changeNotebookStatus({projectId, status});
+    res.sendStatus(200);
+    return;
+  }
+);
+
+// PUT change project team
+api.put(
+  '/:projectId/team',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_PROJECT_TEAM,
+    getResourceId(req) {
+      return req.params.projectId;
+    },
+  }),
+  processRequest({
+    params: z.object({projectId: z.string()}),
+    body: PutChangeNotebookTeamInputSchema,
+  }),
+  async ({body: {teamId}, params: {projectId}}, res) => {
+    await changeNotebookTeam({projectId, teamId});
     res.sendStatus(200);
     return;
   }

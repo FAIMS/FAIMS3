@@ -225,6 +225,7 @@ describe('Authorization Helper Functions', () => {
               Action.UPDATE_PROJECT_DETAILS,
               Action.UPDATE_PROJECT_UISPEC,
               Action.CHANGE_PROJECT_STATUS,
+              Action.CHANGE_PROJECT_TEAM,
               Action.EXPORT_PROJECT_DATA,
 
               // Inherited from PROJECT_CONTRIBUTOR
@@ -245,6 +246,7 @@ describe('Authorization Helper Functions', () => {
       // Direct actions from PROJECT_MANAGER
       expect(actions).toContain(Action.UPDATE_PROJECT_DETAILS);
       expect(actions).toContain(Action.CHANGE_PROJECT_STATUS);
+      expect(actions).toContain(Action.CHANGE_PROJECT_TEAM);
 
       // Inherited from PROJECT_CONTRIBUTOR
       expect(actions).toContain(Action.READ_ALL_PROJECT_RECORDS);
