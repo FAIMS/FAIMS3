@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,7 +15,7 @@
     "fix": "gts fix",
     "test": "vitest"
   },
-   "overrides": {
+  "overrides": {
     "@radix-ui/react-focus-scope": "1.1.7"
   },
   "dependencies": {
