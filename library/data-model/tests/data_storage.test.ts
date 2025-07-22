@@ -412,13 +412,16 @@ describe('record iterator', () => {
 
       let {record, done} = await iterator.next();
       let sumOfAges = 0;
+      let count = 0;
       while (record && !done) {
+        count++;
         expect(record.data.name.startsWith('Bob')).toBe(true);
         sumOfAges += record.data.age;
         const next = await iterator.next();
         record = next.record;
         done = next.done;
       }
+      expect(count).toBe(n);
       // expect the sum of the first n integers from 0 to n-1
       expect(sumOfAges).toBe(Math.abs((n * (n - 1)) / 2));
     }

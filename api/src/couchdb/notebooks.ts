@@ -56,7 +56,7 @@ import {
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL, DEVELOPER_MODE} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 
 import {
@@ -883,6 +883,7 @@ export const streamNotebookRecordsAsCSV = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
+  console.log('streaming notebook records as CSV', projectId, viewID);
   const dataDb = await getDataDb(projectId);
   const uiSpecification = await getProjectUIModel(projectId);
   const iterator = await notebookRecordIterator({
@@ -975,6 +976,17 @@ export const streamNotebookFilesAsZip = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
+  const logMemory = (stage: string, extraInfo = '') => {
+    if (DEVELOPER_MODE) {
+      const used = process.memoryUsage();
+      console.log(
+        `[ZIP ${stage}] ${extraInfo} - RSS: ${Math.round(used.rss / 1024 / 1024)}MB, ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB, External: ${Math.round(used.external / 1024 / 1024)}MB`
+      );
+    }
+  };
+
+  logMemory('START');
+
   let allFilesAdded = false;
   let doneFinalize = false;
 
@@ -1019,6 +1031,9 @@ export const streamNotebookFilesAsZip = async (
     }
   });
 
+  let recordCount = 0;
+  let fileCount = 0;
+
   archive.pipe(res);
   let dataWritten = false;
   let {record, done} = await iterator.next();
@@ -1028,28 +1043,24 @@ export const streamNotebookFilesAsZip = async (
     // append it to the archive
     if (record !== null) {
       const hrid = record.hrid || record.record_id;
-      Object.keys(record.data).forEach(async (key: string) => {
-        if (record && record.data[key] instanceof Array) {
-          if (record.data[key].length === 0) {
-            return;
-          }
+      recordCount++;
+      logMemory('RECORD', `Record ${recordCount} (${hrid})`);
+
+      // Process files sequentially to avoid memory spikes
+      for (const key of Object.keys(record.data)) {
+        if (record.data[key] instanceof Array && record.data[key].length > 0) {
           if (record.data[key][0] instanceof File) {
             const file_list = record.data[key] as File[];
-            file_list.forEach(async (file: File) => {
-              const buffer = await file.stream();
-              const reader = buffer.getReader();
-              // this is how we turn a File object into
-              // a Buffer to pass to the archiver, insane that
-              // we can't derive something from the file that will work
-              const chunks: Uint8Array[] = [];
-              while (true) {
-                const {done, value} = await reader.read();
-                if (done) {
-                  break;
-                }
-                chunks.push(value);
-              }
-              const stream = Stream.Readable.from(chunks);
+
+            // Process files one at a time
+            for (const file of file_list) {
+              fileCount++;
+              const fileSizeMB = Math.round(file.size / 1024 / 1024);
+              logMemory(
+                'BEFORE_FILE',
+                `File ${fileCount}, Size: ${fileSizeMB}MB`
+              );
+
               const filename = generateFilenameForAttachment(
                 file,
                 key,
@@ -1057,15 +1068,50 @@ export const streamNotebookFilesAsZip = async (
                 fileNames
               );
               fileNames.push(filename);
-              await archive.append(stream, {
+
+              // Convert Web ReadableStream to Node.js Readable stream
+              const webStream = file.stream();
+              const reader = webStream.getReader();
+
+              // Create a Node.js Readable stream from the chunks
+              const nodeStream = new Stream.Readable({
+                async read() {
+                  try {
+                    const {done, value} = await reader.read();
+                    if (done) {
+                      this.push(null); // End the stream
+                    } else {
+                      this.push(Buffer.from(value)); // Convert Uint8Array to Buffer
+                    }
+                  } catch (error) {
+                    this.destroy(error as Error);
+                  }
+                },
+              });
+
+              await archive.append(nodeStream, {
                 name: filename,
               });
               dataWritten = true;
-            });
+
+              logMemory('AFTER_FILE', `File ${fileCount} processed`);
+            }
+
+            // Clear the file array after processing to help GC
+            record.data[key] = [];
+            logMemory('AFTER_CLEAR', 'Files cleared');
+            // Force garbage collection if available (Node.js --expose-gc flag)
+            if (global.gc && recordCount % 5 === 0) {
+              global.gc();
+              logMemory('AFTER_GC', `Forced GC after record ${recordCount}`);
+            }
           }
         }
-      });
+      }
     }
+    // Clear the record reference before getting the next one
+    record = null;
+
     const next = await iterator.next();
     record = next.record;
     done = next.done;
@@ -1079,6 +1125,8 @@ export const streamNotebookFilesAsZip = async (
   // fire a progress event here because short/empty zip files don't
   // trigger it late enough for us to call finalize above
   archive.emit('progress', {entries: {processed: 0, total: 0}});
+
+  logMemory('COMPLETE');
 };
 
 export const generateFilenameForAttachment = (
