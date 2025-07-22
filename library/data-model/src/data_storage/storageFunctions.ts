@@ -904,7 +904,7 @@ export const notebookRecordIterator = async ({
   filterDeleted?: boolean;
   uiSpecification: ProjectUIModel;
 }) => {
-  const batchSize = 100;
+  const batchSize = 20;
   const getNextBatch = async (bookmark: string | null) => {
     const records = await getSomeRecords(
       projectId,
@@ -913,29 +913,42 @@ export const notebookRecordIterator = async ({
       filterDeleted
     );
     // select just those in this view
-    return records.filter((record: any) => {
+    const result = records.filter((record: any) => {
       return record.type === viewID;
     });
+    if (records.length > 0 && result.length === 0) {
+      // skip to next batch since none of these match our view
+      const newBookmark = records[records.length - 1].record_id;
+      return getNextBatch(newBookmark);
+    }
+    return {done: records.length === 0, records: result};
   };
 
-  let records = await getNextBatch(null);
-  // deal with no records
-  if (records.length === 0) {
+  let batch = await getNextBatch(null);
+  // deal with end of records
+  if (batch.done) {
     return {next: async () => ({record: null, done: true})};
   }
   let index = 0;
   const recordIterator = {
     async next() {
       let record;
-      if (index < records.length) {
-        record = records[index];
+      if (index < batch.records.length) {
+        record = batch.records[index];
         index++;
       } else {
-        // see if we can get more records
-        const startID = records[records.length - 1].record_id;
-        records = await getNextBatch(startID);
-        if (records.length > 0) {
-          record = records[0];
+        // Explicit cleanup before fetching next batch
+        const lastRecordId = batch.records[batch.records.length - 1]?.record_id;
+        batch.records.length = 0; // Clear the array
+
+        if (!lastRecordId) {
+          return {record: null, done: true};
+        }
+
+        // Fetch next batch
+        batch = await getNextBatch(lastRecordId);
+        if (batch.records.length > 0) {
+          record = batch.records[0];
           index = 1;
         }
       }
@@ -947,6 +960,8 @@ export const notebookRecordIterator = async ({
             uiSpecification,
             dataDb,
           });
+          // clear the record to help GC
+          record = null;
           return {record: data, done: false};
         } catch (error) {
           console.error(error);
