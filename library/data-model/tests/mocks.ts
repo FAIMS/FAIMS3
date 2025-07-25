@@ -1,15 +1,20 @@
 import PouchDB from 'pouchdb';
-import {DBCallbackObject, generateFAIMSDataID, upsertFAIMSData} from '../src';
-import {addDesignDocsForNotebook} from '../src/data_storage/databases';
-import {ProjectID, Record} from '../src/types';
 import PouchDBFind from 'pouchdb-find';
-
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+
+import {DBCallbackObject, getDataDB} from '../src';
+import {
+  initDataDB,
+  couchInitialiser,
+  generateFAIMSDataID,
+  upsertFAIMSData,
+} from '../src/data_storage';
+import {ProjectID, ProjectUIModel, Record} from '../src/types';
 
 const databaseList: any = {};
 
-const getDatabase = async (databaseName: string) => {
+const getDatabase = (databaseName: string) => {
   if (databaseList[databaseName] === undefined) {
     const db = new PouchDB(databaseName, {adapter: 'memory'});
     databaseList[databaseName] = db;
@@ -19,16 +24,19 @@ const getDatabase = async (databaseName: string) => {
 
 const mockGetDataDB = async (project_id: ProjectID) => {
   const databaseName = 'data-' + project_id;
-  const db = await getDatabase(databaseName);
-  await addDesignDocsForNotebook(db);
+  const db = getDatabase(databaseName);
+  const config = initDataDB({
+    projectId: project_id,
+  });
+  await couchInitialiser({
+    db,
+    content: config,
+    config: {forceWrite: true, applyPermissions: false},
+  });
   return db;
 };
 
-const mockGetProjectDB = async (project_id: ProjectID) => {
-  return getDatabase('project-' + project_id);
-};
-
-const mockShouldDisplayRecord = () => {
+const mockShouldDisplayRecord = async () => {
   return true;
 };
 
@@ -51,8 +59,97 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getProjectDB: mockGetProjectDB,
   shouldDisplayRecord: mockShouldDisplayRecord,
+};
+
+export const sampleUiSpecForViewId = ({
+  viewId,
+  hridFieldId = undefined,
+}: {
+  viewId: string;
+  hridFieldId?: 'age' | 'name';
+}): ProjectUIModel => {
+  return {
+    fields: {
+      name: {
+        'component-namespace': 'formik-material-ui',
+        'component-name': 'TextField',
+        'type-returned': 'faims-core::String',
+        'component-parameters': {
+          label: 'name',
+          fullWidth: true,
+          helperText: '',
+          variant: 'outlined',
+          required: false,
+          InputProps: {
+            type: 'text',
+          },
+          name: 'name',
+        },
+        validationSchema: [['yup.string']],
+        initialValue: '',
+        meta: {
+          annotation: {
+            include: false,
+            label: 'annotation',
+          },
+          uncertainty: {
+            include: false,
+            label: 'uncertainty',
+          },
+        },
+        condition: null,
+        persistent: false,
+        displayParent: false,
+      },
+      age: {
+        'component-namespace': 'formik-material-ui',
+        'component-name': 'TextField',
+        'type-returned': 'faims-core::Integer',
+        'component-parameters': {
+          label: 'age',
+          fullWidth: true,
+          helperText: '',
+          variant: 'outlined',
+          required: false,
+          InputProps: {
+            type: 'number',
+          },
+          name: 'age',
+        },
+        validationSchema: [['yup.number']],
+        initialValue: '',
+        meta: {
+          annotation: {
+            include: false,
+            label: 'annotation',
+          },
+          uncertainty: {
+            include: false,
+            label: 'uncertainty',
+          },
+        },
+        condition: null,
+        persistent: false,
+        displayParent: false,
+      },
+    },
+    views: {
+      [`TEST-${viewId}`]: {
+        label: 'TEST',
+        fields: ['name', 'age'],
+      },
+    },
+    viewsets: {
+      TEST: {
+        label: 'TEST',
+        views: [`TEST-${viewId}`],
+        // Include HRID field if specified
+        ...(hridFieldId ? {hridField: hridFieldId} : {}),
+      },
+    },
+    visible_types: ['TEST'],
+  };
 };
 
 export const createRecord = async (
@@ -60,6 +157,7 @@ export const createRecord = async (
   viewID: string,
   data: {name: string; age: number}
 ) => {
+  const dataDb = await getDataDB(project_id);
   const userID = 'user';
   const doc: Record = {
     project_id: project_id,
@@ -80,15 +178,16 @@ export const createRecord = async (
     deleted: false,
   };
 
-  return await upsertFAIMSData(project_id, doc);
+  return await upsertFAIMSData({dataDb, record: doc});
 };
 
 export const createNRecords = async (
   project_id: string,
-  viewID: string,
+  viewId: string,
   n: number
-) => {
+): Promise<ProjectUIModel> => {
   for (let i = 0; i < n; i++) {
-    await createRecord(project_id, viewID, {name: `Bob ${i}`, age: i});
+    await createRecord(project_id, viewId, {name: `Bob ${i}`, age: i});
   }
+  return sampleUiSpecForViewId({viewId});
 };

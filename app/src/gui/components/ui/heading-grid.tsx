@@ -1,16 +1,17 @@
 import {Stack} from '@mui/material';
 import {
   DataGrid,
+  GridColDef,
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
-import {ProjectExtended} from '../../../types/project';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
 import {theme} from '../../themes';
 import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
+import {Project} from '../../../context/slices/projectSlice';
 
 /**
  * Renders a grid with two sections: Active and Not Active.
@@ -22,21 +23,28 @@ import {ACTIVATED_LABEL, NOT_ACTIVATED_LABEL} from '../workspace/notebooks';
  */
 export default function HeadingProjectGrid({
   projects,
-  columns,
+  activatedColumns,
+  notActivatedColumns,
+  serverId,
 }: {
-  projects: ProjectExtended[];
-  columns: any;
+  projects: Project[];
+  activatedColumns: GridColDef<Project>[];
+  notActivatedColumns: GridColDef<Project>[];
+  serverId: string;
 }) {
   // pull out active/inactive surveys
-  const activatedProjects = projects.filter(({activated}) => activated);
-  const availableProjects = projects.filter(({activated}) => !activated);
+  const activatedProjects = projects.filter(({isActivated}) => isActivated);
+  const availableProjects = projects.filter(({isActivated}) => !isActivated);
 
   const history = useNavigate();
 
   const handleRowClick: GridEventListener<'rowClick'> = ({
-    row: {activated, project_id},
+    row: {isActivated, projectId},
+  }: {
+    row: Project;
   }) => {
-    if (activated) history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${project_id}`);
+    if (isActivated)
+      history(`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}${serverId}/${projectId}`);
   };
 
   // we need a state variable to track pagination model since we want to use a
@@ -60,8 +68,9 @@ export default function HeadingProjectGrid({
       <DataGrid
         key={'notebook_list_datagrid_activated'}
         rows={activatedProjects}
-        columns={columns}
+        columns={activatedColumns}
         onRowClick={handleRowClick}
+        rowHeight={75}
         autoHeight
         sx={{
           cursor: 'pointer',
@@ -82,7 +91,7 @@ export default function HeadingProjectGrid({
             borderBottom: '1px solid #eee',
           },
         }}
-        getRowId={({_id}) => _id}
+        getRowId={({projectId}) => projectId}
         hideFooter={true}
         getRowHeight={() => 'auto'}
         paginationModel={paginationModel}
@@ -102,7 +111,7 @@ export default function HeadingProjectGrid({
       <DataGrid
         key={'notebook_list_datagrid_not_activated'}
         rows={availableProjects}
-        columns={columns}
+        columns={notActivatedColumns}
         autoHeight
         sx={{
           cursor: 'pointer',
@@ -124,7 +133,7 @@ export default function HeadingProjectGrid({
           },
         }}
         onRowClick={handleRowClick}
-        getRowId={({_id}) => _id}
+        getRowId={({projectId}) => projectId}
         getRowHeight={() => 'auto'}
         hideFooter
         paginationModel={paginationModel}

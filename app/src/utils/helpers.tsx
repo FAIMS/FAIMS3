@@ -1,27 +1,4 @@
 import {Capacitor} from '@capacitor/core';
-import {TokenContents} from '@faims3/data-model';
-
-function tokenExists(token: null | undefined | TokenContents) {
-  return token !== null && token !== undefined;
-}
-
-function tokenValid(token: null | undefined | TokenContents) {
-  /**
-   * Check for expiry AND validity
-   */
-  // TODO
-
-  // username is a valid user
-  // roles match those stored in user record
-  return token && token.username && token.roles;
-}
-
-export function checkToken(token: null | undefined | TokenContents) {
-  /**
-   * Check if the token exists, and whether it's valid
-   */
-  return tokenExists(token) && tokenValid(token);
-}
 
 /**
  * Input parameter checker to ensure all values are defined
@@ -50,3 +27,36 @@ export function iteratorTakeOne<V>(iterator: Iterator<V>): V | undefined {
   const result = iterator.next();
   return result.done ? undefined : result.value;
 }
+
+/**
+ * Either replaces or adds a redirect to a URL query string
+ * @param url
+ * @param redirectTo
+ * @returns
+ */
+export const replaceOrAppendRedirect = ({
+  url,
+  redirectTo,
+}: {
+  url: string;
+  redirectTo: string;
+}): string => {
+  try {
+    // Parse the URL to manipulate its parts
+    const urlObj = new URL(url);
+
+    // Check if redirect parameter exists and replace it
+    if (urlObj.searchParams.has('redirect')) {
+      urlObj.searchParams.set('redirect', redirectTo);
+    } else {
+      // Add redirect parameter if it doesn't exist
+      urlObj.searchParams.append('redirect', redirectTo);
+    }
+
+    return urlObj.toString();
+  } catch (error) {
+    // Return original URL if parsing fails
+    console.error('Error parsing URL:', error);
+    return url;
+  }
+};

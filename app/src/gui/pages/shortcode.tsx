@@ -18,7 +18,6 @@
  */
 
 import {Browser} from '@capacitor/browser';
-import {ListingsObject} from '@faims3/data-model/src/types';
 import LoginIcon from '@mui/icons-material/Login';
 import {
   Button,
@@ -33,21 +32,22 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import React, {useContext, useState} from 'react';
+import React, {useState} from 'react';
 import {
   APP_ID,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../buildconfig';
-import {ActionType} from '../../context/actions';
-import {store} from '../../context/store';
-import {isWeb} from '../../utils/helpers';
+import {useNotification} from '../../context/popup';
+import {addAlert} from '../../context/slices/alertSlice';
+import {Server} from '../../context/slices/projectSlice';
+import {useAppDispatch} from '../../context/store';
+import {isWeb, replaceOrAppendRedirect} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
 import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
-import {useNotification} from '../../context/popup';
 
 type ShortCodeProps = {
-  listings: ListingsObject[];
+  servers: Server[];
 };
 
 /**
@@ -60,7 +60,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
   const [shortCode, setShortCode] = useState('');
   const {showSuccess, showError, showInfo} = useNotification();
   const [selectedPrefix, setSelectedPrefix] = useState(
-    props.listings[0]?.prefix || ''
+    props.servers[0]?.shortCodePrefix || ''
   );
 
   // pattern for allowed short codes (excluding prefix, 0, O, and dash)
@@ -78,7 +78,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
     const cleanInput = input.toUpperCase().trim();
 
     // Check if input starts with any known prefix (including potential dash)
-    for (const prefix of props.listings.map(listing => listing.prefix)) {
+    for (const prefix of props.servers.map(server => server.shortCodePrefix)) {
       const prefixPattern = new RegExp(`^${prefix}-?`);
       if (prefixPattern.test(cleanInput)) {
         // If found, update selected prefix and remove it from input
@@ -116,36 +116,32 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       return;
     }
 
-    const listing_info = props.listings.find(
-      listing => listing.prefix === selectedPrefix
+    const server = props.servers.find(
+      server => server.shortCodePrefix === selectedPrefix
     );
 
-    if (!listing_info) {
+    if (!server) {
       showError('Invalid prefix selected');
       return;
     }
 
-    const url =
-      listing_info.conductor_url +
-      '/register/' +
-      listing_info.prefix +
-      '-' +
-      shortCode;
+    const inviteCode = server.shortCodePrefix + '-' + shortCode;
+    const url = `${server.serverUrl}/register?inviteId=${inviteCode}`;
 
     showSuccess('Initiating registration...');
 
     if (isWeb()) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
-      window.location.href = url + '?redirect=' + redirect;
+      window.location.href = url + '&redirect=' + redirect;
     } else {
       await Browser.open({
-        url: `${url}?redirect=${APP_ID}://auth-return`,
+        url: `${url}&redirect=${APP_ID}://auth-return`,
       });
     }
   };
 
   // only show the prefix selection dropdown if
-  const showPrefixSelector = props.listings.length > 1;
+  const showPrefixSelector = props.servers.length > 1;
 
   return (
     <MainCard>
@@ -176,9 +172,12 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
                 onChange={handlePrefixChange}
                 size="small"
               >
-                {props.listings.map(listing => (
-                  <MenuItem key={listing.prefix} value={listing.prefix}>
-                    {listing.prefix}
+                {props.servers.map(server => (
+                  <MenuItem
+                    key={server.shortCodePrefix}
+                    value={server.shortCodePrefix}
+                  >
+                    {server.shortCodePrefix}
                   </MenuItem>
                 ))}
               </Select>
@@ -228,27 +227,32 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
  * @returns component content
  */
 export function QRCodeRegistration(props: ShortCodeProps) {
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const handleRegister = async (url: string) => {
     // verify that this URL is one that's going to work
     // valid urls look like:
     // http://192.168.1.2:8154/register/DEV-TMKZSM
-    const valid_hosts = props.listings.map(listing => listing.conductor_url);
-    const valid_re = valid_hosts.join('|') + '/register/.*-[A-Z1-9]+';
+    const valid_hosts = props.servers.map(server => server.serverUrl);
+    const valid_re = valid_hosts.join('|') + '/register.*';
 
     if (url.match(valid_re)) {
+      // Process the URL with our new function
+      const finalUrl = replaceOrAppendRedirect({
+        url,
+        redirectTo: `${APP_ID}://auth-return`,
+      });
+
       // Use the capacitor browser plugin in apps
       await Browser.open({
-        url: `${url}?redirect=${APP_ID}://auth-return`,
+        url: finalUrl,
       });
     } else {
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: 'Invalid QRCode Scanned',
           severity: 'warning',
-        },
-      });
+        })
+      );
     }
   };
 

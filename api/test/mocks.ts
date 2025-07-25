@@ -1,15 +1,19 @@
 import PouchDB from 'pouchdb';
-// eslint-disable-next-line n/no-unpublished-require
+import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-import {ProjectID, DBCallbackObject} from '@faims3/data-model';
+PouchDB.plugin(PouchDBFind);
+
+import {DBCallbackObject, ProjectID} from '@faims3/data-model';
+import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 import {
   getAuthDB,
-  getProjectsDB,
+  localGetProjectsDb,
   getTemplatesDb,
   getUsersDB,
-  initialiseDatabases,
+  initialiseDbAndKeys,
+  getTeamsDB,
 } from '../src/couchdb';
-import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
+import {registerAdminUser} from '../src/couchdb/users';
 
 export const databaseList: any = {};
 
@@ -25,22 +29,12 @@ const getDatabase = async (databaseName: string) => {
   return databaseList[databaseName];
 };
 
-const mockGetDataDB = async (project_id: ProjectID) => {
+export const mockGetDataDB = async (project_id: ProjectID) => {
   const databaseName = 'data-' + project_id;
   return getDatabase(databaseName);
 };
 
-const mockGetProjectDB = async (project_id: ProjectID) => {
-  return getDatabase('metadatadb-' + project_id);
-};
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockGetTemplateDB = async (project_id: ProjectID) => {
-  // Right now the mock get template DB does not need the project ID as context
-  return getDatabase('templatedb');
-};
-
-const mockShouldDisplayRecord = () => {
+const mockShouldDisplayRecord = async () => {
   return true;
 };
 
@@ -55,22 +49,29 @@ const clearDB = async (db: PouchDB.Database) => {
 export const resetDatabases = async () => {
   // Fetch and clear all mocked in memory DBs
   const usersDB = getUsersDB();
-  if (usersDB) {
-    await clearDB(usersDB);
-  }
+  await clearDB(usersDB);
+
   const authDB = getAuthDB();
-  if (authDB) {
-    await clearDB(authDB);
-  }
-  const projectsDB = getProjectsDB();
-  if (projectsDB) {
-    await clearDB(projectsDB);
-  }
+  await clearDB(authDB);
+
+  const projectsDB = localGetProjectsDb();
+  await clearDB(projectsDB);
+
   const templatesDB = getTemplatesDb();
-  if (templatesDB) {
-    await clearDB(templatesDB);
+  await clearDB(templatesDB);
+
+  const teamsDB = getTeamsDB();
+  await clearDB(teamsDB);
+
+  for (const dbKey of Object.keys(databaseList)) {
+    const toClear = ['metadata', 'projects'];
+    if (toClear.some(prefix => dbKey.startsWith(prefix))) {
+      await clearDB(databaseList[dbKey]);
+    }
   }
-  await initialiseDatabases();
+  // Clear all metadata DBs
+  await initialiseDbAndKeys({force: true});
+  await registerAdminUser();
 };
 
 export const cleanDataDBS = async () => {
@@ -91,6 +92,5 @@ export const cleanDataDBS = async () => {
 // register our mock database clients with the module
 export const callbackObject: DBCallbackObject = {
   getDataDB: mockGetDataDB,
-  getProjectDB: mockGetProjectDB,
   shouldDisplayRecord: mockShouldDisplayRecord,
 };

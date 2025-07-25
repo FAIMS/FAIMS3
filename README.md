@@ -55,7 +55,7 @@ This spins up three services
 
 - conductor API (/api) live reloading on http://localhost:8080
 - FAIMS3 app (/app) live reloading on http://localhost:3000
-- couchDB on http://localhost:5984/_utils
+- couchDB on http://localhost:5984/\_utils
 
 ## Initial step-by step setup
 
@@ -134,7 +134,7 @@ as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`). The script will
 have no effect if the admin user is already set up. Run the script with:
 
 ```bash
-npm run initdb
+npm run migrate
 ```
 
 There is also a script that will populate the database with notebooks that are
@@ -151,6 +151,25 @@ value of USER_TOKEN.
 ```bash
 npm run load-notebooks
 ```
+
+## IOS Notes
+
+To build the IOS app locally you need to be on MacOS.  A number of the build
+files for IOS are generated from configuration variables in the `app/.env` 
+file.   These must be set for the build to work, in particular the
+development team might need to be set to a valid team id for the build
+to work.  
+
+Before building the IOS app run 
+
+```bash
+npm run configIOSbuild
+```
+
+in the `app` directory.  This modifies two build files.   See the notes on
+[IOS Deployment](docs/developer/docs/source/markdown/IOS-Deployment.md) for
+more details. That documents the CI workflows but some of it applies for
+local builds.
 
 ## Developer notes to run test copies of FAIMS
 
@@ -193,6 +212,26 @@ Further build/install instructions can be found at
 1. [Optional] Resolve `xcode-select` error
    - `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
 1. Build the apk from the build/build bundle/build apk section
+
+## Live reload Android studio workflow (WSL)
+
+On WSL, the following setup and procedure allows live reloading of the app on an Android emulator (or physical device through adb [though I haven't gotten this working due to adb config issues]).
+
+### Prereqs
+
+- install Android studio on your WSL instance with suitable JDK (this usually comes bundled)
+
+### Setup
+
+First run `npm i` to install all dependencies, and move into `/app`. Then `npm i` to be certain local deps are installed, then
+
+- open android studio in one tab i.e. `./<studio path>/studio.sh`
+- in the open studio window, configure/start the emulator you want to run it on
+- in another tab, build the app i.e. `npm run build && npx cap sync android`
+- run the server `npx vite --force`
+- in another tab, start live reload `npx cap run android -l --external` and select the desired running emulator (it's important you use the existing running emulator rather than starting another which is unstable with WSL)
+
+This then live reloads on the emulator device from the running server.
 
 ## API Development
 

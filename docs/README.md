@@ -1,20 +1,40 @@
 # Fieldmark Documentation
 
-This directory contains two collections of documentation for Fieldmark.
-The `docs` folder contains user facing documentation.  The
-[developer](developer/README.md) folder contains internal developer documentation.
+This is suport documentation for users wanting to learn about the Fieldmark Webapp, Android and iOS versions.
 
-## Building User Facing Documentation
+## Tech
 
-Documentation can be built locally using Sphinx or via a docker image. To
-build the local docker image with sphinx plugins installed:
+The docs uses the Sphinx python build system to build a static website from mostly markdown content.
+
+## User docs local deploy
 
 ```bash
-docker build . -t faims-sphinx
+cd user
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+./localPreview.sh
 ```
 
-To build the documentation: 
+To build, all steps the same except the final line
+
+```
+make html
+```
+
+## Developer docs local deploy
 
 ```bash
-docker run --rm -v ./docs:/docs faims-sphinx make html
+cd developer
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+./localPreview.sh
+```
+
+To build, all steps the same except the final line
+
+```
+cd docs
+make html
 ```

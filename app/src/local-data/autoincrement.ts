@@ -24,16 +24,18 @@
 // (It is this way because the list of projects is decentralised and so we
 // cannot enforce system-wide unique project IDs without a 'namespace' listing id)
 
-import {getLocalStateDB} from '../sync/databases';
 import {
-  ProjectID,
+  AutoIncrementReference,
   LocalAutoIncrementRange,
   LocalAutoIncrementState,
-  AutoIncrementReference,
+  ProjectID,
   ProjectUIFields,
 } from '@faims3/data-model';
+import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../context/slices/projectSlice';
+import {store} from '../context/store';
 import {logError} from '../logging';
-import {getUiSpecForProject} from '../uiSpecification';
+import {databaseService} from '../context/slices/helpers/databaseService';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 
@@ -81,7 +83,7 @@ export async function getLocalAutoincrementStateForField(
 ): Promise<LocalAutoIncrementState> {
   const pouch_id = get_pouch_id(project_id, form_id, field_id);
   try {
-    const local_state_db = getLocalStateDB();
+    const local_state_db = databaseService.getLocalStateDatabase();
     return await local_state_db.get(pouch_id);
   } catch (err: any) {
     if (err.status === 404) {
@@ -109,7 +111,7 @@ export async function setLocalAutoincrementStateForField(
   new_state: LocalAutoIncrementState
 ) {
   try {
-    const local_state_db = getLocalStateDB();
+    const local_state_db = databaseService.getLocalStateDatabase();
     // force due to error 409
     return await local_state_db.put(new_state, {force: true});
   } catch (err) {
@@ -218,11 +220,15 @@ export async function setLocalAutoincrementRangesForField(
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
 ) {
-  const uiSpec = await getUiSpecForProject(project_id);
+  const uiSpecId = selectProjectById(
+    store.getState(),
+    project_id
+  )?.uiSpecificationId;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
 
   const references: AutoIncrementReference[] = [];
 
-  const fields = uiSpec.fields as ProjectUIFields;
+  const fields = (uiSpec?.fields ?? []) as ProjectUIFields;
   for (const field in fields) {
     // TODO are there other names?
     if (fields[field]['component-name'] === 'BasicAutoIncrementer') {

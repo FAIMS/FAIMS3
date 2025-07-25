@@ -1,0 +1,69 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+{
+	"name": "Node.js & TypeScript",
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "devcontainer",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+	"containerEnv": {
+		"PROFILE_NAME": "local-dev",
+		"DEVELOPER_MODE": "true",
+		"KEY_FILE_PATH": ".",
+		"CONDUCTOR_INSTANCE_NAME": "Development FAIMS Server",
+		"CONDUCTOR_DESCRIPTION": "Development server on localhost",
+		"CONDUCTOR_SHORT_CODE_PREFIX": "DEV",
+
+		"COUCHDB_USER": "admin",
+
+		"CONDUCTOR_INTERNAL_PORT": "8080",
+
+		"COUCHDB_EXTERNAL_PORT": "5984",
+		"COUCHDB_INTERNAL_URL": "http://couchdb:5984",
+		"COUCHDB_PUBLIC_URL": "http://localhost:5984",
+  	"NEW_CONDUCTOR_URL": "http://localhost:3001",
+		"WEB_APP_PUBLIC_URL":"http://localhost:3000",
+		"REDIRECT_WHITELIST":" http://localhost:8080,http://localhost:3000,http://localhost:3001,org.fedarch.faims3://auth-return",
+
+		"ANDROID_APP_PUBLIC_URL":"https://play.google.com/store/apps/details?id=org.fedarch.faims3",
+		"IOS_APP_PUBLIC_URL":"https://apps.apple.com/au/app/fieldmark/id1592632372",
+		"DESIGNER_URL":"https://designer.testing.fieldmark.app",
+		
+		"EMAIL_SERVICE_TYPE":"MOCK",
+		"EMAIL_FROM_ADDRESS":"notifications@example.com",
+		"EMAIL_FROM_NAME":"FAIMS Notification",
+		"EMAIL_REPLY_TO":"support@example.com",
+
+		"CONDUCTOR_EMAIL_HOST_NAME":" localhost",
+		"CONDUCTOR_EMAIL_HOST_CONFIG": "smtps://username:password@smtp.example.com",
+		"CONDUCTOR_EMAIL_FROM_ADDRESS": "test@example.com",
+
+		"CONDUCTOR_AUTH_PROVIDERS":"",
+
+		"COUCHDB_PASSWORD": "aSecretPasswordThatCantBeGuessed",
+
+		"TEST_EMAIL_ADDRESS": "test@example.com"
+	},
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	"forwardPorts": [
+					3000,
+					3001,
+					5010,
+					8080
+	],
+	"portsAttributes": {
+					"3000": {
+									"label": "App"
+					},
+					"3001": {
+									"label": "Control Center"
+					},
+					"8080": {
+									"label": "API"
+					},
+					"5010": {
+									"label": "Designer"
+					}
+	}
+}

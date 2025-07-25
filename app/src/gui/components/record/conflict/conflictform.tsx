@@ -19,48 +19,48 @@
  * TODO: Get date/time and username for conflict Drop list instead of ids
  */
 
-import React, {useEffect} from 'react';
-import {useContext, useState} from 'react';
 import {
-  ProjectID,
-  RecordID,
-  RevisionID,
   AttributeValuePairID,
-} from '@faims3/data-model';
-import {
+  InitialMergeDetails,
+  ProjectID,
   ProjectUIModel,
+  RecordID,
   RecordMergeInformation,
+  RevisionID,
   UserMergeResult,
+  getMergeInformationForHead,
+  isEqualFAIMS,
+  saveUserMergeResult,
 } from '@faims3/data-model';
 import TabContext from '@mui/lab/TabContext';
 import TabPanel from '@mui/lab/TabPanel';
-import {Grid, Box, Switch, FormControlLabel} from '@mui/material';
-import RecordTabBar from './recordTab';
 import {
-  InitialMergeDetails,
-  getMergeInformationForHead,
-  saveUserMergeResult,
-} from '@faims3/data-model';
-import {CircularProgress} from '@mui/material';
-
+  Box,
+  CircularProgress,
+  FormControlLabel,
+  Grid,
+  Switch,
+} from '@mui/material';
 import {grey} from '@mui/material/colors';
-import ConflictPanel from './conflictpanel';
-import ConflictToolBar from './conflicttoolbar';
-import {ConflictResolveIcon} from './conflictfield';
-import {ConflictSaveButton} from './conflictbutton';
-import {store} from '../../../../context/store';
-import {ActionType} from '../../../../context/actions';
-import {isEqualFAIMS} from '@faims3/data-model';
-import ConflictLinkBar from './conflictLinkBar';
-import {RecordLinkProps} from '../relationships/types';
-import {
-  addLinkedRecord,
-  update_child_records_conflict,
-  check_if_record_relationship,
-} from '../relationships/RelatedInformation';
-import {ConflictHelpDialog} from './conflictDialog';
+import React, {useEffect, useState} from 'react';
+import {addAlert} from '../../../../context/slices/alertSlice';
+import {useAppDispatch} from '../../../../context/store';
 import {logError} from '../../../../logging';
 import {theme} from '../../../themes';
+import {
+  getRelationshipDisplayData,
+  check_if_record_relationship,
+  update_child_records_conflict,
+} from '../relationships/RelatedInformation';
+import {RecordLinkProps} from '../relationships/types';
+import {ConflictSaveButton} from './conflictbutton';
+import {ConflictHelpDialog} from './conflictDialog';
+import {ConflictResolveIcon} from './conflictfield';
+import ConflictLinkBar from './conflictLinkBar';
+import ConflictPanel from './conflictpanel';
+import ConflictToolBar from './conflicttoolbar';
+import RecordTabBar from './recordTab';
+import {localGetDataDb} from '../../../..';
 
 type ConflictFormProps = {
   project_id: ProjectID;
@@ -73,6 +73,7 @@ type ConflictFormProps = {
   setissavedconflict: any; // this is parameter that allow user can reload the conflict headers
   isSyncing: string;
   not_xs?: boolean;
+  serverId: string;
 };
 type isclicklist = {[key: string]: boolean};
 type iscolourList = {[key: string]: string};
@@ -137,6 +138,7 @@ export default function ConflictForm(props: ConflictFormProps) {
     type,
     conflicts,
     setissavedconflict,
+    serverId,
     isSyncing,
   } = props;
   //this are tabs for form sections
@@ -228,7 +230,7 @@ export default function ConflictForm(props: ConflictFormProps) {
   const [saveduserMergeResult, setUserMergeResult] = useState(
     null as UserMergeResult | null
   );
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
   const [loading, setloading] = useState(false);
   const [numRejected, setnumRejected] = useState(0);
   const now = new Date();
@@ -268,11 +270,12 @@ export default function ConflictForm(props: ConflictFormProps) {
       setconflict(null);
       setIsloading(true);
       // setUserMergeResult({...mergeresult, parents: revisionlist}); // update the value when conflist revision changes
-      const result = await getMergeInformationForHead(
-        project_id,
-        record_id,
-        revisionvalue
-      );
+      const result = await getMergeInformationForHead({
+        dataDb: localGetDataDb(project_id),
+        recordId: record_id,
+        projectId: project_id,
+        revisionId: revisionvalue,
+      });
       await updateconflictvalue(setconflict, result, compareconflict, {
         ...mergeresult,
         parents: revisionlist,
@@ -300,7 +303,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       if (result !== null) {
         const type = result['type'];
         // get the parent and linked item
-        const newLinks: RecordLinkProps[] = await addLinkedRecord(
+        const newLinks: RecordLinkProps[] = await getRelationshipDisplayData(
           ui_specification,
           [],
           project_id,
@@ -308,10 +311,11 @@ export default function ConflictForm(props: ConflictFormProps) {
           record_id,
           type,
           record_id,
-          revisionvalue
+          revisionvalue,
+          serverId
         );
         setLinks(newLinks);
-        const newMergedLinks: RecordLinkProps[] = await addLinkedRecord(
+        const newMergedLinks: RecordLinkProps[] = await getRelationshipDisplayData(
           ui_specification,
           [],
           project_id,
@@ -319,7 +323,8 @@ export default function ConflictForm(props: ConflictFormProps) {
           record_id,
           type,
           record_id,
-          revisionvalue
+          revisionvalue,
+          serverId
         );
         setMergedLinks(newMergedLinks);
       }
@@ -347,7 +352,7 @@ export default function ConflictForm(props: ConflictFormProps) {
       if (comparedrevision.charAt(0) === '1') {
         //get the linksA for first loading
         if (linksA === null) {
-          const newLinks: RecordLinkProps[] = await addLinkedRecord(
+          const newLinks: RecordLinkProps[] = await getRelationshipDisplayData(
             ui_specification,
             [],
             project_id,
@@ -355,7 +360,8 @@ export default function ConflictForm(props: ConflictFormProps) {
             record_id,
             conflictA.type,
             record_id,
-            revisionlist[0]
+            revisionlist[0],
+            serverId
           );
           setLinksA(newLinks);
         }
@@ -624,13 +630,12 @@ export default function ConflictForm(props: ConflictFormProps) {
         });
 
         if (result) {
-          dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
+          dispatch(
+            addAlert({
               message: 'Saved conflict resolved.',
               severity: 'success',
-            },
-          });
+            })
+          );
           try {
             const new_result = await check_relationship(fieldchoise);
             console.debug(
@@ -640,13 +645,12 @@ export default function ConflictForm(props: ConflictFormProps) {
             );
           } catch (error) {
             logError(error); // error to save update child of the conflict
-            dispatch({
-              type: ActionType.ADD_ALERT,
-              payload: {
+            dispatch(
+              addAlert({
                 message: 'Error to save update child record information',
                 severity: 'error',
-              },
-            });
+              })
+            );
           }
           //this function need to be tested more
           // setRevisionList(['', '']);
@@ -660,25 +664,23 @@ export default function ConflictForm(props: ConflictFormProps) {
         logError(error); // error to save the conflict
         // alert user if the conflict not been saved
         setloading(false);
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: 'Attempted conflict resolution not saved',
             severity: 'error',
-          },
-        });
+          })
+        );
         setissavedconflict(record_id + revisionlist[1]);
       }
     } else {
       // alert user if the conflict not been saved
       setloading(false);
-      dispatch({
-        type: ActionType.ADD_ALERT,
-        payload: {
+      dispatch(
+        addAlert({
           message: 'Conflict Resolve Not saved',
           severity: 'error',
-        },
-      });
+        })
+      );
       setissavedconflict(record_id + revisionlist[1]);
     }
   };
@@ -757,8 +759,6 @@ export default function ConflictForm(props: ConflictFormProps) {
     conflictfields.length > numResolved
       ? conflictfields.length - numResolved
       : 0;
-
-  console.log(conflictA);
 
   return (
     <React.Fragment>

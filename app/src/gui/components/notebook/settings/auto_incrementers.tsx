@@ -1,28 +1,27 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Grid, Typography, Paper, Button} from '@mui/material';
-import {ProjectInformation, ProjectUIModel} from '@faims3/data-model';
+import {AutoIncrementReference, ProjectUIModel} from '@faims3/data-model';
+import {Box, Button, Grid, Paper, Typography} from '@mui/material';
+import {useEffect, useState} from 'react';
+import {Project} from '../../../../context/slices/projectSlice';
 import {getAutoincrementReferencesForProject} from '../../../../local-data/autoincrement';
-import {AutoIncrementReference} from '@faims3/data-model';
-import {AutoIncrementEditForm} from '../../autoincrement/edit-form';
 import {logError} from '../../../../logging';
+import {AutoIncrementEditForm} from '../../autoincrement/edit-form';
 
 interface AutoIncrementerSettingsListProps {
-  project_info: ProjectInformation;
+  project: Project;
   uiSpec: ProjectUIModel;
 }
 
 export default function AutoIncrementerSettingsList(
   props: AutoIncrementerSettingsListProps
 ) {
-  const [open, setOpen] = useState(false);
   const [references, setReferences] = useState([] as AutoIncrementReference[]);
   useEffect(() => {
-    getAutoincrementReferencesForProject(props.project_info.project_id)
+    getAutoincrementReferencesForProject(props.project.projectId)
       .then(refs => {
         setReferences(refs);
       })
       .catch(error => logError(error));
-  }, [props.project_info.project_id]);
+  }, [props.project.projectId]);
 
   return (
     <>
@@ -52,25 +51,12 @@ export default function AutoIncrementerSettingsList(
                   'autoincrementer_range_' + ai.form_id + ai.field_id + ai.label
                 }
               >
-                <Box mt={1}>
-                  <AutoIncrementEditForm
-                    project_id={props.project_info.project_id}
-                    form_id={ai.form_id}
-                    field_id={ai.field_id}
-                    label={label}
-                    open={open}
-                    handleClose={() => setOpen(false)}
-                  />
-                  <Button
-                    variant="outlined"
-                    color={'primary'}
-                    onClick={() => {
-                      setOpen(true);
-                    }}
-                  >
-                    {label}
-                  </Button>
-                </Box>
+                <AutoIncrementerButton
+                  project={props.project}
+                  form_id={ai.form_id}
+                  field_id={ai.field_id}
+                  label={label}
+                />
               </Grid>
             );
           })}
@@ -79,3 +65,36 @@ export default function AutoIncrementerSettingsList(
     </>
   );
 }
+
+interface AutoIncrementerButtonProps {
+  project: Project;
+  form_id: string;
+  field_id: string;
+  label: string;
+}
+
+const AutoIncrementerButton = (props: AutoIncrementerButtonProps) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Box mt={1}>
+      <AutoIncrementEditForm
+        project_id={props.project.projectId}
+        form_id={props.form_id}
+        field_id={props.field_id}
+        label={props.label}
+        open={open}
+        handleClose={() => setOpen(false)}
+      />
+      <Button
+        variant="outlined"
+        color={'primary'}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        {props.label}
+      </Button>
+    </Box>
+  );
+};

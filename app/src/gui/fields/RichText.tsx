@@ -13,31 +13,27 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- /*
- * Filename: RichTextField.tsx
- * Description:
- *   A rich text field that will render markdown content.
+
+/**
+ * RichTextField Component
+ *
+ * Safely injects markdown content directly into HTML - see DomPurifier.ts
  */
 
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
 import React from 'react';
-import MarkdownIt from 'markdown-it';
-
 interface Props {
+  /** The markdown content to be rendered. May include safe HTML tags. */
   content: string;
 }
 
 export const RichTextField: React.FC<Props> = ({content}) => {
-  const md = new MarkdownIt();
-  const renderedContent = md.render(content);
+  if (!content?.trim()) {
+    // Return nothing if content is empty or whitespace
+    return null;
+  }
 
-  return <div dangerouslySetInnerHTML={{__html: renderedContent}} />;
+  return (
+    <div dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(content)}} />
+  );
 };
-// const uiSpec = {
-//   'component-namespace': 'faims-custom',
-//   'component-name': 'RichText',
-//   'type-returned': 'faims-core::String',
-//   'component-parameters': {
-//     label: 'Unused',
-//     content: '',
-//   },
-// };

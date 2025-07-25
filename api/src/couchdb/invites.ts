@@ -18,48 +18,78 @@
  *   Provide an interface for manipulating invites to the system
  */
 
-import {NonUniqueProjectID, ProjectID} from '@faims3/data-model';
+import {
+  ExistingInvitesDBDocument,
+  InvitesDBDocument,
+  InvitesDBFields,
+  PeopleDBDocument,
+  Resource,
+  Role,
+  addProjectRole,
+  addTeamRole,
+  writeNewDocument,
+} from '@faims3/data-model';
 import {getInvitesDB} from '.';
-import {ConductorRole, RoleInvite} from '../datamodel/users';
 import {CONDUCTOR_SHORT_CODE_PREFIX} from '../buildconfig';
+import * as Exceptions from '../exceptions';
+
+// Default 30 days expiry
+export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;
 
 /**
- * Create an invite for this project and role if there isn't already
- * one.  If it already exists, return it.
- * @param project_id Project identifier
- * @param role Project role
- * @returns A RoleInvite object
+ * Create an invite for a resource and role if one doesn't already exist.
+ * If it already exists, return the existing invite.
+ *
+ * @param {Object} params - The parameters for creating the invite
+ * @param {Resource.TEAM | Resource.PROJECT} params.resourceType - Type of resource (team or project)
+ * @param {string} params.resourceId - ID of the resource
+ * @param {Role} params.role - Role to grant
+ * @param {string} params.name - Name/purpose of the invite
+ * @param {string} params.createdBy - User ID of the creator
+ * @param {number} [params.expiry] - Timestamp when invite expires
+ * @param {number} [params.usesOriginal] - Maximum number of times invite can be used (infinite if undefined)
+ * @returns {Promise<ExistingInvitesDBDocument>} The invite document
  */
-export async function createInvite(
-  project_id: NonUniqueProjectID,
-  role: ConductorRole
-) {
-  // if there is already an invite for this role,
-  // just return that
-  const allInvites = await getInvitesForNotebook(project_id);
-  const existing = allInvites.filter(
-    i => i.project_id === project_id && i.role === role
-  );
-
-  if (existing.length === 0) {
-    // make a new one
-    const invite: RoleInvite = {
-      _id: generateId(),
-      project_id: project_id,
-      role: role,
-    };
-    return await saveInvite(invite);
-  } else {
-    return existing[0];
-  }
+export async function createInvite({
+  resourceType,
+  resourceId,
+  role,
+  name,
+  createdBy,
+  expiry = Date.now() + DEFAULT_INVITE_EXPIRY,
+  usesOriginal,
+}: {
+  resourceType: Resource.TEAM | Resource.PROJECT;
+  resourceId: string;
+  role: Role;
+  name: string;
+  createdBy: string;
+  expiry?: number;
+  usesOriginal?: number;
+}): Promise<ExistingInvitesDBDocument> {
+  // Create a new invite
+  const invite: InvitesDBFields = {
+    resourceType,
+    resourceId,
+    role,
+    name,
+    createdBy,
+    createdAt: Date.now(),
+    expiry,
+    usesOriginal,
+    usesConsumed: 0,
+    uses: [],
+  };
+  return await writeNewInvite(invite);
 }
 
 /**
- * Generate a short code identifier suitable for an invite, may not
- * be unique.
- * @returns a six character identifier
+ * Generate a short code identifier suitable for an invite.
+ * May not be unique - uniqueness is handled by writeNewInvite.
+ *
+ * @returns {string} A six character identifier prefixed by the system code
  */
-function generateId() {
+function generateInviteId(): string {
   const INVITE_LENGTH = 6;
   const chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
 
@@ -72,69 +102,215 @@ function generateId() {
 }
 
 /**
- * Store an invite, ensure that the identifier is unique
- * @param invite An invite object
- * @returns The invite, possibly with a new identifier
+ * Store an invite, ensuring that the identifier is unique.
+ * Will retry with new IDs if a collision occurs.
+ *
+ * @param {InvitesDBFields} invite - The invite data to store
+ * @returns {Promise<ExistingInvitesDBDocument>} The saved invite document
+ * @throws {Error} If maximum retry count is reached
  */
-export async function saveInvite(invite: RoleInvite) {
-  const invite_db = getInvitesDB();
-  if (invite_db) {
-    let done = false;
-    while (!done) {
-      try {
-        await invite_db.put(invite);
-        done = true;
-      } catch {
-        invite._id = generateId();
-      }
-    }
-    return invite;
-  } else {
-    throw Error('Unable to connect to invites database');
-  }
-}
+export async function writeNewInvite(
+  invite: InvitesDBFields
+): Promise<ExistingInvitesDBDocument> {
+  // Get the invites DB
+  const inviteDb = getInvitesDB();
 
-export async function deleteInvite(invite: RoleInvite) {
-  const invite_db = getInvitesDB();
-  if (invite_db) {
-    // get the invite from the db to ensure we have the most recent revision
-    const fetched = await getInvite(invite._id);
-    if (fetched) {
-      fetched._deleted = true;
-      await invite_db.put(fetched);
-      return fetched;
+  // Prevent infinite loops if something else is going on
+  const maxCount = 5;
+  let count = 0;
+
+  // Build our document with ID
+  const doc: InvitesDBDocument = {...invite, _id: generateInviteId()};
+
+  // Try to write with unique ID, retry if collision occurs
+  while (count < maxCount) {
+    const res = await writeNewDocument({db: inviteDb, data: doc});
+    if (res.wrote) {
+      return {...doc, _rev: res._rev};
     } else {
-      throw Error('Unable to find invite in database to delete');
+      count = count + 1;
+      doc._id = generateInviteId();
     }
-  } else {
-    throw Error('Unable to connect to invites database');
   }
+
+  throw new Error(
+    'Reached the maximum number of retries at generating unique invites! Consider a more durable/unique ID generation function or clear out the invites database. Cannot safely proceed.'
+  );
 }
 
-export async function getInvite(invite_id: string): Promise<null | RoleInvite> {
-  const invite_db = getInvitesDB();
-  if (invite_db) {
-    try {
-      return await invite_db.get(invite_id);
-    } catch {
-      // invite not found
-      return null;
-    }
-  } else {
-    throw Error('Unable to connect to invites database');
-  }
-}
-
-export async function getInvitesForNotebook(
-  project_id: ProjectID
-): Promise<RoleInvite[]> {
-  const invite_db = getInvitesDB();
-  if (invite_db) {
-    const result = await invite_db.find({
-      selector: {project_id: {$eq: project_id}},
+/**
+ * Delete an invite from the database.
+ *
+ * @param {Object} params - The parameters for deleting the invite
+ * @param {ExistingInvitesDBDocument} params.invite - The invite document to delete
+ * @returns {Promise<ExistingInvitesDBDocument>} The deleted invite document
+ * @throws {Error} If the invite cannot be found
+ */
+export async function deleteInvite({
+  invite,
+}: {
+  invite: ExistingInvitesDBDocument;
+}): Promise<ExistingInvitesDBDocument> {
+  const inviteDb = getInvitesDB();
+  // Get the invite from the db to ensure we have the most recent revision
+  const fetched = await getInvite({inviteId: invite._id});
+  if (fetched) {
+    await inviteDb.remove({
+      ...fetched,
     });
-    return result.docs as RoleInvite[];
+    return fetched;
+  } else {
+    throw Error('Unable to find invite in database to delete');
+  }
+}
+
+/**
+ * Retrieve an invite by its ID.
+ *
+ * @param {Object} params - The parameters for retrieving the invite
+ * @param {string} params.inviteId - The ID of the invite to retrieve
+ * @returns {Promise<ExistingInvitesDBDocument | null>} The invite document if found, null otherwise
+ */
+export async function getInvite({
+  inviteId,
+}: {
+  inviteId: string;
+}): Promise<ExistingInvitesDBDocument | null> {
+  const inviteDb = getInvitesDB();
+  try {
+    return await inviteDb.get(inviteId);
+  } catch {
+    // Invite not found
+    return null;
+  }
+}
+
+/**
+ * Record usage of an invite by a user.
+ *
+ * Also checks for validity (though you should do this prior to calling this
+ * function)
+ *
+ * NOTE: DOES NOT save the user - that is the responsibility of the caller - so as to
+ * enable efficiently managing this save point/transaction
+ *
+ * @param {Object} params - The parameters for recording invite usage
+ * @param {ExistingInvitesDBDocument} params.invite - The invite document
+ * @param {string} params.userId - ID of the user using the invite
+ * @returns {Promise<ExistingInvitesDBDocument>} The updated invite document
+ * @throws {Error} If the invite has expired or exceeded usage limits
+ */
+export async function consumeInvite({
+  invite,
+  user,
+}: {
+  invite: ExistingInvitesDBDocument;
+  user: PeopleDBDocument;
+}): Promise<ExistingInvitesDBDocument> {
+  const now = Date.now();
+
+  const {isValid, reason} = isInviteValid({invite});
+  if (!isValid) {
+    throw new Error(
+      'This invite is invalid, reason: ' + (reason ?? 'Unspecified.')
+    );
+  }
+
+  // Update the invite with the new usage
+  const updatedInvite: ExistingInvitesDBDocument = {
+    ...invite,
+    usesConsumed: invite.usesConsumed + 1,
+    uses: [
+      ...invite.uses,
+      {
+        userId: user._id,
+        usedAt: now,
+      },
+    ],
+  };
+
+  // Save the updated invite
+  const inviteDb = getInvitesDB();
+  const result = await inviteDb.put(updatedInvite);
+
+  // Now grant the associated role
+  if (invite.resourceType === Resource.TEAM) {
+    addTeamRole({user, role: invite.role, teamId: invite.resourceId});
+  } else if (invite.resourceType === Resource.PROJECT) {
+    addProjectRole({user, role: invite.role, projectId: invite.resourceId});
+  } else {
+    throw new Exceptions.InternalSystemError(
+      'No invite target for resource type: ' + invite.resourceType
+    );
+  }
+
+  return {
+    ...updatedInvite,
+    _rev: result.rev,
+  };
+}
+
+/**
+ * Get all invites for a specific resource.
+ *
+ * @param {Object} params - The parameters for retrieving invites
+ * @param {Resource.TEAM | Resource.PROJECT} params.resourceType - Type of resource
+ * @param {string} params.resourceId - ID of the resource
+ * @returns {Promise<ExistingInvitesDBDocument[]>} Array of invite documents
+ * @throws {Error} If unable to connect to the invites database
+ */
+export async function getInvitesForResource({
+  resourceType,
+  resourceId,
+}: {
+  resourceType: Resource.TEAM | Resource.PROJECT;
+  resourceId: string;
+}): Promise<ExistingInvitesDBDocument[]> {
+  const inviteDb = getInvitesDB();
+  if (inviteDb) {
+    const result = await inviteDb.find({
+      selector: {
+        resourceType: {$eq: resourceType},
+        resourceId: {$eq: resourceId},
+      },
+    });
+    return result.docs as ExistingInvitesDBDocument[];
   } else {
     throw Error('Unable to connect to invites database');
   }
+}
+
+/**
+ * Check if an invite is valid (not expired and not exceeded usage limits).
+ *
+ * @param {Object} params - The parameters for checking invite validity
+ * @param {ExistingInvitesDBDocument} params.invite - The invite document to check
+ * @returns {Object} Object containing validity status and reason if invalid
+ */
+export function isInviteValid({invite}: {invite: ExistingInvitesDBDocument}): {
+  isValid: boolean;
+  reason?: string;
+} {
+  const now = Date.now();
+
+  if (invite.expiry < now) {
+    return {
+      isValid: false,
+      reason: 'Invite has expired',
+    };
+  }
+
+  if (
+    invite.usesOriginal !== undefined &&
+    invite.usesConsumed >= invite.usesOriginal
+  ) {
+    return {
+      isValid: false,
+      reason: 'Invite has been used the maximum number of times',
+    };
+  }
+
+  return {
+    isValid: true,
+  };
 }

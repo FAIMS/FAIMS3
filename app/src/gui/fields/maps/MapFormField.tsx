@@ -18,56 +18,69 @@
  *   Implement MapFormField for entry of data via maps in FAIMS
  */
 
-import React, {useEffect, useRef, useState} from 'react';
-import './MapFormField.css';
-import MapWrapper from './MapWrapper';
-
-import {Geolocation} from '@capacitor/geolocation';
-import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-
+import CancelIcon from '@mui/icons-material/Cancel';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {Alert, Box, Button, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
-import {Alert} from '@mui/material';
-import {Capacitor} from '@capacitor/core';
-import {APP_NAME} from '../../../buildconfig';
-import {useNotification} from '../../../context/popup';
+import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
+import {useEffect, useMemo, useState} from 'react';
+import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
+import {canShowMapNear} from '../../components/map/map-component';
+import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
+import {theme} from '../../themes';
+import FieldWrapper from '../fieldWrapper';
+import MapWrapper, {MapAction} from './MapWrapper';
 
 // If no center is available - pass this through
 // Sydney CBD
-const FALLBACK_CENTER = [151.2093, -33.8688];
+const FALLBACK_CENTER: [number, number] = [151.2093, -33.8688];
 
 export interface MapFieldProps extends FieldProps {
   label?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   geoTiff?: string;
   projection?: string;
-  center?: Array<number>;
+  center?: [number, number];
   zoom?: number;
   FormLabelProps?: any;
+  helperText: string;
+  required: boolean;
+  advancedHelperText?: string;
 }
+
+const createPointFeature = (
+  center: [number, number]
+): GeoJSONFeatureCollection => {
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: center,
+        },
+        properties: null,
+      },
+    ],
+  };
+};
 
 export function MapFormField({
   field,
   form,
   ...props
 }: MapFieldProps): JSX.Element {
-  // State
-
-  // center location of map - use provided center if any
-  const [center, setCenter] = useState<number[] | undefined>(props.center);
-
-  // and a ref to track if gps location has already been requested
-  const gpsCenterRequested = useRef<boolean>(false);
+  const [canShowMap, setCanShowMap] = useState(false);
 
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
 
-  // Use form value as default field features - otherwise empty {}
-  const [drawnFeatures, setDrawnFeatures] = useState<GeoJSONFeatureCollection>(
-    form.values[field.name] ?? {}
-  );
+  // Derive the features from the field value (this forces re-render anyway)
+  const drawnFeatures = form.values[field.name] ?? {};
 
   // Default zoom level
-  const zoom = props.zoom ?? 14;
+  const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
 
   // default to point if not specified
   const featureType = props.featureType ?? 'Point';
@@ -75,43 +88,68 @@ export function MapFormField({
   // default label
   const label = props.label ?? `Get ${props.featureType}`;
 
-  const mapCallback = (theFeatures: GeoJSONFeatureCollection) => {
-    setDrawnFeatures(theFeatures);
-    form.setFieldValue(field.name, theFeatures, true);
+  // A location is selected if there are features provided
+  const isLocationSelected =
+    drawnFeatures.features && drawnFeatures.features.length > 0;
+
+  // state for visual indicators
+  const [animateCheck, setAnimateCheck] = useState(false);
+
+  // Use the custom hook for location
+  const {data: currentPosition} = useCurrentLocation();
+
+  // Determine map center based on props or current location
+  const center = useMemo(() => {
+    if (props.center) {
+      return props.center;
+    }
+    return getCoordinates(currentPosition);
+  }, [props.center, currentPosition]);
+
+  // when the center changes, check if we can show this map
+  useEffect(() => {
+    if (isLocationSelected) {
+      // can we draw a map around the drawn features?
+      canShowMapNear(drawnFeatures).then(flag => setCanShowMap(flag));
+    } else if (center) {
+      // can we draw a map around the configured center
+      canShowMapNear(createPointFeature(center)).then(flag =>
+        setCanShowMap(flag)
+      );
+    }
+  }, [center]);
+
+  // Callback function when a location is selected
+  const setFeaturesCallback = (
+    theFeatures: GeoJSONFeatureCollection,
+    action: MapAction
+  ) => {
+    if (action === 'save') {
+      form.setFieldValue(field.name, theFeatures, true);
+      setAnimateCheck(true);
+      setTimeout(() => setAnimateCheck(false), 1000);
+    } else if (action === 'close') {
+      setAnimateCheck(true);
+      setTimeout(() => setAnimateCheck(false), 1000);
+    }
   };
 
-  // notification manager
-  const notify = useNotification();
+  const handleCurrentLocation = () => {
+    if (center) {
+      const pointFeature = createPointFeature(center);
+      form.setFieldValue(field.name, pointFeature, true);
+    }
+  };
 
-  useEffect(() => {
-    const getCoords = async () => {
-      // Always get current position on component mount - this forces a permission
-      // request
-      if (!gpsCenterRequested.current) {
-        // Mark that we've requested already
-        gpsCenterRequested.current = true;
-        Geolocation.getCurrentPosition()
-          .then(result => {
-            // Only store the center result if we actually need it
-            if (center === undefined) {
-              setCenter([result.coords.longitude, result.coords.latitude]);
-            }
-            // Since we use a ref to track this running, we can safely run a state
-            // update here without infinite loop
-            setNoPermission(false);
-          })
-          .catch(() => {
-            notify.showWarning(
-              'We were unable to access your current location. Map fields may not work as expected.'
-            );
-            setNoPermission(true);
-          });
-      }
-    };
-    getCoords();
-  }, []);
+  // dynamically determine feature label based on featureType
+  const featureLabel =
+    props.featureType === 'Polygon'
+      ? 'polygon'
+      : props.featureType === 'LineString'
+        ? 'line'
+        : 'point';
 
-  let valueText = '';
+  let valueText = 'No location selected';
   if (drawnFeatures.features && drawnFeatures.features.length > 0) {
     const geom = drawnFeatures.features[0].geometry;
     switch (geom.type) {
@@ -129,53 +167,121 @@ export function MapFormField({
         valueText = 'Line String: ' + geom.coordinates.length + ' points';
         break;
     }
+  } else if (canShowMap) {
+    valueText = `No ${featureLabel} selected, click above to choose one!`;
+  } else {
+    // if no location selected update msg dynamically.
+    valueText = `No ${featureLabel} selected.`;
   }
+
   return (
-    <div>
-      <div>
-        <MapWrapper
-          label={label}
-          featureType={featureType}
-          features={drawnFeatures}
-          zoom={zoom}
-          center={center ?? FALLBACK_CENTER}
-          fallbackCenter={center === undefined}
-          callbackFn={mapCallback}
-          geoTiff={props.geoTiff}
-          projection={props.projection}
-          setNoPermission={setNoPermission}
-        />
-        {noPermission && (
-          <Alert severity="error" sx={{width: '100%'}}>
-            {Capacitor.getPlatform() === 'web' && (
+    <FieldWrapper
+      heading={props.label}
+      subheading={props.helperText}
+      required={props.required}
+      advancedHelperText={props.advancedHelperText}
+    >
+      {/* if offline and no downloaded map, offer to use current location for point features only */}
+
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+          width: '100%',
+        }}
+      >
+        {!canShowMap ? (
+          <>
+            {featureType === 'Point' && (
               <>
-                Please enable location permissions for this page. In your
-                browser, look to the left of the web address bar for a button
-                that gives access to browser settings for this page.
+                <Alert variant="outlined" severity="warning">
+                  The interactive map is not available while <b>offline</b> and
+                  and there is no downloaded map covering this location. Use the
+                  button below to submit your current GPS location.
+                </Alert>
+                <Button variant="outlined" onClick={handleCurrentLocation}>
+                  Use my current location
+                </Button>
               </>
             )}
-            {Capacitor.getPlatform() === 'android' && (
+            {featureType !== 'Point' && (
               <>
-                Please enable location permissions for {APP_NAME}. Go to your
-                device Settings &gt; Apps &gt; {APP_NAME} &gt; Permissions &gt;
-                Location and select "Allow all the time" or "Allow only while
-                using the app".
+                <Alert variant="outlined" severity="warning">
+                  The interactive map is not available while <b>offline</b> and
+                  and there is no downloaded map covering this location.
+                </Alert>
               </>
             )}
-            {Capacitor.getPlatform() === 'ios' && (
-              <>
-                Please enable location permissions for {APP_NAME}. Go to your
-                device Settings &gt; Privacy & Security &gt; Location Services
-                &gt;
-                {APP_NAME} and select "While Using the App".
-              </>
-            )}
-          </Alert>
+          </>
+        ) : (
+          <MapWrapper
+            label={label}
+            featureType={featureType}
+            features={drawnFeatures}
+            zoom={zoom}
+            center={center ?? FALLBACK_CENTER}
+            fallbackCenter={center === undefined}
+            setFeatures={setFeaturesCallback}
+            geoTiff={props.geoTiff}
+            projection={props.projection}
+            setNoPermission={setNoPermission}
+            isLocationSelected={isLocationSelected}
+          />
         )}
-        <p>{valueText}</p>
-      </div>
-    </div>
+        <Box
+          sx={{
+            alignItems: 'center',
+            marginTop: 0.8,
+            display: 'inline-flex',
+            gap: theme.spacing(1),
+          }}
+        >
+          {isLocationSelected ? (
+            <CheckCircleIcon
+              sx={{
+                color: 'green',
+                fontSize: 20,
+                transition: 'transform 0.5s ease-in-out',
+                transform: isLocationSelected
+                  ? animateCheck
+                    ? 'scale(1.3)'
+                    : 'scale(1)'
+                  : 'scale(0.5)',
+              }}
+            />
+          ) : (
+            <CancelIcon
+              sx={{
+                color: 'red',
+                fontSize: 20,
+                transition: 'transform 0.5s ease-in-out',
+                transform: !isLocationSelected
+                  ? animateCheck
+                    ? 'scale(1.3)'
+                    : 'scale(1)'
+                  : 'scale(0.5)',
+              }}
+            />
+          )}
+
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 'bold',
+              color: isLocationSelected
+                ? theme.palette.success.main
+                : theme.palette.error.light,
+              transition: 'color 0.4s ease-in-out',
+            }}
+          >
+            {valueText}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/*  Show error if no permission */}
+      {noPermission && <LocationPermissionIssue />}
+    </FieldWrapper>
   );
 }
-
-//

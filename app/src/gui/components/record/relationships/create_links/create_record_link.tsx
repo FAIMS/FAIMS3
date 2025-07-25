@@ -1,56 +1,61 @@
-import React, {useContext} from 'react';
-import {
-  Button,
-  Grid,
-  Box,
-  Paper,
-  Typography,
-  TextField,
-  Autocomplete,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-} from '@mui/material';
-import LoadingButton from '@mui/lab/LoadingButton';
-import {ActionType} from '../../../../../context/actions';
-import {store} from '../../../../../context/store';
-import {RecordReference} from '@faims3/data-model';
-import {Field} from 'formik';
+import {RecordReference, RevisionID} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
-import {CreateRecordLinkProps} from '../types';
+import LoadingButton from '@mui/lab/LoadingButton';
+import {
+  Autocomplete,
+  Box,
+  Button,
+  FormControl,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  TextField,
+  Typography,
+} from '@mui/material';
+import {Field} from 'formik';
+import React from 'react';
 import {useNavigate} from 'react-router-dom';
-import {LocationState} from '@faims3/data-model';
 import * as ROUTES from '../../../../../constants/routes';
+import {addAlert} from '../../../../../context/slices/alertSlice';
+import {useAppDispatch} from '../../../../../context/store';
 import {logError} from '../../../../../logging';
-import {INDIVIDUAL_NOTEBOOK_ROUTE} from '../../../../../constants/routes';
+import {LocationState} from '../RelatedInformation';
+import {CreateRecordLinkProps} from '../types';
 
 export function AddNewRecordButton(props: {
   is_enabled: boolean;
   pathname: string;
   state: LocationState;
   text: string;
-  handleSubmit: Function;
+  handleSubmit: () => Promise<RevisionID>;
   project_id: string;
+  serverId: string;
   save_new_record: Function;
   handleError: Function;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
   const history = useNavigate();
+  const dispatch = useAppDispatch();
   const handleSubmit = () => {
     setSubmitting(true);
-    const new_child_id = props.save_new_record();
+    // here we make a new record id for the child and populate the form with the
+    // relation information
+    const childRecordId = props.save_new_record();
     if (props.handleSubmit !== undefined) {
       props
         .handleSubmit()
-        .then((result: string) => {
+        .then((revisionID: RevisionID) => {
           const newState = props.state;
-          newState['parent_link'] = ROUTES.getRecordRoute(
-            props.project_id,
-            (props.state.parent_record_id || '').toString(),
-            (result || '').toString()
-          ).replace(INDIVIDUAL_NOTEBOOK_ROUTE, '');
-          newState['child_record_id'] = new_child_id;
+          newState['parent_link'] = ROUTES.getExistingRecordRoute({
+            serverId: props.serverId,
+            projectId: props.project_id,
+            recordId: (props.state.parent_record_id || '').toString(),
+            revisionId: (revisionID || '').toString(),
+          });
+          newState['child_record_id'] = childRecordId;
+          // wait for 300ms and then jump to the new pathname with the new state
           setTimeout(() => {
             // reset local state of component
             setSubmitting(false);
@@ -59,8 +64,16 @@ export function AddNewRecordButton(props: {
         })
         .catch((error: Error) => {
           logError(error);
+          dispatch(
+            addAlert({
+              message: 'Error saving this record before adding a link.',
+              severity: 'error',
+            })
+          );
+          // so that the display resets and we don't have a spinner
+          setSubmitting(false);
           if (props.handleError !== undefined)
-            props.handleError(new_child_id, new_child_id);
+            props.handleError(childRecordId, childRecordId);
         });
     }
   };
@@ -86,12 +99,12 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
    * Allow users to add a link to a record from the current record
    */
   const [submitting, setSubmitting] = React.useState(false);
-
-  const {dispatch} = useContext(store);
+  const dispatch = useAppDispatch();
 
   const {
     field_name,
     relatedRecords,
+    serverId,
     handleChange,
     SetSelectedRecord,
     selectedRecord,
@@ -107,6 +120,8 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
     /**
      * Submit relationship to couchDB
      * TODO replace setTimeout with actual request to couchDB
+     *
+     * Peter B: what the hell is going on here?? This is cooked.
      */
     setSubmitting(true);
     if (props.add_related_child !== undefined) {
@@ -130,13 +145,12 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
       // });
       try {
         // response success
-        dispatch({
-          type: ActionType.ADD_ALERT,
-          payload: {
+        dispatch(
+          addAlert({
             message: `Link between this record ${props.label} and ${selectedRecord.record_label} added`,
             severity: 'success',
-          },
-        });
+          })
+        );
       } catch (error) {
         logError(error);
       }
@@ -188,44 +202,58 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
           md={props.relation_type === 'Linked' ? 3 : 6}
           lg={props.relation_type === 'Linked' ? 3 : 6}
         >
-          <Field
-            size={'small'}
-            // multiple={multiple}
-            id={props.id ?? 'asynchronous-demo'}
-            name={field_name + 'select'}
-            component={Autocomplete}
-            isOptionEqualToValue={(
-              option: RecordReference,
-              value: RecordReference
-            ) =>
-              value !== undefined
-                ? option.project_id === value.project_id &&
-                  option.record_id === value.record_id
-                : false
-            }
-            getOptionLabel={(option: RecordReference) =>
-              option.record_label ?? ''
-            }
-            options={relatedRecords}
-            defaultValue={undefined}
-            disabled={disabled}
-            onChange={(event: any, values: any) => {
-              SetSelectedRecord(values);
-            }}
-            value={selectedRecord}
-            required={false}
-            renderInput={(params: any) => (
-              <TextField
-                {...params}
-                label={props.related_type_label}
-                error={props.form.errors[props.id] === undefined ? false : true}
-                variant="outlined"
-                InputProps={{
-                  ...params.InputProps,
+          <Field name={field_name + '-select'}>
+            {({field, form}: any) => (
+              <Autocomplete
+                size={'small'}
+                id={props.id ?? 'related-record'}
+                isOptionEqualToValue={(
+                  option: RecordReference,
+                  value: RecordReference
+                ) =>
+                  value !== undefined
+                    ? option.project_id === value.project_id &&
+                      option.record_id === value.record_id
+                    : false
+                }
+                getOptionLabel={(option: RecordReference) =>
+                  option.record_label ?? ''
+                }
+                // here we avoid spreading the 'key' option into the list as it
+                // triggers a warning, key isn't supposed to be there according to the
+                // type but it is passed in by the Autocomplete component
+                renderOption={(props, option) => {
+                  const {key, ...optionProps} = props as any;
+                  return (
+                    <li key={key} {...optionProps}>
+                      {option.record_label ?? ''}
+                    </li>
+                  );
                 }}
+                options={relatedRecords}
+                value={selectedRecord}
+                disabled={disabled}
+                onChange={(event: any, values: any) => {
+                  SetSelectedRecord(values);
+                  form.setFieldValue(field.name, values);
+                }}
+                noOptionsText={`No ${props.related_type_label ?? 'records'} available to link`}
+                renderInput={(params: any) => (
+                  <TextField
+                    {...params}
+                    label={props.related_type_label}
+                    error={
+                      props.form.errors[props.id] === undefined ? false : true
+                    }
+                    variant="outlined"
+                    InputProps={{
+                      ...params.InputProps,
+                    }}
+                  />
+                )}
               />
             )}
-          />
+          </Field>
         </Grid>
         {project_id !== undefined && disabled === false && (
           <Grid
@@ -258,6 +286,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                 </Button>
                 {props.relation_type === 'Linked' && (
                   <AddNewRecordButton
+                    serverId={serverId}
                     is_enabled={
                       props.form.isValid === false || props.form.isSubmitting
                         ? false
@@ -266,6 +295,7 @@ export function CreateRecordLink(props: CreateRecordLinkProps) {
                     pathname={props.pathname}
                     state={props.state}
                     text={'Add Record'}
+                    // This is just form submit - which saves the record
                     handleSubmit={props.handleSubmit}
                     project_id={props.project_id}
                     save_new_record={props.save_new_record}

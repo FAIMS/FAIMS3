@@ -19,7 +19,20 @@
   "uiConfiguration": {
     "uiTheme": "default",
     "notebookListType": "tabs",
-    "notebookName": "notebook"
+    "notebookName": "notebook",
+    "appName": "FAIMS Mobile",
+    "appId": "FAIMS",
+    "offlineMaps": {
+      "mapSource": "maptiler",
+      "mapSourceKey": "your-maptiler-api-key",
+      "offlineMaps": true,
+      "mapStyle": "basic"
+    }
+  },
+  "supportLinks": {
+    "supportEmail": "support@your-domain.com",
+    "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
+    "contactUrl": "https://your-domain.com/contact",
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
@@ -75,6 +88,7 @@
     "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "org/faims3-api",
     "conductorDockerImageTag": "latest",
+    "shortCodePrefix": "FAIMS",
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
@@ -84,17 +98,28 @@
       "targetMemoryUtilization": 70,
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
-    }
+    },
+    "localhostWhitelist" : "false"
   },
   "domains": {
     "baseDomain": "your-domain.com",
-    "designer": "designer",
     "conductor": "conductor",
     "couch": "couchdb",
-    "faims": "faims"
+    "faims": "faims",
+    "web": "web"
   },
   "mobileApps": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
+  },
+  "web": {},
+  "smtp": {
+    "emailServiceType": "SMTP",
+    "fromEmail": "notifications@your-domain.com",
+    "fromName": "FAIMS Notification Service",
+    "replyTo": "support@your-domain.com",
+    "testEmailAddress": "admin@your-domain.com",
+    "cacheExpirySeconds": 300,
+    "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
   }
 }

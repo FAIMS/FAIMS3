@@ -25,16 +25,16 @@ import {
   generateFAIMSDataID,
   getDataDB,
 } from '@faims3/data-model';
-import {getNotebookUISpec} from './notebooks';
+import {getEncodedNotebookUISpec} from './notebooks';
 import {randomInt} from 'crypto';
 import {readFileSync} from 'node:fs';
 import * as Exceptions from '../exceptions';
+import {getDataDb} from '.';
 
 export const createManyRandomRecords = async (
   project_id: ProjectID,
   count: number
 ): Promise<string[]> => {
-  console.log('creating', count, 'random records');
   const record_ids = [];
 
   for (let i = 0; i < count; i++) {
@@ -46,10 +46,10 @@ export const createManyRandomRecords = async (
 
 /**
  * Create a new record for this notebook with random data values for all fields
- * @param project_id Project id
+ * @param projectId Project id
  */
 export const createRandomRecord = async (
-  project_id: ProjectID
+  projectId: ProjectID
 ): Promise<string> => {
   // get the project uiSpec
   // select one form from the notebook
@@ -57,17 +57,18 @@ export const createRandomRecord = async (
   // generate data for each field
   // create the record object and call upsertFAIMSData
 
-  const uiSpec = await getNotebookUISpec(project_id);
+  const dataDb = await getDataDb(projectId);
+  const uiSpec = await getEncodedNotebookUISpec(projectId);
   if (!uiSpec) {
     throw new Exceptions.ItemNotFoundException(
-      `Notebook not found with id ${project_id}`
+      `Notebook not found with id ${projectId}`
     );
   }
 
   const forms = Object.keys(uiSpec.viewsets);
   if (forms.length === 0) {
     throw new Exceptions.InvalidRequestException(
-      `The ui spec for project with id ${project_id} has no forms in the viewsets.`
+      `The ui spec for project with id ${projectId} has no forms in the viewsets.`
     );
   }
 
@@ -107,7 +108,7 @@ export const createRandomRecord = async (
     revision_id: null,
     annotations: annotations,
   };
-  const result = await upsertFAIMSData(project_id, newRecord);
+  const result = await upsertFAIMSData({dataDb, record: newRecord});
   return result;
 };
 
@@ -127,6 +128,15 @@ const generateValue = (field: any) => {
     );
     return options[randomInt(options.length)];
   }
+
+  if (field['component-name'] === 'MultiSelect') {
+    const options = field['component-parameters'].ElementProps.options.map(
+      (o: any) => o.value
+    );
+    // value is an array
+    return [options[randomInt(options.length)]];
+  }
+
   // TODO: use 'faker' to generate more realistic data
   switch (fieldType) {
     case 'faims-core::String':

@@ -18,36 +18,48 @@
  *   Tests for the interface to couchDB
  */
 import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
+PouchDB.plugin(PouchDBFind);
 
-import {getDirectoryDB, initialiseDatabases} from '../src/couchdb';
+import {
+  Action,
+  addProjectRole,
+  EncodedProjectUIModel,
+  removeProjectRole,
+  resourceRoles,
+  Role,
+  userHasProjectRole,
+} from '@faims3/data-model';
+import {fail} from 'assert';
+import {expect} from 'chai';
+import * as fs from 'fs';
+import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
+import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
+import {
+  getDirectoryDB,
+  getMetadataDb,
+  initialiseDbAndKeys,
+} from '../src/couchdb';
 import {
   createNotebook,
+  getEncodedNotebookUISpec,
   getNotebookMetadata,
-  getNotebooks,
-  getNotebookUISpec,
   getRolesForNotebook,
+  getUserProjectsDetailed,
   updateNotebook,
   validateNotebookID,
 } from '../src/couchdb/notebooks';
-import * as fs from 'fs';
 import {
-  addProjectRoleToUser,
   createUser,
-  getUserFromEmailOrUsername,
-  removeProjectRoleFromUser,
-  saveUser,
-  userHasPermission,
+  getExpressUserFromEmailOrUserId,
+  saveCouchUser,
+  saveExpressUser,
 } from '../src/couchdb/users';
-import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {EncodedProjectUIModel, getProjectDB} from '@faims3/data-model';
-import {expect} from 'chai';
+import {userCanDo} from '../src/middleware';
 import {resetDatabases} from './mocks';
-import {fail} from 'assert';
 
 const uispec: EncodedProjectUIModel = {
-  _id: '',
   fields: [],
   fviews: {},
   viewsets: {},
@@ -60,12 +72,12 @@ let bobalooba: Express.User;
 describe('notebook api', () => {
   beforeEach(async () => {
     await resetDatabases();
-    const adminUser = await getUserFromEmailOrUsername('admin');
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
     if (adminUser) {
-      const [user, error] = await createUser('', username);
+      const [user, error] = await createUser({username, name: username});
       if (user) {
-        await saveUser(user);
-        bobalooba = user;
+        await saveCouchUser(user);
+        bobalooba = await upgradeCouchUserToExpressUser({dbUser: user});
       } else {
         throw new Error(error);
       }
@@ -73,7 +85,7 @@ describe('notebook api', () => {
   });
 
   it('check initialise', async () => {
-    await initialiseDatabases();
+    await initialiseDbAndKeys({});
 
     const directoryDB = getDirectoryDB();
     expect(directoryDB).not.to.equal(undefined);
@@ -81,10 +93,11 @@ describe('notebook api', () => {
       const default_document = (await directoryDB.get('default')) as any;
       expect(default_document.name).to.equal(CONDUCTOR_INSTANCE_NAME);
 
-      const permissions_document = (await directoryDB.get(
-        '_design/permissions'
-      )) as any;
-      expect(permissions_document['_id']).to.equal('_design/permissions');
+      // This actually doesn't exist anymore as this record is redundant now
+      //const permissions_document = (await directoryDB.get(
+      //  '_design/permissions'
+      //)) as any;
+      //expect(permissions_document['_id']).to.equal('_design/permissions');
     }
   });
 
@@ -95,17 +108,105 @@ describe('notebook api', () => {
 
     if (nb1 && nb2) {
       // give user access to two of them
-      addProjectRoleToUser(bobalooba, nb1, 'user');
-      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
-      addProjectRoleToUser(bobalooba, nb2, 'admin');
-      expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);
-      // and this should still be true
-      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(true);
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
 
-      removeProjectRoleFromUser(bobalooba, nb1, 'user');
-      expect(userHasPermission(bobalooba, nb1, 'read')).to.equal(false);
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb1,
+          role: Role.PROJECT_GUEST,
+        })
+      ).to.equal(true);
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb1,
+          action: Action.READ_MY_PROJECT_RECORDS,
+        })
+      ).to.equal(true);
+
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb2,
+        role: Role.PROJECT_ADMIN,
+      });
+
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb2,
+          role: Role.PROJECT_ADMIN,
+        })
+      ).to.equal(true);
+
+      // And inheritance
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb2,
+          role: Role.PROJECT_MANAGER,
+        })
+      ).to.equal(false);
+      expect(
+        userHasProjectRole({
+          user: bobalooba,
+          projectId: nb2,
+          role: Role.PROJECT_GUEST,
+        })
+      ).to.equal(false);
+
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.DELETE_PROJECT,
+        })
+      ).to.equal(true);
+
+      // check role inheritance too
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.READ_PROJECT_METADATA,
+        })
+      ).to.equal(true);
+
+      removeProjectRole({
+        user: bobalooba,
+        projectId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb1,
+          action: Action.READ_MY_PROJECT_RECORDS,
+        })
+      ).to.equal(false);
+
       // but still...
-      expect(userHasPermission(bobalooba, nb2, 'modify')).to.equal(true);
+      expect(
+        userCanDo({
+          user: bobalooba,
+          resourceId: nb2,
+          action: Action.DELETE_PROJECT,
+        })
+      ).to.equal(true);
     }
   });
 
@@ -118,11 +219,22 @@ describe('notebook api', () => {
 
     if (nb1 && nb2 && nb3 && nb4) {
       // give user access to two of them
-      addProjectRoleToUser(bobalooba, nb1, 'user');
-      addProjectRoleToUser(bobalooba, nb2, 'user');
-      await saveUser(bobalooba);
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb1,
+        role: Role.PROJECT_GUEST,
+      });
+      addProjectRole({
+        user: bobalooba,
+        projectId: nb2,
+        role: Role.PROJECT_GUEST,
+      });
+      await saveExpressUser(bobalooba);
 
-      const notebooks = await getNotebooks(bobalooba);
+      // Update permissions
+      bobalooba = await upgradeCouchUserToExpressUser({dbUser: bobalooba});
+
+      const notebooks = await getUserProjectsDetailed(bobalooba);
       expect(notebooks.length).to.equal(2);
     } else {
       throw new Error('could not make test notebooks');
@@ -130,8 +242,8 @@ describe('notebook api', () => {
   });
 
   it('can create a notebook', async () => {
-    await initialiseDatabases();
-    const user = await getUserFromEmailOrUsername('admin');
+    await initialiseDbAndKeys({});
+    const user = await getExpressUserFromEmailOrUserId('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -151,23 +263,23 @@ describe('notebook api', () => {
     if (projectID && user) {
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
-      const db = await getProjectDB(projectID);
+      const db = await getMetadataDb(projectID);
       if (db) {
         try {
           const autoInc = (await db.get('local-autoincrementers')) as any;
           expect(autoInc.references.length).to.equal(2);
           expect(autoInc.references[0].form_id).to.equal('FORM1SECTION1');
         } catch (err) {
-          fail('could not get autoincrementers');
+          fail('could not get autoincrementers' + err);
         }
       }
     }
   });
 
   it('getNotebookMetadata', async () => {
-    await initialiseDatabases();
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -209,7 +321,7 @@ describe('notebook api', () => {
   });
 
   it('getNotebookUISpec', async () => {
-    await initialiseDatabases();
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -221,7 +333,7 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const retrieved = await getNotebookUISpec(projectID);
+      const retrieved = await getEncodedNotebookUISpec(projectID);
 
       expect(retrieved).not.to.be.null;
       if (retrieved) {
@@ -232,7 +344,7 @@ describe('notebook api', () => {
   });
 
   it('get notebook roles', async () => {
-    await initialiseDatabases();
+    await initialiseDbAndKeys({});
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -244,18 +356,14 @@ describe('notebook api', () => {
 
     expect(projectID).not.to.equal(undefined);
     if (projectID) {
-      const roles = await getRolesForNotebook(projectID);
-      expect(roles.length).to.equal(4);
-      expect(roles).to.include('admin'); // admin role should always be present
-      expect(roles).to.include('team'); // specified in the UISpec
-      expect(roles).to.include('moderator'); // specified in the UISpec
-      expect(roles).to.include('user'); // user role should always be present
+      const roles = getRolesForNotebook();
+      expect(roles.length).to.equal(resourceRoles.PROJECT.length);
     }
   });
 
   it('updateNotebook', async () => {
-    await initialiseDatabases();
-    const user = await getUserFromEmailOrUsername('admin');
+    await initialiseDbAndKeys({});
+    const user = await getExpressUserFromEmailOrUserId('admin');
 
     const jsonText = fs.readFileSync(
       './notebooks/sample_notebook.json',
@@ -296,7 +404,6 @@ describe('notebook api', () => {
         },
         validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
-        access: ['admin'],
         meta: {
           annotation_label: 'annotation',
           annotation: true,
@@ -317,26 +424,23 @@ describe('notebook api', () => {
 
       expect(projectID.substring(13)).to.equal('-test-notebook');
 
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(1);
-      const db = await getProjectDB(projectID);
-      if (db) {
-        const newUISpec = await getNotebookUISpec(projectID);
-        if (newUISpec) {
-          expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
-            'Updated Label'
-          );
-        }
-        const newMetadata = await getNotebookMetadata(projectID);
-        if (newMetadata) {
-          expect(newMetadata['name']).to.equal('Updated Test Notebook');
-          expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
-        }
-        const metaDB = await getProjectDB(projectID);
-        if (metaDB) {
-          const autoInc = (await metaDB.get('local-autoincrementers')) as any;
-          expect(autoInc.references.length).to.equal(3);
-        }
+      const newUISpec = await getEncodedNotebookUISpec(projectID);
+      if (newUISpec) {
+        expect(newUISpec['fviews']['FORM1SECTION1']['label']).to.equal(
+          'Updated Label'
+        );
+      }
+      const newMetadata = await getNotebookMetadata(projectID);
+      if (newMetadata) {
+        expect(newMetadata['name']).to.equal('Updated Test Notebook');
+        expect(newMetadata['project_lead']).to.equal('Bob Bobalooba');
+      }
+      const metaDB = await getMetadataDb(projectID);
+      if (metaDB) {
+        const autoInc = (await metaDB.get('local-autoincrementers')) as any;
+        expect(autoInc.references.length).to.equal(3);
       }
     }
   });

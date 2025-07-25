@@ -1,6 +1,11 @@
 import React, {Dispatch, SetStateAction} from 'react';
 
-import {RecordID, RecordReference, ProjectID} from '@faims3/data-model';
+import {
+  RecordID,
+  RecordReference,
+  ProjectID,
+  RevisionID,
+} from '@faims3/data-model';
 import {SelectChangeEvent} from '@mui/material';
 export interface TabPanelProps {
   children?: React.ReactNode;
@@ -101,6 +106,7 @@ export const PARENT_CHILD_VOCAB = [
  */
 export interface CreateRecordLinkProps {
   field_name: string;
+  serverId: string;
   relatedRecords: any;
   relationshipLabel: string;
   selectedRecord: any;
@@ -110,6 +116,7 @@ export interface CreateRecordLinkProps {
   relation_type: string;
   pathname: string;
   state: any;
+  allowLinkToExisting?: boolean;
 
   field_label: string;
 
@@ -124,7 +131,7 @@ export interface CreateRecordLinkProps {
   handleChange: (e: SelectChangeEvent) => void;
   SetSelectedRecord: Dispatch<SetStateAction<RecordReference | null>>;
   add_related_child?: () => void;
-  handleSubmit: () => void;
+  handleSubmit: () => Promise<RevisionID>;
   save_new_record: () => void;
   handleCreateError: (id: any, hrid: any) => Promise<any>;
 }

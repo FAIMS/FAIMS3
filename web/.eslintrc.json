@@ -1,0 +1,40 @@
+{
+  "extends": "../node_modules/gts/",
+  "ignorePatterns": ["*.js"],
+  "settings": {
+    "node": {
+      "version": ">=10.0.0"
+    }
+  },
+  "overrides": [
+    {
+      "files": "**/*.test.ts",
+      "rules": {
+        "n/no-unpublished-import": [
+          "error",
+          {
+            "allowModules": ["react-jss", "jest-fast-check"]
+          }
+        ],
+        "prettier/prettier": "warn",
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          {
+            "varsIgnorePattern": "[iI]gnored",
+            "argsIgnorePattern": "^_"
+          }
+        ],
+        "no-trailing-spaces": "warn"
+      }
+    }
+  ],
+  "rules": {
+    "prettier/prettier": "warn",
+    "no-trailing-spaces": "warn",
+    "@typescript-eslint/no-explicit-any": "off",
+    "no-constant-condition": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "n/no-missing-import": "off",
+    "n/no-unpublished-import": "off"
+  }
+}

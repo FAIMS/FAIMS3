@@ -17,7 +17,6 @@
  * Description:
  *   TODO
  */
-import PouchDB from 'pouchdb';
 import {v4 as uuidv4} from 'uuid';
 import {
   FAIMSAttachmentID,
@@ -47,43 +46,51 @@ export function file_data_to_attachments(
 
   const docs_to_dump: Array<AttributeValuePair | FAIMSAttachment> = [];
   const attach_refs: FAIMSAttachmentReference[] = [];
-  for (const tmp_file of avp.data) {
-    const file = tmp_file; // as File;
-    const file_name = file.name ?? generate_file_name();
-    const attach_id = generateFAIMSAttachmentID();
-    const attach_doc: FAIMSAttachment = {
-      _id: attach_id,
-      attach_format_version: 1,
-      avp_id: avp._id,
-      revision_id: avp.revision_id,
-      record_id: avp.record_id,
-      created: avp.created,
-      created_by: avp.created_by,
-      filename: file_name,
-      _attachments: {},
-    };
-    // in the browser, `file` will be a File and can
-    // be passed as the data attribute
-    // in Node, `file` will be a structure {type, data}
-    // where `data` is a Buffer that we can pass in
-    if (file.data) {
-      attach_doc._attachments![attach_id] = {
-        content_type: file.type,
-        data: file.data,
-      };
+  for (const attachment_record of avp.data) {
+    if (attachment_record.attachment_id) {
+      // here we have a non-downloaded attachment
+      // we should not make a new attachment object for it since
+      // one already exists on the server
+      // but we maintain the reference to the attachment in .faims_attachments
+      attach_refs.push(attachment_record);
     } else {
-      attach_doc._attachments![attach_id] = {
-        content_type: file.type,
-        data: file,
+      const file = attachment_record; // as File;
+      const file_name = file.name ?? generate_file_name();
+      const attach_id = generateFAIMSAttachmentID();
+      const attach_doc: FAIMSAttachment = {
+        _id: attach_id,
+        attach_format_version: 1,
+        avp_id: avp._id,
+        revision_id: avp.revision_id,
+        record_id: avp.record_id,
+        created: avp.created,
+        created_by: avp.created_by,
+        filename: file_name,
+        _attachments: {},
       };
-    }
+      // in the browser, `file` will be a File and can
+      // be passed as the data attribute
+      // in Node, `file` will be a structure {type, data}
+      // where `data` is a Buffer that we can pass in
+      if (file.data) {
+        attach_doc._attachments![attach_id] = {
+          content_type: file.type,
+          data: file.data,
+        };
+      } else {
+        attach_doc._attachments![attach_id] = {
+          content_type: file.type,
+          data: file,
+        };
+      }
 
-    attach_refs.push({
-      attachment_id: attach_id,
-      filename: file_name,
-      file_type: file.type,
-    });
-    docs_to_dump.push(attach_doc);
+      attach_refs.push({
+        attachment_id: attach_id,
+        filename: file_name,
+        file_type: file.type,
+      });
+      docs_to_dump.push(attach_doc);
+    }
   }
   avp.data = null;
   avp.faims_attachments = attach_refs;

@@ -18,19 +18,23 @@
  *   TODO
  */
 
-import React from 'react';
-import MuiRadioGroup from '@mui/material/RadioGroup';
-import MuiRadio, {RadioProps} from '@mui/material/Radio';
-import FormControl from '@mui/material/FormControl';
 import {
-  FormLabel,
   FormControlLabel,
-  FormHelperText,
-  FormLabelProps,
-  FormHelperTextProps,
   FormControlLabelProps,
+  FormHelperTextProps,
+  FormLabelProps,
 } from '@mui/material';
+import FormControl from '@mui/material/FormControl';
+import MuiRadio, {RadioProps} from '@mui/material/Radio';
+import MuiRadioGroup from '@mui/material/RadioGroup';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
+import React from 'react';
+import FieldWrapper from './fieldWrapper';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
+
+/**
+ * Represents a single option in the radio group.
+ */
 interface option {
   key?: string;
   value: string;
@@ -42,84 +46,129 @@ interface option {
   RadioProps: RadioProps;
 }
 
+/**
+ * Defines the structure of the options array for the RadioGroup component.
+ */
 interface ElementProps {
   options: Array<option>;
 }
 
+/**
+ * Props for the RadioGroup component.
+ */
 interface Props {
   FormLabelProps?: FormLabelProps;
   FormHelperTextProps?: FormHelperTextProps;
-  label?: string;
-  helperText?: string;
-  ElementProps: ElementProps;
-  disabled?: boolean;
+  label?: string; // Heading
+  helperText?: string; // Subheading
+  advancedHelperText?: string; // advanced help text
+  ElementProps: ElementProps; // Radio options
+  disabled?: boolean; // Wheter the field is disabled
+  required?: boolean;
 }
 
 export class RadioGroup extends React.Component<RadioGroupProps & Props> {
+  /**
+   * Handles changes in the selected radio button, allowing users to toggle selection.
+   * If a selected radio button is clicked again, it gets deselected (value is cleared).
+   *
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>} e - The change event triggered by user interaction.
+   */
   handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
+    const {field, form} = this.props;
+    const selectedValue = e.target.value;
+
+    const newValue = field.value === selectedValue ? null : selectedValue;
+    form.setFieldValue(field.name, newValue, true);
+
+    form.setTouched({...form.touched, [field.name]: true});
   }
 
   render() {
     const {
+      field,
+      form,
       ElementProps,
-      FormLabelProps,
-      FormHelperTextProps,
-
+      label,
+      helperText,
+      advancedHelperText,
       ...radioGroupProps
     } = this.props;
 
-    // for backwards compatibility we check these properties as well as
-    // just the plain label and helperText properties
-    const label =
-      this.props.label || FormLabelProps?.children || this.props.field.name;
-
-    const helperText =
-      this.props.helperText || FormHelperTextProps?.children || '';
-
-    let error = false;
-    if (
-      radioGroupProps.form.errors[radioGroupProps.field.name] &&
-      radioGroupProps.form.touched[radioGroupProps.field.name]
-    ) {
-      error = true;
-    }
-
-    // remove helperText from props so we don't pass it into the element
-    delete radioGroupProps.helperText;
-
     return (
-      <FormControl error={error}>
-        <FormLabel children={label} />
-        <MuiRadioGroup
-          {...fieldToRadioGroup(radioGroupProps)}
-          onChange={e => this.handleChange(e)}
-        >
-          {ElementProps.options.map(option => (
-            <FormControlLabel
-              key={option.key ? option.key : option.value}
-              value={option.value}
-              control={<MuiRadio {...option['RadioProps']} />}
-              label={option.label}
-              {...option['FormControlProps']}
-              disabled={this.props.disabled ?? false}
-            />
-          ))}
-        </MuiRadioGroup>
-        {error ? (
-          <FormHelperText
-            children={
-              radioGroupProps.form.errors[radioGroupProps.field.name] as string
-            }
-          />
-        ) : (
-          <FormHelperText children={helperText} />
-        )}
-      </FormControl>
+      <FieldWrapper
+        heading={label}
+        subheading={helperText}
+        required={this.props.required}
+        advancedHelperText={advancedHelperText}
+      >
+        <FormControl sx={{mb: 4}} error={Boolean(form.errors?.[field.name])}>
+          <MuiRadioGroup
+            {...fieldToRadioGroup({field, form, ...radioGroupProps})}
+            value={field.value || ''}
+            onChange={e => this.handleChange(e)}
+          >
+            {ElementProps.options.map(option => (
+              <FormControlLabel
+                key={option.key || option.value}
+                value={option.value}
+                control={
+                  <MuiRadio
+                    {...option.RadioProps}
+                    sx={{
+                      alignSelf: 'flex-start',
+                      paddingTop: '6px',
+                    }}
+                  />
+                }
+                label={
+                  <div
+                    style={{
+                      display: 'block',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      lineHeight: '1.5',
+                      paddingTop: '6px',
+                      paddingLeft: '0px',
+                      marginTop: '0px',
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: contentToSanitizedHtml(option.label),
+                    }}
+                  />
+                }
+                {...option.FormControlProps}
+                disabled={this.props.disabled ?? false}
+                sx={{
+                  alignItems: 'flex-start',
+                  marginBottom: 1,
+                  '& .MuiFormControlLabel-label': {
+                    display: 'block',
+                    marginTop: '0px',
+                    alignSelf: 'flex-start',
+                    // markdown formatted text will be wrapped in a <p> tag
+                    // so we need to remove the default margin
+                    // and padding from the <p> tag
+                    '& p': {
+                      margin: 0,
+                      padding: 0,
+                    },
+                    '& p:first-child': {
+                      marginTop: 0,
+                    },
+                    '& p:last-child': {
+                      marginBottom: 0,
+                    },
+                  },
+                }}
+              />
+            ))}
+          </MuiRadioGroup>
+        </FormControl>
+      </FieldWrapper>
     );
   }
 }
-
 // const uiSpec = {
 //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
 //   'component-name': 'RadioGroup',

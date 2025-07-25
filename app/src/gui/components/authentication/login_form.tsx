@@ -13,6 +13,7 @@ export type LoginButtonProps = {
   size?: ButtonProps['size'];
   sx?: object;
   startIcon: React.ReactNode;
+  variant?: 'text' | 'outlined' | 'contained';
 };
 
 /**
@@ -22,7 +23,7 @@ export type LoginButtonProps = {
 export function LoginButton(props: LoginButtonProps) {
   return (
     <Button
-      variant="outlined"
+      variant={props.variant ?? 'outlined'}
       color="primary"
       size={props.size}
       sx={{
@@ -33,11 +34,11 @@ export function LoginButton(props: LoginButtonProps) {
         if (isWeb()) {
           const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
           window.location.href =
-            props.conductor_url + '/auth?redirect=' + redirect;
+            props.conductor_url + '/login?redirect=' + redirect;
         } else {
           // Use the capacitor browser plugin in apps
           await Browser.open({
-            url: `${props.conductor_url}/auth?redirect=${APP_ID}://auth-return`,
+            url: `${props.conductor_url}/login?redirect=${APP_ID}://auth-return`,
           });
         }
       }}

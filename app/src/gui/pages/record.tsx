@@ -18,84 +18,72 @@
  *   TODO
  */
 
-import React, {useContext, useEffect, useRef, useState} from 'react';
-import {useParams, useNavigate} from 'react-router-dom';
 import {
-  AppBar,
-  Alert,
-  Box,
-  Grid,
-  Typography,
-  Paper,
-  Tab,
-  CircularProgress,
-  Button,
-} from '@mui/material';
-import {grey} from '@mui/material/colors';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
-import {ActionType} from '../../context/actions';
-
-import * as ROUTES from '../../constants/routes';
-import {getProjectInfo} from '../../sync/projects';
-import {
+  InitialMergeDetails,
   ProjectID,
   RecordID,
   Relationship,
   RevisionID,
-  ProjectUIModel,
-  ProjectInformation,
-  listFAIMSRecordRevisions,
+  findConflictingFields,
   getFullRecordData,
   getHRIDforRecordID,
-  InitialMergeDetails,
   getInitialMergeDetails,
-  findConflictingFields,
+  listFAIMSRecordRevisions,
 } from '@faims3/data-model';
-import {store} from '../../context/store';
-import {getUiSpecForProject} from '../../uiSpecification';
-
-import ConflictForm from '../components/record/conflict/conflictform';
-import RecordMeta from '../components/record/meta';
-import BoxTab from '../components/ui/boxTab';
-import Breadcrumbs from '../components/ui/breadcrumbs';
-import {isSyncingProjectAttachments} from '../../sync/sync-toggle';
-import {} from '@faims3/data-model';
-
+import TabContext from '@mui/lab/TabContext';
+import TabList from '@mui/lab/TabList';
+import TabPanel from '@mui/lab/TabPanel';
 import {
-  ConflictHelpDialog,
+  Alert,
+  AppBar,
+  Box,
+  Button,
+  CircularProgress,
+  Grid,
+  Paper,
+  Tab,
+  Typography,
+} from '@mui/material';
+import Badge from '@mui/material/Badge';
+import {grey} from '@mui/material/colors';
+import {useTheme} from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import React, {useEffect, useRef, useState} from 'react';
+import {useNavigate, useParams} from 'react-router-dom';
+import {localGetDataDb} from '../..';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
+import {addAlert} from '../../context/slices/alertSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../../context/slices/projectSlice';
+import {useAppDispatch, useAppSelector} from '../../context/store';
+import {logError} from '../../logging';
+import RecordDelete from '../components/notebook/delete';
+import ProgressBar from '../components/progress-bar';
+import {ResolveButton} from '../components/record/conflict/conflictbutton';
+import {
   BasicDialog,
+  ConflictHelpDialog,
 } from '../components/record/conflict/conflictDialog';
 import {EditDroplist} from '../components/record/conflict/conflictdroplist';
-import Badge from '@mui/material/Badge';
-import {ResolveButton} from '../components/record/conflict/conflictbutton';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import {useTheme} from '@mui/material/styles';
-
+import ConflictForm from '../components/record/conflict/conflictform';
+import RecordMeta from '../components/record/meta';
+import RecordData from '../components/record/RecordData';
 import {
   getDetailRelatedInformation,
   getParentPersistenceData,
   remove_deleted_parent,
 } from '../components/record/relationships/RelatedInformation';
 import {
-  RecordLinkProps,
   ParentLinkProps,
+  RecordLinkProps,
 } from '../components/record/relationships/types';
-
-import ArticleIcon from '@mui/icons-material/Article';
-import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import BackButton from '../components/ui/BackButton';
+import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
-import RecordData from '../components/record/RecordData';
 import getLocalDate from '../fields/LocalDate';
-import RecordDelete from '../components/notebook/delete';
-import {logError} from '../../logging';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
-import ProgressBar from '../components/progress-bar';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 
-import {scrollToDiv} from '../../lib/navigation';
-import TransparentButton from '../components/buttons/transparent-button';
-import ArrowDropDown from '@mui/icons-material/ArrowDropDown';
 export default function Record() {
   /**
    * Record Page. Comprises multiple tab components;
@@ -105,39 +93,51 @@ export default function Record() {
    * Meta
    * Conflict
    */
-  const {project_id, record_id, revision_id, draft_id} = useParams<{
-    project_id: ProjectID;
-    record_id: RecordID;
-    revision_id: RevisionID;
-    draft_id?: string;
+  const {
+    projectId: projectId,
+    serverId,
+    recordId: recordId,
+    revisionId: revisionId,
+    draftId: draftId,
+  } = useParams<{
+    serverId: string;
+    projectId: ProjectID;
+    recordId: RecordID;
+    revisionId: RevisionID;
+    draftId?: string;
   }>();
-  const [updatedrevision_id, setrevision_id] = React.useState(revision_id);
-  const {dispatch} = useContext(store);
+
+  const [updatedRevisionId, setUpdatedRevisionId] = React.useState(revisionId);
+
+  const dispatch = useAppDispatch();
   const history = useNavigate();
 
-  const [value, setValue] = React.useState('1');
-  const [projectInfo, setProjectInfo] = useState<ProjectInformation | null>(
-    null
-  );
-  useEffect(() => {
-    if (project_id)
-      getProjectInfo(project_id).then(info => setProjectInfo(info));
-  }, [project_id]);
+  if (!serverId) return <></>;
+  const [tabValue, setTabValue] = React.useState('1');
 
-  const [uiSpec, setUISpec] = useState(null as null | ProjectUIModel);
+  if (!projectId) return <></>;
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) return <></>;
+
+  const {uiSpecificationId: uiSpecId} = project;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+
+  if (!uiSpec) {
+    return <></>;
+  }
+  const isSyncing = project.database?.isSyncing ?? false;
+
   const [revisions, setRevisions] = React.useState([] as string[]);
-  const [error, setError] = useState(null as null | {});
   const [isDraftSaving, setIsDraftSaving] = useState(false);
   const [draftLastSaved, setDraftLastSaved] = useState(null as Date | null);
   const [draftError, setDraftError] = useState(null as string | null);
   const [type, setType] = useState(null as null | string);
   const [hrid, setHrid] = useState(null as null | string);
-  const [isSyncing, setIsSyncing] = useState<null | boolean>(null); // this is to check if the project attachment sync
   const [conflicts, setConflicts] = useState(
     null as InitialMergeDetails | null
   );
   const [selectrevision, setselectedRevision] = useState(null as null | string); // set default one as revision_id and if there is conflict then get the new vision of content
-  const [issavedconflict, setissavedconflict] = useState(record_id); // this is to check if the conflict resolved been saved
+  const [issavedconflict, setissavedconflict] = useState(recordId); // this is to check if the conflict resolved been saved
   const [conflictfields, setConflictfields] = useState(null as null | string[]);
   const [isalerting, setIsalerting] = useState(true); // this is to check if user get notified in conflict record
   const [recordInfo, setRecordinfo] = useState(null as null | string); // add Updated time and User for Record form
@@ -145,37 +145,50 @@ export default function Record() {
   const not_xs = useMediaQuery(theme.breakpoints.up('sm'));
   const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
   const [open, setOpen] = React.useState(false);
-  const [pressedvalue, setpressedvalue] = useState(value);
+  const [pressedvalue, setpressedvalue] = useState(tabValue);
   const [relatedRecords, setRelatedRecords] = useState([] as RecordLinkProps[]);
   const [parentLinks, setParentLinks] = useState([] as ParentLinkProps[]);
   const [is_link_ready, setIs_link_ready] = useState(false);
   const [breadcrumbs, setBreadcrumbs] = useState<
     {link?: string; title: string}[]
   >([]);
-  const [progress, setProgress] = useState<number>(0);
   const buttonRef = useRef<HTMLDivElement | null>(null);
+  const dataDb = localGetDataDb(projectId);
 
+  const progress = useAppSelector(state => state.records.percent);
+
+  const projectLink =
+    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+  const [backLink, setBackLink] = useState<string>(projectLink);
+  const [backIsParent, setBackIsParent] = useState(false);
+
+  // if there are no conflicts and the tab value is 4 then default back to tab 1
   useEffect(() => {
-    getUiSpecForProject(project_id!).then(setUISpec, setError);
-    if (project_id !== null) {
-      try {
-        setIsSyncing(isSyncingProjectAttachments(project_id!));
-      } catch (error) {
-        logError(error);
-      }
-    }
-  }, [project_id]);
+    if (
+      conflicts === null ||
+      conflicts['available_heads'] === undefined ||
+      Object.keys(conflicts['available_heads']).length === 1
+    )
+      setTabValue('1');
+  }, [conflicts]);
 
   useEffect(() => {
     const getIni = async () => {
       setIs_link_ready(false); //reset the link ready when record id changed
       setRevisions([]);
-      listFAIMSRecordRevisions(project_id!, record_id!)
+      listFAIMSRecordRevisions({
+        dataDb,
+        recordId: recordId!,
+      })
         .then(all_revisions => {
           setRevisions(all_revisions);
         })
         .catch(logError);
-      getHRIDforRecordID(project_id!, record_id!).then(hrid => {
+      getHRIDforRecordID({
+        dataDb,
+        recordId: recordId!,
+        uiSpecification: uiSpec,
+      }).then(hrid => {
         setHrid(hrid);
         setBreadcrumbs([
           // {link: ROUTES.INDEX, title: 'Home'},
@@ -184,28 +197,34 @@ export default function Record() {
             title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
           },
           {
-            link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-            title: projectInfo !== null ? projectInfo.name! : project_id!,
+            link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
+            title: project.name ?? project.metadata.name,
           },
-          {title: hrid ?? record_id},
+          {title: hrid ?? recordId},
         ]);
-        setrevision_id(revision_id);
-        setselectedRevision(revision_id!);
-        setValue('1');
+        setBackLink(projectLink);
+        setBackIsParent(false);
+        setUpdatedRevisionId(revisionId);
+        setselectedRevision(revisionId!);
+        setTabValue('1');
       });
     };
 
     getIni();
-  }, [project_id, record_id]);
+  }, [projectId, recordId]);
 
   // below function is to get conflicts headers when loading record or after user save the conflict resolve button
   useEffect(() => {
     const getconflicts = async () => {
-      getInitialMergeDetails(project_id!, record_id!)
+      getInitialMergeDetails({
+        dataDb,
+        projectId: projectId!,
+        recordId: recordId!,
+      })
         .then(result => {
           setConflicts(result);
           if (result !== null && result['available_heads'] !== undefined) {
-            setrevision_id(result['initial_head']); //reset revision id after conflict
+            setUpdatedRevisionId(result['initial_head']); //reset revision id after conflict
             if (Object.keys(result['available_heads']).length > 1)
               setselectedRevision(result['initial_head']); // reset the revision number if there is conflict
           }
@@ -214,15 +233,20 @@ export default function Record() {
     };
 
     getconflicts();
-  }, [project_id, record_id, issavedconflict]);
+  }, [projectId, recordId, issavedconflict]);
 
   useEffect(() => {
     const getConflictList = async () => {
       try {
         if (selectrevision !== null) {
-          setrevision_id(selectrevision); //set revision_id what is in the form, so it can be same
+          setUpdatedRevisionId(selectrevision); //set revision_id what is in the form, so it can be same
           setConflictfields(
-            await findConflictingFields(project_id!, record_id!, selectrevision)
+            await findConflictingFields({
+              dataDb,
+              projectId: projectId!,
+              recordId: recordId!,
+              revisionId: revisionId!,
+            })
           );
         }
       } catch (error) {
@@ -235,11 +259,12 @@ export default function Record() {
   useEffect(() => {
     const getType = async () => {
       try {
-        const latest_record = await getFullRecordData(
-          project_id!,
-          record_id!,
-          updatedrevision_id!
-        );
+        const latest_record = await getFullRecordData({
+          dataDb,
+          projectId: projectId!,
+          recordId: recordId!,
+          revisionId: updatedRevisionId!,
+        });
 
         if (latest_record !== null) {
           setType(latest_record.type);
@@ -254,108 +279,102 @@ export default function Record() {
       }
     };
     getType();
-  }, [project_id, record_id, updatedrevision_id]);
+  }, [projectId, recordId, updatedRevisionId]);
 
   useEffect(() => {
     // this is function to get child information
-
     const getrelated_Info = async () => {
       try {
         if (uiSpec !== null && type !== null) {
-          const latest_record = await getFullRecordData(
-            project_id!,
-            record_id!,
-            updatedrevision_id!,
-            false
-          );
+          const latest_record = await getFullRecordData({
+            dataDb,
+            projectId: projectId!,
+            recordId: recordId!,
+            revisionId: updatedRevisionId!,
+            isDeleted: false,
+          });
           if (latest_record !== null) {
             //add checking for deleted record, so it can be direct to notebook page
             if (latest_record.deleted === true) {
-              dispatch({
-                type: ActionType.ADD_ALERT,
-                payload: {
+              dispatch(
+                addAlert({
                   message: 'Could not load record, it might be deleted ',
                   severity: 'warning',
-                },
-              });
+                })
+              );
               history({
-                pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
+                pathname:
+                  ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
               });
             }
             const newRelationship = await getDetailRelatedInformation(
               uiSpec,
               type,
               latest_record.data,
-              project_id!,
+              projectId!,
               latest_record.relationship ?? null,
-              record_id!,
-              updatedrevision_id!
+              recordId!,
+              updatedRevisionId!,
+              serverId
             );
             setRelatedRecords(newRelationship);
-            const newParent = await getParentPersistenceData(
-              uiSpec,
-              project_id!,
-              latest_record.relationship ?? null,
-              record_id!
-            );
+            const newParent = await getParentPersistenceData({
+              uiSpecification: uiSpec,
+              projectId: projectId!,
+              parent: latest_record.relationship ?? null,
+              serverId: serverId,
+            });
             setParentLinks(newParent);
-            let newBreadcrumbs = [
-              // {link: ROUTES.INDEX, title: 'Home'},
-              {
-                link: ROUTES.NOTEBOOK_LIST_ROUTE,
-                title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-              },
-              {
-                link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-                title: projectInfo !== null ? projectInfo.name! : project_id!,
-              },
-              {title: hrid! ?? record_id!},
-            ];
             if (
               newParent !== null &&
               newParent.length > 0 &&
               newParent[0].deleted !== true
             ) {
-              newBreadcrumbs = [
-                // {link: ROUTES.INDEX, title: 'Home'},
+              setBreadcrumbs([
                 {
                   link: ROUTES.NOTEBOOK_LIST_ROUTE,
                   title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
                 },
                 {
-                  link: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
-                  title: projectInfo !== null ? projectInfo.name! : project_id!,
+                  link:
+                    ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+                    serverId +
+                    '/' +
+                    projectId,
+                  title: project.name ?? project.metadata.name,
                 },
                 {
                   link: newParent[0]['route'],
                   title: newParent[0]['hrid'],
                 },
-                {title: hrid! ?? record_id!},
-              ];
+                {title: hrid! ?? recordId!},
+              ]);
+              setBackLink(newParent[0]['route']);
+              setBackIsParent(true);
             }
-            setBreadcrumbs(newBreadcrumbs);
           }
           // setValue('1');
           setIs_link_ready(true);
         }
       } catch (error) {
+        console.error(error);
         logError(error);
         //setIs_link_ready(true);
       }
     };
     getrelated_Info();
-  }, [uiSpec, type, updatedrevision_id]);
+  }, [uiSpec, type, updatedRevisionId]);
 
   const handleChange = (event: React.ChangeEvent<{}>, newValue: string) => {
     if (
-      value === '4' &&
+      tabValue === '4' &&
       conflicts !== null &&
       conflicts['available_heads'] !== undefined &&
       Object.keys(conflicts['available_heads']).length > 1
     ) {
       setOpen(true);
       setpressedvalue(newValue);
-    } else setValue(newValue);
+    } else setTabValue(newValue);
   };
 
   const handleUnlink = (
@@ -365,9 +384,9 @@ export default function Record() {
   ) => {
     remove_deleted_parent(
       relation_type,
-      project_id!,
-      record_id!,
-      updatedrevision_id,
+      projectId!,
+      recordId!,
+      updatedRevisionId,
       field_id,
       parent_record_id,
       relatedRecords
@@ -384,34 +403,33 @@ export default function Record() {
             result.new_revision_id !== null &&
             result.new_revision_id !== ''
           )
-            setrevision_id(result.new_revision_id);
+            setUpdatedRevisionId(result.new_revision_id);
           if (uiSpec !== null) {
             setRelatedRecords(result.newRelationship);
 
-            getParentPersistenceData(
-              uiSpec,
-              project_id!,
-              result.new_relation ?? {},
-              record_id!
-            ).then(newParent => {
+            getParentPersistenceData({
+              uiSpecification: uiSpec,
+              projectId: projectId!,
+              parent: result.new_relation,
+              serverId: serverId,
+            }).then(newParent => {
               setParentLinks(newParent);
             });
           }
         } else {
-          dispatch({
-            type: ActionType.ADD_ALERT,
-            payload: {
+          dispatch(
+            addAlert({
               message: 'Could not remove link,please save and then try again ',
               severity: 'warning',
-            },
-          });
+            })
+          );
         }
       }
     );
   };
 
   const handleConfirm = () => {
-    setValue(pressedvalue);
+    setTabValue(pressedvalue);
     setOpen(false);
   };
 
@@ -435,48 +453,49 @@ export default function Record() {
     return new Promise(resolve => {
       resolve(() => {
         history({
-          pathname: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_id,
+          pathname:
+            ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId,
         });
       });
     });
   };
 
+  const titleLabel = (
+    <React.Fragment>
+      {uiSpec !== null && type !== null && uiSpec['visible_types'][0] !== ''
+        ? '[' + uiSpec.viewsets[type]['label'] + '] ' + hrid
+        : ''}{' '}
+      {draftId !== undefined && (
+        <span
+          style={{
+            textDecorationLine: 'underline',
+            textDecorationStyle: 'double',
+          }}
+        >
+          [Draft]
+        </span>
+      )}
+    </React.Fragment>
+  );
+
   return (
     <Box>
-      <Grid container wrap="nowrap" spacing={2}>
+      <Grid
+        container
+        wrap="nowrap"
+        spacing={2}
+        padding={theme.spacing(0.5)}
+        alignItems="center"
+      >
         <Grid item>
-          {draft_id ? (
-            <ArticleOutlinedIcon
-              fontSize={mq_above_md ? 'large' : 'medium'}
-              style={{verticalAlign: 'top'}}
-            />
-          ) : (
-            <ArticleIcon
-              fontSize={mq_above_md ? 'large' : 'medium'}
-              style={{verticalAlign: 'top'}}
-            />
-          )}
+          <BackButton link={backLink} backIsParent={backIsParent} />
         </Grid>
-        <Grid item xs zeroMinWidth>
+        <Grid item xs>
           <Typography
             variant={mq_above_md ? 'h3' : 'h4'}
             style={{overflowWrap: 'break-word'}}
           >
-            {uiSpec !== null &&
-            type !== null &&
-            uiSpec['visible_types'][0] !== ''
-              ? '' + uiSpec.viewsets[type]['label'] + ' Record ' + hrid
-              : ''}{' '}
-            {draft_id !== undefined && (
-              <span
-                style={{
-                  textDecorationLine: 'underline',
-                  textDecorationStyle: 'double',
-                }}
-              >
-                [Draft]
-              </span>
-            )}
+            {titleLabel}
           </Typography>
           {recordInfo !== null && (
             <Typography variant={'caption'} gutterBottom>
@@ -491,32 +510,12 @@ export default function Record() {
       <Grid item xs>
         {is_link_ready && <Breadcrumbs data={breadcrumbs} />}
       </Grid>
-      {draft_id !== undefined && (
+      {draftId !== undefined && (
         <Alert severity={'warning'}>
           This record is currently a draft. The data is stored locally on your
           device only.
         </Alert>
       )}
-      <Typography
-        variant={'subtitle1'}
-        color={'textSecondary'}
-        gutterBottom
-        sx={{mt: 1}}
-      >
-        Edit data for this record. If you need to, you can also revisit previous
-        revisions and resolve conflicts.
-      </Typography>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}
-      >
-        <TransparentButton onClick={() => scrollToDiv(buttonRef)}>
-          <ArrowDropDown />
-          Jump to end
-        </TransparentButton>
-      </div>
       <Box mb={2} pr={1}>
         {conflicts !== null &&
           conflicts['available_heads'] !== undefined &&
@@ -544,7 +543,7 @@ export default function Record() {
           )}
       </Box>
       <Paper square elevation={0} variant={'outlined'}>
-        <TabContext value={value}>
+        <TabContext value={tabValue}>
           <AppBar
             position="static"
             sx={{
@@ -565,44 +564,34 @@ export default function Record() {
               variant="scrollable"
               scrollButtons="auto"
             >
-              <Tab label="Edit" value="1" />
-              <Tab label="Revisions" value="2" />
-              <Tab label="Meta" value="3" />
+              <Tab label="Data" value="1" />
+              {
+                //<Tab label="Revisions" value="2" />
+              }
+              <Tab label="Info" value="3" />
               {conflicts !== null &&
-              conflicts['available_heads'] !== undefined &&
-              Object.keys(conflicts['available_heads']).length > 1 ? (
-                <Tab
-                  label={
-                    <Badge
-                      badgeContent={
-                        Object.keys(conflicts['available_heads']).length
-                      }
-                      color="error"
-                    >
-                      {'Conflicts  '}
-                      {'\xa0\xa0'}
-                    </Badge>
-                  }
-                  value="4"
-                />
-              ) : (
-                <Tab label="Conflicts" value="4" />
-              )}
+                conflicts['available_heads'] !== undefined &&
+                Object.keys(conflicts['available_heads']).length > 1 && (
+                  <Tab
+                    label={
+                      <Badge
+                        badgeContent={
+                          Object.keys(conflicts['available_heads']).length
+                        }
+                        color="error"
+                      >
+                        {'Conflicts  '}
+                        {'\xa0\xa0'}
+                      </Badge>
+                    }
+                    value="4"
+                  />
+                )}
             </TabList>
           </AppBar>
 
           {(() => {
-            if (error !== null) {
-              dispatch({
-                type: ActionType.ADD_ALERT,
-                payload: {
-                  message: 'Could not load form: ' + error.toString(),
-                  severity: 'warning',
-                },
-              });
-              history(-1);
-              return <React.Fragment />;
-            } else if (uiSpec === null || type === null || isSyncing === null) {
+            if (uiSpec === null || type === null || isSyncing === null) {
               return (
                 <Box sx={{p: 1}}>
                   <CircularLoading label={'Loading...'} />
@@ -620,11 +609,11 @@ export default function Record() {
                           <Box bgcolor={grey[100]} p={2}>
                             <Grid container spacing={1}>
                               <Grid item md={5} xs={12}>
-                                {draft_id !== undefined ? (
+                                {draftId !== undefined ? (
                                   <Typography>
                                     <strong>Current Edit Revision:</strong>{' '}
                                     <br />
-                                    {updatedrevision_id}
+                                    {updatedRevisionId}
                                   </Typography>
                                 ) : (
                                   <EditDroplist
@@ -650,7 +639,7 @@ export default function Record() {
                                       handleChange={handleChange}
                                     />
                                   </Box>
-                                  {isalerting && draft_id === undefined && (
+                                  {isalerting && draftId === undefined && (
                                     <Box>
                                       Or, select a version and {'  '}
                                       <Button
@@ -669,15 +658,18 @@ export default function Record() {
                           </Box>
                           <Box>
                             {(isalerting === false ||
-                              draft_id !== undefined) && (
+                              draftId !== undefined) && (
                               <RecordData
-                                project_id={project_id!}
-                                record_id={record_id!}
+                                // here we are in an existing record
+                                isExistingRecord={true}
+                                serverId={serverId}
+                                project_id={projectId!}
+                                record_id={recordId!}
                                 hrid={hrid}
                                 record_type={record_type}
-                                revision_id={updatedrevision_id!}
+                                revision_id={updatedRevisionId!}
                                 ui_specification={uiSpec}
-                                draft_id={draft_id}
+                                draft_id={draftId}
                                 conflictfields={conflictfields}
                                 handleChangeTab={handleChange}
                                 isSyncing={isSyncing.toString()}
@@ -691,9 +683,8 @@ export default function Record() {
                                 record_to_field_links={relatedRecords}
                                 is_link_ready={is_link_ready}
                                 handleUnlink={handleUnlink}
-                                setRevision_id={setrevision_id}
+                                setRevision_id={setUpdatedRevisionId}
                                 mq_above_md={mq_above_md}
-                                setProgress={setProgress}
                                 buttonRef={buttonRef}
                               />
                             )}
@@ -701,13 +692,16 @@ export default function Record() {
                         </Box>
                       ) : (
                         <RecordData
-                          project_id={project_id!}
-                          record_id={record_id!}
+                          // here we are in an existing record
+                          isExistingRecord={true}
+                          serverId={serverId}
+                          project_id={projectId!}
+                          record_id={recordId!}
                           hrid={hrid}
                           record_type={record_type}
-                          revision_id={updatedrevision_id!}
+                          revision_id={updatedRevisionId!}
                           ui_specification={uiSpec}
-                          draft_id={draft_id}
+                          draft_id={draftId}
                           conflictfields={conflictfields}
                           handleChangeTab={handleChange}
                           isDraftSaving={isDraftSaving}
@@ -721,9 +715,8 @@ export default function Record() {
                           record_to_field_links={relatedRecords}
                           is_link_ready={is_link_ready}
                           handleUnlink={handleUnlink}
-                          setRevision_id={setrevision_id}
+                          setRevision_id={setUpdatedRevisionId}
                           mq_above_md={mq_above_md}
-                          setProgress={setProgress}
                           buttonRef={buttonRef}
                         />
                       )}
@@ -748,19 +741,20 @@ export default function Record() {
           </TabPanel>
           <TabPanel value="3" style={{padding: theme.spacing(2)}}>
             <RecordMeta
-              project_id={project_id!}
-              record_id={record_id!}
-              revision_id={updatedrevision_id!}
+              project_id={projectId!}
+              record_id={recordId!}
+              revision_id={updatedRevisionId!}
             />
             <Box mt={2}>
               <Typography variant={'h5'} gutterBottom>
-                {draft_id ? 'Discard Draft' : 'Delete Record'}
+                {draftId ? 'Discard Draft' : 'Delete Record'}
               </Typography>
               <RecordDelete
-                project_id={project_id!}
-                record_id={record_id!}
-                revision_id={revision_id!}
-                draft_id={draft_id ? draft_id : null}
+                project_id={projectId!}
+                serverId={serverId}
+                record_id={recordId!}
+                revision_id={revisionId!}
+                draft_id={draftId ? draftId : null}
                 show_label={true}
                 handleRefresh={handleRefresh}
               />
@@ -789,12 +783,13 @@ export default function Record() {
               />
               {isSyncing !== null && (
                 <ConflictForm
-                  project_id={project_id!}
-                  record_id={record_id!}
-                  revision_id={updatedrevision_id}
+                  project_id={projectId!}
+                  record_id={recordId!}
+                  revision_id={updatedRevisionId}
                   ui_specification={uiSpec}
                   type={type}
                   conflicts={conflicts}
+                  serverId={serverId}
                   setissavedconflict={setissavedconflict}
                   isSyncing={isSyncing.toString()}
                   not_xs={not_xs}

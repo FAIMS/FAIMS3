@@ -15,43 +15,45 @@
  *
  * Filename: bundle_components.ts
  * Description:
- *   TODO
+ *     Bundles components by dispatching name -> component
  */
 
-import Input from '@mui/material/Input';
+import {
+  file_attachments_to_data,
+  file_data_to_attachments,
+  setAttachmentDumperForType,
+  setAttachmentLoaderForType,
+} from '@faims3/data-model';
 import Checkbox from '@mui/material/Checkbox';
+import Input from '@mui/material/Input';
 import TextField from '@mui/material/TextField';
-import {TextField as FormikTextField} from 'formik-mui';
-import {Select as FormikSelect} from 'formik-mui';
-import {RadioGroup as FormikRadioGroup} from 'formik-mui';
-// import {CheckboxWithLabel as FormikCheckboxWithLabel} from 'formik-mui';
-
+import {
+  RadioGroup as FormikRadioGroup,
+  Select as FormikSelect,
+  TextField as FormikTextField,
+} from 'formik-mui';
+import {ActionButton} from '../fields/ActionButton';
+import {AddressField} from '../fields/Address';
+import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
+import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
+import {DateField, DateTimeField, MonthField} from '../fields/DateFields';
+import {DateTimeNow} from '../fields/DateTimeNow';
+import {FAIMSTextField} from '../fields/FAIMSTextField';
+import {FileUploader} from '../fields/FileUploader';
+import {MapFormField} from '../fields/maps/MapFormField';
+import {MultiSelect} from '../fields/multiselect';
+import NumberField from '../fields/NumberField';
+import {QRCodeFormField} from '../fields/qrcode';
+import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
+import {RandomStyle} from '../fields/RandomStyle';
+import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
+import {RichTextField} from '../fields/RichText';
 import {Select as FAIMSSelect} from '../fields/select';
 import {AdvancedSelect} from '../fields/selectadvanced';
-import {MultiSelect} from '../fields/multiselect';
-import {ActionButton} from '../fields/ActionButton';
-import {TakePoint} from '../fields/TakePoint';
-import {Checkbox as FAIMSCheckbox} from '../fields/checkbox';
-import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
-import {TemplatedStringField} from '../fields/TemplatedStringField';
-import {BasicAutoIncrementer} from '../fields/BasicAutoIncrementer';
-import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
-import {FileUploader} from '../fields/FileUploader';
 import {TakePhoto} from '../fields/TakePhoto';
+import {TakePoint} from '../fields/TakePoint';
+import {TemplatedStringField} from '../fields/TemplatedStringField';
 import {registerField} from './internals';
-import {RandomStyle} from '../fields/RandomStyle';
-import {MapFormField} from '../fields/maps/MapFormField';
-import {DateTimeNow} from '../fields/DateTimeNow';
-
-import {
-  setAttachmentLoaderForType,
-  setAttachmentDumperForType,
-  file_data_to_attachments,
-  file_attachments_to_data,
-} from '@faims3/data-model';
-import {QRCodeFormField} from '../fields/qrcode';
-import {RichTextField} from '../fields/RichText';
-import {AddressField} from '../fields/Address';
 
 const bundle = null;
 export default bundle;
@@ -72,15 +74,6 @@ registerField(
   'A simple checkbox',
   'Simple',
   Checkbox
-);
-
-registerField(
-  'core-material-ui',
-  'TextField',
-  'HTML text field',
-  'A simple text field',
-  'Simple',
-  TextField
 );
 
 registerField(
@@ -248,6 +241,15 @@ registerField(
 );
 
 registerField(
+  'core-material-ui',
+  'TextField',
+  'HTML text field',
+  'A simple text field',
+  'Simple',
+  TextField
+);
+
+registerField(
   'faims-custom',
   'FileUploader',
   'File Upload',
@@ -274,6 +276,34 @@ registerField(
   RichTextField
 );
 
+// Date fields
+registerField(
+  'faims-custom',
+  'DateTimePicker',
+  'Date time picker',
+  'Local date time picker',
+  'Text',
+  DateTimeField
+);
+
+registerField(
+  'faims-custom',
+  'DatePicker',
+  'Date picker',
+  'Local date picker',
+  'Text',
+  DateField
+);
+
+registerField(
+  'faims-custom',
+  'MonthPicker',
+  'Month picker',
+  'Local month picker',
+  'Text',
+  MonthField
+);
+
 registerField(
   'faims-custom',
   'DateTimeNow',
@@ -281,6 +311,24 @@ registerField(
   'TZ-aware DateTime field with Now button',
   'Special',
   DateTimeNow
+);
+
+registerField(
+  'faims-custom',
+  'FAIMSTextField',
+  'MUI Text Field',
+  'A simple text input field',
+  'Text',
+  FAIMSTextField
+);
+
+registerField(
+  'faims-custom',
+  'NumberField',
+  'Number Input Field',
+  'Allows users to input numeric values',
+  'Number',
+  NumberField
 );
 
 /*

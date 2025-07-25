@@ -1,4 +1,3 @@
-import React from 'react';
 import {Alert, Typography} from '@mui/material';
 
 export default function UnpublishedWarning() {

@@ -72,14 +72,37 @@ jobs:
           export VITE_APP_ID=${{vars.APP_ID}}
           export VITE_APP_NAME="${{vars.APP_NAME}}"
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
+          export VITE_APPLE_BUNDLE_IDENTIFIER="${{vars.APPLE_BUNDLE_IDENTIFIER}}"
+          export VITE_APP_STORE_CONNECT_TEAM_ID="${{secrets.APP_STORE_CONNECT_TEAM_ID}}"
+          export VITE_APP_PRIVACY_POLICY_URL=${{vars.APP_PRIVACY_POLICY_URL}}
+          export VITE_SUPPORT_EMAIL=${{vars.SUPPORT_EMAIL}}
+          export VITE_APP_CONTACT_URL=${{vars.APP_CONTACT_URL}}
+
+
+          export VITE_ENABLE_RECORD_FILTERS=${{vars.ENABLE_RECORD_FILTERS}}
+          export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"
+          export VITE_MAP_SOURCE=${{vars.MAP_SOURCE}}
+          export VITE_MAP_SOURCE_KEY="${{secrets.MAP_SOURCE_KEY}}"
+          # could make these configurable but enable by default for now
+          export VITE_OFFLINE_MAPS=true
+          export VITE_MAP_STYLE=basic
+          
           npm ci --python=python3.10
+          # we install these here because of a bug in npm with platform specific
+          # dependencies
+          npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          npm run configIOSbuild --workspace app
           npm run build
       - name: Update IOS Build
         run: |
           cd app
           npx cap update ios
           npx cap sync --deployment ios
-          cd ios/App; pod install
+          cd ios/App; pod install     
+      - name: Set up XCode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: 16.2.0
       - name: Deploy iOS app to production with Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:
@@ -88,13 +111,14 @@ jobs:
           bundle-install-path: '$HOME/vendor/bundle'
           verbose: false
         env:
-          APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
+          VITE_APP_STORE_CONNECT_TEAM_ID: '${{ secrets.APP_STORE_CONNECT_TEAM_ID }}'
           DEVELOPER_APP_ID: '${{ vars.DEVELOPER_APP_ID }}'
-          APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
+          VITE_APPLE_BUNDLE_IDENTIFIER: '${{ vars.APPLE_BUNDLE_IDENTIFIER }}'
           DEVELOPER_PORTAL_TEAM_ID: '${{ secrets.DEVELOPER_PORTAL_TEAM_ID }}'
           FASTLANE_APPLE_ID: '${{ secrets.FASTLANE_APPLE_ID }}'
           FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: '${{ secrets.FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD }}'
           MATCH_PASSWORD: '${{ secrets.MATCH_PASSWORD }}'
+          MATCH_GIT_URL: '${{ vars.MATCH_GIT_URL }}'
           GIT_AUTHORIZATION: '${{ secrets.GIT_AUTHORIZATION }}'
           PROVISIONING_PROFILE_SPECIFIER: '${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}'
           APPLE_KEY_ID: '${{ secrets.APPLE_KEY_ID }}'

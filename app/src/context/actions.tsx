@@ -31,11 +31,11 @@ export enum ActionType {
   ADD_ALERT,
   DELETE_ALERT,
   ADD_CUSTOM_ALERT,
-  IS_INITIALIZED,
+  IS_INITIALISED,
 }
 
-export interface IS_INITIALIZED {
-  type: ActionType.IS_INITIALIZED;
+export interface IS_INITIALISED {
+  type: ActionType.IS_INITIALISED;
   payload: boolean;
 }
 

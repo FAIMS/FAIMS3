@@ -18,7 +18,6 @@
  *   This contains the navbar React component, which allows users to navigate
  *   throughout the app.
  */
-
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AccountTree from '@mui/icons-material/AccountTree';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -28,13 +27,14 @@ import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
+import MapIcon from '@mui/icons-material/Map';
 import {
+  Box,
   CircularProgress,
   IconButton,
   ListItemButton,
   AppBar as MuiAppBar,
   Toolbar,
-  createTheme,
 } from '@mui/material';
 import Collapse from '@mui/material/Collapse';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -43,30 +43,33 @@ import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import clsx from 'clsx';
-import React, {useContext, useState} from 'react';
-import {createUseStyles as makeStyles} from 'react-jss';
+import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  OFFLINE_MAPS,
+} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {ProjectsContext} from '../../context/projects-context';
-import {PossibleToken} from '../../types/misc';
-import {ProjectExtended} from '../../types/project';
-import {checkToken} from '../../utils/helpers';
+import {
+  selectActiveServerId,
+  selectIsAuthenticated,
+} from '../../context/slices/authSlice';
+import {
+  Project,
+  selectProjectsByServerId,
+} from '../../context/slices/projectSlice';
+import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
 import SyncStatus from '../components/sync';
 
+const drawerWidth = 240;
+
 /**
  * Represents the properties for a menu list item.
- * @typedef {Object} ProjectListItemProps
- * @property {string} title - The title of the menuitem.
- * @property {React.ReactElement} icon - The icon associated with the menuitem.
- * @property {string} to - The path to navigate to for this menuitem.
- * @property {boolean} disabled - Whether the menuitem is disabled in the list.
  */
-
 type ProjectListItemProps = {
   title: string;
   icon: any;
@@ -76,8 +79,8 @@ type ProjectListItemProps = {
 
 /**
  * Represents the type of icon used in the navigation menu.
- * @typedef {React.ReactElement | string | number | undefined} IconType
- */ type IconType =
+ */
+type IconType =
   | undefined
   | string
   | number
@@ -91,112 +94,20 @@ type MenuItemProps = {
   icon: IconType;
 };
 
-const drawerWidth = 240;
-const theme = createTheme();
-
-const useStyles = makeStyles({
-  root: {
-    display: 'flex',
-    boxShadow: 'none',
-  },
-  appBar: {
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    boxShadow: 'none',
-  },
-  appBarShift: {
-    width: `calc(100% - ${drawerWidth}px)`,
-    marginLeft: drawerWidth,
-    transition: theme.transitions.create(['margin', 'width'], {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  },
-  menuButton: {
-    marginRight: theme.spacing(2),
-  },
-  hide: {
-    display: 'none',
-  },
-  drawer: {
-    width: drawerWidth,
-    flexShrink: 0,
-  },
-  drawerPaper: {
-    width: drawerWidth,
-    height: '100vh',
-    boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
-    borderRight: '1px solid rgba(0, 0, 0, 0.1)',
-  },
-  drawerHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: theme.spacing(0, 1),
-    minHeight: '64px',
-    justifyContent: 'flex-end',
-  },
-  content: {
-    flexGrow: 1,
-    padding: theme.spacing(3),
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen,
-    }),
-    marginLeft: -drawerWidth,
-  },
-  contentShift: {
-    transition: theme.transitions.create('margin', {
-      easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    marginLeft: 0,
-  },
-  nested: {
-    paddingLeft: theme.spacing(4),
-  },
-  /**
-   * Styles for the ListItemText component in the navigation items.
-   * @type {Object}
-   */
-  listItemText: {
-    fontSize: '1.1rem',
-    fontWeight: 'bold',
-    color: 'rgba(0, 0, 0, 0.54)', // Use the same gray color as the icons (this is a common MUI icon color)
-  },
-  /**
-   * Styles for the bottom section options in the drawer.
-   * Includes padding and a border at the top.
-   * @type {Object}
-   */
-  bottomOptions: {
-    borderTop: `1px solid ${theme.palette.divider}`,
-    padding: theme.spacing(2, 0),
-  },
-  /**
-   * Ensures that the bottom section of the drawer is positioned at the bottom of the viewport.
-   * @type {Object}
-   */
-  bottomSection: {
-    marginTop: 'auto',
-  },
-});
-
 /**
  * Retrieves a list of nested menu items to be displayed in the navigation menu.
- * @function
- * @param {ProjectInformation[]} pouchProjectList - List of project information.
- * @returns {MenuItemProps} - The item for nested menu.
  */
-
-function getNestedProjects(pouchProjectList: ProjectExtended[]) {
+function getNestedProjects(pouchProjectList: Project[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
     projectListItems.push({
-      title: project_info.name,
+      title: project_info.name ?? project_info.metadata.name,
       icon: <DescriptionIcon />,
-      to: ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + project_info.project_id,
+      to:
+        ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
+        project_info.serverId +
+        '/' +
+        project_info.projectId,
       disabled: false,
     });
   });
@@ -209,28 +120,19 @@ function getNestedProjects(pouchProjectList: ProjectExtended[]) {
   };
 }
 
-type NavbarProps = {
-  token?: PossibleToken;
-};
 /**
  * MainAppBar component handles the display of the navigation drawer and the app bar.
  * It includes top menu items, bottom menu items, and conditional rendering based on authentication status.
- *
- * @component
- * @param {NavbarProps} props - Props passed to the component.
- * @returns {JSX.Element} - The rendered MainAppBar component.
+ * This version uses inline sx props for styling.
  */
-export default function MainAppBar(props: NavbarProps) {
-  const classes = useStyles();
-  // get the current user token
-
-  // get the list of activated projects
-  const projectList = useContext(ProjectsContext).projects.filter(
-    p => p.activated
+export default function MainAppBar() {
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const activeServerId = useAppSelector(selectActiveServerId);
+  const projectList = useAppSelector(state =>
+    activeServerId ? selectProjectsByServerId(state, activeServerId) : []
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const isAuthenticated = checkToken(props.token);
   const toggle = () => setIsOpen(!isOpen);
 
   const topMenuItems: Array<MenuItemProps> = [
@@ -264,21 +166,29 @@ export default function MainAppBar(props: NavbarProps) {
       to: ROUTES.ABOUT_BUILD,
       disabled: false,
     },
-
-    isAuthenticated
-      ? {
-          title: 'Sign out',
-          icon: <AccountCircleIcon />,
-          to: ROUTES.SIGN_IN,
-          disabled: false,
-        }
-      : {
-          title: 'Sign out',
-          icon: <AccountCircleIcon />,
-          to: '/',
-          disabled: true,
-        },
   ];
+  if (OFFLINE_MAPS)
+    bottomMenuItems.push({
+      title: 'Offline Maps',
+      icon: <MapIcon />,
+      to: ROUTES.OFFLINE_MAPS,
+      disabled: false,
+    });
+
+  if (isAuthenticated)
+    bottomMenuItems.push({
+      title: 'Sign out',
+      icon: <AccountCircleIcon />,
+      to: ROUTES.SIGN_IN,
+      disabled: false,
+    });
+  else
+    bottomMenuItems.push({
+      title: 'Sign out',
+      icon: <AccountCircleIcon />,
+      to: '/',
+      disabled: true,
+    });
 
   const [nestedMenuOpen, setNestedMenuOpen] = useState<{
     [key: string]: boolean;
@@ -286,13 +196,13 @@ export default function MainAppBar(props: NavbarProps) {
 
   return (
     <React.Fragment>
-      <div className={classes.root}>
+      <div style={{display: 'flex', boxShadow: 'none'}}>
         <CssBaseline />
         <MuiAppBar
           position="relative"
-          className={clsx(classes.appBar, {
-            [classes.appBarShift]: isOpen,
-          })}
+          sx={{
+            boxShadow: 'none',
+          }}
         >
           <Toolbar>
             <IconButton
@@ -300,7 +210,12 @@ export default function MainAppBar(props: NavbarProps) {
               aria-label="open drawer"
               onClick={toggle}
               edge="start"
-              className={clsx(classes.menuButton, isOpen && classes.hide)}
+              sx={{
+                mr: 0,
+                paddingLeft: 1,
+                paddingRight: 0,
+                display: isOpen ? 'hidden' : 'flex',
+              }}
             >
               <MenuIcon />
             </IconButton>
@@ -314,25 +229,42 @@ export default function MainAppBar(props: NavbarProps) {
               }}
             >
               {isAuthenticated ? <SyncStatus /> : ''}
-              <AppBarAuth token={props.token} />
+              <AppBarAuth />
             </div>
           </Toolbar>
         </MuiAppBar>
         <Drawer
-          className={classes.drawer}
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            zIndex: 1500,
+          }}
           variant="temporary"
           anchor="left"
           open={isOpen}
           ModalProps={{onBackdropClick: toggle}}
-          classes={{
-            paper: classes.drawerPaper,
+          PaperProps={{
+            sx: {
+              width: drawerWidth,
+              height: '100vh',
+              boxShadow: '2px 0 10px rgba(0, 0, 0, 0.3)',
+              borderRight: '1px solid rgba(0, 0, 0, 0.1)',
+            },
           }}
         >
-          <div className={classes.drawerHeader}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              px: 1,
+              minHeight: '64px',
+              justifyContent: 'flex-end',
+            }}
+          >
             <IconButton onClick={toggle} size="large">
               <ChevronLeftIcon />
             </IconButton>
-          </div>
+          </Box>
           <Divider />
 
           <List>
@@ -349,7 +281,15 @@ export default function MainAppBar(props: NavbarProps) {
                     disabled={item.disabled}
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
-                    <ListItemText classes={{primary: classes.listItemText}}>
+                    <ListItemText
+                      sx={{
+                        '& .MuiListItemText-primary': {
+                          fontSize: '1.1rem',
+                          fontWeight: 'bold',
+                          color: 'rgba(0, 0, 0, 0.54)',
+                        },
+                      }}
+                    >
                       {item.title}{' '}
                     </ListItemText>
                     {item.nested.length === 0 ? (
@@ -374,7 +314,7 @@ export default function MainAppBar(props: NavbarProps) {
                           to: string;
                         }) => (
                           <ListItemButton
-                            className={classes.nested}
+                            sx={{pl: 4}}
                             key={
                               'nestedMenuItem' + item.title + nestedItem.title
                             }
@@ -385,8 +325,14 @@ export default function MainAppBar(props: NavbarProps) {
                           >
                             <ListItemIcon>{nestedItem.icon}</ListItemIcon>
                             <ListItemText
+                              sx={{
+                                '& .MuiListItemText-primary': {
+                                  fontSize: '1.1rem',
+                                  fontWeight: 'bold',
+                                  color: 'rgba(0, 0, 0, 0.54)',
+                                },
+                              }}
                               primary={nestedItem.title}
-                              classes={{primary: classes.listItemText}}
                             />
                           </ListItemButton>
                         )
@@ -404,16 +350,27 @@ export default function MainAppBar(props: NavbarProps) {
                 >
                   <ListItemIcon>{item.icon}</ListItemIcon>
                   <ListItemText
+                    sx={{
+                      '& .MuiListItemText-primary': {
+                        fontSize: '1.1rem',
+                        fontWeight: 'bold',
+                        color: 'rgba(0, 0, 0, 0.54)',
+                      },
+                    }}
                     primary={item.title}
-                    classes={{primary: classes.listItemText}}
                   />
                 </ListItemButton>
               );
             })}
           </List>
-          <div className={classes.bottomSection}>
+          <Box sx={{mt: 'auto'}}>
             <Divider />
-            <List className={classes.bottomOptions}>
+            <List
+              sx={theme => ({
+                borderTop: `1px solid ${theme.palette.divider}`,
+                py: 2,
+              })}
+            >
               {bottomMenuItems.map(
                 (item: {
                   title: string;
@@ -430,14 +387,20 @@ export default function MainAppBar(props: NavbarProps) {
                   >
                     <ListItemIcon>{item.icon}</ListItemIcon>
                     <ListItemText
+                      sx={{
+                        '& .MuiListItemText-primary': {
+                          fontSize: '1.1rem',
+                          fontWeight: 'bold',
+                          color: 'rgba(0, 0, 0, 0.54)',
+                        },
+                      }}
                       primary={item.title}
-                      classes={{primary: classes.listItemText}}
                     />
                   </ListItemButton>
                 )
               )}
             </List>
-          </div>
+          </Box>
         </Drawer>
       </div>
       <SystemAlert />

@@ -48,31 +48,11 @@ const DRAFT_SAVE_CYCLE = 10000;
 type RelevantProps = {
   project_id: ProjectID;
   record_id: RecordID;
-} & (
-  | {
-      // When editing existing record, we require the caller to know its revision
-      revision_id: RevisionID;
-      // This draft state usually requires a draft to keep
-      // track of, BUT if the user is viewing an existing record,
-      // A draft ID won't exist until edits are made
-      draft_id?: string;
-      // Type is required only because that's otherwise another pouchdb lookup,
-      // when form.tsx already has type cached.
-
-      // To avoid 'type' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      type?: undefined;
-    }
-  | {
-      // Editing a new record. Type required to create the draft
-      draft_id: string;
-      type: string;
-
-      // To avoid 'revision_id' in this.props, and since in JS when a key is not set,
-      // you get back undefined:
-      revision_id?: undefined;
-    }
-);
+  revision_id?: RevisionID;
+  draft_id?: string;
+  type?: FAIMSTypeName;
+  dispatchSetEdited: (state: boolean) => void;
+};
 
 /**
  * Important properties that might not be present
@@ -86,6 +66,10 @@ type LoadableProps = {
 
 type StagedData = {
   [fieldName: string]: unknown;
+};
+
+type StagedAnnotations = {
+  [fieldName: string]: Annotations;
 };
 
 /**
@@ -106,7 +90,7 @@ type StagedData = {
 class RecordDraftState {
   data:
     | {
-        state: 'uninitialized';
+        state: 'uninitialised';
       }
     | {
         state: 'unedited';
@@ -121,7 +105,7 @@ class RecordDraftState {
         // in a certain execution, would be to pass down initialValues from
         // the form component, but that's more complicated.)
         fields: StagedData | null;
-        annotations: StagedData | null;
+        annotations: StagedAnnotations | null;
         field_types: {[field_name: string]: FAIMSTypeName};
         relationship?: Relationship;
       }
@@ -134,7 +118,7 @@ class RecordDraftState {
         // and this is only up to date with fields in the current view
         // (view_fields)
         fields: StagedData;
-        annotations: StagedData;
+        annotations: StagedAnnotations;
         type: string;
         field_types: {[field_name: string]: FAIMSTypeName};
         relationship?: Relationship;
@@ -146,7 +130,7 @@ class RecordDraftState {
         // async, so the promise serves as a way to wait for the draft to be
         // created
         draft_id: Promise<string>;
-      } = {state: 'uninitialized'};
+      } = {state: 'uninitialised'};
 
   // NOTE: When data === 'unedited_existing', then draft_id is null.
   // When draft_id is null, data may be null or 'unedited_existing', depending
@@ -154,7 +138,7 @@ class RecordDraftState {
 
   data_listeners: [
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    (data: [StagedData, StagedData]) => unknown,
+    (data: [StagedData, StagedAnnotations]) => unknown,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (err: unknown) => unknown,
   ][] = [];
@@ -254,10 +238,10 @@ class RecordDraftState {
    */
   renderHook(
     values: FormikValues,
-    annotations: {[field_name: string]: Annotations},
+    annotations: StagedAnnotations,
     relationship: Relationship
   ) {
-    if (this.fetch_error === null && this.data.state !== 'uninitialized') {
+    if (this.fetch_error === null && this.data.state !== 'uninitialised') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being
       // triggered before any code gets to renderHook(), but
@@ -314,6 +298,7 @@ class RecordDraftState {
 
       // If anything changed, we create the draft:
       if (this.data.state === 'unedited') {
+        this.props.dispatchSetEdited(true);
         this.data = {
           ...this.data,
           state: 'edited',
@@ -408,7 +393,7 @@ class RecordDraftState {
    */
   async _fetchData(loadedprops: LoadableProps): Promise<void> {
     const uninterrupted_fetch_sequence = this.fetch_sequence;
-    this.data = {state: 'uninitialized'};
+    this.data = {state: 'uninitialised'};
 
     if (this.props.draft_id !== undefined) {
       // Editing an existing draft
@@ -431,6 +416,7 @@ class RecordDraftState {
           draft_id: Promise.resolve(this.props.draft_id),
           relationship: result.relationship,
         };
+        this.props.dispatchSetEdited(true);
         // Resolve any promises waiting for data
         const data_listeners = this.data_listeners;
         this.data_listeners = [];
@@ -455,6 +441,7 @@ class RecordDraftState {
         annotations: null,
         relationship: {},
       };
+      this.props.dispatchSetEdited(false);
       // this.draft_id hasn't needed to be created yet, keep as null
     }
   }
@@ -464,14 +451,14 @@ class RecordDraftState {
    * fetchData() is running or data is immediately available) then returns
    * the staged data, ONLY fields that are touched
    */
-  async _touchedData(): Promise<[StagedData, StagedData]> {
+  async _touchedData(): Promise<[StagedData, StagedAnnotations]> {
     // Function to filter the data
     const with_data = (
       data: StagedData,
-      annotations: StagedData
-    ): [StagedData, StagedData] => {
+      annotations: StagedAnnotations
+    ): [StagedData, StagedAnnotations] => {
       const filtered_data: StagedData = {};
-      const filtered_annotations: StagedData = {};
+      const filtered_annotations: StagedAnnotations = {};
       this.touched_fields.forEach(fieldName => {
         filtered_data[fieldName] = data[fieldName];
         filtered_annotations[fieldName] = annotations[fieldName];
@@ -533,7 +520,7 @@ class RecordDraftState {
       result = await setStagedData(
         await this.data.draft_id,
         data_to_save,
-        annotations_to_save,
+        annotations_to_save as StagedAnnotations,
         this.data.field_types,
         this.data.relationship ?? {}
       );
@@ -577,7 +564,7 @@ class RecordDraftState {
    * Called by setInitialValues, this function retrieves any existing
    * data from the draft storage for this current record/revision
    */
-  async getInitialValues(): Promise<[StagedData, StagedData]> {
+  async getInitialValues(): Promise<[StagedData, StagedAnnotations]> {
     return this._touchedData();
   }
 
@@ -608,7 +595,7 @@ class RecordDraftState {
    * This may trigger a change of state of the RecordForm
    */
   recordChangeHook(newProps: RelevantProps, loadedProps: LoadableProps) {
-    this.data = {state: 'uninitialized'};
+    this.data = {state: 'uninitialised'};
     this.last_revision = null;
     this.touched_fields.clear();
 
@@ -631,7 +618,7 @@ class RecordDraftState {
       console.info('Draft not edited, so not being cleared');
     }
 
-    this.data = {state: 'uninitialized'};
+    this.data = {state: 'uninitialised'};
     this.touched_fields.clear();
 
     this.last_revision = null;

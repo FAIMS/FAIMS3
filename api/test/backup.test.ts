@@ -18,15 +18,30 @@
  *   Tests for the interface to couchDB
  */
 import PouchDB from 'pouchdb';
-import {restoreFromBackup} from '../src/couchdb/backupRestore';
-import {getNotebookRecords, getNotebooks} from '../src/couchdb/notebooks';
-import {registerClient, notebookRecordIterator} from '@faims3/data-model';
-import {getUserFromEmailOrUsername} from '../src/couchdb/users';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
 
+import {
+  getRecordsWithRegex,
+  notebookRecordIterator,
+  registerClient,
+} from '@faims3/data-model';
 import {expect} from 'chai';
-import {callbackObject, cleanDataDBS, resetDatabases} from './mocks';
+import {restoreFromBackup} from '../src/couchdb/backupRestore';
+import {
+  getUserProjectsDetailed,
+  getProjectUIModel,
+} from '../src/couchdb/notebooks';
+import {getExpressUserFromEmailOrUserId} from '../src/couchdb/users';
+import {mockTokenContentsForUser} from '../src/utils';
+import {
+  callbackObject,
+  cleanDataDBS,
+  mockGetDataDB,
+  resetDatabases,
+} from './mocks';
+import {initialiseDbAndKeys} from '../src/couchdb';
 
 // register our mock database clients with the module
 registerClient(callbackObject);
@@ -35,22 +50,29 @@ describe('Backup and restore', () => {
   it('restore backup', async () => {
     await resetDatabases();
     await cleanDataDBS();
+    await initialiseDbAndKeys({});
 
-    await restoreFromBackup('test/backup.jsonl');
+    await restoreFromBackup({filename: 'test/backup.jsonl'});
 
     // should now have the notebooks from the backup defined
-    const user = await getUserFromEmailOrUsername('admin');
+    const user = await getExpressUserFromEmailOrUserId('admin');
     expect(user).not.to.be.undefined;
     if (user) {
-      const notebooks = await getNotebooks(user);
+      const notebooks = await getUserProjectsDetailed(user);
       expect(notebooks.length).to.equal(2);
       expect(notebooks[0].name).to.equal('Campus Survey Demo');
 
       // test record iterator while we're here
-      const iterator = await notebookRecordIterator(
-        notebooks[0].non_unique_project_id,
-        'FORM2'
-      );
+      const projectId = notebooks[0].project_id;
+      const uiSpec = await getProjectUIModel(projectId);
+      const dataDb = await mockGetDataDB(projectId);
+
+      const iterator = await notebookRecordIterator({
+        dataDb,
+        projectId,
+        uiSpecification: uiSpec,
+        viewID: 'FORM2',
+      });
       let count = 0;
       let {record, done} = await iterator.next();
       while (record && !done) {
@@ -59,10 +81,16 @@ describe('Backup and restore', () => {
       }
       expect(count).to.equal(17);
 
-      // throw in a test of getNotebookRecords while we're here
-      const records = await getNotebookRecords(
-        notebooks[0].non_unique_project_id
-      );
+      // throw in a test of getRecordsWithRegex while we're here
+      const tokenContents = mockTokenContentsForUser(user);
+      const records = await getRecordsWithRegex({
+        dataDb,
+        regex: '.*',
+        tokenContents,
+        projectId,
+        filterDeleted: true,
+        uiSpecification: uiSpec,
+      });
       expect(records).to.have.lengthOf(28);
     }
   });

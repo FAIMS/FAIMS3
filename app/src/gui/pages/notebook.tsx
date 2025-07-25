@@ -27,158 +27,53 @@
  * - React Router: useParams, useNavigate
  * - Material UI: Box, Typography, Chip, IconButton, CircularProgress
  */
-import {useContext} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
-import {Box, Chip, IconButton, Typography} from '@mui/material';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
-import {CircularProgress} from '@mui/material';
+import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import {ProjectsContext} from '../../context/projects-context';
-import NotebookComponent from '../components/notebook';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ErrorIcon from '@mui/icons-material/Error';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {useParams} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {useAppSelector} from '../../context/store';
+import NotebookComponent from '../components/notebook';
+import BackButton from '../components/ui/BackButton';
+import NotFound404 from './404';
 
 export default function Notebook() {
-  const {project_id} = useParams<{
-    project_id: string;
+  const theme = useTheme();
+  const {serverId, projectId} = useParams<{
+    projectId: string;
+    serverId: string;
   }>();
+  if (!projectId || !serverId) return <NotFound404 />;
 
-  const project = useContext(ProjectsContext).projects.find(
-    project => project_id === project.project_id
+  const project = useAppSelector(
+    state => state.projects.servers[serverId]?.projects[projectId]
   );
+  const largerThanMedium = useMediaQuery(theme.breakpoints.up('md'));
 
   if (!project) return <CircularProgress data-testid="progressbar" />;
 
-  const theme = useTheme();
-  const mq_above_md = useMediaQuery(theme.breakpoints.up('md'));
-
-  const history = useNavigate();
-  const isActive = project?.activated;
+  // back button goes to the notebook list page
+  const backLink = ROUTES.NOTEBOOK_LIST_ROUTE;
 
   return (
-    <Box>
-      {/* Back Button Section */}
-      <Box sx={{display: 'flex', alignItems: 'center', padding: '8px'}}>
-        <IconButton
-          onClick={() => history(ROUTES.INDEX)}
-          aria-label="back"
-          size="small"
-          sx={{color: 'black'}}
-        >
-          <ArrowBackIcon />
-        </IconButton>
+    <Stack spacing={2}>
+      <Stack direction="row" alignItems={'center'} spacing={2}>
+        <BackButton link={backLink} confirm={false} />
+
         <Typography
-          variant="body1"
-          sx={{marginLeft: '8px', fontWeight: 'bold'}}
-        >
-          Back to {NOTEBOOK_NAME_CAPITALIZED}s
-        </Typography>
-      </Box>
-
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 16px',
-        }}
-      >
-        <Box
-          sx={{display: 'flex', alignItems: 'center', flexGrow: 1, minWidth: 0}}
-        >
-          <MenuBookIcon
-            fontSize={mq_above_md ? 'large' : 'medium'}
-            sx={{marginRight: '8px', color: theme.palette.secondary.main}}
-          />
-          <Typography
-            variant={mq_above_md ? 'h4' : 'h5'}
-            component="div"
-            sx={{
-              fontWeight: 'bold',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              fontSize: '1.6rem',
-            }}
-          >
-            {project.name}
-          </Typography>
-        </Box>
-
-        <Box
+          variant={largerThanMedium ? 'h3' : 'h4'}
+          component="div"
           sx={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            textAlign: 'center',
-            marginLeft: {xs: '32px', sm: '24px', md: '20px'},
+            fontWeight: 'bold',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
           }}
         >
-          {isActive ? (
-            <Chip
-              label="Active"
-              icon={<CheckCircleIcon />}
-              sx={{
-                backgroundColor: 'green',
-                color: 'white',
-                fontSize: '15px',
-                fontWeight: 'bold',
-                borderRadius: '8px',
-                '& .MuiChip-icon': {
-                  color: 'white',
-                },
-              }}
-            />
-          ) : (
-            <Chip
-              label="Not Active"
-              icon={<ErrorIcon sx={{color: 'white'}} />}
-              sx={{
-                backgroundColor: '#b62b2b',
-                color: 'white',
-                fontSize: '15px',
-                fontWeight: 'bold',
-                borderRadius: '8px',
-                '& .MuiChip-icon': {
-                  color: 'white',
-                },
-              }}
-            />
-          )}
-        </Box>
-      </Box>
-      {/* <Grid
-        container
-        direction="row"
-        justifyContent="flex-start"
-        alignItems="center"
-        spacing={2}
-      >
-        <Grid item xs={'auto'}>
-          <Typography variant={mq_above_md ? 'h3' : 'h4'} component={'div'}>
-            <Grid
-              container
-              direction="row"
-              justifyContent="flex-start"
-              alignItems="center"
-              spacing={1}
-            >
-              <Grid item>
-                <FolderIcon
-                  sx={{color: theme.palette.secondary.main}}
-                  fontSize={mq_above_md ? 'large' : 'medium'}
-                  style={{verticalAlign: 'middle'}}
-                />
-              </Grid>
-              <Grid item>{project.name}</Grid>
-            </Grid>
-          </Typography>
-        </Grid>
-      </Grid> */}
+          {project.name ?? project.metadata.name}
+        </Typography>
+      </Stack>
+
       <NotebookComponent project={project} />
-    </Box>
+    </Stack>
   );
 }

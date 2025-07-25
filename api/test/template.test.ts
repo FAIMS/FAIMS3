@@ -18,16 +18,21 @@
  *   Tests for the API
  */
 
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
+PouchDB.plugin(PouchDBFind);
+
 import {
   CreateNotebookFromTemplate,
   EncodedNotebook,
+  EncodedProjectUIModel,
   GetListTemplatesResponse,
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
   GetTemplateByIdResponseSchema,
   PostCreateNotebookResponseSchema,
   PostCreateTemplateInput,
-  PostCreateTemplateResponse,
   PostCreateTemplateResponseSchema,
   PutUpdateTemplateInput,
   PutUpdateTemplateInputSchema,
@@ -37,9 +42,8 @@ import {
 import {expect} from 'chai';
 import {Express} from 'express';
 import fs from 'fs';
-import PouchDB from 'pouchdb';
 import request from 'supertest';
-import {app} from '../src/routes';
+import {app} from '../src/expressSetup';
 import {NOTEBOOKS_API_BASE} from './api.test';
 import {
   adminToken,
@@ -47,8 +51,13 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
-PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
-PouchDB.plugin(require('pouchdb-find'));
+
+const EMPTY_UI_SPEC = {
+  fields: {},
+  fviews: {},
+  viewsets: {},
+  visible_types: [],
+} satisfies EncodedProjectUIModel;
 
 // Where it the template API?
 const TEMPLATE_API_BASE = '/api/templates';
@@ -72,24 +81,23 @@ const getSampleNotebook = () => {
 const createSampleTemplate = async (
   app: Express,
   options: {
-    templateName?: string;
+    teamId?: string;
     payloadExtras?: Object;
+    name?: string;
   },
   token: string = adminToken
-): Promise<{
-  template: PostCreateTemplateResponse;
-  notebook: EncodedNotebook;
-}> => {
+) => {
   // create a template from loaded spec
   const nb = getSampleNotebook();
   return await requestAuthAndType(
     request(app)
       .post(`${TEMPLATE_API_BASE}`)
       .send({
-        template_name: options.templateName ?? 'exampletemplate',
         ...nb,
+        name: options.name ?? 'test template',
+        ...(options.teamId ? {teamId: options.teamId} : {}),
         ...(options.payloadExtras ?? {}),
-      } as PostCreateTemplateInput),
+      } satisfies PostCreateTemplateInput),
     token
   )
     .expect(200)
@@ -191,7 +199,8 @@ describe('template API tests', () => {
   //=============================
 
   it('create, list, get, delete', async () => {
-    const {template, notebook: nb} = await createSampleTemplate(app, {});
+    const name = 'test 123 template';
+    const {template, notebook: nb} = await createSampleTemplate(app, {name});
     const templateId1 = template._id;
 
     // list and see the new template
@@ -204,6 +213,7 @@ describe('template API tests', () => {
 
       // Check all properties match
       expect(entry._id).to.equal(templateId1);
+      expect(entry.name).to.equal(name);
 
       // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
       // expect(JSON.stringify(entry['ui-specification'])).to.equal(
@@ -220,9 +230,6 @@ describe('template API tests', () => {
       expect(JSON.stringify(entry['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
       );
-      expect(JSON.stringify(entry.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
-      );
 
       // should be version 1
       expect(entry.version).to.equal(1);
@@ -234,13 +241,6 @@ describe('template API tests', () => {
       expect(template._id).to.equal(templateId1);
       expect(JSON.stringify(template['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
-      );
-
-      // Remove the template ID which was injected
-      // TODO see BSS-343
-      delete template.metadata.template_id;
-      expect(JSON.stringify(template.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
       );
 
       // should be version 1
@@ -268,15 +268,6 @@ describe('template API tests', () => {
         );
       }
 
-      // Remove the template_id from the result and then check equality
-      // TODO BSS-343
-      delete entry?.metadata.template_id;
-
-      //
-      expect(JSON.stringify(entry?.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
-      );
-
       // should be version 1
       expect(entry?.version).to.equal(1);
     });
@@ -287,13 +278,6 @@ describe('template API tests', () => {
       expect(template._id).to.equal(templateId2);
       expect(JSON.stringify(template['ui-specification'])).to.equal(
         JSON.stringify(nb['ui-specification'])
-      );
-
-      // Remove the template_id from the result and then check equality
-      // TODO BSS-343
-      delete template.metadata.template_id;
-      expect(JSON.stringify(template.metadata)).to.equal(
-        JSON.stringify(nb.metadata)
       );
 
       // should be version 1
@@ -330,7 +314,6 @@ describe('template API tests', () => {
     // update some details and check properties
 
     // change the template name and add a metadata field
-    template.template_name = 'updated name';
     template.metadata.updated_field = 'updated-value';
 
     // update the existing template
@@ -343,7 +326,6 @@ describe('template API tests', () => {
       // Check the new properties
       expect(newTemplate.version).to.equal(2);
       expect(newTemplate.metadata.updated_field).to.equal('updated-value');
-      expect(newTemplate.template_name).to.equal('updated name');
     });
 
     // get the template and check the same
@@ -351,7 +333,6 @@ describe('template API tests', () => {
       // Check the new properties
       expect(newTemplate.version).to.equal(2);
       expect(newTemplate.metadata.updated_field).to.equal('updated-value');
-      expect(newTemplate.template_name).to.equal('updated name');
     });
   });
 
@@ -366,7 +347,7 @@ describe('template API tests', () => {
         .send({
           name: 'test project name',
           template_id: template._id,
-        } as CreateNotebookFromTemplate)
+        } satisfies CreateNotebookFromTemplate)
     )
       .expect(200)
       .then(res => {
@@ -432,9 +413,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           metadata: {},
-          template_name: 'faketemplate',
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404)
@@ -457,9 +437,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           metadata: {},
-          template_name: 'faketemplate',
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies PutUpdateTemplateInput)
     )
       // Expect 404 not found
       .expect(404);
@@ -476,7 +455,7 @@ describe('template API tests', () => {
         .send({
           name: 'test project name',
           template_id: template._id + 'jdkfljs',
-        } as CreateNotebookFromTemplate)
+        } satisfies CreateNotebookFromTemplate)
     ).expect(404);
   });
 
@@ -535,9 +514,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/${fakeId}`)
         .send({
           // missing! metadata: {},
-          template_name: 'faketemplate',
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies Omit<PutUpdateTemplateInput, 'metadata'>)
     )
       // Expect 400 bad request
       .expect(400)
@@ -549,39 +527,6 @@ describe('template API tests', () => {
         expect(err).to.have.property('type');
         expect(err.type).to.equal('Body');
         expect(JSON.stringify(err.errors)).to.include('metadata');
-      });
-  });
-
-  it('check name field is stripped of white space', async () => {
-    // Create a sample template
-    const {template} = await createSampleTemplate(app, {
-      templateName: ' name with whitespace    ',
-    });
-    expect(template.template_name).to.equal('name with whitespace');
-  });
-
-  it('invalid input due to insufficient field length', async () => {
-    const fakeId = '1234';
-    await requestAuthAndType(
-      request(app)
-        .put(`${TEMPLATE_API_BASE}/${fakeId}`)
-        .send({
-          metadata: {},
-          // must be > 5 long
-          template_name: '123',
-          'ui-specification': {},
-        } as PutUpdateTemplateInput)
-    )
-      // Expect 400 bad request
-      .expect(400)
-      // And check the body has the error properties we want
-      .then(res => {
-        expect(res.body).to.be.an('array');
-        expect(res.body.length).to.equal(1);
-        const err = res.body[0];
-        expect(err).to.have.property('type');
-        expect(err.type).to.equal('Body');
-        expect(JSON.stringify(err.errors)).to.include('template_name');
       });
   });
 
@@ -602,9 +547,8 @@ describe('template API tests', () => {
       .put(`${TEMPLATE_API_BASE}/12345`)
       .send({
         metadata: {},
-        template_name: '12345',
-        'ui-specification': {},
-      } as PutUpdateTemplateInput)
+        'ui-specification': EMPTY_UI_SPEC,
+      } satisfies PutUpdateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -612,10 +556,10 @@ describe('template API tests', () => {
     return await request(app)
       .post(`${TEMPLATE_API_BASE}`)
       .send({
-        template_name: 'exampletemplate',
+        name: 'tests',
         metadata: {},
-        'ui-specification': {},
-      } as PostCreateTemplateInput)
+        'ui-specification': EMPTY_UI_SPEC,
+      } satisfies PostCreateTemplateInput)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -632,7 +576,7 @@ describe('template API tests', () => {
       .send({
         name: '12345',
         template_id: '12345',
-      } as CreateNotebookFromTemplate)
+      } satisfies CreateNotebookFromTemplate)
       .set('Content-Type', 'application/json')
       .expect(401);
   });
@@ -641,10 +585,10 @@ describe('template API tests', () => {
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
         .send({
-          template_name: 'exampletemplate',
           metadata: {},
-          'ui-specification': {},
-        } as PostCreateTemplateInput),
+          'ui-specification': EMPTY_UI_SPEC,
+          name: 'test template 123',
+        } satisfies PostCreateTemplateInput),
       localUserToken
     )
       .set('Content-Type', 'application/json')
@@ -656,9 +600,8 @@ describe('template API tests', () => {
         .put(`${TEMPLATE_API_BASE}/12345`)
         .send({
           metadata: {},
-          template_name: '12345',
-          'ui-specification': {},
-        } as PutUpdateTemplateInput),
+          'ui-specification': EMPTY_UI_SPEC,
+        } satisfies PutUpdateTemplateInput),
       localUserToken
     ).expect(401);
   });
@@ -675,7 +618,7 @@ describe('template API tests', () => {
         .send({
           template_id: '12345',
           name: '12345',
-        } as CreateNotebookFromTemplate),
+        } satisfies CreateNotebookFromTemplate),
       localUserToken
     ).expect(401);
   });

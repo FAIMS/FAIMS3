@@ -18,39 +18,68 @@
  *    Core functions to access the various databases used by the application
  */
 
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-security-helper'));
+
 import {
   AuthDatabase,
+  couchInitialiser,
+  DATABASE_TYPE,
+  DatabaseType,
+  initAuthDB,
+  initDataDB,
+  initDirectoryDB,
+  initInvitesDB,
+  initMetadataDB,
+  initMigrationsDB,
+  initPeopleDB,
+  initProjectsDB,
+  initTeamsDB,
+  initTemplatesDB,
+  InvitesDB,
+  migrateDbs,
+  MigrationsDB,
+  PeopleDB,
+  PeopleDBFields,
+  PossibleConnectionInfo,
   ProjectDataObject,
+  ProjectDocument,
   ProjectID,
   ProjectMetaObject,
-  ProjectObject,
-  TemplateDetails,
+  TeamsDB,
+  TemplateDB,
 } from '@faims3/data-model';
-import PouchDB from 'pouchdb';
-import {initialiseJWTKey} from '../authkeys/initJWTKeys';
-import {COUCHDB_INTERNAL_URL, LOCAL_COUCHDB_AUTH} from '../buildconfig';
-import * as Exceptions from '../exceptions';
+import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {
-  initialiseAuthDb,
-  initialiseDirectoryDB,
-  initialiseProjectsDB,
-  initialiseTemplatesDb,
-  initialiseUserDB,
-} from './initialise';
+  CONDUCTOR_DESCRIPTION,
+  CONDUCTOR_INSTANCE_NAME,
+  CONDUCTOR_PUBLIC_URL,
+  COUCHDB_INTERNAL_URL,
+  LOCAL_COUCHDB_AUTH,
+} from '../buildconfig';
+import * as Exceptions from '../exceptions';
+import {getAllProjectsDirectory} from './notebooks';
+import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
 const TEMPLATES_DB_NAME = 'templates';
 const AUTH_DB_NAME = 'auth';
 const PEOPLE_DB_NAME = 'people';
+const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
+const TEAMS_DB_NAME = 'teams';
 
 let _directoryDB: PouchDB.Database | undefined;
-let _projectsDB: PouchDB.Database<ProjectObject> | undefined;
-let _templatesDb: PouchDB.Database<TemplateDetails> | undefined;
+let _projectsDB: PouchDB.Database<ProjectDocument> | undefined;
+let _templatesDb: TemplateDB | undefined;
 let _authDB: AuthDatabase | undefined;
-let _usersDB: PouchDB.Database<Express.User> | undefined;
-let _invitesDB: PouchDB.Database | undefined;
+let _usersDB: PeopleDB | undefined;
+let _invitesDB: InvitesDB | undefined;
+let _teamsDB: TeamsDB | undefined;
+let _migrationsDB: MigrationsDB | undefined;
 
 const pouchOptions = () => {
   const options: PouchDB.Configuration.RemoteDatabaseConfiguration = {};
@@ -132,7 +161,7 @@ export const verifyCouchDBConnection = async () => {
   return result;
 };
 
-export const getDirectoryDB = (): PouchDB.Database | undefined => {
+export const getDirectoryDB = (): PouchDB.Database => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
 
@@ -140,7 +169,9 @@ export const getDirectoryDB = (): PouchDB.Database | undefined => {
     try {
       _directoryDB = new PouchDB(directorydb, pouch_options);
     } catch (error) {
-      console.log('bad thing happened', error);
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting directory database.'
+      );
     }
   }
   return _directoryDB;
@@ -161,12 +192,12 @@ export const getAuthDB = (): AuthDatabase => {
   return _authDB;
 };
 
-export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
+export const getUsersDB = (): PeopleDB => {
   if (!_usersDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PEOPLE_DB_NAME;
     try {
-      _usersDB = new PouchDB<Express.User>(dbName, pouch_options);
+      _usersDB = new PouchDB<PeopleDBFields>(dbName, pouch_options);
     } catch {
       throw new Exceptions.InternalSystemError(
         'Error occurred while getting users database.'
@@ -177,9 +208,7 @@ export const getUsersDB = (): PouchDB.Database<Express.User> | undefined => {
   return _usersDB;
 };
 
-export const getProjectsDB = ():
-  | PouchDB.Database<ProjectObject>
-  | undefined => {
+export const localGetProjectsDb = (): PouchDB.Database<ProjectDocument> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
@@ -194,7 +223,7 @@ export const getProjectsDB = ():
   return _projectsDB;
 };
 
-export const getTemplatesDb = (): PouchDB.Database<TemplateDetails> => {
+export const getTemplatesDb = (): TemplateDB => {
   if (!_templatesDb) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + TEMPLATES_DB_NAME;
@@ -209,7 +238,22 @@ export const getTemplatesDb = (): PouchDB.Database<TemplateDetails> => {
   return _templatesDb;
 };
 
-export const getInvitesDB = (): PouchDB.Database | undefined => {
+export const getMigrationDb = (): MigrationsDB => {
+  if (!_migrationsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + MIGRATIONS_DB_NAME;
+    try {
+      _migrationsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting migrations database.'
+      );
+    }
+  }
+  return _migrationsDB;
+};
+
+export const getInvitesDB = (): PouchDB.Database => {
   if (!_invitesDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + INVITE_DB_NAME;
@@ -224,6 +268,20 @@ export const getInvitesDB = (): PouchDB.Database | undefined => {
   return _invitesDB;
 };
 
+export const getTeamsDB = (): TeamsDB => {
+  if (!_teamsDB) {
+    const pouch_options = pouchOptions();
+    const dbName = COUCHDB_INTERNAL_URL + '/' + TEAMS_DB_NAME;
+    try {
+      _teamsDB = new PouchDB(dbName, pouch_options);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'Error occurred while getting teams database.'
+      );
+    }
+  }
+  return _teamsDB;
+};
 /**
  * Returns the metadata DB for a given project - involves fetching the project
  * doc and then fetching the corresponding metadata db
@@ -234,7 +292,7 @@ export const getMetadataDb = async (
   projectID: ProjectID
 ): Promise<PouchDB.Database<ProjectMetaObject>> => {
   // Gets the projects DB
-  const projectsDB = getProjectsDB();
+  const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
     throw new Exceptions.InternalSystemError(
       'Could not fetch the projects DB. Contact system administrator.'
@@ -251,15 +309,22 @@ export const getMetadataDb = async (
     );
   }
 
-  // Now get the metadata DB from the project document
-  if (!projectDoc.metadata_db) {
-    throw new Exceptions.InternalSystemError(
-      "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
-    );
+  // Now get the metadata DB from the project document (and be backwards
+  // compatible)
+  let db: PossibleConnectionInfo;
+  db = projectDoc.metadataDb;
+  if (!db) {
+    const doc = projectDoc as any;
+    db = doc.metadata_db;
+    if (!db) {
+      throw new Exceptions.InternalSystemError(
+        "The given project document does not contain a mandatory reference to it's metadata database. Unsure how to fetch metadata DB. Aborting."
+      );
+    }
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.metadata_db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
   const pouch_options = pouchOptions();
 
   // Authorise against this DB
@@ -280,7 +345,7 @@ export const getDataDb = async (
   projectID: ProjectID
 ): Promise<PouchDB.Database<ProjectDataObject>> => {
   // Get the projects DB
-  const projectsDB = getProjectsDB();
+  const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
     throw new Exceptions.InternalSystemError(
       'Could not fetch the projects DB. Contact system administrator.'
@@ -289,23 +354,28 @@ export const getDataDb = async (
 
   // Get the project doc for the given ID
   const projectDoc = await projectsDB.get(projectID);
-
-  // 404 if project doc not found
   if (!projectDoc) {
     throw new Exceptions.ItemNotFoundException(
       'Cannot find the given project ID in the projects database.'
     );
   }
 
-  // Now get the data DB for this project
-  if (!projectDoc.data_db) {
-    throw new Exceptions.InternalSystemError(
-      "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
-    );
+  // Now get the metadata DB from the project document (and be backwards
+  // compatible)
+  let db: PossibleConnectionInfo;
+  db = projectDoc.dataDb;
+  if (!db) {
+    const doc = projectDoc as any;
+    db = doc.data_db;
+    if (!db) {
+      throw new Exceptions.InternalSystemError(
+        "The given project document does not contain a mandatory reference to it's data database. Unsure how to fetch data DB. Aborting."
+      );
+    }
   }
 
   // Build the pouch connection for this DB
-  const dbUrl = COUCHDB_INTERNAL_URL + '/' + projectDoc.data_db.db_name;
+  const dbUrl = COUCHDB_INTERNAL_URL + '/' + db.db_name;
   const pouch_options = pouchOptions();
   // Authorize against this DB
   if (LOCAL_COUCHDB_AUTH !== undefined) {
@@ -314,84 +384,332 @@ export const getDataDb = async (
   return new PouchDB(dbUrl, pouch_options);
 };
 
-export const initialiseDatabases = async () => {
-  // Setup the auth DB
+/**
+ * Initialises the database level configuration for a project's metadata DB. Can
+ * create the DB if it doesn't already exist.
+ */
+export const initialiseMetadataDb = async ({
+  projectId,
+  force = false,
+}: {
+  projectId: string;
+  force?: boolean;
+}): Promise<PouchDB.Database<ProjectMetaObject>> => {
+  // Are we in a testing environment?
+  const isTesting = process.env.NODE_ENV === 'test';
+
+  // Get the metadata DB
+  const metaDb = await getMetadataDb(projectId);
+
+  try {
+    await couchInitialiser({
+      db: metaDb,
+      content: initMetadataDB({projectId}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      `An error occurred while initialising the metadata DB for project ${projectId}!... ${e}`
+    );
+  }
+
+  return metaDb;
+};
+
+/**
+ * Initialises the database level configuration for a project's data DB. Can
+ * create the DB if it doesn't already exist.
+ */
+export const initialiseDataDb = async ({
+  projectId,
+  force = false,
+}: {
+  projectId: string;
+  force?: boolean;
+}): Promise<PouchDB.Database<ProjectDataObject>> => {
+  // Are we in a testing environment?
+  const isTesting = process.env.NODE_ENV === 'test';
+
+  // Get the metadata DB
+  const dataDb = await getDataDb(projectId);
+
+  try {
+    await couchInitialiser({
+      db: dataDb,
+      content: initDataDB({projectId}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      `An error occurred while initialising the data DB for project ${projectId}!... ${e}`
+    );
+  }
+
+  return dataDb;
+};
+
+/**
+ * Critical method which initialises all databases, including remotely on the
+ * configured couch instance.
+ *
+ * This systematically generates a set of initialisation content from the data
+ * model, then applies this initialisation using a helper method in the data
+ * model.
+ *
+ * Some local information is injected as part of the config generation step -
+ * e.g. conductor name/description.
+ *
+ * Also initialises keys based on the configured key service.
+ *
+ * If force = true, documents will always be written, even if it already exists.
+ *
+ * If pushKeys = true, will update the public keys
+ *
+ * @param force Write on clash
+ */
+export const initialiseDbAndKeys = async ({
+  force = false,
+  pushKeys = true,
+}: {
+  force?: boolean;
+  // Should we push the key configuration?
+  pushKeys?: boolean;
+}) => {
+  // Are we in a testing environment?
+  const isTesting = process.env.NODE_ENV === 'test';
+
+  // Establish databases (this either fetches or creates)
+  // Auth
   const authDB = getAuthDB();
-  try {
-    await initialiseAuthDb(authDB);
-  } catch (error) {
-    console.log('Could not initialise the auth database', error);
-    throw error;
-  }
 
+  // Directory
   const directoryDB = getDirectoryDB();
-  try {
-    await initialiseDirectoryDB(directoryDB);
-  } catch (error) {
-    console.log('something wrong with directory db init', error);
-    throw error;
-  }
 
-  const projectsDB = getProjectsDB();
-  try {
-    await initialiseProjectsDB(projectsDB);
-  } catch (error) {
-    console.log('something wrong with projects db init', error);
-    throw error;
-  }
+  // Projects
+  const projectsDB = localGetProjectsDb();
 
-  let templatesDb: PouchDB.Database;
+  // Invites
+  const invitesDB = getInvitesDB();
+
+  // Teams
+  const teamsDB = getTeamsDB();
+
+  // Templates
+  const templatesDb = getTemplatesDb();
+
+  // Users
+  const peopleDb = getUsersDB();
+
+  // Migrations DB
+  const migrationsDb = getMigrationDb();
+
+  // Now for each, generate their initialisation documents and apply
+
+  // Auth DB
   try {
-    templatesDb = getTemplatesDb();
-  } catch {
+    await couchInitialiser({
+      db: authDB,
+      content: initAuthDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'An error occurred while instantiating the templates local DB. Aborting operation.'
+      'An error occurred while initialising the auth database!...' + e
     );
   }
 
+  // Directory DB (include default document which establishes identity of this
+  // conductor)
   try {
-    await initialiseTemplatesDb(templatesDb);
-  } catch {
+    await couchInitialiser({
+      db: directoryDB,
+      content: initDirectoryDB({
+        defaultConfig: {
+          conductorInstanceName: CONDUCTOR_INSTANCE_NAME,
+          conductorUrl: CONDUCTOR_PUBLIC_URL,
+          description: CONDUCTOR_DESCRIPTION,
+          peopleDbName: PEOPLE_DB_NAME,
+          projectsDbName: PROJECTS_DB_NAME,
+        },
+      }),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
     throw new Exceptions.InternalSystemError(
-      'Something wrong during templates db initialisation'
+      'An error occurred while initialising the directory database!...' + e
     );
   }
 
-  const usersDB = getUsersDB();
+  // Projects DB
   try {
-    await initialiseUserDB(usersDB);
-  } catch (error) {
-    console.log('something wrong with user db init', error);
-    throw error;
+    await couchInitialiser({
+      db: projectsDB,
+      content: initProjectsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the projects database!...' + e
+    );
   }
 
-  // Setup keys
+  // Templates DB
   try {
-    await initialiseJWTKey();
-  } catch (error) {
-    console.log(
-      'something wrong PUTing jwt_keys into the db configuration...',
-      error
+    await couchInitialiser({
+      db: templatesDb,
+      content: initTemplatesDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the templates database!...' + e
     );
-    throw error;
+  }
+
+  // People DB
+  try {
+    await couchInitialiser({
+      db: peopleDb,
+      content: initPeopleDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the people database!...' + e
+    );
+  }
+
+  // Invites DB
+  try {
+    await couchInitialiser({
+      db: invitesDB,
+      content: initInvitesDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the invites database!...' + e
+    );
+  }
+
+  // Teams DB
+  try {
+    await couchInitialiser({
+      db: teamsDB,
+      content: initTeamsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the teams database!...' + e
+    );
+  }
+
+  // Migrations DB
+  try {
+    await couchInitialiser({
+      db: migrationsDb,
+      content: initMigrationsDB({}),
+      config: {applyPermissions: !isTesting, forceWrite: force},
+    });
+  } catch (e) {
+    throw new Exceptions.InternalSystemError(
+      'An error occurred while initialising the migrations database!...' + e
+    );
+  }
+
+  // For each project, ensure the metadata and data DBs are also
+  // initialised/synced
+  const projects = await getAllProjectsDirectory();
+
+  for (const project of projects) {
+    // Project ID
+    const projectId = project._id;
+
+    // Now initialise the DBs (potentially updating security documents etc)
+    await initialiseMetadataDb({projectId, force});
+    await initialiseDataDb({projectId, force});
+  }
+
+  if (pushKeys) {
+    // Setup keys
+    try {
+      await initialiseJWTKey();
+    } catch (error) {
+      console.log(
+        'something wrong PUTing jwt_keys into the db configuration...',
+        error
+      );
+      throw error;
+    }
+  } else {
+    console.log('Not pushing key configuration.');
   }
 };
 
-export const closeDatabases = async () => {
-  if (_projectsDB) {
-    try {
-      await _projectsDB.close();
-      _projectsDB = undefined;
-    } catch (error) {
-      console.log(error);
-    }
+/**
+ * Initialises and then migrates all databases!
+ */
+export const initialiseAndMigrateDBs = async ({
+  force = false,
+  pushKeys = true,
+}: {
+  force?: boolean;
+  // Should we push the key configuration?
+  pushKeys?: boolean;
+}) => {
+  await initialiseDbAndKeys({force, pushKeys});
+
+  let dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[] = [
+    {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
+    {
+      db: getDirectoryDB(),
+      dbType: DatabaseType.DIRECTORY,
+      dbName: DIRECTORY_DB_NAME,
+    },
+    {db: getInvitesDB(), dbType: DatabaseType.INVITES, dbName: INVITE_DB_NAME},
+    {db: getUsersDB(), dbType: DatabaseType.PEOPLE, dbName: PEOPLE_DB_NAME},
+    {
+      db: localGetProjectsDb(),
+      dbType: DatabaseType.PROJECTS,
+      dbName: PROJECTS_DB_NAME,
+    },
+    {
+      db: getTemplatesDb(),
+      dbType: DatabaseType.TEMPLATES,
+      dbName: TEMPLATES_DB_NAME,
+    },
+  ];
+
+  // Migrate these first
+  const migrationsDb = getMigrationDb();
+  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+
+  // Now migrate all data/metadata DBs
+  const projects = await getAllProjectsDirectory();
+  dbs = [];
+
+  for (const project of projects) {
+    // Project ID
+    const projectId = project._id;
+    const dataDb = (await getDataDb(projectId)) as PouchDB.Database;
+    const metadataDb = (await getMetadataDb(projectId)) as PouchDB.Database;
+    dbs.concat([
+      {
+        db: dataDb,
+        dbType: DatabaseType.DATA,
+        dbName: dataDb.name,
+      },
+      {
+        db: metadataDb,
+        dbType: DatabaseType.METADATA,
+        dbName: metadataDb.name,
+      },
+    ]);
   }
-  if (_directoryDB) {
-    try {
-      await _directoryDB.close();
-      _directoryDB = undefined;
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});
+
+  // For users, we also establish an admin user, if not already present
+  // do this after all migrations so we know the db is up to date
+  await registerAdminUser();
 };

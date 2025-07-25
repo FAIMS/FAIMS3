@@ -30,7 +30,7 @@ wait_for_service() {
             return 1
         fi
 
-        if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080/auth); then
+        if response=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 http://localhost:8080/login); then
             if [ "$response" -eq 200 ]; then
                 echo "Service is now available!"
                 return 0
@@ -62,6 +62,11 @@ uuidgen
 echo "Installing monorepo dependencies"
 echo "> npm install"
 npm install
+
+# turbo build
+echo "Turbo build"
+echo "> npx turbo build"
+npx turbo build
 
 # create .env files
 
@@ -97,9 +102,9 @@ else
     exit 1
 fi
 
-echo "Initialising database"
-echo "> npm run initdb"
-npm run initdb
+echo "Initialising database using API container"
+echo ">docker compose exec api sh -c \"cd api && npm run migrate --keys\""
+docker compose exec api sh -c "cd api && npm run migrate --keys"
 
 
 echo "Service is setup, to load notebooks and templates follow the below steps"

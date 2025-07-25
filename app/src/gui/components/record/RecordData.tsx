@@ -19,26 +19,26 @@
  *   20220620 BBS Adjusted sm to 11 from 8 to get rid of the awful margin reported in FAIMS3-328
  */
 
-import React from 'react';
-import DraftSyncStatus from './sync_status';
-import RelationshipsViewComponent from './relationships';
-import {Accordion, AccordionSummary, AccordionDetails} from './accordion';
-import RecordForm from './form';
-import {ProjectID, RecordID, RevisionID} from '@faims3/data-model';
-import {ProjectUIModel} from '@faims3/data-model';
-import {useTheme} from '@mui/material/styles';
-import {Box, Typography, Tab} from '@mui/material';
-import TabContext from '@mui/lab/TabContext';
-import TabList from '@mui/lab/TabList';
-import TabPanel from '@mui/lab/TabPanel';
-import {grey} from '@mui/material/colors';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import InheritedDataComponent from './inherited_data';
-import {ParentLinkProps, RecordLinkProps} from './relationships/types';
+import {
+  ProjectID,
+  ProjectUIModel,
+  RecordID,
+  RevisionID,
+} from '@faims3/data-model';
+import {Box} from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
-import {useNavigate} from 'react-router-dom';
+import {grey} from '@mui/material/colors';
+import React from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import RecordForm from './form';
+import RelationshipsViewComponent from './relationships';
+import {ParentLinkProps, RecordLinkProps} from './relationships/types';
+import DraftSyncStatus from './sync_status';
+import {SHOW_RECORD_LINKS} from '../../../buildconfig';
 interface RecordDataTypes {
   project_id: ProjectID;
+  serverId: string;
+  isExistingRecord: boolean;
   record_id: RecordID;
   hrid?: string;
   record_type: string;
@@ -61,137 +61,68 @@ interface RecordDataTypes {
   handleUnlink: Function;
   setRevision_id?: Function;
   mq_above_md: boolean;
-  setProgress: React.Dispatch<React.SetStateAction<number>>;
   buttonRef: React.RefObject<HTMLDivElement>;
 }
 
 export default function RecordData(props: RecordDataTypes) {
-  const [dataTab, setDataTab] = React.useState('1');
   const navigate = useNavigate();
   // const [revision_id, setRevision_id] = React.useState(props.revision_id);
   const [ViewName, setViewName] = React.useState(null);
-  const handleDataTabChange = (
-    event: React.SyntheticEvent,
-    newValue: string
-  ) => {
-    setDataTab(newValue);
-  };
-  const theme = useTheme();
+  const location = useLocation();
+
+  const showRecordLinks = SHOW_RECORD_LINKS;
+  const recordLinksLoading = SHOW_RECORD_LINKS && !props.is_link_ready;
+  const recordLinksViable =
+    SHOW_RECORD_LINKS &&
+    !recordLinksLoading &&
+    props.record_to_field_links.length > 0;
 
   return (
     <Box bgcolor={grey[100]}>
-      <TabContext value={dataTab}>
-        <TabList
-          onChange={handleDataTabChange}
-          TabIndicatorProps={{
-            style: {
-              backgroundColor: theme.palette.secondary.contrastText,
-            },
-          }}
-          sx={{backgroundColor: theme.palette.background.tabsBackground}}
-        >
-          <Tab label={'Data'} value={'1'} />
-          <Tab label={'Review'} value={'2'} />
-        </TabList>
-        <TabPanel value={'1'} sx={{p: 0}}>
-          {/* Show UnpublishWarning for unsaved revision ONLY  TODO: need to update when user click publish and continue*/}
-
-          <DraftSyncStatus
-            last_saved={props.draftLastSaved}
-            is_saving={props.isDraftSaving}
-            error={props.draftError}
-          />
-          {props.is_link_ready ? (
-            <RelationshipsViewComponent
-              record_to_field_links={props.record_to_field_links}
-              record_id={props.record_id}
-              record_hrid={props.hrid ?? props.record_id}
-              record_type={props.record_type}
-              handleSetSection={setViewName}
-              handleUnlink={props.handleUnlink}
-            />
-          ) : (
-            <CircularProgress size={24} />
-          )}
-          <Accordion defaultExpanded={true}>
-            <AccordionSummary
-              aria-controls="form-accordion-content"
-              id="form-accordion"
-            >
-              <ListAltIcon sx={{mr: 1}} />
-              <Typography>Form</Typography>
-            </AccordionSummary>
-            <AccordionDetails
-              sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
-            >
-              {props.is_link_ready ? (
-                <RecordForm
-                  project_id={props.project_id}
-                  record_id={props.record_id}
-                  revision_id={props.revision_id}
-                  ui_specification={props.ui_specification}
-                  draft_id={props.draft_id}
-                  handleChangeTab={props.handleChangeTab}
-                  conflictfields={props.conflictfields}
-                  isSyncing={props.isSyncing}
-                  handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                  handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                  handleSetDraftError={props.handleSetDraftError}
-                  setRevision_id={props.setRevision_id}
-                  ViewName={ViewName}
-                  draftLastSaved={props.draftLastSaved}
-                  mq_above_md={props.mq_above_md}
-                  navigate={navigate}
-                  setProgress={props.setProgress}
-                  buttonRef={props.buttonRef}
-                />
-              ) : (
-                <CircularProgress size={24} />
-              )}
-            </AccordionDetails>
-          </Accordion>
-        </TabPanel>
-        <TabPanel value={'2'} sx={{p: 0}}>
-          <InheritedDataComponent
-            parentRecords={props.parentRecords}
-            ui_specification={props.ui_specification}
-          />
+      <DraftSyncStatus
+        last_saved={props.draftLastSaved}
+        is_saving={props.isDraftSaving}
+        error={props.draftError}
+      />
+      {showRecordLinks ? (
+        recordLinksLoading ? (
+          // Show loading as we are waiting but links are enabled
+          <CircularProgress size={24} />
+        ) : recordLinksViable ? (
+          // We have links enabled, not loading, and viable
           <RelationshipsViewComponent
             record_to_field_links={props.record_to_field_links}
             record_id={props.record_id}
             record_hrid={props.hrid ?? props.record_id}
             record_type={props.record_type}
             handleSetSection={setViewName}
+            handleUnlink={props.handleUnlink}
           />
-          <Accordion defaultExpanded={true}>
-            <AccordionSummary
-              aria-controls="form-accordion-content"
-              id="form-accordion"
-            >
-              <ListAltIcon sx={{mr: 1}} />
-              <Typography>Form</Typography>
-            </AccordionSummary>
-            <AccordionDetails
-              sx={{backgroundColor: grey[100], p: {xs: 0, sm: 1, md: 2}}}
-            >
-              <RecordForm
-                project_id={props.project_id}
-                record_id={props.record_id}
-                revision_id={props.revision_id}
-                ui_specification={props.ui_specification}
-                draft_id={props.draft_id}
-                disabled={true} // for view of the forms
-                handleSetIsDraftSaving={props.handleSetIsDraftSaving}
-                handleSetDraftLastSaved={props.handleSetDraftLastSaved}
-                handleSetDraftError={props.handleSetDraftError}
-                navigate={navigate}
-                setProgress={props.setProgress}
-                buttonRef={props.buttonRef}
-              />
-            </AccordionDetails>
-          </Accordion>
-        </TabPanel>
-      </TabContext>
+        ) : // Do not show record links as it is not viable
+        null
+      ) : // do not show record links - as it is disabled
+      null}
+      <RecordForm
+        isExistingRecord={props.isExistingRecord}
+        serverId={props.serverId}
+        project_id={props.project_id}
+        record_id={props.record_id}
+        revision_id={props.revision_id}
+        ui_specification={props.ui_specification}
+        draft_id={props.draft_id}
+        handleChangeTab={props.handleChangeTab}
+        conflictfields={props.conflictfields}
+        isSyncing={props.isSyncing}
+        handleSetIsDraftSaving={props.handleSetIsDraftSaving}
+        handleSetDraftLastSaved={props.handleSetDraftLastSaved}
+        handleSetDraftError={props.handleSetDraftError}
+        setRevision_id={props.setRevision_id}
+        ViewName={ViewName}
+        draftLastSaved={props.draftLastSaved}
+        mq_above_md={props.mq_above_md}
+        navigate={navigate}
+        location={location}
+      />
     </Box>
   );
 }

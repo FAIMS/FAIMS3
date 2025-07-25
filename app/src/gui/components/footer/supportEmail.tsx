@@ -1,30 +1,33 @@
-import {TokenContents} from '@faims3/data-model';
 import {Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
-import {COMMIT_VERSION, CONDUCTOR_URLS} from '../../../buildconfig';
+import {
+  APP_NAME,
+  COMMIT_VERSION,
+  CONDUCTOR_URLS,
+  SUPPORT_EMAIL,
+} from '../../../buildconfig';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
 
-interface SupportEmailProps {
-  token?: null | undefined | TokenContents;
-}
-
-export default function SupportEmail(props: SupportEmailProps) {
+export default function SupportEmail() {
   const theme = useTheme();
-  let supportEmail = 'support@fieldmark.au';
-  if (
-    import.meta.env.VITE_COMMIT_VERSION !== undefined &&
-    import.meta.env.VITE_COMMIT_VERSION.includes('psmip')
-  ) {
-    supportEmail = 'support@fieldmark.au';
-  }
+  // Get active user
+  const activeUser = useAppSelector(selectActiveUser);
+
   const bodyContent =
     `Server: ${CONDUCTOR_URLS.join(', ')} \r` +
     `Commit Version: ${COMMIT_VERSION} \r` +
-    `Username: ${
-      props.token?.username ? props.token.username : 'Unauthenticated'
+    `Username: ${activeUser?.username ?? 'Unauthenticated'} \r` +
+    `Global Roles: ${
+      activeUser?.parsedToken.globalRoles
+        ? JSON.stringify(activeUser?.parsedToken.globalRoles)
+        : 'Unauthenticated'
     } \r` +
-    `Roles: ${
-      props.token?.roles ? JSON.stringify(props.token.roles) : 'Unauthenticated'
+    `Resource Roles: ${
+      activeUser?.parsedToken.resourceRoles
+        ? JSON.stringify(activeUser?.parsedToken.resourceRoles)
+        : 'Unauthenticated'
     }`;
 
   return (
@@ -32,9 +35,9 @@ export default function SupportEmail(props: SupportEmailProps) {
       Support:{' '}
       <Obfuscate
         className={'support-link'}
-        email={supportEmail}
+        email={SUPPORT_EMAIL}
         headers={{
-          subject: 'Fieldmark Support',
+          subject: `${APP_NAME} Support`,
           body: bodyContent,
         }}
       />

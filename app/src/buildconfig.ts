@@ -19,6 +19,7 @@
  *   which server to use and whether to include test data
  */
 
+import {MapStylesheetNameType} from './gui/components/map/styles';
 import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
@@ -196,7 +197,11 @@ function cluster_admin_group_name(): string {
 // If VITE_BUGSNAG_KEY is not defined then we don't use Bugsnag
 function get_bugsnag_key(): string | false {
   const bugsnag_key = import.meta.env.VITE_BUGSNAG_KEY;
-  if (bugsnag_key === '' || bugsnag_key === undefined) {
+  if (
+    bugsnag_key === '' ||
+    bugsnag_key === undefined ||
+    bugsnag_key === 'false'
+  ) {
     return false;
   }
   return bugsnag_key;
@@ -263,23 +268,6 @@ function get_notebook_list_type(): 'tabs' | 'headings' {
 }
 
 /**
- * Is the VITE_SHOW_RECORD_SUMMARY_COUNTS env variable present and not falsey
- * @returns The notebook list type, which can be either "tabs" or "headings".
- */
-function showRecordCounts(): boolean {
-  const val = import.meta.env.VITE_SHOW_RECORD_SUMMARY_COUNTS as
-    | string
-    | undefined;
-  if (!val) {
-    return false;
-  }
-  if (['false', 'f'].includes(val.toLowerCase())) {
-    return false;
-  }
-  return true;
-}
-
-/**
  * Retrieves the name of notebooks from the environment variables.
  * If the environment variable is not set, it returns a default value 'notebook'.
  *
@@ -332,6 +320,145 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
+/**
+ * Return the configured privacy policy URL link
+ *  defaults to the EFN privacy policy url
+ *
+ * @returns {string} - the app privacy policy url link
+ */
+function get_app_privacy_policy_url(): string {
+  const appid = import.meta.env.VITE_APP_PRIVACY_POLICY_URL;
+  return appid || 'https://fieldnote.au/privacy';
+}
+
+/**
+ * Return the configured app contact url link
+ *  if this is falsy, the contact link will not be shown
+ *
+ * @returns {string} - the app contact url link, defaults to empty string
+ */
+function get_app_contact_url(): string {
+  const appid = import.meta.env.VITE_APP_CONTACT_URL;
+  return appid || '';
+}
+
+/**
+ * Retrieves the configured support email address
+ * @returns {string} - the support email address
+ */
+function get_support_email(): string {
+  const support_email = import.meta.env.VITE_SUPPORT_EMAIL;
+  return support_email || 'support@fieldmark.au';
+}
+
+// Consider a refresh every 15 seconds
+const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
+
+/**
+ * @returns The interval by which we attempt to refresh all tokens
+ */
+function tokenRefreshIntervalMs(): number {
+  const tokenRefreshIntervalMs = import.meta.env.VITE_TOKEN_REFRESH_INTERVAL_MS;
+  if (tokenRefreshIntervalMs === '' || tokenRefreshIntervalMs === undefined) {
+    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
+  }
+  try {
+    return parseInt(tokenRefreshIntervalMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_TOKEN_REFRESH_INTERVAL_MS;
+  }
+}
+
+// Try and refresh before it hits 60 seconds till expiry
+const DEFAULT_TOKEN_REFRESH_WINDOW_MS = 60000;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function tokenRefreshWindowMs(): number {
+  const tokenRefreshWindowMs = import.meta.env.VITE_TOKEN_REFRESH_WINDOW_MS;
+  if (tokenRefreshWindowMs === '' || tokenRefreshWindowMs === undefined) {
+    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
+  }
+  try {
+    return parseInt(tokenRefreshWindowMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_TOKEN_REFRESH_WINDOW_MS;
+  }
+}
+
+// Ignore the expiry from the JWT - use 1 year expiry instead - disables token
+// refreshing - debug/compat usage only!
+const DEFAULT_IGNORE_TOKEN_EXP = false;
+
+/**
+ * @returns Flag indicating to spoof/ignore the token expiry if present - if
+ * True then the expiry will be ignored from any JWT intercepted, and set for 1
+ * year. Must === true (case insensitive).
+ */
+function ignoreTokenExp(): boolean {
+  const ignoreTokenExp = import.meta.env.VITE_IGNORE_TOKEN_EXP;
+  if (ignoreTokenExp === '' || ignoreTokenExp === undefined) {
+    return DEFAULT_IGNORE_TOKEN_EXP;
+  }
+  return ignoreTokenExp.toUpperCase() === 'TRUE';
+}
+
+/**
+ * Map source configuration.  Define the map source
+ * (see src/gui/components/map/tile_source.ts for options)
+ * and the map key if required.
+ */
+
+function get_map_source(): string {
+  const map_source = import.meta.env.VITE_MAP_SOURCE;
+  return map_source || 'osm';
+}
+
+function get_map_key(): string {
+  const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
+  return map_key || '';
+}
+
+function get_map_style(): MapStylesheetNameType {
+  const map_style = import.meta.env.VITE_MAP_STYLE;
+  return map_style || 'basic';
+}
+
+function offline_maps(): boolean {
+  const offline_maps = import.meta.env.VITE_OFFLINE_MAPS === 'true';
+  const map_source = get_map_source();
+  // OSM does not allow bulk downloads so we can't enable offline maps
+  return (offline_maps && map_source !== 'osm') || false;
+}
+
+export type NavigationStyleOption = 'none' | 'breadcrumbs';
+function navigation_style(): NavigationStyleOption {
+  const nav_style = import.meta.env.VITE_NAVIGATION;
+  return nav_style || 'none';
+}
+
+/**
+ * Should we show the record links feature?
+ */
+function showRecordLinks(): boolean {
+  return import.meta.env.VITE_SHOW_RECORD_LINKS === 'true';
+}
+
+/**
+ * Should we automatically migrate old v1.0 style databases on startup?
+ */
+function migrateOldDatabases(): boolean {
+  const migrateOldDatabases: string | undefined = import.meta.env
+    .VITE_MIGRATE_OLD_DATABASES;
+  return (
+    !!migrateOldDatabases &&
+    TRUTHY_STRINGS.includes(migrateOldDatabases.toLowerCase())
+  );
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -353,4 +480,16 @@ export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
 export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
-export const SHOW_RECORD_SUMMARY_COUNTS = showRecordCounts();
+export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
+export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
+export const IGNORE_TOKEN_EXP = ignoreTokenExp();
+export const OFFLINE_MAPS = offline_maps();
+export const MAP_SOURCE_KEY = get_map_key();
+export const MAP_SOURCE = get_map_source();
+export const MAP_STYLE = get_map_style();
+export const NAVIGATION_STYLE = navigation_style();
+export const SHOW_RECORD_LINKS = showRecordLinks();
+export const SUPPORT_EMAIL = get_support_email();
+export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
+export const CONTACT_URL = get_app_contact_url();
+export const MIGRATE_OLD_DATABASES = migrateOldDatabases();

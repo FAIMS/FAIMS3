@@ -18,10 +18,16 @@
  *   TODO
  */
 
-import {createTheme, colors} from '@mui/material';
+import {colors, createTheme} from '@mui/material';
 import typography from './typography';
 
 const theme = createTheme({
+  stepperColors: {
+    current: '#000000',
+    visited: '#07a907',
+    error: '#EE1616FF',
+    notVisited: '#BDBDBD',
+  },
   palette: {
     background: {
       default: '#FAFAFB',
@@ -35,6 +41,13 @@ const theme = createTheme({
       light: '#a7e938',
       dark: '#141E03',
     },
+
+    stepper: {
+      current: '#E18200',
+      visited: '#669911',
+      error: '#D50C0CFF',
+      notVisited: '#B7C1A6F1',
+    },
     highlightColor: {
       main: '#E18200',
       contrastText: '#141E03',
@@ -46,15 +59,17 @@ const theme = createTheme({
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
+      helpText: colors.blueGrey[600],
     },
     alert: {
       warningBackground: '#FFF4E5',
-      warningText: '#5F370E',
+      warningText: '#9C5711FF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
+      successBackground: '#669911',
     },
     dialogButton: {
-      cancel: '#669907',
+      cancel: '#E18200',
       confirm: '#669911',
       dialogText: '#FFFFFF',
       hoverBackground: '#50790DFF',
@@ -65,13 +80,17 @@ const theme = createTheme({
     },
     icon: {
       main: '#E18200',
+
       light: '#edeeeb',
+      required: '#890808FF',
+      highlight: '#B10000',
     },
     table: {
       divider: '#828789FF',
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
+    // stepperGradient: generateStepperColors(10, 'default'),
   },
   typography,
   components: {

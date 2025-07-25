@@ -16,35 +16,30 @@
  * Filename: appbarAuth.test.tsx
  */
 
+import {TestWrapper} from '../../fields/utils';
 import {render, screen} from '@testing-library/react';
 import AppBarAuth from './appbarAuth';
-import {BrowserRouter} from 'react-router-dom';
 import {describe, expect, it} from 'vitest';
-import {TokenContents} from '@faims3/data-model';
-
-const testToken = {
-  username: 'admin',
-  roles: ['cluster-admin'],
-  name: 'Admin User',
-  server: 'fake.com',
-} satisfies TokenContents;
 
 describe('Check appbarAuth', () => {
-  it('Check without token', () => {
-    render(
-      <BrowserRouter>
-        <AppBarAuth />
-      </BrowserRouter>
-    );
-    expect(screen.getByText('Sign In')).toBeTruthy();
-  });
+  // TODO: work out how to run a test without token, need to
+  // change global state when we render
+  // it('Check without token', () => {
+  //   render(
+  //     <TestWrapper>
+  //       <AppBarAuth />
+  //     </TestWrapper>
+  //   );
+  //   expect(screen.getByText('Sign In')).toBeTruthy();
+  // });
 
   it('Check with token', () => {
     render(
-      <BrowserRouter>
-        <AppBarAuth token={testToken} />
-      </BrowserRouter>
+      <TestWrapper>
+        <AppBarAuth />
+      </TestWrapper>
     );
-    expect(screen.getByText(testToken.username)).toBeTruthy();
+    // look for first initial of our Test User
+    expect(screen.getByText('T')).toBeTruthy();
   });
 });

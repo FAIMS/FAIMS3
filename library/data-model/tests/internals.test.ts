@@ -19,16 +19,17 @@
  *
  */
 
-import {registerClient} from '../src';
-
-import {HRID_STRING} from '../src/datamodel/core';
-import {Record} from '../src/types';
 import {generateFAIMSDataID, upsertFAIMSData} from '../src/data_storage/index';
+import {Record} from '../src/types';
+import {
+  getHRID,
+  getRecord,
+  getRecordListAudit,
+  getRevision,
+} from '../src/data_storage/internals';
+import {callbackObject, cleanDataDBS, sampleUiSpecForViewId} from './mocks';
+import {getDataDB, registerClient} from '../src';
 
-import {getHRID, getRecord, getRevision} from '../src/data_storage/internals';
-import {callbackObject, cleanDataDBS} from './mocks';
-
-// register our mock database clients with the module
 registerClient(callbackObject);
 
 beforeEach(async () => {
@@ -45,6 +46,11 @@ describe('test internals', () => {
     const fulltype = 'test::test';
     const time = new Date();
     const user_id = 'user';
+    const hridField = 'name';
+    const uiSpec = sampleUiSpecForViewId({
+      viewId: 'test',
+      hridFieldId: hridField,
+    });
 
     const record_id = generateFAIMSDataID();
 
@@ -54,26 +60,30 @@ describe('test internals', () => {
       record_id: record_id,
       revision_id: null,
       type: fulltype,
-      data: {avp1: 1},
+      data: {},
       created_by: user_id,
       updated_by: user_id,
       created: time,
       updated: time,
-      annotations: {
-        avp1: 1,
-      },
+      annotations: {},
       field_types: {field_name: fulltype},
     };
 
-    const hridField = HRID_STRING + 'FieldName';
+    // Need a UI spec which suits this
     const hridValue = 'test HRID value';
     doc.data[hridField] = hridValue;
-    doc.annotations[hridField] = 'annotation for HRID';
+    doc.data['age'] = 10;
+    doc.annotations[hridField] = {
+      annotation: 'annotation for HRID field',
+      uncertainty: false,
+    };
 
-    return upsertFAIMSData(project_id, doc).then(revisionId => {
-      return getRevision(project_id, revisionId)
+    const dataDb = await getDataDB(project_id);
+
+    return upsertFAIMSData({dataDb, record: doc}).then(revisionId => {
+      return getRevision({dataDb, revisionId})
         .then(revision => {
-          return getHRID(project_id, revision);
+          return getHRID({dataDb, revision, uiSpecification: uiSpec});
         })
         .then(hrid => {
           expect(hrid).toBe(hridValue);
@@ -82,8 +92,75 @@ describe('test internals', () => {
   });
 
   test('test getRecord - undefined', () => {
-    expect(() => getRecord('test', 'unknownId')).rejects.toThrow(
-      /no such record/
-    );
+    expect(async () =>
+      getRecord({dataDb: await getDataDB('test'), recordId: 'unknownId'})
+    ).rejects.toThrow(/no such record/);
+  });
+
+  test('test getRecordAudit', async () => {
+    const project_id = 'test';
+    const fullType = 'test::test';
+    const time = new Date();
+    const user_id = 'user';
+    const hridField = 'name';
+
+    const record_id = generateFAIMSDataID();
+
+    // record with an hrid field - one starting with HRID_STRING
+    const doc: Record = {
+      project_id: project_id,
+      record_id: record_id,
+      revision_id: null,
+      type: fullType,
+      data: {},
+      created_by: user_id,
+      updated_by: user_id,
+      created: time,
+      updated: time,
+      annotations: {},
+      field_types: {field_name: fullType},
+    };
+
+    // Need a UI spec which suits this
+    const hridValue = 'test HRID value';
+    doc.data[hridField] = hridValue;
+    doc.data['age'] = 10;
+    doc.annotations[hridField] = {
+      annotation: 'annotation for HRID field',
+      uncertainty: false,
+    };
+
+    const dataDb = await getDataDB(project_id);
+
+    let recordId = '';
+    return upsertFAIMSData({dataDb, record: doc}).then(revisionId => {
+      return getRevision({dataDb, revisionId})
+        .then(revision => {
+          recordId = revision.record_id;
+          return getRecordListAudit({
+            dataDb: dataDb,
+            recordIds: [revision.record_id],
+          });
+        })
+        .then(audit => {
+          expect(audit[recordId]).toBeDefined();
+
+          // now update the record and recompute the audit
+          doc.data['age'] = 11;
+          return upsertFAIMSData({dataDb, record: doc}).then(revisionId => {
+            return getRevision({dataDb, revisionId})
+              .then(revision => {
+                return getRecordListAudit({
+                  dataDb: dataDb,
+                  recordIds: [revision.record_id],
+                });
+              })
+              .then(second_audit => {
+                expect(second_audit[recordId]).toBeDefined();
+                expect(second_audit[recordId]).not.toEqual(audit[recordId]);
+              });
+          });
+        });
+    });
   });
 });

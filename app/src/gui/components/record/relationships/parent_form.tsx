@@ -64,6 +64,15 @@ export default function ParentForm(props: ParentFormProps) {
               handleAnnotation={updateannotation}
               fieldNames={fieldNames}
               disabled={true}
+              visitedSteps={new Set()}
+              currentStepId={viewName}
+              isRevisiting={false}
+              handleSectionClick={() => {}}
+              handleChangeTab={() => {}}
+              // FAKE
+              forceSave={async () => {
+                return '';
+              }}
             />
           </Form>
         );

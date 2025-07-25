@@ -19,9 +19,17 @@
  *   which server to use and whether to include test data
  */
 
-import {v4 as uuidv4} from 'uuid';
-import {getKeyService, IKeyService, KeySource} from './services/keyService';
 import {existsSync} from 'fs';
+import {v4 as uuidv4} from 'uuid';
+import {
+  createEmailService,
+  EmailConfig,
+  EmailServiceType,
+  IEmailService,
+  SMTPEmailServiceConfig,
+} from './services/emailService';
+import {getKeyService, IKeyService, KeySource} from './services/keyService';
+import {slugify} from './utils';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -53,18 +61,17 @@ function app_url(): string {
 
 function android_url(): string {
   const url = process.env.ANDROID_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
 }
 
 function ios_url(): string {
   const url = process.env.IOS_APP_PUBLIC_URL;
-  if (url === '' || url === undefined) {
-    return 'http://localhost:3000';
-  }
-  return url;
+  return url || '';
+}
+
+function designer_url(): string {
+  const url = process.env.DESIGNER_URL;
+  return url || '';
 }
 
 function is_testing() {
@@ -151,7 +158,7 @@ function key_file_path(): string {
   }
 }
 
-function private_key_path(): string {
+export function private_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
@@ -168,7 +175,7 @@ function private_key_path(): string {
   }
 }
 
-function public_key_path(): string {
+export function public_key_path(): string {
   let host = process.env.PROFILE_NAME;
   if (host === '' || host === undefined) {
     host = 'conductor';
@@ -248,13 +255,37 @@ function google_client_secret(): string {
   }
 }
 
-function get_providers_to_use(): string[] {
+// What providers are available?
+export enum AuthProvider {
+  GOOGLE = 'GOOGLE',
+}
+
+/**
+ * Determines which authentication providers to use based on environment configuration.
+ *
+ * Parses the CONDUCTOR_AUTH_PROVIDERS environment variable, which should contain
+ * a semicolon-separated list of provider IDs that match the AuthProvider enum values.
+ *
+ * @returns {AuthProvider[]} Array of enabled authentication providers
+ */
+function getConfiguredProviders(): AuthProvider[] {
+  // expects ; separated list of provider IDs as above
   const providers = process.env.CONDUCTOR_AUTH_PROVIDERS;
   if (providers === '' || providers === undefined) {
     console.log('CONDUCTOR_AUTH_PROVIDERS not set, defaulting to empty');
     return [];
   }
-  return providers.split(';');
+
+  // Get all valid enum keys (e.g., ["GOOGLE"])
+  const validKeys = Object.keys(AuthProvider);
+
+  // split, trim, filter and coerce
+  return providers
+    .split(';')
+    .map(v => v.trim().toUpperCase())
+    .filter(v => v.length !== 0)
+    .filter(v => validKeys.includes(v))
+    .map(v => AuthProvider[v as keyof typeof AuthProvider]);
 }
 
 function conductor_internal_port(): number {
@@ -274,6 +305,152 @@ function developer_mode(): any {
   }
 }
 
+// 5 minute access token expiry by default
+const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function accessTokenExpiryMinutes(): number {
+  const accessTokenExpiryMinutes = process.env.ACCESS_TOKEN_EXPIRY_MINUTES;
+  if (
+    accessTokenExpiryMinutes === '' ||
+    accessTokenExpiryMinutes === undefined
+  ) {
+    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(accessTokenExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'ACCESS_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES
+    );
+    return DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES;
+  }
+}
+
+// 2 days refresh token expiry by default
+const DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES = 60 * 24 * 2;
+
+/**
+ * @returns The minimum valid time for a token before attempting refreshes
+ */
+function refreshTokenExpiryMinutes(): number {
+  const refreshTokenExpiryMinutes = process.env.REFRESH_TOKEN_EXPIRY_MINUTES;
+  if (
+    refreshTokenExpiryMinutes === '' ||
+    refreshTokenExpiryMinutes === undefined
+  ) {
+    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(refreshTokenExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'REFRESH_TOKEN_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES
+    );
+    return DEFAULT_REFRESH_TOKEN_EXPIRY_MINUTES;
+  }
+}
+
+// 30 minute default expiry for email verification codes
+const DEFAULT_EMAIL_CODE_EXPIRY_MINUTES = 30;
+
+/**
+ * @returns The expiry time in minutes for email verification codes
+ */
+function emailCodeExpiryMinutes(): number {
+  const emailCodeExpiryMinutes = process.env.EMAIL_CODE_EXPIRY_MINUTES;
+  if (emailCodeExpiryMinutes === '' || emailCodeExpiryMinutes === undefined) {
+    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
+  }
+  try {
+    return parseInt(emailCodeExpiryMinutes);
+  } catch (err) {
+    console.error(
+      'EMAIL_CODE_EXPIRY_MINUTES unparseable, defaulting to ' +
+        DEFAULT_EMAIL_CODE_EXPIRY_MINUTES
+    );
+    return DEFAULT_EMAIL_CODE_EXPIRY_MINUTES;
+  }
+}
+
+const DEFAULT_RATE_LIMITER_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
+const DEFAULT_RATE_LIMITER_PER_WINDOW = 1000; // 1000 requests per window
+const DEFAULT_RATE_LIMITER_ENABLED = true;
+
+/**
+ * Gets the rate limiter window duration in milliseconds from environment variables
+ * @returns The window duration in milliseconds
+ */
+function rateLimiterWindowMs(): number {
+  const rateLimiterWindowMs = process.env.RATE_LIMITER_WINDOW_MS;
+  if (rateLimiterWindowMs === '' || rateLimiterWindowMs === undefined) {
+    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+  }
+  try {
+    return parseInt(rateLimiterWindowMs);
+  } catch (err) {
+    console.error(
+      'RATE_LIMITER_WINDOW_MS unparseable, defaulting to ' +
+        DEFAULT_RATE_LIMITER_WINDOW_MS
+    );
+    return DEFAULT_RATE_LIMITER_WINDOW_MS;
+  }
+}
+
+/**
+ * Gets the number of requests allowed per window from environment variables
+ * @returns The number of requests allowed per window
+ */
+function rateLimiterPerWindow(): number {
+  const rateLimiterPerWindow = process.env.RATE_LIMITER_PER_WINDOW;
+  if (rateLimiterPerWindow === '' || rateLimiterPerWindow === undefined) {
+    return DEFAULT_RATE_LIMITER_PER_WINDOW;
+  }
+  try {
+    return parseInt(rateLimiterPerWindow);
+  } catch (err) {
+    console.error(
+      'RATE_LIMITER_PER_WINDOW unparseable, defaulting to ' +
+        DEFAULT_RATE_LIMITER_PER_WINDOW
+    );
+    return DEFAULT_RATE_LIMITER_PER_WINDOW;
+  }
+}
+
+/**
+ * Checks if rate limiting is enabled from environment variables
+ * @returns Boolean indicating if rate limiting is enabled
+ */
+function rateLimiterEnabled(): boolean {
+  const rateLimiterEnabled = process.env.RATE_LIMITER_ENABLED;
+  if (rateLimiterEnabled === undefined) {
+    return DEFAULT_RATE_LIMITER_ENABLED;
+  }
+  return rateLimiterEnabled.toLowerCase() === 'true';
+}
+
+/**
+ * What is the URL of the new conductor? Required.
+ *
+ * @returns The new conductor URL, no trailing /
+ */
+function newConductorUrl(): string {
+  let conductorUrl = process.env.NEW_CONDUCTOR_URL;
+  if (conductorUrl === '' || conductorUrl === undefined) {
+    throw Error('You must provide a NEW_CONDUCTOR_URL in your environment.');
+  } else {
+    if (conductorUrl.endsWith('/')) {
+      console.log('NEW_CONDUCTOR_URL should not end with / - removing it');
+      conductorUrl = conductorUrl.substring(0, conductorUrl.length - 1);
+    }
+    return conductorUrl;
+  }
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -282,18 +459,24 @@ export const RUNNING_UNDER_TEST = is_testing();
 export const CONDUCTOR_PUBLIC_URL = conductor_url();
 export const CONDUCTOR_INTERNAL_PORT = conductor_internal_port();
 export const CONDUCTOR_KEY_ID = signing_key_id();
-export const CONDUCTOR_PRIVATE_KEY_PATH = private_key_path();
-export const CONDUCTOR_PUBLIC_KEY_PATH = public_key_path();
 export const CONDUCTOR_INSTANCE_NAME = instance_name();
 export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
 export const GOOGLE_CLIENT_ID = google_client_id();
 export const GOOGLE_CLIENT_SECRET = google_client_secret();
-export const CONDUCTOR_AUTH_PROVIDERS = get_providers_to_use();
+export const CONDUCTOR_AUTH_PROVIDERS = getConfiguredProviders();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();
+export const ACCESS_TOKEN_EXPIRY_MINUTES = accessTokenExpiryMinutes();
+export const REFRESH_TOKEN_EXPIRY_MINUTES = refreshTokenExpiryMinutes();
+export const DESIGNER_URL = designer_url();
+export const RATE_LIMITER_WINDOW_MS = rateLimiterWindowMs();
+export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
+export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
+export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
+export const NEW_CONDUCTOR_URL = newConductorUrl();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
@@ -323,3 +506,233 @@ export const AWS_SECRET_KEY_ARN: string | undefined =
   KEY_SOURCE === KeySource.AWS_SM ? getAwsSecretKeyArn() : undefined;
 
 export const KEY_SERVICE: IKeyService = getKeyService(KEY_SOURCE);
+
+/**
+ * Determines which email service type to use based on environment variables.
+ * @returns The email service type.
+ */
+function getEmailServiceType(): EmailServiceType {
+  const emailServiceType = process.env.EMAIL_SERVICE_TYPE as EmailServiceType;
+
+  if (is_testing()) {
+    console.log('Since we are testing, using mock email service.');
+    return EmailServiceType.MOCK;
+  }
+
+  if (
+    emailServiceType === undefined ||
+    !(emailServiceType in EmailServiceType)
+  ) {
+    // Otherwise default to SMTP
+    console.log(
+      'EMAIL_SERVICE_TYPE not set or invalid, using default SMTP - configuration may not be available depending on your environment. Please explicitly configure SMTP if this is the preferred behaviour.'
+    );
+    return EmailServiceType.SMTP;
+  }
+
+  return emailServiceType;
+}
+
+const DEFAULT_FROM_EMAIL = 'noreply@example.com';
+const DEFAULT_FROM_NAME = 'FAIMS System Notification';
+
+/**
+ * Gets the email configuration from environment variables.
+ * @returns The email configuration.
+ */
+function getEmailConfig(): EmailConfig {
+  const fromEmail = process.env.EMAIL_FROM_ADDRESS;
+  const fromName = process.env.EMAIL_FROM_NAME;
+  const replyTo = process.env.EMAIL_REPLY_TO;
+
+  if (!fromEmail || !fromName) {
+    console.warn('Email configuration is incomplete. Using default values.');
+    return {
+      fromEmail: fromEmail || DEFAULT_FROM_EMAIL,
+      fromName: fromName || DEFAULT_FROM_NAME,
+      replyTo: replyTo,
+    };
+  }
+
+  return {
+    fromEmail,
+    fromName,
+    replyTo,
+  };
+}
+
+/**
+ * Gets the SMTP configuration from environment variables.
+ * @returns The SMTP configuration.
+ */
+function getSMTPConfig(): SMTPEmailServiceConfig {
+  const host = process.env.SMTP_HOST;
+  const portStr = process.env.SMTP_PORT;
+  const secure = process.env.SMTP_SECURE === 'true';
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD;
+  const cacheExpirySecondsStr = process.env.SMTP_CACHE_EXPIRY_SECONDS;
+
+  // Check for missing configuration and provide detailed error message
+  const missingConfig = [];
+  if (!host) missingConfig.push('SMTP_HOST');
+  if (!portStr) missingConfig.push('SMTP_PORT');
+  if (!user) missingConfig.push('SMTP_USER');
+  if (!pass) missingConfig.push('SMTP_PASSWORD');
+
+  if (missingConfig.length > 0) {
+    const providedConfig = {
+      SMTP_HOST: host || '[missing]',
+      SMTP_PORT: portStr || '[missing]',
+      SMTP_SECURE: secure.toString(),
+      SMTP_USER: user ? '[provided]' : '[missing]',
+      SMTP_PASSWORD: pass ? '[provided]' : '[missing]',
+      SMTP_CACHE_EXPIRY_SECONDS: cacheExpirySecondsStr || '[using default]',
+    };
+
+    throw new Error(
+      `SMTP configuration is incomplete. Missing required values: ${missingConfig.join(', ')}.\n` +
+        `Provided configuration: ${JSON.stringify(providedConfig, null, 2)}`
+    );
+  }
+
+  const port = parseInt(portStr!);
+  const cacheExpirySeconds = cacheExpirySecondsStr
+    ? parseInt(cacheExpirySecondsStr)
+    : 300;
+
+  return {
+    host: host!,
+    port,
+    secure,
+    auth: {
+      user: user!,
+      pass: pass!,
+    },
+    cacheExpirySeconds,
+  };
+}
+
+export const EMAIL_SERVICE_TYPE = getEmailServiceType();
+export const EMAIL_CONFIG = getEmailConfig();
+export const EMAIL_SERVICE_CONFIG =
+  EMAIL_SERVICE_TYPE === EmailServiceType.SMTP ? getSMTPConfig() : undefined;
+export const EMAIL_SERVICE: IEmailService = createEmailService({
+  serviceType: EMAIL_SERVICE_TYPE,
+  emailConfig: EMAIL_CONFIG,
+  serviceConfig:
+    EMAIL_SERVICE_TYPE === EmailServiceType.SMTP
+      ? EMAIL_SERVICE_CONFIG
+      : undefined,
+});
+
+/**
+ * Gets the test email address configuration from environment variables.
+ * @returns The test email address.
+ * @throws Error if test email address is not configured.
+ */
+function getTestEmailAddress(): string {
+  const testEmailAddress = process.env.TEST_EMAIL_ADDRESS;
+
+  // Uses fake address if we are unit testing
+  if (is_testing()) {
+    return 'fake@gmail.com';
+  }
+
+  if (!testEmailAddress) {
+    throw new Error(
+      'TEST_EMAIL_ADDRESS environment variable is required for testing email functionality. ' +
+        'Please add this to your environment configuration.'
+    );
+  }
+
+  return testEmailAddress;
+}
+
+// Export the test email address
+export const TEST_EMAIL_ADDRESS = getTestEmailAddress();
+
+/**
+ * Parses and validates the redirect whitelist from environment variables.
+ * The whitelist is a comma-separated list of domains to which redirects
+ * are allowed for auth flows.
+ *
+ * @returns Array of whitelisted domains
+ * @throws If the whitelist is not defined, contains invalid entries, or is empty
+ */
+function getRedirectWhitelist(): string[] {
+  const whitelist = process.env.REDIRECT_WHITELIST;
+
+  if (whitelist === '' || whitelist === undefined) {
+    throw new Error(
+      'REDIRECT_WHITELIST environment variable is required. Please provide a comma-separated list of allowed domains for redirects.'
+    );
+  }
+
+  // Split, trim, and filter empty entries
+  const domains = whitelist
+    .split(',')
+    .map(domain => domain.trim())
+    .filter(domain => domain.length !== 0);
+
+  if (domains.length === 0) {
+    throw new Error(
+      'REDIRECT_WHITELIST must contain at least one valid domain.'
+    );
+  }
+
+  // Validate each domain (basic URL validation)
+  for (const domain of domains) {
+    try {
+      new URL(domain);
+    } catch (err) {
+      throw new Error(
+        `Invalid domain in REDIRECT_WHITELIST: "${domain}". Each entry must be a valid URL.`
+      );
+    }
+  }
+
+  return domains;
+}
+
+// Export the redirect whitelist
+export const REDIRECT_WHITELIST = getRedirectWhitelist();
+export const CONDUCTOR_SERVER_ID = slugify(CONDUCTOR_INSTANCE_NAME);
+
+// Long Lived Token Configuration
+const DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS = 90;
+
+/**
+ * Gets the maximum duration in days for long-lived tokens from environment variables.
+ * @returns Maximum number of days, or undefined for unlimited duration
+ */
+function maximumLongLivedDurationDays(): number | undefined {
+  const maxDays = process.env.MAXIMUM_LONG_LIVED_DURATION_DAYS;
+
+  if (maxDays === '' || maxDays === undefined) {
+    console.log(
+      'MAXIMUM_LONG_LIVED_DURATION_DAYS not set, using default: ' +
+        DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS
+    );
+    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+  }
+
+  // Check for explicit "unlimited" or "infinite" values
+  if (['unlimited', 'infinite', 'none'].includes(maxDays.toLowerCase())) {
+    console.log('Long-lived tokens configured for unlimited duration');
+    return undefined;
+  }
+
+  const parsedDays = parseInt(maxDays, 10);
+  if (isNaN(parsedDays) || parsedDays <= 0) {
+    console.warn(
+      `Invalid value "${maxDays}" for MAXIMUM_LONG_LIVED_DURATION_DAYS. Must be a positive integer or "unlimited".`
+    );
+    console.log('Falling back to default configuration.');
+    return DEFAULT_MAXIMUM_LONG_LIVED_DURATION_DAYS;
+  }
+
+  return parsedDays;
+}
+
+export const MAXIMUM_LONG_LIVED_DURATION_DAYS = maximumLongLivedDurationDays();
