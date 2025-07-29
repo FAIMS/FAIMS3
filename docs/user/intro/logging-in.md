@@ -25,7 +25,7 @@ different members of a team with different credentials.
 ### Don't Forget
 
 Your login details will be recorded against all new records and any changes made
-to records while you are logged in. Always check you are correctly signed in. 
+to records while you are logged in. Always check you are correctly signed in.
 (See [Logging Out](logging-out))
 :::
 
