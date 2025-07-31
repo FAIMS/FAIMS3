@@ -82,13 +82,14 @@ export function DesignerWidget({
 }: DesignerWidgetProps) {
   // 1. Migrate + inject designerIdentifiers + reset undo history on each new notebook
   const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
-    if (!notebook) return undefined;
+    // check that we have an actual notebook
+    if (!notebook?.metadata) return undefined;
 
     const flat: Notebook = {
       metadata: notebook.metadata,
       'ui-specification': notebook['ui-specification'].present,
     };
-
+    // migrate the notebook - update any out of date fields or structures
     const migrated: Notebook = migrateNotebook(flat);
 
     // Inject in-memory designerIdentifier if missing
