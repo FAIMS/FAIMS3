@@ -211,7 +211,13 @@ export const MuiMultiSelect = ({
         multiple
         onChange={handleChange}
         value={value}
-        renderValue={selected => selected.join(', ')}
+        renderValue={selected => (
+          <span
+            dangerouslySetInnerHTML={{
+              __html: contentToSanitizedHtml(selected.join(', ')),
+            }}
+          />
+        )}
         MenuProps={{
           PaperProps: {
             style: {

@@ -60,6 +60,7 @@ interface Props {
 
 import {useTheme} from '@mui/material/styles';
 import FieldWrapper from './fieldWrapper';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
 
 /**
  * Select Component - A reusable dropdown select field with Formik integration.
@@ -102,7 +103,21 @@ export const Select = (props: Props & TextFieldProps) => {
                 wordWrap: 'break-word',
               }}
             >
-              <ListItemText primary={option.label} />
+              <ListItemText
+                primary={
+                  <span
+                    style={{
+                      display: 'contents',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      lineHeight: '0.1rem',
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: contentToSanitizedHtml(option.label),
+                    }}
+                  />
+                }
+              />
             </MenuItem>
           ))}
         </MuiSelect>
