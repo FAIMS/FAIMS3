@@ -53,7 +53,11 @@ export default function CreateLinkComponent(
                 is_enabled={props.form.isSubmitting ? false : props.is_enabled}
                 serverId={props.serverId}
                 pathname={props.pathname}
-                state={props.state}
+                state={{
+                  ...(props.state || {}),
+                  // push our step anchor through so record-create.tsx can pick it up
+                  step_anchor: `step-${props.field_name}`,
+                }}
                 text={`Add New ${props.related_type}`}
                 handleSubmit={props.handleSubmit}
                 project_id={props.project_id}
