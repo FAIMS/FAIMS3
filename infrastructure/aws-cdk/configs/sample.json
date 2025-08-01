@@ -99,7 +99,7 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": "false"
+    "localhostWhitelist": false
   },
   "domains": {
     "baseDomain": "your-domain.com",

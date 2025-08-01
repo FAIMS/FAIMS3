@@ -358,7 +358,7 @@ The following section configures the API
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": "false"
+    "localhostWhitelist": false
   },
 ```
 
