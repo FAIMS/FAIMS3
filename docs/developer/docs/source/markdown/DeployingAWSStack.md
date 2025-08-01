@@ -101,18 +101,18 @@ Replacing `dev` with your proposed stage. There can be multiple stages, as in th
 └── README.md
 ```
 
-Use the `sample.json` in `infrastructure/aws-cdk/configs/sample.json` as a starting point for your configuration json. 
+Use the `sample.json` in `infrastructure/aws-cdk/configs/sample.json` as a starting point for your configuration json.
 
-From now on, when I refer to updating values in the `config json` - this is the file I am referring to. **Ensure you sync your changes using the config script in the infrastructure/aws-cdk package to pull/push the latest changes to your deployment context as you go!**. 
+From now on, when I refer to updating values in the `config json` - this is the file I am referring to. **Ensure you sync your changes using the config script in the infrastructure/aws-cdk package to pull/push the latest changes to your deployment context as you go!**.
 
 Validate that you can pull the config by running
 
 ```
-./config.sh 
+./config.sh
 ./config.sh pull prod --config_repo git@github.com:repo-org/repo-name.git
 ```
 
-assuming you use SSH for git authentication. `prod` being replaced with your stage. After you do this once, you can push pull without the config repo argument. 
+assuming you use SSH for git authentication. `prod` being replaced with your stage. After you do this once, you can push pull without the config repo argument.
 
 Now, when we edit the config json, just change it directly in your configs/<file.json> path, and push the changes using
 
@@ -142,3 +142,7 @@ Enter the domain and ID of the hosted zone, as above
     "name": "your-domain.com"
   },
 ```
+
+You can find these in the hosted zones menu as below:
+
+![hz details](assets/hz.png)
