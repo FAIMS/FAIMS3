@@ -456,8 +456,117 @@ Include the secret ARN alongside other parameters in the config file:
     "cacheExpirySeconds": 300,
 ```
 
+## Deploying using your configuration
+
+You have bootstrapped your CDK account, setup some initial dependencies, and configured your config json (remembering to push it using `./config.sh push <stage>`), you should be ready to deploy FAIMS now.
+
+To deploy, first ensure you have your AWS credentials for the target account configured.
+
+Next, tell our CDK scripts which config to use, by setting the below environment variable to the filename of your config
+
+```bash
+export CONFIG_FILE_NAME=prod.json
+```
+
+then run a CDK diff
+
+```
+npx cdk diff
+```
+
+Note that this will take some time, as it involves building out some Docker and/or local assets.
+
+Given that the application is not deployed yet, the diff should be successful, and indicate all new assets (green).
+
+Once you're happy that the diff is as you expect, run a deploy!
+
+```
+npx cdk deploy
+```
+
+This will rebuild some assets, and request permission to deploy.
+
+In my case, deployment was successful in about 10 minutes.
+
+## Migrating your database
+
+To get started, you'll need to run the DB migration.
+
+Before doing this, you'll need to find the auto generated DB credentials. Navigate to AWS Secrets Manager, and find the secret with a name such as `couchdbCouchDBAdminPassword-ABCD1234`. Click on it, and retrieve the secret value.
+
+**Warning**: This is the root credentials for the DB. Do NOT share this, or leave it in a vulnerable location.
+
+Now, from the repo root, setup a `.env` file in the `api` package:
+
+```
+cd api
+cp .env.dist .env
+```
+
+Then add the following values to the bottom of the .env file:
+
+```
+# OVERRIDES
+COUCHDB_USER=admin
+COUCHDB_PASSWORD="<YOUR DB PASSWORD>"
+COUCHDB_EXTERNAL_PORT=443
+COUCHDB_INTERNAL_URL=https://db.<your domain>:443/
+COUCHDB_PUBLIC_URL=https://db.<your domain>:443/
+AWS_DEFAULT_REGION=<your deployment region e.g. ap-southeast-2>
+KEY_SOURCE=AWS_SM
+AWS_SECRET_KEY_ARN=<secret ARN of the private key in AWS SM>
+```
+
+**Note**: The Secret key ARN above should be the same value as the
+
+```json
+  "secrets": {
+    "privateKey": "arn:aws:secretsmanager:region:account-id:secret:private-key-secret-id",
+```
+
+value from above.
+
+From within `api` (again ensuring your have AWS creds active!)
+
+```
+npm i
+npx turbo build
+npm run migrate -- --keys
+```
+
+This will migrate all the databases, and force push the JWT signing keys. In the future, you do not need to include the `-- --keys` postfix for routine migrations.
+
+You should see output similar to
+
+```
+Public keys will be configured during migration
+AWS SM Key Cache miss
+JWT public key configured in CouchDB
+Database auth (AUTH) is already up to date at version 5
+Database directory (DIRECTORY) is already up to date at version 1
+Database invites (INVITES) is already up to date at version 3
+Database people (PEOPLE) is already up to date at version 4
+Database projects (PROJECTS) is already up to date at version 2
+Database templates (TEMPLATES) is already up to date at version 2
+Migration completed successfully
+```
+
+After you have migrated your databases, the system should be fully operational.
+
+## Bootstrapping your user account
+
+I don't recommend using the CouchDB admin user/password to manage the system. Instead
+
+1. create a team e.g. System Managers
+2. create an admin team invite
+3. open the invite link in a new anonymous tab and sign up with a real email/password
+4. returning to your CouchDB admin account tab/window, refresh to see the new user (you), and grant them the General Admin role
+5. logout of the CouchDB admin account, and sign in with your personal account
+
+You can now manage the deployment with your personal login.
+
 ## Additional configurations
 
-### Social sign in
+There are other additional configurations we did not cover, however they are out of scope for this particular tutorial.
 
-TODO
+For example, you can configure Google social sign in, and apply different themeing. You may also want to setup the GitHub actions CDK deployment workflow which allows a one click deploy.
