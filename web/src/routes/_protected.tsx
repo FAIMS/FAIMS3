@@ -1,18 +1,19 @@
 import {VerificationAlertComponent} from '@/components/alerts/verification-alert';
 import Breadcrumbs from '@/components/breadcrumbs';
-import Logo, {LogoIcon} from '@/components/logo';
+import {LogoIcon} from '@/components/logo';
 import {ModeToggle} from '@/components/mode-toggle';
 import {SessionExpiredOverlay} from '@/components/session-expired-overlay';
 import {AppSidebar} from '@/components/side-bar/app-sidebar';
 import {Button} from '@/components/ui/button';
 import {Dialog} from '@/components/ui/dialog';
-import {Separator} from '@/components/ui/separator';
+import {SidebarInset, SidebarProvider} from '@/components/ui/sidebar';
 import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
-import {API_URL, APP_NAME, APP_URL, SIGNIN_PATH} from '@/constants';
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {API_URL, APP_NAME, APP_SHORT_NAME, APP_URL, SIGNIN_PATH} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useRequestVerify} from '@/hooks/queries';
 import {
@@ -147,16 +148,27 @@ function RouteComponent() {
                 <Breadcrumbs />
               </div>
               <div className="flex">
-                <Button variant="outline">
-                  <a href={APP_URL} target="_blank">
-                    <span className="mr-2">
-                      <LogoIcon size={24} />
-                    </span>
-                    <span className="align-middle font-semibold">
-                      {APP_NAME} App
-                    </span>
-                  </a>
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Button variant="outline" className="mr-2 p-2">
+                        <a href={APP_URL} target="_blank">
+                          <span className="mr-2">
+                            <LogoIcon size={24} />
+                          </span>
+                          <span className="align-middle font-semibold">
+                            {APP_SHORT_NAME} App{' '}
+                          </span>
+                          <ExternalLinkIcon className="inline-block" />
+                        </a>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="w-32 text-balance">
+                      Open the {APP_NAME} data collection app in a new window
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
                 <ModeToggle />
               </div>
             </div>
