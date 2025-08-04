@@ -1,4 +1,4 @@
-import {Construct} from 'constructs';
+kimport {Construct} from 'constructs';
 import {StaticWebsite} from '@cloudcomponents/cdk-static-website';
 import {
   AssetHashType,
@@ -343,6 +343,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_WEB_URL: `https://${props.webDomainName}`,
       VITE_API_URL: props.conductorUrl,
       VITE_APP_NAME: props.appName,
+      VITE_APP_SHORT_NAME: props.headingAppName ?? props.appName,
       // FAIMS /app URL (uses first domain if multiple provided)
       VITE_APP_URL: this.faimsAppUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
