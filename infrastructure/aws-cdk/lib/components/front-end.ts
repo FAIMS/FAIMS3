@@ -1,4 +1,4 @@
-kimport {Construct} from 'constructs';
+import {Construct} from 'constructs';
 import {StaticWebsite} from '@cloudcomponents/cdk-static-website';
 import {
   AssetHashType,
