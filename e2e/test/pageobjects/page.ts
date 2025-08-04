@@ -172,9 +172,11 @@ export default class Page {
     const {name} = this.getViewportConfig();
     const filename = `${baseName}-${name}`;
 
-    mkdirSync(`./screenshots/${category}`, {recursive: true});
+    const theme = process.env.VITE_THEME || 'default';
+    const dirName = `./screenshots/${theme}/${category}`;
+    mkdirSync(dirName, {recursive: true});
     console.log(`Taking screenshot: ${filename}.png`);
-    await browser.saveScreenshot(`./screenshots/${category}/${filename}.png`);
+    await browser.saveScreenshot(`${dirName}/${filename}.png`);
 
     return filename;
   }
