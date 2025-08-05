@@ -235,7 +235,7 @@ for_platform :android do
 end
 ```
 
-Fastlane actions are defined by a `lane` in the [Fastfile](../../app/android/fastlane/Fastfile):
+Fastlane actions are defined by a `lane` in the [Fastfile](../../../../../app/android/fastlane/Fastfile):
 
 ```ruby
    lane :deploy_fieldmark do
