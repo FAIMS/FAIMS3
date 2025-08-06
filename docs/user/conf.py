@@ -37,10 +37,11 @@ myst_enable_extensions = [
 ]
 
 myst_substitutions = {
-  "FAIMS": project,
-  "theme": "default",
-  "notebook": "notebook",
-  "Notebook": "Notebook",
+  "FAIMS": project, # the product name
+  "theme": "default", # the theme name, used to select screenshots
+  "notebook": "notebook", # the name of a project (notebook or survey)
+  "Notebook": "Notebook", # variations of the notebook name
   "notebooks": "notebooks",
   "Notebooks": "Notebooks",
+  "dashboard": "dashboard", # the name of the web management app 
 }

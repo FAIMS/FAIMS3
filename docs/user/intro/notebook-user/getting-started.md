@@ -90,8 +90,6 @@ appear in the _Active_ list in your workspace.
 
 ## Using a {{Notebook}}
 
-
-
 Enter a {{notebook}} by touching or clicking on the name of the {{notebook}} in the
 active list.  You will now see the {{notebook}} page where you can create new records
 and see any existing records you have access to.   The page will look different
@@ -125,4 +123,3 @@ in some {{notebooks}} depending on the configuration.  You should at least see a
 for the record, when it was created and by whom and the "Sync Status"; this last item will
 show a green cloud with a tick if the record is known to be saved on the server and an amber
 circle if upload is still pending.
-

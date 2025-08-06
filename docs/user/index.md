@@ -9,7 +9,21 @@ sd_hide_title: true
 ```{toctree}
 ---
 caption: Introductory Content
-maxdepth: 2
+maxdepth: 1
 ---
 
 intro/notebook-user/getting-started.md
+
+
+```
+
+```{toctree}
+---
+caption: Core Documentation
+maxdepth: 1
+---
+
+core/authentication.md
+core/permissions.md
+
+```
