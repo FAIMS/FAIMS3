@@ -1,0 +1,10 @@
+{
+  "name": "docs",
+  "version": "1.2.2",
+  "description": "User Documentation",
+  "scripts": {
+    "docker:build": "docker build -t sphinx-builder .",
+    "build:user": "docker run -it --rm -v ./user:/docs sphinx-builder  make html",
+    "build:developer": "docker run -it --rm -v ./developer:/docs sphinx-builder  make html"
+  }
+}

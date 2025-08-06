@@ -1,40 +1,34 @@
-# Fieldmark Documentation
+# Project Documentation
 
-This is suport documentation for users wanting to learn about the Fieldmark Webapp, Android and iOS versions.
+This directory contains documentation for the project written using Markdown for
+processing with the Sphinx document processing pipeline.
 
-## Tech
+User documentation is in the `user` directory and is meant to be processed for end-user
+documentation.   Developer documentation is in the `developer` directory and will generally
+just be made available as part of the repository.
 
-The docs uses the Sphinx python build system to build a static website from mostly markdown content.
+## Build the Documentation
 
-## User docs local deploy
+The easiest way to build the docs is via a docker image with Sphinx installed.  The following
+commands can be used:
 
-```bash
-cd user
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-./localPreview.sh
-```
-
-To build, all steps the same except the final line
-
-```
-make html
-```
-
-## Developer docs local deploy
+Build the docker image:
 
 ```bash
-cd developer
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-./localPreview.sh
+npm run docker:build
 ```
 
-To build, all steps the same except the final line
+Build the user documentation in HTML format:
 
+```bash
+npm run build:user
 ```
-cd docs
-make html
+
+Build the developer documentation in HTML format:
+
+```bash
+npm run build:developer
 ```
+
+Outputs in each case go into the `build` folder in the respective directory.
+
