@@ -376,7 +376,6 @@ export const updateNotebook = async (
     force: true,
   });
 
-
   // update the existing uispec document
   // need the revision id of the existing one to do this...
   const existingUISpec = await metaDB.get('ui-specification');

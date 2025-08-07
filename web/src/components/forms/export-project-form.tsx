@@ -3,7 +3,7 @@ import {Form} from '../form';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
-import {ProjectUIViewsets, UISpecification} from '@faims3/data-model';
+import {ProjectUIViewsets} from '@faims3/data-model';
 
 /**
  * ExportProjectForm component renders a form for downloading a project's data.
