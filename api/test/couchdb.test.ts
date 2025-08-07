@@ -31,16 +31,11 @@ import {
   Role,
   userHasProjectRole,
 } from '@faims3/data-model';
-import {fail} from 'assert';
 import {expect} from 'chai';
 import * as fs from 'fs';
 import {upgradeCouchUserToExpressUser} from '../src/auth/keySigning/create';
 import {CONDUCTOR_INSTANCE_NAME} from '../src/buildconfig';
-import {
-  getDirectoryDB,
-  getMetadataDb,
-  initialiseDbAndKeys,
-} from '../src/couchdb';
+import {getDirectoryDB, initialiseDbAndKeys} from '../src/couchdb';
 import {
   createNotebook,
   getEncodedNotebookUISpec,

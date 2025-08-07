@@ -13,7 +13,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {API_URL, APP_NAME, APP_SHORT_NAME, APP_URL, SIGNIN_PATH} from '@/constants';
+import {
+  API_URL,
+  APP_NAME,
+  APP_SHORT_NAME,
+  APP_URL,
+  SIGNIN_PATH,
+} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useRequestVerify} from '@/hooks/queries';
 import {

@@ -1,9 +1,7 @@
-import {Grid, Card, Typography} from '@mui/material';
+import {Typography} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
-import {getViewIDForField, slugify} from '@/designer/state/helpers/uiSpec-helpers';
-import {useState} from 'react';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 type PropType = {

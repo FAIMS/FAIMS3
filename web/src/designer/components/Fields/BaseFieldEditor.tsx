@@ -41,12 +41,12 @@ import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
 import {ConditionType} from '../condition/types';
 
-import DebouncedTextField from '../debounced-text-field';
-import {MdxEditor} from '../mdx-editor';
 import {
   getViewIDForField,
   slugify,
 } from '@/designer/state/helpers/uiSpec-helpers';
+import DebouncedTextField from '../debounced-text-field';
+import {MdxEditor} from '../mdx-editor';
 
 type Props = {
   fieldName: string;
@@ -323,7 +323,10 @@ export const BaseFieldEditor = ({
                               initialMarkdown={state.advancedHelperText}
                               handleChange={debounce(
                                 markdown =>
-                                  updateProperty('advancedHelperText', markdown),
+                                  updateProperty(
+                                    'advancedHelperText',
+                                    markdown
+                                  ),
                                 500,
                                 {leading: false, trailing: true}
                               )}
@@ -363,7 +366,9 @@ export const BaseFieldEditor = ({
                   control={
                     <Checkbox
                       checked={state.required}
-                      onChange={e => updateProperty('required', e.target.checked)}
+                      onChange={e =>
+                        updateProperty('required', e.target.checked)
+                      }
                     />
                   }
                   label="Required"
