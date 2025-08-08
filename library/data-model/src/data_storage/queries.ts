@@ -30,25 +30,45 @@ import {
 } from '../types';
 import {listRecordMetadata} from './internals';
 
+// Get all records of a specific type
+// only referenced in a catch clause in storageFunctions.ts so probably never
+// used
 export async function getAllRecordsOfType(
   project_id: ProjectID,
   type: FAIMSTypeName
 ): Promise<RecordReference[]> {
   const dataDB = await getDataDB(project_id);
-  const res = await dataDB.find({
-    selector: {
-      record_format_version: 1,
-      type: type,
-    },
-  });
-  // const hrid = (await getHRID(project_id, o.revision)) ;
-  return res.docs.map((o: any) => {
-    return {
-      project_id: project_id,
-      record_id: o._id,
-      record_label: o._id, // TODO: decide how we're getting HRIDs from db
-    };
-  });
+
+  const BATCH_SIZE = 100;
+  const records: RecordReference[] = [];
+  let skip = 0;
+  let res;
+  let count = 0;
+
+  do {
+    const res = await dataDB.find({
+      selector: {
+        record_format_version: 1,
+        type: type,
+      },
+      limit: BATCH_SIZE,
+      skip: skip,
+    });
+
+    count = res.docs.length;
+    // const hrid = (await getHRID(project_id, o.revision)) ;
+    res.docs.forEach((o: any) => {
+      records.push({
+        project_id: project_id,
+        record_id: o._id,
+        record_label: o._id, // TODO: decide how we're getting HRIDs from db
+      });
+    });
+
+    skip += BATCH_SIZE;
+  } while (res && count === BATCH_SIZE);
+
+  return records;
 }
 
 /**
@@ -72,6 +92,7 @@ export async function getAllRecordsWithRegex({
   hydrate?: boolean;
 }): Promise<RecordMetadata[]> {
   // find avp documents with matching data, get the record ids from them
+  // TODO: deal with default batch size limit of 25 in pouchdb 9.0.0
   const res = await dataDb.find({
     selector: {
       avp_format_version: 1,
