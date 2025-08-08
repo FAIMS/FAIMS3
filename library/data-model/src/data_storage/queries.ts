@@ -46,7 +46,7 @@ export async function getAllRecordsOfType(
   let count = 0;
 
   do {
-    const res = await dataDB.find({
+    res = await dataDB.find({
       selector: {
         record_format_version: 1,
         type: type,

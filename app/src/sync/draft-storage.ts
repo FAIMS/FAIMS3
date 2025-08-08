@@ -407,7 +407,7 @@ export async function deleteDraftsForRecord(
   // need to delete in batches since find requires a limit argument
   // however we should only ever be deleting one draft
   do {
-    const res = await draftDb.find({
+    res = await draftDb.find({
       selector: {
         project_id: project_id,
         record_id: record_id,
