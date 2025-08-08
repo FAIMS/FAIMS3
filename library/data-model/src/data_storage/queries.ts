@@ -92,17 +92,33 @@ export async function getAllRecordsWithRegex({
   hydrate?: boolean;
 }): Promise<RecordMetadata[]> {
   // find avp documents with matching data, get the record ids from them
-  // TODO: deal with default batch size limit of 25 in pouchdb 9.0.0
-  const res = await dataDb.find({
-    selector: {
-      avp_format_version: 1,
-      data: {$regex: regex},
-    },
-  });
-  const record_ids = res.docs.map((o: any) => {
-    const avp = o as AttributeValuePair;
-    return avp.record_id;
-  });
+
+  const BATCH_SIZE = 100;
+  let skip = 0;
+  let res;
+  let count = 0;
+  const record_ids = [] as RecordID[];
+
+  // need to delete in batches since find requires a limit argument
+  // however we should only ever be deleting one draft
+  do {
+    res = await dataDb.find({
+      selector: {
+        avp_format_version: 1,
+        data: {$regex: regex},
+      },
+      limit: BATCH_SIZE,
+      skip: skip,
+    });
+
+    count = res.docs.length;
+    res.docs.forEach((o: any) => {
+      const avp = o as AttributeValuePair;
+      record_ids.push(avp.record_id);
+    });
+    skip += BATCH_SIZE;
+  } while (res && count === BATCH_SIZE);
+
   // Remove duplicates, no order is implied
   const deduped_record_ids = Array.from(new Set<RecordID>(record_ids));
   return await listRecordMetadata({
