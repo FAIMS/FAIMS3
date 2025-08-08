@@ -420,13 +420,13 @@ export async function deleteDraftsForRecord(
 
     // TODO: bug here, the draft doesn't get deleted - we get a conflict
     // error below and I don't know why
-    res.docs.forEach(async (o: any) => {
+    for (const o of res.docs) {
       try {
         await draftDb.remove(o);
       } catch (err) {
         console.debug('Failed to remove draft', err);
       }
-    });
+    }
 
     skip += BATCH_SIZE;
   } while (res && count === BATCH_SIZE);
