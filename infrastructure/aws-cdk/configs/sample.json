@@ -32,7 +32,7 @@
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
-    "contactUrl": "https://your-domain.com/contact",
+    "contactUrl": "https://your-domain.com/contact"
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
@@ -99,7 +99,7 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist" : "false"
+    "localhostWhitelist": false
   },
   "domains": {
     "baseDomain": "your-domain.com",
@@ -121,5 +121,8 @@
     "testEmailAddress": "admin@your-domain.com",
     "cacheExpirySeconds": 300,
     "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
+  },
+  "security": {
+    "maximumLongLivedTokenDurationDays": 90
   }
 }
