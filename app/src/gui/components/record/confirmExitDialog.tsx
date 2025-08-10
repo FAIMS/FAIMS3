@@ -35,11 +35,13 @@ import {CloseOptionType} from './formButton';
 export const ConfirmExitDialog = ({
   backLink,
   backIsParent = false,
+  fieldId,
   open = false,
   setOpen,
 }: {
   backLink: string;
   backIsParent: boolean;
+  fieldId?: string;
   open: boolean;
   setOpen: (state: boolean) => void;
 }) => {
@@ -55,6 +57,7 @@ export const ConfirmExitDialog = ({
     setOpen(false);
     navigate(backLink, {
       replace: true,
+      state: fieldId ? {fromFieldId: fieldId} : undefined,
     });
   };
 
@@ -89,11 +92,16 @@ export const ConfirmExitDialog = ({
     >
       <Alert severity="info">
         <AlertTitle>
-          {' '}
-          Are you sure you want to return to the record list?
+          {`Are you sure you want to return to ${
+            fieldId
+              ? 'the step where you created this record'
+              : backIsParent
+                ? 'the parent record'
+                : 'the record list'
+          }?`}
         </AlertTitle>
         Your response is saved on your device as a draft. You can return to it
-        later to complete this record.{' '}
+        later to complete this record.
       </Alert>
 
       <DialogActions
@@ -128,7 +136,8 @@ export const ConfirmExitDialog = ({
             },
           }}
         >
-          Return to {backIsParent ? 'parent record' : 'record list'}
+          Return to{' '}
+          {fieldId ? 'step' : backIsParent ? 'parent record' : 'record list'}
         </Button>
       </DialogActions>
     </Dialog>
@@ -145,13 +154,18 @@ export const ConfirmCancelDialog = ({
   open,
   setOpen,
   confirmAction,
+  backLink,
+  fieldId,
 }: {
   open: boolean;
   setOpen: (state: boolean) => void;
   confirmAction: (close: CloseOptionType) => void;
+  backLink?: string;
+  fieldId?: string;
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
 
   const handleClose = () => {
     setOpen(false);
@@ -159,7 +173,12 @@ export const ConfirmCancelDialog = ({
 
   const handleConfirm = () => {
     setOpen(false);
-    confirmAction('cancel');
+    if (backLink) {
+      navigate(backLink, {
+        replace: true,
+        state: fieldId ? {fromFieldId: fieldId} : undefined,
+      });
+    }
   };
 
   return (
