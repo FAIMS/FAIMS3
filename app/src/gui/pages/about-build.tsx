@@ -47,7 +47,7 @@ import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
   RUNNING_UNDER_TEST,
   COMMIT_VERSION,
-  SHOW_MINIFAUXTON,
+  SHOW_POUCHDB_BROWSER,
   SHOW_WIPE,
   NOTEBOOK_NAME,
   CONDUCTOR_URLS,
@@ -237,7 +237,7 @@ export default function AboutBuild() {
             </Grid>
           </Grid>
 
-          {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
+          {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
             <React.Fragment>
               <Grid item xs={12}>
                 <Divider />
@@ -311,7 +311,7 @@ export default function AboutBuild() {
                       </Dialog>
                     </Grid>
                   )}
-                  {SHOW_MINIFAUXTON && (
+                  {SHOW_POUCHDB_BROWSER && (
                     <>
                       <Grid item>
                         <Button
