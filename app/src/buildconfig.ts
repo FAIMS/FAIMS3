@@ -138,13 +138,13 @@ function show_new_notebook(): boolean {
 function pouch_batch_size(): number {
   const pouch_batch_size = import.meta.env.VITE_POUCH_BATCH_SIZE;
   if (pouch_batch_size === '' || pouch_batch_size === undefined) {
-    return 1000;
+    return 10;
   }
   try {
     return parseInt(pouch_batch_size);
   } catch (err) {
     logError(err);
-    return 1000;
+    return 10;
   }
 }
 
