@@ -1,6 +1,6 @@
-# Fieldmark Quick Start Guide for Researchers
+# {{FAIMS}} Quick Start Guide for Researchers
 
-This guide helps researchers design effective digital data collection notebooks using Fieldmark's Designer web application. We focus on practical patterns and field-tested approaches to streamline your transition from paper to digital recording.
+This guide helps researchers design effective digital data collection notebooks using the {{notebook}} designer. We focus on practical patterns and field-tested approaches to streamline your transition from paper to digital recording.
 
 ## Quick Reference: Selecting the Right Field Type
 
@@ -43,7 +43,7 @@ This guide helps researchers design effective digital data collection notebooks 
 
 ### Creating Parent–Child Hierarchies
 
-Most field research involves hierarchical data structures. Fieldmark enables you to establish these relationships naturally through parent–child connections.
+Most field research involves hierarchical data structures. {{FAIMS}} enables you to establish these relationships naturally through parent–child connections.
 
 **Archaeological Pattern:**
 
@@ -123,7 +123,7 @@ Consider tablets as an optimal middle ground, combining portability with suffici
 
 ## Conditional Logic Patterns
 
-Fieldmark's conditional logic enables dynamic forms that adapt to your data, showing relevant fields based on previous responses.
+Conditional logic enables dynamic forms that adapt to your data, showing relevant fields based on previous responses.
 
 ### Pattern 1: Progressive Detail
 
@@ -226,7 +226,3 @@ When data won't sync:
 - **Technical Support**: Contact details for system-specific assistance
 
 Remember that successful digital field recording emerges from iterative refinement. Start with simple notebooks, gather user feedback, and progressively enhance your designs based on real-world experience.
-
----
-
-*This guide reflects current Fieldmark capabilities. Features and interfaces may evolve with system updates.*

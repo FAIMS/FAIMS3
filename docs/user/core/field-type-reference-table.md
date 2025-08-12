@@ -1,6 +1,6 @@
-# Fieldmark Field Type Summary Reference Table
+# {{FAIMS}} Field Type Summary Reference Table
 
-This comprehensive reference provides detailed specifications for all Fieldmark field types, supporting informed selection for digital data collection notebook design. We present technical capabilities, validation options, and platform-specific considerations for each field type within the Designer interface.
+This comprehensive reference provides detailed specifications for all {{FAIMS}} field types, supporting informed selection for digital data collection {{notebook}} design. We present technical capabilities, validation options, and platform-specific considerations for each field type within the Designer interface.
 
 ## Text and Identifier Fields
 
@@ -69,12 +69,15 @@ This comprehensive reference provides detailed specifications for all Fieldmark 
 ## Critical Implementation Considerations
 
 ### Human-Readable Identifiers (HRIDs)
+
 Whilst technically optional, we strongly recommend implementing HRIDs using Templated String fields for every form. Without HRIDs, the system defaults to opaque UUIDs (e.g., "rec-5f8a9b3c"), substantially complicating data management, export interpretation, and team communication. Configure the `hridField` property in your viewset to specify which Templated String field serves as the identifier.
 
 ### Conditional Logic Architecture
+
 Fields capable of controlling logic (marked in specifications) can trigger visibility conditions through standardised operators (equal, not-equal, greater-than, less-than). Complex conditions utilise AND/OR combinations. Note that controller fields require the `logic_select` property or inclusion in `conditional_sources` for optimal performance.
 
 ### Platform-Specific Limitations
+
 Critical platform disparities require careful consideration:
 - QR/Barcode scanning functions exclusively on mobile applications
 - Map fields require internet connectivity for initial tile loading
@@ -82,13 +85,15 @@ Critical platform disparities require careful consideration:
 - Touch interfaces present challenges for precise selection and text entry
 
 ### Performance Boundaries
+
 Documented performance thresholds inform design decisions:
 - Relationship fields: Noticeable degradation beyond 50 relationships, unusable beyond 200
 - Long option lists: Consider hierarchical organisation beyond 20 items
-- Media synchronisation: Device-specific download toggles essential for photo-intensive notebooks
+- Media synchronisation: Device-specific download toggles essential for photo-intensive {{notebooks}}
 - Complex conditional logic: Multiple controller fields may impact form responsiveness
 
 ### Validation Limitations
+
 Current validation architecture exhibits specific constraints:
 - No cross-field validation (cannot compare Field A to Field B)
 - No custom validation functions for project-specific rules
@@ -97,8 +102,5 @@ Current validation architecture exhibits specific constraints:
 - Validation occurs client-side with limited server verification
 
 ### Export Considerations
+
 Each entity type exports as a separate CSV file with relationships preserved through identifier columns. The export format maintains relationship semantics (e.g., "cuts/CTX-042;fills/CTX-043") but requires manual reconstruction for hierarchical analysis. Design vocabularies and identifiers with post-processing requirements in mind.
-
----
-
-*This reference table reflects Fieldmark capabilities as documented in 2024–2025. Platform updates may introduce new features or modify existing behaviour. Consult current documentation for production deployments.*

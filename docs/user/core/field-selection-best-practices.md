@@ -1,8 +1,8 @@
-# Fieldmark Field Selection Best Practices Guide
+# Field Selection Best Practices Guide
 
 ## Introduction: Principled Field Selection for Digital Recording
 
-The transition from paper-based to digital field recording necessitates fundamental reconsideration of data structure and capture mechanisms. This guide articulates evidence-based principles for field selection within Fieldmark, drawing upon extensive deployment experience across archaeological, ecological, and geoscientific contexts. We present both theoretical foundations and practical recommendations to support informed decision-making throughout the notebook design process.
+The transition from paper-based to digital field recording necessitates fundamental reconsideration of data structure and capture mechanisms. This guide articulates evidence-based principles for field selection within {{FAIMS}}, drawing upon extensive deployment experience across archaeological, ecological, and geoscientific contexts. We present both theoretical foundations and practical recommendations to support informed decision-making throughout the {{notebook}} design process.
 
 The selection of appropriate field types represents a critical juncture where research objectives, data quality requirements, and practical constraints converge. Poor field choices cascade through the entire research lifecycle – complicating data entry, compromising analytical potential, and ultimately undermining research outcomes. Conversely, thoughtful field selection enhances both immediate usability and long-term research value.
 
@@ -322,10 +322,6 @@ For mixed-device deployments:
 
 The selection of field types transcends mere technical implementation – it embodies methodological decisions about data structure, analytical possibilities, and research outcomes. Through principled field selection, we transform the contingencies of fieldwork into structured datasets that support both immediate research needs and long-term analytical potential.
 
-This guide provides a framework for navigating the complex decision space of field selection. By understanding the capabilities and constraints of each field type, considering device realities, and maintaining focus on research objectives, notebook designers can create recording systems that enhance rather than constrain field research.
+This guide provides a framework for navigating the complex decision space of field selection. By understanding the capabilities and constraints of each field type, considering device realities, and maintaining focus on research objectives, {{notebook}} designers can create recording systems that enhance rather than constrain field research.
 
 The iterative refinement of field selections, informed by actual usage patterns and emerging research questions, ensures that digital recording systems evolve alongside research programmes. Through careful attention to these principles and patterns, we enable the creation of robust, usable, and analytically powerful field recording systems.
-
----
-
-*This guide reflects current Fieldmark capabilities and deployment experience through 2024–2025. As the platform evolves and deployment experience accumulates, these recommendations will require periodic revision. We encourage notebook designers to document their own patterns and contribute to the collective understanding of effective field selection strategies.*
