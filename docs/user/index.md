@@ -13,6 +13,7 @@ maxdepth: 1
 ---
 
 intro/notebook-user/getting-started.md
+intro/quick-start-researchers.md
 
 
 ```
@@ -23,6 +24,8 @@ caption: Core Documentation
 maxdepth: 1
 ---
 
+core/field-selection-best-practices.md
+core/field-type-reference-table.md
 core/authentication.md
 core/permissions.md
 
