@@ -28,7 +28,7 @@ import {
   Modal,
   Paper,
   Typography,
-  useTheme
+  useTheme,
 } from '@mui/material';
 import {
   DataGrid,

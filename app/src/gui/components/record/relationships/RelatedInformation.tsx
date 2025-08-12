@@ -579,7 +579,7 @@ async function get_field_RelatedFields(
  * converting them into RecordLinkProps objects for UI display. This function examines the
  * relationship structure of a record and creates display objects for each parent and linked
  * relationship, including metadata like HRIDs, routes, and relationship types.
- * 
+ *
  * @param ui_specification - The UI specification for the project
  * @param newfields - Existing array of RecordLinkProps to append to
  * @param project_id - The project identifier
