@@ -187,7 +187,7 @@ export class FaimsFrontEnd extends Construct {
 
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
-      VITE_SHOW_MINIFAUXTON: 'true',
+      VITE_SHOW_POUCHDB_BROWSER: 'true',
       VITE_APP_NAME: props.appName,
       VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,

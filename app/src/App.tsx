@@ -50,6 +50,7 @@ import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
 import {MapDownloadComponent} from './gui/components/map/map-download';
 import {OFFLINE_MAPS} from './buildconfig';
+import {PouchExplorer} from './gui/pages/pouchExplorer';
 
 // type AppProps = {};
 
@@ -217,6 +218,10 @@ export default function App() {
                           Component={MapDownloadComponent}
                         />
                       )}
+                      <Route
+                        path={ROUTES.POUCH_EXPLORER}
+                        Component={PouchExplorer}
+                      />
                       <Route path={'*'} Component={NotFound404} />
                     </Routes>
                   </MainLayout>
