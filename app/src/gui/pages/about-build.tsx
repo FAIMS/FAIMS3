@@ -57,6 +57,7 @@ import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
+import {Link} from 'react-router-dom';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -314,13 +315,13 @@ export default function AboutBuild() {
                     <>
                       <Grid item>
                         <Button
+                          size={'small'}
                           variant="contained"
                           disableElevation
                           color={'warning'}
-                          onClick={() => {
-                            window.location.pathname = '/minifauxton.html';
-                          }}
                           startIcon={<StorageIcon />}
+                          component={Link}
+                          to={ROUTES.POUCH_EXPLORER}
                         >
                           Open Raw Database Interface
                         </Button>
