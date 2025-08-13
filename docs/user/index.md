@@ -29,7 +29,7 @@ core/permissions.md
 
 ```{toctree}
 ---
-caption: Creating {{Notebooks}}
+caption: Authoring {{Notebooks}}
 maxdepth: 1
 ---
 

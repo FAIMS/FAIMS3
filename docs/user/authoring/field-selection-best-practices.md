@@ -14,7 +14,7 @@ Structured data supports computational analysis, enables meaningful aggregation,
 
 **Implementation Strategy:**
 
-- Deploy controlled vocabularies (Select, RadioGroup) for any attribute with finite, known values
+- Deploy controlled vocabularies (Select, Radio Group) for any attribute with finite, known values
 - Reserve free text for genuinely unpredictable content (interpretations, unique observations)
 - Utilise annotation fields to capture edge cases within structured frameworks
 - Document vocabulary evolution to support longitudinal data integration
@@ -27,23 +27,23 @@ Structured data supports computational analysis, enables meaningful aggregation,
 
 ### Principle 2: Automate System-Knowable Information
 
-Any information the system can determine should never require manual entry. This principle reduces errors, accelerates recording, and ensures consistency across datasets.
+Any information the system can determine should never require manual entry.
+This principle reduces errors, accelerates recording, and ensures consistency across datasets.
 
-**System Variables Available:**
+Every record includes metadata that records:
 
-- `{{_CREATED_BY}}` – Current user (eliminates "Recorded by" fields)
-- `{{_CREATED_TIME}}` – Timestamp of record creation
-- Current GPS location via Take GPS Point
+- the original creator and creation time of the record
+- for every subsequent edit, the time and person responsible for the change
+
+This means that you don't need to include fields in your form for the person recording
+the data or the time that they are doing it.  You may want to use a _Date Time Now_
+field to allow recording of times during data entry (eg. start of recording, end of recording).
+
+You can also automatically collect:
+
+- Current GPS location via a _Take GPS Point_ field
 - Sequential identifiers through Auto-incrementing fields
 - Parent record context through inheritance
-
-**Implementation Patterns:**
-
-Replace manual entry fields with automated capture:
-
-- ❌ Text field for "Recorder name" → ✓ System variable in HRID
-- ❌ DateTime field for "Entry time" → ✓ `{{_CREATED_TIME}}` in template
-- ❌ Manual context copying → ✓ Parent-child relationships with inheritance
 
 ### Principle 3: Design for Progressive Disclosure
 

@@ -1,4 +1,4 @@
-# {{FAIMS}} Field Type Summary Reference Table
+# Field Type Reference Table
 
 This comprehensive reference provides detailed specifications for all {{FAIMS}} field types, supporting informed selection for digital data collection {{notebook}} design. We present technical capabilities, validation options, and platform-specific considerations for each field type within the Designer interface.
 
