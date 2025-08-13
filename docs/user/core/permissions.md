@@ -1,4 +1,4 @@
-# Permissions in {{FAIMS}}
+# Roles and Permissions
 
 {{FAIMS}} uses a role-based permissions system to control access to different
 functions and data.  This page outlines the different roles that are

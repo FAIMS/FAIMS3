@@ -1,4 +1,4 @@
-# Authentication in {{FAIMS}}
+# Authentication
 
 You can register an account with the {{FAIMS}} system either through a email and password or
 using a federated authentication service such as Google or a configured SSO provider.
