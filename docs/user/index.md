@@ -13,8 +13,6 @@ maxdepth: 1
 ---
 
 intro/notebook-user/getting-started.md
-intro/quick-start-researchers.md
-
 
 ```
 
@@ -24,9 +22,19 @@ caption: Core Documentation
 maxdepth: 1
 ---
 
-core/field-selection-best-practices.md
-core/field-type-reference-table.md
 core/authentication.md
 core/permissions.md
+
+```
+
+```{toctree}
+---
+caption: Creating {{Notebooks}}
+maxdepth: 1
+---
+
+authoring/quick-start-researchers.md
+authoring/field-selection-best-practices.md
+authoring/field-type-reference-table.md
 
 ```
