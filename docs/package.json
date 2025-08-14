@@ -1,0 +1,10 @@
+{
+  "name": "docs",
+  "version": "1.2.2",
+  "description": "User Documentation",
+  "scripts": {
+    "docker:build": "docker build -t sphinx-builder .",
+    "build:user": "./build.sh user",
+    "build:developer": "./build.sh developer/docs"
+  }
+}

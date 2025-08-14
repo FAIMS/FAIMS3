@@ -475,7 +475,7 @@ export const BaseFieldEditor = ({
                       }
                     />
                   }
-                  label="Display in parent record"
+                  label="Display in child records"
                 />
               </Grid>
               {VITE_TEMPLATE_PROTECTIONS && (
