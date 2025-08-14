@@ -49,5 +49,3 @@ myst_substitutions = {
   "Notebooks": NOTEBOOK_NAME.title() + 's',
   "dashboard": DASHBOARD_NAME, # the name of the web management app
 }
-
-print(os.environ)
