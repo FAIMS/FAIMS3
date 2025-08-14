@@ -12,7 +12,7 @@ caption: Introductory Content
 maxdepth: 1
 ---
 
-intro/notebook-user/getting-started.md
+intro-notebook-user/getting-started.md
 
 ```
 
@@ -34,6 +34,8 @@ maxdepth: 1
 ---
 
 authoring/quick-start-researchers.md
+authoring/structure.md
+authoring/templates.md
 authoring/field-selection-best-practices.md
 authoring/field-type-reference-table.md
 
