@@ -35,6 +35,7 @@ maxdepth: 1
 
 authoring/quick-start-researchers.md
 authoring/structure.md
+authoring/conditions.md
 authoring/templates.md
 authoring/field-selection-best-practices.md
 authoring/field-type-reference-table.md
