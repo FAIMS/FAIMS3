@@ -55,22 +55,16 @@ images directory and inserted using the normal {image} directive.
 The easiest way to build the docs is via a docker image with Sphinx installed.  The following
 commands can be used:
 
-Build the docker image:
-
-```bash
-npm run docker:build
-```
-
 Build the user documentation in HTML format:
 
 ```bash
-npm run build:user
+make user-docs
 ```
 
 Build the developer documentation in HTML format:
 
 ```bash
-npm run build:developer
+make developer-docs
 ```
 
 Outputs in each case go into the `build` folder in the respective directory.
