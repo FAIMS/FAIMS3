@@ -89,7 +89,6 @@ export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
  * @param socialProviders an array of login provider identifiers
  */
 export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
-
   // For legacy versions of the app, we provide a message on /auth to
   // let them know they need to upgrade to the latest version
   app.get('/auth', (req, res) => {

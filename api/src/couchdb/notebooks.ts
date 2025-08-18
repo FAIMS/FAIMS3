@@ -252,52 +252,6 @@ const generateProjectID = (projectName: string): ProjectID => {
   return `${Date.now().toFixed()}-${slugify(projectName)}`;
 };
 
-type AutoIncReference = {
-  form_id: string;
-  field_id: string;
-  label: string;
-};
-
-type AutoIncrementObject = {
-  _id: string;
-  references: AutoIncReference[];
-};
-
-/**
- * Derive an autoincrementers object from a UI Spec
- *   find all of the autoincrement fields in the UISpec and create an
- *   entry for each of them.
- * @param uiSpec a project UI Model
- * @returns an autoincrementers object suitable for insertion into the db or
- *          undefined if there are no such fields
- */
-const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
-  // Note that this relies on the name 'local-autoincrementers' being the same as that
-  // used in the front-end code (LOCAL_AUTOINCREMENTERS_NAME in src/local-data/autoincrementers.ts)
-  const autoinc: AutoIncrementObject = {
-    _id: 'local-autoincrementers',
-    references: [],
-  };
-
-  const fields = uiSpec.fields;
-  for (const field in fields) {
-    // TODO are there other names?
-    if (fields[field]['component-name'] === 'BasicAutoIncrementer') {
-      autoinc.references.push({
-        form_id: fields[field]['component-parameters'].form_id,
-        field_id: fields[field]['component-parameters'].name,
-        label: fields[field]['component-parameters'].label,
-      });
-    }
-  }
-
-  if (autoinc.references.length > 0) {
-    return autoinc;
-  } else {
-    return undefined;
-  }
-};
-
 /**
  * validateDatabases - check that all notebook databases are set up
  *  properly, add design documents if they are missing
@@ -382,11 +336,6 @@ export const createNotebook = async (
     force: true,
   });
 
-  // derive autoincrementers from uispec
-  const autoIncrementers = getAutoIncrementers(uispec);
-  if (autoIncrementers) {
-    await metaDB.put(autoIncrementers);
-  }
   const payload = {_id: 'ui-specification', ...uispec};
   await metaDB.put(
     payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
@@ -426,22 +375,6 @@ export const updateNotebook = async (
     projectId,
     force: true,
   });
-
-  // derive autoincrementers from uispec
-  const autoIncrementers = getAutoIncrementers(uispec);
-  if (autoIncrementers) {
-    // need to update any existing autoincrementer document
-    // this should have the _rev property so that our update will work
-    const existingAutoInc = (await metaDB.get(
-      'local-autoincrementers'
-    )) as AutoIncrementObject;
-    if (existingAutoInc) {
-      existingAutoInc.references = autoIncrementers.references;
-      await metaDB.put(existingAutoInc);
-    } else {
-      await metaDB.put(autoIncrementers);
-    }
-  }
 
   // update the existing uispec document
   // need the revision id of the existing one to do this...

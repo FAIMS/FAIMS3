@@ -544,7 +544,7 @@ export async function getPossibleRelatedRecords({
   } catch (err) {
     // TODO: What are we doing here, why would things error?
     const records = await getAllRecordsOfType(projectId, type);
-    console.warn(err);
+    logError(err);
     return records;
   }
 }

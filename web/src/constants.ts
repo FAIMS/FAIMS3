@@ -12,6 +12,7 @@ export const NOTEBOOK_NAME = import.meta.env.VITE_NOTEBOOK_NAME || 'project';
 export const WEBSITE_TITLE =
   import.meta.env.VITE_WEBSITE_TITLE || 'Control Centre';
 export const APP_NAME = getConfigValue('VITE_APP_NAME');
+export const APP_SHORT_NAME = import.meta.env.VITE_APP_SHORT_NAME || APP_NAME;
 export const WEB_URL = getConfigValue('VITE_WEB_URL');
 export const API_URL = getConfigValue('VITE_API_URL');
 export const APP_URL = getConfigValue('VITE_APP_URL');

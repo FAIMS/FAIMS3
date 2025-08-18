@@ -399,25 +399,35 @@ export async function deleteDraftsForRecord(
 ) {
   const draftDb = databaseService.getDraftDatabase();
 
-  try {
-    const res = await draftDb.find({
+  const BATCH_SIZE = 100;
+  let skip = 0;
+  let res;
+  let count = 0;
+
+  // need to delete in batches since find requires a limit argument
+  // however we should only ever be deleting one draft
+  do {
+    res = await draftDb.find({
       selector: {
         project_id: project_id,
         record_id: record_id,
       },
+      limit: BATCH_SIZE,
+      skip: skip,
     });
-    const ids_to_delete = res.docs.map(o => {
-      return {
-        _id: o._id,
-        _rev: o._rev,
-        _deleted: true,
-      };
-    });
-    if (ids_to_delete.length > 0) {
-      await (draftDb as PouchDB.Database<{}>).bulkDocs(ids_to_delete);
+
+    count = res.docs.length;
+
+    // TODO: bug here, the draft doesn't get deleted - we get a conflict
+    // error below and I don't know why
+    for (const o of res.docs) {
+      try {
+        await draftDb.remove(o);
+      } catch (err) {
+        console.debug('Failed to remove draft', err);
+      }
     }
-  } catch (err) {
-    console.debug('Failed to remove drafts', err);
-    throw err;
-  }
+
+    skip += BATCH_SIZE;
+  } while (res && count === BATCH_SIZE);
 }
