@@ -1,16 +1,16 @@
-<div class="auth-header">
+<div class="auth-header" data-testid="auth-header">
     <h2>Create account</h2>
-    <p>Already have an account? <a href="{{loginURL}}" class="auth-link">Sign in</a></p>
+    <p>Already have an account? <a href="{{loginURL}}" class="auth-link" data-testid="login-link">Sign in</a></p>
 </div>
 
 {{#if localAuth}}
-<form method="post" action="{{postUrl}}">
+<form method="post" action="{{postUrl}}" data-testid="register-form">
     <input type="hidden" name="redirect" value="{{localRegisterPostPayload.redirect}}">
     <input type="hidden" name="inviteId" value="{{localRegisterPostPayload.inviteId}}">
     <input type="hidden" name="action" value="{{localRegisterPostPayload.action}}">
 
     {{#if messages.error.registration}}
-    <div class="alert alert-danger">{{messages.error.registration}}</div>
+    <div class="alert alert-danger" data-testid="registration-error">{{messages.error.registration}}</div>
     {{/if}}
 
     <div class="mb-3">
@@ -20,10 +20,11 @@
                name="email" 
                class="form-control" 
                id="EmailInput" 
+               data-testid="email-input"
                value="{{messages.email}}"
                required>
         {{#if messages.error.email}}
-        <div class="alert alert-danger">{{messages.error.email.msg}}</div>
+        <div class="alert alert-danger" data-testid="email-error">{{messages.error.email.msg}}</div>
         {{/if}}
     </div>
 
@@ -34,24 +35,26 @@
                name="name" 
                class="form-control" 
                id="NameInput" 
+               data-testid="name-input"
                value="{{messages.name}}"
                required>
         {{#if messages.error.name}}
-        <div class="alert alert-danger">{{messages.error.name.msg}}</div>
+        <div class="alert alert-danger" data-testid="name-error">{{messages.error.name.msg}}</div>
         {{/if}}
     </div>
 
     <div class="mb-3">
         <label for="InputPassword" class="form-label">Password</label>
-        <p class="helper-text">Choose a password with at least 10 characters</p>
+        <p class="helper-text" data-testid="password-helper">Choose a password with at least 10 characters</p>
         <input type="password" 
                autocomplete="new-password" 
                name="password" 
                class="form-control" 
                id="InputPassword"
+               data-testid="password-input"
                required>
         {{#if messages.error.password}}
-        <div class="alert alert-danger">{{messages.error.password.msg}}</div>
+        <div class="alert alert-danger" data-testid="password-error">{{messages.error.password.msg}}</div>
         {{/if}}
     </div>
 
@@ -62,29 +65,31 @@
                name="repeat" 
                class="form-control" 
                id="RepeatPassword"
+               data-testid="confirm-password-input"
                required>
         {{#if messages.error.repeat}}
-        <div class="alert alert-danger">{{messages.error.repeat.msg}}</div>
+        <div class="alert alert-danger" data-testid="confirm-password-error">{{messages.error.repeat.msg}}</div>
         {{/if}}
     </div>
 
-    <button type="submit" class="auth-button">Create account</button>
+    <button type="submit" class="auth-button" data-testid="register-submit-button">Create account</button>
     {{#if messages.error.registrationError}}
-      <div class='alert alert-danger'>{{messages.error.registrationError.msg}}</div>
+      <div class='alert alert-danger' data-testid="registration-submit-error">{{messages.error.registrationError.msg}}</div>
     {{/if}}
 </form>
 {{/if}}
 
 {{#if (and localAuth providers)}}
-<div class="divider">
+<div class="divider" data-testid="divider">
     <span>or</span>
 </div>
 {{/if}}
 
-<div class="sso-options">
+<div class="sso-options" data-testid="sso-options">
     {{#each providers}}
     <a href="{{this.targetUrl}}"
-       class="auth-button-outline">
+       class="auth-button-outline"
+       data-testid="sso-provider-{{this.id}}">
         <i class="bi bi-{{this.id}}" style="margin-right: 8px;"></i>
         Continue with {{ this.name }}
     </a>

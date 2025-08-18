@@ -32,6 +32,7 @@ const OnboardingComponent = ({
 
   return (
     <Box
+      data-testid="onboarding-component"
       sx={{
         display: 'flex',
         justifyContent: 'center',
