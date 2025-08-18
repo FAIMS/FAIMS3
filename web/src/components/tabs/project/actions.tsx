@@ -23,6 +23,7 @@ import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
 import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
+import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -210,6 +211,24 @@ const ProjectActions = (): JSX.Element => {
             </ListItem>
             <ListItem>
               <EditProjectDialog />
+            </ListItem>
+          </List>
+        </Card>
+
+        <Card className="flex-1">
+          <List className="flex flex-col gap-4">
+            <ListItem>
+              <ListLabel>
+                Create Template from this {NOTEBOOK_NAME_CAPITALIZED}
+              </ListLabel>
+              <ListDescription>
+                Create a new template from the current {NOTEBOOK_NAME}.  You will
+                then be able to create copies of this {NOTEBOOK_NAME} from the
+                template.
+              </ListDescription>
+            </ListItem>
+            <ListItem>
+              <CreateTemplateFromProjectDialog projectId={projectId} />
             </ListItem>
           </List>
         </Card>
