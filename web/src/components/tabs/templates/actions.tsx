@@ -14,6 +14,7 @@ import type {
   NotebookWithHistory,
   NotebookUISpec,
 } from '@/designer/state/initial';
+import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,
@@ -121,6 +122,18 @@ const TemplateActions = () => {
             </ListItem>
           </List>
         </Card>
+        <Card className="flex-1">
+          <List className="flex flex-col gap-4">
+            <ListItem>
+              <ListLabel>Replace Template JSON File</ListLabel>
+              <ListDescription>Replace the template JSON file.</ListDescription>
+            </ListItem>
+            <ListItem>
+              <EditTemplateDialog />
+            </ListItem>
+          </List>
+        </Card>
+
         <Card>
           <List>
             <ListItem>
