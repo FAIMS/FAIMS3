@@ -19,6 +19,7 @@
  */
 
 import React, {useEffect, useRef} from 'react';
+import PouchDB from 'pouchdb-browser';
 import {
   Box,
   Paper,
@@ -31,6 +32,9 @@ import {
   LinearProgress,
   AppBar,
   Toolbar,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -65,6 +69,20 @@ export default function AboutBuild() {
   const [showingProgress, setShowingProgress] = React.useState(false);
   const [progressiveDump, setProgressiveDump] = React.useState(false);
   const [progressMessage, setProgressMessage] = React.useState('');
+  const [pouchDBDebug, setPouchDBDebug] = React.useState(false);
+
+  const togglePouchDBDebug = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPouchDBDebug(event.target.checked);
+    console.log('current debug state is ', PouchDB.debug.enabled('*'));
+    if (event.target.checked) {
+      console.log('PouchDB Debug Logging enabled');
+      PouchDB.debug.enable('*');
+    } else {
+      console.log('PouchDB Debug Logging disabled');
+      PouchDB.debug.disable();
+    }
+    console.log('now debug state is ', PouchDB.debug.enabled('*'));
+  };
 
   // need useRef here because this value is used in a callback which
   // needs to see the live value so that when we cancel, it can
@@ -293,19 +311,34 @@ export default function AboutBuild() {
                     </Grid>
                   )}
                   {SHOW_MINIFAUXTON && (
-                    <Grid item>
-                      <Button
-                        variant="contained"
-                        disableElevation
-                        color={'warning'}
-                        onClick={() => {
-                          window.location.pathname = '/minifauxton.html';
-                        }}
-                        startIcon={<StorageIcon />}
-                      >
-                        Open Raw Database Interface
-                      </Button>
-                    </Grid>
+                    <>
+                      <Grid item>
+                        <Button
+                          variant="contained"
+                          disableElevation
+                          color={'warning'}
+                          onClick={() => {
+                            window.location.pathname = '/minifauxton.html';
+                          }}
+                          startIcon={<StorageIcon />}
+                        >
+                          Open Raw Database Interface
+                        </Button>
+                      </Grid>
+                      <Grid item>
+                        <FormControl>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={pouchDBDebug}
+                                onChange={togglePouchDBDebug}
+                              />
+                            }
+                            label="Enable PouchDB Debug Logging"
+                          />
+                        </FormControl>
+                      </Grid>
+                    </>
                   )}
                 </Grid>
               </Grid>

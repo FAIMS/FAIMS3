@@ -467,4 +467,3 @@ function MapWrapper(props: MapProps) {
 }
 // added forward rendering..
 export default MapWrapper;
-

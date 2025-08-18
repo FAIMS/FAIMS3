@@ -227,6 +227,8 @@ we'll need it to be updated.
 - `vars.APP_PRIVACY_POLICY_URL` - URL for the app privacy policy link in the app footer
 - `vars.SUPPORT_EMAIL` - Support email address displayed in the app
 - `vars.APP_CONTACT_URL` - URL for the 'Contact' link in the app footer
+- `vars.POUCH_BATCH_SIZE` - batch size for pouchdb replication, defaults to 10 to ensure reliable sync of large files
+
 
 ## Note on Development Team
 

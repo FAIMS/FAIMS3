@@ -315,17 +315,18 @@ export default function ConflictForm(props: ConflictFormProps) {
           serverId
         );
         setLinks(newLinks);
-        const newMergedLinks: RecordLinkProps[] = await getRelationshipDisplayData(
-          ui_specification,
-          [],
-          project_id,
-          new_relationship,
-          record_id,
-          type,
-          record_id,
-          revisionvalue,
-          serverId
-        );
+        const newMergedLinks: RecordLinkProps[] =
+          await getRelationshipDisplayData(
+            ui_specification,
+            [],
+            project_id,
+            new_relationship,
+            record_id,
+            type,
+            record_id,
+            revisionvalue,
+            serverId
+          );
         setMergedLinks(newMergedLinks);
       }
     }

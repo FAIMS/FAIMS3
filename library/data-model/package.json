@@ -1,7 +1,7 @@
 {
   "name": "@faims3/data-model",
   "packageManager": "npm@10.7.0",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Database access layer for FAIMS3",
   "main": "./build/src/index.js",
   "module": "./build/esm/index.js",
@@ -46,11 +46,11 @@
     "url": "https://github.com/FAIMS/faims3-data-model"
   },
   "peerDependencies": {
-    "pouchdb": "^7.3.1"
+    "pouchdb": "^9.0.0"
   },
   "dependencies": {
     "@demvsystems/yup-ast": "^1.2.2",
-    "@types/pouchdb": "^6.4.0",
+    "@types/pouchdb": "^6.4.2",
     "fast-json-stable-stringify": "^2.1.0",
     "lodash": "^4.17.21",
     "pouchdb-security-helper": "^2.1.2",
@@ -67,8 +67,8 @@
     "gts": "^5.3.1",
     "jest": "^29.4.3",
     "madge": "^8.0.0",
-    "pouchdb-adapter-memory": "^8.0.1",
-    "pouchdb-find": "^8.0.1",
+    "pouchdb-adapter-memory": "^9.0.0",
+    "pouchdb-find": "^9.0.0",
     "ts-jest": "^29.0.5",
     "typescript": "^5.5.4"
   }

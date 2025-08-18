@@ -56,7 +56,7 @@ import {
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL, DEVELOPER_MODE} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 
 import {
@@ -252,52 +252,6 @@ const generateProjectID = (projectName: string): ProjectID => {
   return `${Date.now().toFixed()}-${slugify(projectName)}`;
 };
 
-type AutoIncReference = {
-  form_id: string;
-  field_id: string;
-  label: string;
-};
-
-type AutoIncrementObject = {
-  _id: string;
-  references: AutoIncReference[];
-};
-
-/**
- * Derive an autoincrementers object from a UI Spec
- *   find all of the autoincrement fields in the UISpec and create an
- *   entry for each of them.
- * @param uiSpec a project UI Model
- * @returns an autoincrementers object suitable for insertion into the db or
- *          undefined if there are no such fields
- */
-const getAutoIncrementers = (uiSpec: EncodedProjectUIModel) => {
-  // Note that this relies on the name 'local-autoincrementers' being the same as that
-  // used in the front-end code (LOCAL_AUTOINCREMENTERS_NAME in src/local-data/autoincrementers.ts)
-  const autoinc: AutoIncrementObject = {
-    _id: 'local-autoincrementers',
-    references: [],
-  };
-
-  const fields = uiSpec.fields;
-  for (const field in fields) {
-    // TODO are there other names?
-    if (fields[field]['component-name'] === 'BasicAutoIncrementer') {
-      autoinc.references.push({
-        form_id: fields[field]['component-parameters'].form_id,
-        field_id: fields[field]['component-parameters'].name,
-        label: fields[field]['component-parameters'].label,
-      });
-    }
-  }
-
-  if (autoinc.references.length > 0) {
-    return autoinc;
-  } else {
-    return undefined;
-  }
-};
-
 /**
  * validateDatabases - check that all notebook databases are set up
  *  properly, add design documents if they are missing
@@ -382,11 +336,6 @@ export const createNotebook = async (
     force: true,
   });
 
-  // derive autoincrementers from uispec
-  const autoIncrementers = getAutoIncrementers(uispec);
-  if (autoIncrementers) {
-    await metaDB.put(autoIncrementers);
-  }
   const payload = {_id: 'ui-specification', ...uispec};
   await metaDB.put(
     payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
@@ -426,22 +375,6 @@ export const updateNotebook = async (
     projectId,
     force: true,
   });
-
-  // derive autoincrementers from uispec
-  const autoIncrementers = getAutoIncrementers(uispec);
-  if (autoIncrementers) {
-    // need to update any existing autoincrementer document
-    // this should have the _rev property so that our update will work
-    const existingAutoInc = (await metaDB.get(
-      'local-autoincrementers'
-    )) as AutoIncrementObject;
-    if (existingAutoInc) {
-      existingAutoInc.references = autoIncrementers.references;
-      await metaDB.put(existingAutoInc);
-    } else {
-      await metaDB.put(autoIncrementers);
-    }
-  }
 
   // update the existing uispec document
   // need the revision id of the existing one to do this...
@@ -883,6 +816,7 @@ export const streamNotebookRecordsAsCSV = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
+  console.log('streaming notebook records as CSV', projectId, viewID);
   const dataDb = await getDataDb(projectId);
   const uiSpecification = await getProjectUIModel(projectId);
   const iterator = await notebookRecordIterator({
@@ -975,6 +909,17 @@ export const streamNotebookFilesAsZip = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
+  const logMemory = (stage: string, extraInfo = '') => {
+    if (DEVELOPER_MODE) {
+      const used = process.memoryUsage();
+      console.log(
+        `[ZIP ${stage}] ${extraInfo} - RSS: ${Math.round(used.rss / 1024 / 1024)}MB, ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB, External: ${Math.round(used.external / 1024 / 1024)}MB`
+      );
+    }
+  };
+
+  logMemory('START');
+
   let allFilesAdded = false;
   let doneFinalize = false;
 
@@ -1019,6 +964,9 @@ export const streamNotebookFilesAsZip = async (
     }
   });
 
+  let recordCount = 0;
+  let fileCount = 0;
+
   archive.pipe(res);
   let dataWritten = false;
   let {record, done} = await iterator.next();
@@ -1028,28 +976,24 @@ export const streamNotebookFilesAsZip = async (
     // append it to the archive
     if (record !== null) {
       const hrid = record.hrid || record.record_id;
-      Object.keys(record.data).forEach(async (key: string) => {
-        if (record && record.data[key] instanceof Array) {
-          if (record.data[key].length === 0) {
-            return;
-          }
+      recordCount++;
+      logMemory('RECORD', `Record ${recordCount} (${hrid})`);
+
+      // Process files sequentially to avoid memory spikes
+      for (const key of Object.keys(record.data)) {
+        if (record.data[key] instanceof Array && record.data[key].length > 0) {
           if (record.data[key][0] instanceof File) {
             const file_list = record.data[key] as File[];
-            file_list.forEach(async (file: File) => {
-              const buffer = await file.stream();
-              const reader = buffer.getReader();
-              // this is how we turn a File object into
-              // a Buffer to pass to the archiver, insane that
-              // we can't derive something from the file that will work
-              const chunks: Uint8Array[] = [];
-              while (true) {
-                const {done, value} = await reader.read();
-                if (done) {
-                  break;
-                }
-                chunks.push(value);
-              }
-              const stream = Stream.Readable.from(chunks);
+
+            // Process files one at a time
+            for (const file of file_list) {
+              fileCount++;
+              const fileSizeMB = Math.round(file.size / 1024 / 1024);
+              logMemory(
+                'BEFORE_FILE',
+                `File ${fileCount}, Size: ${fileSizeMB}MB`
+              );
+
               const filename = generateFilenameForAttachment(
                 file,
                 key,
@@ -1057,15 +1001,50 @@ export const streamNotebookFilesAsZip = async (
                 fileNames
               );
               fileNames.push(filename);
-              await archive.append(stream, {
+
+              // Convert Web ReadableStream to Node.js Readable stream
+              const webStream = file.stream();
+              const reader = webStream.getReader();
+
+              // Create a Node.js Readable stream from the chunks
+              const nodeStream = new Stream.Readable({
+                async read() {
+                  try {
+                    const {done, value} = await reader.read();
+                    if (done) {
+                      this.push(null); // End the stream
+                    } else {
+                      this.push(Buffer.from(value)); // Convert Uint8Array to Buffer
+                    }
+                  } catch (error) {
+                    this.destroy(error as Error);
+                  }
+                },
+              });
+
+              await archive.append(nodeStream, {
                 name: filename,
               });
               dataWritten = true;
-            });
+
+              logMemory('AFTER_FILE', `File ${fileCount} processed`);
+            }
+
+            // Clear the file array after processing to help GC
+            record.data[key] = [];
+            logMemory('AFTER_CLEAR', 'Files cleared');
+            // Force garbage collection if available (Node.js --expose-gc flag)
+            if (global.gc && recordCount % 5 === 0) {
+              global.gc();
+              logMemory('AFTER_GC', `Forced GC after record ${recordCount}`);
+            }
           }
         }
-      });
+      }
     }
+    // Clear the record reference before getting the next one
+    record = null;
+
     const next = await iterator.next();
     record = next.record;
     done = next.done;
@@ -1079,6 +1058,8 @@ export const streamNotebookFilesAsZip = async (
   // fire a progress event here because short/empty zip files don't
   // trigger it late enough for us to call finalize above
   archive.emit('progress', {entries: {processed: 0, total: 0}});
+
+  logMemory('COMPLETE');
 };
 
 export const generateFilenameForAttachment = (
