@@ -12,10 +12,13 @@ const VIEWPORTS = {
   wide: {width: 1920, height: 1080}, // Full HD
 };
 
+// write screenshots to a configurable location
+const SCREENSHOT_DIR = process.env.SCREENSHOT_DIR || './screenshots';
+
 /**
  * Base page object class
  */
-export default class Page {
+export class Page {
   /**
    * Check if running on mobile platform
    */
@@ -173,7 +176,7 @@ export default class Page {
     const filename = `${baseName}-${name}`;
 
     const theme = process.env.VITE_THEME || 'default';
-    const dirName = `./screenshots/${theme}/${category}`;
+    const dirName = `${SCREENSHOT_DIR}/${theme}/${category}`;
     mkdirSync(dirName, {recursive: true});
     console.log(`Taking screenshot: ${filename}.png`);
     await browser.saveScreenshot(`${dirName}/${filename}.png`);

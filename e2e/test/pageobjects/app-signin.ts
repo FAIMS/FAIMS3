@@ -1,5 +1,5 @@
 import {$} from '@wdio/globals';
-import Page from './page.js';
+import {Page} from './page.ts';
 
 /**
  * Page object for the Fieldmark login/onboarding screen
