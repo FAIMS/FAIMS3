@@ -542,12 +542,34 @@ You should see output similar to
 Public keys will be configured during migration
 AWS SM Key Cache miss
 JWT public key configured in CouchDB
-Database auth (AUTH) is already up to date at version 5
+Applying migration for AUTH from v1 to v2: Adds the exchange token property to refresh tokens
+Migration step completed. Processed 0 documents, updated 0 documents.
+Applying migration for AUTH from v2 to v3: No-op migration to prompt V3 of schema which includes the new verification email document.
+Migration step completed. Processed 0 documents, updated 0 documents.
+Applying migration for AUTH from v3 to v4: Adds a created timestamp to email codes such that we can determine rate limiting
+Migration step completed. Processed 0 documents, updated 0 documents.
+Applying migration for AUTH from v4 to v5: No-op migration to prompt V5 of schema which includes the new long lived token document.
+Migration step completed. Processed 0 documents, updated 0 documents.
+Successfully migrated database auth (AUTH) from version 1 to 5
 Database directory (DIRECTORY) is already up to date at version 1
-Database invites (INVITES) is already up to date at version 3
-Database people (PEOPLE) is already up to date at version 4
-Database projects (PROJECTS) is already up to date at version 2
-Database templates (TEMPLATES) is already up to date at version 2
+Applying migration for INVITES from v1 to v2: Refactors the invites database to use a typed Role enum for new permissions system, removes records it can't understand
+Migration step completed. Processed 0 documents, updated 0 documents.
+Applying migration for INVITES from v2 to v3: Overhauls migrations to be more generic and allow for team vs project invites. Includes logging information, expiry and uses.
+Migration step completed. Processed 0 documents, updated 0 documents.
+Successfully migrated database invites (INVITES) from version 1 to 3
+Applying migration for PEOPLE from v1 to v2: Updates the people database to use new permissions models
+Migration step completed. Processed 0 documents, updated 0 documents.
+Applying migration for PEOPLE from v2 to v3: Adds empty teams field
+Migration step completed. Processed 0 documents, updated 0 documents.
+Applying migration for PEOPLE from v3 to v4: Adds email verification field for emails - defaulting to false
+Migration step completed. Processed 0 documents, updated 0 documents.
+Successfully migrated database people (PEOPLE) from version 1 to 4
+Applying migration for PROJECTS from v1 to v2: Renames and cleans up the projects DB and adds the status enum field.
+Migration step completed. Processed 0 documents, updated 0 documents.
+Successfully migrated database projects (PROJECTS) from version 1 to 2
+Applying migration for TEMPLATES from v1 to v2: Adds the name property to the template document (from the metadata)
+Migration step completed. Processed 0 documents, updated 0 documents.
+Successfully migrated database templates (TEMPLATES) from version 1 to 2
 Migration completed successfully
 ```
 
