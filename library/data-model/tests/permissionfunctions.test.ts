@@ -429,6 +429,15 @@ describe('getUserResourcesForAction', () => {
 
     expect(resources).toHaveLength(0);
   });
+
+  it('returns an empty array if token is undefined', () => {
+    const resources = getUserResourcesForAction({
+      decodedToken: undefined,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    });
+
+    expect(resources).toHaveLength(0);
+  });
 });
 
 describe('isAuthorized', () => {

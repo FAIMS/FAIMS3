@@ -120,10 +120,13 @@ export function getUserResourcesForAction({
   decodedToken,
   action,
 }: {
-  decodedToken: DecodedTokenPermissions;
+  decodedToken?: DecodedTokenPermissions | null;
   action: Action;
 }): Array<string> {
   const authorizedResources: Array<string> = [];
+
+  // if token is not there, we can't access any resources
+  if (!decodedToken) return authorizedResources;
 
   // Check resource-specific roles for access
   for (const resourceRole of decodedToken.resourceRoles) {
