@@ -10,6 +10,7 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {useAuth} from '@/context/auth-provider';
 import {ErrorComponent} from '@tanstack/react-router';
+import {AddTemplateToTeamForm} from '../forms/add-template-to-team-form';
 
 export const AddTemplateToTeamDialog = ({templateId}: {templateId: string}) => {
   const [open, setOpen] = useState(false);

@@ -17,6 +17,7 @@ import type {
 import {EditTemplateDialog} from '@/components/dialogs/edit-template';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team-dialog';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,
@@ -92,6 +93,17 @@ const TemplateActions = () => {
       action: Action.CREATE_PROJECT_IN_TEAM,
     }).length > 0;
 
+  // per-team and global permissions for adding templates to a team
+  const canAddTemplateToTeam =
+    getUserResourcesForAction({
+      decodedToken: user?.decodedToken,
+      action: Action.CREATE_TEMPLATE_IN_TEAM,
+    }).length > 0;
+
+  const globalCanAddTemplateToTeam = useIsAuthorisedTo({
+    action: Action.CREATE_TEMPLATE,
+  });
+
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -116,6 +128,23 @@ const TemplateActions = () => {
             </List>
           </Card>
         )}
+
+        {(canAddTemplateToTeam || globalCanAddTemplateToTeam) && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListDescription>
+                  Assign this {NOTEBOOK_NAME} to a team.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <AddTemplateToTeamDialog templateId={templateId} />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         <Card>
           <List>
             <ListItem>
