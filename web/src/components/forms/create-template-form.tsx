@@ -4,7 +4,7 @@ import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
@@ -37,6 +37,20 @@ export function CreateTemplateForm({
     action: Action.CREATE_TEMPLATE,
   });
 
+  // filter teams by those we can create templates in
+  const possibleTeams = teams?.teams.filter(team => {
+    return (
+      user &&
+      userCanDo({
+        user,
+        action: Action.CREATE_TEMPLATE_IN_TEAM,
+        resourceId: team._id,
+      })
+    );
+  });
+
+  const justOneTeam = specifiedTeam || possibleTeams?.length === 1;
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -60,11 +74,11 @@ export function CreateTemplateForm({
     },
   ];
 
-  if (!specifiedTeam) {
+  if (!justOneTeam) {
     fields.push({
       name: 'team',
       label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
-      options: teams?.teams.map(({_id, name}) => ({
+      options: possibleTeams?.map(({_id, name}) => ({
         label: name,
         value: _id,
       })),
@@ -101,6 +115,13 @@ export function CreateTemplateForm({
       };
     }
 
+    let chosenTeamId = specifiedTeam;
+    if (justOneTeam && possibleTeams) {
+      chosenTeamId = possibleTeams[0]._id;
+    } else if (team) {
+      chosenTeamId = team;
+    }
+
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/templates/`,
@@ -111,7 +132,7 @@ export function CreateTemplateForm({
             Authorization: `Bearer ${user.token}`,
           },
           body: JSON.stringify({
-            teamId: team ?? specifiedTeam,
+            teamId: chosenTeamId,
             name,
             ...jsonPayload,
           }),
@@ -141,11 +162,18 @@ export function CreateTemplateForm({
   };
 
   return (
-    <Form
-      fields={fields}
-      onSubmit={onSubmit}
-      submitButtonText="Create Template"
-      defaultValues={{team: defaultValues?.teamId}}
-    />
+    <>
+      {possibleTeams?.length === 1 && (
+        <span>
+          <strong>Template will be owned by:</strong> {possibleTeams[0].name}
+        </span>
+      )}
+      <Form
+        fields={fields}
+        onSubmit={onSubmit}
+        submitButtonText="Create Template"
+        defaultValues={{team: defaultValues?.teamId}}
+      />
+    </>
   );
 }

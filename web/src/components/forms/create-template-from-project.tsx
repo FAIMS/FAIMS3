@@ -1,14 +1,10 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
-import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetProject, useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
 import {Action} from '@faims3/data-model';
-
-import blankNotebook from '../../../notebooks/blank-notebook.json';
-import {NOTEBOOK_NAME} from '@/constants';
 
 interface CreateTemplateFromProjectForm {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -51,6 +47,7 @@ export function CreateTemplateFromProjectForm({
       })
     );
   });
+  const justOneTeam = specifiedTeam || possibleTeams?.length === 1;
 
   const fields: Field[] = [
     {
@@ -63,7 +60,7 @@ export function CreateTemplateFromProjectForm({
     },
   ];
 
-  if (!specifiedTeam) {
+  if (!justOneTeam) {
     fields.push({
       name: 'team',
       label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
@@ -83,12 +80,6 @@ export function CreateTemplateFromProjectForm({
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
     const {name, team} = values;
-
-    console.log('request body', {
-      ...projectData,
-      teamId: team ?? specifiedTeam,
-      name,
-    });
 
     try {
       const res = await fetch(
@@ -130,11 +121,18 @@ export function CreateTemplateFromProjectForm({
   };
 
   return (
-    <Form
-      fields={fields}
-      onSubmit={onSubmit}
-      submitButtonText="Create Template"
-      defaultValues={{team: defaultValues?.teamId}}
-    />
+    <>
+      {possibleTeams?.length === 1 && (
+        <span>
+          <strong>Template will be owned by:</strong> {possibleTeams[0].name}
+        </span>
+      )}
+      <Form
+        fields={fields}
+        onSubmit={onSubmit}
+        submitButtonText="Create Template"
+        defaultValues={{team: defaultValues?.teamId}}
+      />
+    </>
   );
 }
