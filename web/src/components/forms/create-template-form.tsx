@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
-import {Action} from '@faims3/data-model';
+import {Action, getUserResourcesForAction} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
@@ -37,17 +37,17 @@ export function CreateTemplateForm({
     action: Action.CREATE_TEMPLATE,
   });
 
-  // filter teams by those we can create templates in
-  const possibleTeams = teams?.teams.filter(team => {
-    return (
-      user &&
-      userCanDo({
-        user,
-        action: Action.CREATE_TEMPLATE_IN_TEAM,
-        resourceId: team._id,
-      })
-    );
+  // get the teams that we have permission to create
+  // templates in
+  const teamsAvailable = getUserResourcesForAction({
+    decodedToken: user?.decodedToken,
+    action: Action.CREATE_TEMPLATE_IN_TEAM,
   });
+
+  // filter teams by those we can create templates in
+  const possibleTeams = teams?.teams.filter(team =>
+    teamsAvailable.includes(team._id)
+  );
 
   const justOneTeam = specifiedTeam || possibleTeams?.length === 1;
 
