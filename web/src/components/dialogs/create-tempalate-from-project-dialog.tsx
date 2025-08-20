@@ -13,6 +13,7 @@ import {useGetTeam} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {ErrorComponent} from '@tanstack/react-router';
 import {CreateTemplateFromProjectForm} from '../forms/create-template-from-project';
+import {NOTEBOOK_NAME} from '@/constants';
 
 export const CreateTemplateFromProjectDialog = ({
   defaultValues,
@@ -49,8 +50,8 @@ export const CreateTemplateFromProjectDialog = ({
             {specifiedTeam && <> in “{team?.name ?? 'Team'}”</>}
           </DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Upload a JSON file to pre-populate, or leave blank to start from
-            scratch.
+            This will create a template using the current {NOTEBOOK_NAME}
+            structure.
           </DialogDescription>
         </DialogHeader>
 

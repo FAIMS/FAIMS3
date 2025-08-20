@@ -4,7 +4,7 @@ import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
-import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {Action, getUserResourcesForAction} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
