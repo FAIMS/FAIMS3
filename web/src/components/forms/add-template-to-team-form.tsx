@@ -3,6 +3,7 @@ import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {modifyTeamForProject} from '@/hooks/project-hooks';
 import {useGetTeams} from '@/hooks/queries';
+import {updateTemplateRequest} from '@/hooks/template-hooks';
 import {Action} from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {z} from 'zod';
@@ -60,8 +61,8 @@ export function AddTemplateToTeamForm({
   const onSubmit = async ({teamId}: onSubmitProps) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
-    const response = await modifyTeamForProject({
-      projectId,
+    const response = await updateTemplateRequest({
+      templateId,
       teamId,
       user,
     });
@@ -73,7 +74,7 @@ export function AddTemplateToTeamForm({
       };
 
     QueryClient.invalidateQueries({
-      queryKey: ['projectsbyteam', user.token, teamId],
+      queryKey: ['templatesbyteam', user.token, teamId],
     });
 
     setDialogOpen(false);

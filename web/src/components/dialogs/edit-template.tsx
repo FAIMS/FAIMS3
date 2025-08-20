@@ -7,7 +7,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {List, ListDescription, ListItem} from '../ui/list';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
@@ -61,8 +60,8 @@ export const EditTemplateDialog = () => {
             <DialogHeader>
               <DialogTitle>Replace Template JSON</DialogTitle>
               <DialogDescription>
-                Upload a new template JSON file to replace the current one. new
-                file must be a valid JSON file.
+                Upload a new template JSON file to replace the current one. The
+                new file must be a valid JSON file.
               </DialogDescription>
             </DialogHeader>
             <UpdateTemplateForm setDialogOpen={setOpen} />
