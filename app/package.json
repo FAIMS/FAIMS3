@@ -25,6 +25,8 @@
     "prebuild": "npm run runconfig",
     "build": "tsc && vite build",
     "pretest": "npm run compile",
+    "sourcemap": "npm run build -- --mode sourcemap",
+    "bugsnag-upload": "env-cmd ./bin/bugsnag-sourcemaps.sh",
     "test": "vitest --watch=false",
     "test-watch": "vitest",
     "posttest": "npm run lint",
@@ -44,13 +46,13 @@
     "compile": "tsc",
     "fix": "gts fix",
     "doc": "jsdoc -c ./jsdoc.config.json",
-    "set-version": "./bin/setBuildVersion.sh",
     "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh",
     "configIOSbuild": "env-cmd --no-override --silent ./bin/prebuildIOS.sh"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",
     "@bugsnag/plugin-react": "^7.19.0",
+    "@bugsnag/source-maps": "^2.3.3",
     "@capacitor-community/exif": "^7.0.0",
     "@capacitor-community/safe-area": "^7.0.0-alpha.1",
     "@capacitor-mlkit/barcode-scanning": "^7.2.1",
