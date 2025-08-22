@@ -1,5 +1,5 @@
 import path from 'path';
-import react from '@vitejs/plugin-react';
+import react from '@vitejs/plugin-react-swc';
 import {defineConfig, PluginOption} from 'vite';
 import {TanStackRouterVite} from '@tanstack/router-plugin/vite';
 
