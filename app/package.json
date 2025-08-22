@@ -25,7 +25,7 @@
     "prebuild": "npm run runconfig",
     "build": "tsc && vite build",
     "pretest": "npm run compile",
-    "sourcemap": "npm run build -- --mode sourcemap",
+    "build-sourcemap": "npm run build -- --mode sourcemap",
     "bugsnag-upload": "env-cmd ./bin/bugsnag-sourcemaps.sh",
     "test": "vitest --watch=false",
     "test-watch": "vitest",
