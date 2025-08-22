@@ -13,38 +13,36 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: vite.config.ts
+ * Filename: vitest.config.ts
  * Description:
- *   Configuration for Vite build
+ *   Configuration for Vitest testing
  */
-/// <reference types="vitest" />
 
-import {defineConfig} from 'vite';
+import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react-swc';
 
 export default defineConfig({
-  base: '/',
-  build: {
-    outDir: 'build',
-  },
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-    strictPort: true,
-  },
-  preview: {
-    port: 3000,
-    host: true,
-  },
+  plugins: [react({jsxImportSource: '@emotion/react'})],
   resolve: {
     alias: {
       events: 'rollup-plugin-node-polyfills/polyfills/events',
     },
     preserveSymlinks: true,
   },
-  plugins: [react({jsxImportSource: '@emotion/react'})],
   define: {
     global: 'globalThis',
     'process.env': {},
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    css: true,
+    reporters: ['verbose'],
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      include: ['src/**/*'],
+      exclude: [],
+    },
   },
 });
