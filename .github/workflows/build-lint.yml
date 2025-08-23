@@ -40,8 +40,10 @@ jobs:
       #     restore-keys: npm-
 
       - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
-        run: npm ci
+        run: |
+            rm -rf node_modules package-lock.json
+            npm cache clean --force
+            npm install
 
       - name: Configure Turborepo Remote Cache
         run: |
