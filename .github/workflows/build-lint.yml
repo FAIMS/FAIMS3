@@ -24,20 +24,24 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: 'npm'
- 
-      - name: Setup node cache
-        id: node-cache
-        uses: actions/cache@v3
-        with:
-          path: "**/node_modules"
-          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
-          restore-keys: npm-
+          node-version: 22.18.0
+          cache: 'npm'    
+          cache-dependency-path: |
+            package-lock.json
+            app/package-lock.json
+            web/package-lock.json
+
+      # - name: Setup node cache
+      #   id: node-cache
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: "**/node_modules"
+      #     key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
+      #     restore-keys: npm-
 
       - name: Install dependencies
         if: steps.node-cache.outputs.cache-hit != 'true'
-        run: npm i
+        run: npm ci
 
       - name: Configure Turborepo Remote Cache
         run: |
