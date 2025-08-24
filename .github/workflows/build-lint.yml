@@ -59,7 +59,11 @@ jobs:
           else
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
-      
+      - name: Report Typescript version
+        run: |
+          echo "Using Typescript version:"
+          npx tsc --version
+
       - name: Lint
         run: npm run lint
         
