@@ -19,10 +19,9 @@
  */
 
 import {defineConfig} from 'vitest/config';
-import react from '@vitejs/plugin-react-swc';
 
 export default defineConfig({
-  plugins: [react({jsxImportSource: '@emotion/react'})],
+  plugins: [],
   resolve: {
     alias: {
       events: 'rollup-plugin-node-polyfills/polyfills/events',
