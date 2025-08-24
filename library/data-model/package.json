@@ -70,6 +70,6 @@
     "pouchdb-adapter-memory": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "ts-jest": "^29.0.5",
-    "typescript": "^5.5.4"
+    "typescript": "^5.9.2"
   }
 }
