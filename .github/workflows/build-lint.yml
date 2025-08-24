@@ -31,19 +31,17 @@ jobs:
             app/package-lock.json
             web/package-lock.json
 
-      # - name: Setup node cache
-      #   id: node-cache
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: "**/node_modules"
-      #     key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
-      #     restore-keys: npm-
+      - name: Setup node cache
+        id: node-cache
+        uses: actions/cache@v3
+        with:
+          path: "**/node_modules"
+          key: npm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
+          restore-keys: npm-
 
       - name: Install dependencies
         run: |
-            rm -rf node_modules package-lock.json
-            npm cache clean --force
-            npm install
+            npm ci
 
       - name: Configure Turborepo Remote Cache
         run: |
@@ -59,10 +57,6 @@ jobs:
           else
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
-      - name: Report Typescript version
-        run: |
-          echo "Using Typescript version:"
-          npx tsc --version
 
       - name: Lint
         run: npm run lint
