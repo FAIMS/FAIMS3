@@ -15,6 +15,8 @@
     "isolatedModules": true,
     "noEmit": false,
     "jsx": "react-jsx",
+    "jsxImportSource": "@emotion/react",
+
     "rootDir": "./",
     "outDir": "./dist/",
     "types": ["vite/client", "vite-plugin-svgr/client"]

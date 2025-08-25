@@ -5,7 +5,7 @@
   "main": "build/src/index.js",
   "packageManager": "npm@10.7.0",
   "engines": {
-    "node": "^20.9.0"
+    "node": "^22.18.0"
   },
   "scripts": {
     "lint": "gts lint",
@@ -103,6 +103,6 @@
     "sinon": "^17.0.1",
     "supertest": "^6.3.3",
     "ts-node": "10.9.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.9.2"
   }
 }
