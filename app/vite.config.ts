@@ -48,18 +48,6 @@ const config: any = {
     'process.env': {} /* some libraries check this */,
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/setupTests.ts',
-    css: true,
-    reporters: ['verbose'],
-    coverage: {
-      reporter: ['text', 'json', 'html'],
-      include: ['src/**/*'],
-      exclude: [],
-    },
-  },
 };
 
 // Conditional configuration.  If run with --mode sourcemap
