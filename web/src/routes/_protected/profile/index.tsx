@@ -123,33 +123,6 @@ function RouteComponent() {
           </Button>
         </ListItem>
       </Card>
-
-      <Card className="flex-1">
-        <ListItem className="flex flex-col gap-2">
-          <ListLabel className="flex items-center gap-2">
-            <ShieldAlert size={18} />
-            <span>Bearer Token</span>
-          </ListLabel>
-          <ListDescription>
-            Click below to copy the token that can be used to authenticate in
-            scripts that use the API.
-          </ListDescription>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(user?.token || '');
-                toast('Bearer token copied to clipboard successfully! 🎉');
-              } catch (error) {
-                toast.error('Failed to copy bearer token to clipboard');
-              }
-            }}
-            className="mt-2"
-          >
-            Copy Bearer Token to Clipboard
-          </Button>
-        </ListItem>
-      </Card>
       <Card className="flex-1">
         <ListItem className="flex flex-col gap-2">
           <ListLabel className="flex items-center gap-2">

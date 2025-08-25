@@ -51,6 +51,7 @@ import {
   localUserToken,
   requestAuthAndType,
 } from './utils';
+import {createSampleTeam} from './teams.test';
 
 const EMPTY_UI_SPEC = {
   fields: {},
@@ -307,6 +308,29 @@ describe('template API tests', () => {
     });
   });
 
+  it('will not create a template in a team that does not exist', async () => {
+    // Try creating a template in a team that does not exist
+    // should return an error response
+    const nb = getSampleNotebook();
+    const response = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}`)
+        .send({
+          ...nb,
+          name: 'test template',
+          teamId: 'non-existent-team-id',
+        } satisfies PostCreateTemplateInput),
+      adminToken
+    );
+
+    console.log('body error', response.body.error);
+    // Check that the response indicates an error
+    expect(response.status).to.equal(403);
+    expect(response.body.error.message).to.equal(
+      'The specified team ID does not exist.'
+    );
+  });
+
   it('update', async () => {
     // create a template
     const {template} = await createSampleTemplate(app, {});
@@ -334,6 +358,90 @@ describe('template API tests', () => {
       expect(newTemplate.version).to.equal(2);
       expect(newTemplate.metadata.updated_field).to.equal('updated-value');
     });
+  });
+
+  it('update only some fields', async () => {
+    // create a template
+    const {template} = await createSampleTemplate(app, {});
+
+    const {metadata} = template;
+
+    // update some details and check properties
+
+    // change the template name and add a metadata field
+    metadata.updated_field = 'updated-value';
+
+    // update the existing template but only send the metadata and name
+    await updateATemplate(app, template._id, {
+      metadata,
+      name: 'updated name for template',
+    }).then(newTemplate => {
+      // Check the new properties
+      expect(newTemplate.version).to.equal(2);
+      expect(newTemplate.metadata.updated_field).to.equal('updated-value');
+      expect(newTemplate.name).to.equal('updated name for template');
+      // but team is still the same
+      expect(newTemplate.ownedByTeamId).to.equal(template.ownedByTeamId);
+    });
+
+    // get the template and check the same
+    await getATemplate(app, template._id).then(newTemplate => {
+      // Check the new properties
+      expect(newTemplate.version).to.equal(2);
+      expect(newTemplate.metadata.updated_field).to.equal('updated-value');
+      expect(newTemplate.name).to.equal('updated name for template');
+      // but team is still the same
+      expect(newTemplate.ownedByTeamId).to.equal(template.ownedByTeamId);
+    });
+  });
+
+  it('updates team ownership', async () => {
+    const team1 = await createSampleTeam(app, {teamName: 'team1'});
+    const team2 = await createSampleTeam(app, {teamName: 'team2'});
+
+    // create a template
+    const {template} = await createSampleTemplate(app, {
+      teamId: team1._id,
+    });
+
+    // update team ownership
+
+    // update the existing template but only send the metadata and name
+    await updateATemplate(app, template._id, {
+      teamId: team2._id,
+    }).then(newTemplate => {
+      // Check the new properties
+      expect(newTemplate.version).to.equal(2);
+      expect(newTemplate.ownedByTeamId).to.equal(team2._id);
+    });
+
+    // get the template and check the same
+    await getATemplate(app, template._id).then(newTemplate => {
+      // Check the new properties
+      expect(newTemplate.version).to.equal(2);
+      expect(newTemplate.ownedByTeamId).to.equal(team2._id);
+    });
+  });
+
+  it('will not update team ownership to a team that does not exist', async () => {
+    const team1 = await createSampleTeam(app, {teamName: 'team1'});
+
+    // create a template
+    const {template} = await createSampleTemplate(app, {
+      teamId: team1._id,
+    });
+
+    const response = await requestAuthAndType(
+      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
+        teamId: 'non-existent-team-id',
+      }),
+      adminToken
+    );
+
+    expect(response.status).to.equal(403);
+    expect(response.body.error.message).to.equal(
+      'The specified team ID does not exist.'
+    );
   });
 
   it('create notebook from template', async () => {
@@ -504,29 +612,6 @@ describe('template API tests', () => {
           'Are you sure the ID is correct?'
         );
         expect(res.body.error.status).to.equal(404);
-      });
-  });
-
-  it('invalid input due to missing field', async () => {
-    const fakeId = '1234';
-    await requestAuthAndType(
-      request(app)
-        .put(`${TEMPLATE_API_BASE}/${fakeId}`)
-        .send({
-          // missing! metadata: {},
-          'ui-specification': EMPTY_UI_SPEC,
-        } satisfies Omit<PutUpdateTemplateInput, 'metadata'>)
-    )
-      // Expect 400 bad request
-      .expect(400)
-      // And check the body has the error properties we want
-      .then(res => {
-        expect(res.body).to.be.an('array');
-        expect(res.body.length).to.equal(1);
-        const err = res.body[0];
-        expect(err).to.have.property('type');
-        expect(err.type).to.equal('Body');
-        expect(JSON.stringify(err.errors)).to.include('metadata');
       });
   });
 

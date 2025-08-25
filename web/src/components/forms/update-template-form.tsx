@@ -56,9 +56,9 @@ export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
     <Form
       fields={fields}
       onSubmit={onSubmit}
-      submitButtonText="Update Template"
+      submitButtonText="Upload Template JSON"
       submitButtonVariant="destructive"
-      warningMessage={`Editing the template may result in inconsistencies between the ${NOTEBOOK_NAME} created from it.`}
+      warningMessage={`Editing the template does not change any of the ${NOTEBOOK_NAME}s created from it.  This may create inconsistencies in your data.`}
     />
   );
 }

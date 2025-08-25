@@ -389,10 +389,21 @@ export type PostCreateTemplateResponse = z.infer<
 >;
 
 // PUT update existing template input
+// same fields as POST request but all are optional
 export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   metadata: true,
   'ui-specification': true,
-});
+  name: true,
+})
+  .partial({
+    metadata: true,
+    'ui-specification': true,
+    name: true,
+  })
+  .extend({
+    // prefer to use a nicer team ID input field
+    teamId: z.string().trim().min(1).optional(),
+  });
 export type PutUpdateTemplateInput = z.infer<
   typeof PutUpdateTemplateInputSchema
 >;

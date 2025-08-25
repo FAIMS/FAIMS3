@@ -1,18 +1,15 @@
 import {useAuth} from '@/context/auth-provider';
 import {Field, Form} from '@/components/form';
-import {readFileAsText} from '@/lib/utils';
 import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
-import {useGetTeams} from '@/hooks/queries';
-import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {useGetProject, useGetTeams} from '@/hooks/queries';
+import {useIsAuthorisedTo, userCanDo} from '@/hooks/auth-hooks';
+import {Action} from '@faims3/data-model';
 
-import blankNotebook from '../../../notebooks/blank-notebook.json';
-import {NOTEBOOK_NAME} from '@/constants';
-
-interface CreateTemplateFormProps {
+interface CreateTemplateFromProjectForm {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
   defaultValues?: {teamId?: string};
+  projectId: string;
   specifiedTeam?: string;
 }
 
@@ -20,35 +17,36 @@ interface CreateTemplateFormProps {
  * CreateTemplateForm component renders a form for creating a template.
  * It provides a button to open the dialog and a form to create the template.
  *
- * @param {CreateTemplateFormProps} props - The props for the form.
+ * @param {CreateTemplateFromProjectForm} props - The props for the form.
  * @returns {JSX.Element} The rendered CreateTemplateForm component.
  */
-export function CreateTemplateForm({
+export function CreateTemplateFromProjectForm({
   setDialogOpen,
   defaultValues,
+  projectId,
   specifiedTeam = undefined,
-}: CreateTemplateFormProps) {
+}: CreateTemplateFromProjectForm) {
   const {user, refreshToken} = useAuth();
   const queryClient = useQueryClient();
   const {data: teams} = useGetTeams(user);
+  const {data: projectData} = useGetProject({user, projectId});
 
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({
     action: Action.CREATE_TEMPLATE,
   });
 
-  // get the teams that we have permission to create
-  // templates in
-  const teamsAvailable = getUserResourcesForAction({
-    decodedToken: user?.decodedToken,
-    action: Action.CREATE_TEMPLATE_IN_TEAM,
-  });
-
   // filter teams by those we can create templates in
-  const possibleTeams = teams?.teams.filter(team =>
-    teamsAvailable.includes(team._id)
-  );
-
+  const possibleTeams = teams?.teams.filter(team => {
+    return (
+      user &&
+      userCanDo({
+        user,
+        action: Action.CREATE_TEMPLATE_IN_TEAM,
+        resourceId: team._id,
+      })
+    );
+  });
   const justOneTeam = specifiedTeam || possibleTeams?.length === 1;
 
   const fields: Field[] = [
@@ -59,18 +57,6 @@ export function CreateTemplateForm({
       schema: z.string().min(5, {
         message: 'Template name must be at least 5 characters.',
       }),
-    },
-    {
-      name: 'file',
-      label: 'JSON File (optional — leave blank to create a blank template)',
-      description: `Upload a .json ${NOTEBOOK_NAME} file to pre-fill your template, or leave blank to use our built-in sample.`,
-      type: 'file',
-      schema: z
-        .instanceof(File)
-        .refine(f => f.type === 'application/json', {
-          message: 'Only JSON files are allowed.',
-        })
-        .optional(),
     },
   ];
 
@@ -93,34 +79,7 @@ export function CreateTemplateForm({
   }) => {
     if (!user) return {type: 'submit', message: 'Not authenticated'};
 
-    const {name, file, team} = values;
-    let jsonPayload: Record<string, any> = {};
-
-    if (file) {
-      // parse the user-uploaded file
-      const text = await readFileAsText(file);
-      if (!text) {
-        return {type: 'submit', message: 'Error reading file'};
-      }
-      try {
-        jsonPayload = JSON.parse(text);
-      } catch {
-        return {type: 'submit', message: 'Invalid JSON file'};
-      }
-    } else {
-      // pull in the sample's metadata + ui-spec
-      jsonPayload = {
-        metadata: (blankNotebook as any).metadata,
-        'ui-specification': (blankNotebook as any)['ui-specification'],
-      };
-    }
-
-    let chosenTeamId = specifiedTeam;
-    if (justOneTeam && possibleTeams) {
-      chosenTeamId = possibleTeams[0]._id;
-    } else if (team) {
-      chosenTeamId = team;
-    }
+    const {name, team} = values;
 
     try {
       const res = await fetch(
@@ -132,9 +91,9 @@ export function CreateTemplateForm({
             Authorization: `Bearer ${user.token}`,
           },
           body: JSON.stringify({
-            teamId: chosenTeamId,
+            ...projectData,
+            teamId: team ?? specifiedTeam,
             name,
-            ...jsonPayload,
           }),
         }
       );
