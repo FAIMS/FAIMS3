@@ -2,12 +2,18 @@ import {defineConfig} from 'vitest/config';
 
 export default defineConfig({
   test: {
-    environment: 'jsdom', // This is the key setting
+    environment: 'jsdom',
     globals: true,
+    // browser config updated for Vitest 2.x
     browser: {
       enabled: true,
       headless: true,
-      name: 'chrome',
+      provider: 'webdriverio', // or 'playwright'
+      instances: [
+        {
+          browser: 'chrome',
+        },
+      ],
     },
   },
 });
