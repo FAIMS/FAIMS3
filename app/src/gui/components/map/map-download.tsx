@@ -37,6 +37,7 @@ import ProgressBar from '../progress-bar';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {set} from 'lodash';
 
 /**
  * Map download component presents the UI for downloading offline maps.
@@ -48,6 +49,7 @@ export const MapDownloadComponent = () => {
   const [downloadSetName, setDownloadSetName] = useState('Default');
   const [message, setMessage] = useState('');
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
+  const [downloadListOpen, setDownloadListOpen] = useState(false);
 
   const tileStore = useMemo(() => new VectorTileStore(), []);
 
@@ -116,6 +118,8 @@ export const MapDownloadComponent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
       setMessage('');
+      setDownloadListOpen(true);
+      console.log('set downloadListOpen true');
       try {
         await tileStore.createTileSet(extent, downloadSetName);
         tileStore.downloadTileSet(downloadSetName);
@@ -173,7 +177,11 @@ export const MapDownloadComponent = () => {
       </Grid>
 
       <Grid item xs={12} sm={4} md={3}>
-        <Accordion sx={{width: '100%'}}>
+        <Accordion
+          sx={{width: '100%'}}
+          expanded={downloadListOpen}
+          onClick={() => setDownloadListOpen(!downloadListOpen)}
+        >
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             sx={{height: '2em'}}
