@@ -12,6 +12,7 @@ def capacitor_pods
   pod 'Capacitor', :path => '../../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../../node_modules/@capacitor/ios'
   pod 'CapacitorCommunityExif', :path => '../../../node_modules/@capacitor-community/exif'
+  pod 'CapacitorCommunitySafeArea', :path => '../../../node_modules/@capacitor-community/safe-area'
   pod 'CapacitorMlkitBarcodeScanning', :path => '../../../node_modules/@capacitor-mlkit/barcode-scanning'
   pod 'CapacitorApp', :path => '../../../node_modules/@capacitor/app'
   pod 'CapacitorAppLauncher', :path => '../../../node_modules/@capacitor/app-launcher'

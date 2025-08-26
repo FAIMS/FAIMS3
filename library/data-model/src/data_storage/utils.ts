@@ -95,9 +95,83 @@ export async function safeWriteDocument<T extends {}>({
       }
     } else {
       // Something else happened - unsure and throw
+      console.log(err);
       throw Error('Failed to update record - non 409 error' + err);
     }
   }
+}
+
+/**
+ * Efficiently writes multiple documents in a batch, handling conflicts
+ */
+export async function batchWriteDocuments<T extends {}>({
+  db,
+  documents,
+  writeOnClash = true,
+}: {
+  db: PouchDB.Database<T>;
+  documents: PouchDB.Core.ExistingDocument<T>[];
+  writeOnClash?: boolean;
+}): Promise<{successful: number; failed: number}> {
+  let successful = 0;
+  let failed = 0;
+
+  // Process in smaller chunks to avoid memory build-up
+  const CHUNK_SIZE = 10;
+
+  for (let i = 0; i < documents.length; i += CHUNK_SIZE) {
+    const chunk = documents.slice(i, i + CHUNK_SIZE);
+
+    try {
+      // Try bulk insert first
+      const results = await db.bulkDocs(chunk, {new_edits: true});
+
+      // Handle any conflicts in the results
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j];
+        const doc = chunk[j];
+
+        if (
+          'error' in result &&
+          result.error &&
+          result.status === 409 &&
+          writeOnClash
+        ) {
+          // Handle conflict individually
+          try {
+            const existing = await db.get<T>(doc._id);
+            doc._rev = existing._rev;
+            await db.put(doc);
+            successful++;
+          } catch (conflictErr) {
+            console.warn(`Failed to resolve conflict for ${doc._id}`);
+            failed++;
+          }
+        } else if ('error' in result) {
+          failed++;
+        } else {
+          successful++;
+        }
+      }
+    } catch (bulkErr) {
+      // Fallback to individual writes for this chunk
+      for (const doc of chunk) {
+        try {
+          await safeWriteDocument({db, data: doc, writeOnClash});
+          successful++;
+        } catch (err) {
+          failed++;
+        }
+      }
+    }
+
+    // Allow garbage collection between chunks
+    if (i % (CHUNK_SIZE * 10) === 0) {
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
+
+  return {successful, failed};
 }
 
 /**

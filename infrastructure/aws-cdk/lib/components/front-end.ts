@@ -43,6 +43,11 @@ export interface FaimsFrontEndProps {
   // Used for mobile app builds etc
   appId: string;
 
+  // support links
+  supportEmail: string;
+  privacyPolicyUrl: string;
+  contactUrl: string;
+
   // e.g. db.domain.com
   couchDbDomainOnly: string;
   // e.g. 443
@@ -59,6 +64,9 @@ export interface FaimsFrontEndProps {
 
   // Offline maps settings -> env variables in faims
   offlineMaps: OfflineMapsConfig;
+
+  /** Maximum long-lived token duration in days (undefined = infinite) */
+  maximumLongLivedDurationDays?: number;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -183,6 +191,9 @@ export class FaimsFrontEnd extends Construct {
       VITE_APP_NAME: props.appName,
       VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
+      VITE_SUPPORT_EMAIL: props.supportEmail,
+      VITE_APP_PRIVACY_POLICY_URL: props.privacyPolicyUrl,
+      VITE_APP_CONTACT_URL: props.contactUrl,
 
       // Theme: default or bubble
       VITE_THEME: props.uiTheme,
@@ -332,11 +343,14 @@ export class FaimsFrontEnd extends Construct {
       VITE_WEB_URL: `https://${props.webDomainName}`,
       VITE_API_URL: props.conductorUrl,
       VITE_APP_NAME: props.appName,
+      VITE_APP_SHORT_NAME: props.headingAppName ?? props.appName,
       // FAIMS /app URL (uses first domain if multiple provided)
       VITE_APP_URL: this.faimsAppUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
       VITE_THEME: props.uiTheme,
       VITE_WEBSITE_TITLE: 'Control Centre',
+      VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
+        props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
     };
 
     // Setup a deployment into this bucket with static files

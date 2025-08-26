@@ -49,7 +49,7 @@ jobs:
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
       - name: Use Python 3.10
         uses: actions/setup-python@v4
@@ -63,6 +63,7 @@ jobs:
           export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_MINIFAUXTON=false
+          export VITE_POUCH_BATCH_SIZE=${{vars.POUCH_BATCH_SIZE}}
           export VITE_CONDUCTOR_URL=${{vars.PRODUCTION_CONDUCTOR_URL}}
           export VITE_TAG=prodIOS
           export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
@@ -74,6 +75,10 @@ jobs:
           export VITE_SHOW_RECORD_SUMMARY_COUNTS="${{vars.VITE_SHOW_RECORD_SUMMARY_COUNTS}}"
           export VITE_APPLE_BUNDLE_IDENTIFIER="${{vars.APPLE_BUNDLE_IDENTIFIER}}"
           export VITE_APP_STORE_CONNECT_TEAM_ID="${{secrets.APP_STORE_CONNECT_TEAM_ID}}"
+          export VITE_APP_PRIVACY_POLICY_URL=${{vars.APP_PRIVACY_POLICY_URL}}
+          export VITE_SUPPORT_EMAIL=${{vars.SUPPORT_EMAIL}}
+          export VITE_APP_CONTACT_URL=${{vars.APP_CONTACT_URL}}
+
 
           export VITE_ENABLE_RECORD_FILTERS=${{vars.ENABLE_RECORD_FILTERS}}
           export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"

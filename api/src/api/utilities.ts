@@ -21,6 +21,8 @@ import {
   Action,
   PostExchangeTokenInputSchema,
   PostExchangeTokenResponse,
+  PostLongLivedTokenExchangeInputSchema,
+  PostLongLivedTokenExchangeResponse,
   PostRefreshTokenInputSchema,
   PostRefreshTokenResponse,
   PublicServerInfo,
@@ -59,6 +61,8 @@ import {
   requireAuthenticationAPI,
 } from '../middleware';
 import patch from '../utils/patchExpressAsync';
+import {validateLongLivedToken} from '../couchdb/longLivedTokens';
+import {hashChallengeCode} from '../utils';
 
 // TODO: configure this directory
 const upload = multer({dest: '/tmp/'});
@@ -204,10 +208,62 @@ api.post(
     // existing user.
     // From the db user, drill and generate permissions
     const expressUser = await upgradeCouchUserToExpressUser({dbUser: user!});
+
     const {token} = await generateUserToken(expressUser, false);
 
     // return the token
     res.json({token});
+  }
+);
+
+/**
+ * Long-lived token exchange - get a new JWT using a long-lived API token.
+ *
+ * This endpoint allows users to authenticate using their long-lived API tokens
+ * to receive a short-lived access token for API access.
+ */
+api.post(
+  '/auth/exchange-long-lived-token',
+  processRequest({
+    body: PostLongLivedTokenExchangeInputSchema,
+  }),
+  async (req, res: Response<PostLongLivedTokenExchangeResponse>) => {
+    const {token} = req.body;
+
+    // Hash the provided token to match against stored hashes
+    const tokenHash = hashChallengeCode(token);
+
+    // Validate the long-lived token
+    const {
+      valid,
+      validationError,
+      user,
+      token: tokenRecord,
+    } = await validateLongLivedToken(
+      tokenHash,
+      true // Update last used timestamp
+    );
+
+    // If the token is not valid, let user know
+    if (!valid || !user) {
+      throw new Exceptions.UnauthorizedException(
+        `Authentication with long-lived token failed. ${validationError || 'Invalid token.'}`
+      );
+    }
+
+    // Generate a JWT (no refresh) for this user
+    const expressUser = await upgradeCouchUserToExpressUser({dbUser: user});
+    const {token: accessToken} = await generateUserToken(expressUser, false);
+
+    // Log the token usage for security auditing
+    if (!RUNNING_UNDER_TEST) {
+      console.log(
+        `[Long-Lived Token] Token "${tokenRecord?.title}" used by user ${user._id} at ${new Date().toISOString()}`
+      );
+    }
+
+    // Return the access token
+    res.json({token: accessToken});
   }
 );
 

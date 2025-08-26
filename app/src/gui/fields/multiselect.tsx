@@ -32,6 +32,7 @@ import {FieldProps} from 'formik';
 import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
 import FieldWrapper from './fieldWrapper';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
 
 /**
  * Base properties for multi-select components
@@ -133,18 +134,18 @@ export const ExpandedChecklist = ({
               />
             }
             label={
-              <Box
-                component="span"
-                sx={{
+              <span
+                style={{
                   display: 'contents',
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
                   lineHeight: '1.8rem',
                   paddingTop: '4px',
                 }}
-              >
-                {option.label}
-              </Box>
+                dangerouslySetInnerHTML={{
+                  __html: contentToSanitizedHtml(option.label),
+                }}
+              />
             }
             sx={{
               alignItems: 'center',
@@ -210,7 +211,13 @@ export const MuiMultiSelect = ({
         multiple
         onChange={handleChange}
         value={value}
-        renderValue={selected => selected.join(', ')}
+        renderValue={selected => (
+          <span
+            dangerouslySetInnerHTML={{
+              __html: contentToSanitizedHtml(selected.join(', ')),
+            }}
+          />
+        )}
         MenuProps={{
           PaperProps: {
             style: {
@@ -234,7 +241,19 @@ export const MuiMultiSelect = ({
             }}
           >
             <Checkbox checked={value.includes(option.value)} />
-            <ListItemText primary={option.label} />
+            <ListItemText
+              primary={
+                <span
+                  style={{
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: contentToSanitizedHtml(option.label),
+                  }}
+                />
+              }
+            />{' '}
           </MenuItem>
         ))}
       </Select>
@@ -248,10 +267,17 @@ export const MuiMultiSelect = ({
  */
 export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
   const handleChange = (value: string[]) => {
+    // remove stray empty strings from values if present
     props.form.setFieldValue(props.field.name, value, true);
   };
 
   const isExpandedChecklist = props.ElementProps.expandedChecklist ?? false;
+
+  // force value to be an array if it isn't already, but empty string becomes []
+  if (!Array.isArray(props.field.value)) {
+    if (props.field.value === '') props.field.value = [];
+    else props.field.value = [props.field.value];
+  }
 
   const commonProps = {
     options: props.ElementProps.options,

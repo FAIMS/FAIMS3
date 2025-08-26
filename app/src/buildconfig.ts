@@ -138,13 +138,13 @@ function show_new_notebook(): boolean {
 function pouch_batch_size(): number {
   const pouch_batch_size = import.meta.env.VITE_POUCH_BATCH_SIZE;
   if (pouch_batch_size === '' || pouch_batch_size === undefined) {
-    return 1000;
+    return 10;
   }
   try {
     return parseInt(pouch_batch_size);
   } catch (err) {
     logError(err);
-    return 1000;
+    return 10;
   }
 }
 
@@ -320,6 +320,37 @@ function get_heading_app_name(): string {
   return appid || get_app_name();
 }
 
+/**
+ * Return the configured privacy policy URL link
+ *  defaults to the EFN privacy policy url
+ *
+ * @returns {string} - the app privacy policy url link
+ */
+function get_app_privacy_policy_url(): string {
+  const appid = import.meta.env.VITE_APP_PRIVACY_POLICY_URL;
+  return appid || 'https://fieldnote.au/privacy';
+}
+
+/**
+ * Return the configured app contact url link
+ *  if this is falsy, the contact link will not be shown
+ *
+ * @returns {string} - the app contact url link, defaults to empty string
+ */
+function get_app_contact_url(): string {
+  const appid = import.meta.env.VITE_APP_CONTACT_URL;
+  return appid || '';
+}
+
+/**
+ * Retrieves the configured support email address
+ * @returns {string} - the support email address
+ */
+function get_support_email(): string {
+  const support_email = import.meta.env.VITE_SUPPORT_EMAIL;
+  return support_email || 'support@fieldmark.au';
+}
+
 // Consider a refresh every 15 seconds
 const DEFAULT_TOKEN_REFRESH_INTERVAL_MS = 15000;
 
@@ -416,6 +447,18 @@ function showRecordLinks(): boolean {
   return import.meta.env.VITE_SHOW_RECORD_LINKS === 'true';
 }
 
+/**
+ * Should we automatically migrate old v1.0 style databases on startup?
+ */
+function migrateOldDatabases(): boolean {
+  const migrateOldDatabases: string | undefined = import.meta.env
+    .VITE_MIGRATE_OLD_DATABASES;
+  return (
+    !!migrateOldDatabases &&
+    TRUTHY_STRINGS.includes(migrateOldDatabases.toLowerCase())
+  );
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -446,3 +489,7 @@ export const MAP_SOURCE = get_map_source();
 export const MAP_STYLE = get_map_style();
 export const NAVIGATION_STYLE = navigation_style();
 export const SHOW_RECORD_LINKS = showRecordLinks();
+export const SUPPORT_EMAIL = get_support_email();
+export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
+export const CONTACT_URL = get_app_contact_url();
+export const MIGRATE_OLD_DATABASES = migrateOldDatabases();

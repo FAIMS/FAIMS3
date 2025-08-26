@@ -1,1 +1,19 @@
-{"ui-specification":{"fields":{"newfieldfa3c1b6b":{"component-namespace":"faims-custom","component-name":"TemplatedStringField","type-returned":"faims-core::String","component-parameters":{"fullWidth":true,"name":"newfieldfa3c1b6b","id":"newfieldfa3c1b6b","helperText":"Human Readable ID","variant":"outlined","required":true,"template":"{{newfield4ac4f23b}}-{{newfield4510ea65}}","InputProps":{"type":"text","readOnly":true},"InputLabelProps":{"label":"ArtefactID"},"hrid":true,"fieldselect10":"newfield4ac4f23b","numberfield":2,"fieldselect11":"newfield4510ea65"},"validationSchema":[["yup.string"],["yup.required"]],"initialValue":"","access":["admin"],"meta":{"annotation_label":"annotation","annotation":true,"uncertainty":{"include":false,"label":"uncertainty"}}},"newfield020362dc":{"component-namespace":"faims-custom","component-name":"TemplatedStringField","type-returned":"faims-core::String","component-parameters":{"fullWidth":true,"name":"newfield020362dc","id":"newfield020362dc","helperText":"","variant":"outlined","required":false,"template":"{{newfield83238a4d}}-{{newfielda0f81ae8}}","InputProps":{"type":"text","readOnly":true},"InputLabelProps":{"label":"FeatureID"},"hrid":true,"numberfield":2,"fieldselect10":"newfield83238a4d","fieldselect11":"newfielda0f81ae8"},"validationSchema":[["yup.string"],["yup.required"]],"initialValue":"","access":["admin"],"meta":{"annotation_label":"annotation","annotation":true,"uncertainty":{"include":false,"label":"uncertainty"}}},"newfield44fdbc12":{"component-namespace":"faims-custom","component-name":"TemplatedStringField","type-returned":"faims-core::String","component-parameters":{"fullWidth":true,"name":"newfield44fdbc12","id":"newfield44fdbc12","helperText":"","variant":"outlined","required":true,"template":"{{newfield0b21d3e2}}-{{newfield4bfc3c26}}","InputProps":{"type":"text","readOnly":true},"InputLabelProps":{"label":""},"hrid":true,"numberfield":2,"fieldselect10":"newfield0b21d3e2","fieldselect11":"newfield4bfc3c26"},"validationSchema":[["yup.string"],["yup.required"]],"initialValue":"","access":["admin"],"meta":{"annotation_label":"annotation","annotation":true,"uncertainty":{"include":false,"label":"uncertainty"}}}},"fviews":{},"viewsets":{},"visible_types":[]},"metadata":{"access":{"accessFORM1":["admin"],"accessFORM2":["admin"],"accessFORM3":["admin"]},"accesses":["admin","moderator","team"],"filenames":[],"forms":{"FORM1":{"submitActionFORM1":"Save and New","annotationFORM1":true,"uncertaintyFORM1":false,"formaccessinheritFORM1":false,"visibleFORM1":true},"FORM2":{"submitActionFORM2":"Save and New","annotationFORM2":true,"uncertaintyFORM2":false,"formaccessinheritFORM2":false,"visibleFORM2":true},"FORM3":{"submitActionFORM3":"Save and New","annotationFORM3":true,"uncertaintyFORM3":false,"formaccessinheritFORM3":false,"visibleFORM3":true}},"ispublic":false,"isrequest":false,"lead_institution":"","meta":{},"name":"New Notebook","pre_description":"","project_id":"1747740593269-blank","project_lead":"","project_status":"New","sections":{}}}
+{
+  "ui-specification": {
+    "fields": {},
+    "fviews": {},
+    "viewsets": {},
+    "visible_types": []
+  },
+  "metadata": {
+    "filenames": [],
+    "lead_institution": "",
+    "meta": {},
+    "name": "New Notebook",
+    "pre_description": "",
+    "project_id": "1747740593269-blank",
+    "project_lead": "",
+    "project_status": "New",
+    "sections": {}
+  }
+}

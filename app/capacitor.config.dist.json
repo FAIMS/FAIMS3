@@ -7,8 +7,22 @@
     "SplashScreen": {
       "launchShowDuration": 0
     },
+    "StatusBar": {
+      "style": "Light",
+      "backgroundColor": "#FAFAFB",
+      "overlaysWebView": false
+    },
     "CapacitorHttp": {
       "enabled": false
+    },
+    "SafeArea": {
+      "enabled": true,
+      "customColorsForSystemBars": true,
+      "statusBarColor": "#FAFAFB",
+      "statusBarContent": "dark",
+      "navigationBarColor": "#FAFAFB",
+      "navigationBarContent": "dark",
+      "offset": 0
     }
   },
   "server": {

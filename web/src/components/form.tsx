@@ -18,7 +18,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {Alert, AlertTitle, AlertDescription} from './ui/alert';
 import {
   Select,
@@ -37,8 +37,8 @@ export interface Field {
   type?: string;
   options?: {label: string; value: string}[];
   excludes?: string;
-  min?: number;
-  max?: number;
+  min?: number | string;
+  max?: number | string;
   step?: number;
   placeholder?: string;
 }
@@ -72,6 +72,7 @@ export function Form<
   submitButtonVariant = 'default',
   warningMessage,
   defaultValues,
+  footer = undefined,
 }: {
   fields: TFields;
   dividers?: Divider[];
@@ -80,6 +81,7 @@ export function Form<
   submitButtonVariant?: ButtonProps['variant'];
   warningMessage?: string;
   defaultValues?: DefaultValues<TSchema>;
+  footer?: React.ReactNode;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -149,7 +151,7 @@ export function Form<
                           {options ? (
                             <Select
                               onValueChange={field.onChange}
-                              value={field.value}
+                              value={field.value ?? ''}
                               disabled={isDisabled}
                             >
                               <SelectTrigger>
@@ -163,30 +165,46 @@ export function Form<
                                 ))}
                               </SelectContent>
                             </Select>
+                          ) : type === 'file' ? (
+                            <Input
+                              type="file"
+                              min={min}
+                              max={max}
+                              step={step}
+                              disabled={isDisabled}
+                              className="cursor-pointer"
+                              placeholder={placeholder}
+                              onChange={event =>
+                                event.target.files &&
+                                field.onChange(event.target.files[0])
+                              }
+                            />
                           ) : (
                             <Input
                               {...field}
                               type={type || 'text'}
-                              min={type === 'number' ? min : undefined}
-                              max={type === 'number' ? max : undefined}
+                              min={
+                                type === 'number' || type === 'datetime-local'
+                                  ? min
+                                  : undefined
+                              }
+                              max={
+                                type === 'number' || type === 'datetime-local'
+                                  ? max
+                                  : undefined
+                              }
                               step={type === 'number' ? step : undefined}
                               disabled={isDisabled}
-                              className={
-                                type === 'file' ? 'cursor-pointer' : ''
-                              }
-                              value={type === 'file' ? undefined : field.value}
+                              value={field.value ?? ''}
                               placeholder={placeholder}
                               onChange={event =>
-                                type === 'file'
-                                  ? event.target.files &&
-                                    field.onChange(event.target.files[0])
-                                  : type === 'number'
-                                    ? field.onChange(
-                                        event.target.value === ''
-                                          ? undefined
-                                          : Number(event.target.value)
-                                      )
-                                    : field.onChange(event)
+                                type === 'number'
+                                  ? field.onChange(
+                                      event.target.value === ''
+                                        ? undefined
+                                        : Number(event.target.value)
+                                    )
+                                  : field.onChange(event)
                               }
                             />
                           )}
@@ -200,6 +218,7 @@ export function Form<
             }
           )}
         </div>
+        {footer ?? null}
         {warningMessage && (
           <Alert variant="destructive">
             <AlertTitle>Warning</AlertTitle>

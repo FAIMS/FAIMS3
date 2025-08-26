@@ -19,7 +19,6 @@
  */
 
 import {
-  Box,
   FormControlLabel,
   FormControlLabelProps,
   FormHelperTextProps,
@@ -31,6 +30,8 @@ import MuiRadioGroup from '@mui/material/RadioGroup';
 import {fieldToRadioGroup, RadioGroupProps} from 'formik-mui';
 import React from 'react';
 import FieldWrapper from './fieldWrapper';
+import {contentToSanitizedHtml} from '../../utils/DomPurifier';
+
 /**
  * Represents a single option in the radio group.
  */
@@ -121,19 +122,20 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                   />
                 }
                 label={
-                  <Box
-                    component="span"
-                    sx={{
-                      display: 'contents',
+                  <div
+                    style={{
+                      display: 'block',
                       whiteSpace: 'normal',
                       wordBreak: 'break-word',
                       lineHeight: '1.5',
-                      paddingTop: '2px',
+                      paddingTop: '6px',
                       paddingLeft: '0px',
+                      marginTop: '0px',
                     }}
-                  >
-                    {option.label}
-                  </Box>
+                    dangerouslySetInnerHTML={{
+                      __html: contentToSanitizedHtml(option.label),
+                    }}
+                  />
                 }
                 {...option.FormControlProps}
                 disabled={this.props.disabled ?? false}
@@ -142,7 +144,21 @@ export class RadioGroup extends React.Component<RadioGroupProps & Props> {
                   marginBottom: 1,
                   '& .MuiFormControlLabel-label': {
                     display: 'block',
-                    marginTop: '5px',
+                    marginTop: '0px',
+                    alignSelf: 'flex-start',
+                    // markdown formatted text will be wrapped in a <p> tag
+                    // so we need to remove the default margin
+                    // and padding from the <p> tag
+                    '& p': {
+                      margin: 0,
+                      padding: 0,
+                    },
+                    '& p:first-child': {
+                      marginTop: 0,
+                    },
+                    '& p:last-child': {
+                      marginBottom: 0,
+                    },
                   },
                 }}
               />

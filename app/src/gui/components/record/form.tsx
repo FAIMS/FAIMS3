@@ -86,6 +86,7 @@ import {AppDispatch} from '../../../context/store';
 
 // Import the actions from recordSlice
 import {setEdited, setPercent} from '../../../context/slices/recordSlice';
+import {isEqual} from 'lodash';
 
 // Define mapDispatchToProps
 const mapDispatchToProps = (dispatch: AppDispatch) => {
@@ -256,6 +257,29 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       )
         this.updateView(this.props.ViewName);
     }
+    // Handle derived field updates when form values change (moved from render method)
+    if (this.formikRef.current) {
+      const currentValues = this.formikRef.current.values;
+      const valuesChanged = isEqual(
+        currentValues,
+        this.state.lastProcessedValues
+      );
+
+      if (valuesChanged) {
+        const changed = recomputeDerivedFields({
+          context: this.state.recordContext,
+          values: currentValues,
+          uiSpecification: this.props.ui_specification,
+        });
+
+        if (changed) {
+          this.formikRef.current.setValues(currentValues);
+        }
+
+        this.setState({lastProcessedValues: currentValues});
+      }
+    }
+
     if (prevState.view_cached !== this.state.view_cached) {
       window.scrollTo(0, 200);
     }
@@ -603,10 +627,10 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       const database_data = fromdb ? fromdb.data : {};
       const database_annotations = fromdb ? fromdb.annotations : {};
 
-      // this doesn't resolve when the draftState is 'uninitialized'
+      // this doesn't resolve when the draftState is 'uninitialised'
       // which happens when we redirect here from a child record
       const [staged_data, staged_annotations] =
-        this.draftState.data.state === 'uninitialized'
+        this.draftState.data.state === 'uninitialised'
           ? [{}, {}]
           : await this.draftState.getInitialValues();
 
@@ -713,7 +737,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       const related: Relationship = {};
       let parent = null;
       if (
-        this.draftState.data.state !== 'uninitialized' &&
+        this.draftState.data.state !== 'uninitialised' &&
         this.draftState.data.relationship !== undefined
       )
         parent = fromdb?.relationship?.parent;
@@ -728,7 +752,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
       let linked = null;
       if (
-        this.draftState.data.state !== 'uninitialized' &&
+        this.draftState.data.state !== 'uninitialised' &&
         this.draftState.data.relationship !== undefined
       )
         linked = fromdb?.relationship?.linked;
@@ -985,7 +1009,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     // properly and consider implications if the active user is no longer
     // defined
     const currentUser = selectActiveUser(store.getState())?.username;
-
     // TODO no idea how to handle errors appropriately here!
     if (!currentUser) {
       const message =
@@ -1652,31 +1675,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                   (publishButtonBehaviour === 'visited' &&
                     allSectionsVisited) ||
                   (publishButtonBehaviour === 'noErrors' && !hasErrors);
-
-                // Recompute derived values if something has changed
-                const {values, setValues} = formProps;
-                // Compare current values with last processed values
-                const valuesChanged =
-                  JSON.stringify(values) !==
-                  JSON.stringify(this.state.lastProcessedValues);
-
-                if (valuesChanged) {
-                  // Process the derive fields updates
-                  const changed = recomputeDerivedFields({
-                    context: this.state.recordContext,
-                    values: values,
-                    uiSpecification: this.props.ui_specification,
-                  });
-
-                  // Only update if processing actually changed something
-                  if (changed) {
-                    // Update form values
-                    setValues(values);
-                  }
-
-                  // Store the processed values
-                  this.setState({lastProcessedValues: values});
-                }
 
                 const layout =
                   this.props.ui_specification.viewsets[viewsetName]?.layout;

@@ -60,6 +60,9 @@ export enum Action {
   // Change open/closed status
   CHANGE_PROJECT_STATUS = 'CHANGE_PROJECT_STATUS',
 
+  // Change team of a project
+  CHANGE_PROJECT_TEAM = 'CHANGE_PROJECT_TEAM',
+
   // Delete the project
   DELETE_PROJECT = 'DELETE_PROJECT',
 
@@ -176,6 +179,31 @@ export enum Action {
   RESET_USER_PASSWORD = 'RESET_USER_PASSWORD',
   // Delete a user
   DELETE_USER = 'DELETE_USER',
+
+  // ============================================================
+  // LONG LIVED TOKEN ACTIONS
+  // ============================================================
+
+  // Create a new long-lived token for yourself
+  CREATE_LONG_LIVED_TOKEN = 'CREATE_LONG_LIVED_TOKEN',
+
+  // Read your own long-lived tokens
+  READ_MY_LONG_LIVED_TOKENS = 'READ_MY_LONG_LIVED_TOKENS',
+
+  // Read all long-lived tokens in the system (admin)
+  READ_ANY_LONG_LIVED_TOKENS = 'READ_ANY_LONG_LIVED_TOKENS',
+
+  // Edit your own long-lived tokens (metadata only)
+  EDIT_MY_LONG_LIVED_TOKEN = 'EDIT_MY_LONG_LIVED_TOKEN',
+
+  // Edit any long-lived token in the system (admin)
+  EDIT_ANY_LONG_LIVED_TOKEN = 'EDIT_ANY_LONG_LIVED_TOKEN',
+
+  // Revoke your own long-lived tokens
+  REVOKE_MY_LONG_LIVED_TOKEN = 'REVOKE_MY_LONG_LIVED_TOKEN',
+
+  // Revoke any long-lived token in the system (admin)
+  REVOKE_ANY_LONG_LIVED_TOKEN = 'REVOKE_ANY_LONG_LIVED_TOKEN',
 
   // ============================================================
   // SYSTEM ACTIONS
@@ -308,6 +336,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.CHANGE_PROJECT_STATUS]: {
     name: 'Change Project Status',
     description: 'Modify the open/closed status of a project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.CHANGE_PROJECT_TEAM]: {
+    name: 'Change Project Team',
+    description: 'Change the team associated with a project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -680,9 +714,9 @@ export const actionDetails: Record<Action, ActionDetails> = {
   // SYSTEM ACTIONS
   // ============================================================
   [Action.INITIALISE_SYSTEM_API]: {
-    name: 'Initialize System API',
+    name: 'Initialise System API',
     description:
-      'Perform system initialization tasks like database migrations and key setup',
+      'Perform system initialisation tasks like database migrations and key setup',
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
@@ -707,6 +741,53 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.VERIFY_EMAIL]: {
     name: 'Verify an email address',
     description: 'Allows the user to generate a verification challenge email.',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  // ============================================================
+  // LONG LIVED TOKEN ACTIONS
+  // ============================================================
+  [Action.CREATE_LONG_LIVED_TOKEN]: {
+    name: 'Create Long-Lived Token',
+    description: 'Create a new long-lived token for API usage',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.READ_MY_LONG_LIVED_TOKENS]: {
+    name: 'Read My Long-Lived Tokens',
+    description: 'View your own long-lived API tokens',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.EDIT_MY_LONG_LIVED_TOKEN]: {
+    name: 'Edit My Long-Lived Token',
+    description: 'Modify the metadata of your own long-lived API tokens',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.REVOKE_MY_LONG_LIVED_TOKEN]: {
+    name: 'Revoke My Long-Lived Token',
+    description: 'Revoke/disable your own long-lived API tokens',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.READ_ANY_LONG_LIVED_TOKENS]: {
+    name: 'Read Any Long-Lived Tokens',
+    description: 'View all long-lived API tokens in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.EDIT_ANY_LONG_LIVED_TOKEN]: {
+    name: 'Edit Any Long-Lived Token',
+    description:
+      'Modify the metadata of any long-lived API token in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+  [Action.REVOKE_ANY_LONG_LIVED_TOKEN]: {
+    name: 'Revoke Any Long-Lived Token',
+    description: 'Revoke/disable any long-lived API token in the system',
     resourceSpecific: false,
     resource: Resource.SYSTEM,
   },
@@ -919,6 +1000,7 @@ export const roleActions: Record<
       Action.UPDATE_PROJECT_DETAILS,
       Action.UPDATE_PROJECT_UISPEC,
       Action.CHANGE_PROJECT_STATUS,
+      Action.CHANGE_PROJECT_TEAM,
       Action.EXPORT_PROJECT_DATA,
 
       Action.VIEW_PROJECT_INVITES,
@@ -970,7 +1052,17 @@ export const roleActions: Record<
 
   // GLOBAL ROLES
   [Role.GENERAL_USER]: {
-    actions: [Action.LIST_PROJECTS, Action.LIST_TEMPLATES, Action.VERIFY_EMAIL],
+    actions: [
+      Action.LIST_PROJECTS,
+      Action.LIST_TEMPLATES,
+      Action.VERIFY_EMAIL,
+
+      // Long-lived token actions for own tokens (CRUD)
+      Action.CREATE_LONG_LIVED_TOKEN,
+      Action.READ_MY_LONG_LIVED_TOKENS,
+      Action.EDIT_MY_LONG_LIVED_TOKEN,
+      Action.REVOKE_MY_LONG_LIVED_TOKEN,
+    ],
   },
   [Role.GENERAL_CREATOR]: {
     actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
@@ -995,6 +1087,11 @@ export const roleActions: Record<
       Action.CREATE_ADMIN_TEAM_INVITE,
       Action.EDIT_ADMIN_TEAM_INVITE,
       Action.DELETE_ADMIN_TEAM_INVITE,
+
+      // Long-lived token admin actions
+      Action.READ_ANY_LONG_LIVED_TOKENS,
+      Action.EDIT_ANY_LONG_LIVED_TOKEN,
+      Action.REVOKE_ANY_LONG_LIVED_TOKEN,
     ],
     inheritedRoles: [
       // God role

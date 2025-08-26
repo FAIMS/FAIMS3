@@ -1,11 +1,11 @@
 {
   "name": "@faims3/api",
-  "version": "1.2.0",
+  "version": "1.2.2",
   "private": true,
   "main": "build/src/index.js",
   "packageManager": "npm@10.7.0",
   "engines": {
-    "node": "^20.9.0"
+    "node": "^22.18.0"
   },
   "scripts": {
     "lint": "gts lint",
@@ -14,24 +14,25 @@
     "build": "tsc && copyfiles views/* views/**/* public/* public/**/* build/src",
     "fix": "gts fix",
     "prestart": "npm run-script compile",
-    "start": "node .",
-    "start:prod": "node build/src/index.js",
-    "local": "env-cmd nodemon --ignore build --ext ts --exec 'tsc --incremental && node .'",
+    "start": "node --expose-gc --max-old-space-size=4096  .",
+    "start:prod": "node --expose-gc --max-old-space-size=4096 build/src/index.js",
+    "local": "env-cmd nodemon --ignore build --ext ts --exec 'tsc --incremental && node --expose-gc --max-old-space-size=4096 .'",
     "load-projects": "env-cmd ts-node src/scripts/loadProjects.ts ./notebooks/*.json",
     "load-templates": "env-cmd ts-node src/scripts/loadTemplates.ts ./notebooks/*.json",
     "test": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha --exit",
     "test:watch": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha -w",
     "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
-    "migrate": "env-cmd ts-node src/scripts/migrate.ts"
+    "migrate": "env-cmd ts-node src/scripts/migrate.ts",
+    "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts"
   },
   "dependencies": {
     "@faims3/data-model": "*",
     "archiver": "^6.0.1",
     "aws-sdk": "^2.1664.0",
-    "axios": "^1.8.2",
+    "axios": "^1.11.0",
     "body-parser": "1.20.3",
     "cache-manager": "^5.7.3",
-    "cookie-session": "2.0.0",
+    "cookie-session": "2.1.1",
     "cors": "2.8.5",
     "csv-stringify": "^6.4.4",
     "express": "4.21.1",
@@ -43,7 +44,7 @@
     "istanbul": "^0.4.5",
     "jose": "^4.15.5",
     "markdown-it": "^14.0.0",
-    "morgan": "^1.10.0",
+    "morgan": "^1.10.1",
     "multer": "^2.0.1",
     "node-cache": "^5.1.2",
     "nodemailer": "^6.10.0",
@@ -53,8 +54,8 @@
     "passport-google-oauth20": "2.0.0",
     "passport-local": "^1.0.0",
     "passport-oauth2": "1.7.0",
-    "pouchdb": "7.3.1",
-    "pouchdb-find": "^8.0.1",
+    "pouchdb": "9.0.0",
+    "pouchdb-find": "^9.0.0",
     "pouchdb-mapreduce": "^9.0.0",
     "pouchdb-security-helper": "^2.1.2",
     "qrcode": "^1.5.3",
@@ -82,7 +83,7 @@
     "@types/passport-google-oauth20": "2.0.13",
     "@types/passport-local": "^1.0.35",
     "@types/passport-oauth2": "1.4.15",
-    "@types/pouchdb": "6.4.0",
+    "@types/pouchdb": "6.4.2",
     "@types/qrcode": "^1.5.2",
     "@types/sinon": "^10.0.20",
     "@types/supertest": "2.0.16",
@@ -98,10 +99,10 @@
     "nano": "^10.1.2",
     "node-fetch": "^3.3.2",
     "nodemon": "^2.0.20",
-    "pouchdb-adapter-memory": "^8.0.1",
+    "pouchdb-adapter-memory": "^9.0.0",
     "sinon": "^17.0.1",
     "supertest": "^6.3.3",
     "ts-node": "10.9.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.9.2"
   }
 }

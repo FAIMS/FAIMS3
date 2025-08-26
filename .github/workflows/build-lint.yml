@@ -24,9 +24,13 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20.9.0
-          cache: 'npm'
- 
+          node-version: 22.18.0
+          cache: 'npm'    
+          cache-dependency-path: |
+            package-lock.json
+            app/package-lock.json
+            web/package-lock.json
+
       - name: Setup node cache
         id: node-cache
         uses: actions/cache@v3
@@ -36,8 +40,8 @@ jobs:
           restore-keys: npm-
 
       - name: Install dependencies
-        if: steps.node-cache.outputs.cache-hit != 'true'
-        run: npm i
+        run: |
+            npm ci
 
       - name: Configure Turborepo Remote Cache
         run: |
@@ -53,7 +57,7 @@ jobs:
           else
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
-      
+
       - name: Lint
         run: npm run lint
         
@@ -65,6 +69,8 @@ jobs:
           cd api
           cp .env.dist .env
           ./keymanagement/makeInstanceKeys.sh
-          cd ..
-          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model
+          cd ../app
+          cp .env.dist .env
+          cd ../
+          npx turbo run test --filter=@faims3/api --filter=@faims3/data-model  --filter=@faims3/app
  

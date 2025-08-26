@@ -4,12 +4,12 @@ import {grey} from '@mui/material/colors';
 
 type BoxTabProps = {
   title: string;
-  bgcolor: string;
+  bgcolor?: string;
 };
 export default function BoxTab(props: BoxTabProps) {
   return (
     <Box
-      bgcolor={props.bgcolor}
+      bgcolor={props.bgcolor || grey[200]}
       style={{
         borderTopLeftRadius: '4px',
         borderTopRightRadius: '4px',
@@ -24,6 +24,3 @@ export default function BoxTab(props: BoxTabProps) {
     </Box>
   );
 }
-BoxTab.defaultProps = {
-  bgcolor: grey[200],
-};
