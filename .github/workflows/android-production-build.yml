@@ -106,7 +106,7 @@ jobs:
           npm ci
           npm run build
           # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY)
-          ./bin/bugsnag-sourcemaps.sh
+          ./bin/bugsnag-sourcemaps.sh ANDROID
       - run: npm run app-update android --workspace=@faims3/app
       - run: npm run webapp-sync --workspace=@faims3/app -- --deployment android
       - name: Fastlane
