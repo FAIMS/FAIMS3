@@ -95,6 +95,7 @@ jobs:
           npm run configIOSbuild --workspace app
           npm run build          
           # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY and uses VITE_APPLE_BUNDLE_IDENTIFIER on IOS)
+          cd app
           ./bin/bugsnag-sourcemaps.sh IOS
       - name: Update IOS Build
         run: |
