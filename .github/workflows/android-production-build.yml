@@ -105,8 +105,9 @@ jobs:
           
           npm ci
           npm run build
-      # https://capacitorjs.com/docs/android
-      # The bundle install shouldn't be necessary, but given we've got ios and android in...      
+          # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY)
+          cd app
+          ./bin/bugsnag-sourcemaps.sh ANDROID
       - run: npm run app-update android --workspace=@faims3/app
       - run: npm run webapp-sync --workspace=@faims3/app -- --deployment android
       - name: Fastlane

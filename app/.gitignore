@@ -111,6 +111,7 @@ dist
 .vscode
 
 build
+build-sourcemap
 active
 directory
 .DS_Store

@@ -22,7 +22,7 @@
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react-swc';
 
-export default defineConfig({
+const config: any = {
   base: '/',
   build: {
     outDir: 'build',
@@ -45,6 +45,19 @@ export default defineConfig({
   plugins: [react({jsxImportSource: '@emotion/react'})],
   define: {
     global: 'globalThis',
-    'process.env': {},
+    'process.env': {} /* some libraries check this */,
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
+};
+
+// Conditional configuration.  If run with --mode sourcemap
+// we will build with sourcemaps enabled and output to a different directory.
+export default defineConfig(({mode}) => {
+  if (mode === 'sourcemap') {
+    config.build.sourcemap = true;
+    config.build.outDir = 'build-sourcemap';
+    return config;
+  } else {
+    return config;
+  }
 });
