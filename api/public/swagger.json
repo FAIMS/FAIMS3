@@ -1171,12 +1171,12 @@
     "PostCreateTemplateInput": {
       "type": "object",
       "properties": {
-        "template_name": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
         "metadata": {"type": "object"},
         "ui_specification": {"type": "object"},
-        "teamId": {"type": "string", "description": "Optional team ID"}
+        "teamId": {"type": "string", "description": "Optional team ID"},
       },
-      "required": ["template_name", "metadata", "ui_specification"]
+      "required": ["name", "metadata", "ui_specification"]
     },
     "PostCreateTemplateResponse": {
       "$ref": "#/definitions/TemplateDocument"
@@ -1185,9 +1185,11 @@
       "type": "object", 
       "properties": {
         "metadata": {"type": "object"},
-        "ui-specification": {"type": "object"}
+        "ui-specification": {"type": "object"},
+        "name": {"type": "string", "minLength": 1},
+        "teamId": {"type": "string"}
       },
-      "required": ["metadata", "ui-specification"]
+      "required": []
     },
     "PutUpdateTemplateResponse": {
       "$ref": "#/definitions/TemplateDocument"
@@ -1215,7 +1217,7 @@
     "TemplateEditableDetails": {
       "type": "object",
       "properties": {
-        "template_name": {
+        "name": {
           "type": "string",
           "minLength": 5
         },
@@ -1226,7 +1228,7 @@
           "$ref": "#/definitions/NotebookMetadata"
         }
       },
-      "required": ["template_name", "ui_specification", "metadata"]
+      "required": ["name", "ui_specification", "metadata"]
     },
     "TemplateDerivedDetails": {
       "type": "object",

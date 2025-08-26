@@ -13,11 +13,35 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: version.ts
+ * Filename: vitest.config.ts
  * Description:
- *   A version string that can be changed via `npm run set-version' that
- * can override environment settings if present
+ *   Configuration for Vitest testing
  */
 
-export const BUILD_VERSION_DEFAULT = 'not-set';
-export const BUILD_VERSION = `${BUILD_VERSION_DEFAULT}`;
+import {defineConfig} from 'vitest/config';
+
+export default defineConfig({
+  plugins: [],
+  resolve: {
+    alias: {
+      events: 'rollup-plugin-node-polyfills/polyfills/events',
+    },
+    preserveSymlinks: true,
+  },
+  define: {
+    global: 'globalThis',
+    'process.env': {},
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.ts',
+    css: true,
+    reporters: ['verbose'],
+    coverage: {
+      reporter: ['text', 'json', 'html'],
+      include: ['src/**/*'],
+      exclude: [],
+    },
+  },
+});

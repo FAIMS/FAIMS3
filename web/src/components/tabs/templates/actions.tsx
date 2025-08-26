@@ -14,6 +14,10 @@ import type {
   NotebookWithHistory,
   NotebookUISpec,
 } from '@/designer/state/initial';
+import {EditTemplateDialog} from '@/components/dialogs/edit-template';
+import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team-dialog';
 
 /**
  * TemplateActions component renders action cards for creating a project from a template,
@@ -74,28 +78,73 @@ const TemplateActions = () => {
     setEditorOpen(false);
   };
 
+  const canEditTemplate = useIsAuthorisedTo({
+    action: Action.UPDATE_TEMPLATE_UISPEC,
+    resourceId: templateId,
+  });
+
+  const canCreateProject = useIsAuthorisedTo({
+    action: Action.CREATE_PROJECT,
+  });
+
+  const canCreateProjectInTeam =
+    getUserResourcesForAction({
+      decodedToken: user?.decodedToken,
+      action: Action.CREATE_PROJECT_IN_TEAM,
+    }).length > 0;
+
+  // per-team and global permissions for adding templates to a team
+  const canAddTemplateToTeam =
+    getUserResourcesForAction({
+      decodedToken: user?.decodedToken,
+      action: Action.CREATE_TEMPLATE_IN_TEAM,
+    }).length > 0;
+
+  const globalCanAddTemplateToTeam = useIsAuthorisedTo({
+    action: Action.CREATE_TEMPLATE,
+  });
+
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <Card>
-          <List>
-            <ListItem>
-              <ListLabel>Edit Template</ListLabel>
-              <ListDescription>
-                Edit this template in the Notebook Editor.
-              </ListDescription>
-            </ListItem>
-            <ListItem>
-              <Button
-                variant="outline"
-                disabled={isLoading}
-                onClick={() => setEditorOpen(true)}
-              >
-                Open in Editor
-              </Button>
-            </ListItem>
-          </List>
-        </Card>
+        {canEditTemplate && (
+          <Card>
+            <List>
+              <ListItem>
+                <ListLabel>Edit Template</ListLabel>
+                <ListDescription>
+                  Edit this template in the Notebook Editor.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <Button
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={() => setEditorOpen(true)}
+                >
+                  Open in Editor
+                </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {(canAddTemplateToTeam || globalCanAddTemplateToTeam) && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListDescription>
+                  Assign this {NOTEBOOK_NAME} to a team.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <AddTemplateToTeamDialog templateId={templateId} />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
         <Card>
           <List>
             <ListItem>
@@ -121,19 +170,34 @@ const TemplateActions = () => {
             </ListItem>
           </List>
         </Card>
-        <Card>
-          <List>
-            <ListItem>
-              <ListLabel>Create {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-              <ListDescription>
-                Create a new {NOTEBOOK_NAME} based on this template.
-              </ListDescription>
-            </ListItem>
-            <ListItem>
-              <ProjectFromTemplateDialog />
-            </ListItem>
-          </List>
-        </Card>
+        {canEditTemplate && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Replace Template JSON File</ListLabel>
+                <ListDescription>Replace the template JSON file.</ListDescription>
+              </ListItem>
+              <ListItem>
+                <EditTemplateDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+        {(canCreateProject || canCreateProjectInTeam) && (
+          <Card>
+            <List>
+              <ListItem>
+                <ListLabel>Create {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+                <ListDescription>
+                  Create a new {NOTEBOOK_NAME} based on this template.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <ProjectFromTemplateDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
         <Card>
           <List>
             {data?.metadata.project_status === 'archived' ? (

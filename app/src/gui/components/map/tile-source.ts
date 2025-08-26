@@ -417,7 +417,7 @@ class TileStoreBase {
       const tileSets = await this.tileStore.tileSetDB.getAll();
       return tileSets
         ?.filter(ts => !ts.setName.startsWith('_'))
-        .toSorted((a, b) => b.created.getTime() - a.created.getTime());
+        .sort((a, b) => b.created.getTime() - a.created.getTime());
     } else {
       return [];
     }

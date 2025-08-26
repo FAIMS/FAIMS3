@@ -35,7 +35,8 @@ export const getPathHash = (
   const hash = crypto.createHash('sha256');
 
   const processFile = (filePath: string) => {
-    const content = fs.readFileSync(filePath);
+    const buffer = fs.readFileSync(filePath);
+    const content = new Uint8Array(buffer);
     hash.update(filePath);
     hash.update(content);
   };

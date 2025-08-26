@@ -113,6 +113,35 @@ export function isAuthorized({
 }
 
 /**
+ * What resources does this user have permission for with a resource-specific
+ * action?
+ */
+export function getUserResourcesForAction({
+  decodedToken,
+  action,
+}: {
+  decodedToken?: DecodedTokenPermissions | null;
+  action: Action;
+}): Array<string> {
+  const authorizedResources: Array<string> = [];
+
+  // if token is not there, we can't access any resources
+  if (!decodedToken) return authorizedResources;
+
+  // Check resource-specific roles for access
+  for (const resourceRole of decodedToken.resourceRoles) {
+    if (
+      resourceRole.resourceId &&
+      roleGrantsAction({roles: [resourceRole.role], action})
+    ) {
+      authorizedResources.push(resourceRole.resourceId);
+    }
+  }
+
+  return authorizedResources;
+}
+
+/**
  * Maps a add/remove role operation to the corresponding action needed
  * @param add Whether this is an add operation (true) or remove operation (false)
  * @param role The role being added or removed

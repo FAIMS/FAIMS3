@@ -49,7 +49,7 @@ jobs:
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
       - name: Use Python 3.10
         uses: actions/setup-python@v4
@@ -93,7 +93,10 @@ jobs:
           # dependencies
           npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
           npm run configIOSbuild --workspace app
-          npm run build
+          npm run build          
+          # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY and uses VITE_APPLE_BUNDLE_IDENTIFIER on IOS)
+          cd app
+          ./bin/bugsnag-sourcemaps.sh IOS
       - name: Update IOS Build
         run: |
           cd app

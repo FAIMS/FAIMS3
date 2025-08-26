@@ -59,9 +59,11 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
 
   // Convert base64 to buffer
   const buffer = Buffer.from(image.base64String, 'base64');
+  // typescript now wants us to specify the type of buffer
+  const content = new Uint8Array(buffer);
 
   // Create blob from buffer
-  return new Blob([buffer], {
+  return new Blob([content], {
     type: `image/${image.format}`,
   });
 }

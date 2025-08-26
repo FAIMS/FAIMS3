@@ -43,7 +43,7 @@ jobs:
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20          
+          node-version: 22
           cache: 'npm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Set up adopt JDK 1.21
@@ -105,8 +105,9 @@ jobs:
           
           npm ci
           npm run build
-      # https://capacitorjs.com/docs/android
-      # The bundle install shouldn't be necessary, but given we've got ios and android in...      
+          # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY)
+          cd app
+          ./bin/bugsnag-sourcemaps.sh ANDROID
       - run: npm run app-update android --workspace=@faims3/app
       - run: npm run webapp-sync --workspace=@faims3/app -- --deployment android
       - name: Fastlane
