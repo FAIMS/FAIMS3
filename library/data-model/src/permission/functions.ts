@@ -265,7 +265,7 @@ export function teamInviteToAction({
     } else {
       actionNeeded = Action.DELETE_MANAGER_TEAM_INVITE;
     }
-  } else if (role === Role.TEAM_MEMBER) {
+  } else if (role === Role.TEAM_MEMBER || role === Role.TEAM_MEMBER_CREATOR) {
     if (action === 'create') {
       actionNeeded = Action.CREATE_MEMBER_TEAM_INVITE;
     } else {
