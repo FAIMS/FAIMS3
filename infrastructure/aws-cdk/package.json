@@ -6,7 +6,7 @@
     "@faims3/infra-aws-cdk": "bin/@faims3/infra-aws-cdk.js"
   },
   "engines": {
-    "node": "22.18.0"
+    "node": "22"
   },
   "scripts": {
     "build": "tsc",

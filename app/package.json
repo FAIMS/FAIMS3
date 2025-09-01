@@ -17,7 +17,7 @@
     ]
   },
   "engines": {
-    "node": "22.18.0"
+    "node": "22"
   },
   "scripts": {
     "prestart": "npm run runconfig",
