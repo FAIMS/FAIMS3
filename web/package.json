@@ -3,6 +3,9 @@
   "version": "1.2.3",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "22.18.0"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "dev": "vite --port=3001",
