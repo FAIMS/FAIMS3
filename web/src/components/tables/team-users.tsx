@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
-import {Action, GetTeamMembersResponse, Role} from '@faims3/data-model';
+import {Action, GetTeamMembersResponse, Role, roleDetails} from '@faims3/data-model';
 import {
   Tooltip,
   TooltipContent,
@@ -93,6 +93,10 @@ export const useGetColumns = ({
     return true;
   };
 
+  const roleDisplayName = (role: Role) => {
+    return roleDetails[role].name;
+  }
+
   const baseColumns: ColumnDef<GetTeamMembersResponse['members'][number]>[] = [
     {
       accessorKey: 'name',
@@ -155,7 +159,7 @@ export const useGetColumns = ({
                           }
                     }
                   >
-                    {role.role}
+                    {roleDisplayName(role.role)}
                   </RoleCard>
                 );
               })}

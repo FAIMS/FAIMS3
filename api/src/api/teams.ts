@@ -316,7 +316,6 @@ api.post(
         )
       );
     }
-    console.log('Required actions:', requiredActions);
 
     for (const actionToCheck of requiredActions) {
       if (

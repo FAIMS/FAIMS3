@@ -13,6 +13,7 @@ import {
 } from '../ui/tooltip';
 import {Plus} from 'lucide-react';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
+import {Role, roleDetails} from '@faims3/data-model';
 
 /**
  */
@@ -21,7 +22,7 @@ export const AddTeamRolePopover = ({
   userId,
   teamId,
 }: {
-  roles: string[];
+  roles: Role[];
   userId: string;
   teamId: string;
 }) => {
@@ -89,7 +90,7 @@ export const AddTeamRolePopover = ({
               }
             }}
           >
-            {role}
+            {roleDetails[role]?.name || role}
           </RoleCard>
         ))}
       </PopoverContent>
