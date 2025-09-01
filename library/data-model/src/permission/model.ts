@@ -882,27 +882,27 @@ export const roleDetails: Record<Role, RoleDetails> = {
 
   // Project roles
   [Role.PROJECT_ADMIN]: {
-    name: 'Project Administrator',
+    name: 'Administrator',
     description:
       'Full control over a specific project, including deletion and admin user management',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_MANAGER]: {
-    name: 'Project Manager',
+    name: 'Manager',
     description:
       'Can manage project settings, invitations and all data within a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
-    name: 'Project Contributor',
+    name: 'Contributor',
     description: 'Can view all data within a project and contribute their own',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_GUEST]: {
-    name: 'Project Guest',
+    name: 'Guest',
     description: 'Can view only their own contributions to a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
