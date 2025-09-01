@@ -287,12 +287,15 @@ export function teamInviteToAction({
  * @returns The corresponding permission action
  */
 export function getTeamMembershipAction(role: Role, add: boolean): Action {
+  console.log('getTeamMembershipAction', role, add);
   switch (role) {
     case Role.TEAM_ADMIN:
       return add ? Action.ADD_ADMIN_TO_TEAM : Action.REMOVE_ADMIN_FROM_TEAM;
     case Role.TEAM_MANAGER:
       return add ? Action.ADD_MANAGER_TO_TEAM : Action.REMOVE_MANAGER_FROM_TEAM;
     case Role.TEAM_MEMBER:
+      return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
+    case Role.TEAM_MEMBER_CREATOR:
       return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
     default:
       throw new Error(`Invalid team role: ${role}`);

@@ -37,6 +37,8 @@ const TeamUsers = ({teamId}: {teamId: string}) => {
 
   const columns = useGetColumns({teamId});
 
+  console.log('team data', data);
+
   return (
     <div>
       {isLoading ? (

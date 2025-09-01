@@ -836,6 +836,7 @@ export enum Role {
   // TEAM ROLES
   // ================
   TEAM_MEMBER = 'TEAM_MEMBER',
+  TEAM_MEMBER_CREATOR = 'TEAM_MEMBER_CREATOR',
   TEAM_MANAGER = 'TEAM_MANAGER',
   TEAM_ADMIN = 'TEAM_ADMIN',
 }
@@ -937,8 +938,14 @@ export const roleDetails: Record<Role, RoleDetails> = {
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
-    name: 'Team Member',
-    description: 'Basic membership in a team with standard access privileges',
+    name: 'Team Member (Contributor)',
+    description: 'Can contribute data to all projects within a team',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
+  [Role.TEAM_MEMBER_CREATOR]: {
+    name: 'Team Member (Creator)',
+    description: 'Can create new projects within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
@@ -1108,6 +1115,20 @@ export const roleActions: Record<
     virtualRoles: new Map([
       // Projects owned by team -> contributor
       [Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]],
+      // Template owned by team -> guest
+      [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
+    ]),
+  },
+
+  // Modified team member to allow project creation but not
+  // access to all projects in the team
+  [Role.TEAM_MEMBER_CREATOR]: {
+    actions: [
+      Action.VIEW_TEAM_DETAILS,
+      Action.VIEW_TEAM_MEMBERS,
+      Action.CREATE_PROJECT_IN_TEAM,
+    ],
+    virtualRoles: new Map([
       // Template owned by team -> guest
       [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
     ]),

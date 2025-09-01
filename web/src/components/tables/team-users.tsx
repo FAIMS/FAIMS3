@@ -57,6 +57,7 @@ export const useGetColumns = ({
   const rolesAvailable: Role[] = [];
   if (canAddMemberToTeam) {
     rolesAvailable.push(Role.TEAM_MEMBER);
+    rolesAvailable.push(Role.TEAM_MEMBER_CREATOR);
   }
   if (canAddManagerToTeam) {
     rolesAvailable.push(Role.TEAM_MANAGER);
@@ -79,6 +80,9 @@ export const useGetColumns = ({
       return canRemoveManager;
     }
     if (hasRoles.includes(Role.TEAM_MEMBER)) {
+      return canRemoveMember;
+    }
+    if (hasRoles.includes(Role.TEAM_MEMBER_CREATOR)) {
       return canRemoveMember;
     }
 
@@ -111,6 +115,7 @@ export const useGetColumns = ({
           original: {roles, username},
         },
       }) => {
+        console.log('roles for ', username, roles);
         return (
           <div
             className="flex flex-wrap gap-1 items-center"
