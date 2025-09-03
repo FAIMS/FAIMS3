@@ -163,19 +163,24 @@ export function CreateTemplateForm({
     setDialogOpen(false);
   };
 
-  return (
-    <>
-      {possibleTeams?.length === 1 && (
-        <span>
-          <strong>Template will be owned by:</strong> {possibleTeams[0].name}
-        </span>
-      )}
-      <Form
-        fields={fields}
-        onSubmit={onSubmit}
-        submitButtonText="Create Template"
-        defaultValues={{team: defaultValues?.teamId}}
-      />
-    </>
-  );
+  if (possibleTeams.length === 0) {
+    // we shouldn't get here but just in case show a message
+    return <p>You do not have permission to create templates.</p>;
+  } else {
+    return (
+      <>
+        {possibleTeams?.length === 1 && (
+          <span>
+            <strong>Template will be owned by:</strong> {possibleTeams[0].name}
+          </span>
+        )}
+        <Form
+          fields={fields}
+          onSubmit={onSubmit}
+          submitButtonText="Create Template"
+          defaultValues={{team: defaultValues?.teamId}}
+        />
+      </>
+    );
+}
 }
