@@ -24,7 +24,7 @@ function RouteComponent() {
   const {isPending, data} = useGetTemplates(user);
   const navigate = useNavigate();
 
-  // can they create projects outside team?
+  // can they create templates outside team?
   const canCreateGlobally = useIsAuthorisedTo({
     action: Action.CREATE_TEMPLATE,
   });

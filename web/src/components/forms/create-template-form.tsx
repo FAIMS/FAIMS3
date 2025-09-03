@@ -169,7 +169,7 @@ export function CreateTemplateForm({
   } else {
     return (
       <>
-        {possibleTeams?.length === 1 && (
+        {possibleTeams.length === 1 && (
           <span>
             <strong>Template will be owned by:</strong> {possibleTeams[0].name}
           </span>
