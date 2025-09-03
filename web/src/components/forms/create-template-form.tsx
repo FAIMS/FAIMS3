@@ -39,17 +39,19 @@ export function CreateTemplateForm({
 
   // get the teams that we have permission to create
   // templates in
-  const teamsAvailable = getUserResourcesForAction({
-    decodedToken: user?.decodedToken,
-    action: Action.CREATE_TEMPLATE_IN_TEAM,
-  });
+  const teamsAvailable =
+    (canCreateGlobally
+      ? teams?.teams.map(t => t._id)
+      : getUserResourcesForAction({
+          decodedToken: user?.decodedToken,
+          action: Action.CREATE_TEMPLATE_IN_TEAM,
+        })) || [];
 
   // filter teams by those we can create templates in
-  const possibleTeams = teams?.teams.filter(team =>
-    teamsAvailable.includes(team._id)
-  );
+  const possibleTeams =
+    teams?.teams.filter(team => teamsAvailable.includes(team._id)) || [];
 
-  const justOneTeam = specifiedTeam || possibleTeams?.length === 1;
+  const justOneTeam = specifiedTeam || possibleTeams.length === 1;
 
   const fields: Field[] = [
     {
@@ -116,7 +118,7 @@ export function CreateTemplateForm({
     }
 
     let chosenTeamId = specifiedTeam;
-    if (justOneTeam && possibleTeams) {
+    if (justOneTeam && possibleTeams.length > 0) {
       chosenTeamId = possibleTeams[0]._id;
     } else if (team) {
       chosenTeamId = team;
