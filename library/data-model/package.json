@@ -1,7 +1,7 @@
 {
   "name": "@faims3/data-model",
   "packageManager": "npm@10.7.0",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Database access layer for FAIMS3",
   "main": "./build/src/index.js",
   "module": "./build/esm/index.js",
