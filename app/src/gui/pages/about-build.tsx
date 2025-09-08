@@ -57,6 +57,8 @@ import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
+import {logError} from '../../logging';
+import {databaseService} from '../../context/slices/helpers/databaseService';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -178,7 +180,7 @@ export default function AboutBuild() {
               size={'small'}
               disableElevation
               onClick={() => {
-                console.log('User refreshed page');
+                logError('User refreshed page');
                 unregisterServiceWorker();
                 window.location.reload();
               }}
@@ -187,6 +189,29 @@ export default function AboutBuild() {
               Refresh the app
             </Button>
           </Grid>
+          <Grid item md={4} sm={6} xs={12}>
+            <Typography variant={'body2'}>
+              Reset local database connections. Use this if you see errors
+              indicating that that the app can't read or write data. No data
+              will be lost by doing this.
+            </Typography>
+          </Grid>
+          <Grid item md={8} sm={6} xs={12}>
+            <Button
+              variant="contained"
+              color={'warning'}
+              size={'small'}
+              disableElevation
+              onClick={() => {
+                logError('User reset local databases');
+                databaseService.validateLocalDatabases();
+              }}
+              startIcon={<RefreshIcon />}
+            >
+              Reset local database connections
+            </Button>
+          </Grid>
+
           <Grid item xs={12}>
             <Divider />
           </Grid>
@@ -203,24 +228,6 @@ export default function AboutBuild() {
           </Grid>
           <Grid item md={8} sm={6} xs={12}>
             <Grid container spacing={2} alignItems={'center'}>
-              {/* <Grid item>
-                <Button
-                  disableElevation
-                  variant={'contained'}
-                  size={'small'}
-                  color={'info'}
-                  onClick={async () => {
-                    await doDumpDownload();
-                  }}
-                  startIcon={<DownloadIcon />}
-                >
-                  Download local database contents
-                </Button>
-              </Grid>
-              <Grid item sm={'auto'}>
-                <Typography variant={'body2'}>Browsers only</Typography>
-              </Grid> */}
-
               <Grid item>
                 <Button
                   disableElevation
@@ -235,7 +242,30 @@ export default function AboutBuild() {
               </Grid>
             </Grid>
           </Grid>
-
+          {/* For debugging only - testing database damage handling this will close all databases */}
+          {false && (
+            <>
+              <Grid item md={4} sm={6} xs={12}>
+                <Typography variant={'h5'} gutterBottom>
+                  Do Damage!
+                </Typography>
+              </Grid>
+              <Grid item md={8} sm={6} xs={12}>
+                <Button
+                  variant="contained"
+                  color={'error'}
+                  size={'small'}
+                  disableElevation
+                  onClick={() => {
+                    databaseService.damage();
+                  }}
+                  startIcon={<RefreshIcon />}
+                >
+                  Damage local databases
+                </Button>
+              </Grid>
+          </>
+          )}
           {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
             <React.Fragment>
               <Grid item xs={12}>

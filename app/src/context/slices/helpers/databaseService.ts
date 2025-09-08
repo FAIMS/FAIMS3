@@ -9,7 +9,7 @@
 
 import {logError, ProjectDataObject} from '@faims3/data-model';
 import {DraftDB} from '../../../sync/draft-storage';
-import {LOCAL_POUCH_OPTIONS} from './databaseHelpers';
+import {createLocalPouchDatabase, LOCAL_POUCH_OPTIONS} from './databaseHelpers';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
@@ -33,10 +33,21 @@ class DatabaseService {
   > = new Map();
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
-  private draftDb: DraftDB = new PouchDB('draft-storage', LOCAL_POUCH_OPTIONS);
-  private localStateDb = new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
+  private draftDb: DraftDB | null = null;
+  private localStateDb: PouchDB.Database | null = null;
 
-  private constructor() {}
+  private constructor() {
+    this.createDraftDb();
+    this.createLocalStateDb();
+  }
+
+  // these are in methods so we can re-create them if needed later
+  createDraftDb() {
+    this.draftDb = new PouchDB('draft-storage', LOCAL_POUCH_OPTIONS);
+  }
+  createLocalStateDb() {
+    this.localStateDb = new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
+  }
 
   static getInstance(): DatabaseService {
     if (!DatabaseService.instance) {
@@ -170,6 +181,78 @@ class DatabaseService {
 
   getLocalStateDatabase() {
     return this.localStateDb;
+  }
+
+  // method for ensuring that all database connections are valid
+  // and working.  Mitigates a bug (possibly only on IOS) where
+  // the IDB database connection becomes invalid and so all
+  // database operations fail.
+  // Here we look at all local database connections, check that
+  // we can read from them, and if not we close and re-open
+  // the database connection.
+  async validateLocalDatabases() {
+    let repairCount = 0;
+    for (const [id, db] of this.localDatabases) {
+      try {
+        // try a simple read operation
+        await db.info();
+      } catch (e) {
+        logError(`Database ${id} appears invalid, re-opening: ${e}`);
+        // re-open the database connection
+        const newDb = createLocalPouchDatabase<ProjectDataObject>({id});
+        // can't use registerLocalDatabase as that complains if we already know this db
+        // so just replace the existing entry
+        this.localDatabases.set(id, newDb);
+        repairCount += 1;
+      }
+    }
+    // also check draft and local state dbs
+    try {
+      if (this.draftDb) {
+        await this.draftDb.info();
+      } else {
+        logError('Draft database missing, re-opening');
+        this.createDraftDb();
+        repairCount += 1;
+      }
+    } catch (e) {
+      logError(`Draft database appears invalid, re-opening: ${e}`);
+      this.createDraftDb();
+      repairCount += 1;
+    }
+
+    try {
+      if (this.localStateDb) {
+        await this.localStateDb.info();
+      } else {
+        logError('Local state database missing, re-opening');
+        this.createLocalStateDb();
+        repairCount += 1;
+      }
+    } catch (e) {
+      logError(`Local state database appears invalid, re-opening: ${e}`);
+      this.createLocalStateDb();
+      repairCount += 1;
+    }
+    return repairCount;
+  }
+
+  // for debugging - damage all local dbs and the draft db
+  // by closing them but leaving the handle in the databases list
+  async damage() {
+    console.log('Damaging all local databases for testing');
+    for (const id of this.localDatabases.keys()) {
+      await this.localDatabases.get(id)?.close();
+    }
+    if (this.draftDb) {
+      try {
+        await this.draftDb.destroy();
+      } catch (e) {
+        logError(`Error destroying draft database: ${e}`);
+      } finally {
+        this.draftDb = null;
+      }
+    }
   }
 }
 
