@@ -7,7 +7,7 @@
  * This class also contains a static reference to the draft DB.
  */
 
-import {logError, ProjectDataObject} from '@faims3/data-model';
+import {EncodedDraft, logError, ProjectDataObject} from '@faims3/data-model';
 import {DraftDB} from '../../../sync/draft-storage';
 import {createLocalPouchDatabase, LOCAL_POUCH_OPTIONS} from './databaseHelpers';
 import PouchDB from 'pouchdb-browser';
@@ -33,20 +33,20 @@ class DatabaseService {
   > = new Map();
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
-  private draftDb: DraftDB | null = null;
-  private localStateDb: PouchDB.Database | null = null;
+  private draftDb: DraftDB;
+  private localStateDb: PouchDB.Database;
 
   private constructor() {
-    this.createDraftDb();
-    this.createLocalStateDb();
+    this.draftDb = this.createDraftDb();
+    this.localStateDb = this.createLocalStateDb();
   }
 
   // these are in methods so we can re-create them if needed later
   createDraftDb() {
-    this.draftDb = new PouchDB('draft-storage', LOCAL_POUCH_OPTIONS);
+    return new PouchDB<EncodedDraft>('draft-storage', LOCAL_POUCH_OPTIONS);
   }
   createLocalStateDb() {
-    this.localStateDb = new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
+    return new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
   }
 
   static getInstance(): DatabaseService {
@@ -212,12 +212,12 @@ class DatabaseService {
         await this.draftDb.info();
       } else {
         logError('Draft database missing, re-opening');
-        this.createDraftDb();
+        this.draftDb = this.createDraftDb();
         repairCount += 1;
       }
     } catch (e) {
       logError(`Draft database appears invalid, re-opening: ${e}`);
-      this.createDraftDb();
+      this.localStateDb = this.createDraftDb();
       repairCount += 1;
     }
 
@@ -249,8 +249,6 @@ class DatabaseService {
         await this.draftDb.destroy();
       } catch (e) {
         logError(`Error destroying draft database: ${e}`);
-      } finally {
-        this.draftDb = null;
       }
     }
   }
