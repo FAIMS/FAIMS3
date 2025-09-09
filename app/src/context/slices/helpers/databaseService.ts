@@ -67,12 +67,24 @@ class DatabaseService {
     return this.databaseSyncs.get(id);
   }
 
+  // Remove a local database, destroying all content
+  // note that we don't use this yet, we don't have a good way to ensure
+  // that all data is synced before deleting
+  async destroyLocalDatabase(id: string): Promise<void> {
+    const db = this.localDatabases.get(id);
+    if (db) {
+      try {
+        await db.destroy();
+      } catch (e) {
+        logError(`Error destroying database ${id}: ${e}`);
+      } finally {
+        this.localDatabases.delete(id);
+      }
+    }
+  }
+
   // Clean up database instances
-  async closeAndRemoveLocalDatabase(
-    id: string,
-    // Clean will also remove entries/fully destroy
-    {clean = false}: {clean?: boolean} = {}
-  ): Promise<void> {
+  async closeAndRemoveLocalDatabase(id: string): Promise<void> {
     if (this.cleanupInProgress.has(id)) {
       console.warn(`Cleanup already in progress for database ${id}`);
       return;
@@ -82,9 +94,6 @@ class DatabaseService {
     const db = this.localDatabases.get(id);
     if (db) {
       try {
-        if (clean) {
-          await db.destroy();
-        }
         await db.close();
       } catch (e) {
         logError(`Error closing database ${id}: ${e}`);
