@@ -1102,7 +1102,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
         // to never get here or provide a good reason if we do
         .catch(err => {
           const message =
-            'Could not save record.  This may be due to a database connection issue.  Please go to "About Build" and use the "Reset Local Database Connections" button.';
+            'Could not save record.  This may be due to a database connection issue.  Please go to "About Build" and use the "Refresh Local Database Connections" button.';
           logError(`Could not save record: ${JSON.stringify(err)}`);
           (this.context as NotificationContextType).showError(message);
           logError('Unsaved record error:' + err);
