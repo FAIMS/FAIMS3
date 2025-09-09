@@ -191,7 +191,7 @@ export default function AboutBuild() {
           </Grid>
           <Grid item md={4} sm={6} xs={12}>
             <Typography variant={'body2'}>
-              Reset local database connections. Use this if you see errors
+              Refresh local database connections. Use this if you see errors
               indicating that that the app can't read or write data. No data
               will be lost by doing this.
             </Typography>
@@ -208,7 +208,7 @@ export default function AboutBuild() {
               }}
               startIcon={<RefreshIcon />}
             >
-              Reset local database connections
+              Refresh local database connections
             </Button>
           </Grid>
 
