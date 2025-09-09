@@ -51,6 +51,7 @@ import {
 } from '../types';
 import {createHash} from './utils';
 import {chunk} from 'lodash';
+import {logError} from '../logging';
 
 // INDEX NAMES
 
@@ -588,7 +589,7 @@ export async function listRecordMetadata({
 
         // Skip if revision not found
         if (!revision) {
-          console.warn(
+          logError(
             `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
           );
           return null;
@@ -603,7 +604,7 @@ export async function listRecordMetadata({
 
           // Ensure it's defined
           if (!data) {
-            console.warn(
+            logError(
               `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
             );
             return null;
@@ -635,7 +636,7 @@ export async function listRecordMetadata({
           hrid: hrid,
         } satisfies RecordMetadata;
       } catch (e) {
-        console.error(
+        logError(
           `Failed to get record information. Record ID ${record._id}. Project ID ${projectId}. Due to error: ${e}.`
         );
         return null;
@@ -646,7 +647,7 @@ export async function listRecordMetadata({
     const results = await Promise.all(recordMetadataPromises);
     return results.filter(item => item !== null);
   } catch (err) {
-    console.log(err);
+    logError(err);
     throw Error(`failed to get metadata. ${err}`);
   }
 }
