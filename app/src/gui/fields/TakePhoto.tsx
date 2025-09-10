@@ -407,7 +407,9 @@ export const TakePhoto: React.FC<
             : [image];
         props.form.setFieldValue(props.field.name, newImages, true);
       } catch (err: any) {
-        logError(err);
+        // we don't log this because it will be the result of user action
+        // cancelling the camera or denying access - set the field error
+        // so they can see the problem
         props.form.setFieldError(props.field.name, err.message);
       }
     } else {
