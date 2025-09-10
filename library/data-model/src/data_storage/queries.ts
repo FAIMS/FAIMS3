@@ -99,13 +99,13 @@ export async function getAllRecordsWithRegex({
   let count = 0;
   const record_ids = [] as RecordID[];
 
-  // need to delete in batches since find requires a limit argument
-  // however we should only ever be deleting one draft
+  // need to query in batches since find requires a limit argument
   do {
     res = await dataDb.find({
       selector: {
         avp_format_version: 1,
-        data: {$regex: regex},
+        // need an or query here to handle values that are arrays
+        $or: [{data: {$regex: regex}}, {data: {$elemMatch: {$regex: regex}}}],
       },
       limit: BATCH_SIZE,
       skip: skip,
