@@ -29,6 +29,7 @@ import {
   SyncEventHandlers,
 } from './helpers/databaseHelpers';
 import {databaseService} from './helpers/databaseService';
+import {PouchDBWrapper} from './helpers/pouchDBWrapper';
 
 // TYPES
 // =====
@@ -1121,8 +1122,8 @@ export const projectByIdentity = (
  */
 export function getAllDataDbs(
   state: RootState
-): PouchDB.Database<ProjectDataObject>[] {
-  const databases: PouchDB.Database<ProjectDataObject>[] = [];
+): PouchDBWrapper<ProjectDataObject>[] {
+  const databases: PouchDBWrapper<ProjectDataObject>[] = [];
   for (const server of Object.values(state.projects.servers)) {
     for (const project of Object.values(server.projects)) {
       if (project.isActivated && project.database?.localDbId) {

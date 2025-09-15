@@ -27,6 +27,7 @@ import {
   AuthDatabase,
   couchInitialiser,
   DATABASE_TYPE,
+  DatabaseInterface,
   DatabaseType,
   initAuthDB,
   initDataDB,
@@ -72,8 +73,8 @@ const MIGRATIONS_DB_NAME = 'migrations';
 const INVITE_DB_NAME = 'invites';
 const TEAMS_DB_NAME = 'teams';
 
-let _directoryDB: PouchDB.Database | undefined;
-let _projectsDB: PouchDB.Database<ProjectDocument> | undefined;
+let _directoryDB: DatabaseInterface | undefined;
+let _projectsDB: DatabaseInterface<ProjectDocument> | undefined;
 let _templatesDb: TemplateDB | undefined;
 let _authDB: AuthDatabase | undefined;
 let _usersDB: PeopleDB | undefined;
@@ -161,7 +162,7 @@ export const verifyCouchDBConnection = async () => {
   return result;
 };
 
-export const getDirectoryDB = (): PouchDB.Database => {
+export const getDirectoryDB = (): DatabaseInterface => {
   if (!_directoryDB) {
     const pouch_options = pouchOptions();
 
@@ -208,7 +209,7 @@ export const getUsersDB = (): PeopleDB => {
   return _usersDB;
 };
 
-export const localGetProjectsDb = (): PouchDB.Database<ProjectDocument> => {
+export const localGetProjectsDb = (): DatabaseInterface<ProjectDocument> => {
   if (!_projectsDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + PROJECTS_DB_NAME;
@@ -253,7 +254,7 @@ export const getMigrationDb = (): MigrationsDB => {
   return _migrationsDB;
 };
 
-export const getInvitesDB = (): PouchDB.Database => {
+export const getInvitesDB = (): DatabaseInterface => {
   if (!_invitesDB) {
     const pouch_options = pouchOptions();
     const dbName = COUCHDB_INTERNAL_URL + '/' + INVITE_DB_NAME;
@@ -290,7 +291,7 @@ export const getTeamsDB = (): TeamsDB => {
  */
 export const getMetadataDb = async (
   projectID: ProjectID
-): Promise<PouchDB.Database<ProjectMetaObject>> => {
+): Promise<DatabaseInterface<ProjectMetaObject>> => {
   // Gets the projects DB
   const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
@@ -343,7 +344,7 @@ export const getMetadataDb = async (
  */
 export const getDataDb = async (
   projectID: ProjectID
-): Promise<PouchDB.Database<ProjectDataObject>> => {
+): Promise<DatabaseInterface<ProjectDataObject>> => {
   // Get the projects DB
   const projectsDB = localGetProjectsDb();
   if (!projectsDB) {
@@ -394,7 +395,7 @@ export const initialiseMetadataDb = async ({
 }: {
   projectId: string;
   force?: boolean;
-}): Promise<PouchDB.Database<ProjectMetaObject>> => {
+}): Promise<DatabaseInterface<ProjectMetaObject>> => {
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
 
@@ -426,7 +427,7 @@ export const initialiseDataDb = async ({
 }: {
   projectId: string;
   force?: boolean;
-}): Promise<PouchDB.Database<ProjectDataObject>> => {
+}): Promise<DatabaseInterface<ProjectDataObject>> => {
   // Are we in a testing environment?
   const isTesting = process.env.NODE_ENV === 'test';
 
@@ -660,7 +661,7 @@ export const initialiseAndMigrateDBs = async ({
 }) => {
   await initialiseDbAndKeys({force, pushKeys});
 
-  let dbs: {dbType: DATABASE_TYPE; dbName: string; db: PouchDB.Database}[] = [
+  let dbs: {dbType: DATABASE_TYPE; dbName: string; db: DatabaseInterface}[] = [
     {db: getAuthDB(), dbType: DatabaseType.AUTH, dbName: AUTH_DB_NAME},
     {
       db: getDirectoryDB(),
@@ -692,8 +693,8 @@ export const initialiseAndMigrateDBs = async ({
   for (const project of projects) {
     // Project ID
     const projectId = project._id;
-    const dataDb = (await getDataDb(projectId)) as PouchDB.Database;
-    const metadataDb = (await getMetadataDb(projectId)) as PouchDB.Database;
+    const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
+    const metadataDb = (await getMetadataDb(projectId)) as DatabaseInterface;
     dbs.concat([
       {
         db: dataDb,

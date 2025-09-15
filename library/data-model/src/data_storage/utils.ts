@@ -1,6 +1,7 @@
 import PouchDB from 'pouchdb';
 import PouchDBSecurity from 'pouchdb-security-helper';
 import {z} from 'zod';
+import {DatabaseInterface} from '../types';
 PouchDB.plugin(PouchDBSecurity);
 
 // Zod schema for the document and existing document couch interfaces
@@ -74,7 +75,7 @@ export async function safeWriteDocument<T extends {}>({
   data,
   writeOnClash = true,
 }: {
-  db: PouchDB.Database<T>;
+  db: DatabaseInterface<T>;
   data: PouchDB.Core.Document<T>;
   writeOnClash?: boolean;
 }) {
@@ -109,7 +110,7 @@ export async function batchWriteDocuments<T extends {}>({
   documents,
   writeOnClash = true,
 }: {
-  db: PouchDB.Database<T>;
+  db: DatabaseInterface<T>;
   documents: PouchDB.Core.ExistingDocument<T>[];
   writeOnClash?: boolean;
 }): Promise<{successful: number; failed: number}> {
@@ -184,7 +185,7 @@ export async function writeNewDocument<T extends {}>({
   db,
   data,
 }: {
-  db: PouchDB.Database<T>;
+  db: DatabaseInterface<T>;
   data: PouchDB.Core.Document<T>;
 }): Promise<{
   wrote: boolean;
@@ -221,7 +222,7 @@ export async function writeNewDocument<T extends {}>({
 /**
  * Method to apply initialisation content to a database.
  *
- * @param db PouchDB.Database to initialise
+ * @param db DatabaseInterface to initialise
  * @param content The documents to write
  * @param config.forceWrite Override on clash?
  * @param config.applyPermissions Actually write security document?
@@ -231,7 +232,7 @@ export const couchInitialiser = async ({
   content,
   config: {forceWrite = false, applyPermissions = true} = {},
 }: {
-  db: PouchDB.Database;
+  db: DatabaseInterface;
   content: InitialisationContent;
   config?: {
     forceWrite?: boolean;

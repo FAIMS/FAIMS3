@@ -12,6 +12,7 @@ import {DraftDB} from '../../../sync/draft-storage';
 import {createLocalPouchDatabase, LOCAL_POUCH_OPTIONS} from './databaseHelpers';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
+import {PouchDBWrapper} from './pouchDBWrapper';
 PouchDB.plugin(PouchDBFind);
 
 export interface RegisterDbOptions {
@@ -25,16 +26,17 @@ class DatabaseService {
   private static instance: DatabaseService;
   // track databases that we're in the process of closing down
   private cleanupInProgress: Set<string> = new Set();
-  private localDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
+  private localDatabases: Map<string, PouchDBWrapper<ProjectDataObject>> =
     new Map();
   private databaseSyncs: Map<
     string,
     PouchDB.Replication.Sync<ProjectDataObject>
   > = new Map();
+  // remote databases are not wrapped
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
   private draftDb: DraftDB;
-  private localStateDb: PouchDB.Database;
+  private localStateDb: PouchDBWrapper<{}>;
 
   private constructor() {
     this.draftDb = this.createDraftDb();
@@ -43,10 +45,10 @@ class DatabaseService {
 
   // these are in methods so we can re-create them if needed later
   createDraftDb() {
-    return new PouchDB<EncodedDraft>('draft-storage', LOCAL_POUCH_OPTIONS);
+    return new PouchDBWrapper<EncodedDraft>('draft-storage');
   }
   createLocalStateDb() {
-    return new PouchDB('local_state', LOCAL_POUCH_OPTIONS);
+    return new PouchDBWrapper('local_state');
   }
 
   static getInstance(): DatabaseService {
@@ -134,7 +136,7 @@ class DatabaseService {
   // Create or get existing database instance
   async registerLocalDatabase(
     id: string,
-    db: PouchDB.Database<ProjectDataObject>,
+    db: PouchDBWrapper<ProjectDataObject>,
     {tolerant = false}: RegisterDbOptions = {}
   ) {
     if (this.localDatabases.has(id)) {

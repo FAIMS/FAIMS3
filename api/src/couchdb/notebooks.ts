@@ -45,6 +45,7 @@ import {
   userHasProjectRole,
   PROJECT_METADATA_PREFIX,
   Annotations,
+  DatabaseInterface,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -498,7 +499,7 @@ export const deleteNotebook = async (project_id: string) => {
 };
 
 export const writeProjectMetadata = async (
-  metaDB: PouchDB.Database,
+  metaDB: DatabaseInterface,
   metadata: any
 ) => {
   // add metadata, one document per attribute value pair
