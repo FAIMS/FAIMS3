@@ -18,6 +18,16 @@
  * and mitigate the indexedDB failure that occurs on IOS devices
  */
 
+/*
+ * This wrapper should have the same interface as PouchDB.Database
+ * so that it can be used as a drop-in replacement.  All operations
+ * then go through the withRetry() method which will try to re-connect
+ * to the database if one of the known errors occurs.
+ *
+ * This should have no performance impact apart from the additional
+ * function call overhead.
+ */
+
 import {DatabaseInterface} from '@faims3/data-model';
 import {RUNNING_UNDER_TEST} from '../../../buildconfig';
 import {logError} from '../../../logging';
@@ -139,7 +149,6 @@ export class PouchDBWrapper<T extends {}> implements DatabaseInterface<T> {
     doc: PouchDB.Core.PutDocument<T & Model>,
     options?: any
   ) {
-    console.log('db.pub', doc, options);
     if (options)
       return this.withRetry(() => this.db.put<Model>(doc, options), 'put');
     else return this.withRetry(() => this.db.put<Model>(doc), 'put');
