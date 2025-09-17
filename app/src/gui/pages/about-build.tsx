@@ -47,7 +47,7 @@ import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
   RUNNING_UNDER_TEST,
   COMMIT_VERSION,
-  SHOW_MINIFAUXTON,
+  SHOW_POUCHDB_BROWSER,
   SHOW_WIPE,
   NOTEBOOK_NAME,
   CONDUCTOR_URLS,
@@ -59,6 +59,7 @@ import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
 import {logError} from '../../logging';
 import {databaseService} from '../../context/slices/helpers/databaseService';
+import {Link} from 'react-router-dom';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -266,7 +267,7 @@ export default function AboutBuild() {
               </Grid>
           </>
           )}
-          {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
+          {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
             <React.Fragment>
               <Grid item xs={12}>
                 <Divider />
@@ -340,17 +341,17 @@ export default function AboutBuild() {
                       </Dialog>
                     </Grid>
                   )}
-                  {SHOW_MINIFAUXTON && (
+                  {SHOW_POUCHDB_BROWSER && (
                     <>
                       <Grid item>
                         <Button
+                          size={'small'}
                           variant="contained"
                           disableElevation
                           color={'warning'}
-                          onClick={() => {
-                            window.location.pathname = '/minifauxton.html';
-                          }}
                           startIcon={<StorageIcon />}
+                          component={Link}
+                          to={ROUTES.POUCH_EXPLORER}
                         >
                           Open Raw Database Interface
                         </Button>
