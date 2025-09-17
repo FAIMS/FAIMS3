@@ -20,7 +20,6 @@
  */
 
 import {MapStylesheetNameType} from './gui/components/map/styles';
-import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -41,9 +40,7 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
  */
 
 function commit_version(): string {
-  // BUILD_VERSION is updated by the 'set-version' script in package.json
-  // use that if it's not just the default
-  if (BUILD_VERSION !== BUILD_VERSION_DEFAULT) return BUILD_VERSION;
+  if (process.env.__APP_VERSION__) return __APP_VERSION__;
   // otherwise look in the environment
   const commitVersion = import.meta.env.VITE_COMMIT_VERSION;
   if (
@@ -138,13 +135,13 @@ function show_new_notebook(): boolean {
 function pouch_batch_size(): number {
   const pouch_batch_size = import.meta.env.VITE_POUCH_BATCH_SIZE;
   if (pouch_batch_size === '' || pouch_batch_size === undefined) {
-    return 1000;
+    return 10;
   }
   try {
     return parseInt(pouch_batch_size);
   } catch (err) {
     logError(err);
-    return 1000;
+    return 10;
   }
 }
 

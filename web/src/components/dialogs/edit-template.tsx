@@ -7,7 +7,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import {List, ListDescription, ListItem} from '../ui/list';
 import {Route} from '@/routes/_protected/templates/$templateId';
 import {useAuth} from '@/context/auth-provider';
 import {useGetTemplate} from '@/hooks/queries';
@@ -19,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import {Pencil} from 'lucide-react';
 
 /**
  * EditTemplateDialog component renders a dialog for editing a template.
@@ -29,7 +29,7 @@ import {
 export const EditTemplateDialog = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data, isLoading} = useGetTemplate(user, templateId);
+  const {data} = useGetTemplate(user, templateId);
   const [open, setOpen] = useState(false);
 
   return (
@@ -39,7 +39,8 @@ export const EditTemplateDialog = () => {
           <Tooltip>
             <TooltipTrigger className="w-fit">
               <Button variant="outline" disabled={true}>
-                Edit Template
+                Replace Template JSON
+                <Pencil />
               </Button>
             </TooltipTrigger>
             <TooltipContent className="w-32 text-balance">
@@ -50,49 +51,20 @@ export const EditTemplateDialog = () => {
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild className="w-fit">
-            <Button variant="outline">Edit Template</Button>
+            <Button variant="outline">
+              Replace Template JSON
+              <Pencil />
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Template</DialogTitle>
+              <DialogTitle>Replace Template JSON</DialogTitle>
               <DialogDescription>
-                Follow the following steps to edit the current template.
+                Upload a new template JSON file to replace the current one. The
+                new file must be a valid JSON file.
               </DialogDescription>
             </DialogHeader>
-            <List>
-              <ListItem className="space-y-2">
-                <ListDescription>
-                  1. Download the template file.
-                </ListDescription>
-                <Button variant="outline" disabled={isLoading}>
-                  <a
-                    href={`data:text/json;charset=utf-8,${encodeURIComponent(
-                      JSON.stringify({
-                        metadata: data?.metadata,
-                        'ui-specification': data?.['ui-specification'],
-                      })
-                    )}`}
-                    download={`${templateId}.json`}
-                  >
-                    Download
-                  </a>
-                </Button>
-              </ListItem>
-              <ListItem>
-                {
-                  //TODO Update this view to link directly into designer
-                }
-                <ListDescription>
-                  2. Edit the template using Designer.
-                </ListDescription>
-              </ListItem>
-              <ListItem className="space-y-2">
-                <ListDescription>
-                  3. Upload the edited template file.
-                </ListDescription>
-                <UpdateTemplateForm setDialogOpen={setOpen} />
-              </ListItem>
-            </List>
+            <UpdateTemplateForm setDialogOpen={setOpen} />
           </DialogContent>
         </Dialog>
       )}

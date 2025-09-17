@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
-import {Action, GetTeamMembersResponse, Role} from '@faims3/data-model';
+import {Action, GetTeamMembersResponse, Role, roleDetails} from '@faims3/data-model';
 import {
   Tooltip,
   TooltipContent,
@@ -57,6 +57,7 @@ export const useGetColumns = ({
   const rolesAvailable: Role[] = [];
   if (canAddMemberToTeam) {
     rolesAvailable.push(Role.TEAM_MEMBER);
+    rolesAvailable.push(Role.TEAM_MEMBER_CREATOR);
   }
   if (canAddManagerToTeam) {
     rolesAvailable.push(Role.TEAM_MANAGER);
@@ -81,6 +82,9 @@ export const useGetColumns = ({
     if (hasRoles.includes(Role.TEAM_MEMBER)) {
       return canRemoveMember;
     }
+    if (hasRoles.includes(Role.TEAM_MEMBER_CREATOR)) {
+      return canRemoveMember;
+    }
 
     // Weird case here
     console.warn(
@@ -88,6 +92,10 @@ export const useGetColumns = ({
     );
     return true;
   };
+
+  const roleDisplayName = (role: Role) => {
+    return roleDetails[role].name;
+  }
 
   const baseColumns: ColumnDef<GetTeamMembersResponse['members'][number]>[] = [
     {
@@ -111,6 +119,7 @@ export const useGetColumns = ({
           original: {roles, username},
         },
       }) => {
+        console.log('roles for ', username, roles);
         return (
           <div
             className="flex flex-wrap gap-1 items-center"
@@ -150,7 +159,7 @@ export const useGetColumns = ({
                           }
                     }
                   >
-                    {role.role}
+                    {roleDisplayName(role.role)}
                   </RoleCard>
                 );
               })}

@@ -96,7 +96,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   }, [viewSet?.publishButtonBehaviour]);
 
   /**
-   * Updates the Publish Button Behavior setting in Redux and persists it
+   * Updates the Finish Button Behavior setting in Redux and persists it
    */
   const handlePublishButtonBehaviourChange = (event: any) => {
     const newValue = event.target.value;
@@ -226,10 +226,10 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
 
       <Collapse in={expanded}>
         <CardContent>
-          {/* Publish Button Behavior*/}
+          {/* Finish Button Behavior*/}
           <SettingSection
-            title="Publish Button Behavior"
-            description="Configure when the Publish and Close buttons should be shown."
+            title="Finish Button Behavior"
+            description="Configure when the Finish and Close buttons should be shown."
           >
             <Select
               fullWidth

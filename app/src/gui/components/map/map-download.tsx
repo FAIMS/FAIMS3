@@ -18,6 +18,9 @@
  */
 
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Button,
   Card,
@@ -33,6 +36,8 @@ import {useEffect, useMemo, useState} from 'react';
 import ProgressBar from '../progress-bar';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {set} from 'lodash';
 
 /**
  * Map download component presents the UI for downloading offline maps.
@@ -44,6 +49,7 @@ export const MapDownloadComponent = () => {
   const [downloadSetName, setDownloadSetName] = useState('Default');
   const [message, setMessage] = useState('');
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
+  const [downloadListOpen, setDownloadListOpen] = useState(false);
 
   const tileStore = useMemo(() => new VectorTileStore(), []);
 
@@ -112,6 +118,8 @@ export const MapDownloadComponent = () => {
     if (map) {
       const extent = map.getView().calculateExtent();
       setMessage('');
+      setDownloadListOpen(true);
+      console.log('set downloadListOpen true');
       try {
         await tileStore.createTileSet(extent, downloadSetName);
         tileStore.downloadTileSet(downloadSetName);
@@ -164,7 +172,65 @@ export const MapDownloadComponent = () => {
               Estimate Download Size
             </Button>
           )}
+          {message && <Alert severity="error">{message}</Alert>}
         </Stack>
+      </Grid>
+
+      <Grid item xs={12} sm={4} md={3}>
+        <Accordion
+          sx={{width: '100%'}}
+          expanded={downloadListOpen}
+          onClick={() => setDownloadListOpen(!downloadListOpen)}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            sx={{height: '2em'}}
+          >
+            <h3>Maps Downloaded</h3>
+          </AccordionSummary>
+          <AccordionDetails>
+            {tileSets.length === 0 && <p>No maps downloaded.</p>}
+            {tileSets.map((mapSet: StoredTileSet, idx: number) => (
+              <Card variant="outlined" key={idx}>
+                <CardContent>
+                  <Typography variant="h5" component="div">
+                    {mapSet.setName}
+                  </Typography>
+
+                  <Typography variant="body2" color="text.secondary">
+                    Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100}{' '}
+                    MB
+                  </Typography>
+
+                  {mapSet.tileKeys.length !== mapSet.expectedTileCount && (
+                    <ProgressBar
+                      percentage={
+                        mapSet.tileKeys.length / mapSet.expectedTileCount
+                      }
+                    />
+                  )}
+                  <Typography variant="body2" color="text.secondary">
+                    Downloaded on: {mapSet.created.toLocaleDateString()}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleDeleteTileSet(mapSet.setName)}
+                  >
+                    Delete
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => handleShowExtent(mapSet)}
+                  >
+                    Show
+                  </Button>
+                </CardActions>
+              </Card>
+            ))}
+          </AccordionDetails>
+        </Accordion>
       </Grid>
 
       <Grid
@@ -180,51 +246,6 @@ export const MapDownloadComponent = () => {
         }}
       >
         <MapComponent parentSetMap={setMap} />
-      </Grid>
-
-      <Grid item xs={12} sm={4} md={3}>
-        <h3>Offline Maps</h3>
-
-        {message && <Alert severity="error">{message}</Alert>}
-
-        <h4>Maps Downloaded</h4>
-        {tileSets.length === 0 && <p>No maps downloaded.</p>}
-        {tileSets.map((mapSet: StoredTileSet, idx: number) => (
-          <Card variant="outlined" key={idx}>
-            <CardContent>
-              <Typography variant="h5" component="div">
-                {mapSet.setName}
-              </Typography>
-
-              <Typography variant="body2" color="text.secondary">
-                Size: {Math.round((100 * mapSet.size) / 1024 / 1024) / 100} MB
-              </Typography>
-
-              {mapSet.tileKeys.length !== mapSet.expectedTileCount && (
-                <ProgressBar
-                  percentage={mapSet.tileKeys.length / mapSet.expectedTileCount}
-                />
-              )}
-              <Typography variant="body2" color="text.secondary">
-                Downloaded on: {mapSet.created.toLocaleDateString()}
-              </Typography>
-            </CardContent>
-            <CardActions>
-              <Button
-                variant="outlined"
-                onClick={() => handleDeleteTileSet(mapSet.setName)}
-              >
-                Delete
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => handleShowExtent(mapSet)}
-              >
-                Show
-              </Button>
-            </CardActions>
-          </Card>
-        ))}
       </Grid>
     </Grid>
   );

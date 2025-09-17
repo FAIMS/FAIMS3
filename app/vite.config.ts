@@ -22,25 +22,15 @@
 import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react-swc';
 
-// vite does not shim the global object and we need it for dev but
-// not for the production build
-const global = process.env.NODE_ENV === 'development' ? 'window' : 'global';
-
-// https://vitejs.dev/config/
-export default defineConfig({
+const config: any = {
   base: '/',
   build: {
     outDir: 'build',
   },
-  // server: {
-  //   port: 3000,
-  //   host: true,
-  // },
   server: {
     host: '0.0.0.0',
     port: 3000,
     strictPort: true,
-    allowedHosts: true, // to be removed later @TODO RG
   },
   preview: {
     port: 3000,
@@ -54,19 +44,20 @@ export default defineConfig({
   },
   plugins: [react({jsxImportSource: '@emotion/react'})],
   define: {
-    global: global,
+    global: 'globalThis',
     'process.env': {} /* some libraries check this */,
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/setupTests.ts',
-    css: true,
-    reporters: ['verbose'],
-    coverage: {
-      reporter: ['text', 'json', 'html'],
-      include: ['src/**/*'],
-      exclude: [],
-    },
-  },
+};
+
+// Conditional configuration.  If run with --mode sourcemap
+// we will build with sourcemaps enabled and output to a different directory.
+export default defineConfig(({mode}) => {
+  if (mode === 'sourcemap') {
+    config.build.sourcemap = true;
+    config.build.outDir = 'build-sourcemap';
+    return config;
+  } else {
+    return config;
+  }
 });

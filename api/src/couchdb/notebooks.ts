@@ -390,12 +390,35 @@ export const updateNotebook = async (
     payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
   );
 
-  // ensure that the name is in the metadata
-  // metadata.name = projectName.trim();
   await writeProjectMetadata(metaDB, metadata);
+
+  // update the name if required
+  await changeNotebookName({projectId, name: metadata.name});
 
   // no need to write design docs for existing projects
   return projectId;
+};
+
+/**
+ * Updates the notebook status to the targeted value
+ */
+export const changeNotebookName = async ({
+  projectId,
+  name,
+}: {
+  projectId: string;
+  name: string;
+}) => {
+  // get existing project record
+  const project = await getProjectById(projectId);
+
+  if (project.name !== name) {
+    // update name
+    const updated = {...project, name};
+
+    // write it back
+    await putProjectDoc(updated);
+  }
 };
 
 /**

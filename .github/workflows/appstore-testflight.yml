@@ -70,7 +70,7 @@ jobs:
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
       - name: Use Python 3.10
         uses: actions/setup-python@v4
@@ -84,6 +84,7 @@ jobs:
           export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
           export VITE_SHOW_POUCHDB_BROWSER=true
+          export VITE_POUCH_BATCH_SIZE=${{vars.POUCH_BATCH_SIZE}}
           export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
           export VITE_TAG=prodIOS
           export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
@@ -123,7 +124,7 @@ jobs:
       - name: Set up XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2.0
+          xcode-version: 16.3
       - name: Deploy iOS Beta to TestFlight via Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:

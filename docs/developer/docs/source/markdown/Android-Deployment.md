@@ -235,7 +235,7 @@ for_platform :android do
 end
 ```
 
-Fastlane actions are defined by a `lane` in the [Fastfile](../../app/android/fastlane/Fastfile):
+Fastlane actions are defined by a `lane` in the [Fastfile](../../../../../app/android/fastlane/Fastfile):
 
 ```ruby
    lane :deploy_fieldmark do
@@ -291,6 +291,7 @@ where these workflows will run.
 - `vars.APP_PRIVACY_POLICY_URL` - URL for the app privacy policy link in the app footer
 - `vars.SUPPORT_EMAIL` - Support email address displayed in the app
 - `vars.APP_CONTACT_URL` - URL for the 'Contact' link in the app footer
+- `vars.POUCH_BATCH_SIZE` - batch size for pouchdb replication, defaults to 10 to ensure reliable sync of large files
 
 Secrets will not be visible once added so we need to keep copies somewhere safe.
 

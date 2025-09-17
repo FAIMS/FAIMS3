@@ -15,6 +15,7 @@ import {
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
 import {generateRandomString, slugify} from '../utils';
+import {getTeamById} from './teams';
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
@@ -142,6 +143,17 @@ export const createTemplate = async ({
   // TODO see BSS-343
   payload.metadata.template_id = templateId;
 
+  // if there is a team id provided, it must be an actual team
+  if (payload.teamId) {
+    try {
+      await getTeamById(payload.teamId);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'The specified team ID does not exist.'
+      );
+    }
+  }
+
   // Setup the document with id included
   const templateDoc: TemplateDocument = {
     _id: templateId,
@@ -198,24 +210,43 @@ export const updateExistingTemplate = async (
     );
   }
 
+  // team might be overridden in the payload
+  // check that it is a valid team
+  if (payload.teamId) {
+    try {
+      await getTeamById(payload.teamId);
+    } catch (error) {
+      throw new Exceptions.InternalSystemError(
+        'The specified team ID does not exist.'
+      );
+    }
+  }
+  const teamId = payload.teamId || existingTemplate.ownedByTeamId;
+
+  // ditto for the template name
+  const name = payload.name || existingTemplate.name;
+  const metadata = payload.metadata || existingTemplate.metadata;
+  const uiSpecification =
+    payload['ui-specification'] || existingTemplate['ui-specification'];
+
   // Now on the new put, we make sure to include the _rev of previous document which allows replacement
   const templateDb = getTemplatesDb();
 
   // inject templateId into the metadata - we have to do this here because a
   // user could potentially change the metadata
   // TODO see BSS-343
-  payload.metadata.template_id = templateId;
+  metadata.template_id = templateId;
 
   const newDocument = {
-    ...payload,
-
+    metadata: metadata,
+    'ui-specification': uiSpecification,
     // explicitly retain these details!
     _id: templateId,
     _rev: existingTemplate._rev,
     // Increment version by 1 when updated
     version: existingTemplate.version + 1,
-    ownedByTeamId: existingTemplate.ownedByTeamId,
-    name: existingTemplate.name,
+    ownedByTeamId: teamId,
+    name: name,
   } satisfies TemplateDocument;
   try {
     await templateDb.put(newDocument);

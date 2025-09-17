@@ -1,5 +1,5 @@
 # Base including npm cache
-FROM node:20 AS base
+FROM node:22 AS base
 WORKDIR /usr/src
 COPY package*.json ./
 

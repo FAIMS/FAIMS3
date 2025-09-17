@@ -52,6 +52,19 @@ import {MapDownloadComponent} from './gui/components/map/map-download';
 import {OFFLINE_MAPS} from './buildconfig';
 import {PouchExplorer} from './gui/pages/pouchExplorer';
 
+import {SafeArea} from '@capacitor-community/safe-area';
+
+SafeArea.enable({
+  config: {
+    customColorsForSystemBars: true,
+    statusBarColor: '#FAFAFB', // transparent
+    statusBarContent: 'dark',
+    navigationBarColor: '#FAFAFB', // transparent
+    navigationBarContent: 'dark',
+    offset: 0,
+  },
+});
+
 // type AppProps = {};
 
 // type AppState = {

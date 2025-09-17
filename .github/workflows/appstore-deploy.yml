@@ -49,7 +49,7 @@ jobs:
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
       - name: Use Python 3.10
         uses: actions/setup-python@v4
@@ -62,7 +62,8 @@ jobs:
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
           export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
-          export VITE_SHOW_POUCHDB_BROWSER=false
+          export VITE_SHOW_MINIFAUXTON=false
+          export VITE_POUCH_BATCH_SIZE=${{vars.POUCH_BATCH_SIZE}}
           export VITE_CONDUCTOR_URL=${{vars.PRODUCTION_CONDUCTOR_URL}}
           export VITE_TAG=prodIOS
           export VITE_NOTEBOOK_LIST_TYPE=${{vars.NOTEBOOK_LIST_TYPE}}
@@ -92,7 +93,10 @@ jobs:
           # dependencies
           npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
           npm run configIOSbuild --workspace app
-          npm run build
+          npm run build          
+          # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY and uses VITE_APPLE_BUNDLE_IDENTIFIER on IOS)
+          cd app
+          ./bin/bugsnag-sourcemaps.sh IOS
       - name: Update IOS Build
         run: |
           cd app
@@ -102,7 +106,7 @@ jobs:
       - name: Set up XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.2.0
+          xcode-version: 16.3
       - name: Deploy iOS app to production with Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:

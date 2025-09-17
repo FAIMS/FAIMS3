@@ -59,9 +59,11 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
 
   // Convert base64 to buffer
   const buffer = Buffer.from(image.base64String, 'base64');
+  // typescript now wants us to specify the type of buffer
+  const content = new Uint8Array(buffer);
 
   // Create blob from buffer
-  return new Blob([buffer], {
+  return new Blob([content], {
     type: `image/${image.format}`,
   });
 }
@@ -405,7 +407,9 @@ export const TakePhoto: React.FC<
             : [image];
         props.form.setFieldValue(props.field.name, newImages, true);
       } catch (err: any) {
-        logError(err);
+        // we don't log this because it will be the result of user action
+        // cancelling the camera or denying access - set the field error
+        // so they can see the problem
         props.form.setFieldError(props.field.name, err.message);
       }
     } else {

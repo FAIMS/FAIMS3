@@ -3,8 +3,8 @@
 # BASED ON https://turbo.build/repo/docs/guides/tools/docker
 # AND https://github.com/ThaddeusJiang/turborepo-starter/blob/main/apps/api/Dockerfile
 
-# Use Node 20 base
-FROM node:20-alpine AS alpine
+# Use Node 22 base
+FROM node:22-alpine AS alpine
 
 # What is the @faims3/... name of the package to build
 ARG PACKAGE_NAME

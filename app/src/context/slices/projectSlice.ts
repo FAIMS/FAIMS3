@@ -423,13 +423,11 @@ const projectsSlice = createSlice({
           if (localDatabaseId) {
             // NOTE that this is an async operation, the deletion will not
             // happen immediately
-            databaseService.closeAndRemoveLocalDatabase(localDatabaseId, {
-              // For the time being - don't clean up deactivated databases as a last
-              // resort data recovery mechanism
-
-              // TODO determine a more suitable approach for validating data is synced to allow true cleanup
-              clean: false,
-            });
+            databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
+            // For the time being - don't clean up deactivated databases as a last
+            // resort data recovery mechanism
+            // databaseService.destroyLocalDatabase(localDatabaseId);
+            // TODO determine a more suitable approach for validating data is synced to allow true cleanup
           }
         }
 
@@ -613,13 +611,11 @@ const projectsSlice = createSlice({
       const localDatabaseId = project.database.localDbId;
       // wipe and remove local database (cleaning records)
       // NOTE this is an async operation, deletion may not happen immediately
-      databaseService.closeAndRemoveLocalDatabase(localDatabaseId, {
-        // For the time being - don't clean up deactivated databases as a last
-        // resort data recovery mechanism
-
-        // TODO determine a more suitable approach for validating data is synced to allow true cleanup
-        clean: false,
-      });
+      databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
+      // For the time being - don't clean up deactivated databases as a last
+      // resort data recovery mechanism
+      // databaseService.destroyLocalDatabase(localDatabaseId);
+      // TODO determine a more suitable approach for validating data is synced to allow true cleanup
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
