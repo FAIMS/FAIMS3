@@ -105,7 +105,7 @@ const DatabaseSelector = ({onSelect}: {onSelect: (dbName: string) => void}) => {
 
 const DatabaseViewer = ({dbName}: {dbName: string}) => {
   const [documents, setDocuments] = useState<any[]>([]);
-  const [selectedDoc, setSelectedDoc] = useState<any>(null);
+  const [selectedDoc, setSelectedDoc] = useState<any>({});
   const [filter, setFilter] = useState('');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -122,6 +122,11 @@ const DatabaseViewer = ({dbName}: {dbName: string}) => {
   };
 
   useEffect(() => {
+    // reset page when dbName changes
+    setPage(0);
+    // and clear selected doc
+    setSelectedDoc({});
+    // and get the docs from this db
     const fetchData = async () => {
       const docs = await listDatabaseContents(dbName);
       setDocuments(docs);
