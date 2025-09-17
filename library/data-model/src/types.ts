@@ -388,15 +388,6 @@ export interface DatabaseInterface<Content extends {} = {}> {
   close(): Promise<void>;
   destroy(): Promise<void>;
 
-  // query<Result extends {}, Model extends {} = Content>(
-  //   fun: string | Map<Model, Result> | PouchDB.Filter<Model, Result>,
-  //   opts: PouchDB.Query.Options<Model, Result>,
-  //   callback: PouchDB.Core.Callback<PouchDB.Query.Response<Result>>
-  // ): void;
-  // query<Result extends {}, Model extends {} = Content>(
-  //   fun: string | Map<Model, Result> | PouchDB.Filter<Model, Result>,
-  //   callback: PouchDB.Core.Callback<PouchDB.Query.Response<Result>>
-  // ): void;
   query<Result extends {}, Model extends {} = Content>(
     fun: string | PouchDB.Map<Model, Result> | PouchDB.Filter<Model, Result>,
     opts?: PouchDB.Query.Options<Model, Result>

@@ -184,6 +184,8 @@ export class PouchDBWrapper<T extends {}> implements DatabaseInterface<T> {
     return this.withRetry(() => this.db.query(fun, opts), 'query');
   }
 
+  // security is not implemented for local browser based databases but we need
+  // to include the method to match the interface
   async security() {}
 
   async destroy() {
