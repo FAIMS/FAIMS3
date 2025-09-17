@@ -267,7 +267,7 @@ export default function AboutBuild() {
               </Grid>
           </>
           )}
-          {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
+          {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
             <React.Fragment>
               <Grid item xs={12}>
                 <Divider />
