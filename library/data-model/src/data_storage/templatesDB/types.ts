@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {EncodedUISpecificationSchema} from '../../types';
+import {DatabaseInterface, EncodedUISpecificationSchema} from '../../types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
 
 // V1
@@ -45,4 +45,4 @@ export type ExistingTemplateDocument = z.infer<
 >;
 
 // Database
-export type TemplateDB = PouchDB.Database<TemplateDBFields>;
+export type TemplateDB = DatabaseInterface<TemplateDBFields>;

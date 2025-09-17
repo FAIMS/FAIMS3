@@ -41,7 +41,7 @@ const mockShouldDisplayRecord = async () => {
 };
 
 export const cleanDataDBS = async () => {
-  let db: PouchDB.Database;
+  let db: DatabaseInterface;
   for (const name in databaseList) {
     db = databaseList[name];
     delete databaseList[name];

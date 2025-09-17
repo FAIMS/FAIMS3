@@ -1,3 +1,4 @@
+import {DatabaseInterface} from '../../types';
 import {DatabaseType} from '../migrations/types';
 export type MigrationLog = {
   // from and to version ID
@@ -45,4 +46,4 @@ export type MigrationsDBFields = {
 };
 export type MigrationsDBDocument =
   PouchDB.Core.ExistingDocument<MigrationsDBFields>;
-export type MigrationsDB = PouchDB.Database<MigrationsDBFields>;
+export type MigrationsDB = DatabaseInterface<MigrationsDBFields>;

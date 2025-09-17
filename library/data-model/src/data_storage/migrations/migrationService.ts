@@ -13,6 +13,7 @@ import {
   MigrationsDBFields,
 } from '../migrationsDB';
 import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
+import {DatabaseInterface} from '../../types';
 
 function generateErrorLog({
   reason,
@@ -153,7 +154,7 @@ export function identifyMigrations({
  * 5. Tracks and returns any issues encountered
  *
  * @param {Object} params - The parameters object.
- * @param {PouchDB.Database} params.db - The PouchDB database to migrate.
+ * @param {DatabaseInterface} params.db - The PouchDB database to migrate.
  * @param {MigrationFunc} params.migrationFunc - The migration function to apply to each document.
  * @returns {Object} - An object containing an array of issues encountered during migration.
  */
@@ -161,7 +162,7 @@ export async function performMigration({
   db,
   migrationFunc,
 }: {
-  db: PouchDB.Database;
+  db: DatabaseInterface;
   migrationFunc: MigrationFunc;
 }): Promise<{
   issues: string[];
@@ -278,7 +279,7 @@ export async function migrateDbs({
   migrationDb,
   userId = 'system',
 }: {
-  dbs: {dbType: DatabaseType; dbName: string; db: PouchDB.Database}[];
+  dbs: {dbType: DatabaseType; dbName: string; db: DatabaseInterface}[];
   migrationDb: MigrationsDB;
   userId?: string;
 }): Promise<void> {

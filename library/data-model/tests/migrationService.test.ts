@@ -21,6 +21,7 @@ import {
   migrateDbs,
   performMigration,
 } from '../src/data_storage';
+import {DatabaseInterface} from '../src';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
@@ -208,11 +209,13 @@ describe('Migration System Tests', () => {
    * Test performMigration function with in-memory PouchDB
    */
   describe('performMigration', () => {
-    let testDb: PouchDB.Database;
+    let testDb: DatabaseInterface;
 
     beforeEach(async () => {
       // Create a fresh in-memory database for each test
-      testDb = new PouchDB('test-migration-db', {adapter: 'memory'});
+      testDb = new PouchDB('test-migration-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
 
       // Add some test documents
       await testDb.bulkDocs([
@@ -337,7 +340,9 @@ describe('Migration System Tests', () => {
 
     it('should handle database errors gracefully', async () => {
       // Create a broken database by closing and trying to use it
-      const brokenDb = new PouchDB('broken-db', {adapter: 'memory'});
+      const brokenDb = new PouchDB('broken-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
       await brokenDb.destroy(); // This makes the DB unusable
 
       // Try to perform migration on broken DB
@@ -399,13 +404,17 @@ describe('Migration System Tests', () => {
    * Test migrateDbs function with in-memory PouchDB
    */
   describe('migrateDbs', () => {
-    let testMigrationDb: PouchDB.Database;
-    let testPeopleDb: PouchDB.Database;
+    let testMigrationDb: DatabaseInterface;
+    let testPeopleDb: DatabaseInterface;
 
     beforeEach(async () => {
       // Create in-memory databases
-      testMigrationDb = new PouchDB('test-migrations-db', {adapter: 'memory'});
-      testPeopleDb = new PouchDB('test-people-db', {adapter: 'memory'});
+      testMigrationDb = new PouchDB('test-migrations-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
+      testPeopleDb = new PouchDB('test-people-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
 
       // Add design documents to migrations db
       await couchInitialiser({
@@ -467,7 +476,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
-            db: testPeopleDb as PouchDB.Database,
+            db: testPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -510,7 +519,9 @@ describe('Migration System Tests', () => {
     });
 
     it('should handle existing database with migration document', async () => {
-      const realPeopleDb = new PouchDB('real-people-db', {adapter: 'memory'});
+      const realPeopleDb = new PouchDB('real-people-db', {
+        adapter: 'memory',
+      }) as DatabaseInterface;
 
       // Add design documents to migrations db
       await couchInitialiser({
@@ -561,7 +572,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'real-people-db',
-            db: realPeopleDb as PouchDB.Database,
+            db: realPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -646,7 +657,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
-            db: testPeopleDb as PouchDB.Database,
+            db: testPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -711,7 +722,7 @@ describe('Migration System Tests', () => {
           {
             dbType: DatabaseType.PEOPLE,
             dbName: 'test-people-db',
-            db: testPeopleDb as PouchDB.Database,
+            db: testPeopleDb,
           },
         ],
         migrationDb: testMigrationDb as unknown as MigrationsDB,
@@ -743,7 +754,7 @@ describe('Migration System Tests', () => {
       // Create another test database
       const testProjectsDb = new PouchDB('test-projects-db', {
         adapter: 'memory',
-      });
+      }) as DatabaseInterface;
       await testProjectsDb.put({_id: 'project1', name: 'Test Project'});
 
       try {
@@ -774,12 +785,12 @@ describe('Migration System Tests', () => {
             {
               dbType: DatabaseType.PEOPLE,
               dbName: 'test-people-db',
-              db: testPeopleDb as PouchDB.Database,
+              db: testPeopleDb,
             },
             {
               dbType: DatabaseType.PROJECTS,
               dbName: 'test-projects-db',
-              db: testProjectsDb as PouchDB.Database,
+              db: testProjectsDb,
             },
           ],
           migrationDb: testMigrationDb as unknown as MigrationsDB,

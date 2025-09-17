@@ -141,7 +141,7 @@ export async function progressiveSaveFiles(
   try {
     if (keepDumping)
       keepDumping = await progressiveDump(
-        databaseService.getLocalStateDatabase(),
+        databaseService.getLocalStateDatabase().db,
         writer(10, 12)
       );
   } catch {
@@ -151,7 +151,7 @@ export async function progressiveSaveFiles(
   try {
     if (keepDumping)
       keepDumping = await progressiveDump(
-        databaseService.getDraftDatabase(),
+        databaseService.getDraftDatabase().db,
         writer(15, 20)
       );
   } catch {

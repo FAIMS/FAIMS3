@@ -384,7 +384,7 @@ export const deleteEmailCode = async (
   }
 
   try {
-    await authDB.remove(codeDoc!._id, codeDoc!._rev);
+    if (codeDoc) await authDB.remove(codeDoc);
   } catch (error) {
     throw new Error(`Failed to delete email code: ${(error as Error).message}`);
   }

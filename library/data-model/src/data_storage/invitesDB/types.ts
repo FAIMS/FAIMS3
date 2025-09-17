@@ -19,6 +19,7 @@
  */
 
 import {Resource, Role} from '../../permission';
+import {DatabaseInterface} from '../../types';
 
 export type V1InviteDBFields = {
   // The project it refers to
@@ -78,4 +79,4 @@ export type InvitesDBFields = V3InviteDBFields;
 export type ExistingInvitesDBDocument =
   PouchDB.Core.ExistingDocument<InvitesDBFields>;
 export type InvitesDBDocument = PouchDB.Core.Document<InvitesDBFields>;
-export type InvitesDB = PouchDB.Database<InvitesDBFields>;
+export type InvitesDB = DatabaseInterface<InvitesDBFields>;
