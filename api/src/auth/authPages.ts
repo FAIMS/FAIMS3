@@ -53,6 +53,8 @@ export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
   // PAGES
   // =====
 
+  console.log('Adding auth pages for providers: ', socialProviders);
+
   // PAGE: This is the base auth handlebars route which is a login form +
   // providers if present
   app.get(

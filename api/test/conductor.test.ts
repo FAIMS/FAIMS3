@@ -25,7 +25,7 @@ PouchDB.plugin(PouchDBFind);
 
 import {expect} from 'chai';
 import request from 'supertest';
-import {AUTH_PROVIDER_DETAILS} from '../src/auth/strategies/applyStrategies';
+import {getAuthProviderDetails} from '../src/auth/strategies/applyStrategies';
 import {CONDUCTOR_AUTH_PROVIDERS, LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
@@ -77,7 +77,7 @@ describe('Auth', () => {
       .then(response => {
         CONDUCTOR_AUTH_PROVIDERS.forEach(provider => {
           expect(response.text).to.include(
-            AUTH_PROVIDER_DETAILS[provider].displayName
+            getAuthProviderDetails(provider).displayName
           );
         });
         done();

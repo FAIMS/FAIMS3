@@ -71,8 +71,8 @@ import {
   validateRedirect,
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
-import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
+import {getAuthProviderDetails} from './strategies/applyStrategies';
 
 patch();
 
@@ -162,9 +162,10 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         // do not use session (JWT only - no persistence)
         {session: false},
         // custom success function which signs JWT and redirects
-        async (err: string | Error | null, user: Express.User) => {
+        async (err: Error | null, user: Express.User) => {
           if (err) {
-            req.flash('error', {loginError: {msg: err}});
+            console.log('Login error:', err);
+            req.flash('error', {loginError: {msg: err.message}});
             return res.redirect(errorRedirect);
           }
           // We have logged in - do we also want to consume an invite?
@@ -315,7 +316,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           // custom success function which signs JWT and redirects
           async (err: string | Error | null, user: Express.User) => {
             if (err) {
-              req.flash('error', {registrationError: {msg: err}});
+              req.flash('error', {registrationError: {msg: err.toString()}});
               return res.redirect(errorRedirect);
             }
             // We have logged in - do we also want to consume an invite?
@@ -716,7 +717,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
   // For each handler, deploy an auth route + auth return route
   for (const handler of socialProviders) {
-    const handlerDetails = AUTH_PROVIDER_DETAILS[handler];
+    const handlerDetails = getAuthProviderDetails(handler);
 
     // **Login OR register** method for this handler - this will result in a
     // redirection to the configured providers URL, then called back to the
@@ -781,7 +782,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       passport.authenticate(
         handlerDetails.id,
         // custom success function which signs JWT and redirects
-        async (err: string | Error | null, user: Express.User) => {
+        async (err: Error | null, user: Express.User) => {
           // We have come back from EITHER login or registration. In either case
           // we have either a newly minted user, or an updated existing one -
           // now we just apply an invite if present
@@ -790,10 +791,10 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           // right place returning with full context for another attempt)
           if (err) {
             if ((req.session as CustomSessionData).action === 'login') {
-              req.flash('error', {loginError: {msg: err}});
+              req.flash('error', {loginError: {msg: err.message}});
               return res.redirect(loginErrorRedirect);
             } else {
-              req.flash('error', {registrationError: {msg: err}});
+              req.flash('error', {registrationError: {msg: err.message}});
               return res.redirect(registerErrorRedirect);
             }
           }

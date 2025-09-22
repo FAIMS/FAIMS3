@@ -235,30 +235,24 @@ function cookie_secret(): string {
   }
 }
 
-function google_client_id(): string {
-  const s = process.env.GOOGLE_CLIENT_ID;
-  if (s === '' || s === undefined) {
-    console.log('GOOGLE_CLIENT_ID not set, setting empty');
-    return '';
-  } else {
-    return s;
-  }
-}
-
-function google_client_secret(): string {
-  const s = process.env.GOOGLE_CLIENT_SECRET;
-  if (s === '' || s === undefined) {
-    console.log('GOOGLE_CLIENT_SECRET not set, setting empty');
-    return '';
-  } else {
-    return s;
-  }
-}
-
 // What providers are available?
 export enum AuthProvider {
   GOOGLE = 'GOOGLE',
+  AAF = 'AAF',
 }
+
+// Auth provider secrets and keys packaged into
+// an object for ease of use
+export const authProviderConfig: Record<AuthProvider, any> = {
+  [AuthProvider.GOOGLE]: {
+    id: process.env.GOOGLE_CLIENT_ID || '',
+    secret: process.env.GOOGLE_CLIENT_SECRET || '',
+  },
+  [AuthProvider.AAF]: {
+    id: process.env.AAF_CLIENT_ID || '',
+    secret: process.env.AAF_CLIENT_SECRET || '',
+  },
+};
 
 /**
  * Determines which authentication providers to use based on environment configuration.
@@ -463,8 +457,6 @@ export const CONDUCTOR_INSTANCE_NAME = instance_name();
 export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
-export const GOOGLE_CLIENT_ID = google_client_id();
-export const GOOGLE_CLIENT_SECRET = google_client_secret();
 export const CONDUCTOR_AUTH_PROVIDERS = getConfiguredProviders();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();

@@ -15,7 +15,7 @@ import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
-import {AUTH_PROVIDER_DETAILS} from './strategies/applyStrategies';
+import {getAuthProviderDetails} from './strategies/applyStrategies';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -213,7 +213,7 @@ export function providersToRenderDetails({
 }) {
   const providers = [];
   for (const handler of handlers) {
-    const details = AUTH_PROVIDER_DETAILS[handler];
+    const details = getAuthProviderDetails(handler);
     providers.push({
       id: details.id,
       name: details.displayName,

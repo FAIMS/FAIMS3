@@ -30,7 +30,7 @@ import {
   ExistingPeopleDBDocument,
   VerifiableEmail,
 } from '@faims3/data-model';
-import {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} from '../../buildconfig';
+import {AuthProvider, authProviderConfig, CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
 import {
   createUser,
   getCouchUserFromEmailOrUserId,
@@ -39,7 +39,7 @@ import {
 import {CustomSessionData} from '../../types';
 import {lookupAndValidateInvite} from '../helpers';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {StrategyGeneratorFunction} from './applyStrategies';
+import {registerAuthProvider, StrategyGeneratorFunction} from './applyStrategies';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -78,7 +78,9 @@ async function oauthVerify(
   // Action should always be defined
   if (!action) {
     return done(
-      'No action provided during identity provider redirection - cannot proceed. Contact system administrator.',
+      new Error(
+        'No action provided during identity provider redirection - cannot proceed. Contact system administrator.'
+      ),
       undefined
     );
   }
@@ -87,7 +89,9 @@ async function oauthVerify(
   // responsibility of this module - see the success callback in authRoutes
   if (action === 'register' && !inviteId) {
     return done(
-      'Trying to register a new account without an invitation - this is not authorised.',
+      new Error(
+        'Trying to register a new account without an invitation - this is not authorised.'
+      ),
       undefined
     );
   }
@@ -102,7 +106,9 @@ async function oauthVerify(
   if (verifiedEmails.length === 0) {
     // indicate error since there are no valid email addresses!
     return done(
-      'The google user does not have any verified email addresses, and therefore cannot be logged in.',
+      new Error(
+        'The google user does not have any verified email addresses, and therefore cannot be logged in.'
+      ),
       undefined
     );
   }
@@ -136,7 +142,9 @@ async function oauthVerify(
   // Confusing situation let's not allow this.
   if (matchingAccounts.length > 1) {
     return done(
-      'The users google profile included more than one email address, of which more than one match existing accounts. Unsure how to proceed.',
+      new Error(
+        'The users google profile included more than one email address, of which more than one match existing accounts. Unsure how to proceed.'
+      ),
       undefined
     );
   }
@@ -150,7 +158,9 @@ async function oauthVerify(
     if (matchingAccounts.length === 0) {
       // We abort here - this is an error
       return done(
-        'This Google user account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.',
+        new Error(
+          'This Google user account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.'
+        ),
         undefined
       );
     }
@@ -181,7 +191,7 @@ async function oauthVerify(
       await lookupAndValidateInvite({inviteCode: inviteId!});
     } catch (e) {
       return done(
-        'Invalid invite provided. Cannot register an account.',
+        new Error('Invalid invite provided. Cannot register an account.'),
         undefined
       );
     }
@@ -262,14 +272,16 @@ async function oauthVerify(
   }
 }
 
+// The strategy generator function returns an instance of the Passport 
+// strategy for this provider
 export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({
   loginCallbackUrl,
   scope,
 }) => {
-  if (GOOGLE_CLIENT_ID === '') {
+  if (authProviderConfig.GOOGLE.id === '') {
     throw Error('GOOGLE_CLIENT_ID must be set to use Google');
   }
-  if (GOOGLE_CLIENT_SECRET === '') {
+  if (authProviderConfig.GOOGLE.secret === '') {
     throw Error('GOOGLE_CLIENT_SECRET must be set to use Google');
   }
 
@@ -277,8 +289,8 @@ export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({
   // verify function
   const strategy = new Strategy(
     {
-      clientID: GOOGLE_CLIENT_ID,
-      clientSecret: GOOGLE_CLIENT_SECRET,
+      clientID: authProviderConfig.GOOGLE.id,
+      clientSecret: authProviderConfig.GOOGLE.secret,
       callbackURL: loginCallbackUrl,
       passReqToCallback: true,
       scope,
@@ -289,3 +301,5 @@ export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({
 
   return strategy;
 };
+
+
