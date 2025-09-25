@@ -92,15 +92,7 @@ const generateOIDCVerifyFunction = ({
       );
     }
 
-    //AAF profile received:  {
-    //   id: 'lp-BMXSVIiVCF7C2CBKCluuQ8IeNW-IlXHVb2WTdEqI',
-    //   displayName: 'Steve Cassidy',
-    //   username: 'Associate Professor Steve Cassidy',
-    //   name: { familyName: 'Cassidy', givenName: 'Steve' },
-    //   emails: [ { value: 'steve.cassidy@mq.edu.au' } ]
-    // }
-
-    // NB OIDC does not distinguis verified emails so assume all provided are good
+    // NB OIDC does not distinguish verified emails so assume all provided are good
     const profileEmails = (profile.emails ?? []).map(o => o.value);
 
     if (profileEmails.length === 0) {
@@ -216,7 +208,7 @@ const generateOIDCVerifyFunction = ({
         }
 
         // add the aff profile info
-        newDbUser.profiles['aff'] = profile;
+        newDbUser.profiles[strategyId] = profile;
 
         // add the other emails to the user emails array if necessary
         addEmails({

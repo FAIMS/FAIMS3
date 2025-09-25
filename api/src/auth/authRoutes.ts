@@ -162,10 +162,21 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         // do not use session (JWT only - no persistence)
         {session: false},
         // custom success function which signs JWT and redirects
-        async (err: Error | null, user: Express.User) => {
+        async (err: Error | null, user: Express.User, info: any) => {
           if (err) {
-            console.log('Login error:', err);
             req.flash('error', {loginError: {msg: err.message}});
+            return res.redirect(errorRedirect);
+          }
+          if (!user) {
+            // if user is false, info might have something useful
+            // the type of info is unconstrained (object | string | Array<string | undefined>) but
+            // from OIDC we get {message: '...'} with an error message on failure
+            // I think they don't use err here because this is a post-auth failure
+            // (the case I saw was mis-configuration of the endpoint)
+            console.warn('User is false after social auth:', info);
+            req.flash('error', {
+              loginError: {msg: info?.message || 'Login failed'},
+            });
             return res.redirect(errorRedirect);
           }
           // We have logged in - do we also want to consume an invite?
@@ -314,9 +325,21 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
           // do not use session (JWT only - no persistence)
           {session: false},
           // custom success function which signs JWT and redirects
-          async (err: string | Error | null, user: Express.User) => {
+          async (err: string | Error | null, user: Express.User, info: any) => {
             if (err) {
               req.flash('error', {registrationError: {msg: err.toString()}});
+              return res.redirect(errorRedirect);
+            }
+            if (!user) {
+              // if user is false, info might have something useful
+              // the type of info is unconstrained (object | string | Array<string | undefined>) but
+              // from OIDC we get {message: '...'} with an error message on failure
+              // I think they don't use err here because this is a post-auth failure
+              // (the case I saw was mis-configuration of the endpoint)
+              console.warn('User is false after social auth:', info);
+              req.flash('error', {
+                registrationError: {msg: info?.message || 'Login failed'},
+              });
               return res.redirect(errorRedirect);
             }
             // We have logged in - do we also want to consume an invite?
@@ -782,7 +805,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       passport.authenticate(
         handlerDetails.id,
         // custom success function which signs JWT and redirects
-        async (err: Error | null, user: Express.User) => {
+        async (err: Error | null, user: Express.User, info: any) => {
           // We have come back from EITHER login or registration. In either case
           // we have either a newly minted user, or an updated existing one -
           // now we just apply an invite if present
@@ -798,7 +821,18 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
               return res.redirect(registerErrorRedirect);
             }
           }
-
+          if (!user) {
+            // if user is false, info might have something useful
+            // the type of info is unconstrained (object | string | Array<string | undefined>) but
+            // from OIDC we get {message: '...'} with an error message on failure
+            // I think they don't use err here because this is a post-auth failure
+            // (the case I saw was mis-configuration of the endpoint)
+            console.warn('User is false after social auth:', info);
+            req.flash('error', {
+              registrationError: {msg: info?.message || 'Login failed'},
+            });
+            return res.redirect(registerErrorRedirect);
+          }
           const inviteId = (req.session as CustomSessionData).inviteId;
           const updatedUser = user;
           if (inviteId) {
