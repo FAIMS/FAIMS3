@@ -11,6 +11,7 @@ export const BaseAuthProviderConfigSchema = z.object({
   id: z.string(),
   type: z.string(),
   displayName: z.string(),
+  helperText: z.string().optional(),
   clientID: z.string(),
   clientSecret: z.string(),
   scope: z.array(z.string()),

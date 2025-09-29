@@ -40,6 +40,7 @@ file is illustrated in `authConfig.dist.json` as follows:
   "aaf": {
     "type": "oidc",
     "displayName": "AAF",
+    "helperText": "Use your Australian University credentials",
     "issuer": "https://central.test.aaf.edu.au",
     "authorizationURL": "https://central.test.aaf.edu.au/oidc/authorize",
     "tokenURL": "https://central.test.aaf.edu.au/oidc/token",
@@ -55,6 +56,10 @@ The file contains one or more authentication providers.  The `type` field
 must be one of `google` or `oidc`.   There should probably only be one
 Google configuration but there could be many OIDC providers.  The details
 required are those provided by the authentication provider.
+
+The `displayName` field is used to label the login button _"Continue with XXX"_. 
+The `helperText` field is optional and is displayed below the login button
+if provided.
 
 ## Key Files
 

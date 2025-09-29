@@ -2,6 +2,7 @@
   "google": {
     "type": "google",
     "displayName": "Google",
+    "helperText": "Log in with your Google account",
     "clientID": "google client id",
     "clientSecret": "google client secret",
     "scope": [
@@ -11,6 +12,7 @@
   "aaf": {
     "type": "oidc",
     "displayName": "AAF",
+    "helperText": "Use your Australian University credentials",
     "issuer": "https://central.test.aaf.edu.au",
     "authorizationURL": "https://central.test.aaf.edu.au/oidc/authorize",
     "tokenURL": "https://central.test.aaf.edu.au/oidc/token",

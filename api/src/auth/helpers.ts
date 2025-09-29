@@ -212,6 +212,7 @@ export function providersToRenderDetails({
     providers.push({
       id: id,
       name: handlers[id].displayName,
+      helperText: handlers[id].helperText,
       targetUrl: `/auth/${id}${buildQueryString({
         values: {
           redirect: redirectUrl,
