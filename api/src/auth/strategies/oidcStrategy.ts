@@ -24,7 +24,6 @@ import {
   ExistingPeopleDBDocument,
   VerifiableEmail,
 } from '@faims3/data-model';
-import {authProviderConfig} from '../../buildconfig';
 import {
   createUser,
   getCouchUserFromEmailOrUserId,
@@ -33,7 +32,9 @@ import {
 import {CustomSessionData} from '../../types';
 import {lookupAndValidateInvite} from '../helpers';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {StrategyGeneratorFunction} from './applyStrategies';
+import {providerAuthReturnUrl} from '../authRoutes';
+import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {OIDCAuthProviderConfig} from './strategyTypes';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -111,7 +112,8 @@ const generateOIDCVerifyFunction = ({
 
     for (const targetEmail of profileEmails) {
       // Try to get the user based on the target email
-      userLookups[targetEmail] = await getCouchUserFromEmailOrUserId(targetEmail);
+      userLookups[targetEmail] =
+        await getCouchUserFromEmailOrUserId(targetEmail);
     }
 
     const matchingEmails = Object.entries(userLookups)
@@ -272,43 +274,26 @@ const generateOIDCVerifyFunction = ({
 // - displayName is a human friendly name for the provider (eg. 'AAF')
 // - issuer, authorizationURL, tokenURL, userInfoURL, clientID, clientSecret
 //   are all as per the passport-openidconnect Strategy configuration
-export const OIDCStragetyGenerator = ({
-  strategyId,
-  displayName,
-  issuer,
-  authorizationURL,
-  tokenURL,
-  userInfoURL,
-  clientID,
-  clientSecret,
-}: {
-  strategyId: string;
-  displayName: string;
-  issuer: string;
-  authorizationURL: string;
-  tokenURL: string;
-  userInfoURL: string;
-  clientID: string;
-  clientSecret: string;
-}): StrategyGeneratorFunction => {
-  return ({loginCallbackUrl, scope}) => {
-    // This strategy handles both login and registration cases with the same
-    // verify function
-    const strategy = new Strategy(
-      {
-        issuer,
-        authorizationURL,
-        tokenURL,
-        userInfoURL,
-        clientID,
-        clientSecret,
-        callbackURL: loginCallbackUrl,
-        passReqToCallback: true,
-        scope,
-      },
-      generateOIDCVerifyFunction({strategyId, displayName})
-    );
+export const oidcStrategyGenerator = (options: OIDCAuthProviderConfig) => {
+  // This strategy handles both login and registration cases with the same
+  // verify function
+  const strategy = new Strategy(
+    {
+      issuer: options.issuer,
+      authorizationURL: options.authorizationURL,
+      tokenURL: options.tokenURL,
+      userInfoURL: options.userInfoURL,
+      clientID: options.clientID,
+      clientSecret: options.clientSecret,
+      callbackURL: CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl(options.id),
+      passReqToCallback: true,
+      scope: options.scope,
+    },
+    generateOIDCVerifyFunction({
+      strategyId: options.id,
+      displayName: options.displayName,
+    })
+  );
 
-    return strategy;
-  };
+  return strategy;
 };

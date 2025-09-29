@@ -19,7 +19,7 @@
  *   which server to use and whether to include test data
  */
 
-import {existsSync} from 'fs';
+import {existsSync, readFileSync} from 'fs';
 import {v4 as uuidv4} from 'uuid';
 import {
   createEmailService,
@@ -30,6 +30,7 @@ import {
 } from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
 import {slugify} from './utils';
+import {z} from 'zod';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -235,53 +236,6 @@ function cookie_secret(): string {
   }
 }
 
-// What providers are available?
-export enum AuthProvider {
-  GOOGLE = 'GOOGLE',
-  AAF = 'AAF',
-}
-
-// Auth provider secrets and keys packaged into
-// an object for ease of use
-export const authProviderConfig: Record<AuthProvider, any> = {
-  [AuthProvider.GOOGLE]: {
-    id: process.env.GOOGLE_CLIENT_ID || '',
-    secret: process.env.GOOGLE_CLIENT_SECRET || '',
-  },
-  [AuthProvider.AAF]: {
-    id: process.env.AAF_CLIENT_ID || '',
-    secret: process.env.AAF_CLIENT_SECRET || '',
-  },
-};
-
-/**
- * Determines which authentication providers to use based on environment configuration.
- *
- * Parses the CONDUCTOR_AUTH_PROVIDERS environment variable, which should contain
- * a semicolon-separated list of provider IDs that match the AuthProvider enum values.
- *
- * @returns {AuthProvider[]} Array of enabled authentication providers
- */
-function getConfiguredProviders(): AuthProvider[] {
-  // expects ; separated list of provider IDs as above
-  const providers = process.env.CONDUCTOR_AUTH_PROVIDERS;
-  if (providers === '' || providers === undefined) {
-    console.log('CONDUCTOR_AUTH_PROVIDERS not set, defaulting to empty');
-    return [];
-  }
-
-  // Get all valid enum keys (e.g., ["GOOGLE"])
-  const validKeys = Object.keys(AuthProvider);
-
-  // split, trim, filter and coerce
-  return providers
-    .split(';')
-    .map(v => v.trim().toUpperCase())
-    .filter(v => v.length !== 0)
-    .filter(v => validKeys.includes(v))
-    .map(v => AuthProvider[v as keyof typeof AuthProvider]);
-}
-
 function conductor_internal_port(): number {
   const port = process.env.CONDUCTOR_INTERNAL_PORT;
   if (port === '' || port === undefined) {
@@ -457,7 +411,6 @@ export const CONDUCTOR_INSTANCE_NAME = instance_name();
 export const CONDUCTOR_SHORT_CODE_PREFIX = short_code_prefix();
 export const CONDUCTOR_DESCRIPTION = instance_description();
 export const COOKIE_SECRET = cookie_secret();
-export const CONDUCTOR_AUTH_PROVIDERS = getConfiguredProviders();
 export const WEBAPP_PUBLIC_URL = app_url();
 export const ANDROID_APP_URL = android_url();
 export const IOS_APP_URL = ios_url();

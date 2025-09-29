@@ -6,16 +6,12 @@ import {
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
 import {ZodError} from 'zod';
-import {
-  AuthProvider,
-  CONDUCTOR_SERVER_ID,
-  REDIRECT_WHITELIST,
-} from '../buildconfig';
+import {CONDUCTOR_SERVER_ID, REDIRECT_WHITELIST} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
-import {getAuthProviderDetails} from './strategies/applyStrategies';
+import {AuthProviderConfigMap} from './strategies/strategyTypes';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -206,18 +202,17 @@ export function providersToRenderDetails({
   inviteId = undefined,
   action,
 }: {
-  handlers: AuthProvider[];
+  handlers: AuthProviderConfigMap | null;
   redirectUrl: string;
   inviteId?: string;
   action: AuthAction;
 }) {
   const providers = [];
-  for (const handler of handlers) {
-    const details = getAuthProviderDetails(handler);
+  for (const id in handlers) {
     providers.push({
-      id: details.id,
-      name: details.displayName,
-      targetUrl: `/auth/${details.id}${buildQueryString({
+      id: id,
+      name: handlers[id].displayName,
+      targetUrl: `/auth/${id}${buildQueryString({
         values: {
           redirect: redirectUrl,
           inviteId,

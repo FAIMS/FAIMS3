@@ -1,0 +1,22 @@
+{
+  "google": {
+    "type": "google",
+    "displayName": "Google",
+    "clientID": "google client id",
+    "clientSecret": "google client secret",
+    "scope": [
+          "profile", "email", "https://www.googleapis.com/auth/plus.login"
+        ]
+  },
+  "aaf": {
+    "type": "oidc",
+    "displayName": "AAF",
+    "issuer": "https://central.test.aaf.edu.au",
+    "authorizationURL": "https://central.test.aaf.edu.au/oidc/authorize",
+    "tokenURL": "https://central.test.aaf.edu.au/oidc/token",
+    "userInfoURL": "https://central.test.aaf.edu.au/oidc/userinfo",
+    "clientID": "aaf client id",
+    "clientSecret": "aaf client secret",
+    "scope": ["profile", "email"]
+  }
+}

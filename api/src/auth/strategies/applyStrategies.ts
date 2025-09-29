@@ -1,102 +1,98 @@
 import passport from 'passport';
-import {AuthProvider, CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {oidcStrategyGenerator} from './oidcStrategy';
+import {googleStrategyGenerator} from './googleStrategy';
+import {existsSync, readFileSync} from 'fs';
 import {getLocalAuthStrategy} from './localStrategy';
-import {getGoogleOAuthStrategy} from './googleStrategy';
-import {OIDCStragetyGenerator} from './oidcStrategy';
+import {
+  AuthProviderConfigMap,
+  AuthProviderConfigMapSchema,
+  BaseAuthProviderConfig,
+  GoogleAuthProviderConfig,
+  OIDCAuthProviderConfig,
+} from './strategyTypes';
+
+// Read the configuration file if present and parse
+// return null if not found (no configured providers)
+export const readAuthProviderConfig = (): AuthProviderConfigMap | null => {
+  const configFile = './authConfig.json';
+  if (!existsSync(configFile)) {
+    console.log(
+      'No oidc.json file found, no OIDC providers will be configured.'
+    );
+    return null;
+  }
+  const rawData = JSON.parse(readFileSync(configFile, 'utf-8'));
+  // Before we validate this, add keys lowercased as id to each entry
+  for (const key in rawData) {
+    rawData[key].id = key.toLowerCase();
+  }
+  const parsed = AuthProviderConfigMapSchema.safeParse(rawData);
+  if (!parsed.success) {
+    console.error(
+      'Error parsing auth provider config: ',
+      JSON.stringify(parsed.error.format(), null, 2)
+    );
+    return null;
+  }
+
+  return parsed.success ? parsed.data : null;
+};
+// read once and store the result
+const AUTH_PROVIDER_CONFIG = readAuthProviderConfig();
+
+// provide an accessor function
+export const getAuthProviderConfig = (): AuthProviderConfigMap | null => {
+  return AUTH_PROVIDER_CONFIG;
+};
 
 // This function takes the callback URL and generates the passport strategy
-export type StrategyGeneratorFunction = (params: {
-  loginCallbackUrl: string;
-  scope: string[];
-}) => passport.Strategy;
+export type StrategyGeneratorFunction = (
+  params: BaseAuthProviderConfig
+) => passport.Strategy;
 
-// This is a set of configuration details for a provider
-export type ProviderDetails = {
-  id: string;
-  displayName: string;
-  relativeLoginCallbackUrl: string;
-  fullLoginCallbackUrl: string;
-  strategyGenerator: StrategyGeneratorFunction;
-  scope: string[];
-};
-
-// This maps the provider name/enum -> details about it
-const AUTH_PROVIDER_DETAILS: Record<AuthProvider, ProviderDetails> =
-  {} as Record<AuthProvider, ProviderDetails>;
+// This maps the provider name/enum -> stragety generator function
+const AUTH_STRATEGIES: Record<string, StrategyGeneratorFunction> = {} as Record<
+  string,
+  StrategyGeneratorFunction
+>;
 
 export const registerAuthProvider = (
-  providerName: AuthProvider,
-  provider: ProviderDetails
+  provider: string,
+  generator: StrategyGeneratorFunction
 ) => {
-  AUTH_PROVIDER_DETAILS[provider.id as AuthProvider] = provider;
+  AUTH_STRATEGIES[provider] = generator;
 };
 
-export const getAuthProviderDetails = (
-  providerName: AuthProvider
-): ProviderDetails => {
-  return AUTH_PROVIDER_DETAILS[providerName];
+export const getStrategyGenerator = (
+  provider: string
+): StrategyGeneratorFunction => {
+  return AUTH_STRATEGIES[provider];
 };
 
-/**
- * Register strategies using `passport.use`,
- * Social provider identifiers must appear in the AVAILABLE_AUTH_PROVIDERS
- *
- * @param providersToUse array of provider identifiers
- */
-export function applyPassportStrategies(providersToUse: AuthProvider[]) {
-  // Local is always enabled
-  passport.use('local', getLocalAuthStrategy());
+export const registerAuthProviders = () => {
+  // register the local provider always
 
-  // For each provider
-  for (const providerName of providersToUse) {
-    // Get the function which generates the strategy
+  console.log('Registering auth providers: ');
+  const localStrategy = getLocalAuthStrategy();
+  console.log('  local');
+  passport.use('local', localStrategy);
 
-    const {
-      strategyGenerator,
-      fullLoginCallbackUrl: loginCallbackUrl,
-      scope,
-      id,
-    } = AUTH_PROVIDER_DETAILS[providerName];
-
-    // Build the strategy, providing the login callback URL
-    const strategy = strategyGenerator({
-      loginCallbackUrl,
-      scope,
-    });
-
-    // Register the strategy generated
-    passport.use(id, strategy);
+  // register any other providers from the config
+  const providers = getAuthProviderConfig();
+  if (!providers) {
+    return {};
   }
-}
-
-// Register providers here - forces import of the strategies and ensures the
-// registration happens on startup
-
-registerAuthProvider(AuthProvider.GOOGLE, {
-  id: AuthProvider.GOOGLE,
-  displayName: 'Google',
-  relativeLoginCallbackUrl: '/auth-return/google',
-  fullLoginCallbackUrl: `${CONDUCTOR_PUBLIC_URL}/auth-return/google`,
-  strategyGenerator: getGoogleOAuthStrategy,
-  scope: ['profile', 'email', 'https://www.googleapis.com/auth/plus.login'],
-});
-
-const AAF_ISSUER = 'https://central.test.aaf.edu.au';
-
-registerAuthProvider(AuthProvider.AAF, {
-  id: AuthProvider.AAF,
-  displayName: 'AAF',
-  relativeLoginCallbackUrl: '/auth-return/aaf',
-  fullLoginCallbackUrl: `${CONDUCTOR_PUBLIC_URL}/auth-return/aaf`,
-  strategyGenerator: OIDCStragetyGenerator({
-    strategyId: AuthProvider.AAF,
-    displayName: 'AAF',
-    issuer: AAF_ISSUER,
-    authorizationURL: `${AAF_ISSUER}/oidc/authorize`,
-    tokenURL: `${AAF_ISSUER}/oidc/token`,
-    userInfoURL: `${AAF_ISSUER}/oidc/userinfo`,
-    clientID: process.env.AAF_CLIENT_ID!,
-    clientSecret: process.env.AAF_CLIENT_SECRET!,
-  }),
-  scope: ['profile', 'email'],
-});
+  Object.entries(providers).forEach(([providerId, config]) => {
+    console.log(`  ${config.displayName} (${config.type})`);
+    if (config.type === 'google') {
+      const strategy = googleStrategyGenerator(
+        config as GoogleAuthProviderConfig
+      );
+      passport.use(providerId, strategy);
+    } else if (config.type === 'oidc') {
+      const strategy = oidcStrategyGenerator(config as OIDCAuthProviderConfig);
+      passport.use(providerId, strategy);
+    }
+  });
+  return providers;
+};

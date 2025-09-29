@@ -36,7 +36,7 @@ import {
 import {NextFunction, Router} from 'express';
 import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
-import {AuthProvider, WEBAPP_PUBLIC_URL} from '../buildconfig';
+import {WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
   createNewEmailCode,
   markCodeAsUsed,
@@ -72,12 +72,21 @@ import {
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {getAuthProviderDetails} from './strategies/applyStrategies';
+import {AuthProviderConfigMap} from './strategies/strategyTypes';
 
 patch();
 
 // This is the place to go if all else fails - it will have a token!
+// note that this auth-return is not in this API but in the webapp
 export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
+
+// Generate the URLs for auth and auth return for different auth providers
+export const providerAuthUrl = (provider: string) => {
+  return `/auth/${provider}`;
+};
+export const providerAuthReturnUrl = (provider: string) => {
+  return `/auth-return/${provider}`;
+};
 
 /**
  * Add authentication routes for local and federated login
@@ -86,9 +95,12 @@ export const DEFAULT_REDIRECT_URL = WEBAPP_PUBLIC_URL + '/auth-return';
  * See `auth_providers/index.ts` for registration of providers.
  *
  * @param app Express router
- * @param socialProviders an array of login provider identifiers
+ * @param socialProviders configuration details for social login providers
  */
-export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
+export function addAuthRoutes(
+  app: Router,
+  socialProviders: AuthProviderConfigMap | null
+) {
   // For legacy versions of the app, we provide a message on /auth to
   // let them know they need to upgrade to the latest version
   app.get('/auth', (req, res) => {
@@ -739,14 +751,14 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
   });
 
   // For each handler, deploy an auth route + auth return route
-  for (const handler of socialProviders) {
-    const handlerDetails = getAuthProviderDetails(handler);
+  for (const provider in socialProviders) {
+    const handlerDetails = socialProviders[provider];
 
     // **Login OR register** method for this handler - this will result in a
     // redirection to the configured providers URL, then called back to the
     // configured callback (see below)
     app.get(
-      `/auth/${handler}`,
+      providerAuthUrl(provider),
       processRequest({
         query: AuthContextSchema,
       }),
@@ -777,7 +789,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
         if (action) sessionData.action = action;
 
         // passport authenticate route for this handler (bye bye)
-        passport.authenticate(handlerDetails.id, {scope: handlerDetails.scope})(
+        passport.authenticate(provider, {scope: handlerDetails.scope})(
           req,
           res,
           next
@@ -787,7 +799,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
 
     // the callback URL for this provider - all we need to do is call the
     // validate function again since we will have come back with enough info now
-    app.get(handlerDetails.relativeLoginCallbackUrl, (req, res, next) => {
+    app.get(providerAuthReturnUrl(provider), (req, res, next) => {
       // we expect these values! (Or some of them e.g. invite may not be
       // present)
       const redirectValues = {
@@ -803,7 +815,7 @@ export function addAuthRoutes(app: Router, socialProviders: AuthProvider[]) {
       })}`;
       // authenticate using the associated validate function
       passport.authenticate(
-        handlerDetails.id,
+        provider,
         // custom success function which signs JWT and redirects
         async (err: Error | null, user: Express.User, info: any) => {
           // We have come back from EITHER login or registration. In either case

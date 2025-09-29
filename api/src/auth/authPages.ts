@@ -23,7 +23,6 @@ import {AuthContext} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {AuthProvider} from '../buildconfig';
 import {getInvite, isInviteValid} from '../couchdb/invites';
 import {AuthAction} from '../types';
 import {DEFAULT_REDIRECT_URL} from './authRoutes';
@@ -36,6 +35,7 @@ import {
 import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
+import {AuthProviderConfigMap} from './strategies/strategyTypes';
 
 // This must occur before express app is used
 patch();
@@ -49,11 +49,12 @@ patch();
  * @param app Express router
  * @param socialProviders an array of login provider identifiers
  */
-export function addAuthPages(app: Router, socialProviders: AuthProvider[]) {
+export function addAuthPages(
+  app: Router,
+  socialProviders: AuthProviderConfigMap | null
+) {
   // PAGES
   // =====
-
-  console.log('Adding auth pages for providers: ', socialProviders);
 
   // PAGE: This is the base auth handlebars route which is a login form +
   // providers if present

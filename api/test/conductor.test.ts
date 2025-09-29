@@ -25,11 +25,12 @@ PouchDB.plugin(PouchDBFind);
 
 import {expect} from 'chai';
 import request from 'supertest';
-import {getAuthProviderDetails} from '../src/auth/strategies/applyStrategies';
-import {CONDUCTOR_AUTH_PROVIDERS, LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
+import {LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
 import {PostLoginInput} from '@faims3/data-model';
+import {get} from 'http';
+import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
 
 const adminPassword = LOCAL_COUCHDB_AUTH ? LOCAL_COUCHDB_AUTH.password : '';
 
@@ -71,14 +72,13 @@ describe('Auth', () => {
   });
 
   it('shows the configured login button(s)', done => {
+    const providers = getAuthProviderConfig();
     request(app)
       .get('/login')
       .expect(200)
       .then(response => {
-        CONDUCTOR_AUTH_PROVIDERS.forEach(provider => {
-          expect(response.text).to.include(
-            getAuthProviderDetails(provider).displayName
-          );
+        Object.values(providers || {}).forEach(provider => {
+          if (providers) expect(response.text).to.include(provider.displayName);
         });
         done();
       });

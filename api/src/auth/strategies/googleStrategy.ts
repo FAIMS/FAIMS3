@@ -30,7 +30,7 @@ import {
   ExistingPeopleDBDocument,
   VerifiableEmail,
 } from '@faims3/data-model';
-import {AuthProvider, authProviderConfig, CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
 import {
   createUser,
   getCouchUserFromEmailOrUserId,
@@ -39,7 +39,7 @@ import {
 import {CustomSessionData} from '../../types';
 import {lookupAndValidateInvite} from '../helpers';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {registerAuthProvider, StrategyGeneratorFunction} from './applyStrategies';
+import {providerAuthReturnUrl} from '../authRoutes';
 
 /**
  * The verify function receives the verified profile information from an IdP
@@ -272,26 +272,22 @@ async function oauthVerify(
   }
 }
 
-// The strategy generator function returns an instance of the Passport 
-// strategy for this provider
-export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({
-  loginCallbackUrl,
+export const googleStrategyGenerator = ({
+  clientID,
+  clientSecret,
   scope,
+}: {
+  clientID: string;
+  clientSecret: string;
+  scope: string[];
 }) => {
-  if (authProviderConfig.GOOGLE.id === '') {
-    throw Error('GOOGLE_CLIENT_ID must be set to use Google');
-  }
-  if (authProviderConfig.GOOGLE.secret === '') {
-    throw Error('GOOGLE_CLIENT_SECRET must be set to use Google');
-  }
-
   // This strategy handles both login and registration cases with the same
   // verify function
   const strategy = new Strategy(
     {
-      clientID: authProviderConfig.GOOGLE.id,
-      clientSecret: authProviderConfig.GOOGLE.secret,
-      callbackURL: loginCallbackUrl,
+      clientID: clientID,
+      clientSecret: clientSecret,
+      callbackURL: CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl('google'),
       passReqToCallback: true,
       scope,
       state: true,
@@ -301,5 +297,3 @@ export const getGoogleOAuthStrategy: StrategyGeneratorFunction = ({
 
   return strategy;
 };
-
-
