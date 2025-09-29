@@ -20,7 +20,41 @@ The system is configured in `expressSetup.ts` which initializes:
 2. Authentication handlebar **pages** via `addAuthPages`
 3. Authentication API **routes** via `addAuthRoutes`
 
-Social providers are defined in `buildconfig.ts` as `CONDUCTOR_AUTH_PROVIDERS`. Auth providers should be referenced via their ID in the `AUTH_PROVIDER_DETAILS` map in `applyStrategies.ts`. A semicolon separated list is used.
+Local password authentication is always available and if configured, one or
+more identity providers can also be used. There is a custom implementation for
+Google authentication and a more general OIDC based provider.  The available
+providers are configured in the file `authConfig.json`.  The format of this
+file is illustrated in `authConfig.dist.json` as follows:
+
+```json
+{
+  "google": {
+    "type": "google",
+    "displayName": "Google",
+    "clientID": "google client id",
+    "clientSecret": "google client secret",
+    "scope": [
+          "profile", "email", "https://www.googleapis.com/auth/plus.login"
+        ]
+  },
+  "aaf": {
+    "type": "oidc",
+    "displayName": "AAF",
+    "issuer": "https://central.test.aaf.edu.au",
+    "authorizationURL": "https://central.test.aaf.edu.au/oidc/authorize",
+    "tokenURL": "https://central.test.aaf.edu.au/oidc/token",
+    "userInfoURL": "https://central.test.aaf.edu.au/oidc/userinfo",
+    "clientID": "aaf client id",
+    "clientSecret": "aaf client secret",
+    "scope": ["profile", "email"]
+  }
+}
+```
+
+The file contains one or more authentication providers.  The `type` field
+must be one of `google` or `oidc`.   There should probably only be one
+Google configuration but there could be many OIDC providers.  The details
+required are those provided by the authentication provider.
 
 ## Key Files
 
