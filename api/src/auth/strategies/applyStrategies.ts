@@ -57,16 +57,13 @@ export const readAuthProviderConfigFromEnv =
           }
           return false;
         });
-
-        // create the provider entry if it doesn't exist
-
         // initialise the provider if we haven't already
         if (!config[provider]) {
           config[provider] = {id: provider};
         }
 
         if (isArray) {
-          // Initialize array if not present
+          // simple split on commas and trim the values
           config[provider][property] = value?.split(',').map(v => v.trim());
         } else {
           config[provider][property] = value;
