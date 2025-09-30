@@ -945,135 +945,151 @@ export const streamNotebookRecordsAsCSV = async (
  */
 export const streamNotebookRecordsAsGeoJSON = async (
   projectId: ProjectID,
-  viewID: string,
   res: NodeJS.WritableStream
 ) => {
-  console.log('streaming notebook records as GeoJSON', projectId, viewID);
-
   // Get the database
   const dataDb = await getDataDb(projectId);
 
   // get the UI spec
   const uiSpecification = await getProjectUIModel(projectId);
 
-  // This is a record iterator which returns an efficient iteration through the
-  // records each containing a data object with a {key, value} dataset
-  const iterator = await notebookRecordIterator({
-    dataDb,
-    projectId,
-    uiSpecification,
-    viewID,
-  });
-  const fields = await getNotebookFieldTypes(projectId, viewID);
+  // Get all view IDs
+  const allViewIds = Array.from(Object.keys(uiSpecification.viewsets));
 
-  // This tracks the encountered filenames
-  const filenames: string[] = [];
+  // Collate map of view -> list of fields
+  const viewFieldsMap: Record<string, FieldSummary[]> = {};
 
-  // First - check if any of the fields are spatial
-  if (!fields.some(f => f.isSpatial)) {
-    res.end();
-    throw new Error('No spatial fields, cannot produce a GeoJSON export!');
+  // First do validation to ensure spatial elements are present
+  for (const viewID of allViewIds) {
+    // Get field info for view
+    const fields = await getNotebookFieldTypes(projectId, viewID);
+
+    // Collect
+    viewFieldsMap[viewID] = fields;
+
+    // First - check if any of the fields are spatial
+    if (!fields.some(f => f.isSpatial)) {
+      res.end();
+      throw new Error(
+        `No spatial fields in current view ${viewID}, cannot produce a GeoJSON export!`
+      );
+    }
   }
 
-  // Next - write out the header
+  // Everything appears to be in order, so we...
+
+  // a) track filenames
+  const filenames: string[] = [];
+
+  // b) write out the header
   res.write('{"type":"FeatureCollection","features":[');
 
-  let {record, done} = await iterator.next();
-  while (!done) {
-    // For each valid record (row)
-    if (record) {
-      // Get the HRID
-      const hrid = record.hrid || record.record_id;
+  // c) stream individual features in the GeoJSON feature collection, one
+  // viewset at a time
 
-      // Setup the base JSON data
-      let baseJsonData: Record<string, any> = {
-        hrid,
-        recordId: record.record_id,
-        revisionId: record.revision_id,
-        type: record.type,
-        createdBy: record.created_by,
-        createdTime: record.created.toISOString(),
-        updatedBy: record.updated_by,
-        updatedTime: record.updated.toISOString(),
-      };
+  // For the first one, don't prepend a comma
+  let isFirstRecord = true;
 
-      // extract data out
-      const data = record.data;
+  for (const viewID of allViewIds) {
+    // This is a record iterator which returns an efficient iteration through the
+    // records each containing a data object with a hydrated {key, value} dataset
+    const iterator = await notebookRecordIterator({
+      dataDb,
+      projectId,
+      uiSpecification,
+      viewID,
+    });
 
-      // As we go, track the encountered geometric entries
-      const geometric: {
-        // The geoJSON geometry type (feature,point,polygon etc)
-        type: string;
-        // The geometry string
-        geometry: string;
-      }[] = [];
-      console.log(`Starting to build geometries`);
+    let {record, done} = await iterator.next();
+    while (!done) {
+      // For each valid record (row)
+      if (record) {
+        // Get the HRID
+        const hrid = record.hrid || record.record_id;
 
-      // Then iterate through the fields, and extra data if available
-      fields.forEach(fieldInfo => {
-        // Does the record contain a corresponding entry?
-        if (Object.keys(data).includes(fieldInfo.name)) {
-          // get it out
-          const fieldData = data[fieldInfo.name];
+        // Setup the base JSON data
+        let baseJsonData: Record<string, any> = {
+          hrid,
+          record_id: record.record_id,
+          revision_id: record.revision_id,
+          type: record.type,
+          created_by: record.created_by,
+          created_time: record.created.toISOString(),
+          updated_by: record.updated_by,
+          updated_time: record.updated.toISOString(),
+        };
 
-          console.log(JSON.stringify(fieldData));
+        // extract data out
+        const data = record.data;
 
-          // Is this a geospatial field? If so - just mark our geometric objects
-          // to add and proceed
-          if (fieldInfo.isSpatial) {
-            // If the record is spatial its data is typically GeoJSON - let's
-            // try figure that out
-            try {
-              console.log(`Found geometry : `);
-              // get the first feature
-              const firstFeature = fieldData['features'][0];
-              // We handle this specially by promoting above
-              geometric.push({
-                type: firstFeature.type,
-                geometry: firstFeature.geometry,
-              });
-              console.log(`Pushed`);
-            } catch (e) {
-              throw new Error('issue while converting geometry' + e);
-            }
-          } else {
-            // If non spatial then we append typical data
-            const convertedData = convertDataForOutput(
-              fields,
-              data,
-              record!.annotations,
-              hrid,
-              filenames
-            );
+        // As we go, track the encountered geometric entries
+        const geometric: {
+          // The geoJSON geometry type (feature,point,polygon etc)
+          type: string;
+          // The geometry string
+          geometry: string;
+        }[] = [];
 
-            // this is a possible set of things to append - append them
-            for (const kv of Object.entries(convertedData)) {
-              baseJsonData[kv[0]] = kv[1];
+        // Then iterate through the fields, and extra data if available
+        viewFieldsMap[viewID].forEach(fieldInfo => {
+          // Does the record contain a corresponding entry?
+          if (Object.keys(data).includes(fieldInfo.name)) {
+            // get it out
+            const fieldData = data[fieldInfo.name];
+
+            // Is this a geospatial field? If so - just mark our geometric
+            // objects to add and proceed
+            if (fieldInfo.isSpatial) {
+              // If the record is spatial its data is typically GeoJSON - let's
+              // try figure that out
+              try {
+                // get the first feature
+                const firstFeature = fieldData['features'][0];
+                // We handle this specially by promoting above
+                geometric.push({
+                  type: firstFeature.type,
+                  geometry: firstFeature.geometry,
+                });
+              } catch (e) {
+                throw new Error('issue while converting geometry' + e);
+              }
+            } else {
+              // If non spatial then we append typical data
+              const convertedData = convertDataForOutput(
+                viewFieldsMap[viewID],
+                data,
+                record!.annotations,
+                hrid,
+                filenames
+              );
+
+              // this is a possible set of things to append - append them
+              for (const kv of Object.entries(convertedData)) {
+                baseJsonData[kv[0]] = kv[1];
+              }
             }
           }
+        });
+
+        // We've gone through all fields and either created properties or
+        // geometries, for each geometry, append the properties, then add to
+        // GeoJSON
+        for (const geom of geometric) {
+          // output is {type, geometry, properties}
+          const output = {...geom, properties: baseJsonData};
+
+          // And write this out (prepending a comma if NOT first record)
+          res.write(`${isFirstRecord ? '' : ','}${JSON.stringify(output)}`);
         }
-      });
-
-      // We've gone through all fields and either created properties or
-      // geometries, for each geometry, append the properties, then add to
-      // GeoJSON
-      for (const geom of geometric) {
-        // output is {type, geometry, properties}
-        const output = {...geom, properties: baseJsonData};
-
-        // And write this out
-        res.write(`${JSON.stringify(output)}`);
-        console.log(`Wrote output ${JSON.stringify(output)}`);
       }
-    }
 
-    // Go to next record (if available)
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
+      // Go to next record (if available)
+      const next = await iterator.next();
+      record = next.record;
+      done = next.done;
 
-    if (!done){
-      res.write(',')
+      // No longer first record
+      isFirstRecord = false;
     }
   }
 

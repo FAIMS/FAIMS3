@@ -86,7 +86,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
-import {mockTokenContentsForUser} from '../utils';
+import {mockTokenContentsForUser, slugify} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -454,13 +454,17 @@ api.get(
 
 // Types for download format and token payloads
 const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson']);
+type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
 const DownloadTokenPayloadSchema = z.object({
   projectID: z.string(),
   format: DownloadFormatSchema,
-  viewID: z.string(),
+  viewID: z.string().optional(),
   userID: z.string(),
 });
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
+
+// Formats requiring a view ID
+const VIEW_ID_FORMATS: DownloadFormat[] = ['csv', 'zip'];
 
 // download tokens last this long
 const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
@@ -523,32 +527,48 @@ api.get(
   processRequest({
     params: z.object({
       id: z.string(),
-      viewID: z.string(),
+      viewID: z.string().optional(),
       format: DownloadFormatSchema,
     }),
   }),
   async (req, res) => {
-    if (req.user) {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+
+    let payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.params.format,
+      userID: req.user.user_id,
+    };
+
+    if (VIEW_ID_FORMATS.includes(req.params.format)) {
+      if (!req.params.viewID) {
+        throw new Exceptions.InvalidRequestException(
+          `The specified format ${req.params.format} requires a viewID to be included.`
+        );
+      }
+
       // get the label for this form for the filename header
       const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-      if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-        const payload: DownloadTokenPayload = {
-          projectID: req.params.id,
-          format: req.params.format,
-          viewID: req.params.viewID,
-          userID: req.user.user_id,
-        };
-        const jwt = await generateDownloadToken({
-          user: req.user,
-          payload: payload,
-        });
-        return res.redirect(`/api/notebooks/download/${jwt}`);
-      } else {
+
+      // check the view ID is valid
+      if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
           `Form with id ${req.params.viewID} not found in notebook`
         );
       }
+
+      // Update with viewID
+      payload.viewID = req.params.viewID;
     }
+
+    // Build the download token payload
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+    return res.redirect(`/api/notebooks/download/${jwt}`);
   }
 );
 
@@ -556,42 +576,62 @@ api.get(
   '/download/:downloadToken',
   processRequest({params: z.object({downloadToken: z.string()})}),
   async (req, res) => {
+    // Validate payload
     const payload = await validateDownloadToken({
       token: req.params.downloadToken,
     });
-    if (payload) {
+
+    // If invalid/issue - throw
+    if (!payload) {
+      throw new Exceptions.InvalidRequestException(
+        'Cannot download with a valid downloadToken.'
+      );
+    }
+
+    // Depending on the format type - handle differently
+
+    if (VIEW_ID_FORMATS.includes(payload.format)) {
       const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
-      if (uiSpec && payload.viewID in uiSpec.viewsets) {
-        const label = uiSpec.viewsets[payload.viewID].label;
-        switch (payload.format) {
-          case 'csv':
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="${label}.csv"`
-            );
-            streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
-            break;
-          case 'geojson':
-            res.setHeader('Content-Type', 'application/geo+json');
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="${label}.geojson"`
-            );
-            streamNotebookRecordsAsGeoJSON(payload.projectID, payload.viewID, res);
-            break;
-          case 'zip':
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="${label}.zip"`
-            );
-            res.setHeader('Content-Type', 'application/zip');
-            streamNotebookFilesAsZip(payload.projectID, payload.viewID, res);
-        }
-      } else {
+      if (!payload.viewID) {
+        throw new Exceptions.InvalidRequestException(
+          'Must provide viewID for this export format.'
+        );
+      }
+
+      if (!(uiSpec && payload.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
           `Form with id ${payload.viewID} not found in notebook`
         );
+      }
+      const label = uiSpec.viewsets[payload.viewID].label;
+      switch (payload.format) {
+        case 'csv':
+          res.setHeader('Content-Type', 'text/csv');
+          res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${label}.csv"`
+          );
+          streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
+          break;
+        case 'zip':
+          res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${label}.zip"`
+          );
+          res.setHeader('Content-Type', 'application/zip');
+          streamNotebookFilesAsZip(payload.projectID, payload.viewID, res);
+      }
+    } else {
+      // Non view ID requiring formats
+      switch (payload.format) {
+        case 'geojson':
+          res.setHeader('Content-Type', 'application/geo+json');
+          res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${slugify(payload.projectID)}.geojson"`
+          );
+          streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+          break;
       }
     }
   }
