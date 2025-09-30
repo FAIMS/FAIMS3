@@ -130,7 +130,7 @@ export class FaimsFrontEnd extends Construct {
     // this allows connections to various map services supported as well as the
     // API and couch domains
     const csp =
-      `connect-src 'self' https://${props.couchDbDomainOnly} ${props.conductorUrl} ` +
+      `connect-src 'self' https://${props.couchDbDomainOnly} ${props.conductorUrl} *.bugsnag.com ` +
       MAP_ORIGINS_SHARED.join(' ');
 
     const website = new StaticWebsite(this, 'faims-website', {
