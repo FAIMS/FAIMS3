@@ -67,6 +67,9 @@ export interface FaimsFrontEndProps {
 
   /** Maximum long-lived token duration in days (undefined = infinite) */
   maximumLongLivedDurationDays?: number;
+
+  /** Bugsnag key - enables app monitoring if desired */
+  bugsnagKey?: string;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -184,7 +187,6 @@ export class FaimsFrontEnd extends Construct {
       // Debugging has performance implications
       VITE_DEBUG_APP: this.debugMode ? 'true' : 'false',
       VITE_DEBUG_POUCHDB: this.debugMode ? 'true' : 'false',
-
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
       VITE_SHOW_POUCHDB_BROWSER: 'true',
@@ -214,6 +216,9 @@ export class FaimsFrontEnd extends Construct {
       ...(props.offlineMaps.mapSourceKey
         ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
         : {}),
+
+      // Monitoring
+      ...(props.bugsnagKey ? {VITE_BUGSNAG_KEY: props.bugsnagKey} : {}),
     };
 
     // Setup a deployment into this bucket with static files

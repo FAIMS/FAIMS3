@@ -172,6 +172,7 @@ export class FaimsInfraStack extends cdk.Stack {
       contactUrl: config.supportLinks.contactUrl,
       maximumLongLivedDurationDays:
         config.security.maximumLongLivedTokenDurationDays,
+      bugsnagKey: config.bugMonitoring.bugsnagKey,
     });
 
     // Backup setup
