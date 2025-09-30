@@ -29,7 +29,7 @@ export const DataExportDialog = () => (
           file.
         </DialogDescription>
       </DialogHeader>
-      <ExportProjectForm type="csv" />
+      <ExportProjectForm />
     </DialogContent>
   </Dialog>
 );

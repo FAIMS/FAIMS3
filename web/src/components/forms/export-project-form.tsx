@@ -5,13 +5,13 @@ import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {ProjectUIViewsets} from '@faims3/data-model';
 
+export type ExportType = 'zip' | 'csv' | 'geojson';
+
 /**
  * ExportProjectForm component renders a form for downloading a project's data.
  * It provides a button to download the project's data.
- *
- * @returns {JSX.Element} The rendered ExportProjectForm component.
  */
-const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
+const ExportProjectForm = () => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
@@ -23,6 +23,15 @@ const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
   const viewSets = data['ui-specification'].viewsets as ProjectUIViewsets;
 
   const fields = [
+    {
+      name: 'format',
+      label: 'Format',
+      schema: z.enum(['csv', 'geojson']),
+      options: [
+        {label: 'CSV', value: 'csv'},
+        {label: 'GeoJSON', value: 'geojson'},
+      ],
+    },
     {
       name: 'form',
       label: 'Form',
@@ -43,9 +52,15 @@ const ExportProjectForm = ({type}: {type: 'zip' | 'csv'}) => {
    * @param {{form: string}} params - The submitted form values.
    * @returns {Promise<{type: string; message: string}>} The result of the form submission.
    */
-  const onSubmit = async ({form}: {form: string}) => {
+  const onSubmit = async ({
+    form,
+    format,
+  }: {
+    form: string;
+    format: ExportType;
+  }) => {
     if (user) {
-      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/${form}.${type}`;
+      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/${form}.${format}`;
       const response = await fetch(downloadURL, {
         headers: {
           'Content-Type': 'application/json',
