@@ -22,43 +22,48 @@ The system is configured in `expressSetup.ts` which initializes:
 
 Local password authentication is always available and if configured, one or
 more identity providers can also be used. There is a custom implementation for
-Google authentication and a more general OIDC based provider.  The available
-providers are configured in the file `authConfig.json`.  The format of this
-file is illustrated in `authConfig.dist.json` as follows:
+Google authentication and a more general OIDC based provider.  
 
-```json
-{
-  "google": {
-    "type": "google",
-    "displayName": "Google",
-    "clientID": "google client id",
-    "clientSecret": "google client secret",
-    "scope": [
-          "profile", "email", "https://www.googleapis.com/auth/plus.login"
-        ]
-  },
-  "aaf": {
-    "type": "oidc",
-    "displayName": "AAF",
-    "helperText": "Use your Australian University credentials",
-    "issuer": "https://central.test.aaf.edu.au",
-    "authorizationURL": "https://central.test.aaf.edu.au/oidc/authorize",
-    "tokenURL": "https://central.test.aaf.edu.au/oidc/token",
-    "userInfoURL": "https://central.test.aaf.edu.au/oidc/userinfo",
-    "clientID": "aaf client id",
-    "clientSecret": "aaf client secret",
-    "scope": ["profile", "email"]
-  }
-}
+The available
+providers are configured via environment variables using a pattern of variable
+names to encode an object structure.  Variables starting with `AUTH_` define
+the properties of different providers with the pattern `AUTH_{provider}_{property}`.   There are two kinds of provider: Google and OIDC.  These are configured
+as follows:
+
+For a Google provider, the TYPE property should be `google` and the following
+properties should be supplied:
+
+```shell
+AUTH_GOOGLE_TYPE="google"
+AUTH_GOOGLE_DISPLAY_NAME="Google"
+AUTH_GOOGLE_HELPER_TEXT="Log in with your Google account"
+AUTH_GOOGLE_CLIENT_ID="google client id"
+AUTH_GOOGLE_CLIENT_SECRET="google client secret"
+AUTH_GOOGLE_SCOPE="profile,email,https://www.googleapis.com/auth/plus.login"
 ```
 
-The file contains one or more authentication providers.  The `type` field
-must be one of `google` or `oidc`.   There should probably only be one
-Google configuration but there could be many OIDC providers.  The details
-required are those provided by the authentication provider.
+For an OIDC provider, the `TYPE` property should be `oidc` and the following 
+properties should be defined:
 
-The `displayName` field is used to label the login button _"Continue with XXX"_. 
-The `helperText` field is optional and is displayed below the login button
+```shell
+AUTH_AAF_TYPE="oidc"
+AUTH_AAF_DISPLAY_NAME="AAF"
+AUTH_AAF_HELPER_TEXT="Use your Australian University credentials"
+AUTH_AAF_ISSUER="https://central.test.aaf.edu.au"
+AUTH_AAF_AUTHORIZATION_URL="https://central.test.aaf.edu.au/oidc/authorize"
+AUTH_AAF_TOKEN_URL="https://central.test.aaf.edu.au/oidc/token"
+AUTH_AAF_USER_INFO_URL="https://central.test.aaf.edu.au/oidc/userinfo"
+AUTH_AAF_CLIENT_ID="aaf client id"
+AUTH_AAF_CLIENT_SECRET="aaf client secret"
+AUTH_AAF_SCOPE="profile,email"
+```
+
+Note that another provider of the same type can be configured, eg. you 
+could configure `AUTH_FOOBAR_TYPE="oidc"` and supply the other `AUTH_FOOBAR_*`
+properties as well.
+
+The `DISPLAY_NAME` field is used to label the login button _"Continue with XXX"_. 
+The `HELPER_TEXT` field is optional and is displayed below the login button
 if provided.
 
 ## Key Files

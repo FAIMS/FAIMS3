@@ -6,39 +6,88 @@ import {getLocalAuthStrategy} from './localStrategy';
 import {
   AuthProviderConfigMap,
   AuthProviderConfigMapSchema,
+  AuthProviderSchema,
   BaseAuthProviderConfig,
   GoogleAuthProviderConfig,
   OIDCAuthProviderConfig,
 } from './strategyTypes';
+import {z} from 'zod';
 
-// Read the configuration file if present and parse
-// return null if not found (no configured providers)
-export const readAuthProviderConfig = (): AuthProviderConfigMap | null => {
-  const configFile = './authConfig.json';
-  if (!existsSync(configFile)) {
-    console.log(
-      'No oidc.json file found, no OIDC providers will be configured.'
-    );
-    return null;
-  }
-  const rawData = JSON.parse(readFileSync(configFile, 'utf-8'));
-  // Before we validate this, add keys lowercased as id to each entry
-  for (const key in rawData) {
-    rawData[key].id = key.toLowerCase();
-  }
-  const parsed = AuthProviderConfigMapSchema.safeParse(rawData);
-  if (!parsed.success) {
-    console.error(
-      'Error parsing auth provider config: ',
-      JSON.stringify(parsed.error.format(), null, 2)
-    );
-    return null;
-  }
-
-  return parsed.success ? parsed.data : null;
+// Convert a SNAKE_CASE identifier to camelCase with a few exceptions
+const snakeToCamel = (str: string): string => {
+  const exceptions = ['ID', 'URL'];
+  const parts = str.split('_');
+  // split and capitalise each part unless it's in the exceptions list
+  const almost = parts
+    .map(part => {
+      if (exceptions.includes(part)) {
+        return part;
+      }
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join('');
+  // lowercase the first character
+  return almost.charAt(0).toLowerCase() + almost.slice(1);
 };
+
+// A version of the above that builds the config from environment variables
+export const readAuthProviderConfigFromEnv =
+  (): AuthProviderConfigMap | null => {
+    // Gather env variables that start with AUTH_
+    const envVars = Object.entries(process.env).filter(([key, _]) =>
+      key.startsWith('AUTH_')
+    );
+    const config: Record<string, any> = {};
+
+    // parse the environment variables to get the provider/property/value triples
+    // Expected format: AUTH_{PROVIDER}_{PROPERTY} or
+    //                 AUTH_{PROVIDER}_{PROPERTY}_N for array properties
+    const pattern = /^AUTH_([A-Z0-9]+)_([A-Z0-9_]+)?$/;
+    envVars.forEach(([key, value]) => {
+      const match = key.match(pattern);
+      if (match) {
+        const provider = match[1].toLowerCase();
+        const property = snakeToCamel(match[2]);
+        // look at the zod schema to see if this property is an array type
+        const isArray = AuthProviderSchema.options.some(schema => {
+          const shape = schema.shape as Record<string, z.ZodSchema>;
+          if (property in shape) {
+            // Check if this schema is for our provider type
+            return shape[property] instanceof z.ZodArray;
+          }
+          return false;
+        });
+
+        // create the provider entry if it doesn't exist
+
+        // initialise the provider if we haven't already
+        if (!config[provider]) {
+          config[provider] = {id: provider};
+        }
+
+        if (isArray) {
+          // Initialize array if not present
+          config[provider][property] = value?.split(',').map(v => v.trim());
+        } else {
+          config[provider][property] = value;
+        }
+      } else {
+        console.warn(`Ignoring unrecognized env var: ${key}`);
+      }
+    });
+    const parsed = AuthProviderConfigMapSchema.safeParse(config);
+    if (!parsed.success) {
+      console.error(
+        'Error parsing auth provider config from env: ',
+        JSON.stringify(parsed.error.format(), null, 2)
+      );
+      return null;
+    }
+    return parsed.success ? parsed.data : null;
+  };
+
 // read once and store the result
-const AUTH_PROVIDER_CONFIG = readAuthProviderConfig();
+const AUTH_PROVIDER_CONFIG = readAuthProviderConfigFromEnv();
 
 // provide an accessor function
 export const getAuthProviderConfig = (): AuthProviderConfigMap | null => {
