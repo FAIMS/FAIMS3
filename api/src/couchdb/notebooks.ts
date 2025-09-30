@@ -72,6 +72,9 @@ import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
 import {slugify} from '../utils';
 
+// TODO populate completely
+const SPATIAL_FIELDS = ['MapFormField'];
+
 /**
  * Gets project IDs by teamID (who owns it)
  * @returns an array of template ids
@@ -739,6 +742,7 @@ type FieldSummary = {
   type: string;
   annotation?: string;
   uncertainty?: string;
+  isSpatial?: boolean;
 };
 
 /**
@@ -810,12 +814,15 @@ const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
   }
   const views = uiSpec.viewsets[viewID].views;
   const fields: FieldSummary[] = [];
+
   views.forEach((view: any) => {
     uiSpec.fviews[view].fields.forEach((field: any) => {
       const fieldInfo = uiSpec.fields[field];
       fields.push({
         name: field,
         type: fieldInfo['type-returned'],
+        // include a hint as to whether this is a spatial field
+        isSpatial: fieldInfo['component-name'] in SPATIAL_FIELDS,
         annotation: fieldInfo.meta.annotation.include
           ? slugify(fieldInfo.meta.annotation.label)
           : '',
@@ -926,6 +933,108 @@ export const streamNotebookRecordsAsCSV = async (
     stringifier.pipe(res);
     stringifier.end();
   }
+};
+
+/**
+ * Stream the records in a notebook as a CSV file
+ *
+ * @param projectId Project ID
+ * @param viewID View ID
+ * @param res writeable stream
+ */
+export const streamNotebookRecordsAsGeoJSON = async (
+  projectId: ProjectID,
+  viewID: string,
+  res: NodeJS.WritableStream
+) => {
+  console.log('streaming notebook records as GeoJSON', projectId, viewID);
+
+  // Get the database
+  const dataDb = await getDataDb(projectId);
+
+  // get the UI spec
+  const uiSpecification = await getProjectUIModel(projectId);
+
+  // This is a record iterator which returns an efficient iteration through the
+  // records each containing a data object with a {key, value} dataset
+  const iterator = await notebookRecordIterator({
+    dataDb,
+    projectId,
+    uiSpecification,
+    viewID,
+  });
+  const fields = await getNotebookFieldTypes(projectId, viewID);
+
+  // This tracks the encountered filenames
+  const filenames: string[] = [];
+
+  // First - check if any of the fields are spatial
+  if (!fields.some(f => f.isSpatial)) {
+    throw new Error('No spatial fields, cannot produce a GeoJSON export!');
+  }
+
+  // Next - write out the header
+  res.write('{"type":"FeatureCollection","features":[');
+
+  let {record, done} = await iterator.next();
+  while (!done) {
+    // record might be null if there was an invalid db entry
+    if (record) {
+      // Get the HRID
+      const hrid = record.hrid || record.record_id;
+
+      // Setup the base JSON data
+      let baseJsonData = {
+        hrid,
+        recordId: record.record_id,
+        revisionId: record.revision_id,
+        type: record.type,
+        createdBy: record.created_by,
+        createdTime: record.created.toISOString(),
+        updatedBy: record.updated_by,
+        updatedTime: record.updated.toISOString(),
+      };
+
+      // extract data out
+      const data = record.data;
+
+      // As we go, track the encountered geometric entries
+      const geometric: {
+        // The geoJSON geometry type
+        type: 'Feature';
+        // The geometry string
+        geometry: string;
+      }[] = [];
+
+      // Then iterate through the fields, and extra data if available
+      fields.forEach(fieldInfo => {
+        // Does the record contain a corresponding entry?
+        if (fieldInfo.name in Object.keys(data)) {
+          // get it out
+          const fieldData = data[fieldInfo.name];
+
+          // Is this a geospatial field?
+          if (fieldInfo.isSpatial) {
+            // 
+            // We handle this specially by promoting above
+            geometric.push({
+              type: 'Feature',
+              geometry: '',
+            });
+          }
+        }
+      });
+    }
+
+    // Go to next record (if available)
+    const next = await iterator.next();
+    record = next.record;
+    done = next.done;
+  }
+
+  // Close up shop
+  res.write(']}');
+  res.end();
 };
 
 export const streamNotebookFilesAsZip = async (

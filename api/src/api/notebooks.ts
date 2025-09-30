@@ -69,6 +69,7 @@ import {
   getUserProjectsDetailed,
   streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
+  streamNotebookRecordsAsGeoJSON,
   updateNotebook,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
@@ -452,7 +453,7 @@ api.get(
 );
 
 // Types for download format and token payloads
-const DownloadFormatSchema = z.enum(['csv', 'zip']);
+const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson']);
 const DownloadTokenPayloadSchema = z.object({
   projectID: z.string(),
   format: DownloadFormatSchema,
@@ -570,6 +571,14 @@ api.get(
               `attachment; filename="${label}.csv"`
             );
             streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
+            break;
+          case 'geojson':
+            res.setHeader('Content-Type', 'application/geo+json');
+            res.setHeader(
+              'Content-Disposition',
+              `attachment; filename="${label}.geojson"`
+            );
+            streamNotebookRecordsAsGeoJSON(payload.projectID, payload.viewID, res);
             break;
           case 'zip':
             res.setHeader(
