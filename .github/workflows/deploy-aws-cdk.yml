@@ -1,29 +1,79 @@
+# acknowledging extended from OSS https://github.com/FAIMS/FAIMS3
+#
+# CDK Deploy Workflow for FAIMS3
+#
+# This workflow deploys FAIMS3 infrastructure to AWS using CDK.
+# It supports multiple environments (dev/prod) with manual deployment triggers.
+#
+# Required GitHub Secrets:
+#   - CDK_CONFIG_REPO_TOKEN: OAuth token for accessing the configuration repository
+#
+# Required GitHub Environment Variables (per environment):
+#   - CDK_CONFIG_REPO_PATH: Path to config repository (e.g., org/repo-name)
+#   - CDK_DEPLOY_ENVIRONMENT: Environment name used for config file selection
+#   - CDK_DEPLOY_GA_ROLE_ARN: AWS IAM role ARN for GitHub Actions authentication to CDK/AWS
+#
+# Optional GitHub Environment Variables:
+#   - CDK_DEPLOY_BRANCH: Config repo branch to use (defaults to 'main')
+#
+# Methodology:
+#   1. Checkout main code and external config repository
+#   2. Run config setup action to extract AWS account and region details
+#   3. Authenticate with AWS using OIDC (no long-lived credentials)
+#   4. Install dependencies and run CDK diff or deploy based on user input
+
 name: CDK Deploy FAIMS3 to AWS
 on:
   # Manually run deploy
   workflow_dispatch:
     inputs:
       action:
-        description: 'Choose CDK action to perform'
+        description: 'Choose action to perform'
         required: true
         default: 'diff'
         type: choice
         options:
           - deploy
           - diff
-
+      environment:
+        description: 'Which GitHub environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
 permissions:
   id-token: write
   contents: read
-
 jobs:
   cdk-deploy:
-    # This means the workflow can only run from dev protected branches e.g. main
-    environment: dev
+    # This means the workflow can only run from the selected environments branches
+    environment: ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
     steps:
+      - name: Display Workflow Inputs
+        run: |
+          echo "========================================="
+          echo "CDK Deploy Workflow Started"
+          echo "========================================="
+          echo "Action: ${{ github.event.inputs.action }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Triggered by: ${{ github.actor }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch/Ref: ${{ github.ref }}"
+          echo "Run ID: ${{ github.run_id }}"
+          echo "========================================="
+
       - name: Checkout main code
         uses: actions/checkout@v4
+
+      - name: Display Repository Info
+        run: |
+          echo "Main repository cloned"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Working directory contents:"
+          ls -la
 
       - name: Checkout config code
         uses: actions/checkout@v4
@@ -34,38 +84,111 @@ jobs:
           token: ${{ secrets.CDK_CONFIG_REPO_TOKEN }}
           # Where to clone the repo to
           path: ./config_repo
+
+      - name: Display Config Repository Info
+        run: |
+          echo "Config repository checked out"
+          echo "Config repo path: ${{ vars.CDK_CONFIG_REPO_PATH }}"
+          echo "Config directory contents:"
+          ls -la ./config_repo/ || echo "Config directory not found"
+
+      - name: Display CDK Configuration Variables
+        run: |
+          echo "========================================="
+          echo "CDK Configuration Variables"
+          echo "========================================="
+          echo "CDK Deploy Environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}"
+          echo "CDK Deploy Branch: ${{ vars.CDK_DEPLOY_BRANCH || 'main' }}"
+          echo "CDK Config Repo Path: ${{ vars.CDK_CONFIG_REPO_PATH }}"
+          echo "CDK Deploy GA Role ARN: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}"
+          echo "========================================="
+
       - name: Run FAIMS Config Setup Action
         uses: ./.github/actions/config
         id: faims-config-setup
         with:
           environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}
+          branch: ${{ vars.CDK_DEPLOY_BRANCH || 'main' }}
           config-repo-path: config_repo
-          branch: main
+
       - name: Display AWS Target Details
         run: |
-          echo "Deploying to:"
+          echo "========================================="
+          echo "AWS Deployment Target"
+          echo "========================================="
           echo "AWS Region: ${{ steps.faims-config-setup.outputs.aws-region }}"
           echo "AWS Account: ${{ steps.faims-config-setup.outputs.aws-account }}"
-          echo "Environment: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}"
-        # You can now use these outputs in subsequent steps for AWS configuration
-      - uses: aws-actions/configure-aws-credentials@v2
+          echo "Role to Assume: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}"
+          echo "========================================="
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ vars.CDK_DEPLOY_GA_ROLE_ARN }}
           aws-region: ${{ steps.faims-config-setup.outputs.aws-region }}
+
+      - name: Verify AWS Configuration
+        run: |
+          echo "Verifying AWS credentials..."
+          aws sts get-caller-identity
+          echo "Current AWS region: $(aws configure get region)"
+
       - id: install-aws-cli
         uses: unfor19/install-aws-cli-action@v1
-      - run: aws sts get-caller-identity
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "22"
-      - name: Install dependencies and run CDK deploy
+
+      - name: Display AWS CLI Version
         run: |
-          cd infrastructure/aws-cdk
+          echo "AWS CLI installed:"
+          aws --version
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Display Node.js Version
+        run: |
+          echo "Node.js setup complete:"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+
+      - name: Install dependencies
+        working-directory: infrastructure/aws-cdk
+        run: |
+          echo "Installing project dependencies..."
           npm install
+          echo "Dependencies installed successfully"
+
+      - name: Display Final Configuration Before CDK
+        working-directory: infrastructure/aws-cdk
+        run: |
+          echo "========================================="
+          echo "Final Configuration Summary"
+          echo "========================================="
+          echo "Action to perform: ${{ github.event.inputs.action }}"
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Config file: ${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json"
+          echo "AWS Region: ${{ steps.faims-config-setup.outputs.aws-region }}"
+          echo "AWS Account: ${{ steps.faims-config-setup.outputs.aws-account }}"
+          echo "Working directory: $(pwd)"
+          echo "Contents:"
+          ls -la
+          echo "========================================="
+
+      - name: Run CDK Command
+        working-directory: infrastructure/aws-cdk
+        run: |
           export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
+          echo "CONFIG_FILE_NAME set to: $CONFIG_FILE_NAME"
+
           if [ "${{ github.event.inputs.action }}" = "deploy" ]; then
+            echo "Starting CDK deployment..."
+            echo "Command: npx cdk deploy --require-approval never"
             npx cdk deploy --require-approval never
+            echo "CDK deployment completed successfully"
           else
+            echo "Running CDK diff..."
+            echo "Command: npx cdk diff"
             npx cdk diff
+            echo "CDK diff completed successfully"
           fi
