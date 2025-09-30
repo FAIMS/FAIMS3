@@ -21,6 +21,7 @@ import {z} from 'zod';
 import {Role} from '../../permission/model';
 import {resourceRoleSchema} from '../../permission/types';
 import {CouchDocumentSchema, CouchExistingDocumentSchema} from '../utils';
+import {DatabaseInterface} from '../../types';
 
 // Basic types defined as Zod schemas
 export const ServiceIDSchema = z.string();
@@ -152,4 +153,4 @@ export type ExistingPeopleDBDocument = z.infer<
 >;
 
 // Database
-export type PeopleDB = PouchDB.Database<PeopleDBFields>;
+export type PeopleDB = DatabaseInterface<PeopleDBFields>;

@@ -375,7 +375,7 @@ export const deleteLongLivedToken = async (
   }
 
   try {
-    await authDB.remove(tokenDoc!._id, tokenDoc!._rev);
+    if (tokenDoc) await authDB.remove(tokenDoc);
   } catch (error) {
     throw new Error(
       `Failed to delete long-lived token: ${(error as Error).message}`

@@ -83,7 +83,7 @@ jobs:
           export VITE_CLUSTER_ADMIN_GROUP_NAME=cluster-admin
           export VITE_COMMIT_VERSION=${{env.version_string}}
           export VITE_SHOW_WIPE=true
-          export VITE_SHOW_MINIFAUXTON=true
+          export VITE_SHOW_POUCHDB_BROWSER=true
           export VITE_POUCH_BATCH_SIZE=${{vars.POUCH_BATCH_SIZE}}
           export VITE_CONDUCTOR_URL=${{vars.NIGHTLY_CONDUCTOR_URL}}
           export VITE_TAG=prodIOS

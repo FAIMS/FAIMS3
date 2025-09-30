@@ -45,6 +45,7 @@ import {
   userHasProjectRole,
   PROJECT_METADATA_PREFIX,
   Annotations,
+  DatabaseInterface,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -390,12 +391,35 @@ export const updateNotebook = async (
     payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
   );
 
-  // ensure that the name is in the metadata
-  // metadata.name = projectName.trim();
   await writeProjectMetadata(metaDB, metadata);
+
+  // update the name if required
+  await changeNotebookName({projectId, name: metadata.name});
 
   // no need to write design docs for existing projects
   return projectId;
+};
+
+/**
+ * Updates the notebook status to the targeted value
+ */
+export const changeNotebookName = async ({
+  projectId,
+  name,
+}: {
+  projectId: string;
+  name: string;
+}) => {
+  // get existing project record
+  const project = await getProjectById(projectId);
+
+  if (project.name !== name) {
+    // update name
+    const updated = {...project, name};
+
+    // write it back
+    await putProjectDoc(updated);
+  }
 };
 
 /**
@@ -475,7 +499,7 @@ export const deleteNotebook = async (project_id: string) => {
 };
 
 export const writeProjectMetadata = async (
-  metaDB: PouchDB.Database,
+  metaDB: DatabaseInterface,
   metadata: any
 ) => {
   // add metadata, one document per attribute value pair

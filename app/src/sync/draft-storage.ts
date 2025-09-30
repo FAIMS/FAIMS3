@@ -38,8 +38,9 @@ import {databaseService} from '../context/slices/helpers/databaseService';
 import {selectProjectById} from '../context/slices/projectSlice';
 import {store} from '../context/store';
 import {logError} from '../logging';
+import {PouchDBWrapper} from '../context/slices/helpers/pouchDBWrapper';
 
-export type DraftDB = PouchDB.Database<EncodedDraft>;
+export type DraftDB = PouchDBWrapper<EncodedDraft>;
 
 // Note: duplicated from @faims3/data-model as it doesn't do anything important
 export function generate_file_name(): string {
@@ -262,7 +263,7 @@ export async function deleteStagedData(
       ? revision_cache
       : (await draftDb.get(draft_id))._rev;
 
-  await (draftDb as PouchDB.Database<{}>).put(
+  await (draftDb as PouchDBWrapper<{}>).put(
     {
       _id: draft_id,
       _rev: revision,

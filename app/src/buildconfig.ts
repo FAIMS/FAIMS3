@@ -84,8 +84,8 @@ function include_app_debugging(): boolean {
   }
 }
 
-function show_minifauxton(): boolean {
-  const debug_app = import.meta.env.VITE_SHOW_MINIFAUXTON;
+function show_pouchdb_browser(): boolean {
+  const debug_app = import.meta.env.VITE_SHOW_POUCHDB_BROWSER;
   if (debug_app === '' || debug_app === undefined) {
     return true;
   }
@@ -94,7 +94,7 @@ function show_minifauxton(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    logError('VITE_SHOW_MINIFAUXTON badly defined, assuming true');
+    logError('VITE_SHOW_POUCHDB_BROWSER badly defined, assuming true');
     return true;
   }
 }
@@ -467,7 +467,7 @@ export const COMMIT_VERSION = commit_version();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
-export const SHOW_MINIFAUXTON = show_minifauxton();
+export const SHOW_POUCHDB_BROWSER = show_pouchdb_browser();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const BUGSNAG_KEY = get_bugsnag_key();

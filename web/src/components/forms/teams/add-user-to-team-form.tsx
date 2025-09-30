@@ -37,6 +37,7 @@ export function AddUserToTeamForm({
   const rolesAvailable: Role[] = [];
   if (canAddMemberToTeam) {
     rolesAvailable.push(Role.TEAM_MEMBER);
+    rolesAvailable.push(Role.TEAM_MEMBER_CREATOR);
   }
   if (canAddManagerToTeam) {
     rolesAvailable.push(Role.TEAM_MANAGER);
@@ -58,7 +59,12 @@ export function AddUserToTeamForm({
         label: roleDetails[r].name,
         value: r,
       })),
-      schema: z.enum(['TEAM_MEMBER', 'TEAM_MANAGER', 'TEAM_ADMIN']),
+      schema: z.enum([
+        Role.TEAM_MEMBER,
+        Role.TEAM_MEMBER_CREATOR,
+        Role.TEAM_MANAGER,
+        Role.TEAM_ADMIN,
+      ]),
     },
   ];
 

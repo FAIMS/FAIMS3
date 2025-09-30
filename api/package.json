@@ -1,11 +1,11 @@
 {
   "name": "@faims3/api",
-  "version": "1.2.3",
+  "version": "1.2.5",
   "private": true,
   "main": "build/src/index.js",
   "packageManager": "npm@10.7.0",
   "engines": {
-    "node": "^22.18.0"
+    "node": "22"
   },
   "scripts": {
     "lint": "gts lint",
@@ -29,7 +29,7 @@
     "@faims3/data-model": "*",
     "archiver": "^6.0.1",
     "aws-sdk": "^2.1664.0",
-    "axios": "^1.11.0",
+    "axios": "^1.12.2",
     "body-parser": "1.20.3",
     "cache-manager": "^5.7.3",
     "cookie-session": "2.1.1",
@@ -45,7 +45,7 @@
     "jose": "^4.15.5",
     "markdown-it": "^14.0.0",
     "morgan": "^1.10.1",
-    "multer": "^2.0.1",
+    "multer": "^2.0.2",
     "node-cache": "^5.1.2",
     "nodemailer": "^6.10.0",
     "nyc": "^15.1.0",

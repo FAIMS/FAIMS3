@@ -15,6 +15,7 @@ import {getDataDB, shouldDisplayRecord} from '../callbacks';
 import {TokenContents} from '../permission/types';
 import {logError} from '../logging';
 import {
+  DatabaseInterface,
   DataDbType,
   FAIMSTypeName,
   ProjectDataObject,
@@ -27,6 +28,7 @@ import {
   RecordReference,
   RecordRevisionListing,
   Revision,
+  RevisionDbType,
   RevisionID,
   UnhydratedRecord,
 } from '../types';
@@ -218,12 +220,12 @@ export async function listFAIMSRecordRevisions({
 export async function listFAIMSProjectRevisions({
   dataDb,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RevisionDbType;
 }): Promise<ProjectRevisionListing> {
   try {
     // get all revision
     const result = await queryCouch<Revision>({
-      db: dataDb,
+      db: dataDb as RevisionDbType,
       index: REVISIONS_INDEX,
     });
     const revisionMap: ProjectRevisionListing = {};
@@ -846,7 +848,7 @@ export async function getSomeRecords(
   bookmark: string | null = null,
   filter_deleted = true
 ): Promise<RecordRevisionIndexDocument[]> {
-  const dataDB: PouchDB.Database<ProjectDataObject> | undefined =
+  const dataDB: DatabaseInterface<ProjectDataObject> | undefined =
     await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 

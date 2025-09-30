@@ -33,9 +33,12 @@ import {
 } from '../utils';
 import {
   Annotations,
+  AttachmentDbType,
   AttributeValuePair,
   AttributeValuePairID,
   AttributeValuePairIDMap,
+  AvpDbType,
+  DatabaseInterface,
   DataDbType,
   EncodedRecord,
   FAIMSAttachment,
@@ -43,14 +46,17 @@ import {
   ProjectID,
   ProjectUIModel,
   Record,
+  RecordDbType,
   RecordID,
   RecordMetadata,
   Revision,
+  RevisionDbType,
   RevisionID,
   UnhydratedRecord,
 } from '../types';
 import {createHash} from './utils';
 import {chunk} from 'lodash';
+import {logError} from '../logging';
 
 // INDEX NAMES
 
@@ -91,7 +97,7 @@ export function generateFAIMSAttributeValuePairID(): AttributeValuePairID {
  * Uses the direct get() method which is more efficient than queries for single
  * document retrieval.
  *
- * @param db PouchDB.Database to query
+ * @param db DatabaseInterface to query
  * @param id The document ID to retrieve
  * @param typeField? field name that contains type information
  * @param conflicts? Whether to include conflict information (defaults to false)
@@ -105,7 +111,7 @@ export async function getCouchDocument<DocType extends {[key: string]: any}>({
   typeField = undefined,
   conflicts = false,
 }: {
-  db: PouchDB.Database;
+  db: DatabaseInterface;
   id: string;
   typeField?: string;
   conflicts?: boolean;
@@ -142,7 +148,7 @@ export async function getCouchDocument<DocType extends {[key: string]: any}>({
  * configuration of the keys to filter on (if any), as well as the index and
  * conflicts.
  *
- * @param db PouchDB.Database to query
+ * @param db DatabaseInterface to query
  * @param index? index name e.g. index/recordRevisions
  * @param keys? list of keys to filter if any - if not provided gets all records in index
  * @param conflicts? include conflict info in query
@@ -157,7 +163,7 @@ export async function queryCouch<DocType extends {}>({
   binary = false,
   attachments = false,
 }: {
-  db: PouchDB.Database;
+  db: DatabaseInterface<DocType>; // DatabaseInterface;
   index?: string;
   keys?: string[];
   conflicts?: boolean;
@@ -588,7 +594,7 @@ export async function listRecordMetadata({
 
         // Skip if revision not found
         if (!revision) {
-          console.warn(
+          logError(
             `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
           );
           return null;
@@ -603,7 +609,7 @@ export async function listRecordMetadata({
 
           // Ensure it's defined
           if (!data) {
-            console.warn(
+            logError(
               `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
             );
             return null;
@@ -635,7 +641,7 @@ export async function listRecordMetadata({
           hrid: hrid,
         } satisfies RecordMetadata;
       } catch (e) {
-        console.error(
+        logError(
           `Failed to get record information. Record ID ${record._id}. Project ID ${projectId}. Due to error: ${e}.`
         );
         return null;
@@ -646,7 +652,7 @@ export async function listRecordMetadata({
     const results = await Promise.all(recordMetadataPromises);
     return results.filter(item => item !== null);
   } catch (err) {
-    console.log(err);
+    logError(err);
     throw Error(`failed to get metadata. ${err}`);
   }
 }
@@ -718,7 +724,7 @@ export async function getAttributeValuePairs({
   dataDb,
   avpIds,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | AvpDbType;
   avpIds: AttributeValuePairID[];
 }): Promise<{
   [id: string]: PouchDB.Core.ExistingDocument<AttributeValuePair>;
@@ -732,7 +738,7 @@ export async function getAttributeValuePairs({
     // Query the database for AVP documents
     const avpDocs = await queryCouch<AttributeValuePair>({
       keys: avpIds,
-      db: dataDb,
+      db: dataDb as AvpDbType,
       index: AVP_INDEX,
       conflicts: false,
     });
@@ -758,10 +764,10 @@ export async function getRevisions({
   dataDb,
 }: {
   revisionIds: RevisionID[];
-  dataDb: DataDbType;
+  dataDb: DataDbType | RevisionDbType;
 }): Promise<PouchDB.Core.ExistingDocument<Revision>[]> {
   return await queryCouch<Revision>({
-    db: dataDb,
+    db: dataDb as RevisionDbType,
     conflicts: false,
     index: REVISIONS_INDEX,
     keys: revisionIds,
@@ -938,10 +944,10 @@ export async function getRecords({
   dataDb,
 }: {
   recordIds?: RecordID[];
-  dataDb: DataDbType;
+  dataDb: DataDbType | RecordDbType;
 }): Promise<PouchDB.Core.ExistingDocument<EncodedRecord>[]> {
   return await queryCouch<EncodedRecord>({
-    db: dataDb,
+    db: dataDb as RecordDbType,
     conflicts: false,
     index: RECORDS_INDEX,
     keys: recordIds,
@@ -957,7 +963,7 @@ export async function getFormDataFromRevision({
   revision,
   dataDb,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RevisionDbType;
   revision: Revision;
 }): Promise<FormData> {
   // Scaffold
@@ -995,7 +1001,7 @@ export async function addNewRevisionFromForm({
   dataDb,
   newRevId,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RevisionDbType;
   record: Record;
   newRevId: RevisionID;
 }) {
@@ -1032,7 +1038,7 @@ async function addNewAttributeValuePairs({
   record,
   newRevId,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | AvpDbType | AttachmentDbType;
   record: Record;
   newRevId: RevisionID;
 }): Promise<AttributeValuePairIDMap> {
@@ -1121,7 +1127,7 @@ async function addNewAttributeValuePairs({
     }
   }
   // Write all updates
-  await dataDb.bulkDocs(documentsToWrite);
+  await (dataDb as DataDbType).bulkDocs(documentsToWrite);
   return avpMap;
 }
 
@@ -1140,7 +1146,7 @@ export async function initialiseRecordForNewRevision({
   revision_id,
   dataDb,
 }: {
-  dataDb: DataDbType;
+  dataDb: DataDbType | RecordDbType;
   record: Record;
   revision_id: RevisionID;
 }) {
@@ -1155,7 +1161,7 @@ export async function initialiseRecordForNewRevision({
     type: record.type,
   } satisfies EncodedRecord;
   try {
-    await dataDb.put(new_encoded_record);
+    await (dataDb as RecordDbType).put(new_encoded_record);
   } catch (err) {
     // if there was an error then the document exists
     // already which is fine

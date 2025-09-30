@@ -1,4 +1,4 @@
-import {PossibleConnectionInfo} from '../../types';
+import {DatabaseInterface, PossibleConnectionInfo} from '../../types';
 
 // V1
 export type ProjectV1Fields = {
@@ -50,4 +50,4 @@ export type ExistingProjectDocument =
   PouchDB.Core.ExistingDocument<ProjectDBFields>;
 
 // DB Type (V2)
-export type ProjectDB = PouchDB.Database<ProjectDBFields>;
+export type ProjectDB = DatabaseInterface<ProjectDBFields>;

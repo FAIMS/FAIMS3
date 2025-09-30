@@ -30,10 +30,11 @@ import './index.css';
 import {addNativeHooks} from './native_hooks';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
+import {PouchDBWrapper} from './context/slices/helpers/pouchDBWrapper';
 
 export const localGetDataDb = (
   projectId: string
-): PouchDB.Database<ProjectDataObject> => {
+): PouchDBWrapper<ProjectDataObject> => {
   const projectState = store.getState();
   const dbId = selectAllProjects(projectState).find(
     p => p.projectId === projectId
