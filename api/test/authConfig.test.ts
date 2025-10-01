@@ -67,6 +67,7 @@ describe('readAuthProviderConfigFromEnv', () => {
     expect(result).to.have.property('google');
     expect(result?.google).to.deep.equal({
       id: 'google',
+      index: 100, // index should be defaulted to 100
       type: 'google',
       displayName: 'Google',
       helperText: 'Log in with your Google account',
@@ -80,6 +81,7 @@ describe('readAuthProviderConfigFromEnv', () => {
     // Configure environment with OIDC provider
     process.env.AUTH_AAF_TYPE = 'oidc';
     process.env.AUTH_AAF_DISPLAY_NAME = 'AAF';
+    process.env.AUTH_AAF_INDEX = '50';
     process.env.AUTH_AAF_HELPER_TEXT =
       'Use your Australian University credentials';
     process.env.AUTH_AAF_ISSUER = 'https://central.test.aaf.edu.au';
@@ -100,6 +102,7 @@ describe('readAuthProviderConfigFromEnv', () => {
     expect(result?.aaf).to.deep.equal({
       id: 'aaf',
       type: 'oidc',
+      index: 50, // supplied index
       displayName: 'AAF',
       helperText: 'Use your Australian University credentials',
       issuer: 'https://central.test.aaf.edu.au',
