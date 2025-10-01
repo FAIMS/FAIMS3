@@ -296,13 +296,15 @@ export default function MainAppBar() {
                     >
                       {item.title}{' '}
                     </ListItemText>
-                    {item.nested.length === 0 ? (
+                    {item.nested === null || item.nested === undefined ? (
                       <CircularProgress size={12} thickness={4} />
-                    ) : nestedMenuOpen[item.title] ? (
-                      <ExpandLess />
-                    ) : (
-                      <ExpandMore />
-                    )}
+                    ) : item.nested.length > 0 ? (
+                      nestedMenuOpen[item.title] ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )
+                    ) : null}
                   </ListItemButton>
                   <Collapse
                     in={nestedMenuOpen[item.title]}
