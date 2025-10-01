@@ -12,7 +12,7 @@ import {z} from 'zod';
 import {Field, Form} from '../form';
 import {ChevronRight} from 'lucide-react';
 
-export type ExportType = 'csv' | 'geojson';
+export type ExportType = 'csv' | 'geojson' | 'kml';
 type ExportCategory = 'tabular' | 'geospatial';
 
 /**
@@ -31,7 +31,7 @@ const ExportProjectForm = () => {
     return null;
   }
 
-  const isValidForGeoJSON = useMemo(() => {
+  const isValidForSpatial = useMemo(() => {
     const uiSpecification = data['ui-specification'] as unknown;
     const decodedUiSpec = decodeUiSpec(
       uiSpecification as EncodedUISpecification
@@ -65,13 +65,16 @@ const ExportProjectForm = () => {
     },
   ];
 
-  // Geospatial export form (GeoJSON)
+  // Geospatial export form (GeoJSON and KML)
   const geospatialFields: Field[] = [
     {
       name: 'format',
       label: 'Format',
-      schema: z.enum(['geojson']),
-      options: [{label: 'GeoJSON', value: 'geojson'}],
+      schema: z.enum(['geojson', 'kml']),
+      options: [
+        {label: 'GeoJSON', value: 'geojson'},
+        {label: 'KML (Google Earth)', value: 'kml'},
+      ],
     },
   ];
 
@@ -147,15 +150,15 @@ const ExportProjectForm = () => {
           </button>
 
           <button
-            onClick={() => isValidForGeoJSON && setExportCategory('geospatial')}
-            disabled={!isValidForGeoJSON}
+            onClick={() => isValidForSpatial && setExportCategory('geospatial')}
+            disabled={!isValidForSpatial}
             className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:border-border"
           >
             <div className="flex-1">
-              <p className="font-medium text-sm mb-1">Geospatial (GeoJSON)</p>
+              <p className="font-medium text-sm mb-1">Geospatial (GeoJSON / KML)</p>
               <p className="text-sm text-muted-foreground">
-                {isValidForGeoJSON
-                  ? 'Export spatial data for use in mapping applications like QGIS or ArcGIS.'
+                {isValidForSpatial
+                  ? 'Export spatial data for use in mapping applications like QGIS, ArcGIS, or Google Earth.'
                   : 'Not available - this project does not contain any spatial data fields.'}
               </p>
             </div>
@@ -205,9 +208,7 @@ const ExportProjectForm = () => {
       <div className="text-sm text-muted-foreground mb-2">
         <p className="font-medium text-foreground mb-1">Spatial Export</p>
         <p>
-          Export all data from your project in a GIS compatible format. The file
-          will include geometry and attributes for all records with location
-          data.
+          Export all spatial data from your project in a GIS-compatible format. Choose GeoJSON for modern web mapping or KML for Google Earth and other applications.
         </p>
       </div>
       <Form

@@ -56,6 +56,10 @@ import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
+  streamNotebookRecordsAsGeoJSON,
+  streamNotebookRecordsAsKML,
+} from '../couchdb/geospatialExport';
+import {
   changeNotebookStatus,
   changeNotebookTeam,
   countRecordsInNotebook,
@@ -70,7 +74,6 @@ import {
   getUserProjectsDetailed,
   streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
-  streamNotebookRecordsAsGeoJSON,
   updateNotebook,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';
@@ -454,7 +457,7 @@ api.get(
 );
 
 // Types for download format and token payloads
-const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson']);
+const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml']);
 type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
 const DownloadTokenPayloadSchema = z.object({
   projectID: z.string(),
@@ -681,9 +684,17 @@ api.get(
           res.setHeader('Content-Type', 'application/geo+json');
           res.setHeader(
             'Content-Disposition',
-            `attachment; filename="${slugify(payload.projectID)}.geojson"`
+            `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
           );
           streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+          break;
+        case 'kml':
+          res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
+          res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+          );
+          streamNotebookRecordsAsKML(payload.projectID, res);
           break;
       }
     }
