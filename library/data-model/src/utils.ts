@@ -280,8 +280,8 @@ export const getFieldToIdsMap = (
   return fieldMap;
 };
 
-// TODO populate completely
-export const SPATIAL_FIELDS = ['MapFormField'];
+// Maintain this list of spatially relevant fields
+export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
 
 export type FieldSummary = {
   name: string;

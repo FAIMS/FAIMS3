@@ -10,14 +10,7 @@ import {
 import {useMemo, useState} from 'react';
 import {z} from 'zod';
 import {Field, Form} from '../form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {Label} from '@/components/ui/label';
+import {ChevronRight} from 'lucide-react';
 
 export type ExportType = 'csv' | 'geojson';
 type ExportCategory = 'tabular' | 'geospatial';
@@ -30,7 +23,9 @@ const ExportProjectForm = () => {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
   const {data} = useGetProject({user, projectId});
-  const [exportCategory, setExportCategory] = useState<ExportCategory | null>(null);
+  const [exportCategory, setExportCategory] = useState<ExportCategory | null>(
+    null
+  );
 
   if (!data) {
     return null;
@@ -54,20 +49,19 @@ const ExportProjectForm = () => {
       name: 'format',
       label: 'Format',
       schema: z.enum(['csv']),
-      options: [
-        {label: 'CSV', value: 'csv'},
-      ],
+      options: [{label: 'CSV', value: 'csv'}],
     },
     {
       name: 'form',
       label: 'Form',
       schema: z.string().min(1, 'Please select a form'),
-      options: data && data['ui-specification']?.viewsets
-        ? Object.keys(viewSets).map(name => ({
-            label: viewSets[name].label || name,
-            value: name,
-          }))
-        : [],
+      options:
+        data && data['ui-specification']?.viewsets
+          ? Object.keys(viewSets).map(name => ({
+              label: viewSets[name].label || name,
+              value: name,
+            }))
+          : [],
     },
   ];
 
@@ -98,34 +92,30 @@ const ExportProjectForm = () => {
   }) => {
     if (user) {
       const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}&viewID=${form}`;
-      
+
       const response = await fetch(downloadURL, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
       });
-      
+
       if (response.redirected) window.open(response.url, '_self');
     }
     return undefined;
   };
 
-  const handleGeospatialSubmit = async ({
-    format,
-  }: {
-    format: ExportType;
-  }) => {
+  const handleGeospatialSubmit = async ({format}: {format: ExportType}) => {
     if (user) {
       const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}`;
-      
+
       const response = await fetch(downloadURL, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
       });
-      
+
       if (response.redirected) window.open(response.url, '_self');
     }
     return undefined;
@@ -136,27 +126,41 @@ const ExportProjectForm = () => {
     return (
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="export-type">Export Type</Label>
-          <Select
-            value={exportCategory || ''}
-            onValueChange={(value) => setExportCategory(value as ExportCategory)}
+          <p className="text-sm text-muted-foreground">
+            Export your project data in different formats. Choose the type of
+            export that best suits your needs.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => setExportCategory('tabular')}
+            className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-200 text-left group"
           >
-            <SelectTrigger id="export-type">
-              <SelectValue placeholder="Select export type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="tabular">Tabular (CSV)</SelectItem>
-              <SelectItem value="geospatial" disabled={!isValidForGeoJSON}>
-                Geospatial (GeoJSON)
-                {!isValidForGeoJSON && ' - No spatial data'}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {!isValidForGeoJSON && (
-            <p className="text-sm text-muted-foreground">
-              Geospatial export is disabled because this project does not contain any spatial data fields.
-            </p>
-          )}
+            <div className="flex-1">
+              <p className="font-medium text-sm mb-1">Tabular (CSV)</p>
+              <p className="text-sm text-muted-foreground">
+                Export data from a specific form as a spreadsheet. Ideal for
+                analysis in Excel or other tools.
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 ml-4" />
+          </button>
+
+          <button
+            onClick={() => isValidForGeoJSON && setExportCategory('geospatial')}
+            disabled={!isValidForGeoJSON}
+            className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:border-border"
+          >
+            <div className="flex-1">
+              <p className="font-medium text-sm mb-1">Geospatial (GeoJSON)</p>
+              <p className="text-sm text-muted-foreground">
+                {isValidForGeoJSON
+                  ? 'Export spatial data for use in mapping applications like QGIS or ArcGIS.'
+                  : 'Not available - this project does not contain any spatial data fields.'}
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0 ml-4" />
+          </button>
         </div>
       </div>
     );
@@ -172,10 +176,17 @@ const ExportProjectForm = () => {
         >
           ← Change export type
         </button>
+        <div className="text-sm text-muted-foreground mb-2">
+          <p className="font-medium text-foreground mb-1">CSV Export</p>
+          <p>
+            Select which form you want to export. The download will include all
+            records from that form in a spreadsheet format.
+          </p>
+        </div>
         <Form
           fields={tabularFields}
           onSubmit={handleTabularSubmit}
-          submitButtonText="Download"
+          submitButtonText="Download CSV"
           defaultValues={tabularDefaultValues}
         />
       </div>
@@ -191,6 +202,14 @@ const ExportProjectForm = () => {
       >
         ← Change export type
       </button>
+      <div className="text-sm text-muted-foreground mb-2">
+        <p className="font-medium text-foreground mb-1">Spatial Export</p>
+        <p>
+          Export all data from your project in a GIS compatible format. The file
+          will include geometry and attributes for all records with location
+          data.
+        </p>
+      </div>
       <Form
         fields={geospatialFields}
         onSubmit={handleGeospatialSubmit}

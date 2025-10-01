@@ -990,41 +990,71 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
             // Is this a geospatial field? If so - just mark our geometric
             // objects to add and proceed
-            if (fieldInfo.isSpatial) {
+            if (
+              // Is it spatial
+              fieldInfo.isSpatial &&
+              // Does it seem to be valid/defined?
+              fieldData !== undefined &&
+              fieldData !== null &&
+              // Empty string check
+              fieldData !== '' &&
+              // General truthy check
+              !!fieldInfo
+            ) {
               // If the record is spatial its data is typically GeoJSON - let's
               // try figure that out
               try {
                 // get the first feature
-                const firstFeature = fieldData['features'][0];
-                // We handle this specially by promoting above
-                geometric.push({
-                  type: firstFeature.type,
-                  geometry: firstFeature.geometry,
-                  // where did this geometry come from?
-                  geometrySource: {
-                    fieldId: fieldInfo.name,
-                    viewsetId: fieldInfo.viewsetId,
-                    type: fieldInfo.type,
-                    viewId: fieldInfo.viewId,
-                  },
-                });
+                let feature: any = {};
+                if (fieldData.type === 'FeatureCollection') {
+                  feature = fieldData['features'][0];
+                } else {
+                  feature = fieldData;
+                }
+                if (
+                  feature &&
+                  feature.geometry &&
+                  feature.geometry.coordinates
+                ) {
+                  // We handle this specially by promoting above
+                  geometric.push({
+                    type: feature.type,
+                    geometry: feature.geometry,
+                    // where did this geometry come from?
+                    geometrySource: {
+                      fieldId: fieldInfo.name,
+                      viewsetId: fieldInfo.viewsetId,
+                      type: fieldInfo.type,
+                      viewId: fieldInfo.viewId,
+                    },
+                  });
+                } else {
+                  console.warn(
+                    'Encountered geometry which appeared on the surface to be valid but had no geometry or coordinates fields.'
+                  );
+                }
               } catch (e) {
-                throw new Error('issue while converting geometry' + e);
+                // Just log this error - nothing specifically needs to happen -
+                // we should be able to proceed
+                console.error(
+                  `issue while converting geometry ${e}. Field data: ${fieldData}. Record: ${record?.record_id}. Field info: ${JSON.stringify(fieldInfo)}.`
+                );
               }
-            } else {
-              // If non spatial then we append typical data
-              const convertedData = convertDataForOutput(
-                viewFieldsMap[viewID],
-                data,
-                record!.annotations,
-                hrid,
-                filenames
-              );
+            }
 
-              // this is a possible set of things to append - append them
-              for (const kv of Object.entries(convertedData)) {
-                baseJsonData[kv[0]] = kv[1];
-              }
+            // Regardless we append typical data fields to retain consistency
+            // with existing encoding approaches
+            const convertedData = convertDataForOutput(
+              viewFieldsMap[viewID],
+              data,
+              record!.annotations,
+              hrid,
+              filenames
+            );
+
+            // this is a possible set of things to append - append them
+            for (const kv of Object.entries(convertedData)) {
+              baseJsonData[kv[0]] = kv[1];
             }
           }
         });
@@ -1035,10 +1065,8 @@ export const streamNotebookRecordsAsGeoJSON = async (
         for (const geom of geometric) {
           // output is {type, geometry, properties}
           const output = {
-            ...{
-              type: geom.type,
-              geometry: geom.geometry,
-            },
+            type: geom.type,
+            geometry: geom.geometry,
             properties: {
               ...baseJsonData,
               // Here we append additional information about the geometry source
@@ -1052,6 +1080,9 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
           // And write this out (prepending a comma if NOT first record)
           res.write(`${isFirstRecord ? '' : ','}${JSON.stringify(output)}`);
+
+          // No longer first record
+          isFirstRecord = false;
         }
       }
 
@@ -1059,9 +1090,6 @@ export const streamNotebookRecordsAsGeoJSON = async (
       const next = await iterator.next();
       record = next.record;
       done = next.done;
-
-      // No longer first record
-      isFirstRecord = false;
     }
   }
 

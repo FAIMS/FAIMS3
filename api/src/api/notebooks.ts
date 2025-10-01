@@ -575,6 +575,57 @@ api.get(
   }
 );
 
+// Export record data (old route for CSV/ZIP with ViewID and Format in the param)
+// @deprecated - use the new /export style route above - this is here for backwards compat
+api.get(
+  '/:id/records/:viewID.:format',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({
+      id: z.string(),
+      viewID: z.string(),
+      // don't allow geoJSON here - must use new route
+      // @deprecated
+      format: z.enum(['csv', 'zip']),
+    }),
+  }),
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+
+    // get the label for this form for the filename header
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+
+    // check the view ID is valid
+    if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
+      throw new Exceptions.ItemNotFoundException(
+        `Form with id ${req.query.viewID} not found in notebook`
+      );
+    }
+
+    let payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.params.format,
+      userID: req.user.user_id,
+      viewID: req.params.viewID,
+    };
+
+    // Build the download token payload
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+    return res.redirect(`/api/notebooks/download/${jwt}`);
+  }
+);
+
 api.get(
   '/download/:downloadToken',
   processRequest({params: z.object({downloadToken: z.string()})}),
@@ -592,7 +643,6 @@ api.get(
     }
 
     // Depending on the format type - handle differently
-
     if (VIEW_ID_FORMATS.includes(payload.format)) {
       const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
       if (!payload.viewID) {

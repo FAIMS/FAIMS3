@@ -24,10 +24,6 @@ export const DataExportDialog = () => (
     <DialogContent>
       <DialogHeader>
         <DialogTitle>Data Export</DialogTitle>
-        <DialogDescription>
-          Export all responses for this {NOTEBOOK_NAME_CAPITALIZED} to a CSV
-          file.
-        </DialogDescription>
       </DialogHeader>
       <ExportProjectForm />
     </DialogContent>
