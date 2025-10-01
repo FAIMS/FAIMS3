@@ -35,6 +35,7 @@ properties should be supplied:
 
 ```shell
 AUTH_GOOGLE_TYPE="google"
+AUTH_GOOGLE_INDEX=1
 AUTH_GOOGLE_DISPLAY_NAME="Google"
 AUTH_GOOGLE_HELPER_TEXT="Log in with your Google account"
 AUTH_GOOGLE_CLIENT_ID="google client id"
@@ -47,6 +48,7 @@ properties should be defined:
 
 ```shell
 AUTH_AAF_TYPE="oidc"
+AUTH_AAF_INDEX=2
 AUTH_AAF_DISPLAY_NAME="AAF"
 AUTH_AAF_HELPER_TEXT="Use your Australian University credentials"
 AUTH_AAF_ISSUER="https://central.test.aaf.edu.au"
@@ -64,7 +66,8 @@ properties as well.
 
 The `DISPLAY_NAME` field is used to label the login button _"Continue with XXX"_. 
 The `HELPER_TEXT` field is optional and is displayed below the login button
-if provided.
+if provided. The `INDEX` field is optional but if present, defines the ordering
+of buttons on the login page.
 
 ## Key Files
 

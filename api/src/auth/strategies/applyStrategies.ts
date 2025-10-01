@@ -72,6 +72,18 @@ export const readAuthProviderConfigFromEnv =
         console.warn(`Ignoring unrecognized env var: ${key}`);
       }
     });
+    // add an index to each provider if there isn't already one
+    let index = 100;
+    Object.values(config).forEach((provider: BaseAuthProviderConfig) => {
+      if (provider.index === undefined) {
+        provider.index = index;
+        index += 1;
+      } else {
+        // coerce to a number
+        provider.index = parseInt(provider.index as any, 10);
+      }
+    });
+
     const parsed = AuthProviderConfigMapSchema.safeParse(config);
     if (!parsed.success) {
       console.error(

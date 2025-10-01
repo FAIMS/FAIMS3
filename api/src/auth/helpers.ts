@@ -211,6 +211,7 @@ export function providersToRenderDetails({
   for (const id in handlers) {
     providers.push({
       id: id,
+      index: handlers[id].index ?? 100,
       name: handlers[id].displayName,
       helperText: handlers[id].helperText,
       targetUrl: `/auth/${id}${buildQueryString({
@@ -222,6 +223,10 @@ export function providersToRenderDetails({
       })}`,
     });
   }
+  // sort providers by the index property
+  providers.sort((a, b) => {
+    return a.index - b.index;
+  });
   return providers;
 }
 

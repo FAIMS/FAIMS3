@@ -9,6 +9,7 @@ import {z} from 'zod';
 // auth types in future
 export const BaseAuthProviderConfigSchema = z.object({
   id: z.string(),
+  index: z.number().optional(), // order for display in UI
   type: z.string(),
   displayName: z.string(),
   helperText: z.string().optional(),
