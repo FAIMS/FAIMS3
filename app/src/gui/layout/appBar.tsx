@@ -57,6 +57,7 @@ import {
 } from '../../context/slices/authSlice';
 import {
   Project,
+  selectActiveServerProjects,
   selectProjectsByServerId,
 } from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
@@ -129,7 +130,10 @@ export default function MainAppBar() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const activeServerId = useAppSelector(selectActiveServerId);
   const projectList = useAppSelector(state =>
-    activeServerId ? selectProjectsByServerId(state, activeServerId) : []
+    activeServerId
+      ? // Only show active projects in the side bar
+        selectActiveServerProjects(state).filter(p => p.isActivated)
+      : []
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -152,7 +156,7 @@ export default function MainAppBar() {
       : isAuthenticated
         ? getNestedProjects(projectList)
         : {
-            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+            title: `Active ${NOTEBOOK_NAME_CAPITALIZED}s`,
             icon: <AccountTree />,
             to: '/',
             disabled: true,
