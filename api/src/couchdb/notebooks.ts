@@ -26,13 +26,18 @@ PouchDB.plugin(SecurityPlugin);
 
 import {
   Action,
+  Annotations,
   APINotebookList,
   CouchProjectUIModel,
+  DatabaseInterface,
   EncodedProjectUIModel,
   ExistingProjectDocument,
+  FieldSummary,
+  getNotebookFieldTypes,
   GetNotebookListResponse,
   logError,
   notebookRecordIterator,
+  PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
@@ -42,14 +47,8 @@ import {
   Resource,
   resourceRoles,
   Role,
-  userHasProjectRole,
-  PROJECT_METADATA_PREFIX,
-  Annotations,
-  DatabaseInterface,
-  FieldSummary,
-  getNotebookFieldTypes,
   slugify,
-  buildViewsetFieldSummaries,
+  userHasProjectRole,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -887,7 +886,6 @@ export const streamNotebookRecordsAsCSV = async (
     stringifier.end();
   }
 };
-
 
 export const streamNotebookFilesAsZip = async (
   projectId: ProjectID,

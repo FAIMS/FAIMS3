@@ -130,7 +130,7 @@ export const streamNotebookRecordsAsGeoJSON = async (
                 let feature: any = {};
                 if (fieldData.type === 'FeatureCollection') {
                   feature = fieldData['features'][0];
-                } else {
+                } else if (fieldData.type === 'Feature') {
                   feature = fieldData;
                 }
                 if (
@@ -152,14 +152,14 @@ export const streamNotebookRecordsAsGeoJSON = async (
                   });
                 } else {
                   console.warn(
-                    'Encountered geometry which appeared on the surface to be valid but had no geometry or coordinates fields.'
+                    `Encountered geometry which appeared on the surface to be valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}. Feature: ${JSON.stringify(feature)}.`
                   );
                 }
               } catch (e) {
                 // Just log this error - nothing specifically needs to happen -
                 // we should be able to proceed
                 console.error(
-                  `issue while converting geometry ${e}. Field data: ${fieldData}. Record: ${record?.record_id}. Field info: ${JSON.stringify(fieldInfo)}.`
+                  `issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${record?.record_id}. Field info: ${JSON.stringify(fieldInfo)}.`
                 );
               }
             }
@@ -239,7 +239,6 @@ const escapeXml = (unsafe: string): string => {
 const convertGeometryToKML = (geometry: any): string => {
   const type = geometry.type;
   const coords = geometry.coordinates;
-
   // Helper to format coordinate pairs for KML (lon,lat,alt)
   const formatCoords = (coordArray: any): string => {
     if (typeof coordArray[0] === 'number') {
@@ -251,15 +250,12 @@ const convertGeometryToKML = (geometry: any): string => {
     // Array of coordinates
     return coordArray.map((coord: any) => formatCoords(coord)).join(' ');
   };
-
   switch (type) {
     case 'Point':
       return `<Point><coordinates>${formatCoords(coords)}</coordinates></Point>`;
-
     case 'LineString':
       return `<LineString><coordinates>${formatCoords(coords)}</coordinates></LineString>`;
-
-    case 'Polygon':
+    case 'Polygon': {
       const outerRing = `<outerBoundaryIs><LinearRing><coordinates>${formatCoords(coords[0])}</coordinates></LinearRing></outerBoundaryIs>`;
       const innerRings = coords
         .slice(1)
@@ -269,7 +265,7 @@ const convertGeometryToKML = (geometry: any): string => {
         )
         .join('');
       return `<Polygon>${outerRing}${innerRings}</Polygon>`;
-
+    }
     case 'MultiPoint':
       return `<MultiGeometry>${coords
         .map(
@@ -277,7 +273,6 @@ const convertGeometryToKML = (geometry: any): string => {
             `<Point><coordinates>${formatCoords(coord)}</coordinates></Point>`
         )
         .join('')}</MultiGeometry>`;
-
     case 'MultiLineString':
       return `<MultiGeometry>${coords
         .map(
@@ -285,7 +280,6 @@ const convertGeometryToKML = (geometry: any): string => {
             `<LineString><coordinates>${formatCoords(lineCoords)}</coordinates></LineString>`
         )
         .join('')}</MultiGeometry>`;
-
     case 'MultiPolygon':
       return `<MultiGeometry>${coords
         .map((polyCoords: any) => {
@@ -300,7 +294,6 @@ const convertGeometryToKML = (geometry: any): string => {
           return `<Polygon>${outer}${inner}</Polygon>`;
         })
         .join('')}</MultiGeometry>`;
-
     default:
       throw new Error(`Unsupported geometry type: ${type}`);
   }
@@ -447,7 +440,7 @@ export const streamNotebookRecordsAsKML = async (
                 let feature: any = {};
                 if (fieldData.type === 'FeatureCollection') {
                   feature = fieldData['features'][0];
-                } else {
+                } else if (fieldData.type === 'Feature') {
                   feature = fieldData;
                 }
                 if (
@@ -469,14 +462,14 @@ export const streamNotebookRecordsAsKML = async (
                   });
                 } else {
                   console.warn(
-                    'Encountered geometry which appeared on the surface to be valid but had no geometry or coordinates fields.'
+                    `Encountered geometry which appeared on the surface to be valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}. Feature: ${JSON.stringify(feature)}.`
                   );
                 }
               } catch (e) {
                 // Just log this error - nothing specifically needs to happen -
                 // we should be able to proceed
                 console.error(
-                  `issue while converting geometry ${e}. Field data: ${fieldData}. Record: ${record?.record_id}. Field info: ${JSON.stringify(fieldInfo)}.`
+                  `issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${record?.record_id}. Field info: ${JSON.stringify(fieldInfo)}.`
                 );
               }
             }

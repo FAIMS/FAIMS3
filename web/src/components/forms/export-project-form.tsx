@@ -155,7 +155,9 @@ const ExportProjectForm = () => {
             className="flex items-center justify-between p-4 rounded-lg border border-border bg-background shadow-sm hover:shadow-md hover:border-foreground/20 transition-all duration-200 text-left group disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:border-border"
           >
             <div className="flex-1">
-              <p className="font-medium text-sm mb-1">Geospatial (GeoJSON / KML)</p>
+              <p className="font-medium text-sm mb-1">
+                Geospatial (GeoJSON / KML)
+              </p>
               <p className="text-sm text-muted-foreground">
                 {isValidForSpatial
                   ? 'Export spatial data for use in mapping applications like QGIS, ArcGIS, or Google Earth.'
@@ -208,7 +210,9 @@ const ExportProjectForm = () => {
       <div className="text-sm text-muted-foreground mb-2">
         <p className="font-medium text-foreground mb-1">Spatial Export</p>
         <p>
-          Export all spatial data from your project in a GIS-compatible format. Choose GeoJSON for modern web mapping or KML for Google Earth and other applications.
+          Export all spatial data from your project in a GIS-compatible format.
+          Choose GeoJSON for modern web mapping or KML for Google Earth and
+          other applications.
         </p>
       </div>
       <Form
