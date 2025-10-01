@@ -988,7 +988,7 @@ export const notebookAttachmentIterator = async ({
   projectId: string;
   filterDeleted?: boolean;
 }) => {
-  const batchSize = 20;
+  const batchSize = 10000;
 
   const getNextBatch = async (bookmark: string | null) => {
     const records = await getSomeAttachments(
@@ -1058,6 +1058,8 @@ export async function getSomeAttachments(
     include_docs: true,
   };
 
+  console.log(options);
+
   // if we have a bookmark, start from there
   if (bookmark !== null) {
     options.startkey = bookmark;
@@ -1066,6 +1068,7 @@ export async function getSomeAttachments(
   try {
     const res = await dataDB.query('index/attachments', options);
     let attachmentList = res.rows.map((doc: any) => doc.doc);
+    console.log(attachmentList.length);
 
     if (filter_deleted) {
       attachmentList = attachmentList.filter((doc: any) => {
