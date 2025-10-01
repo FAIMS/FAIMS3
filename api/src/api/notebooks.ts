@@ -45,6 +45,7 @@ import {
   PutUpdateNotebookResponse,
   removeProjectRole,
   Role,
+  slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -86,7 +87,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
-import {mockTokenContentsForUser, slugify} from '../utils';
+import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -516,7 +517,7 @@ const validateDownloadToken = async ({
 // details of the download, that route is handled below to do the actual
 // download.
 api.get(
-  '/:id/records/:viewID.:format',
+  '/:id/records/export',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.EXPORT_PROJECT_DATA,
@@ -525,10 +526,12 @@ api.get(
     },
   }),
   processRequest({
-    params: z.object({
-      id: z.string(),
+    query: z.object({
       viewID: z.string().optional(),
       format: DownloadFormatSchema,
+    }),
+    params: z.object({
+      id: z.string(),
     }),
   }),
   async (req, res) => {
@@ -538,14 +541,14 @@ api.get(
 
     let payload: DownloadTokenPayload = {
       projectID: req.params.id,
-      format: req.params.format,
+      format: req.query.format,
       userID: req.user.user_id,
     };
 
-    if (VIEW_ID_FORMATS.includes(req.params.format)) {
-      if (!req.params.viewID) {
+    if (VIEW_ID_FORMATS.includes(req.query.format)) {
+      if (!req.query.viewID) {
         throw new Exceptions.InvalidRequestException(
-          `The specified format ${req.params.format} requires a viewID to be included.`
+          `The specified format ${req.query.format} requires a viewID to be included.`
         );
       }
 
@@ -553,14 +556,14 @@ api.get(
       const uiSpec = await getEncodedNotebookUISpec(req.params.id);
 
       // check the view ID is valid
-      if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
+      if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
-          `Form with id ${req.params.viewID} not found in notebook`
+          `Form with id ${req.query.viewID} not found in notebook`
         );
       }
 
       // Update with viewID
-      payload.viewID = req.params.viewID;
+      payload.viewID = req.query.viewID;
     }
 
     // Build the download token payload

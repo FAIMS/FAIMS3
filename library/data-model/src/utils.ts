@@ -1,5 +1,31 @@
+import {build} from 'esbuild';
 import {HRID_STRING} from './datamodel/core';
 import {ProjectUIModel, ProjectUIViewset} from './types';
+
+/**
+ * Slugify a string, replacing special characters with less special ones
+ * @param str input string
+ * @returns url safe version of the string
+ * https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
+ */
+export const slugify = (str: string) => {
+  str = str.trim();
+  str = str.toLowerCase();
+
+  // remove accents, swap ñ for n, etc
+  const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
+  const to = 'aaaaaeeeeeiiiiooooouuuunc------';
+  for (let i = 0, l = from.length; i < l; i++) {
+    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
+  }
+
+  str = str
+    .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
+    .replace(/\s+/g, '-') // collapse whitespace and replace by -
+    .replace(/-+/g, '-'); // collapse dashes
+
+  return str;
+};
 
 /**
  * Retrieves a viewset from the UI specification by its ID
@@ -252,4 +278,110 @@ export const getFieldToIdsMap = (
   }
 
   return fieldMap;
+};
+
+// TODO populate completely
+export const SPATIAL_FIELDS = ['MapFormField'];
+
+export type FieldSummary = {
+  name: string;
+  type: string;
+  annotation?: string;
+  viewId: string;
+  viewsetId: string;
+  uncertainty?: string;
+  isSpatial?: boolean;
+};
+
+/**
+ * Get a list of fields for a notebook with relevant information
+ * on each for the export
+  
+ * @param uiSpecification UI Specification (decoded)
+ * @param viewID View ID
+ * @returns an array of FieldSummary objects
+ */
+export const getNotebookFieldTypes = ({
+  uiSpecification,
+  viewID,
+}: {
+  uiSpecification: ProjectUIModel;
+  viewID: string;
+}) => {
+  if (!(viewID in uiSpecification.viewsets)) {
+    throw new Error(`invalid form ${viewID} not found in notebook`);
+  }
+  const views = uiSpecification.viewsets[viewID].views;
+  const fields: FieldSummary[] = [];
+
+  views.forEach((view: string) => {
+    uiSpecification.views[view].fields.forEach((field: any) => {
+      const fieldInfo = uiSpecification.fields[field];
+      fields.push({
+        name: field,
+        type: fieldInfo['type-returned'],
+        viewsetId: viewID,
+        viewId: view,
+        // include a hint as to whether this is a spatial field
+        isSpatial: SPATIAL_FIELDS.some(f => f == fieldInfo['component-name']),
+        annotation: fieldInfo.meta.annotation.include
+          ? slugify(fieldInfo.meta.annotation.label)
+          : '',
+        uncertainty: fieldInfo.meta.uncertainty.include
+          ? slugify(fieldInfo.meta.uncertainty.label)
+          : '',
+      });
+    });
+  });
+  return fields;
+};
+
+/**
+ * Builds a mapping of viewset IDs to their respective field summaries
+ * @param uiSpecification - The UI specification containing viewsets and fields
+ * @returns Map of viewset IDs to arrays of FieldSummary objects
+ */
+export const buildViewsetFieldSummaries = ({
+  uiSpecification,
+}: {
+  uiSpecification: ProjectUIModel;
+}): Record<string, FieldSummary[]> => {
+  // Get all view IDs
+  const allViewIds = Array.from(Object.keys(uiSpecification.viewsets));
+
+  // Collate map of viewset -> list of fields
+  const viewFieldsMap: Record<string, FieldSummary[]> = {};
+
+  // First do validation to ensure spatial elements are present
+  for (const viewID of allViewIds) {
+    // Get field info for view
+    const fields = getNotebookFieldTypes({uiSpecification, viewID});
+
+    // Collect
+    viewFieldsMap[viewID] = fields;
+  }
+
+  return viewFieldsMap;
+};
+
+/**
+ * Determines if any viewset in the UI specification contains spatial fields
+ * @param uiSpecification - The UI specification to analyze
+ * @returns True if any viewset has spatial fields, false otherwise
+ */
+export const isValidForSpatialExport = ({
+  uiSpecification,
+}: {
+  uiSpecification: ProjectUIModel;
+}): boolean => {
+  const viewInfo = buildViewsetFieldSummaries({uiSpecification});
+  let hasSpatial = false;
+  for (const viewID of Object.keys(viewInfo)) {
+    const fields = viewInfo[viewID];
+    if (fields.some(f => f.isSpatial)) {
+      hasSpatial = true;
+      break;
+    }
+  }
+  return hasSpatial;
 };

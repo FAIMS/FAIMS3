@@ -46,6 +46,10 @@ import {
   PROJECT_METADATA_PREFIX,
   Annotations,
   DatabaseInterface,
+  FieldSummary,
+  getNotebookFieldTypes,
+  slugify,
+  buildViewsetFieldSummaries,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -70,11 +74,6 @@ import {
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
-import {slugify} from '../utils';
-import {K} from 'handlebars';
-
-// TODO populate completely
-const SPATIAL_FIELDS = ['MapFormField'];
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -738,14 +737,6 @@ const csvFormatValue = (
   return result;
 };
 
-type FieldSummary = {
-  name: string;
-  type: string;
-  annotation?: string;
-  uncertainty?: string;
-  isSpatial?: boolean;
-};
-
 /**
  * Convert annotations on a field to a format suitable for CSV export
  */
@@ -798,45 +789,6 @@ const convertDataForOutput = (
 };
 
 /**
- * Get a list of fields for a notebook with relevant information
- * on each for the export
- *
- * @param project_id Project ID
- * @param viewID View ID
- * @returns an array of FieldSummary objects
- */
-const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
-  const uiSpec = await getEncodedNotebookUISpec(project_id);
-  if (!uiSpec) {
-    throw new Error("can't find project " + project_id);
-  }
-  if (!(viewID in uiSpec.viewsets)) {
-    throw new Error(`invalid form ${viewID} not found in notebook`);
-  }
-  const views = uiSpec.viewsets[viewID].views;
-  const fields: FieldSummary[] = [];
-
-  views.forEach((view: any) => {
-    uiSpec.fviews[view].fields.forEach((field: any) => {
-      const fieldInfo = uiSpec.fields[field];
-      fields.push({
-        name: field,
-        type: fieldInfo['type-returned'],
-        // include a hint as to whether this is a spatial field
-        isSpatial: SPATIAL_FIELDS.some(f => f == fieldInfo['component-name']),
-        annotation: fieldInfo.meta.annotation.include
-          ? slugify(fieldInfo.meta.annotation.label)
-          : '',
-        uncertainty: fieldInfo.meta.uncertainty.include
-          ? slugify(fieldInfo.meta.uncertainty.label)
-          : '',
-      });
-    });
-  });
-  return fields;
-};
-
-/**
  * Stream the records in a notebook as a CSV file
  *
  * @param projectId Project ID
@@ -857,7 +809,7 @@ export const streamNotebookRecordsAsCSV = async (
     uiSpecification,
     viewID,
   });
-  const fields = await getNotebookFieldTypes(projectId, viewID);
+  const fields = getNotebookFieldTypes({uiSpecification, viewID});
 
   let stringifier: Stringifier | null = null;
   let {record, done} = await iterator.next();
@@ -953,27 +905,19 @@ export const streamNotebookRecordsAsGeoJSON = async (
   // get the UI spec
   const uiSpecification = await getProjectUIModel(projectId);
 
-  // Get all view IDs
-  const allViewIds = Array.from(Object.keys(uiSpecification.viewsets));
-
-  // Collate map of view -> list of fields
-  const viewFieldsMap: Record<string, FieldSummary[]> = {};
+  // get a mapping of viewset ID -> field summaries
+  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
 
   // First do validation to ensure spatial elements are present
-  for (const viewID of allViewIds) {
-    // Get field info for view
-    const fields = await getNotebookFieldTypes(projectId, viewID);
-
-    // Collect
-    viewFieldsMap[viewID] = fields;
-
-    // First - check if any of the fields are spatial
-    if (!fields.some(f => f.isSpatial)) {
-      res.end();
-      throw new Error(
-        `No spatial fields in current view ${viewID}, cannot produce a GeoJSON export!`
-      );
-    }
+  if (
+    !Array.from(Object.keys(viewFieldsMap)).some(viewsetID =>
+      viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
+    )
+  ) {
+    res.end();
+    throw new Error(
+      `No spatial fields in any view, cannot produce a GeoJSON export!`
+    );
   }
 
   // Everything appears to be in order, so we...
@@ -990,7 +934,7 @@ export const streamNotebookRecordsAsGeoJSON = async (
   // For the first one, don't prepend a comma
   let isFirstRecord = true;
 
-  for (const viewID of allViewIds) {
+  for (const viewID of Object.keys(viewFieldsMap)) {
     // This is a record iterator which returns an efficient iteration through the
     // records each containing a data object with a hydrated {key, value} dataset
     const iterator = await notebookRecordIterator({
@@ -1028,6 +972,13 @@ export const streamNotebookRecordsAsGeoJSON = async (
           type: string;
           // The geometry string
           geometry: string;
+          // We also want to track the geometry source in the properties
+          geometrySource: {
+            viewsetId: string;
+            viewId: string;
+            fieldId: string;
+            type: string;
+          };
         }[] = [];
 
         // Then iterate through the fields, and extra data if available
@@ -1049,6 +1000,13 @@ export const streamNotebookRecordsAsGeoJSON = async (
                 geometric.push({
                   type: firstFeature.type,
                   geometry: firstFeature.geometry,
+                  // where did this geometry come from?
+                  geometrySource: {
+                    fieldId: fieldInfo.name,
+                    viewsetId: fieldInfo.viewsetId,
+                    type: fieldInfo.type,
+                    viewId: fieldInfo.viewId,
+                  },
                 });
               } catch (e) {
                 throw new Error('issue while converting geometry' + e);
@@ -1076,7 +1034,21 @@ export const streamNotebookRecordsAsGeoJSON = async (
         // GeoJSON
         for (const geom of geometric) {
           // output is {type, geometry, properties}
-          const output = {...geom, properties: baseJsonData};
+          const output = {
+            ...{
+              type: geom.type,
+              geometry: geom.geometry,
+            },
+            properties: {
+              ...baseJsonData,
+              // Here we append additional information about the geometry source
+              // so that if there are more than one geometry per
+              geometry_source_view_id: geom.geometrySource.viewId,
+              geometry_source_viewset_id: geom.geometrySource.viewsetId,
+              geometry_source_field_id: geom.geometrySource.fieldId,
+              geometry_source_type: geom.geometrySource.type,
+            },
+          };
 
           // And write this out (prepending a comma if NOT first record)
           res.write(`${isFirstRecord ? '' : ','}${JSON.stringify(output)}`);
