@@ -976,3 +976,109 @@ export const notebookRecordIterator = async ({
   };
   return recordIterator;
 };
+
+/**
+ * Return an iterator over the records in a notebook
+ * @param projectId project identifier
+ */
+export const notebookAttachmentIterator = async ({
+  projectId,
+  filterDeleted = true,
+}: {
+  projectId: string;
+  filterDeleted?: boolean;
+}) => {
+  const batchSize = 20;
+
+  const getNextBatch = async (bookmark: string | null) => {
+    const records = await getSomeAttachments(
+      projectId,
+      batchSize,
+      bookmark,
+      filterDeleted
+    );
+    return {done: records.length === 0, records};
+  };
+
+  let batch = await getNextBatch(null);
+  // deal with end of records
+  if (batch.done) {
+    return {next: async () => ({record: null, done: true})};
+  }
+  let index = 0;
+  const recordIterator = {
+    async next() {
+      let record;
+      if (index < batch.records.length) {
+        record = batch.records[index];
+        index++;
+      } else {
+        // Explicit cleanup before fetching next batch
+        const lastRecordId = batch.records[batch.records.length - 1]?.record_id;
+        batch.records.length = 0; // Clear the array
+
+        if (!lastRecordId) {
+          return {record: null, done: true};
+        }
+
+        // Fetch next batch
+        batch = await getNextBatch(lastRecordId);
+        if (batch.records.length > 0) {
+          record = batch.records[0];
+          index = 1;
+        }
+      }
+      if (record) {
+        try {
+          return {record, done: false};
+        } catch (error) {
+          console.error(error);
+          return {record: null, done: false};
+        }
+      } else {
+        return {record: null, done: true};
+      }
+    },
+  };
+  return recordIterator;
+};
+
+export async function getSomeAttachments(
+  project_id: ProjectID,
+  limit: number,
+  bookmark: string | null = null,
+  filter_deleted = true
+) {
+  const dataDB: DatabaseInterface<ProjectDataObject> | undefined =
+    await getDataDB(project_id);
+  if (!dataDB) throw Error('No data DB with project ID ' + project_id);
+
+  const options: {[key: string]: any} = {
+    limit: limit,
+    include_docs: true,
+  };
+
+  // if we have a bookmark, start from there
+  if (bookmark !== null) {
+    options.startkey = bookmark;
+  }
+
+  try {
+    const res = await dataDB.query('index/attachments', options);
+    let attachmentList = res.rows.map((doc: any) => doc.doc);
+
+    if (filter_deleted) {
+      attachmentList = attachmentList.filter((doc: any) => {
+        return !doc?.deleted;
+      });
+    }
+
+    // don't return the first record if we have a bookmark
+    // as it will be the bookmarked record
+    if (bookmark !== null) return attachmentList.slice(1);
+    else return attachmentList;
+  } catch (err) {
+    console.log('failed to get some records', err);
+    return [];
+  }
+}

@@ -36,8 +36,10 @@ import {
   getNotebookFieldTypes,
   GetNotebookListResponse,
   logError,
+  notebookAttachmentIterator,
   notebookRecordIterator,
   PROJECT_METADATA_PREFIX,
+  ProjectDataObject,
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
@@ -73,6 +75,7 @@ import {
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
+import {record} from 'zod';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -887,51 +890,70 @@ export const streamNotebookRecordsAsCSV = async (
   }
 };
 
+/**
+ * Streams notebook files as a ZIP archive directly to a writable stream.
+ *
+ * This function creates a ZIP archive containing all non-deleted attachments from a notebook view.
+ * It processes records one at a time to minimize memory usage, streaming file buffers directly
+ * into the archive without keeping them all in memory simultaneously.
+ *
+ * @param projectId - The ID of the project containing the notebook
+ * @param viewID - The ID of the view to export (currently unused but reserved for future filtering)
+ * @param res - The writable stream (typically an HTTP response) to pipe the ZIP data to
+ *
+ * @throws Error if database access fails or archiving encounters an error
+ */
 export const streamNotebookFilesAsZip = async (
   projectId: ProjectID,
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
+  // Memory logging helper for development/debugging
   const logMemory = (stage: string, extraInfo = '') => {
     if (DEVELOPER_MODE) {
       const used = process.memoryUsage();
       console.log(
-        `[ZIP ${stage}] ${extraInfo} - RSS: ${Math.round(used.rss / 1024 / 1024)}MB, ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB, External: ${Math.round(used.external / 1024 / 1024)}MB`
+        `[ZIP ${stage}] ${extraInfo} - RSS: ${Math.round(used.rss / 1024 / 1024)}MB, ` +
+          `ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB, ` +
+          `External: ${Math.round(used.external / 1024 / 1024)}MB`
       );
     }
   };
 
   logMemory('START');
 
+  // State tracking for finalization
   let allFilesAdded = false;
   let doneFinalize = false;
+  let dataWritten = false;
 
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-  const iterator = await notebookRecordIterator({
-    dataDb,
+  // Initialize database and iterator
+  const dataDb = (await getDataDb(
+    projectId
+  )) as PouchDB.Database<ProjectDataObject>;
+  const iterator = await notebookAttachmentIterator({
     projectId,
-    uiSpecification,
-    viewID,
+    filterDeleted: true,
   });
+
+  // Create ZIP archive with maximum compression
   const archive = archiver('zip', {zlib: {level: 9}});
-  // good practice to catch warnings (ie stat failures and other non-blocking errors)
+
+  // Set up archive event handlers
   archive.on('warning', err => {
     if (err.code === 'ENOENT') {
-      // log warning
+      console.warn('[ZIP] File not found warning:', err.message);
     } else {
-      // throw error
       throw err;
     }
   });
 
-  // good practice to catch this error explicitly
   archive.on('error', err => {
+    console.error('[ZIP] Archive error:', err);
     throw err;
   });
 
-  // check on progress, if we've finished adding files and they are
-  // all processed then we can finalize the archive
+  // Monitor progress and finalize when all files are processed
   archive.on('progress', (ev: any) => {
     if (
       !doneFinalize &&
@@ -941,108 +963,170 @@ export const streamNotebookFilesAsZip = async (
       try {
         archive.finalize();
         doneFinalize = true;
-      } catch {
-        // ignore ArchiveError
+        logMemory('FINALIZED');
+      } catch (err) {
+        // Ignore ArchiveError if already finalized
+        console.warn('[ZIP] Finalization error (may be duplicate):', err);
       }
     }
   });
 
+  // Pipe archive output to response stream
+  archive.pipe(res);
+
+  // Process records iteratively to minimize memory footprint
   let recordCount = 0;
   let fileCount = 0;
+  let skippedCount = 0;
 
-  archive.pipe(res);
-  let dataWritten = false;
   let {record, done} = await iterator.next();
-  const fileNames: string[] = [];
+
   while (!done) {
-    // iterate over the fields, if it's a file, then
-    // append it to the archive
     if (record !== null) {
-      const hrid = record.hrid || record.record_id;
       recordCount++;
+      const hrid = record.hrid || record.record_id;
       logMemory('RECORD', `Record ${recordCount} (${hrid})`);
 
-      // Process files sequentially to avoid memory spikes
-      for (const key of Object.keys(record.data)) {
-        if (record.data[key] instanceof Array && record.data[key].length > 0) {
-          if (record.data[key][0] instanceof File) {
-            const file_list = record.data[key] as File[];
+      const attachmentID = record['_id'];
+      const filename = record['filename'] || `attachment-${attachmentID}`;
 
-            // Process files one at a time
-            for (const file of file_list) {
-              fileCount++;
-              const fileSizeMB = Math.round(file.size / 1024 / 1024);
-              logMemory(
-                'BEFORE_FILE',
-                `File ${fileCount}, Size: ${fileSizeMB}MB`
-              );
+      try {
+        // Retrieve attachment metadata to determine content type
+        const attachmentMeta = record['_attachments']?.[attachmentID];
+        const contentType = attachmentMeta?.content_type;
 
-              const filename = generateFilenameForAttachment(
-                file,
-                key,
-                hrid,
-                fileNames
-              );
-              fileNames.push(filename);
+        // Get file extension from content type
+        const extension = getFileExtensionFromMimeType(contentType);
 
-              // Convert Web ReadableStream to Node.js Readable stream
-              const webStream = file.stream();
-              const reader = webStream.getReader();
+        if (!extension) {
+          console.warn(
+            `[ZIP] Skipping record ${hrid}: unknown content type "${contentType}"`
+          );
+          skippedCount++;
+        } else {
+          // Stream attachment directly from database
+          const fileBuffer: Buffer = (await dataDb.getAttachment(
+            attachmentID,
+            attachmentID
+          )) as Buffer;
 
-              // Create a Node.js Readable stream from the chunks
-              const nodeStream = new Stream.Readable({
-                async read() {
-                  try {
-                    const {done, value} = await reader.read();
-                    if (done) {
-                      this.push(null); // End the stream
-                    } else {
-                      this.push(Buffer.from(value)); // Convert Uint8Array to Buffer
-                    }
-                  } catch (error) {
-                    this.destroy(error as Error);
-                  }
-                },
-              });
+          // Add to archive
+          archive.append(fileBuffer, {
+            name: `${filename}${extension}`,
+          });
 
-              await archive.append(nodeStream, {
-                name: filename,
-              });
-              dataWritten = true;
+          fileCount++;
+          dataWritten = true;
 
-              logMemory('AFTER_FILE', `File ${fileCount} processed`);
-            }
-
-            // Clear the file array after processing to help GC
-            record.data[key] = [];
-            logMemory('AFTER_CLEAR', 'Files cleared');
-            // Force garbage collection if available (Node.js --expose-gc flag)
-            if (global.gc && recordCount % 5 === 0) {
-              global.gc();
-              logMemory('AFTER_GC', `Forced GC after record ${recordCount}`);
-            }
-          }
+          logMemory('FILE_ADDED', `File ${fileCount}: ${filename}${extension}`);
         }
+      } catch (err) {
+        console.error(
+          `[ZIP] Failed to process attachment for record ${hrid}:`,
+          err
+        );
+        skippedCount++;
       }
     }
-    // Clear the record reference before getting the next one
-    record = null;
 
+    // Get next record
     const next = await iterator.next();
     record = next.record;
     done = next.done;
   }
-  // if we didn't write any data then finalise because that won't happen elsewhere
+
+  // Handle empty archive case
   if (!dataWritten) {
-    console.log('no data written');
+    console.log('[ZIP] No data written, aborting archive');
     archive.abort();
   }
+
   allFilesAdded = true;
-  // fire a progress event here because short/empty zip files don't
-  // trigger it late enough for us to call finalize above
+
+  // Trigger progress event for empty/small archives to ensure finalization
   archive.emit('progress', {entries: {processed: 0, total: 0}});
 
-  logMemory('COMPLETE');
+  logMemory(
+    'COMPLETE',
+    `Total: ${fileCount} files, ${skippedCount} skipped, ${recordCount} records`
+  );
+};
+
+/**
+ * Maps MIME types to appropriate file extensions.
+ *
+ * @param mimeType - The MIME type from the attachment metadata
+ * @returns The file extension (including leading dot) or null if type is unknown
+ */
+const getFileExtensionFromMimeType = (
+  mimeType: string | undefined
+): string | null => {
+  if (!mimeType) return null;
+
+  // Normalize MIME type (lowercase, trim whitespace)
+  const normalized = mimeType.toLowerCase().trim();
+
+  // Common MIME type to extension mappings
+  const mimeTypeMap: Record<string, string> = {
+    // Images
+    'image/png': '.png',
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
+    'image/gif': '.gif',
+    'image/webp': '.webp',
+    'image/svg+xml': '.svg',
+    'image/bmp': '.bmp',
+    'image/tiff': '.tiff',
+    'image/x-icon': '.ico',
+    'image/heic': '.heic',
+    'image/heif': '.heif',
+
+    // Documents
+    'application/pdf': '.pdf',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      '.docx',
+    'application/vnd.ms-excel': '.xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+      '.xlsx',
+    'application/vnd.ms-powerpoint': '.ppt',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+      '.pptx',
+    'text/plain': '.txt',
+    'text/csv': '.csv',
+    'text/html': '.html',
+    'text/markdown': '.md',
+
+    // Archives
+    'application/zip': '.zip',
+    'application/x-rar-compressed': '.rar',
+    'application/x-7z-compressed': '.7z',
+    'application/x-tar': '.tar',
+    'application/gzip': '.gz',
+
+    // Audio
+    'audio/mpeg': '.mp3',
+    'audio/wav': '.wav',
+    'audio/ogg': '.ogg',
+    'audio/webm': '.webm',
+    'audio/aac': '.aac',
+    'audio/flac': '.flac',
+
+    // Video
+    'video/mp4': '.mp4',
+    'video/mpeg': '.mpeg',
+    'video/webm': '.webm',
+    'video/ogg': '.ogv',
+    'video/quicktime': '.mov',
+    'video/x-msvideo': '.avi',
+
+    // Other
+    'application/json': '.json',
+    'application/xml': '.xml',
+    'application/javascript': '.js',
+  };
+
+  return mimeTypeMap[normalized] || null;
 };
 
 export const generateFilenameForAttachment = (
