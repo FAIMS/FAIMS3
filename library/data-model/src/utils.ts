@@ -1,4 +1,3 @@
-import {build} from 'esbuild';
 import {HRID_STRING} from './datamodel/core';
 import {ProjectUIModel, ProjectUIViewset} from './types';
 
@@ -296,7 +295,7 @@ export type FieldSummary = {
 /**
  * Get a list of fields for a notebook with relevant information
  * on each for the export
-  
+
  * @param uiSpecification UI Specification (decoded)
  * @param viewID View ID
  * @returns an array of FieldSummary objects
@@ -323,7 +322,7 @@ export const getNotebookFieldTypes = ({
         viewsetId: viewID,
         viewId: view,
         // include a hint as to whether this is a spatial field
-        isSpatial: SPATIAL_FIELDS.some(f => f == fieldInfo['component-name']),
+        isSpatial: SPATIAL_FIELDS.some(f => f === fieldInfo['component-name']),
         annotation: fieldInfo.meta.annotation.include
           ? slugify(fieldInfo.meta.annotation.label)
           : '',

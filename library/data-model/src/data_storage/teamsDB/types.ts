@@ -18,7 +18,7 @@
  *   Data models related to users.
  */
 
-import {DatabaseInterface} from "../../types";
+import {DatabaseInterface} from '../../types';
 
 export type TeamsV1Document = PouchDB.Core.ExistingDocument<TeamsV1Fields>;
 

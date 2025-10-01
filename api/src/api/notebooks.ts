@@ -539,7 +539,7 @@ api.get(
       throw new Exceptions.UnauthorizedException('Not authenticated.');
     }
 
-    let payload: DownloadTokenPayload = {
+    const payload: DownloadTokenPayload = {
       projectID: req.params.id,
       format: req.query.format,
       userID: req.user.user_id,
@@ -610,7 +610,7 @@ api.get(
       );
     }
 
-    let payload: DownloadTokenPayload = {
+    const payload: DownloadTokenPayload = {
       projectID: req.params.id,
       format: req.params.format,
       userID: req.user.user_id,

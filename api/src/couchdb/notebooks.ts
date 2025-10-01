@@ -916,7 +916,7 @@ export const streamNotebookRecordsAsGeoJSON = async (
   ) {
     res.end();
     throw new Error(
-      `No spatial fields in any view, cannot produce a GeoJSON export!`
+      'No spatial fields in any view, cannot produce a GeoJSON export!'
     );
   }
 
@@ -952,7 +952,7 @@ export const streamNotebookRecordsAsGeoJSON = async (
         const hrid = record.hrid || record.record_id;
 
         // Setup the base JSON data
-        let baseJsonData: Record<string, any> = {
+        const baseJsonData: Record<string, any> = {
           hrid,
           record_id: record.record_id,
           revision_id: record.revision_id,

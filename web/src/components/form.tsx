@@ -89,7 +89,10 @@ export function Form<
   warningMessage?: string;
   defaultValues?: DefaultValues<TSchema>;
   footer?: React.ReactNode;
-  disableSubmission?: {disabled: boolean | ((data: TSchema) => boolean); reason: string};
+  disableSubmission?: {
+    disabled: boolean | ((data: TSchema) => boolean);
+    reason: string;
+  };
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -105,19 +108,19 @@ export function Form<
     defaultValues,
   });
 
-  const isSubmitDisabled = 
-    isSubmitting || 
-    (disableSubmission 
+  const isSubmitDisabled =
+    isSubmitting ||
+    (disableSubmission
       ? typeof disableSubmission.disabled === 'function'
         ? disableSubmission.disabled(form.watch() as TSchema)
         : disableSubmission.disabled
       : false);
 
-  const shouldShowDisableMessage = disableSubmission && (
-    typeof disableSubmission.disabled === 'function'
+  const shouldShowDisableMessage =
+    disableSubmission &&
+    (typeof disableSubmission.disabled === 'function'
       ? disableSubmission.disabled(form.watch() as TSchema)
-      : disableSubmission.disabled
-  );
+      : disableSubmission.disabled);
 
   return (
     <FormProvider {...form}>
@@ -263,9 +266,7 @@ export function Form<
         )}
         <FormMessage>{form.formState.errors.root?.message}</FormMessage>
         {shouldShowDisableMessage && (
-          <p className="text-sm text-destructive">
-            {disableSubmission.reason}
-          </p>
+          <p className="text-sm text-destructive">{disableSubmission.reason}</p>
         )}
         <Button
           type="submit"
