@@ -20,7 +20,54 @@ The system is configured in `expressSetup.ts` which initializes:
 2. Authentication handlebar **pages** via `addAuthPages`
 3. Authentication API **routes** via `addAuthRoutes`
 
-Social providers are defined in `buildconfig.ts` as `CONDUCTOR_AUTH_PROVIDERS`. Auth providers should be referenced via their ID in the `AUTH_PROVIDER_DETAILS` map in `applyStrategies.ts`. A semicolon separated list is used.
+Local password authentication is always available and if configured, one or
+more identity providers can also be used. There is a custom implementation for
+Google authentication and a more general OIDC based provider.  
+
+The available
+providers are configured via environment variables using a pattern of variable
+names to encode an object structure.  Variables starting with `AUTH_` define
+the properties of different providers with the pattern `AUTH_{provider}_{property}`.   There are two kinds of provider: Google and OIDC.  These are configured
+as follows:
+
+For a Google provider, the TYPE property should be `google` and the following
+properties should be supplied:
+
+```shell
+AUTH_GOOGLE_TYPE="google"
+AUTH_GOOGLE_INDEX=1
+AUTH_GOOGLE_DISPLAY_NAME="Google"
+AUTH_GOOGLE_HELPER_TEXT="Log in with your Google account"
+AUTH_GOOGLE_CLIENT_ID="google client id"
+AUTH_GOOGLE_CLIENT_SECRET="google client secret"
+AUTH_GOOGLE_SCOPE="profile,email,https://www.googleapis.com/auth/plus.login"
+```
+
+For an OIDC provider, the `TYPE` property should be `oidc` and the following 
+properties should be defined:
+
+```shell
+AUTH_AAF_TYPE="oidc"
+AUTH_AAF_INDEX=2
+AUTH_AAF_DISPLAY_NAME="AAF"
+AUTH_AAF_HELPER_TEXT="Use your Australian University credentials"
+AUTH_AAF_ISSUER="https://central.test.aaf.edu.au"
+AUTH_AAF_AUTHORIZATION_URL="https://central.test.aaf.edu.au/oidc/authorize"
+AUTH_AAF_TOKEN_URL="https://central.test.aaf.edu.au/oidc/token"
+AUTH_AAF_USER_INFO_URL="https://central.test.aaf.edu.au/oidc/userinfo"
+AUTH_AAF_CLIENT_ID="aaf client id"
+AUTH_AAF_CLIENT_SECRET="aaf client secret"
+AUTH_AAF_SCOPE="profile,email"
+```
+
+Note that another provider of the same type can be configured, eg. you 
+could configure `AUTH_FOOBAR_TYPE="oidc"` and supply the other `AUTH_FOOBAR_*`
+properties as well.
+
+The `DISPLAY_NAME` field is used to label the login button _"Continue with XXX"_. 
+The `HELPER_TEXT` field is optional and is displayed below the login button
+if provided. The `INDEX` field is optional but if present, defines the ordering
+of buttons on the login page.
 
 ## Key Files
 
