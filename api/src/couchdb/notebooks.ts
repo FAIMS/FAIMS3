@@ -1033,6 +1033,7 @@ export const streamNotebookFilesAsZip = async (
     const next = await iterator.next();
     record = next.record;
     done = next.done;
+    console.log('Iterator DONE ', done);
   }
 
   // Handle empty archive case

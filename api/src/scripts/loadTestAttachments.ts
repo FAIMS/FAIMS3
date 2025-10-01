@@ -2,22 +2,21 @@
  * Load Testing Script for PouchDB Attachment Storage
  *
  * This script populates a PouchDB database with test image attachments to simulate
- * large-scale data exports. It downloads sample images from online sources and creates
- * attachment records in the format expected by your application.
+ * large-scale data exports. It repeatedly uploads a specified JPEG file from the local filesystem.
  *
  * Usage:
- *   ts-node loadTestAttachments.ts --count 100 --project my-project-id
+ *   ts-node loadTestAttachments.ts --file /path/to/image.jpg --count 100 --project my-project-id
  *
  * Options:
+ *   --file: Path to JPEG file to upload (required)
  *   --count: Number of attachments to create (default: 50)
  *   --project: Project ID to use (default: from environment)
- *   --size: Image size - 'small' (100KB), 'medium' (500KB), 'large' (2MB), 'mixed' (default: mixed)
  *   --concurrent: Number of concurrent uploads (default: 5)
  */
 
 import {ProjectDataObject, ProjectID} from '@faims3/data-model';
-import * as http from 'http';
-import * as https from 'https';
+import * as fs from 'fs';
+import * as path from 'path';
 import {v4 as uuidv4} from 'uuid';
 import {getDataDb} from '../couchdb';
 
@@ -25,131 +24,33 @@ import {getDataDb} from '../couchdb';
 interface LoadTestConfig {
   count: number;
   projectId: ProjectID;
-  imageSize: 'small' | 'medium' | 'large' | 'mixed';
+  filePath: string;
   concurrentUploads: number;
 }
 
-interface TestImageSource {
-  url: string;
-  size: 'small' | 'medium' | 'large';
-  contentType: string;
-}
-
-// Image sources - using picsum.photos for random test images
-// These are different sizes to simulate realistic data
-const IMAGE_SOURCES: TestImageSource[] = [
-  // Small images (~100-200KB)
-  {
-    url: 'https://picsum.photos/400/300',
-    size: 'small',
-    contentType: 'image/jpeg',
-  },
-  {
-    url: 'https://picsum.photos/300/400',
-    size: 'small',
-    contentType: 'image/jpeg',
-  },
-  {
-    url: 'https://picsum.photos/350/350',
-    size: 'small',
-    contentType: 'image/jpeg',
-  },
-
-  // Medium images (~500KB-1MB)
-  {
-    url: 'https://picsum.photos/800/600',
-    size: 'medium',
-    contentType: 'image/jpeg',
-  },
-  {
-    url: 'https://picsum.photos/600/800',
-    size: 'medium',
-    contentType: 'image/jpeg',
-  },
-  {
-    url: 'https://picsum.photos/700/700',
-    size: 'medium',
-    contentType: 'image/jpeg',
-  },
-
-  // Large images (~2-3MB)
-  {
-    url: 'https://picsum.photos/1920/1080',
-    size: 'large',
-    contentType: 'image/jpeg',
-  },
-  {
-    url: 'https://picsum.photos/1080/1920',
-    size: 'large',
-    contentType: 'image/jpeg',
-  },
-  {
-    url: 'https://picsum.photos/1600/1200',
-    size: 'large',
-    contentType: 'image/jpeg',
-  },
-];
-
 /**
- * Downloads an image from a URL and returns it as a Buffer
+ * Reads a file from the local filesystem
  */
-async function downloadImage(url: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const protocol = url.startsWith('https') ? https : http;
-    protocol
-      .get(url, response => {
-        // Handle redirects
-        if (response.statusCode === 301 || response.statusCode === 302) {
-          const redirectUrl = response.headers.location;
-          if (redirectUrl) {
-            downloadImage(redirectUrl).then(resolve).catch(reject);
-            return; // Add explicit return here
-          }
-          // Handle missing location header
-          reject(new Error('Redirect without location header'));
-          return;
-        }
-        if (response.statusCode !== 200) {
-          reject(new Error(`Failed to download image: ${response.statusCode}`));
-          return;
-        }
-        const chunks: Buffer[] = [];
-        response.on('data', (chunk: Buffer) => {
-          chunks.push(chunk);
-        });
-        response.on('end', () => {
-          resolve(Buffer.concat(chunks as any));
-        });
-        response.on('error', reject);
-      })
-      .on('error', reject);
-  });
-}
-
-/**
- * Selects an appropriate image source based on size preference
- */
-function selectImageSource(
-  sizePreference: 'small' | 'medium' | 'large' | 'mixed'
-): TestImageSource {
-  if (sizePreference === 'mixed') {
-    // Randomly select from all sizes
-    return IMAGE_SOURCES[Math.floor(Math.random() * IMAGE_SOURCES.length)];
+function readLocalFile(filePath: string): Buffer {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
   }
 
-  const filtered = IMAGE_SOURCES.filter(
-    source => source.size === sizePreference
-  );
-  return filtered[Math.floor(Math.random() * filtered.length)];
+  const stats = fs.statSync(filePath);
+  if (!stats.isFile()) {
+    throw new Error(`Not a file: ${filePath}`);
+  }
+
+  return fs.readFileSync(filePath);
 }
 
 /**
- * Creates a single attachment record with the downloaded image
+ * Creates a single attachment record with the image data
  */
 async function createAttachmentRecord(
   db: PouchDB.Database,
   imageBuffer: Buffer,
-  contentType: string,
+  filename: string,
   index: number
 ): Promise<void> {
   const attachmentId = `att-${uuidv4()}`;
@@ -168,10 +69,10 @@ async function createAttachmentRecord(
     record_id: recordId,
     created: now,
     created_by: 'load-test-script',
-    filename: `load-test-image-${index}`,
+    filename: `${filename}-copy-${index}`,
     _attachments: {
       [attachmentId]: {
-        content_type: contentType,
+        content_type: 'image/jpeg',
         data: imageBuffer,
       },
     },
@@ -185,6 +86,8 @@ async function createAttachmentRecord(
  */
 async function processBatch(
   db: PouchDB.Database,
+  imageBuffer: Buffer,
+  filename: string,
   config: LoadTestConfig,
   startIndex: number,
   batchSize: number
@@ -193,24 +96,13 @@ async function processBatch(
 
   for (let i = 0; i < batchSize; i++) {
     const index = startIndex + i;
-    const imageSource = selectImageSource(config.imageSize);
 
     const promise = (async () => {
       try {
         console.log(
-          `[${index + 1}/${config.count}] Downloading image from ${imageSource.url}...`
-        );
-        const imageBuffer = await downloadImage(imageSource.url);
-
-        console.log(
           `[${index + 1}/${config.count}] Uploading ${(imageBuffer.length / 1024).toFixed(2)}KB to database...`
         );
-        await createAttachmentRecord(
-          db,
-          imageBuffer,
-          imageSource.contentType,
-          index
-        );
+        await createAttachmentRecord(db, imageBuffer, filename, index);
 
         console.log(`[${index + 1}/${config.count}] ✓ Successfully uploaded`);
       } catch (error) {
@@ -233,13 +125,20 @@ async function runLoadTest(config: LoadTestConfig): Promise<void> {
   console.log('PouchDB Attachment Load Test');
   console.log('='.repeat(60));
   console.log(`Project ID: ${config.projectId}`);
+  console.log(`Source file: ${config.filePath}`);
   console.log(`Target count: ${config.count} attachments`);
-  console.log(`Image size: ${config.imageSize}`);
   console.log(`Concurrent uploads: ${config.concurrentUploads}`);
   console.log('='.repeat(60));
   console.log('');
 
   const startTime = Date.now();
+
+  // Read the local file
+  console.log('Reading local file...');
+  const imageBuffer = readLocalFile(config.filePath);
+  const fileSizeMB = (imageBuffer.length / 1024 / 1024).toFixed(2);
+  const filename = path.basename(config.filePath, path.extname(config.filePath));
+  console.log(`✓ File loaded: ${fileSizeMB}MB\n`);
 
   // Initialize database
   console.log('Connecting to database...');
@@ -264,7 +163,7 @@ async function runLoadTest(config: LoadTestConfig): Promise<void> {
     );
 
     try {
-      await processBatch(db, config, i, batchSize);
+      await processBatch(db, imageBuffer, filename, config, i, batchSize);
       totalUploaded += batchSize;
     } catch (error) {
       totalFailed += batchSize;
@@ -284,6 +183,7 @@ async function runLoadTest(config: LoadTestConfig): Promise<void> {
   const docIncrease = finalInfo.doc_count - initialInfo.doc_count;
 
   const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+  const totalDataMB = (totalUploaded * imageBuffer.length / 1024 / 1024).toFixed(2);
 
   console.log('\n' + '='.repeat(60));
   console.log('Load Test Complete');
@@ -292,6 +192,7 @@ async function runLoadTest(config: LoadTestConfig): Promise<void> {
   console.log(`Successfully uploaded: ${totalUploaded}/${config.count}`);
   console.log(`Failed: ${totalFailed}/${config.count}`);
   console.log(`Documents added: ${docIncrease}`);
+  console.log(`Total data uploaded: ${totalDataMB}MB`);
   console.log(
     `Average upload rate: ${(totalUploaded / parseFloat(totalTime)).toFixed(2)} attachments/second`
   );
@@ -307,7 +208,7 @@ function parseArgs(): LoadTestConfig {
   const config: LoadTestConfig = {
     count: 50,
     projectId: process.env.PROJECT_ID || 'default-project',
-    imageSize: 'mixed',
+    filePath: '',
     concurrentUploads: 5,
   };
 
@@ -316,16 +217,14 @@ function parseArgs(): LoadTestConfig {
     const value = args[i + 1];
 
     switch (flag) {
+      case '--file':
+        config.filePath = value;
+        break;
       case '--count':
         config.count = parseInt(value, 10);
         break;
       case '--project':
         config.projectId = value as ProjectID;
-        break;
-      case '--size':
-        if (['small', 'medium', 'large', 'mixed'].includes(value)) {
-          config.imageSize = value as any;
-        }
         break;
       case '--concurrent':
         config.concurrentUploads = parseInt(value, 10);
@@ -334,6 +233,19 @@ function parseArgs(): LoadTestConfig {
         console.error(`Unknown flag: ${flag}`);
         process.exit(1);
     }
+  }
+
+  // Validate required arguments
+  if (!config.filePath) {
+    console.error('Error: --file argument is required');
+    console.log('\nUsage:');
+    console.log('  ts-node loadTestAttachments.ts --file /path/to/image.jpg [options]');
+    console.log('\nOptions:');
+    console.log('  --file <path>        Path to JPEG file (required)');
+    console.log('  --count <number>     Number of uploads (default: 50)');
+    console.log('  --project <id>       Project ID (default: from env)');
+    console.log('  --concurrent <num>   Concurrent uploads (default: 5)');
+    process.exit(1);
   }
 
   return config;
