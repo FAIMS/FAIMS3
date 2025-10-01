@@ -40,8 +40,7 @@ export const readAuthProviderConfigFromEnv =
     const config: Record<string, any> = {};
 
     // parse the environment variables to get the provider/property/value triples
-    // Expected format: AUTH_{PROVIDER}_{PROPERTY} or
-    //                 AUTH_{PROVIDER}_{PROPERTY}_N for array properties
+    // Expected format: AUTH_{PROVIDER}_{PROPERTY}
     const pattern = /^AUTH_([A-Z0-9]+)_([A-Z0-9_]+)?$/;
     envVars.forEach(([key, value]) => {
       const match = key.match(pattern);

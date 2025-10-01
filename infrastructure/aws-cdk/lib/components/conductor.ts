@@ -191,14 +191,17 @@ export class FaimsConductor extends Construct {
       : undefined;
     const googleConfigSecrets = googleSecret
       ? {
-          GOOGLE_CLIENT_ID: ecs.Secret.fromSecretsManager(
+          AUTH_GOOGLE_CLIENT_ID: ecs.Secret.fromSecretsManager(
             googleSecret,
             'CLIENT_ID'
           ),
-          GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
+          AUTH_GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
             googleSecret,
             'CLIENT_SECRET'
           ),
+          AUTH_GOOGLE_TYPE: 'google',
+          AUTH_GOOGLE_DISPLAY_NAME:'Google',
+          AUTH_GOOGLE_SCOPE:'profile,email,https://www.googleapis.com/auth/plus.login',
         }
       : undefined;
 
