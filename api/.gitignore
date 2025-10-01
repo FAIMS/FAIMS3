@@ -122,6 +122,3 @@ projects_dummy_listing/
 keys
 couchdb/local.ini*
 !couchdb/local.ini.dist
-
-# ignore authConfig.json which may contain sensitive client secrets
-authConfig.json
