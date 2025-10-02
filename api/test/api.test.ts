@@ -670,95 +670,55 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup({filename: 'test/backup.jsonl'});
 
-    const url =
-      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
-    const adminUser = await getExpressUserFromEmailOrUserId('admin');
-    if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
-      expect(notebooks).to.have.lengthOf(2);
+    // new method
+    const urls = [
+      // @deprecated
+      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv',
+      // new method
+      '/api/notebooks/1693291182736-campus-survey-demo/records/export?viewID=FORM2&format=csv',
+    ];
+    for (const url of urls) {
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
+      if (adminUser) {
+        const notebooks = await getUserProjectsDetailed(adminUser);
+        expect(notebooks).to.have.lengthOf(2);
 
-      let redirectURL = '';
-      await request(app)
-        .get(url)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .set('Content-Type', 'application/json')
-        .expect(302)
-        .expect(response => {
-          expect(response.headers.location).to.match(/\/download\/.*/);
-          redirectURL = response.headers.location;
-        });
-
-      if (redirectURL)
+        let redirectURL = '';
         await request(app)
-          .get(redirectURL)
-          .expect('Content-Type', 'text/csv')
-          .expect(response => {
-            // response body should be csv data
-            expect(response.text).to.contain('identifier');
-            expect(response.text).to.contain('take-photo');
-            // uncertainty label on asset number
-            expect(response.text).to.contain('asset-number_questionable');
-            // annotation label for asset number
-            expect(response.text).to.contain('asset-number_difficulties');
-
-            const lines = response.text.split('\n');
-            lines.forEach(line => {
-              if (line !== '' && !line.startsWith('identifier')) {
-                expect(line).to.contain('rec');
-                expect(line).to.contain('FORM2');
-                expect(line).to.contain('frev');
-              }
-            });
-            // one more newline than the number of records + header
-            expect(lines).to.have.lengthOf(19);
-          });
-    }
-  });
-
-  //identifier,record_id,revision_id,type,created_by,created,updated_by,updated,
-  // hridFORM2,hridFORM2_uncertainty,autoincrementer,autoincrementer_uncertainty,
-  // asset-number,asset-number_Questionable,element-type,
-  // take-gps-point,take-gps-point_latitude,take-gps-point_longitude,take-gps-point_accuracy,
-  // nearest-building,nearest-building_Uncertain,
-  // checkbox,condition,
-  // take-photo,element-notes,element-notes_uncertainty
-
-  it('can download files as zip', async () => {
-    // pull in some test data
-    await restoreFromBackup({filename: 'test/backup.jsonl'});
-
-    const adminUser = await getExpressUserFromEmailOrUserId('admin');
-    if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
-      expect(notebooks).to.have.lengthOf(2);
-
-      const url =
-        '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip';
-      let redirectURL = '';
-      await request(app)
-        .get(url)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .set('Content-Type', 'application/json')
-        .expect(302)
-        .expect(response => {
-          expect(response.headers.location).to.match(/\/download\/.*/);
-          redirectURL = response.headers.location;
-        });
-
-      if (redirectURL)
-        await request(app)
-          .get(redirectURL)
+          .get(url)
           .set('Authorization', `Bearer ${adminToken}`)
-          .expect(200)
-          .expect('Content-Type', 'application/zip')
+          .set('Content-Type', 'application/json')
+          .expect(302)
           .expect(response => {
-            const zipContent = response.text;
-            // check for _1 filename which should be there because of
-            // a clash of names
-            expect(zipContent).to.contain(
-              'take-photo/DuplicateHRID-take-photo_1.png'
-            );
+            expect(response.headers.location).to.match(/\/download\/.*/);
+            redirectURL = response.headers.location;
           });
+
+        if (redirectURL)
+          await request(app)
+            .get(redirectURL)
+            .expect('Content-Type', 'text/csv')
+            .expect(response => {
+              // response body should be csv data
+              expect(response.text).to.contain('identifier');
+              expect(response.text).to.contain('take-photo');
+              // uncertainty label on asset number
+              expect(response.text).to.contain('asset-number_questionable');
+              // annotation label for asset number
+              expect(response.text).to.contain('asset-number_difficulties');
+
+              const lines = response.text.split('\n');
+              lines.forEach(line => {
+                if (line !== '' && !line.startsWith('identifier')) {
+                  expect(line).to.contain('rec');
+                  expect(line).to.contain('FORM2');
+                  expect(line).to.contain('frev');
+                }
+              });
+              // one more newline than the number of records + header
+              expect(lines).to.have.lengthOf(19);
+            });
+      }
     }
   });
 

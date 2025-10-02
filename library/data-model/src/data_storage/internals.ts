@@ -723,9 +723,11 @@ export async function hydrateIndividualRecord({
 export async function getAttributeValuePairs({
   dataDb,
   avpIds,
+  includeAttachments = true,
 }: {
   dataDb: DataDbType | AvpDbType;
   avpIds: AttributeValuePairID[];
+  includeAttachments?: boolean;
 }): Promise<{
   [id: string]: PouchDB.Core.ExistingDocument<AttributeValuePair>;
 }> {
@@ -745,7 +747,9 @@ export async function getAttributeValuePairs({
 
     // Process all attachment loading operations in parallel
     await Promise.all(
-      avpDocs.map(avp => loadAttributeValuePair({avp, dataDb}))
+      avpDocs.map(avp =>
+        loadAttributeValuePair({avp, dataDb, includeAttachments})
+      )
     );
 
     // Build and return the document map
@@ -962,9 +966,11 @@ export async function getRecords({
 export async function getFormDataFromRevision({
   revision,
   dataDb,
+  includeAttachments = true,
 }: {
   dataDb: DataDbType | RevisionDbType;
   revision: Revision;
+  includeAttachments?: boolean;
 }): Promise<FormData> {
   // Scaffold
   const form_data: FormData = {
@@ -975,7 +981,11 @@ export async function getFormDataFromRevision({
 
   // Get relevant avps and then populate (including fetching attachments)
   const avp_ids = Object.values(revision.avps);
-  const avps = await getAttributeValuePairs({avpIds: avp_ids, dataDb});
+  const avps = await getAttributeValuePairs({
+    avpIds: avp_ids,
+    dataDb,
+    includeAttachments,
+  });
 
   for (const [name, avp_id] of Object.entries(revision.avps)) {
     form_data.data[name] = avps[avp_id].data;
@@ -1175,15 +1185,27 @@ export async function initialiseRecordForNewRevision({
 async function loadAttributeValuePair({
   avp,
   dataDb,
+  includeAttachments = true,
 }: {
   avp: AttributeValuePair;
   dataDb: DataDbType;
+  includeAttachments: boolean;
 }): Promise<AttributeValuePair> {
+  // Proceed with attachment loading where applicable
   const attachmentRefs = avp.faims_attachments;
   if (attachmentRefs === null || attachmentRefs === undefined) {
     // No attachments
     return avp;
   }
+
+  // This forcefully ignores loading attachments - this is important for
+  // performance when streaming lots of AVPs due to memory buffering issues
+  if (!includeAttachments) {
+    // Here we populate data with the 'unresolved' attachments
+    avp.data = avp.faims_attachments;
+    return avp;
+  }
+
   // Work out how to load the attachment
   const loader = getAttachmentLoaderForType(avp.type);
 
