@@ -54,6 +54,10 @@ import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
+import {
+  generateFilenameForAttachment,
+  streamNotebookFilesAsZip,
+} from '../couchdb/attachmentExport';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   streamNotebookRecordsAsGeoJSON,
@@ -65,14 +69,12 @@ import {
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
-  generateFilenameForAttachment,
   getEncodedNotebookUISpec,
   getNotebookMetadata,
   getProjectById,
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
-  streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
   updateNotebook,
 } from '../couchdb/notebooks';
@@ -431,12 +433,12 @@ api.get(
           if (values instanceof Array) {
             const names = values.map((v: any) => {
               if (v instanceof File) {
-                const filename = generateFilenameForAttachment(
-                  v,
-                  fieldName,
+                const filename = generateFilenameForAttachment({
+                  file: v,
+                  key: fieldName,
                   hrid,
-                  filenames
-                );
+                  filenames,
+                });
                 filenames.push(filename);
                 return filename;
               } else {

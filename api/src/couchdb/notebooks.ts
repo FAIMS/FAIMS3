@@ -35,6 +35,8 @@ import {
   FieldSummary,
   getNotebookFieldTypes,
   GetNotebookListResponse,
+  HydratedDataRecord,
+  hydrateRecord,
   logError,
   notebookAttachmentIterator,
   notebookRecordIterator,
@@ -46,6 +48,7 @@ import {
   ProjectMetadata,
   PROJECTS_BY_TEAM_ID,
   ProjectStatus,
+  RecordRevisionIndexDocument,
   Resource,
   resourceRoles,
   Role,
@@ -76,6 +79,7 @@ import {
 import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
 import {record} from 'zod';
+import {generateFilenameForAttachment} from './attachmentExport';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -655,18 +659,18 @@ const csvFormatValue = (
         result[fieldName] = '';
         return result;
       }
-      const valueList = value.map((v: any) => {
-        if (v instanceof File) {
-          const filename = generateFilenameForAttachment(
-            v,
-            fieldName,
+      const valueList = value.map((possibleFileValue: any) => {
+        if (possibleFileValue instanceof File) {
+          const filename = generateFilenameForAttachment({
+            file: possibleFileValue,
+            key: fieldName,
             hrid,
-            filenames
-          );
+            filenames,
+          });
           filenames.push(filename);
           return filename;
         } else {
-          return v;
+          return possibleFileValue;
         }
       });
       result[fieldName] = valueList.join(';');
@@ -888,305 +892,6 @@ export const streamNotebookRecordsAsCSV = async (
     stringifier.pipe(res);
     stringifier.end();
   }
-};
-
-/**
- * Maximum number of file streams to process concurrently when building the ZIP archive.
- * This limit prevents excessive memory usage while still allowing parallel I/O operations.
- */
-const MAX_CONCURRENT_STREAMS = 20;
-
-/**
- * Streams notebook files as a ZIP archive directly to a writable stream.
- *
- * This function creates a ZIP archive containing all non-deleted attachments from a notebook view.
- * It processes records with bounded parallelism to balance performance and memory usage, streaming
- * file buffers directly into the archive without keeping them all in memory simultaneously.
- *
- * @param projectId - The ID of the project containing the notebook
- * @param viewID - The ID of the view to export (currently unused but reserved for future filtering)
- * @param res - The writable stream (typically an HTTP response) to pipe the ZIP data to
- *
- * @throws Error if database access fails or archiving encounters an error
- */
-export const streamNotebookFilesAsZip = async (
-  projectId: ProjectID,
-  viewID: string,
-  res: NodeJS.WritableStream
-) => {
-  /**
-   * Logs current memory usage during development/debugging.
-   * Only active when DEVELOPER_MODE is enabled.
-   */
-  const logMemory = (stage: string, extraInfo = '') => {
-    if (DEVELOPER_MODE) {
-      const used = process.memoryUsage();
-      console.log(
-        `[ZIP ${stage}] ${extraInfo}...\n` +
-          `RSS: ${Math.round(used.rss / 1024 / 1024)}MB,\n` +
-          `ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB,\n` +
-          `heapTotal: ${Math.round(used.heapTotal / 1024 / 1024)} MB\n` +
-          `heapUsed: ${Math.round(used.heapUsed / 1024 / 1024)} MB\n` +
-          `External: ${Math.round(used.external / 1024 / 1024)}MB`
-      );
-    }
-  };
-
-  logMemory('START');
-
-  // State tracking for finalization
-  let allFilesAdded = false;
-  let doneFinalize = false;
-  let dataWritten = false;
-
-  // Initialize database and iterator
-  const iterator = await notebookAttachmentIterator({
-    projectId,
-    filterDeleted: true,
-  });
-
-  const nanoDb = await getNanoDataDb(projectId);
-
-  // Create ZIP archive with maximum compression
-  const archive = archiver('zip', {zlib: {level: 9}});
-
-  // Set up archive event handlers
-  archive.on('warning', err => {
-    if (err.code === 'ENOENT') {
-      console.warn('[ZIP] File not found warning:', err.message);
-    } else {
-      throw err;
-    }
-  });
-
-  archive.on('error', err => {
-    console.error('[ZIP] Archive error:', err);
-    throw err;
-  });
-
-  // Monitor progress and finalize when all files are processed
-  archive.on('progress', (ev: any) => {
-    if (
-      !doneFinalize &&
-      allFilesAdded &&
-      ev.entries.total === ev.entries.processed
-    ) {
-      try {
-        archive.finalize();
-        doneFinalize = true;
-        logMemory('FINALIZED');
-      } catch (err) {
-        // Ignore ArchiveError if already finalized
-        console.warn('[ZIP] Finalization error (may be duplicate):', err);
-      }
-    }
-  });
-
-  // Pipe archive output to response stream
-  archive.pipe(res);
-
-  // Tracking for statistics and concurrent stream management
-  let recordCount = 0;
-  let fileCount = 0;
-  let skippedCount = 0;
-  const activeStreams = new Set<Promise<void>>();
-
-  let {record, done} = await iterator.next();
-
-  while (!done) {
-    // Wait if we've reached the concurrency limit
-    while (activeStreams.size >= MAX_CONCURRENT_STREAMS) {
-      await Promise.race(activeStreams);
-    }
-
-    if (record !== null) {
-      recordCount++;
-      const hrid = record.hrid || record.record_id;
-      logMemory('RECORD', `Record ${recordCount} (${hrid})`);
-
-      const attachmentID = record['_id'];
-      const filename = record['filename'] || `attachment-${attachmentID}`;
-
-      // Create a promise for this stream's processing
-      const streamPromise = (async () => {
-        try {
-          const attachmentMeta = record['_attachments']?.[attachmentID];
-          const contentType = attachmentMeta?.content_type;
-          const extension = getFileExtensionFromMimeType(contentType);
-
-          if (!extension) {
-            console.warn(
-              `[ZIP] Skipping record ${hrid}: unknown content type "${contentType}"`
-            );
-            skippedCount++;
-          } else {
-            const fileReadStream = nanoDb.attachment.getAsStream(
-              attachmentID,
-              attachmentID
-            );
-
-            archive.append(fileReadStream, {
-              name: `${filename}${extension}`,
-            });
-
-            await new Promise<void>((resolve, reject) => {
-              fileReadStream.on('end', resolve);
-              fileReadStream.on('error', reject);
-            });
-
-            fileCount++;
-            dataWritten = true;
-
-            logMemory(
-              'FILE_ADDED',
-              `File ${fileCount}: ${filename}${extension}`
-            );
-          }
-        } catch (err) {
-          console.error(
-            `[ZIP] Failed to process attachment for record ${hrid}:`,
-            err
-          );
-          skippedCount++;
-        }
-      })();
-
-      // Add to active set and chain cleanup using .finally()
-      activeStreams.add(streamPromise);
-      streamPromise.finally(() => {
-        activeStreams.delete(streamPromise);
-      });
-    }
-
-    // Get next record
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-    console.log('Iterator DONE ', done);
-  }
-
-  // Wait for all remaining active streams to complete
-  await Promise.all(activeStreams);
-
-  // Handle empty archive case
-  if (!dataWritten) {
-    console.log('[ZIP] No data written, aborting archive');
-    archive.abort();
-  }
-
-  allFilesAdded = true;
-
-  // Trigger progress event for empty/small archives to ensure finalization
-  archive.emit('progress', {entries: {processed: 0, total: 0}});
-
-  logMemory(
-    'COMPLETE',
-    `Total: ${fileCount} files, ${skippedCount} skipped, ${recordCount} records`
-  );
-};
-
-/**
- * Maps MIME types to appropriate file extensions.
- *
- * @param mimeType - The MIME type from the attachment metadata
- * @returns The file extension (including leading dot) or null if type is unknown
- */
-const getFileExtensionFromMimeType = (
-  mimeType: string | undefined
-): string | null => {
-  if (!mimeType) return null;
-
-  // Normalize MIME type (lowercase, trim whitespace)
-  const normalized = mimeType.toLowerCase().trim();
-
-  // Common MIME type to extension mappings
-  const mimeTypeMap: Record<string, string> = {
-    // Images
-    'image/png': '.png',
-    'image/jpeg': '.jpg',
-    'image/jpg': '.jpg',
-    'image/gif': '.gif',
-    'image/webp': '.webp',
-    'image/svg+xml': '.svg',
-    'image/bmp': '.bmp',
-    'image/tiff': '.tiff',
-    'image/x-icon': '.ico',
-    'image/heic': '.heic',
-    'image/heif': '.heif',
-
-    // Documents
-    'application/pdf': '.pdf',
-    'application/msword': '.doc',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-      '.docx',
-    'application/vnd.ms-excel': '.xls',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-      '.xlsx',
-    'application/vnd.ms-powerpoint': '.ppt',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-      '.pptx',
-    'text/plain': '.txt',
-    'text/csv': '.csv',
-    'text/html': '.html',
-    'text/markdown': '.md',
-
-    // Archives
-    'application/zip': '.zip',
-    'application/x-rar-compressed': '.rar',
-    'application/x-7z-compressed': '.7z',
-    'application/x-tar': '.tar',
-    'application/gzip': '.gz',
-
-    // Audio
-    'audio/mpeg': '.mp3',
-    'audio/wav': '.wav',
-    'audio/ogg': '.ogg',
-    'audio/webm': '.webm',
-    'audio/aac': '.aac',
-    'audio/flac': '.flac',
-
-    // Video
-    'video/mp4': '.mp4',
-    'video/mpeg': '.mpeg',
-    'video/webm': '.webm',
-    'video/ogg': '.ogv',
-    'video/quicktime': '.mov',
-    'video/x-msvideo': '.avi',
-
-    // Other
-    'application/json': '.json',
-    'application/xml': '.xml',
-    'application/javascript': '.js',
-  };
-
-  return mimeTypeMap[normalized] || null;
-};
-
-export const generateFilenameForAttachment = (
-  file: File,
-  key: string,
-  hrid: string,
-  filenames: string[]
-) => {
-  const fileTypes: {[key: string]: string} = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/gif': 'gif',
-    'image/tiff': 'tif',
-    'text/plain': 'txt',
-    'application/pdf': 'pdf',
-    'application/json': 'json',
-  };
-
-  const type = file.type;
-  const extension = fileTypes[type] || 'dat';
-  let filename = `${key}/${hrid}-${key}.${extension}`;
-  let postfix = 1;
-  while (filenames.find(f => f.localeCompare(filename) === 0)) {
-    filename = `${key}/${hrid}-${key}_${postfix}.${extension}`;
-    postfix += 1;
-  }
-  return filename;
 };
 
 /**
