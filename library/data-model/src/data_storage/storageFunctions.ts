@@ -942,14 +942,10 @@ export const notebookRecordIterator = async ({
       bookmark,
       filterDeleted
     );
-    console.log(`Fetched records ${JSON.stringify(records)}`);
     // select just those in this view
     const result = records.filter((record: any) => {
-      console.log('Record type is ' + record.type + ' viewID is ' + viewID);
-      console.log(`${record.type === viewID}`);
       return record.type === viewID;
     });
-    console.log(`Filtered records ${JSON.stringify(result)}`);
     if (records.length > 0 && result.length === 0) {
       // skip to next batch since none of these match our view
       const newBookmark = records[records.length - 1].record_id;
