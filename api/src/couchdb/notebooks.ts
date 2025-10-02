@@ -891,11 +891,17 @@ export const streamNotebookRecordsAsCSV = async (
 };
 
 /**
+ * Maximum number of file streams to process concurrently when building the ZIP archive.
+ * This limit prevents excessive memory usage while still allowing parallel I/O operations.
+ */
+const MAX_CONCURRENT_STREAMS = 20;
+
+/**
  * Streams notebook files as a ZIP archive directly to a writable stream.
  *
  * This function creates a ZIP archive containing all non-deleted attachments from a notebook view.
- * It processes records one at a time to minimize memory usage, streaming file buffers directly
- * into the archive without keeping them all in memory simultaneously.
+ * It processes records with bounded parallelism to balance performance and memory usage, streaming
+ * file buffers directly into the archive without keeping them all in memory simultaneously.
  *
  * @param projectId - The ID of the project containing the notebook
  * @param viewID - The ID of the view to export (currently unused but reserved for future filtering)
@@ -908,7 +914,10 @@ export const streamNotebookFilesAsZip = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
-  // Memory logging helper for development/debugging
+  /**
+   * Logs current memory usage during development/debugging.
+   * Only active when DEVELOPER_MODE is enabled.
+   */
   const logMemory = (stage: string, extraInfo = '') => {
     if (DEVELOPER_MODE) {
       const used = process.memoryUsage();
@@ -976,14 +985,20 @@ export const streamNotebookFilesAsZip = async (
   // Pipe archive output to response stream
   archive.pipe(res);
 
-  // Process records iteratively to minimize memory footprint
+  // Tracking for statistics and concurrent stream management
   let recordCount = 0;
   let fileCount = 0;
   let skippedCount = 0;
+  const activeStreams = new Set<Promise<void>>();
 
   let {record, done} = await iterator.next();
 
   while (!done) {
+    // Wait if we've reached the concurrency limit
+    while (activeStreams.size >= MAX_CONCURRENT_STREAMS) {
+      await Promise.race(activeStreams);
+    }
+
     if (record !== null) {
       recordCount++;
       const hrid = record.hrid || record.record_id;
@@ -992,49 +1007,55 @@ export const streamNotebookFilesAsZip = async (
       const attachmentID = record['_id'];
       const filename = record['filename'] || `attachment-${attachmentID}`;
 
-      try {
-        // Retrieve attachment metadata to determine content type
-        const attachmentMeta = record['_attachments']?.[attachmentID];
-        const contentType = attachmentMeta?.content_type;
+      // Create a promise for this stream's processing
+      const streamPromise = (async () => {
+        try {
+          const attachmentMeta = record['_attachments']?.[attachmentID];
+          const contentType = attachmentMeta?.content_type;
+          const extension = getFileExtensionFromMimeType(contentType);
 
-        // Get file extension from content type
-        const extension = getFileExtensionFromMimeType(contentType);
+          if (!extension) {
+            console.warn(
+              `[ZIP] Skipping record ${hrid}: unknown content type "${contentType}"`
+            );
+            skippedCount++;
+          } else {
+            const fileReadStream = nanoDb.attachment.getAsStream(
+              attachmentID,
+              attachmentID
+            );
 
-        if (!extension) {
-          console.warn(
-            `[ZIP] Skipping record ${hrid}: unknown content type "${contentType}"`
+            archive.append(fileReadStream, {
+              name: `${filename}${extension}`,
+            });
+
+            await new Promise<void>((resolve, reject) => {
+              fileReadStream.on('end', resolve);
+              fileReadStream.on('error', reject);
+            });
+
+            fileCount++;
+            dataWritten = true;
+
+            logMemory(
+              'FILE_ADDED',
+              `File ${fileCount}: ${filename}${extension}`
+            );
+          }
+        } catch (err) {
+          console.error(
+            `[ZIP] Failed to process attachment for record ${hrid}:`,
+            err
           );
           skippedCount++;
-        } else {
-          // Stream attachment directly from database
-          const fileReadStream = nanoDb.attachment.getAsStream(
-            attachmentID,
-            attachmentID
-          );
-
-          // Read stream append
-          archive.append(fileReadStream, {
-            name: `${filename}${extension}`,
-          });
-
-          // Wait for the stream to be fully read
-          await new Promise<void>((resolve, reject) => {
-            fileReadStream.on('end', resolve);
-            fileReadStream.on('error', reject);
-          });
-
-          fileCount++;
-          dataWritten = true;
-
-          logMemory('FILE_ADDED', `File ${fileCount}: ${filename}${extension}`);
         }
-      } catch (err) {
-        console.error(
-          `[ZIP] Failed to process attachment for record ${hrid}:`,
-          err
-        );
-        skippedCount++;
-      }
+      })();
+
+      // Add to active set and chain cleanup using .finally()
+      activeStreams.add(streamPromise);
+      streamPromise.finally(() => {
+        activeStreams.delete(streamPromise);
+      });
     }
 
     // Get next record
@@ -1043,6 +1064,9 @@ export const streamNotebookFilesAsZip = async (
     done = next.done;
     console.log('Iterator DONE ', done);
   }
+
+  // Wait for all remaining active streams to complete
+  await Promise.all(activeStreams);
 
   // Handle empty archive case
   if (!dataWritten) {
