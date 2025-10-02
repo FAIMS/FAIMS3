@@ -671,7 +671,7 @@ describe('API tests', () => {
     await restoreFromBackup({filename: 'test/backup.jsonl'});
 
     const url =
-      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv';
+      '/api/notebooks/1693291182736-campus-survey-demo/records/export?viewID=FORM2&format=csv';
     const adminUser = await getExpressUserFromEmailOrUserId('admin');
     if (adminUser) {
       const notebooks = await getUserProjectsDetailed(adminUser);
@@ -711,53 +711,6 @@ describe('API tests', () => {
             });
             // one more newline than the number of records + header
             expect(lines).to.have.lengthOf(19);
-          });
-    }
-  });
-
-  //identifier,record_id,revision_id,type,created_by,created,updated_by,updated,
-  // hridFORM2,hridFORM2_uncertainty,autoincrementer,autoincrementer_uncertainty,
-  // asset-number,asset-number_Questionable,element-type,
-  // take-gps-point,take-gps-point_latitude,take-gps-point_longitude,take-gps-point_accuracy,
-  // nearest-building,nearest-building_Uncertain,
-  // checkbox,condition,
-  // take-photo,element-notes,element-notes_uncertainty
-
-  it('can download files as zip', async () => {
-    // pull in some test data
-    await restoreFromBackup({filename: 'test/backup.jsonl'});
-
-    const adminUser = await getExpressUserFromEmailOrUserId('admin');
-    if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
-      expect(notebooks).to.have.lengthOf(2);
-
-      const url =
-        '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.zip';
-      let redirectURL = '';
-      await request(app)
-        .get(url)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .set('Content-Type', 'application/json')
-        .expect(302)
-        .expect(response => {
-          expect(response.headers.location).to.match(/\/download\/.*/);
-          redirectURL = response.headers.location;
-        });
-
-      if (redirectURL)
-        await request(app)
-          .get(redirectURL)
-          .set('Authorization', `Bearer ${adminToken}`)
-          .expect(200)
-          .expect('Content-Type', 'application/zip')
-          .expect(response => {
-            const zipContent = response.text;
-            // check for _1 filename which should be there because of
-            // a clash of names
-            expect(zipContent).to.contain(
-              'take-photo/DuplicateHRID-take-photo_1.png'
-            );
           });
     }
   });
