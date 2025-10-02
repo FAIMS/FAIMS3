@@ -101,7 +101,7 @@ export const streamNotebookFilesAsZip = async ({
       // Begin iteration
       let {record, done} = await iterator.next();
       console.log(
-        `[ZIP] Record iterator initialized - first record:`,
+        '[ZIP] Record iterator initialized - first record:',
         record ? `ID ${record.record_id}` : 'none',
         `done: ${done}`
       );

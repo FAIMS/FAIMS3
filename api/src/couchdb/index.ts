@@ -53,7 +53,7 @@ import {
   TemplateDB,
 } from '@faims3/data-model';
 import Nano from 'nano';
-import { initialiseJWTKey } from '../auth/keySigning/initJWTKeys';
+import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -62,8 +62,8 @@ import {
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import { getAllProjectsDirectory } from './notebooks';
-import { registerAdminUser } from './users';
+import {getAllProjectsDirectory} from './notebooks';
+import {registerAdminUser} from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -751,8 +751,8 @@ export const getNanoDataDb = async (
     const projectDoc = await projectsDB.get(projectID);
 
     // Extract the data DB name (with backwards compatibility)
-    let db: PossibleConnectionInfo;
-    db = (projectDoc as any).dataDb || (projectDoc as any).data_db;
+    const db: PossibleConnectionInfo =
+      (projectDoc as any).dataDb || (projectDoc as any).data_db;
 
     if (!db || !db.db_name) {
       throw new Exceptions.InternalSystemError(

@@ -35,37 +35,30 @@ import {
   FieldSummary,
   getNotebookFieldTypes,
   GetNotebookListResponse,
-  HydratedDataRecord,
-  hydrateRecord,
   logError,
-  notebookAttachmentIterator,
   notebookRecordIterator,
   PROJECT_METADATA_PREFIX,
-  ProjectDataObject,
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
   ProjectMetadata,
   PROJECTS_BY_TEAM_ID,
   ProjectStatus,
-  RecordRevisionIndexDocument,
   Resource,
   resourceRoles,
   Role,
   slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
-import archiver from 'archiver';
 import {
   getDataDb,
   getMetadataDb,
-  getNanoDataDb,
   initialiseDataDb,
   initialiseMetadataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL, DEVELOPER_MODE} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 
 import {
@@ -78,7 +71,6 @@ import {
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
-import {record} from 'zod';
 import {generateFilenameForAttachment} from './attachmentExport';
 
 /**

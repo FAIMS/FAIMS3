@@ -130,8 +130,8 @@ const ExportPhotosForm = () => {
         <div className="text-sm text-muted-foreground mb-2">
           <p className="font-medium text-foreground mb-1">Export All Photos</p>
           <p>
-            Download all photos from every form in your project. The photos
-            will be organized in a ZIP file.
+            Download all photos from every form in your project. The photos will
+            be organized in a ZIP file.
           </p>
         </div>
         <button
