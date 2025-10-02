@@ -1,7 +1,6 @@
 import {Field, Form} from '@/components/form';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {modifyTeamForProject} from '@/hooks/project-hooks';
 import {useGetTeams} from '@/hooks/queries';
 import {updateTemplateRequest} from '@/hooks/template-hooks';
 import {Action} from '@faims3/data-model';

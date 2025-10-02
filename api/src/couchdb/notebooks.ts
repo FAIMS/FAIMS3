@@ -26,13 +26,18 @@ PouchDB.plugin(SecurityPlugin);
 
 import {
   Action,
+  Annotations,
   APINotebookList,
   CouchProjectUIModel,
+  DatabaseInterface,
   EncodedProjectUIModel,
   ExistingProjectDocument,
+  FieldSummary,
+  getNotebookFieldTypes,
   GetNotebookListResponse,
   logError,
   notebookRecordIterator,
+  PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
@@ -42,10 +47,8 @@ import {
   Resource,
   resourceRoles,
   Role,
+  slugify,
   userHasProjectRole,
-  PROJECT_METADATA_PREFIX,
-  Annotations,
-  DatabaseInterface,
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {Stream} from 'stream';
@@ -70,7 +73,6 @@ import {
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
-import {slugify} from '../utils';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -734,13 +736,6 @@ const csvFormatValue = (
   return result;
 };
 
-type FieldSummary = {
-  name: string;
-  type: string;
-  annotation?: string;
-  uncertainty?: string;
-};
-
 /**
  * Convert annotations on a field to a format suitable for CSV export
  */
@@ -763,7 +758,7 @@ const csvFormatAnnotation = (
  *
  * @returns a map of column headings to values
  */
-const convertDataForOutput = (
+export const convertDataForOutput = (
   fields: FieldSummary[],
   data: any,
   annotations: {[name: string]: Annotations},
@@ -793,42 +788,6 @@ const convertDataForOutput = (
 };
 
 /**
- * Get a list of fields for a notebook with relevant information
- * on each for the export
- *
- * @param project_id Project ID
- * @param viewID View ID
- * @returns an array of FieldSummary objects
- */
-const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
-  const uiSpec = await getEncodedNotebookUISpec(project_id);
-  if (!uiSpec) {
-    throw new Error("can't find project " + project_id);
-  }
-  if (!(viewID in uiSpec.viewsets)) {
-    throw new Error(`invalid form ${viewID} not found in notebook`);
-  }
-  const views = uiSpec.viewsets[viewID].views;
-  const fields: FieldSummary[] = [];
-  views.forEach((view: any) => {
-    uiSpec.fviews[view].fields.forEach((field: any) => {
-      const fieldInfo = uiSpec.fields[field];
-      fields.push({
-        name: field,
-        type: fieldInfo['type-returned'],
-        annotation: fieldInfo.meta.annotation.include
-          ? slugify(fieldInfo.meta.annotation.label)
-          : '',
-        uncertainty: fieldInfo.meta.uncertainty.include
-          ? slugify(fieldInfo.meta.uncertainty.label)
-          : '',
-      });
-    });
-  });
-  return fields;
-};
-
-/**
  * Stream the records in a notebook as a CSV file
  *
  * @param projectId Project ID
@@ -849,7 +808,7 @@ export const streamNotebookRecordsAsCSV = async (
     uiSpecification,
     viewID,
   });
-  const fields = await getNotebookFieldTypes(projectId, viewID);
+  const fields = getNotebookFieldTypes({uiSpecification, viewID});
 
   let stringifier: Stringifier | null = null;
   let {record, done} = await iterator.next();

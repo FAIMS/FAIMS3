@@ -7,8 +7,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {Button} from '../ui/button';
-import ExportProjectForm from '../forms/export-project-form';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import ExportPhotosForm from '../forms/export-photos-form';
 
 /**
  * PhotoExportDialog component renders a dialog for exporting a project's photos.
@@ -16,19 +16,22 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
  *
  * @returns {JSX.Element} The rendered PhotoExportDialog component.
  */
-export const PhotoExportDialog = () => (
-  <Dialog>
-    <DialogTrigger asChild className="w-fit">
-      <Button>Photo Export</Button>
-    </DialogTrigger>
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Photo Export</DialogTitle>
-        <DialogDescription>
-          Export all photos for this {NOTEBOOK_NAME_CAPITALIZED} to a ZIP file.
-        </DialogDescription>
-      </DialogHeader>
-      <ExportProjectForm type={'zip'} />
-    </DialogContent>
-  </Dialog>
-);
+export const PhotoExportDialog = () => {
+  return (
+    <Dialog>
+      <DialogTrigger asChild className="w-fit">
+        <Button>Photo Export</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Photo Export</DialogTitle>
+          <DialogDescription>
+            Export all photos for this {NOTEBOOK_NAME_CAPITALIZED} to a ZIP
+            file.
+          </DialogDescription>
+        </DialogHeader>
+        <ExportPhotosForm />
+      </DialogContent>
+    </Dialog>
+  );
+};

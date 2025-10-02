@@ -18,7 +18,9 @@ const ProjectExport = (): JSX.Element => (
       <ListItem>
         <ListLabel>Data Export</ListLabel>
         <ListDescription>
-          Export all responses for this {NOTEBOOK_NAME} to a CSV file.
+          Export all responses for this {NOTEBOOK_NAME}. You can select a data
+          format which suits your needs. Photos can be downloaded separately
+          below.
         </ListDescription>
       </ListItem>
       <DataExportDialog />

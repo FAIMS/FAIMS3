@@ -8,13 +8,14 @@ import {
   PostCreateTemplateInput,
   ProjectID,
   PutUpdateTemplateInput,
+  slugify,
   TemplateDBFields,
   TemplateDocument,
   TEMPLATES_BY_TEAM_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
-import {generateRandomString, slugify} from '../utils';
+import {generateRandomString} from '../utils';
 import {getTeamById} from './teams';
 
 /**

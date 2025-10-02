@@ -3,7 +3,11 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
-import {DatabaseInterface, DBCallbackObject, ProjectID} from '@faims3/data-model';
+import {
+  DatabaseInterface,
+  DBCallbackObject,
+  ProjectID,
+} from '@faims3/data-model';
 import {COUCHDB_INTERNAL_URL} from '../src/buildconfig';
 import {
   getAuthDB,

@@ -19,7 +19,8 @@
  *   which server to use and whether to include test data
  */
 
-import {existsSync, readFileSync} from 'fs';
+import {slugify} from '@faims3/data-model';
+import {existsSync} from 'fs';
 import {v4 as uuidv4} from 'uuid';
 import {
   createEmailService,
@@ -29,8 +30,6 @@ import {
   SMTPEmailServiceConfig,
 } from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
-import {slugify} from './utils';
-import {z} from 'zod';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
