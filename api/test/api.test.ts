@@ -670,48 +670,55 @@ describe('API tests', () => {
     // pull in some test data
     await restoreFromBackup({filename: 'test/backup.jsonl'});
 
-    const url =
-      '/api/notebooks/1693291182736-campus-survey-demo/records/export?viewID=FORM2&format=csv';
-    const adminUser = await getExpressUserFromEmailOrUserId('admin');
-    if (adminUser) {
-      const notebooks = await getUserProjectsDetailed(adminUser);
-      expect(notebooks).to.have.lengthOf(2);
+    // new method
+    const urls = [
+      // @deprecated
+      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv',
+      // new method
+      '/api/notebooks/1693291182736-campus-survey-demo/records/export?viewID=FORM2&format=csv',
+    ];
+    for (const url of urls) {
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
+      if (adminUser) {
+        const notebooks = await getUserProjectsDetailed(adminUser);
+        expect(notebooks).to.have.lengthOf(2);
 
-      let redirectURL = '';
-      await request(app)
-        .get(url)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .set('Content-Type', 'application/json')
-        .expect(302)
-        .expect(response => {
-          expect(response.headers.location).to.match(/\/download\/.*/);
-          redirectURL = response.headers.location;
-        });
-
-      if (redirectURL)
+        let redirectURL = '';
         await request(app)
-          .get(redirectURL)
-          .expect('Content-Type', 'text/csv')
+          .get(url)
+          .set('Authorization', `Bearer ${adminToken}`)
+          .set('Content-Type', 'application/json')
+          .expect(302)
           .expect(response => {
-            // response body should be csv data
-            expect(response.text).to.contain('identifier');
-            expect(response.text).to.contain('take-photo');
-            // uncertainty label on asset number
-            expect(response.text).to.contain('asset-number_questionable');
-            // annotation label for asset number
-            expect(response.text).to.contain('asset-number_difficulties');
-
-            const lines = response.text.split('\n');
-            lines.forEach(line => {
-              if (line !== '' && !line.startsWith('identifier')) {
-                expect(line).to.contain('rec');
-                expect(line).to.contain('FORM2');
-                expect(line).to.contain('frev');
-              }
-            });
-            // one more newline than the number of records + header
-            expect(lines).to.have.lengthOf(19);
+            expect(response.headers.location).to.match(/\/download\/.*/);
+            redirectURL = response.headers.location;
           });
+
+        if (redirectURL)
+          await request(app)
+            .get(redirectURL)
+            .expect('Content-Type', 'text/csv')
+            .expect(response => {
+              // response body should be csv data
+              expect(response.text).to.contain('identifier');
+              expect(response.text).to.contain('take-photo');
+              // uncertainty label on asset number
+              expect(response.text).to.contain('asset-number_questionable');
+              // annotation label for asset number
+              expect(response.text).to.contain('asset-number_difficulties');
+
+              const lines = response.text.split('\n');
+              lines.forEach(line => {
+                if (line !== '' && !line.startsWith('identifier')) {
+                  expect(line).to.contain('rec');
+                  expect(line).to.contain('FORM2');
+                  expect(line).to.contain('frev');
+                }
+              });
+              // one more newline than the number of records + header
+              expect(lines).to.have.lengthOf(19);
+            });
+      }
     }
   });
 
