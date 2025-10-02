@@ -53,10 +53,10 @@ import {
   userHasProjectRole,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import {Stream} from 'stream';
 import {
   getDataDb,
   getMetadataDb,
+  getNanoDataDb,
   initialiseDataDb,
   initialiseMetadataDb,
   localGetProjectsDb,
@@ -913,8 +913,11 @@ export const streamNotebookFilesAsZip = async (
     if (DEVELOPER_MODE) {
       const used = process.memoryUsage();
       console.log(
-        `[ZIP ${stage}] ${extraInfo} - RSS: ${Math.round(used.rss / 1024 / 1024)}MB, ` +
-          `ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB, ` +
+        `[ZIP ${stage}] ${extraInfo}...\n` +
+          `RSS: ${Math.round(used.rss / 1024 / 1024)}MB,\n` +
+          `ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB,\n` +
+          `heapTotal: ${Math.round(used.heapTotal / 1024 / 1024)} MB\n` +
+          `heapUsed: ${Math.round(used.heapUsed / 1024 / 1024)} MB\n` +
           `External: ${Math.round(used.external / 1024 / 1024)}MB`
       );
     }
@@ -928,13 +931,12 @@ export const streamNotebookFilesAsZip = async (
   let dataWritten = false;
 
   // Initialize database and iterator
-  const dataDb = (await getDataDb(
-    projectId
-  )) as PouchDB.Database<ProjectDataObject>;
   const iterator = await notebookAttachmentIterator({
     projectId,
     filterDeleted: true,
   });
+
+  const nanoDb = await getNanoDataDb(projectId);
 
   // Create ZIP archive with maximum compression
   const archive = archiver('zip', {zlib: {level: 9}});
@@ -1005,14 +1007,20 @@ export const streamNotebookFilesAsZip = async (
           skippedCount++;
         } else {
           // Stream attachment directly from database
-          const fileBuffer: Buffer = (await dataDb.getAttachment(
+          const fileReadStream = nanoDb.attachment.getAsStream(
             attachmentID,
             attachmentID
-          )) as Buffer;
+          );
 
-          // Add to archive
-          archive.append(fileBuffer, {
+          // Read stream append
+          archive.append(fileReadStream, {
             name: `${filename}${extension}`,
+          });
+
+          // Wait for the stream to be fully read
+          await new Promise<void>((resolve, reject) => {
+            fileReadStream.on('end', resolve);
+            fileReadStream.on('error', reject);
           });
 
           fileCount++;

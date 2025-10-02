@@ -52,7 +52,8 @@ import {
   TeamsDB,
   TemplateDB,
 } from '@faims3/data-model';
-import {initialiseJWTKey} from '../auth/keySigning/initJWTKeys';
+import Nano from 'nano';
+import { initialiseJWTKey } from '../auth/keySigning/initJWTKeys';
 import {
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
@@ -61,8 +62,8 @@ import {
   LOCAL_COUCHDB_AUTH,
 } from '../buildconfig';
 import * as Exceptions from '../exceptions';
-import {getAllProjectsDirectory} from './notebooks';
-import {registerAdminUser} from './users';
+import { getAllProjectsDirectory } from './notebooks';
+import { registerAdminUser } from './users';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -713,4 +714,62 @@ export const initialiseAndMigrateDBs = async ({
   // For users, we also establish an admin user, if not already present
   // do this after all migrations so we know the db is up to date
   await registerAdminUser();
+};
+
+// Initialize nano instance
+let _nanoInstance: Nano.ServerScope | undefined;
+
+const getNanoInstance = (): Nano.ServerScope => {
+  if (!_nanoInstance) {
+    const auth = LOCAL_COUCHDB_AUTH
+      ? `${LOCAL_COUCHDB_AUTH.username}:${LOCAL_COUCHDB_AUTH.password}@`
+      : '';
+
+    // Parse the URL and inject auth if needed
+    const url = COUCHDB_INTERNAL_URL.replace('://', `://${auth}`);
+
+    _nanoInstance = Nano(url);
+  }
+  return _nanoInstance;
+};
+
+/**
+ * Returns the data DB for a given project using nano-couchdb
+ * @param projectID The project ID to use
+ * @returns The nano document scope for this project's data DB
+ */
+export const getNanoDataDb = async (
+  projectID: ProjectID
+): Promise<Nano.DocumentScope<ProjectDataObject>> => {
+  const nano = getNanoInstance();
+
+  // Get the projects DB
+  const projectsDB = nano.db.use('projects');
+
+  try {
+    // Get the project document
+    const projectDoc = await projectsDB.get(projectID);
+
+    // Extract the data DB name (with backwards compatibility)
+    let db: PossibleConnectionInfo;
+    db = (projectDoc as any).dataDb || (projectDoc as any).data_db;
+
+    if (!db || !db.db_name) {
+      throw new Exceptions.InternalSystemError(
+        'The given project document does not contain a mandatory reference to its data database.'
+      );
+    }
+
+    // Return the nano document scope for the data DB
+    return nano.db.use<ProjectDataObject>(db.db_name);
+  } catch (error: any) {
+    if (error.statusCode === 404) {
+      throw new Exceptions.ItemNotFoundException(
+        'Cannot find the given project ID in the projects database.'
+      );
+    }
+    throw new Exceptions.InternalSystemError(
+      `Error fetching data DB for project ${projectID}: ${error.message}`
+    );
+  }
 };

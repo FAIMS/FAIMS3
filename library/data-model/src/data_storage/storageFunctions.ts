@@ -988,6 +988,7 @@ export const notebookAttachmentIterator = async ({
   projectId: string;
   filterDeleted?: boolean;
 }) => {
+  // TODO fix this
   const batchSize = 10000;
 
   const getNextBatch = async (bookmark: string | null) => {
