@@ -435,7 +435,7 @@ api.get(
               if (v instanceof File) {
                 const filename = generateFilenameForAttachment({
                   file: v,
-                  key: fieldName,
+                  fieldId: fieldName,
                   hrid,
                   filenames,
                 });
@@ -470,7 +470,7 @@ const DownloadTokenPayloadSchema = z.object({
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
 // Formats requiring a view ID
-const VIEW_ID_FORMATS: DownloadFormat[] = ['csv', 'zip'];
+const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
 
 // download tokens last this long
 const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
@@ -550,7 +550,7 @@ api.get(
       userID: req.user.user_id,
     };
 
-    if (VIEW_ID_FORMATS.includes(req.query.format)) {
+    if (REQUIRES_VIEW_ID.includes(req.query.format) || req.query.viewID) {
       if (!req.query.viewID) {
         throw new Exceptions.InvalidRequestException(
           `The specified format ${req.query.format} requires a viewID to be included.`
@@ -648,7 +648,8 @@ api.get(
     }
 
     // Depending on the format type - handle differently
-    if (VIEW_ID_FORMATS.includes(payload.format)) {
+    let exportLabel = '';
+    if (REQUIRES_VIEW_ID.includes(payload.format) || payload.viewID) {
       const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
       if (!payload.viewID) {
         throw new Exceptions.InvalidRequestException(
@@ -661,44 +662,49 @@ api.get(
           `Form with id ${payload.viewID} not found in notebook`
         );
       }
-      const label = uiSpec.viewsets[payload.viewID].label;
-      switch (payload.format) {
-        case 'csv':
-          res.setHeader('Content-Type', 'text/csv');
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="${label}.csv"`
-          );
-          streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
-          break;
-        case 'zip':
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="${label}.zip"`
-          );
-          res.setHeader('Content-Type', 'application/zip');
-          streamNotebookFilesAsZip(payload.projectID, payload.viewID, res);
-      }
+      exportLabel = uiSpec.viewsets[payload.viewID].label ?? payload.viewID;
     } else {
+      exportLabel = slugify(payload.projectID);
+    }
+
+    switch (payload.format) {
+      case 'csv':
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${exportLabel}-export.csv"`
+        );
+        streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
+        break;
+      case 'zip':
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${exportLabel}-photos.zip"`
+        );
+        res.setHeader('Content-Type', 'application/zip');
+        streamNotebookFilesAsZip({
+          projectId: payload.projectID,
+          targetViewID: payload.viewID,
+          res,
+        });
+        break;
       // Non view ID requiring formats
-      switch (payload.format) {
-        case 'geojson':
-          res.setHeader('Content-Type', 'application/geo+json');
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
-          );
-          streamNotebookRecordsAsGeoJSON(payload.projectID, res);
-          break;
-        case 'kml':
-          res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
-          res.setHeader(
-            'Content-Disposition',
-            `attachment; filename="${slugify(payload.projectID)}-export.kml"`
-          );
-          streamNotebookRecordsAsKML(payload.projectID, res);
-          break;
-      }
+      case 'geojson':
+        res.setHeader('Content-Type', 'application/geo+json');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+        );
+        streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+        break;
+      case 'kml':
+        res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+        );
+        streamNotebookRecordsAsKML(payload.projectID, res);
+        break;
     }
   }
 );

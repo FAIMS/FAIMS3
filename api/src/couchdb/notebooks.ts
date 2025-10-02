@@ -663,7 +663,7 @@ const csvFormatValue = (
         if (possibleFileValue instanceof File) {
           const filename = generateFilenameForAttachment({
             file: possibleFileValue,
-            key: fieldName,
+            fieldId: fieldName,
             hrid,
             filenames,
           });
