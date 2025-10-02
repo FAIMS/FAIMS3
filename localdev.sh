@@ -46,9 +46,9 @@ echo "Using docker build kit"
 echo "export DOCKER_BUILDKIT=1"
 export DOCKER_BUILDKIT=1
 
-echo "checking npm install"
-echo "> npm --version"
-npm --version
+echo "checking pnpm install"
+echo "> pnpm --version"
+pnpm --version
 
 echo "checking docker install"
 echo "> docker --version"
@@ -60,8 +60,8 @@ uuidgen
 
 # install dependencies
 echo "Installing monorepo dependencies"
-echo "> npm install"
-npm install
+echo "> pnpm install"
+pnpm install
 
 # turbo build
 echo "Turbo build"
@@ -81,8 +81,8 @@ cp ./app/.env.dist ./app/.env
 
 # create local keys
 echo "Generating local keys"
-echo "> npm run generate-local-keys"
-npm run generate-local-keys
+echo "> pnpm run generate-local-keys"
+pnpm run generate-local-keys
 
 echo "Building docker files using docker compose"
 echo "> ./scripts/devbuild.sh"
@@ -103,8 +103,8 @@ else
 fi
 
 echo "Initialising database using API container"
-echo ">docker compose exec api sh -c \"cd api && npm run migrate --keys\""
-docker compose exec api sh -c "cd api && npm run migrate --keys"
+echo ">docker compose exec api sh -c \"cd api && pnpm run migrate --keys\""
+docker compose exec api sh -c "cd api && pnpm run migrate --keys"
 
 
 echo "Service is setup, to load notebooks and templates follow the below steps"
@@ -118,10 +118,10 @@ value of USER_TOKEN.
 
 Then run: 
 
-$> npm run load-notebooks
+$> pnpm run load-notebooks
 
 And:
-$> npm run load-templates
+$> pnpm run load-templates
 EOF
 
 echo "Services running:"

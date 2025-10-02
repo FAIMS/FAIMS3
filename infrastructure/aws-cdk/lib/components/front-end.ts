@@ -246,7 +246,7 @@ export class FaimsFrontEnd extends Construct {
               'bash',
               '-c',
               `
-            cd /asset-input && npm i && npm run github-build-app && cd ${appPath} && cp -R ${outputPath}/* /asset-output
+            cd /asset-input && pnpm i && pnpm run github-build-app && cd ${appPath} && cp -R ${outputPath}/* /asset-output
             `,
             ],
             // Local bundling is faster for quick local deploy
@@ -268,7 +268,7 @@ export class FaimsFrontEnd extends Construct {
                   //export environment variables - not included by default
                   envs,
                   `cd ${buildPath}`,
-                  'npm i && npm run github-build-app',
+                  'pnpm i && pnpm run github-build-app',
                   `cd ${appPath}`,
                   `cp -R ${outputPath}/* ${outputDir}`,
                 ];
@@ -383,7 +383,7 @@ export class FaimsFrontEnd extends Construct {
               'bash',
               '-c',
               `
-            cd /asset-input && npm i && npm run build-web && cd ${appPath} && cp -R ${outputPath}/* /asset-output
+            cd /asset-input && pnpm i && pnpm run build-web && cd ${appPath} && cp -R ${outputPath}/* /asset-output
             `,
             ],
             // Local bundling is faster for quick local deploy
@@ -405,7 +405,7 @@ export class FaimsFrontEnd extends Construct {
                   //export environment variables - not included by default
                   envs,
                   `cd ${buildPath}`,
-                  'npm i && npm run build-web',
+                  'pnpm i && pnpm run build-web',
                   `cd ${appPath}`,
                   `cp -R ${outputPath}/* ${outputDir}`,
                 ];

@@ -22,7 +22,7 @@ Ensure you have uuid installed e.g.
 sudo apt-get install uuid
 ```
 
-Also check you have a modern npm installed, ideally v10.x.y and node v20+.
+Also check you have a modern pnpm installed, ideally v10.x.y and node v20+.
 
 We recommend using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager). To set this up
 
@@ -62,7 +62,7 @@ This spins up three services
 Clone the repository and install node modules (note this only needs to be run from the parent folder)
 
 ```bash
-npm install
+pnpm install
 ```
 
 Create the .env file by copying the .env.dist file and updating the values
@@ -79,7 +79,7 @@ code ./app/.env
 ### Key Generation
 
 ```bash
-npm run generate-local-keys
+pnpm run generate-local-keys
 ```
 
 generates new key pair in the `keys` folder in the `api` folder and generates the `local.ini` file for couchdb that contains the public key and other information. This uses the script located at `./api/keymanagement/makeInstanceKeys.sh`.
@@ -114,13 +114,13 @@ running on your host and enter the appropriate addresses in the `.env` file.
 You should then be able to run the server with:
 
 ```bash
-npm run start-api
+pnpm run start-api
 ```
 
 If you are developing, you may want to run:
 
 ```bash
-npm run watch-api
+pnpm run watch-api
 ```
 
 instead, which will monitor for changes with `nodemon`.
@@ -134,7 +134,7 @@ as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`). The script will
 have no effect if the admin user is already set up. Run the script with:
 
 ```bash
-npm run migrate
+pnpm run migrate
 ```
 
 There is also a script that will populate the database with notebooks that are
@@ -149,24 +149,24 @@ Bearer Token to Clipboard". Paste this value into your .env file as the
 value of USER_TOKEN.
 
 ```bash
-npm run load-notebooks
+pnpm run load-notebooks
 ```
 
 ## IOS Notes
 
-To build the IOS app locally you need to be on MacOS.  A number of the build
-files for IOS are generated from configuration variables in the `app/.env` 
-file.   These must be set for the build to work, in particular the
+To build the IOS app locally you need to be on MacOS. A number of the build
+files for IOS are generated from configuration variables in the `app/.env`
+file. These must be set for the build to work, in particular the
 development team might need to be set to a valid team id for the build
-to work.  
+to work.
 
-Before building the IOS app run 
+Before building the IOS app run
 
 ```bash
-npm run configIOSbuild
+pnpm run configIOSbuild
 ```
 
-in the `app` directory.  This modifies two build files.   See the notes on
+in the `app` directory. This modifies two build files. See the notes on
 [IOS Deployment](docs/developer/docs/source/markdown/IOS-Deployment.md) for
 more details. That documents the CI workflows but some of it applies for
 local builds.
@@ -174,10 +174,10 @@ local builds.
 ## Developer notes to run test copies of FAIMS
 
 Before you do anything (apart from cloning this repository), you should run
-npm install`to get all the dependencies
+pnpm install`to get all the dependencies
 for the scripts installed (If you have been doing some development, either
 stashing or committing your changes before
-running`npm install` would be wise).
+running`pnpm install` would be wise).
 
 Once the dependencies are installed, you should check any changes that have been
 made, and commit them if needed.
@@ -186,12 +186,12 @@ There are a number of helper scripts (which can be seen in the `package.json`),
 but the ones that should always exist
 are:
 
-- `npm run build-app`: builds the webapp (not the Android/iOS apps)
-- `npm run test-app`: runs the main test suite
-- `npm run serve-app`: runs the webapp in a browser (currently via capacitor's
+- `pnpm run build-app`: builds the webapp (not the Android/iOS apps)
+- `pnpm run test-app`: runs the main test suite
+- `pnpm run serve-app`: runs the webapp in a browser (currently via capacitor's
   system, to ensure that the webapp and the phone apps are as similar as
   possible).
-- `npm run start-app`: runs the webapp in a browser (unoptimized dev build).
+- `pnpm run start-app`: runs the webapp in a browser (unoptimized dev build).
 
 You should also be aware of the
 [cli interface to capacitor](https://capacitorjs.com/docs/cli), as that does the
@@ -204,9 +204,9 @@ Further build/install instructions can be found at
 ## Build mobile app
 
 1. Build the source code
-   - `npm run webapp-build`
+   - `pnpm run webapp-build`
 1. Synchronise Gradle files
-   - `npm run webapp-sync` OR `cap sync`
+   - `pnpm run webapp-sync` OR `cap sync`
 1. [Optional] Allow to copy to /Library/Ruby/Gems/2.3.0:
    - `export GEM_HOME="$HOME/.gem"`
 1. [Optional] Resolve `xcode-select` error
@@ -223,11 +223,11 @@ On WSL, the following setup and procedure allows live reloading of the app on an
 
 ### Setup
 
-First run `npm i` to install all dependencies, and move into `/app`. Then `npm i` to be certain local deps are installed, then
+First run `pnpm i` to install all dependencies, and move into `/app`. Then `pnpm i` to be certain local deps are installed, then
 
 - open android studio in one tab i.e. `./<studio path>/studio.sh`
 - in the open studio window, configure/start the emulator you want to run it on
-- in another tab, build the app i.e. `npm run build && npx cap sync android`
+- in another tab, build the app i.e. `pnpm run build && npx cap sync android`
 - run the server `npx vite --force`
 - in another tab, start live reload `npx cap run android -l --external` and select the desired running emulator (it's important you use the existing running emulator rather than starting another which is unstable with WSL)
 
@@ -240,10 +240,10 @@ current working directory inside the container so that you can work on
 code in real time. To use this you also need a local `node_modules` folder
 since the current directory will shadow the one inside the container.
 
-To create `node_modules` run `npm ci` inside the container:
+To create `node_modules` run `pnpm ci` inside the container:
 
 ```bash
-docker compose -f api/docker-compose.dev.yml run conductor npm ci
+docker compose -f api/docker-compose.dev.yml run conductor pnpm ci
 ```
 
 Then start the services:
@@ -258,7 +258,7 @@ Run tests inside the conductor instance:
 
 ```bash
 
-docker compose exec conductor npm run test
+docker compose exec conductor pnpm run test
 ```
 
 ## Production docker builds

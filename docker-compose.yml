@@ -3,6 +3,8 @@ services:
     env_file:
       - ./api/.env
     build:
+      context: .
+      dockerfile: Dockerfile
       target: api
     ports:
       - "0.0.0.0:${CONDUCTOR_EXTERNAL_PORT}:${CONDUCTOR_INTERNAL_PORT}"
@@ -13,7 +15,11 @@ services:
       - ./api/public:/usr/src/api/public
       - ./api/test:/usr/src/api/test
       - ./api/.env:/usr/src/api/.env
-    command: npm run watch-api
+      # Exclude node_modules from being overwritten by host mount
+      - /usr/src/node_modules
+      - /usr/src/api/node_modules
+      - /usr/src/.pnpm
+    command: pnpm run watch-api
     depends_on:
       - couchdb
     healthcheck:
@@ -22,11 +28,13 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
+      
   app:
     env_file:
       - ./app/.env
     build:
+      context: .
+      dockerfile: Dockerfile
       target: app
     ports:
       - "3000:3000"
@@ -35,10 +43,14 @@ services:
       - ./app/public:/usr/src/app/public
       - ./app/.env:/usr/src/app/.env
       - ./app/src:/usr/src/app/src
-    command: npm run start-app -- --force
+      # Exclude node_modules from being overwritten by host mount
+      - /usr/src/node_modules
+      - /usr/src/app/node_modules
+      - /usr/src/.pnpm
+    command: pnpm run start-app -- --force
     depends_on:
       - api
-
+      
   couchdb:
     env_file:
       - ./api/.env
@@ -51,6 +63,6 @@ services:
         target: /opt/couchdb/data
     ports:
       - "0.0.0.0:${COUCHDB_EXTERNAL_PORT}:5984"
-
+      
 volumes:
   couchdb_data:

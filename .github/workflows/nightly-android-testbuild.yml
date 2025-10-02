@@ -36,7 +36,7 @@ jobs:
         env:
           cache-name: cache-node-modules
         with:
-          path: ~/.npm
+          path: ~/.pnpm
           key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-build-${{ env.cache-name }}-
@@ -53,7 +53,7 @@ jobs:
       - name: Create version string
         shell: bash
         run: |
-          echo "version_string=v${{env.app_version}}-android-#${{env.sha_short}}" >> "$GITHUB_ENV"        
+          echo "version_string=v${{env.app_version}}-android-#${{env.sha_short}}" >> "$GITHUB_ENV"
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Cache Gradle packages
         uses: actions/cache@v4
@@ -64,8 +64,8 @@ jobs:
       - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 22          
-          cache: 'npm'
+          node-version: 22
+          cache: 'pnpm'
       # https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-java-with-gradle
       - name: Set up adopt JDK 1.21
         uses: actions/setup-java@v4
@@ -84,14 +84,14 @@ jobs:
         uses: timheuer/base64-to-file@v1
         id: service_account_json_file
         with:
-          fileName: "fastlane-android-google-play-key.json"
-          encodedString: ${{ secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON }}     
+          fileName: 'fastlane-android-google-play-key.json'
+          encodedString: ${{ secrets.GPLAY_SERVICE_ACCOUNT_KEY_JSON }}
       - name: Decode Keystore File
         uses: timheuer/base64-to-file@v1
         id: android_keystore
         with:
-          fileName: "android-signing-keystore.jks"
-          encodedString: ${{ secrets.KEYSTORE_FILE }}        
+          fileName: 'android-signing-keystore.jks'
+          encodedString: ${{ secrets.KEYSTORE_FILE }}
       # https://github.com/android-actions/setup-android
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -124,12 +124,12 @@ jobs:
           export VITE_OFFLINE_MAPS=true
           export VITE_MAP_STYLE=basic
 
-          npm ci
-          npm run build
+          pnpm ci
+          pnpm run build
       # https://capacitorjs.com/docs/android
-      # The bundle install shouldn't be necessary, but given we've got ios and android in...      
-      - run: npm run app-update android --workspace=@faims3/app
-      - run: npm run webapp-sync --workspace=@faims3/app -- --deployment android 
+      # The bundle install shouldn't be necessary, but given we've got ios and android in...
+      - run: pnpm run app-update android --workspace=@faims3/app
+      - run: pnpm run webapp-sync --workspace=@faims3/app -- --deployment android
       - name: Fastlane
         run: |
           cd app/android
@@ -138,11 +138,11 @@ jobs:
         env:
           APP_ID: ${{ vars.APP_ID }}
           ANDROID_RELEASE_STATUS: ${{ vars.ANDROID_RELEASE_STATUS }}
-          ANDROID_DEPLOY_TRACK: "internal"
+          ANDROID_DEPLOY_TRACK: 'internal'
           JAVA_KEYSTORE: ${{ steps.android_keystore.outputs.filePath }}
           JAVA_KEYSTORE_PASSWORD: ${{ secrets.JAVA_KEYSTORE_PASSWORD }}
           JAVA_KEY: ${{ secrets.JAVA_KEY}}
           JAVA_KEY_PASSWORD: ${{ secrets.JAVA_KEY_PASSWORD }}
           ANDROID_JSON_KEY_FILE: ${{ steps.service_account_json_file.outputs.filePath }}
-          serverprefix: "testing"
+          serverprefix: 'testing'
           prnum: ${{env.version_string}}
