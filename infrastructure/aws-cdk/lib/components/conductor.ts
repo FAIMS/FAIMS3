@@ -191,11 +191,11 @@ export class FaimsConductor extends Construct {
       : undefined;
     const googleConfigSecrets = googleSecret
       ? {
-          GOOGLE_CLIENT_ID: ecs.Secret.fromSecretsManager(
+          AUTH_GOOGLE_CLIENT_ID: ecs.Secret.fromSecretsManager(
             googleSecret,
             'CLIENT_ID'
           ),
-          GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
+          AUTH_GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
             googleSecret,
             'CLIENT_SECRET'
           ),
@@ -228,6 +228,15 @@ export class FaimsConductor extends Construct {
         KEY_SOURCE: 'AWS_SM',
         AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         NEW_CONDUCTOR_URL: props.webUrl,
+
+        ...(googleSecret
+          ? {
+              AUTH_GOOGLE_TYPE: 'google',
+              AUTH_GOOGLE_DISPLAY_NAME: 'Google',
+              AUTH_GOOGLE_SCOPE:
+                'profile,email,https://www.googleapis.com/auth/plus.login',
+            }
+          : {}),
 
         // Security configurations
         MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays

@@ -35,8 +35,8 @@ import passport from 'passport';
 import flash from 'req-flash';
 import {addAuthPages} from './auth/authPages';
 import {addAuthRoutes} from './auth/authRoutes';
-import {applyPassportStrategies} from './auth/strategies/applyStrategies';
-import {CONDUCTOR_AUTH_PROVIDERS, COUCHDB_INTERNAL_URL} from './buildconfig';
+import {registerAuthProviders} from './auth/strategies/applyStrategies';
+import {COUCHDB_INTERNAL_URL} from './buildconfig';
 import {
   databaseValidityReport,
   initialiseDbAndKeys,
@@ -212,15 +212,13 @@ app.get('/up/', (req, res) => {
 
 // AUTH
 // ====
-
-// This sets up passport to use the social strategies
-applyPassportStrategies(CONDUCTOR_AUTH_PROVIDERS);
+const socialProviders = registerAuthProviders();
 
 // This adds the views/pages related to auth (/login, /register)
-addAuthPages(app, CONDUCTOR_AUTH_PROVIDERS);
+addAuthPages(app, socialProviders);
 
 // This adds the endpoints for auth (/auth/local, [/auth/<handler>])
-addAuthRoutes(app, CONDUCTOR_AUTH_PROVIDERS);
+addAuthRoutes(app, socialProviders);
 
 // HANDLEBARS ROUTES
 // =================

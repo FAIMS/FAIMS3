@@ -17,6 +17,7 @@ if [ -n "$VITE_BUGSNAG_KEY" ]; then
     --api-key ${VITE_BUGSNAG_KEY} \
     --detect-app-version \
     --base-url ${BASE_URL}/assets \
-    --directory ./build-sourcemap/assets
+    --directory ./build-sourcemap/assets \
+    --overwrite
 fi
 
