@@ -22,10 +22,8 @@
 import {FieldProps} from 'formik';
 import {useEffect, useState} from 'react';
 import {AutoIncrementer} from '../../local-data/autoincrement';
-
 import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
-import FieldWrapper from './fieldWrapper';
-import {Input, TextField} from '@mui/material';
+import {Input} from '@mui/material';
 
 interface Props {
   num_digits: number;
@@ -37,8 +35,6 @@ interface Props {
 export const BasicAutoIncrementer = (props: FieldProps & Props) => {
   const [showAutoIncrementEditForm, setShowAutoIncrementEditForm] =
     useState(false);
-
-  const [value, setValue] = useState(props.form.values[props.field.name]);
 
   const incrementer = new AutoIncrementer(
     props.form.values['_project_id'],
@@ -70,7 +66,6 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
       if (new_id === undefined) {
         setShowAutoIncrementEditForm(true);
       } else {
-        setValue(new_id);
         props.form.setFieldValue(props.field.name, new_id, true);
       }
     }
