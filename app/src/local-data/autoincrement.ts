@@ -321,7 +321,6 @@ export async function getDisplayStatusForProject(
   const statuses: UserFriendlyAutoincrementStatus[] = [];
   try {
     const refs = await getAutoincrementReferencesForProject(project_id);
-    console.log('Got references', refs);
     for (const ref of refs) {
       const status = await getDisplayStatusForField(
         project_id,
@@ -334,6 +333,5 @@ export async function getDisplayStatusForProject(
   } catch (err) {
     logError(err);
   }
-  console.log('Got statuses', statuses);
   return statuses;
 }

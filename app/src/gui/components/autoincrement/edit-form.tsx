@@ -94,7 +94,6 @@ export const AutoIncrementEditForm = ({
     };
 
   const removeRange = async (index: number) => {
-    console.log('Removing range', index);
     await incrementer.removeRange(index).catch(errorHandler);
     refreshState();
   };

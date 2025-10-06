@@ -62,7 +62,6 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
       current_value === undefined
     ) {
       const new_id = await compute_id(props.num_digits || 4);
-      console.log('Computed new id', new_id);
       if (new_id === undefined) {
         setShowAutoIncrementEditForm(true);
       } else {
