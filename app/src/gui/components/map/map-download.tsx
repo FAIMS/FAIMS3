@@ -37,6 +37,7 @@ import {useEffect, useMemo, useState} from 'react';
 import ProgressBar from '../progress-bar';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 /**
  * Map download component presents the UI for downloading offline maps.
