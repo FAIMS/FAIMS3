@@ -44,6 +44,7 @@ import {
   LocalAutoIncrementRange,
   LocalAutoIncrementState,
 } from '../../../local-data/autoincrementTypes';
+import {last} from 'lodash';
 
 interface Props {
   project_id: ProjectID;
@@ -62,10 +63,12 @@ export const AutoIncrementEditForm = ({
   open,
   handleClose,
 }: Props) => {
+  const [lastUsedInput, setLastUsedInput] = useState<number>(0);
   const [state, setState] = useState<LocalAutoIncrementState>();
   const refreshState = async () => {
     const state = await incrementer.getState();
     setState(state);
+    setLastUsedInput(state.last_used_id ?? 0);
   };
 
   useEffect(() => {
@@ -102,6 +105,11 @@ export const AutoIncrementEditForm = ({
     refreshState();
   };
 
+  const updateLastUsed = async () => {
+    await incrementer.setLastUsed(lastUsedInput).catch(errorHandler);
+    refreshState();
+  };
+
   return (
     <Dialog open={open} onClose={handleClose}>
       <DialogTitle>Edit Settings for {label}</DialogTitle>
@@ -127,14 +135,31 @@ export const AutoIncrementEditForm = ({
           until used up. You must add at least one range. If there is more than
           one range, the ranges will be used in order.
         </Typography>
+
+        <Divider sx={{mt: 1, mb: 2}} />
+
+        <Typography gutterBottom>
+          The last used value is shown here. You can update this to a value
+          within one of your ranges. If you do this, the next value will be
+          based on this value.
+        </Typography>
+
+        <Stack direction="row" spacing={2} alignItems="center">
+          <TextField
+            label="Last Used Value"
+            type="number"
+            size="small"
+            value={lastUsedInput}
+            onChange={event => setLastUsedInput(parseInt(event.target.value))}
+          />
+          <Button variant="outlined" onClick={updateLastUsed}>
+            Update Last Used Value
+          </Button>
+        </Stack>
+
         <Divider sx={{mt: 1, mb: 2}} />
 
         <Stack direction="column" spacing={2}>
-          <TextField
-            label="Current Value"
-            value={state?.last_used_id ?? 'No value set'}
-            disabled={true}
-          />
           {state?.ranges?.map(
             (range: LocalAutoIncrementRange, index: number) => {
               return (

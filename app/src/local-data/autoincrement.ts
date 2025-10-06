@@ -96,6 +96,36 @@ export class AutoIncrementer {
     }
   }
 
+  // set the last used id for this incrementer
+  async setLastUsed(last_used_id: number) {
+    const state = await this.getState();
+    // value should be in one of the ranges, that range becomes the
+    // new active range, overriding any previous active range
+    if (state.ranges.length === 0) {
+      throw Error('No ranges defined for this autoincrementer');
+    }
+    let in_range = false;
+    for (const range of state.ranges) {
+      if (last_used_id >= range.start && last_used_id <= range.stop) {
+        in_range = true;
+        range.using = true;
+        range.fully_used = last_used_id === range.stop;
+      } else if (in_range) {
+        // if we already found the range, set any later ranges to not using
+        range.using = false;
+      } else {
+        // if we haven't found the range yet, set any earlier ranges to full used
+        range.fully_used = true;
+        range.using = false;
+      }
+    }
+    if (!in_range) {
+      throw Error('Last used ID not in any defined range');
+    }
+    state.last_used_id = last_used_id;
+    await this.setState(state);
+  }
+
   // Add a new range to the autoincrementer
   async addRange({start, stop}: {start: number; stop: number}) {
     const doc: LocalAutoIncrementRange = {
