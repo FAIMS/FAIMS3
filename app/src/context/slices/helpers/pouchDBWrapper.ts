@@ -76,9 +76,6 @@ export class PouchDBWrapper<T extends {}> implements DatabaseInterface<T> {
 
   private async _recreate(): Promise<void> {
     this.recreationCount++;
-    logError(
-      `PouchDB connection error, recreating (attempt ${this.recreationCount}) ${this.name}`
-    );
 
     try {
       // Destroy the old database instance
