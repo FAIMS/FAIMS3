@@ -19,15 +19,13 @@
  *   a value that can be used in templated string fields.
  */
 
-import Input from '@mui/material/Input';
 import {FieldProps} from 'formik';
 import {useEffect, useState} from 'react';
-import {
-  getLocalAutoincrementStateForField,
-  setLocalAutoincrementStateForField,
-} from '../../local-data/autoincrement';
+import {AutoIncrementer} from '../../local-data/autoincrement';
 
 import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
+import FieldWrapper from './fieldWrapper';
+import {Input, TextField} from '@mui/material';
 
 interface Props {
   num_digits: number;
@@ -40,65 +38,19 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
   const [showAutoIncrementEditForm, setShowAutoIncrementEditForm] =
     useState(false);
 
-  const get_id = async (): Promise<number | null> => {
-    const project_id = props.form.values['_project_id'];
-    const form_id = props.form_id;
-    const field_id = props.field.name;
-    const local_state = await getLocalAutoincrementStateForField(
-      project_id,
-      form_id,
-      field_id
-    );
-    if (local_state.last_used_id === null && local_state.ranges.length === 0) {
-      setShowAutoIncrementEditForm(true);
-      return null;
-    }
+  const [value, setValue] = useState(props.form.values[props.field.name]);
 
-    if (local_state.last_used_id === null) {
-      // We've got a clean slate with ranges allocated, start allocating ids
-      const new_id = local_state.ranges[0].start;
-      local_state.ranges[0].using = true;
-      local_state.last_used_id = new_id;
-      await setLocalAutoincrementStateForField(local_state);
-      return new_id;
-    }
-
-    // We're now using the allocated ranges, find where we've up to:
-    // If we're using a range, find it
-    for (const range of local_state.ranges) {
-      if (range.using) {
-        if (local_state.last_used_id + 1 < range.stop) {
-          const next_id = local_state.last_used_id + 1;
-          local_state.last_used_id = next_id;
-          await setLocalAutoincrementStateForField(local_state);
-          return next_id;
-        }
-        range.fully_used = true;
-        range.using = false;
-      }
-    }
-
-    // find a new range to use
-    for (const range of local_state.ranges) {
-      if (!range.fully_used) {
-        const next_id = range.start;
-        range.using = true;
-        local_state.last_used_id = next_id;
-        await setLocalAutoincrementStateForField(local_state);
-        return next_id;
-      }
-    }
-    // we've got no new ranges to use, ask the user to allocate more
-
-    setShowAutoIncrementEditForm(true);
-    return null;
-  };
+  const incrementer = new AutoIncrementer(
+    props.form.values['_project_id'],
+    props.form_id,
+    props.field.name
+  );
 
   const compute_id = async (
     num_digits: number
   ): Promise<string | undefined> => {
-    const new_id = await get_id();
-    if (new_id === null || new_id === undefined) {
+    const new_id = await incrementer.nextValue();
+    if (new_id === undefined) {
       return undefined;
     }
     return new_id.toString().padStart(num_digits, '0');
@@ -114,9 +66,11 @@ export const BasicAutoIncrementer = (props: FieldProps & Props) => {
       current_value === undefined
     ) {
       const new_id = await compute_id(props.num_digits || 4);
+      console.log('Computed new id', new_id);
       if (new_id === undefined) {
         setShowAutoIncrementEditForm(true);
       } else {
+        setValue(new_id);
         props.form.setFieldValue(props.field.name, new_id, true);
       }
     }

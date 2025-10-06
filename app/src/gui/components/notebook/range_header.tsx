@@ -34,10 +34,8 @@ import {
   Paper,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
-import {
-  getDisplayStatusForProject,
-  UserFriendlyAutoincrementStatus,
-} from '../../../local-data/autoincrement';
+import {getDisplayStatusForProject} from '../../../local-data/autoincrement';
+import {UserFriendlyAutoincrementStatus} from '../../../local-data/autoincrementTypes';
 
 export default function RangeHeader(props: {
   project: any;

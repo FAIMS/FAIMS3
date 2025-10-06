@@ -33,18 +33,18 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 
-import {LocalAutoIncrementRange, ProjectID} from '@faims3/data-model';
+import {ProjectID} from '@faims3/data-model';
 import CloseIcon from '@mui/icons-material/Close';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
+import {AutoIncrementer} from '../../../local-data/autoincrement';
 import {
-  createNewAutoincrementRange,
-  getLocalAutoincrementRangesForField,
-  setLocalAutoincrementRangesForField,
-} from '../../../local-data/autoincrement';
+  LocalAutoIncrementRange,
+  LocalAutoIncrementState,
+} from '../../../local-data/autoincrementTypes';
 
 interface Props {
   project_id: ProjectID;
@@ -63,68 +63,44 @@ export const AutoIncrementEditForm = ({
   open,
   handleClose,
 }: Props) => {
+  const [state, setState] = useState<LocalAutoIncrementState>();
+  const refreshState = async () => {
+    const state = await incrementer.getState();
+    setState(state);
+  };
+
+  useEffect(() => {
+    refreshState();
+  }, []);
+
   const dispatch = useAppDispatch();
 
-  // useQuery to get the current ranges for the field,
-  // we will invalidate the query when we update the ranges
-  // so that they get re-fetched
-  const queryClient = useQueryClient();
-  const queryKey = ['autoincrement', project_id, form_id, field_id];
-  const {data: ranges} = useQuery({
-    queryKey: queryKey,
-    queryFn: async () => {
-      const ranges = await getLocalAutoincrementRangesForField(
-        project_id,
-        form_id,
-        field_id
-      );
-      return ranges;
-    },
-    enabled: true,
-  });
+  const incrementer = new AutoIncrementer(project_id, form_id, field_id);
+
+  const errorHandler = (error: Error) => {
+    dispatch(
+      addAlert({
+        message: error.toString(),
+        severity: 'error',
+      })
+    );
+  };
+
+  const updateRange =
+    (index: number) => async (range: LocalAutoIncrementRange) => {
+      await incrementer.updateRange(index, range).catch(errorHandler);
+      await refreshState();
+    };
+
+  const removeRange = async (index: number) => {
+    console.log('Removing range', index);
+    await incrementer.removeRange(index).catch(errorHandler);
+    refreshState();
+  };
 
   const addNewRange = async () => {
-    const updatedRanges = [...(ranges || [])];
-    updatedRanges.push(createNewAutoincrementRange(0, 0));
-    updateRanges(updatedRanges);
-  };
-
-  const updateRanges = async (newRanges: LocalAutoIncrementRange[]) => {
-    try {
-      await setLocalAutoincrementRangesForField(
-        project_id,
-        form_id,
-        field_id,
-        newRanges
-      );
-      queryClient.invalidateQueries({queryKey: queryKey});
-    } catch (err: any) {
-      dispatch(
-        addAlert({
-          message: err.toString(),
-          severity: 'error',
-        })
-      );
-    }
-  };
-
-  const updateRange = (index: number) => {
-    return (range: LocalAutoIncrementRange) => {
-      if (ranges) {
-        const rangesCopy = [...ranges];
-        rangesCopy[index] = range;
-        updateRanges(rangesCopy);
-      }
-    };
-  };
-
-  const handleRemoveRange = (index: number) => {
-    const newRanges = ranges?.filter((_, i) => i !== index);
-    if (newRanges !== undefined) {
-      updateRanges(newRanges);
-    } else {
-      updateRanges([]);
-    }
+    await incrementer.addRange({start: 0, stop: 0}).catch(errorHandler);
+    refreshState();
   };
 
   return (
@@ -155,18 +131,25 @@ export const AutoIncrementEditForm = ({
         <Divider sx={{mt: 1, mb: 2}} />
 
         <Stack direction="column" spacing={2}>
-          {ranges?.map((range, index) => {
-            return (
-              <IncrementerRange
-                key={index}
-                range={range}
-                index={index}
-                updateRange={updateRange(index)}
-                handleRemoveRange={handleRemoveRange}
-                allowRemove={ranges.length > 1}
-              />
-            );
-          })}
+          <TextField
+            label="Current Value"
+            value={state?.last_used_id ?? 'No value set'}
+            disabled={true}
+          />
+          {state?.ranges?.map(
+            (range: LocalAutoIncrementRange, index: number) => {
+              return (
+                <IncrementerRange
+                  key={index}
+                  range={range}
+                  index={index}
+                  updateRange={updateRange(index)}
+                  handleRemoveRange={removeRange}
+                  allowRemove={state.ranges.length > 1}
+                />
+              );
+            }
+          )}
           <Button
             variant="outlined"
             color={'primary'}
@@ -209,6 +192,13 @@ type IncremenenterRangeProps = {
 const IncrementerRange = (props: IncremenenterRangeProps) => {
   const [start, setStart] = useState<number | string>(props.range.start);
   const [stop, setStop] = useState<number | string>(props.range.stop);
+
+  // need to force reset when props change to ensure we update when
+  // a range is deleted
+  useEffect(() => {
+    setStart(props.range.start);
+    setStop(props.range.stop);
+  }, [props.range.start, props.range.stop]);
 
   const handleStartChange = (event: any) => {
     if (event.target.value === '') {

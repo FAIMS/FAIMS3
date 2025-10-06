@@ -9,12 +9,16 @@
 
 import {EncodedDraft, logError, ProjectDataObject} from '@faims3/data-model';
 import {DraftDB} from '../../../sync/draft-storage';
-import {createLocalPouchDatabase, LOCAL_POUCH_OPTIONS} from './databaseHelpers';
+import {createLocalPouchDatabase} from './databaseHelpers';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import {PouchDBWrapper} from './pouchDBWrapper';
 PouchDB.plugin(PouchDBFind);
 
+// Local State db can contain two types of document that don't have a
+// field we can use for a discriminator, so we use 'any' for the type
+// when making the database and relay on local checks
+export type LocalStateDbType = any;
 export interface RegisterDbOptions {
   // Tolerant = true will disable errors when you are trying to create a
   // database with the same ID as existing
@@ -36,7 +40,7 @@ class DatabaseService {
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
   private draftDb: DraftDB;
-  private localStateDb: PouchDBWrapper<{}>;
+  private localStateDb: PouchDBWrapper<LocalStateDbType>;
 
   private constructor() {
     this.draftDb = this.createDraftDb();
@@ -48,7 +52,7 @@ class DatabaseService {
     return new PouchDBWrapper<EncodedDraft>('draft-storage');
   }
   createLocalStateDb() {
-    return new PouchDBWrapper('local_state');
+    return new PouchDBWrapper<LocalStateDbType>('local_state');
   }
 
   static getInstance(): DatabaseService {
@@ -228,7 +232,7 @@ class DatabaseService {
       }
     } catch (e) {
       logError(`Draft database appears invalid, re-opening: ${e}`);
-      this.localStateDb = this.createDraftDb();
+      this.draftDb = this.createDraftDb();
       repairCount += 1;
     }
 

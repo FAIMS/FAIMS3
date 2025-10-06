@@ -37,7 +37,6 @@ import ProgressBar from '../progress-bar';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {set} from 'lodash';
 
 /**
  * Map download component presents the UI for downloading offline maps.
