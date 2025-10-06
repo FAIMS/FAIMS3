@@ -107,9 +107,10 @@ describe('Check edit-form component', () => {
       expect(screen.getByLabelText('Start')).toBeTruthy();
       expect(screen.getByLabelText('Stop')).toBeTruthy();
     });
-    // Check that the inputs have the expected IDs
-    await waitFor(() => {
-      expect(screen.getAllByDisplayValue('0')).toHaveLength(2); // Both start and stop default to 0
-    });
+    // check that we have two inputs with zero values (initial state)
+    const startInput = screen.getByLabelText('Start') as HTMLInputElement;
+    const stopInput = screen.getByLabelText('Stop') as HTMLInputElement;
+    expect(startInput.value).toBe('0');
+    expect(stopInput.value).toBe('0');
   });
 });

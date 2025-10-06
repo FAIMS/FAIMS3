@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import {Project} from '../../../context/slices/projectSlice';
 import MetadataRenderer from '../metadataRenderer';
-import RangeHeader from './range_header';
 
 interface MetadataDisplayComponentProps {
   project: Project;
@@ -176,12 +175,6 @@ export const MetadataDisplayComponent = (
               </TableBody>
             </Table>
           </TableContainer>
-        </Grid>
-        <Grid item xs={12} sm={12} md={12} lg={4}>
-          <RangeHeader
-            project={props.project}
-            handleAIEdit={props.handleTabChange}
-          />
         </Grid>
       </Grid>
     </>
