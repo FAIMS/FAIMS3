@@ -241,12 +241,12 @@ class DatabaseService {
         await this.localStateDb.info();
       } else {
         logError('Local state database missing, re-opening');
-        this.createLocalStateDb();
+        this.localStateDb = this.createLocalStateDb();
         repairCount += 1;
       }
     } catch (e) {
       logError(`Local state database appears invalid, re-opening: ${e}`);
-      this.createLocalStateDb();
+      this.localStateDb = this.createLocalStateDb();
       repairCount += 1;
     }
     return repairCount;
