@@ -8,8 +8,6 @@
  */
 
 import {EncodedDraft, logError, ProjectDataObject} from '@faims3/data-model';
-import {DraftDB} from '../../../sync/draft-storage';
-import {createLocalPouchDatabase} from './databaseHelpers';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
 import {DraftDB} from '../../../sync/draft-storage';
