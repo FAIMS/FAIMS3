@@ -64,6 +64,7 @@ export class AutoIncrementer {
   async getState() {
     try {
       const doc = await this.db.get(this.pouch_id);
+      console.log('Got state', doc);
       return doc;
     } catch (err: any) {
       if (err.status === 404) {
@@ -155,7 +156,6 @@ export class AutoIncrementer {
   // return the next value for this autoincrementer, or undefined if we can't
   // get one
   async nextValue() {
-    console.log('Getting next value for', this.pouch_id);
     const state = await this.getState();
     // find the range in use
     if (state.last_used_id === null && state.ranges.length === 0) {
@@ -235,7 +235,7 @@ export class AutoIncrementer {
  */
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
-) {
+): Promise<AutoIncrementReference[]> {
   const uiSpecId = selectProjectById(
     store.getState(),
     project_id
@@ -293,6 +293,7 @@ export async function getDisplayStatusForProject(
   const statuses: UserFriendlyAutoincrementStatus[] = [];
   try {
     const refs = await getAutoincrementReferencesForProject(project_id);
+    console.log('Got references', refs);
     for (const ref of refs) {
       const status = await getDisplayStatusForField(
         project_id,
@@ -305,5 +306,6 @@ export async function getDisplayStatusForProject(
   } catch (err) {
     logError(err);
   }
+  console.log('Got statuses', statuses);
   return statuses;
 }
