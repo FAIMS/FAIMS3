@@ -64,7 +64,6 @@ export class AutoIncrementer {
   async getState() {
     try {
       const doc = await this.db.get(this.pouch_id);
-      console.log('Got state', doc);
       return doc;
     } catch (err: any) {
       if (err.status === 404) {
@@ -137,7 +136,6 @@ export class AutoIncrementer {
     const state = await this.getState();
     state.ranges.push(doc);
     await this.setState(state);
-    console.log('Added range', state);
     return doc;
   }
 

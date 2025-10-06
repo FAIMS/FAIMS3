@@ -44,7 +44,6 @@ import {
   LocalAutoIncrementRange,
   LocalAutoIncrementState,
 } from '../../../local-data/autoincrementTypes';
-import {last} from 'lodash';
 
 interface Props {
   project_id: ProjectID;
@@ -159,12 +158,13 @@ export const AutoIncrementEditForm = ({
 
         <Divider sx={{mt: 1, mb: 2}} />
 
-        <Stack direction="column" spacing={2}>
+        <Stack data-testid="ranges" direction="column" spacing={2}>
           {state?.ranges?.map(
             (range: LocalAutoIncrementRange, index: number) => {
               return (
                 <IncrementerRange
                   key={index}
+                  data-testid={'range-' + index}
                   range={range}
                   index={index}
                   updateRange={updateRange(index)}
