@@ -6,7 +6,7 @@
 # get the new version from the first argument
 NEW_VERSION=$1
 
-FILES=("api/package.json" "app/package.json" "web/package.json" "library/data-model/package.json")
+FILES=("package.json" "api/package.json" "app/package.json" "web/package.json" "library/data-model/package.json")
 
 for FILE in "${FILES[@]}"; do
   if [ -f "$FILE" ]; then

@@ -18,194 +18,238 @@
  *   Manage autoincrementer state for a project
  */
 
-// There are two internal IDs for projects, the former is unique to the system
-// (i.e. includes the listing_id), the latter is unique only to the 'projects'
-// database it came from, for a FAIMS listing
-// (It is this way because the list of projects is decentralised and so we
-// cannot enforce system-wide unique project IDs without a 'namespace' listing id)
-
-import {
-  AutoIncrementReference,
-  LocalAutoIncrementRange,
-  LocalAutoIncrementState,
-  ProjectID,
-  ProjectUIFields,
-} from '@faims3/data-model';
+import {ProjectID, ProjectUIFields} from '@faims3/data-model';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../context/slices/projectSlice';
 import {store} from '../context/store';
 import {logError} from '../logging';
-import {databaseService} from '../context/slices/helpers/databaseService';
+import {
+  databaseService,
+  LocalStateDbType,
+} from '../context/slices/helpers/databaseService';
+import {
+  AutoIncrementReference,
+  LocalAutoIncrementRange,
+  LocalAutoIncrementState,
+  UserFriendlyAutoincrementStatus,
+} from './autoincrementTypes';
+import {PouchDBWrapper} from '../context/slices/helpers/pouchDBWrapper';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
 
-export interface UserFriendlyAutoincrementStatus {
-  label: string;
-  last_used: number | null;
-  end: number | null;
-}
+// An auto-incrementer allocates numbers from a set of ranges
+// defined by the user.
+// One range will be active at any time.
+// The incrementer yields a number from the current range
+// until it is exhausted, then moves to the next range.
+// The current state is stored in the local_state database
+export class AutoIncrementer {
+  private project_id: ProjectID;
+  private form_id: string;
+  private field_id: string;
+  private pouch_id: string;
+  private db: PouchDBWrapper<LocalStateDbType>;
 
-/**
- * Generate a name to use to store autoincrementer state for this field
- *
- * @param project_id project identifier
- * @param form_id form identifier
- * @param field_id field identifier
- * @returns a name for the pouchdb document
- */
-function get_pouch_id(
-  project_id: ProjectID,
-  form_id: string,
-  field_id: string
-): string {
-  return (
-    LOCAL_AUTOINCREMENT_PREFIX +
-    '-' +
-    project_id +
-    '-' +
-    form_id +
-    '-' +
-    field_id
-  );
-}
+  constructor(project_id: ProjectID, form_id: string, field_id: string) {
+    this.project_id = project_id;
+    this.form_id = form_id;
+    this.field_id = field_id;
+    // document id for this autoincrementer
+    this.pouch_id = `${LOCAL_AUTOINCREMENT_PREFIX}-${project_id}-${form_id}-${field_id}`;
+    this.db = databaseService.getLocalStateDatabase();
+  }
 
-/**
- * Get the current state of the autoincrementer for this field
- * @param project_id project identifier
- * @param form_id form identifier
- * @param field_id field identifier
- * @returns current state from the database
- */
-export async function getLocalAutoincrementStateForField(
-  project_id: ProjectID,
-  form_id: string,
-  field_id: string
-): Promise<LocalAutoIncrementState> {
-  const pouch_id = get_pouch_id(project_id, form_id, field_id);
-  try {
-    const local_state_db = databaseService.getLocalStateDatabase();
-    return await local_state_db.get(pouch_id);
-  } catch (err: any) {
-    if (err.status === 404) {
-      // We haven't initialised this yet
-      const doc = {
-        _id: pouch_id,
-        last_used_id: null,
-        ranges: [],
-      };
+  // get the current state for this incrementer from the database or initialise
+  // it if it doesn't exist
+  async getState() {
+    try {
+      const doc = await this.db.get(this.pouch_id);
       return doc;
+    } catch (err: any) {
+      if (err.status === 404) {
+        // We haven't initialised this yet
+        const doc: LocalAutoIncrementState = {
+          _id: this.pouch_id,
+          last_used_id: null,
+          ranges: [],
+        };
+        // store the initial state
+        await this.setState(doc);
+        return doc;
+      }
+      logError(err);
+      throw Error(
+        `Unable to get local increment state: ${this.project_id} ${this.form_id} ${this.field_id}`
+      );
     }
-    logError(err);
-    throw Error(
-      `Unable to get local increment state: ${project_id} ${form_id} ${field_id}`
-    );
   }
-}
 
-/**
- * Store a new state document for an autoincrementer
- *
- * @param new_state A state document with updated settings
- */
-export async function setLocalAutoincrementStateForField(
-  new_state: LocalAutoIncrementState
-) {
-  try {
-    const local_state_db = databaseService.getLocalStateDatabase();
-    // force due to error 409
-    return await local_state_db.put(new_state, {force: true});
-  } catch (err) {
-    logError(err);
-    throw Error('Unable to set local increment state');
+  // update the state for this incrementer
+  async setState(state: LocalAutoIncrementState) {
+    try {
+      // force due to error 409
+      return await this.db.put(state, {force: true});
+    } catch (err) {
+      logError(err);
+      throw Error('Unable to set local increment state');
+    }
   }
-}
 
-/**
- * Create a new autoincrementer range document but do not store it
- * @param start Start of range
- * @param stop End of range
- * @returns The auto incrementer range document
- */
-export function createNewAutoincrementRange(
-  start: number,
-  stop: number
-): LocalAutoIncrementRange {
-  const doc: LocalAutoIncrementRange = {
-    start: start,
-    stop: stop,
-    fully_used: false,
-    using: false,
-  };
-  return doc;
-}
+  // set the last used id for this incrementer
+  async setLastUsed(last_used_id: number) {
+    const state = await this.getState();
+    // value should be in one of the ranges, that range becomes the
+    // new active range, overriding any previous active range
+    if (state.ranges.length === 0) {
+      throw Error('No ranges defined for this autoincrementer');
+    }
+    let in_range = false;
+    for (const range of state.ranges) {
+      if (last_used_id >= range.start && last_used_id <= range.stop) {
+        in_range = true;
+        range.using = true;
+        range.fully_used = last_used_id === range.stop;
+      } else if (in_range) {
+        // if we already found the range, set any later ranges to not using
+        range.using = false;
+      } else {
+        // if we haven't found the range yet, set any earlier ranges to full used
+        range.fully_used = true;
+        range.using = false;
+      }
+    }
+    if (!in_range) {
+      throw Error('Last used ID not in any defined range');
+    }
+    state.last_used_id = last_used_id;
+    await this.setState(state);
+  }
 
-/**
- * Get the range information for a field
- *
- * @param project_id project identifier
- * @param form_id form identifier
- * @param field_id field identifier
- * @returns the current range document for this field
- */
-export async function getLocalAutoincrementRangesForField(
-  project_id: ProjectID,
-  form_id: string,
-  field_id: string
-): Promise<LocalAutoIncrementRange[]> {
-  const state = await getLocalAutoincrementStateForField(
-    project_id,
-    form_id,
-    field_id
-  );
-  return state.ranges;
-}
+  // Add a new range to the autoincrementer
+  async addRange({start, stop}: {start: number; stop: number}) {
+    const doc: LocalAutoIncrementRange = {
+      start: start,
+      stop: stop,
+      fully_used: false,
+      using: false,
+    };
+    const state = await this.getState();
+    state.ranges.push(doc);
+    await this.setState(state);
+    return doc;
+  }
 
-/**
- * Set the range information for a field
- *
- * @param project_id project identifier
- * @param form_id form identifier
- * @param field_id field identifier
- * @throws an error if the range has been removed
- * @throws an error if the range start has changed
- * @throws an error if the range stop is less than the last used value
- */
-export async function setLocalAutoincrementRangesForField(
-  project_id: ProjectID,
-  form_id: string,
-  field_id: string,
-  new_ranges: LocalAutoIncrementRange[]
-) {
-  const state = await getLocalAutoincrementStateForField(
-    project_id,
-    form_id,
-    field_id
-  );
-  if (state.ranges.length === 0) {
-    state.ranges = new_ranges;
-    await setLocalAutoincrementStateForField(state);
-  } else {
-    // We should check that we're not causing problems for existing ranges
+  // Remove a range given an index
+  async removeRange(index: number) {
+    const state = await this.getState();
+    if (index < 0 || index >= state.ranges.length) {
+      throw Error('Index out of range');
+    }
+    const range = state.ranges[index];
+    if (range.using) {
+      throw Error('Cannot remove a range that is currently in use');
+    }
+    state.ranges.splice(index, 1);
+    await this.setState(state);
+  }
+
+  async updateRange(index: number, newRange: LocalAutoIncrementRange) {
+    const state = await this.getState();
+    if (index < 0 || index >= state.ranges.length) {
+      throw Error('Index out of range');
+    }
+    const range = state.ranges[index];
+    if (range.using) {
+      if (newRange.fully_used) {
+        newRange.using = false;
+      } else if (newRange.start !== range.start) {
+        throw Error("Can't change start of currently used range");
+      } else if (
+        state.last_used_id !== null &&
+        newRange.stop <= state.last_used_id
+      ) {
+        throw Error('Currently used range stop less than last used ID.');
+      }
+    }
+    state.ranges[index] = newRange;
+    await this.setState(state);
+  }
+
+  // get the current ranges for this autoincrementer
+  async getRanges() {
+    const state = await this.getState();
+    return state.ranges;
+  }
+
+  // return the next value for this autoincrementer, or undefined if we can't
+  // get one
+  async nextValue() {
+    const state = await this.getState();
+    // find the range in use
+    if (state.last_used_id === null && state.ranges.length === 0) {
+      // no ranges allocated, can't get a value
+      return undefined;
+    }
+
+    if (state.last_used_id === null) {
+      // We've got a clean slate with ranges allocated, start allocating ids
+      const new_id = state.ranges[0].start;
+      state.ranges[0].using = true;
+      state.last_used_id = new_id;
+      await this.setState(state);
+      return new_id;
+    }
+    // We're now using the allocated ranges, find where we've up to:
+    // If we're using a range, find it
     for (const range of state.ranges) {
       if (range.using) {
-        const new_using_range = new_ranges.find(r => r.using);
-        if (new_using_range === undefined) {
-          throw Error('Currently used range removed');
-        } else if (new_using_range.fully_used) {
-          new_using_range.using = false;
-        } else if (new_using_range.start !== range.start) {
-          throw Error('Currently used range start changed');
-        } else if (
-          state.last_used_id !== null &&
-          new_using_range.stop <= state.last_used_id
-        ) {
-          throw Error('Currently used range stop less than last used ID.');
+        if (state.last_used_id! + 1 <= range.stop) {
+          const next_id = state.last_used_id! + 1;
+          state.last_used_id = next_id;
+          await this.setState(state);
+          return next_id;
+        } else {
+          // mark the range as fully used
+          range.fully_used = true;
+          range.using = false;
         }
       }
     }
-    // We having broken anything, update ranges and save
-    state.ranges = new_ranges;
-    await setLocalAutoincrementStateForField(state);
+
+    // find a new range to use - first one that isn't fully used
+    for (const range of state.ranges) {
+      if (!range.fully_used) {
+        const next_id = range.start;
+        range.using = true;
+        state.last_used_id = next_id;
+        await this.setState(state);
+        return next_id;
+      }
+    }
+    // we've got no new ranges to use, can't get a value
+    return undefined;
+  }
+
+  // return the status of auto incrementers for a field
+  async getDisplayStatus(
+    label: string
+  ): Promise<UserFriendlyAutoincrementStatus> {
+    const ref_state = await this.getState();
+    const last_used = ref_state.last_used_id;
+    for (const range of ref_state.ranges) {
+      if (range.using) {
+        return {
+          label: label,
+          last_used: last_used,
+          end: range.stop,
+        };
+      }
+    }
+    return {
+      label: label,
+      last_used: last_used,
+      end: null,
+    };
   }
 }
 
@@ -219,7 +263,7 @@ export async function setLocalAutoincrementRangesForField(
  */
 export async function getAutoincrementReferencesForProject(
   project_id: ProjectID
-) {
+): Promise<AutoIncrementReference[]> {
   const uiSpecId = selectProjectById(
     store.getState(),
     project_id
@@ -243,17 +287,15 @@ export async function getAutoincrementReferencesForProject(
   return references;
 }
 
+// return the status of auto incrementers for a field
 async function getDisplayStatusForField(
   project_id: ProjectID,
   form_id: string,
   field_id: string,
   label: string
 ): Promise<UserFriendlyAutoincrementStatus> {
-  const ref_state = await getLocalAutoincrementStateForField(
-    project_id,
-    form_id,
-    field_id
-  );
+  const incrementer = new AutoIncrementer(project_id, form_id, field_id);
+  const ref_state = await incrementer.getState();
   const last_used = ref_state.last_used_id;
   for (const range of ref_state.ranges) {
     if (range.using) {
@@ -271,6 +313,8 @@ async function getDisplayStatusForField(
   };
 }
 
+// return the status of all auto incrementers in a project so
+// that we can display them to the user
 export async function getDisplayStatusForProject(
   project_id: ProjectID
 ): Promise<UserFriendlyAutoincrementStatus[]> {

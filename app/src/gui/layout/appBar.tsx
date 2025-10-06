@@ -58,7 +58,6 @@ import {
 import {
   Project,
   selectActiveServerProjects,
-  selectProjectsByServerId,
 } from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
