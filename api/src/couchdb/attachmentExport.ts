@@ -411,7 +411,7 @@ export const generateFilenameForAttachment = ({
   // Generate base filename with consistent structure
   // Multi-view mode: viewID/fieldId/hrid-fieldId.ext
   // Single-view mode: fieldId/hrid-fieldId.ext
-  let baseFilename = `${viewID}/${fieldId}/${hrid}`;
+  const baseFilename = `${viewID}/${fieldId}/${hrid}`;
 
   const slugify = (filename: string) => {
     return (
@@ -419,7 +419,7 @@ export const generateFilenameForAttachment = ({
         // replace spaces with underscores
         .replace(/\s+/g, '_')
         // remove any unsafe characters
-        .replace(/[^a-zA-Z0-9\]\[_/\-]/g, '_')
+        .replace(/[^a-zA-Z0-9\][_/-]/g, '_')
     );
   };
 

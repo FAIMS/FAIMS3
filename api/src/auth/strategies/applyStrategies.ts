@@ -1,8 +1,8 @@
 import passport from 'passport';
-import {oidcStrategyGenerator} from './oidcStrategy';
+import {z} from 'zod';
 import {googleStrategyGenerator} from './googleStrategy';
-import {existsSync, readFileSync} from 'fs';
 import {getLocalAuthStrategy} from './localStrategy';
+import {oidcStrategyGenerator} from './oidcStrategy';
 import {
   AuthProviderConfigMap,
   AuthProviderConfigMapSchema,
@@ -11,7 +11,6 @@ import {
   GoogleAuthProviderConfig,
   OIDCAuthProviderConfig,
 } from './strategyTypes';
-import {z} from 'zod';
 
 // Convert a SNAKE_CASE identifier to camelCase with a few exceptions
 const snakeToCamel = (str: string): string => {
