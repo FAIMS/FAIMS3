@@ -24,6 +24,7 @@ import {
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
+  getIdsByFieldName,
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
@@ -426,17 +427,33 @@ api.get(
     if (records) {
       const filenames: string[] = [];
       // Process any file fields to give the file name in the zip download
-      records.forEach((record: any) => {
+      records.forEach(record => {
         const hrid = record.hrid || record.record_id;
         for (const fieldName in record.data) {
           const values = record.data[fieldName];
           if (values instanceof Array) {
             const names = values.map((v: any) => {
               if (v instanceof File) {
+                let viewID = record.type;
+                try {
+                  const viewsetId = getIdsByFieldName({
+                    fieldName,
+                    uiSpecification,
+                  }).viewSetId;
+                  viewID = viewsetId;
+                } catch (e) {
+                  console.error(
+                    'missing viewset for field',
+                    fieldName,
+                    'falling back to type'
+                  );
+                }
                 const filename = generateFilenameForAttachment({
                   file: v,
                   fieldId: fieldName,
                   hrid,
+                  // The view ID is the viewset ID - which is the 'type'
+                  viewID,
                   filenames,
                 });
                 filenames.push(filename);

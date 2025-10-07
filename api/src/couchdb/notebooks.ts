@@ -642,7 +642,8 @@ const csvFormatValue = (
   fieldType: string,
   value: any,
   hrid: string,
-  filenames: string[]
+  filenames: string[],
+  viewsetId: string
 ) => {
   const result: {[key: string]: any} = {};
   if (fieldType === 'faims-attachment::Files') {
@@ -657,6 +658,7 @@ const csvFormatValue = (
             file: possibleFileValue,
             fieldId: fieldName,
             hrid,
+            viewID: viewsetId,
             filenames,
           });
           filenames.push(filename);
@@ -762,7 +764,8 @@ export const convertDataForOutput = (
   data: any,
   annotations: {[name: string]: Annotations},
   hrid: string,
-  filenames: string[]
+  filenames: string[],
+  viewsetId: string
 ) => {
   let result: {[key: string]: any} = {};
   fields.map((field: any) => {
@@ -772,7 +775,8 @@ export const convertDataForOutput = (
         field.type,
         data[field.name],
         hrid,
-        filenames
+        filenames,
+        viewsetId
       );
       const formattedAnnotation = csvFormatAnnotation(
         field,
@@ -832,7 +836,8 @@ export const streamNotebookRecordsAsCSV = async (
         record.data,
         record.annotations,
         hrid,
-        filenames
+        filenames,
+        viewID
       );
       Object.keys(outputData).forEach((property: string) => {
         row.push(outputData[property]);

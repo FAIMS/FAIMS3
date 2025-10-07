@@ -5,7 +5,6 @@ import {
 } from '@faims3/data-model';
 import archiver from 'archiver';
 import {getNanoDataDb, getDataDb} from '.';
-import {DEVELOPER_MODE} from '../buildconfig';
 import {getProjectUIModel} from './notebooks';
 
 /**
@@ -52,12 +51,9 @@ export const streamNotebookFilesAsZip = async ({
   res: NodeJS.WritableStream;
 }): Promise<void> => {
   // Statistics tracking for logging and debugging
-  let recordCount = 0;
   let fileCount = 0;
 
   try {
-    logMemory('START');
-
     // If we have a view ID specified, then use only that iterator - otherwise
     // go through all of them
     let relevantViews: string[] = [];
@@ -71,11 +67,6 @@ export const streamNotebookFilesAsZip = async ({
       relevantViews = [targetViewID];
     }
 
-    console.log('Processing the requested viewset IDs:', relevantViews);
-
-    // Manage multiple views in a single export
-    const singleViewMode = relevantViews.length === 1;
-
     // Create ZIP archive with maximum compression
     const archive = createConfiguredArchive(res);
 
@@ -86,8 +77,6 @@ export const streamNotebookFilesAsZip = async ({
     const activeStreams = new Set<Promise<void>>();
 
     for (const viewID of relevantViews) {
-      console.log('[ZIP] Initializing export for view:', viewID);
-
       // Get an efficient iterator of all notebook records (attachments not DL'd)
       const iterator = await createNotebookRecordIterator(
         projectId,
@@ -100,11 +89,6 @@ export const streamNotebookFilesAsZip = async ({
 
       // Begin iteration
       let {record, done} = await iterator.next();
-      console.log(
-        '[ZIP] Record iterator initialized - first record:',
-        record ? `ID ${record.record_id}` : 'none',
-        `done: ${done}`
-      );
 
       /**
        * Main processing loop with bounded concurrency.
@@ -117,18 +101,13 @@ export const streamNotebookFilesAsZip = async ({
         // Fill the stream pool up to the concurrency limit
         while (!done && activeStreams.size < MAX_CONCURRENT_STREAMS) {
           if (record !== null) {
-            recordCount++;
-
             // Start processing this record's attachments asynchronously
             const streamPromises = processRecord({
-              includeViewIDPrefix: !singleViewMode,
               viewID,
               record,
               nanoDb,
               archive,
               filenames,
-              recordCount,
-              fileCount,
             });
 
             // Add to active pool and set up cleanup handlers
@@ -174,18 +153,10 @@ export const streamNotebookFilesAsZip = async ({
     }
 
     /**
-     * CRITICAL: Finalize the archive only after ALL streams have completed.
+     * Finalize the archive only after ALL streams have completed.
      * Finalizing too early will result in a corrupted ZIP file.
      */
-    console.log(
-      `[ZIP] All files processed. Finalizing archive with ${fileCount} files`
-    );
     await archive.finalize();
-
-    logMemory(
-      'COMPLETE',
-      `Successfully archived ${fileCount} files from ${recordCount} records`
-    );
   } catch (error) {
     console.error('[ZIP] Fatal error during archive creation:', error);
     throw new Error(
@@ -239,7 +210,7 @@ function createConfiguredArchive(
   outputStream: NodeJS.WritableStream
 ): archiver.Archiver {
   const archive = archiver('zip', {
-    zlib: {level: 9}, // Maximum compression for smaller file sizes
+    zlib: {level: 1}, // Minimum compression for speed - PNGs/JPEGs are already compressed
   });
 
   // Handle non-fatal warnings (e.g., file not found)
@@ -291,30 +262,20 @@ function processRecord({
   record,
   nanoDb,
   archive,
-  fileCount,
   filenames,
-  recordCount,
   viewID,
-  includeViewIDPrefix,
 }: {
   record: HydratedDataRecord;
   nanoDb: any;
   archive: archiver.Archiver;
   filenames: string[];
-  recordCount: number;
-  fileCount: number;
   viewID: string;
-  includeViewIDPrefix: boolean;
 }): Promise<void>[] {
   const promises: Promise<void>[] = [];
 
   // Iterate through all fields in the record's data
   for (const fieldId of Object.keys(record.data)) {
     const fieldType = record.types[fieldId];
-
-    console.log(
-      `[ZIP] Processing record ${record.record_id}, field ${fieldId} (type: ${fieldType})`
-    );
 
     // Only process attachment fields
     if (fieldType !== 'faims-attachment::Files') {
@@ -337,24 +298,18 @@ function processRecord({
 
     // Null indicates an incomplete or pending attachment field
     if (attachmentList === null) {
-      console.log(`[ZIP] Skipping null attachment list in field ${fieldId}`);
       continue;
     }
 
     // Process each attachment in the field
     for (const {attachment_id, file_type} of attachmentList) {
-      logMemory(
-        'PROCESSING',
-        `Record ${recordCount} (${record.record_id}): ${attachment_id}`
-      );
-
       // Generate a unique, collision-free filename for the archive
       const fullFileName = generateFilenameForAttachment({
         filenames,
         fileMimeType: file_type,
         hrid: record.hrid ?? record.record_id,
         fieldId,
-        viewID: includeViewIDPrefix ? viewID : undefined,
+        viewID,
       });
 
       // Track this filename to prevent duplicates
@@ -380,7 +335,6 @@ function processRecord({
        */
       const streamPromise = new Promise<void>((resolve, reject) => {
         fileReadStream.on('end', () => {
-          logMemory('ADDED', `File ${fileCount + 1}: ${fullFileName}`);
           resolve();
         });
         fileReadStream.on('error', (err: any) => {
@@ -394,36 +348,6 @@ function processRecord({
   }
 
   return promises;
-}
-
-/**
- * Logs current memory usage during development and debugging.
- *
- * Memory metrics logged:
- * - RSS: Total memory allocated to the process
- * - Heap Used/Total: JavaScript heap memory usage
- * - ArrayBuffers: Memory used by ArrayBuffers (file buffers)
- * - External: Memory used by external C++ objects
- *
- * Only active when DEVELOPER_MODE is enabled to avoid performance overhead
- * in production.
- *
- * @param stage - Label for this logging checkpoint
- * @param extraInfo - Additional context information
- */
-function logMemory(stage: string, extraInfo = ''): void {
-  if (!DEVELOPER_MODE) return;
-
-  const used = process.memoryUsage();
-  const formatMB = (bytes: number) => Math.round(bytes / 1024 / 1024);
-
-  console.log(
-    `[ZIP ${stage}] ${extraInfo}\n` +
-      `  RSS: ${formatMB(used.rss)} MB\n` +
-      `  Heap Used: ${formatMB(used.heapUsed)} MB / ${formatMB(used.heapTotal)} MB\n` +
-      `  ArrayBuffers: ${formatMB(used.arrayBuffers)} MB\n` +
-      `  External: ${formatMB(used.external)} MB`
-  );
 }
 
 /**
@@ -464,7 +388,7 @@ export const generateFilenameForAttachment = ({
   fileMimeType?: string;
   fieldId: string;
   hrid: string;
-  viewID?: string;
+  viewID: string;
   filenames: string[];
 }): string => {
   // Mapping of MIME types to file extensions
@@ -487,17 +411,26 @@ export const generateFilenameForAttachment = ({
   // Generate base filename with consistent structure
   // Multi-view mode: viewID/fieldId/hrid-fieldId.ext
   // Single-view mode: fieldId/hrid-fieldId.ext
-  const baseFilename = `${hrid}-${fieldId}.${extension}`;
-  const basePath = viewID ? `${viewID}/${fieldId}` : fieldId;
-  let filename = `${basePath}/${baseFilename}`;
+  let baseFilename = `${viewID}/${fieldId}/${hrid}`;
+
+  const slugify = (filename: string) => {
+    return (
+      filename
+        // replace spaces with underscores
+        .replace(/\s+/g, '_')
+        // remove any unsafe characters
+        .replace(/[^a-zA-Z0-9\]\[_/\-]/g, '_')
+    );
+  };
 
   // Handle collisions by appending numeric suffix
   let postfix = 1;
-  while (filenames.includes(filename)) {
-    const filenameWithPostfix = `${hrid}-${fieldId}_${postfix}.${extension}`;
-    filename = `${basePath}/${filenameWithPostfix}`;
+  let fullFilename = `${slugify(baseFilename)}.${extension}`;
+  while (filenames.includes(fullFilename)) {
+    fullFilename = `${slugify(baseFilename)}_${postfix}.${extension}`;
     postfix += 1;
   }
 
-  return filename;
+  console.log(`[ZIP] Generated filename: ${fullFilename}`);
+  return fullFilename;
 };

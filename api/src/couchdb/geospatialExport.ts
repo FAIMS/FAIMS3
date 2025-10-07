@@ -171,7 +171,8 @@ export const streamNotebookRecordsAsGeoJSON = async (
               data,
               record!.annotations,
               hrid,
-              filenames
+              filenames,
+              viewID
             );
 
             // this is a possible set of things to append - append them
@@ -481,7 +482,8 @@ export const streamNotebookRecordsAsKML = async (
               data,
               record!.annotations,
               hrid,
-              filenames
+              filenames,
+              viewID
             );
 
             // this is a possible set of things to append - append them
