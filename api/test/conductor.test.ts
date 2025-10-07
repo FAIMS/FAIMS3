@@ -23,14 +23,13 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {PostLoginInput} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
+import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
 import {LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
-import {PostLoginInput} from '@faims3/data-model';
-import {get} from 'http';
-import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
 
 const adminPassword = LOCAL_COUCHDB_AUTH ? LOCAL_COUCHDB_AUTH.password : '';
 

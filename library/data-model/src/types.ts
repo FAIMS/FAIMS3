@@ -225,8 +225,6 @@ export interface FAIMSAttachment {
   created_by: string;
 }
 
-
-
 /*
  * Elements of a Project's metadataDB can be any one of these,
  * discriminated by the prefix of the object's id
