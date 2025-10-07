@@ -175,7 +175,9 @@ const TemplateActions = () => {
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Replace Template JSON File</ListLabel>
-                <ListDescription>Replace the template JSON file.</ListDescription>
+                <ListDescription>
+                  Replace the template JSON file.
+                </ListDescription>
               </ListItem>
               <ListItem>
                 <EditTemplateDialog />

@@ -180,7 +180,9 @@ class AWSSecretsManagerKeyService extends BaseKeyService {
   constructor(config: KeyConfig, awsServiceConfig: AWSKeyServiceConfig) {
     super(config);
     this.awsServiceConfig = awsServiceConfig;
-    this.secretsManager = new SecretsManager({region: process.env.AWS_DEFAULT_REGION});
+    this.secretsManager = new SecretsManager({
+      region: process.env.AWS_DEFAULT_REGION,
+    });
     this.cache = new NodeCache({
       stdTTL: this.awsServiceConfig.cacheExpirySeconds,
     });
