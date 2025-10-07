@@ -50,8 +50,6 @@ import {
   slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
-import archiver from 'archiver';
-import {Stream} from 'stream';
 import {
   getDataDb,
   getMetadataDb,
@@ -60,7 +58,7 @@ import {
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL, DEVELOPER_MODE} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 
 import {
@@ -73,6 +71,7 @@ import {
 } from '@faims3/data-model';
 import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
+import {generateFilenameForAttachment} from './attachmentExport';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -643,7 +642,8 @@ const csvFormatValue = (
   fieldType: string,
   value: any,
   hrid: string,
-  filenames: string[]
+  filenames: string[],
+  viewsetId: string
 ) => {
   const result: {[key: string]: any} = {};
   if (fieldType === 'faims-attachment::Files') {
@@ -652,18 +652,19 @@ const csvFormatValue = (
         result[fieldName] = '';
         return result;
       }
-      const valueList = value.map((v: any) => {
-        if (v instanceof File) {
-          const filename = generateFilenameForAttachment(
-            v,
-            fieldName,
+      const valueList = value.map((possibleFileValue: any) => {
+        if (possibleFileValue instanceof File) {
+          const filename = generateFilenameForAttachment({
+            file: possibleFileValue,
+            fieldId: fieldName,
             hrid,
-            filenames
-          );
+            viewID: viewsetId,
+            filenames,
+          });
           filenames.push(filename);
           return filename;
         } else {
-          return v;
+          return possibleFileValue;
         }
       });
       result[fieldName] = valueList.join(';');
@@ -763,7 +764,8 @@ export const convertDataForOutput = (
   data: any,
   annotations: {[name: string]: Annotations},
   hrid: string,
-  filenames: string[]
+  filenames: string[],
+  viewsetId: string
 ) => {
   let result: {[key: string]: any} = {};
   fields.map((field: any) => {
@@ -773,7 +775,8 @@ export const convertDataForOutput = (
         field.type,
         data[field.name],
         hrid,
-        filenames
+        filenames,
+        viewsetId
       );
       const formattedAnnotation = csvFormatAnnotation(
         field,
@@ -833,7 +836,8 @@ export const streamNotebookRecordsAsCSV = async (
         record.data,
         record.annotations,
         hrid,
-        filenames
+        filenames,
+        viewID
       );
       Object.keys(outputData).forEach((property: string) => {
         row.push(outputData[property]);
@@ -885,191 +889,6 @@ export const streamNotebookRecordsAsCSV = async (
     stringifier.pipe(res);
     stringifier.end();
   }
-};
-
-export const streamNotebookFilesAsZip = async (
-  projectId: ProjectID,
-  viewID: string,
-  res: NodeJS.WritableStream
-) => {
-  const logMemory = (stage: string, extraInfo = '') => {
-    if (DEVELOPER_MODE) {
-      const used = process.memoryUsage();
-      console.log(
-        `[ZIP ${stage}] ${extraInfo} - RSS: ${Math.round(used.rss / 1024 / 1024)}MB, ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB, External: ${Math.round(used.external / 1024 / 1024)}MB`
-      );
-    }
-  };
-
-  logMemory('START');
-
-  let allFilesAdded = false;
-  let doneFinalize = false;
-
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-  const iterator = await notebookRecordIterator({
-    dataDb,
-    projectId,
-    uiSpecification,
-    viewID,
-  });
-  const archive = archiver('zip', {zlib: {level: 9}});
-  // good practice to catch warnings (ie stat failures and other non-blocking errors)
-  archive.on('warning', err => {
-    if (err.code === 'ENOENT') {
-      // log warning
-    } else {
-      // throw error
-      throw err;
-    }
-  });
-
-  // good practice to catch this error explicitly
-  archive.on('error', err => {
-    throw err;
-  });
-
-  // check on progress, if we've finished adding files and they are
-  // all processed then we can finalize the archive
-  archive.on('progress', (ev: any) => {
-    if (
-      !doneFinalize &&
-      allFilesAdded &&
-      ev.entries.total === ev.entries.processed
-    ) {
-      try {
-        archive.finalize();
-        doneFinalize = true;
-      } catch {
-        // ignore ArchiveError
-      }
-    }
-  });
-
-  let recordCount = 0;
-  let fileCount = 0;
-
-  archive.pipe(res);
-  let dataWritten = false;
-  let {record, done} = await iterator.next();
-  const fileNames: string[] = [];
-  while (!done) {
-    // iterate over the fields, if it's a file, then
-    // append it to the archive
-    if (record !== null) {
-      const hrid = record.hrid || record.record_id;
-      recordCount++;
-      logMemory('RECORD', `Record ${recordCount} (${hrid})`);
-
-      // Process files sequentially to avoid memory spikes
-      for (const key of Object.keys(record.data)) {
-        if (record.data[key] instanceof Array && record.data[key].length > 0) {
-          if (record.data[key][0] instanceof File) {
-            const file_list = record.data[key] as File[];
-
-            // Process files one at a time
-            for (const file of file_list) {
-              fileCount++;
-              const fileSizeMB = Math.round(file.size / 1024 / 1024);
-              logMemory(
-                'BEFORE_FILE',
-                `File ${fileCount}, Size: ${fileSizeMB}MB`
-              );
-
-              const filename = generateFilenameForAttachment(
-                file,
-                key,
-                hrid,
-                fileNames
-              );
-              fileNames.push(filename);
-
-              // Convert Web ReadableStream to Node.js Readable stream
-              const webStream = file.stream();
-              const reader = webStream.getReader();
-
-              // Create a Node.js Readable stream from the chunks
-              const nodeStream = new Stream.Readable({
-                async read() {
-                  try {
-                    const {done, value} = await reader.read();
-                    if (done) {
-                      this.push(null); // End the stream
-                    } else {
-                      this.push(Buffer.from(value)); // Convert Uint8Array to Buffer
-                    }
-                  } catch (error) {
-                    this.destroy(error as Error);
-                  }
-                },
-              });
-
-              await archive.append(nodeStream, {
-                name: filename,
-              });
-              dataWritten = true;
-
-              logMemory('AFTER_FILE', `File ${fileCount} processed`);
-            }
-
-            // Clear the file array after processing to help GC
-            record.data[key] = [];
-            logMemory('AFTER_CLEAR', 'Files cleared');
-            // Force garbage collection if available (Node.js --expose-gc flag)
-            if (global.gc && recordCount % 5 === 0) {
-              global.gc();
-              logMemory('AFTER_GC', `Forced GC after record ${recordCount}`);
-            }
-          }
-        }
-      }
-    }
-    // Clear the record reference before getting the next one
-    record = null;
-
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
-  // if we didn't write any data then finalise because that won't happen elsewhere
-  if (!dataWritten) {
-    console.log('no data written');
-    archive.abort();
-  }
-  allFilesAdded = true;
-  // fire a progress event here because short/empty zip files don't
-  // trigger it late enough for us to call finalize above
-  archive.emit('progress', {entries: {processed: 0, total: 0}});
-
-  logMemory('COMPLETE');
-};
-
-export const generateFilenameForAttachment = (
-  file: File,
-  key: string,
-  hrid: string,
-  filenames: string[]
-) => {
-  const fileTypes: {[key: string]: string} = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/gif': 'gif',
-    'image/tiff': 'tif',
-    'text/plain': 'txt',
-    'application/pdf': 'pdf',
-    'application/json': 'json',
-  };
-
-  const type = file.type;
-  const extension = fileTypes[type] || 'dat';
-  let filename = `${key}/${hrid}-${key}.${extension}`;
-  let postfix = 1;
-  while (filenames.find(f => f.localeCompare(filename) === 0)) {
-    filename = `${key}/${hrid}-${key}_${postfix}.${extension}`;
-    postfix += 1;
-  }
-  return filename;
 };
 
 /**
