@@ -314,7 +314,9 @@ export type Config = z.infer<typeof ConfigSchema>;
 export type CouchConfig = z.infer<typeof CouchConfigSchema>;
 export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
-export type BugMonitoringConfiguration = z.infer<typeof BugMonitoringConfigurationSchema>;
+export type BugMonitoringConfiguration = z.infer<
+  typeof BugMonitoringConfigurationSchema
+>;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;

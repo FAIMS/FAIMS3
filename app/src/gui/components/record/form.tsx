@@ -260,18 +260,17 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     // Handle derived field updates when form values change (moved from render method)
     if (this.formikRef.current) {
       const currentValues = this.formikRef.current.values;
-      const valuesChanged = isEqual(
+      const valuesUnchanged = isEqual(
         currentValues,
         this.state.lastProcessedValues
       );
 
-      if (valuesChanged) {
+      if (!valuesUnchanged) {
         const changed = recomputeDerivedFields({
           context: this.state.recordContext,
           values: currentValues,
           uiSpecification: this.props.ui_specification,
         });
-
         if (changed) {
           this.formikRef.current.setValues(currentValues);
         }

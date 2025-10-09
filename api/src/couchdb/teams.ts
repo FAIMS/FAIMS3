@@ -1,11 +1,11 @@
 import {
   ExistingTeamsDBDocument,
+  slugify,
   TeamsDBDocument,
   TeamsDBFields,
 } from '@faims3/data-model';
 import {getTeamsDB} from '.';
 import * as Exceptions from '../exceptions';
-import {slugify} from '../utils';
 
 /**
  * Lists all documents in the teams DB.

@@ -1,6 +1,11 @@
 import {useAuth} from '@/context/auth-provider';
 import {modifyMemberForTeam} from '@/hooks/teams-hooks';
-import {Action, GetTeamMembersResponse, Role, roleDetails} from '@faims3/data-model';
+import {
+  Action,
+  GetTeamMembersResponse,
+  Role,
+  roleDetails,
+} from '@faims3/data-model';
 import {
   Tooltip,
   TooltipContent,
@@ -95,7 +100,7 @@ export const useGetColumns = ({
 
   const roleDisplayName = (role: Role) => {
     return roleDetails[role].name;
-  }
+  };
 
   const baseColumns: ColumnDef<GetTeamMembersResponse['members'][number]>[] = [
     {
