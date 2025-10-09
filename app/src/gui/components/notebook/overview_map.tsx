@@ -20,7 +20,6 @@
 
 import {ProjectID, ProjectUIModel, RecordMetadata} from '@faims3/data-model';
 import {Box, Grid, Popover} from '@mui/material';
-import {useQuery} from '@tanstack/react-query';
 import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
@@ -32,6 +31,7 @@ import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {MapComponent} from '../map/map-component';
 import {Extent} from 'ol/extent';
+import {transformExtent} from 'ol/proj';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -159,7 +159,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
       // set the view so that we can see the features
       // but don't zoom too much
-      const extent = source.getExtent();
+      // this extent will be in the map projection, so need to transform to EPSG:4326
+      const extent = transformExtent(
+        source.getExtent(),
+        theMap.getView().getProjection(),
+        'EPSG:4326'
+      );
       // don't set if the extent is infinite because it crashes
       if (!extent.includes(Infinity)) {
         setFeaturesExtent(extent);
@@ -176,7 +181,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
       // add click handler for map features
       map.on('click', evt => {
-        console.log('map click', evt);
         const feature = map.forEachFeatureAtPixel(
           evt.pixel,
           feature => {

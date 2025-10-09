@@ -30,7 +30,7 @@ import {Extent} from 'ol/extent';
 import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
-import {transform} from 'ol/proj';
+import {transform, transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -109,9 +109,15 @@ export const MapComponent = (props: MapComponentProps) => {
   const mapCenter = useMemo(() => {
     if (props.center) {
       return props.center;
+    } else if (props.extent) {
+      // find the centre of the extent and return that
+      const centerX = (props.extent[0] + props.extent[2]) / 2;
+      const centerY = (props.extent[1] + props.extent[3]) / 2;
+      return [centerX, centerY];
     }
+    // otherwise rely on current location
     return getCoordinates(currentPosition);
-  }, [props.center, currentPosition]);
+  }, [props.center, currentPosition, props.extent]);
 
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
@@ -145,7 +151,11 @@ export const MapComponent = (props: MapComponentProps) => {
     // create a center control
     theMap.getView().on('change:resolution', () => {
       const z = theMap.getView().getZoom();
-      if (z) setZoomLevel(z);
+      if (z) {
+        setZoomLevel(z);
+        // need to trigger redrawing of the live cursor because the zoom level has changed
+        // so any accuracy circle needs to be redrawn
+      }
     });
 
     return theMap;
@@ -177,6 +187,15 @@ export const MapComponent = (props: MapComponentProps) => {
     positionLayerRef.current = layer;
 
     const dotFeature = new Feature(new Point([0, 0]));
+    dotFeature.setStyle(
+      new Style({
+        image: new CircleStyle({
+          radius: 14,
+          fill: new Fill({color: '#1a73e8'}),
+          stroke: new Stroke({color: '#A19F9FFF', width: 3}),
+        }),
+      })
+    );
     const triangleFeature = new Feature(new Point([0, 0]));
     const accuracyFeature = new Feature(new Point([0, 0]));
     positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
@@ -187,18 +206,8 @@ export const MapComponent = (props: MapComponentProps) => {
       accuracy: number
     ) => {
       const resolution = view.getResolution() ?? 1;
-
       //  blue location dot
       dotFeature.setGeometry(new Point(coords));
-      dotFeature.setStyle(
-        new Style({
-          image: new CircleStyle({
-            radius: 14,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: '#A19F9FFF', width: 3}),
-          }),
-        })
-      );
 
       // accuracy circle
       const accuracyRadius = accuracy / resolution;
@@ -279,8 +288,11 @@ export const MapComponent = (props: MapComponentProps) => {
 
   // when we have a location and a map, add the 'here' marker to the map
   useEffect(() => {
-    if (!loadingLocation && map && mapCenter) {
-      startLiveCursor(map);
+    if (map && mapCenter) {
+      // add the here marker if we have a live location
+      if (!loadingLocation) startLiveCursor(map);
+
+      // move the map to the center and fit the extent
       if (mapCenter) {
         const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
         map.addControl(createCenterControl(map.getView(), centerMap));
@@ -289,16 +301,26 @@ export const MapComponent = (props: MapComponentProps) => {
         // set the map center which will either have been passed
         // in or derived from the current location
         if (props.extent) {
-          map.getView().fit(props.extent, {
-            padding: [20, 20, 20, 20],
-            maxZoom: props.zoom,
-          });
+          // need to transform the extent to the map projection
+          map
+            .getView()
+            .fit(
+              transformExtent(
+                props.extent,
+                'EPSG:4326',
+                map.getView().getProjection()
+              ),
+              {
+                padding: [20, 20, 20, 20],
+                maxZoom: props.zoom,
+              }
+            );
         } else {
           map.getView().setCenter(center);
         }
       }
     }
-  }, [map, mapCenter, loadingLocation]);
+  }, [map, mapCenter, loadingLocation, props.center, props.extent, props.zoom]);
 
   // callback to add the map to the DOM
   const refCallback = useCallback(
@@ -329,7 +351,7 @@ export const MapComponent = (props: MapComponentProps) => {
   return (
     <>
       <Grid container spacing={2}>
-        {loadingLocation ? (
+        {!mapCenter ? (
           <div>Loading location...</div>
         ) : (
           <Box sx={{height: '100%', width: '100%', minHeight: '600px'}}>
