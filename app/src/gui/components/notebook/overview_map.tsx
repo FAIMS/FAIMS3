@@ -27,7 +27,7 @@ import Map from 'ol/Map';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {memo, useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {MapComponent} from '../map/map-component';
@@ -52,7 +52,7 @@ interface FeatureProps {
  *
  * @param props {uiSpec, project_id}
  */
-export const OverviewMap = memo((props: OverviewMapProps) => {
+export const OverviewMap = (props: OverviewMapProps) => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
@@ -80,10 +80,9 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
    *
    * @returns a FeatureProps object containing all of the features in the record
    */
-  const getFeatures = async () => {
+  const getFeatures = (records: any[], gisFields: string[]) => {
     const f: FeatureProps[] = [];
     if (gisFields.length > 0) {
-      const records = props.records.allRecords;
       if (records) {
         records.forEach(record => {
           if (record.data) {
@@ -123,10 +122,9 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
     };
   };
 
-  const {data: features, isLoading: loadingFeatures} = useQuery({
-    queryKey: ['records', props.project_id],
-    queryFn: getFeatures,
-  });
+  const features = useMemo(() => {
+    return getFeatures(props.records.allRecords, gisFields);
+  }, [props.records.allRecords, gisFields]);
 
   /**
    * Add the features to the map and set the map view to
@@ -173,21 +171,30 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
 
   useEffect(() => {
     // when we have features, add them to the map
-    if (!loadingFeatures && map) {
+    if (features && map) {
       addFeaturesToMap(map);
 
       // add click handler for map features
       map.on('click', evt => {
-        const feature = map.forEachFeatureAtPixel(evt.pixel, feature => {
-          return feature.getProperties();
-        });
+        console.log('map click', evt);
+        const feature = map.forEachFeatureAtPixel(
+          evt.pixel,
+          feature => {
+            // only return features that relate to records (not general map features)
+            if (feature.getProperties().record_id)
+              return feature.getProperties();
+          },
+          {
+            hitTolerance: 10,
+          }
+        );
         if (!feature) {
           return;
         }
         setSelectedFeature(feature as FeatureProps);
       });
     }
-  }, [loadingFeatures, map]);
+  }, [features, map]);
 
   const handlePopoverClose = () => {
     setSelectedFeature(null);
@@ -197,7 +204,7 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
     return <Box>No GIS fields found.</Box>;
   } else if (features?.features.length === 0) {
     return <Box>No records with locations found.</Box>;
-  } else if (loadingFeatures) {
+  } else if (features === undefined) {
     return <Box>Loading...</Box>;
   } else
     return (
@@ -233,4 +240,4 @@ export const OverviewMap = memo((props: OverviewMapProps) => {
         </Popover>
       </Grid>
     );
-});
+};
