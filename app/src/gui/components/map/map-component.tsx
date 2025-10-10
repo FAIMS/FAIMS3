@@ -30,14 +30,14 @@ import {Extent} from 'ol/extent';
 import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
-import {transform} from 'ol/proj';
+import {transform, transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useIsOnline} from '../../../utils/customHooks';
 import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
 import {createCenterControl} from '../map/center-control';
-import {failedURLs, VectorTileStore} from './tile-source';
+import {VectorTileStore} from './tile-source';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
 import CircleStyle from 'ol/style/Circle';
@@ -81,8 +81,8 @@ export const canShowMapNear = async (
  */
 export interface MapComponentProps {
   parentSetMap: (map: Map) => void;
-  center?: [number, number];
-  extent?: Extent;
+  center?: [number, number]; // in EPSG:4326
+  extent?: Extent; // note that the extent should be in EPSG:4326, not in the map projection
   zoom?: number;
 }
 
@@ -101,24 +101,46 @@ export const MapComponent = (props: MapComponentProps) => {
   const {isOnline} = useIsOnline();
   const tileStore = useMemo(() => new VectorTileStore(), []);
 
-  // Use the custom hook for location
+  // Use the custom hook for location which we only need if we don't have a center or extent
+  // passed in props
   const {data: currentPosition, isLoading: loadingLocation} =
     useCurrentLocation();
-
-  // Determine map center based on props or current location
-  const mapCenter = useMemo(() => {
-    if (props.center) {
-      return props.center;
-    }
-    return getCoordinates(currentPosition);
-  }, [props.center, currentPosition]);
 
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
 
+  // Determine map center based on props or current location
+  // if we really can't work it out, use Sydney
+  const mapCenter = useMemo(() => {
+    if (props.center) {
+      return props.center;
+    } else if (props.extent) {
+      // find the centre of the extent and return that
+      const centerX = (props.extent[0] + props.extent[2]) / 2;
+      const centerY = (props.extent[1] + props.extent[3]) / 2;
+      return [centerX, centerY];
+    }
+    // otherwise rely on current location
+    if (liveLocationRef.current) {
+      return getCoordinates(liveLocationRef?.current ?? undefined);
+    } else {
+      // try to get current location
+      if (!loadingLocation && currentPosition) {
+        return getCoordinates(currentPosition);
+      } else {
+        // default to Sydney
+        return [151.2093, -33.8688];
+      }
+    }
+  }, [props.center, props.extent]);
+
   /**
    * Initializes the map instance with base tile layers and zoom controls.
+   * Adds the live cursor layer and sets up GPS tracking.
+   *
+   * @param element The HTML element to attach the map to
+   * @returns The initialized OpenLayers Map instance
    */
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
     setAttribution(tileStore.getAttribution() as unknown as string);
@@ -142,53 +164,93 @@ export const MapComponent = (props: MapComponentProps) => {
       controls: [new Zoom()],
     });
 
-    // create a center control
+    // create the live cursor layer
+    const liveCursor = createLiveCursorFeatures(theMap);
+
+    // Handle zoom events, keep track of the zoom level and
+    // redraw the live cursor accuracy circle
     theMap.getView().on('change:resolution', () => {
       const z = theMap.getView().getZoom();
-      if (z) setZoomLevel(z);
+      if (z) {
+        setZoomLevel(z);
+        // need to trigger redrawing of the live cursor because the zoom level has changed
+        // so any accuracy circle needs to be redrawn
+        liveCursor.updateCursorAccuracy(
+          liveLocationRef.current?.coords.accuracy ?? 30
+        );
+      }
     });
 
+    // Watch real GPS position and update cursor when it changes
+    Geolocation.watchPosition(
+      {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}, // maximum age to avoid using cached position of the user.
+      (position, err) => {
+        if (err) {
+          console.warn('Geolocation error:', err.message || err);
+          return;
+        }
+        if (position) {
+          liveLocationRef.current = position;
+          liveCursor.updateCursorLocation(position);
+        }
+      }
+    ).then(id => {
+      watchIdRef.current = id;
+    });
     return theMap;
   }, []);
 
-  /**
-   * Initializes and updates the live GPS location cursor.
-   * Displays:
-   * - Blue dot at user location with directional traingular and accuracy circle. which would wokk on rela-time gps location tracking
-   *   */
-  const startLiveCursor = (theMap: Map) => {
+  // Clean up the location watcher when the component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up location watcher when component unmounts
+      if (watchIdRef.current !== null) {
+        Geolocation.clearWatch({id: watchIdRef.current}).catch(error =>
+          console.warn('Failed to clear GPS watch on unmount:', error)
+        );
+        watchIdRef.current = null;
+      }
+    };
+  }, []);
+
+  // Create a layer to show the live cursor, return functions
+  // that can be used to update the cursor location and accuracy
+  const createLiveCursorFeatures = (theMap: Map) => {
     // Clean up before re-adding
     if (positionLayerRef.current) {
       theMap.removeLayer(positionLayerRef.current);
       positionLayerRef.current.getSource()?.clear();
       positionLayerRef.current = undefined;
     }
-    if (watchIdRef.current !== null) {
-      Geolocation.clearWatch({id: watchIdRef.current}).catch(() =>
-        console.warn('Failed to clear previous GPS watch')
-      );
-      watchIdRef.current = null;
-    }
-    const view = theMap.getView();
-    const projection = view.getProjection();
+
     const positionSource = new VectorSource();
     const layer = new VectorLayer({source: positionSource, zIndex: 999});
     theMap.addLayer(layer);
     positionLayerRef.current = layer;
 
     const dotFeature = new Feature(new Point([0, 0]));
+    dotFeature.setStyle(
+      new Style({
+        image: new CircleStyle({
+          radius: 14,
+          fill: new Fill({color: '#1a73e8'}),
+          stroke: new Stroke({color: '#A19F9FFF', width: 3}),
+        }),
+      })
+    );
     const triangleFeature = new Feature(new Point([0, 0]));
     const accuracyFeature = new Feature(new Point([0, 0]));
     positionSource.addFeatures([dotFeature, triangleFeature, accuracyFeature]);
 
-    const updateCursor = (
-      coords: number[],
-      heading: number,
-      accuracy: number
-    ) => {
-      const resolution = view.getResolution() ?? 1;
+    // function to update the cursor location when we move
+    const updateCursorLocation = (position: Position) => {
+      const coords = transform(
+        [position.coords.longitude, position.coords.latitude],
+        'EPSG:4326',
+        theMap.getView().getProjection()
+      );
 
-      //  blue location dot
+      // set the location of the blue dot marking our position
       dotFeature.setGeometry(new Point(coords));
       dotFeature.setStyle(
         new Style({
@@ -200,9 +262,42 @@ export const MapComponent = (props: MapComponentProps) => {
         })
       );
 
-      // accuracy circle
-      const accuracyRadius = accuracy / resolution;
+      // draw the heading triangle
+      // convert heading from degrees to radians
+      if (position.coords.heading) {
+        const headingRadians = (position.coords.heading * Math.PI) / 180;
+        triangleFeature.setGeometry(new Point(coords));
+        triangleFeature.setStyle(
+          new Style({
+            image: new RegularShape({
+              points: 3,
+              radius: 12,
+              rotation: headingRadians + Math.PI,
+              angle: Math.PI,
+              fill: new Fill({color: '#1a73e8'}),
+              stroke: new Stroke({color: 'white', width: 2}),
+            }),
+            geometry: () => {
+              const px = theMap.getPixelFromCoordinate(coords);
+              const offset = 23;
+              const dx = offset * Math.sin(headingRadians);
+              const dy = -offset * Math.cos(headingRadians);
+              const newPx = [px[0] + dx, px[1] + dy];
+              return new Point(theMap.getCoordinateFromPixel(newPx));
+            },
+          })
+        );
+      }
+
+      // set the location of the accuracy circle
       accuracyFeature.setGeometry(new Point(coords));
+      updateCursorAccuracy(position.coords.accuracy);
+    };
+
+    // function to update the size of the accuracy circle if we zoom or it changes
+    const updateCursorAccuracy = (accuracy: number) => {
+      const resolution = theMap.getView().getResolution() ?? 1;
+      const accuracyRadius = accuracy / resolution;
       accuracyFeature.setStyle(
         new Style({
           image: new CircleStyle({
@@ -212,61 +307,12 @@ export const MapComponent = (props: MapComponentProps) => {
           }),
         })
       );
-
-      // heading is in degrees
-      const headingRadians = (heading * Math.PI) / 180;
-      // directional navigation triangle
-      triangleFeature.setGeometry(new Point(coords));
-      triangleFeature.setStyle(
-        new Style({
-          image: new RegularShape({
-            points: 3,
-            radius: 12,
-            rotation: headingRadians + Math.PI,
-            angle: Math.PI,
-            fill: new Fill({color: '#1a73e8'}),
-            stroke: new Stroke({color: 'white', width: 2}),
-          }),
-          geometry: () => {
-            const px = theMap.getPixelFromCoordinate(coords);
-            const offset = 23;
-            const dx = offset * Math.sin(headingRadians);
-            const dy = -offset * Math.cos(headingRadians);
-            const newPx = [px[0] + dx, px[1] + dy];
-            return new Point(theMap.getCoordinateFromPixel(newPx));
-          },
-        })
-      );
     };
 
-    // Watch real GPS position and update cursor
-    Geolocation.watchPosition(
-      {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}, // maximum age to avoic using cached postion of the user.
-      (position, err) => {
-        if (err) {
-          console.warn('Geolocation error:', err.message || err);
-          return;
-        }
-        if (position) {
-          liveLocationRef.current = position;
-          const coords = transform(
-            [position.coords.longitude, position.coords.latitude],
-            'EPSG:4326',
-            projection
-          );
-          updateCursor(
-            coords,
-            position.coords.heading ?? 0,
-            position.coords.accuracy ?? 30
-          );
-        }
-      }
-    ).then(id => {
-      watchIdRef.current = id;
-    });
+    return {updateCursorLocation, updateCursorAccuracy};
   };
 
-  // center the map on the current location
+  // Center the map on the current location
   const centerMap = () => {
     if (map && liveLocationRef.current) {
       const coords = getCoordinates(liveLocationRef.current);
@@ -277,10 +323,11 @@ export const MapComponent = (props: MapComponentProps) => {
     }
   };
 
-  // when we have a location and a map, add the 'here' marker to the map
+  // Here we set the extent of the map or just the center depending on
+  // what information we are given
   useEffect(() => {
-    if (!loadingLocation && map && mapCenter) {
-      startLiveCursor(map);
+    if (map && mapCenter) {
+      // move the map to the center and fit the extent
       if (mapCenter) {
         const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
         map.addControl(createCenterControl(map.getView(), centerMap));
@@ -289,18 +336,29 @@ export const MapComponent = (props: MapComponentProps) => {
         // set the map center which will either have been passed
         // in or derived from the current location
         if (props.extent) {
-          map.getView().fit(props.extent, {
-            padding: [20, 20, 20, 20],
-            maxZoom: props.zoom,
-          });
+          // need to transform the extent to the map projection
+          map
+            .getView()
+            .fit(
+              transformExtent(
+                props.extent,
+                'EPSG:4326',
+                map.getView().getProjection()
+              ),
+              {
+                padding: [20, 20, 20, 20],
+                maxZoom: props.zoom,
+              }
+            );
         } else {
           map.getView().setCenter(center);
         }
       }
     }
-  }, [map, mapCenter, loadingLocation]);
+  }, [map, mapCenter, props.center, props.extent, props.zoom]);
 
   // callback to add the map to the DOM
+  // here is where we actually create the map if it doesn't exist already
   const refCallback = useCallback(
     (element: HTMLElement | null) => {
       if (element === null) return;
@@ -319,42 +377,23 @@ export const MapComponent = (props: MapComponentProps) => {
     [map, createMap]
   );
 
-  // This avoids double-calling and ensures cursor only starts after DOM + map are fully ready
-  useEffect(() => {
-    if (map) {
-      startLiveCursor(map);
-    }
-  }, [map]);
-
   return (
     <>
       <Grid container spacing={2}>
-        {loadingLocation ? (
-          <div>Loading location...</div>
-        ) : (
-          <Box sx={{height: '100%', width: '100%', minHeight: '600px'}}>
-            <Box
-              ref={refCallback}
-              sx={{
-                height: '95%',
-                width: '100%',
-              }}
-            />
-            <Box sx={{height: '5%', paddingLeft: '20px'}}>
-              {attribution && (
-                <p dangerouslySetInnerHTML={{__html: attribution}} />
-              )}
-            </Box>
-            {failedURLs.size > 0 && (
-              <details>
-                <summary>Style Cache Misses</summary>
-                {Array.from(failedURLs).map((url, i) => (
-                  <p key={i}>{url}</p>
-                ))}
-              </details>
+        <Box sx={{height: '100%', width: '100%', minHeight: '600px'}}>
+          <Box
+            ref={refCallback} // will create the map
+            sx={{
+              height: '95%',
+              width: '100%',
+            }}
+          />
+          <Box sx={{height: '5%', paddingLeft: '20px'}}>
+            {attribution && (
+              <p dangerouslySetInnerHTML={{__html: attribution}} />
             )}
           </Box>
-        )}
+        </Box>
       </Grid>
     </>
   );

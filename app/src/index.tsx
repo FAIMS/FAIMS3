@@ -27,7 +27,6 @@ import {databaseService} from './context/slices/helpers/databaseService';
 import {selectAllProjects} from './context/slices/projectSlice';
 import {store} from './context/store';
 import './index.css';
-import {addNativeHooks} from './native_hooks';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
 import {PouchDBWrapper} from './context/slices/helpers/pouchDBWrapper';
@@ -72,7 +71,6 @@ document
   .querySelector('meta[name=description]')
   ?.setAttribute('content', `${APP_NAME} app`);
 
-addNativeHooks();
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
