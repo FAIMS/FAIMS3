@@ -718,18 +718,24 @@ export const initialiseAndMigrateDBs = async ({
 
 // Initialize nano instance
 let _nanoInstance: Nano.ServerScope | undefined;
+// Track whether we have awaited auth yet
+let _authInitialized = false;
 
-const getNanoInstance = (): Nano.ServerScope => {
+const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   if (!_nanoInstance) {
-    const auth = LOCAL_COUCHDB_AUTH
-      ? `${LOCAL_COUCHDB_AUTH.username}:${LOCAL_COUCHDB_AUTH.password}@`
-      : '';
-
-    // Parse the URL and inject auth if needed
-    const url = COUCHDB_INTERNAL_URL.replace('://', `://${auth}`);
-
-    _nanoInstance = Nano(url);
+    // Create nano instance without auth in the URL
+    _nanoInstance = Nano(COUCHDB_INTERNAL_URL);
   }
+
+  // Authenticate if we have credentials and haven't already authenticated
+  if (LOCAL_COUCHDB_AUTH && !_authInitialized) {
+    await _nanoInstance.auth(
+      LOCAL_COUCHDB_AUTH.username,
+      LOCAL_COUCHDB_AUTH.password
+    );
+    _authInitialized = true;
+  }
+
   return _nanoInstance;
 };
 
@@ -741,25 +747,20 @@ const getNanoInstance = (): Nano.ServerScope => {
 export const getNanoDataDb = async (
   projectID: ProjectID
 ): Promise<Nano.DocumentScope<ProjectDataObject>> => {
-  const nano = getNanoInstance();
-
+  const nano = await getNanoInstance();
   // Get the projects DB
   const projectsDB = nano.db.use('projects');
-
   try {
     // Get the project document
     const projectDoc = await projectsDB.get(projectID);
-
     // Extract the data DB name (with backwards compatibility)
     const db: PossibleConnectionInfo =
       (projectDoc as any).dataDb || (projectDoc as any).data_db;
-
     if (!db || !db.db_name) {
       throw new Exceptions.InternalSystemError(
         'The given project document does not contain a mandatory reference to its data database.'
       );
     }
-
     // Return the nano document scope for the data DB
     return nano.db.use<ProjectDataObject>(db.db_name);
   } catch (error: any) {
