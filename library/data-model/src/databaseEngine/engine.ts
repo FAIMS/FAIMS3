@@ -33,12 +33,10 @@ import {FAIMSTypeName} from '../types';
  * Configuration options for the DataEngine
  *
  * @property dbName - The name of the PouchDB database
- * @property projectId - The unique identifier for the project
  * @property pouchConfig - Optional PouchDB configuration options
  */
 export interface DataEngineConfig {
   dbName: string;
-  projectId: string;
   pouchConfig?: PouchDB.Configuration.DatabaseConfiguration;
 }
 
@@ -230,7 +228,7 @@ type DocumentTypeConfig<T> = {
  * Includes embedded Core, Hydrated, and Form submodules for different access patterns.
  *
  * @example
- * const engine = new DataEngine({ dbName: 'mydb', projectId: 'project-1' });
+ * const engine = new DataEngine({ dbName: 'mydb' });
  *
  * // Core operations
  * const record = await engine.core.getRecord('record-123');
