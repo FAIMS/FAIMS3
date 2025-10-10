@@ -1,7 +1,7 @@
 {
   "name": "@faims3/app",
   "packageManager": "npm@10.7.0",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "private": true,
   "type": "module",
   "browserslist": {
