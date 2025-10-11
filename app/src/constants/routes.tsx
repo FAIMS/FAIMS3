@@ -45,6 +45,7 @@ export const SWITCH_ORG = '/switch-organisation';
 export const HELP = '/help';
 export const CREATE_NEW_SURVEY = '/create-new-survey';
 export const USER_ACTIVE_TESTR = '/test';
+export const POUCH_EXPLORER = '/pouchDB';
 
 /**
  * Generates a route to a record in the format

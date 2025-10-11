@@ -226,43 +226,13 @@ export interface FAIMSAttachment {
 }
 
 /*
- * Autoincrementing types
- */
-export interface LocalAutoIncrementRange {
-  start: number;
-  stop: number;
-  fully_used: boolean;
-  using: boolean;
-}
-
-export interface LocalAutoIncrementState {
-  _id: string;
-  _rev?: string;
-  last_used_id: number | null;
-  ranges: LocalAutoIncrementRange[];
-}
-
-export interface AutoIncrementReference {
-  form_id: string;
-  field_id: string;
-  label?: string;
-}
-
-export interface AutoIncrementReferenceDoc {
-  _id: string;
-  _rev?: string;
-  references: AutoIncrementReference[];
-}
-
-/*
  * Elements of a Project's metadataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | EncodedProjectMetadata
-  | AutoIncrementReferenceDoc;
+  | EncodedProjectMetadata;
 
 /*
  * Elements of a Project's dataDB can be any one of these,
@@ -329,7 +299,82 @@ export type DraftMetadataList = {
   [key: string]: DraftMetadata;
 };
 
-export type DataDbType = PouchDB.Database<ProjectDataObject>;
+// Define an abstract database interface that will allow for real
+// PouchDB databases or our wrapped version in the app
+export interface DatabaseInterface<Content extends {} = {}> {
+  name: string;
+
+  allDocs<Model>(
+    options?:
+      | PouchDB.Core.AllDocsWithKeysOptions
+      | PouchDB.Core.AllDocsOptions
+      | PouchDB.Core.AllDocsWithinRangeOptions
+  ): Promise<PouchDB.Core.AllDocsResponse<Content & Model>>;
+  allDocs<Model>(
+    options: PouchDB.Core.AllDocsWithKeysOptions
+  ): Promise<PouchDB.Core.AllDocsWithKeysResponse<Content & Model>>;
+
+  bulkDocs<Model>(
+    docs: Array<PouchDB.Core.PutDocument<Content & Model>>,
+    options?: PouchDB.Core.BulkDocsOptions
+  ): Promise<Array<PouchDB.Core.Response | PouchDB.Core.Error>>;
+  get<Model>(
+    id: string,
+    options?: PouchDB.Core.GetOptions
+  ): Promise<PouchDB.Core.Document<Content & Model> & PouchDB.Core.GetMeta>;
+  get<Model>(
+    docId: PouchDB.Core.DocumentId,
+    options: PouchDB.Core.GetOpenRevisions
+  ): Promise<Array<PouchDB.Core.Revision<Content & Model>>>;
+
+  put<Model>(
+    doc: PouchDB.Core.PutDocument<Content & Model>,
+    options?: PouchDB.Core.PutOptions
+  ): Promise<PouchDB.Core.Response>;
+
+  post<Model>(
+    doc: PouchDB.Core.PostDocument<Content & Model>,
+    options?: PouchDB.Core.Options
+  ): Promise<PouchDB.Core.Response>;
+
+  find(
+    query: PouchDB.Find.FindRequest<Content>
+  ): Promise<PouchDB.Find.FindResponse<Content>>;
+  remove(
+    doc: PouchDB.Core.RemoveDocument,
+    options?: PouchDB.Core.Options
+  ): Promise<PouchDB.Core.Response>;
+  remove(
+    docId: PouchDB.Core.DocumentId,
+    revision: PouchDB.Core.RevisionId,
+    options?: PouchDB.Core.Options
+  ): Promise<PouchDB.Core.Response>;
+  remove(
+    doc: PouchDB.Core.RemoveDocument,
+    options?: PouchDB.Core.Options
+  ): Promise<PouchDB.Core.Response>;
+
+  info(): Promise<PouchDB.Core.DatabaseInfo>;
+  close(): Promise<void>;
+  destroy(): Promise<void>;
+
+  query<Result extends {}, Model extends {} = Content>(
+    fun: string | PouchDB.Map<Model, Result> | PouchDB.Filter<Model, Result>,
+    opts?: PouchDB.Query.Options<Model, Result>
+  ): Promise<PouchDB.Query.Response<Result>>;
+
+  security(
+    doc?: PouchDB.SecurityHelper.PartialSecurityDocument
+  ): PouchDB.SecurityHelper.Security;
+}
+
+// Add these type definitions after the existing DatabaseInterface
+export type RecordDbType = DatabaseInterface<EncodedRecord>;
+export type RevisionDbType = DatabaseInterface<Revision>;
+export type AvpDbType = DatabaseInterface<AttributeValuePair>;
+export type AttachmentDbType = DatabaseInterface<FAIMSAttachment>;
+
+export type DataDbType = DatabaseInterface<ProjectDataObject>;
 
 // end of types from datamodel/drafts.ts --------------------------------
 

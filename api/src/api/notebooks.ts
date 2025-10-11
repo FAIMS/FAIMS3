@@ -24,6 +24,7 @@ import {
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
+  getIdsByFieldName,
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
@@ -40,10 +41,12 @@ import {
   projectRoleToAction,
   ProjectUIModel,
   PutChangeNotebookStatusInputSchema,
+  PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookInputSchema,
   PutUpdateNotebookResponse,
   removeProjectRole,
   Role,
+  slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -52,20 +55,27 @@ import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
+import {
+  generateFilenameForAttachment,
+  streamNotebookFilesAsZip,
+} from '../couchdb/attachmentExport';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
+  streamNotebookRecordsAsGeoJSON,
+  streamNotebookRecordsAsKML,
+} from '../couchdb/geospatialExport';
+import {
   changeNotebookStatus,
+  changeNotebookTeam,
   countRecordsInNotebook,
   createNotebook,
   deleteNotebook,
-  generateFilenameForAttachment,
   getEncodedNotebookUISpec,
   getNotebookMetadata,
   getProjectById,
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
-  streamNotebookFilesAsZip,
   streamNotebookRecordsAsCSV,
   updateNotebook,
 } from '../couchdb/notebooks';
@@ -322,6 +332,27 @@ api.put(
   }
 );
 
+// PUT change project team
+api.put(
+  '/:projectId/team',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_PROJECT_TEAM,
+    getResourceId(req) {
+      return req.params.projectId;
+    },
+  }),
+  processRequest({
+    params: z.object({projectId: z.string()}),
+    body: PutChangeNotebookTeamInputSchema,
+  }),
+  async ({body: {teamId}, params: {projectId}}, res) => {
+    await changeNotebookTeam({projectId, teamId});
+    res.sendStatus(200);
+    return;
+  }
+);
+
 // POST to check sync status of a set of records
 api.post(
   '/:id/sync-status/',
@@ -396,19 +427,35 @@ api.get(
     if (records) {
       const filenames: string[] = [];
       // Process any file fields to give the file name in the zip download
-      records.forEach((record: any) => {
+      records.forEach(record => {
         const hrid = record.hrid || record.record_id;
         for (const fieldName in record.data) {
           const values = record.data[fieldName];
           if (values instanceof Array) {
             const names = values.map((v: any) => {
               if (v instanceof File) {
-                const filename = generateFilenameForAttachment(
-                  v,
-                  fieldName,
+                let viewID = record.type;
+                try {
+                  const viewsetId = getIdsByFieldName({
+                    fieldName,
+                    uiSpecification,
+                  }).viewSetId;
+                  viewID = viewsetId;
+                } catch (e) {
+                  console.error(
+                    'missing viewset for field',
+                    fieldName,
+                    'falling back to type'
+                  );
+                }
+                const filename = generateFilenameForAttachment({
+                  file: v,
+                  fieldId: fieldName,
                   hrid,
-                  filenames
-                );
+                  // The view ID is the viewset ID - which is the 'type'
+                  viewID,
+                  filenames,
+                });
                 filenames.push(filename);
                 return filename;
               } else {
@@ -429,14 +476,18 @@ api.get(
 );
 
 // Types for download format and token payloads
-const DownloadFormatSchema = z.enum(['csv', 'zip']);
+const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml']);
+type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
 const DownloadTokenPayloadSchema = z.object({
   projectID: z.string(),
   format: DownloadFormatSchema,
-  viewID: z.string(),
+  viewID: z.string().optional(),
   userID: z.string(),
 });
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
+
+// Formats requiring a view ID
+const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
 
 // download tokens last this long
 const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
@@ -488,6 +539,67 @@ const validateDownloadToken = async ({
 // details of the download, that route is handled below to do the actual
 // download.
 api.get(
+  '/:id/records/export',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    query: z.object({
+      viewID: z.string().optional(),
+      format: DownloadFormatSchema,
+    }),
+    params: z.object({
+      id: z.string(),
+    }),
+  }),
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+
+    const payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.query.format,
+      userID: req.user.user_id,
+    };
+
+    if (REQUIRES_VIEW_ID.includes(req.query.format) || req.query.viewID) {
+      if (!req.query.viewID) {
+        throw new Exceptions.InvalidRequestException(
+          `The specified format ${req.query.format} requires a viewID to be included.`
+        );
+      }
+
+      // get the label for this form for the filename header
+      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+
+      // check the view ID is valid
+      if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
+        throw new Exceptions.ItemNotFoundException(
+          `Form with id ${req.query.viewID} not found in notebook`
+        );
+      }
+
+      // Update with viewID
+      payload.viewID = req.query.viewID;
+    }
+
+    // Build the download token payload
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+    return res.redirect(`/api/notebooks/download/${jwt}`);
+  }
+);
+
+// Export record data (old route for CSV/ZIP with ViewID and Format in the param)
+// @deprecated - use the new /export style route above - this is here for backwards compat
+api.get(
   '/:id/records/:viewID.:format',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
@@ -500,31 +612,39 @@ api.get(
     params: z.object({
       id: z.string(),
       viewID: z.string(),
-      format: DownloadFormatSchema,
+      // don't allow geoJSON here - must use new route
+      // @deprecated
+      format: z.enum(['csv', 'zip']),
     }),
   }),
   async (req, res) => {
-    if (req.user) {
-      // get the label for this form for the filename header
-      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-      if (uiSpec && req.params.viewID in uiSpec.viewsets) {
-        const payload: DownloadTokenPayload = {
-          projectID: req.params.id,
-          format: req.params.format,
-          viewID: req.params.viewID,
-          userID: req.user.user_id,
-        };
-        const jwt = await generateDownloadToken({
-          user: req.user,
-          payload: payload,
-        });
-        return res.redirect(`/api/notebooks/download/${jwt}`);
-      } else {
-        throw new Exceptions.ItemNotFoundException(
-          `Form with id ${req.params.viewID} not found in notebook`
-        );
-      }
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
     }
+
+    // get the label for this form for the filename header
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+
+    // check the view ID is valid
+    if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
+      throw new Exceptions.ItemNotFoundException(
+        `Form with id ${req.query.viewID} not found in notebook`
+      );
+    }
+
+    const payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.params.format,
+      userID: req.user.user_id,
+      viewID: req.params.viewID,
+    };
+
+    // Build the download token payload
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+    return res.redirect(`/api/notebooks/download/${jwt}`);
   }
 );
 
@@ -532,35 +652,76 @@ api.get(
   '/download/:downloadToken',
   processRequest({params: z.object({downloadToken: z.string()})}),
   async (req, res) => {
+    // Validate payload
     const payload = await validateDownloadToken({
       token: req.params.downloadToken,
     });
-    if (payload) {
+
+    // If invalid/issue - throw
+    if (!payload) {
+      throw new Exceptions.InvalidRequestException(
+        'Cannot download with a valid downloadToken.'
+      );
+    }
+
+    // Depending on the format type - handle differently
+    let exportLabel = '';
+    if (REQUIRES_VIEW_ID.includes(payload.format) || payload.viewID) {
       const uiSpec = await getEncodedNotebookUISpec(payload.projectID);
-      if (uiSpec && payload.viewID in uiSpec.viewsets) {
-        const label = uiSpec.viewsets[payload.viewID].label;
-        switch (payload.format) {
-          case 'csv':
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="${label}.csv"`
-            );
-            streamNotebookRecordsAsCSV(payload.projectID, payload.viewID, res);
-            break;
-          case 'zip':
-            res.setHeader(
-              'Content-Disposition',
-              `attachment; filename="${label}.zip"`
-            );
-            res.setHeader('Content-Type', 'application/zip');
-            streamNotebookFilesAsZip(payload.projectID, payload.viewID, res);
-        }
-      } else {
+      if (!payload.viewID) {
+        throw new Exceptions.InvalidRequestException(
+          'Must provide viewID for this export format.'
+        );
+      }
+
+      if (!(uiSpec && payload.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
           `Form with id ${payload.viewID} not found in notebook`
         );
       }
+      exportLabel = uiSpec.viewsets[payload.viewID].label ?? payload.viewID;
+    } else {
+      exportLabel = slugify(payload.projectID);
+    }
+
+    switch (payload.format) {
+      case 'csv':
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${exportLabel}-export.csv"`
+        );
+        streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
+        break;
+      case 'zip':
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${exportLabel}-photos.zip"`
+        );
+        res.setHeader('Content-Type', 'application/zip');
+        streamNotebookFilesAsZip({
+          projectId: payload.projectID,
+          targetViewID: payload.viewID,
+          res,
+        });
+        break;
+      // Non view ID requiring formats
+      case 'geojson':
+        res.setHeader('Content-Type', 'application/geo+json');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+        );
+        streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+        break;
+      case 'kml':
+        res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+        );
+        streamNotebookRecordsAsKML(payload.projectID, res);
+        break;
     }
   }
 );

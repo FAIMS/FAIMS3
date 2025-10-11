@@ -19,6 +19,7 @@
  */
 
 import React, {useEffect, useRef} from 'react';
+import PouchDB from 'pouchdb-browser';
 import {
   Box,
   Paper,
@@ -31,6 +32,9 @@ import {
   LinearProgress,
   AppBar,
   Toolbar,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -43,7 +47,7 @@ import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
   RUNNING_UNDER_TEST,
   COMMIT_VERSION,
-  SHOW_MINIFAUXTON,
+  SHOW_POUCHDB_BROWSER,
   SHOW_WIPE,
   NOTEBOOK_NAME,
   CONDUCTOR_URLS,
@@ -53,6 +57,9 @@ import BoxTab from '../components/ui/boxTab';
 import DialogActions from '@mui/material/DialogActions';
 import Dialog from '@mui/material/Dialog';
 import {clearReduxAndLocalStorage, wipeAllDatabases} from '../../context/store';
+import {logError} from '../../logging';
+import {databaseService} from '../../context/slices/helpers/databaseService';
+import {Link} from 'react-router-dom';
 
 export default function AboutBuild() {
   const breadcrumbs = [
@@ -65,6 +72,20 @@ export default function AboutBuild() {
   const [showingProgress, setShowingProgress] = React.useState(false);
   const [progressiveDump, setProgressiveDump] = React.useState(false);
   const [progressMessage, setProgressMessage] = React.useState('');
+  const [pouchDBDebug, setPouchDBDebug] = React.useState(false);
+
+  const togglePouchDBDebug = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPouchDBDebug(event.target.checked);
+    console.log('current debug state is ', PouchDB.debug.enabled('*'));
+    if (event.target.checked) {
+      console.log('PouchDB Debug Logging enabled');
+      PouchDB.debug.enable('*');
+    } else {
+      console.log('PouchDB Debug Logging disabled');
+      PouchDB.debug.disable();
+    }
+    console.log('now debug state is ', PouchDB.debug.enabled('*'));
+  };
 
   // need useRef here because this value is used in a callback which
   // needs to see the live value so that when we cancel, it can
@@ -160,7 +181,7 @@ export default function AboutBuild() {
               size={'small'}
               disableElevation
               onClick={() => {
-                console.log('User refreshed page');
+                logError('User refreshed page');
                 unregisterServiceWorker();
                 window.location.reload();
               }}
@@ -169,6 +190,29 @@ export default function AboutBuild() {
               Refresh the app
             </Button>
           </Grid>
+          <Grid item md={4} sm={6} xs={12}>
+            <Typography variant={'body2'}>
+              Refresh local database connections. Use this if you see errors
+              indicating that that the app can't read or write data. No data
+              will be lost by doing this.
+            </Typography>
+          </Grid>
+          <Grid item md={8} sm={6} xs={12}>
+            <Button
+              variant="contained"
+              color={'warning'}
+              size={'small'}
+              disableElevation
+              onClick={() => {
+                logError('User reset local databases');
+                databaseService.validateLocalDatabases();
+              }}
+              startIcon={<RefreshIcon />}
+            >
+              Refresh local database connections
+            </Button>
+          </Grid>
+
           <Grid item xs={12}>
             <Divider />
           </Grid>
@@ -185,24 +229,6 @@ export default function AboutBuild() {
           </Grid>
           <Grid item md={8} sm={6} xs={12}>
             <Grid container spacing={2} alignItems={'center'}>
-              {/* <Grid item>
-                <Button
-                  disableElevation
-                  variant={'contained'}
-                  size={'small'}
-                  color={'info'}
-                  onClick={async () => {
-                    await doDumpDownload();
-                  }}
-                  startIcon={<DownloadIcon />}
-                >
-                  Download local database contents
-                </Button>
-              </Grid>
-              <Grid item sm={'auto'}>
-                <Typography variant={'body2'}>Browsers only</Typography>
-              </Grid> */}
-
               <Grid item>
                 <Button
                   disableElevation
@@ -217,8 +243,31 @@ export default function AboutBuild() {
               </Grid>
             </Grid>
           </Grid>
-
-          {(SHOW_WIPE || SHOW_MINIFAUXTON) && (
+          {/* For debugging only - testing database damage handling this will close all databases */}
+          {false && (
+            <>
+              <Grid item md={4} sm={6} xs={12}>
+                <Typography variant={'h5'} gutterBottom>
+                  Do Damage!
+                </Typography>
+              </Grid>
+              <Grid item md={8} sm={6} xs={12}>
+                <Button
+                  variant="contained"
+                  color={'error'}
+                  size={'small'}
+                  disableElevation
+                  onClick={() => {
+                    databaseService.damage();
+                  }}
+                  startIcon={<RefreshIcon />}
+                >
+                  Damage local databases
+                </Button>
+              </Grid>
+            </>
+          )}
+          {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
             <React.Fragment>
               <Grid item xs={12}>
                 <Divider />
@@ -292,20 +341,35 @@ export default function AboutBuild() {
                       </Dialog>
                     </Grid>
                   )}
-                  {SHOW_MINIFAUXTON && (
-                    <Grid item>
-                      <Button
-                        variant="contained"
-                        disableElevation
-                        color={'warning'}
-                        onClick={() => {
-                          window.location.pathname = '/minifauxton.html';
-                        }}
-                        startIcon={<StorageIcon />}
-                      >
-                        Open Raw Database Interface
-                      </Button>
-                    </Grid>
+                  {SHOW_POUCHDB_BROWSER && (
+                    <>
+                      <Grid item>
+                        <Button
+                          size={'small'}
+                          variant="contained"
+                          disableElevation
+                          color={'warning'}
+                          startIcon={<StorageIcon />}
+                          component={Link}
+                          to={ROUTES.POUCH_EXPLORER}
+                        >
+                          Open Raw Database Interface
+                        </Button>
+                      </Grid>
+                      <Grid item>
+                        <FormControl>
+                          <FormControlLabel
+                            control={
+                              <Checkbox
+                                checked={pouchDBDebug}
+                                onChange={togglePouchDBDebug}
+                              />
+                            }
+                            label="Enable PouchDB Debug Logging"
+                          />
+                        </FormControl>
+                      </Grid>
+                    </>
                   )}
                 </Grid>
               </Grid>

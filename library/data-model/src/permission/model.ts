@@ -60,6 +60,9 @@ export enum Action {
   // Change open/closed status
   CHANGE_PROJECT_STATUS = 'CHANGE_PROJECT_STATUS',
 
+  // Change team of a project
+  CHANGE_PROJECT_TEAM = 'CHANGE_PROJECT_TEAM',
+
   // Delete the project
   DELETE_PROJECT = 'DELETE_PROJECT',
 
@@ -333,6 +336,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.CHANGE_PROJECT_STATUS]: {
     name: 'Change Project Status',
     description: 'Modify the open/closed status of a project',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
+  [Action.CHANGE_PROJECT_TEAM]: {
+    name: 'Change Project Team',
+    description: 'Change the team associated with a project',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -827,6 +836,7 @@ export enum Role {
   // TEAM ROLES
   // ================
   TEAM_MEMBER = 'TEAM_MEMBER',
+  TEAM_MEMBER_CREATOR = 'TEAM_MEMBER_CREATOR',
   TEAM_MANAGER = 'TEAM_MANAGER',
   TEAM_ADMIN = 'TEAM_ADMIN',
 }
@@ -872,27 +882,27 @@ export const roleDetails: Record<Role, RoleDetails> = {
 
   // Project roles
   [Role.PROJECT_ADMIN]: {
-    name: 'Project Administrator',
+    name: 'Administrator',
     description:
       'Full control over a specific project, including deletion and admin user management',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_MANAGER]: {
-    name: 'Project Manager',
+    name: 'Manager',
     description:
       'Can manage project settings, invitations and all data within a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_CONTRIBUTOR]: {
-    name: 'Project Contributor',
+    name: 'Contributor',
     description: 'Can view all data within a project and contribute their own',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
   },
   [Role.PROJECT_GUEST]: {
-    name: 'Project Guest',
+    name: 'Guest',
     description: 'Can view only their own contributions to a project',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.PROJECT,
@@ -928,8 +938,14 @@ export const roleDetails: Record<Role, RoleDetails> = {
     resource: Resource.TEAM,
   },
   [Role.TEAM_MEMBER]: {
-    name: 'Team Member',
-    description: 'Basic membership in a team with standard access privileges',
+    name: 'Team Member (Contributor)',
+    description: 'Can contribute data to all projects within a team',
+    scope: RoleScope.RESOURCE_SPECIFIC,
+    resource: Resource.TEAM,
+  },
+  [Role.TEAM_MEMBER_CREATOR]: {
+    name: 'Team Member (Creator)',
+    description: 'Can create new projects within a team',
     scope: RoleScope.RESOURCE_SPECIFIC,
     resource: Resource.TEAM,
   },
@@ -991,6 +1007,7 @@ export const roleActions: Record<
       Action.UPDATE_PROJECT_DETAILS,
       Action.UPDATE_PROJECT_UISPEC,
       Action.CHANGE_PROJECT_STATUS,
+      Action.CHANGE_PROJECT_TEAM,
       Action.EXPORT_PROJECT_DATA,
 
       Action.VIEW_PROJECT_INVITES,
@@ -1098,6 +1115,20 @@ export const roleActions: Record<
     virtualRoles: new Map([
       // Projects owned by team -> contributor
       [Resource.PROJECT, [Role.PROJECT_CONTRIBUTOR]],
+      // Template owned by team -> guest
+      [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
+    ]),
+  },
+
+  // Modified team member to allow project creation but not
+  // access to all projects in the team
+  [Role.TEAM_MEMBER_CREATOR]: {
+    actions: [
+      Action.VIEW_TEAM_DETAILS,
+      Action.VIEW_TEAM_MEMBERS,
+      Action.CREATE_PROJECT_IN_TEAM,
+    ],
+    virtualRoles: new Map([
       // Template owned by team -> guest
       [Resource.TEMPLATE, [Role.TEMPLATE_GUEST]],
     ]),

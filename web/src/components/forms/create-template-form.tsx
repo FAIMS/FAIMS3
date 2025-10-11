@@ -5,7 +5,7 @@ import {z} from 'zod';
 import {useQueryClient} from '@tanstack/react-query';
 import {useGetTeams} from '@/hooks/queries';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action} from '@faims3/data-model';
+import {Action, getUserResourcesForAction} from '@faims3/data-model';
 
 import blankNotebook from '../../../notebooks/blank-notebook.json';
 import {NOTEBOOK_NAME} from '@/constants';
@@ -37,6 +37,22 @@ export function CreateTemplateForm({
     action: Action.CREATE_TEMPLATE,
   });
 
+  // get the teams that we have permission to create
+  // templates in
+  const teamsAvailable =
+    (canCreateGlobally
+      ? teams?.teams.map(t => t._id)
+      : getUserResourcesForAction({
+          decodedToken: user?.decodedToken,
+          action: Action.CREATE_TEMPLATE_IN_TEAM,
+        })) || [];
+
+  // filter teams by those we can create templates in
+  const possibleTeams =
+    teams?.teams.filter(team => teamsAvailable.includes(team._id)) || [];
+
+  const justOneTeam = specifiedTeam || possibleTeams.length === 1;
+
   const fields: Field[] = [
     {
       name: 'name',
@@ -60,11 +76,11 @@ export function CreateTemplateForm({
     },
   ];
 
-  if (!specifiedTeam) {
+  if (!justOneTeam) {
     fields.push({
       name: 'team',
       label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
-      options: teams?.teams.map(({_id, name}) => ({
+      options: possibleTeams?.map(({_id, name}) => ({
         label: name,
         value: _id,
       })),
@@ -101,6 +117,13 @@ export function CreateTemplateForm({
       };
     }
 
+    let chosenTeamId = specifiedTeam;
+    if (justOneTeam && possibleTeams.length > 0) {
+      chosenTeamId = possibleTeams[0]._id;
+    } else if (team) {
+      chosenTeamId = team;
+    }
+
     try {
       const res = await fetch(
         `${import.meta.env.VITE_API_URL}/api/templates/`,
@@ -111,7 +134,7 @@ export function CreateTemplateForm({
             Authorization: `Bearer ${user.token}`,
           },
           body: JSON.stringify({
-            teamId: team ?? specifiedTeam,
+            teamId: chosenTeamId,
             name,
             ...jsonPayload,
           }),
@@ -140,12 +163,24 @@ export function CreateTemplateForm({
     setDialogOpen(false);
   };
 
-  return (
-    <Form
-      fields={fields}
-      onSubmit={onSubmit}
-      submitButtonText="Create Template"
-      defaultValues={{team: defaultValues?.teamId}}
-    />
-  );
+  if (possibleTeams.length === 0) {
+    // we shouldn't get here but just in case show a message
+    return <p>You do not have permission to create templates.</p>;
+  } else {
+    return (
+      <>
+        {possibleTeams.length === 1 && (
+          <span>
+            <strong>Template will be owned by:</strong> {possibleTeams[0].name}
+          </span>
+        )}
+        <Form
+          fields={fields}
+          onSubmit={onSubmit}
+          submitButtonText="Create Template"
+          defaultValues={{team: defaultValues?.teamId}}
+        />
+      </>
+    );
+  }
 }

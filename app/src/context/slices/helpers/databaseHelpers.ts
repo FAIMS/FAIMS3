@@ -13,6 +13,7 @@ import {
 } from '../../../buildconfig';
 import {compileUiSpecConditionals} from '../../../uiSpecification';
 import {DatabaseConnectionConfig, ProjectIdentity} from '../projectSlice';
+import {PouchDBWrapper} from './pouchDBWrapper';
 
 type DBReplicateOptions =
   | PouchDB.Replication.ReplicateOptions
@@ -109,12 +110,12 @@ export function createLocalPouchDatabase<Content extends {}>({
   id,
 }: {
   id: string;
-}): PouchDB.Database<Content> {
-  return new PouchDB<Content>(id, LOCAL_POUCH_OPTIONS);
+}): PouchDBWrapper<Content> {
+  return new PouchDBWrapper<Content>(id);
 }
 
 /**
- * Creates a PouchDB.Database used to access a remote Couch/Pouch instance
+ * Creates a PouchDBWrapper used to access a remote Couch/Pouch instance
  *
  * @param jwtToken The token to authorise with
  * @param couchUrl The couch URL e.g. https://couch.domain.com:443
@@ -143,7 +144,7 @@ export function createRemotePouchDbFromConnectionInfo<Content extends {}>({
     return PouchDB.fetch(url, opts);
   };
 
-  // Derivce the connection string (includes port if needed)
+  // Derive the connection string (includes port if needed)
   const dbConnectionString = couchUrl.endsWith('/')
     ? couchUrl + databaseName
     : couchUrl + '/' + databaseName;
@@ -276,7 +277,7 @@ export function createPouchDbSync<Content extends {}>({
   eventHandlers = DEFAULT_SYNC_HANDLERS,
 }: {
   attachmentDownload: boolean;
-  localDb: PouchDB.Database<Content>;
+  localDb: PouchDBWrapper<Content>;
   remoteDb: PouchDB.Database<Content>;
   eventHandlers?: SyncEventHandlers;
 }) {
@@ -303,7 +304,7 @@ export function createPouchDbSync<Content extends {}>({
   };
 
   // Create the sync object
-  let sync = PouchDB.sync(localDb, remoteDb, options);
+  let sync = PouchDB.sync(localDb.db, remoteDb, options);
 
   // Attach all provided event handlers These types provided in the library are
   // completely wrong - e.g. see the docs here https://pouchdb.com/api.html#sync

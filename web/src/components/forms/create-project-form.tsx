@@ -59,7 +59,7 @@ export function CreateProjectForm({
         value: _id,
       })),
       schema: z.any().optional(),
-      excludes: 'file',
+      excludedBy: 'file',
     },
     {
       name: 'file',
@@ -69,7 +69,7 @@ export function CreateProjectForm({
         .instanceof(File)
         .refine(file => file.type === 'application/json')
         .optional(),
-      excludes: 'template',
+      excludedBy: 'template',
     },
   ];
 

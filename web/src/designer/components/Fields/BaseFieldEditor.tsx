@@ -41,15 +41,17 @@ import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
 import {ConditionType} from '../condition/types';
 
-import DebouncedTextField from '../debounced-text-field';
-import {MdxEditor} from '../mdx-editor';
 import {
   getViewIDForField,
   slugify,
 } from '@/designer/state/helpers/uiSpec-helpers';
+import DebouncedTextField from '../debounced-text-field';
+import {MdxEditor} from '../mdx-editor';
 
 type Props = {
   fieldName: string;
+  showExtraConfig?: boolean;
+  showHelperText?: boolean;
   children?: React.ReactNode;
 };
 
@@ -69,7 +71,12 @@ type StateType = {
   allowHiding: boolean;
 };
 
-export const BaseFieldEditor = ({fieldName, children}: Props) => {
+export const BaseFieldEditor = ({
+  fieldName,
+  showExtraConfig = true,
+  showHelperText = true,
+  children,
+}: Props) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
   );
@@ -265,74 +272,79 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
                 />
               </Box>
             </Grid>
-            <Grid item xs={12} md={8}>
-              <DebouncedTextField
-                fullWidth
-                label="Helper Text"
-                value={state.helperText}
-                multiline
-                rows={2}
-                onChange={e => updateProperty('helperText', e.target.value)}
-              />
-              {hasAdvancedSupport && (
-                <>
-                  <Box mt={2}>
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={showAdvanced}
-                          onChange={e => {
-                            setShowAdvanced(e.target.checked);
-                          }}
-                        />
-                      }
-                      label="Include advanced helper text"
-                    />
-                  </Box>
-
-                  {showAdvanced && (
-                    <Card variant="outlined" sx={{mt: 2, p: 2}}>
-                      <Box
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="space-between"
-                      >
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          Advanced Helper Text (Markdown)
-                        </Typography>
-                        <IconButton
-                          onClick={() => setExpanded(!expanded)}
-                          size="small"
-                          aria-label="Toggle advanced editor"
-                        >
-                          {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </IconButton>
-                      </Box>
-
-                      <Collapse in={expanded}>
-                        <Box mt={2} sx={{maxHeight: 300, overflowY: 'auto'}}>
-                          <MdxEditor
-                            initialMarkdown={state.advancedHelperText}
-                            handleChange={debounce(
-                              markdown =>
-                                updateProperty('advancedHelperText', markdown),
-                              500,
-                              {leading: false, trailing: true}
-                            )}
-                            editorRef={mdxEditorRef}
+            {showHelperText && (
+              <Grid item xs={12} md={8}>
+                <DebouncedTextField
+                  fullWidth
+                  label="Helper Text"
+                  value={state.helperText}
+                  multiline
+                  rows={2}
+                  onChange={e => updateProperty('helperText', e.target.value)}
+                />
+                {hasAdvancedSupport && (
+                  <>
+                    <Box mt={2}>
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={showAdvanced}
+                            onChange={e => {
+                              setShowAdvanced(e.target.checked);
+                            }}
                           />
-                          <Alert severity="info" sx={{mt: 2}}>
-                            This markdown-based helper will appear in a dialog
-                            when users click the info icon next to the field
-                            label in the app.
-                          </Alert>
+                        }
+                        label="Include advanced helper text"
+                      />
+                    </Box>
+
+                    {showAdvanced && (
+                      <Card variant="outlined" sx={{mt: 2, p: 2}}>
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="space-between"
+                        >
+                          <Typography variant="subtitle2" fontWeight="bold">
+                            Advanced Helper Text (Markdown)
+                          </Typography>
+                          <IconButton
+                            onClick={() => setExpanded(!expanded)}
+                            size="small"
+                            aria-label="Toggle advanced editor"
+                          >
+                            {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                          </IconButton>
                         </Box>
-                      </Collapse>
-                    </Card>
-                  )}
-                </>
-              )}
-            </Grid>
+
+                        <Collapse in={expanded}>
+                          <Box mt={2} sx={{maxHeight: 300, overflowY: 'auto'}}>
+                            <MdxEditor
+                              initialMarkdown={state.advancedHelperText}
+                              handleChange={debounce(
+                                markdown =>
+                                  updateProperty(
+                                    'advancedHelperText',
+                                    markdown
+                                  ),
+                                500,
+                                {leading: false, trailing: true}
+                              )}
+                              editorRef={mdxEditorRef}
+                            />
+                            <Alert severity="info" sx={{mt: 2}}>
+                              This markdown-based helper will appear in a dialog
+                              when users click the info icon next to the field
+                              label in the app.
+                            </Alert>
+                          </Box>
+                        </Collapse>
+                      </Card>
+                    )}
+                  </>
+                )}
+              </Grid>
+            )}
 
             {children && (
               <Grid item xs={12}>
@@ -344,170 +356,174 @@ export const BaseFieldEditor = ({fieldName, children}: Props) => {
       </Grid>
 
       {/* --- REMAINDER OF THE FORM CONFIG --- */}
-      <Grid item xs={12}>
-        <Card variant="outlined" sx={{p: 2}}>
-          <Grid container spacing={2}>
-            {/* Row 1: Required, Annotation, Uncertainty, Condition */}
-            <Grid item xs={12} sm={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={state.required}
-                    onChange={e => updateProperty('required', e.target.checked)}
-                  />
-                }
-                label="Required"
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={state.annotation}
-                    onChange={e =>
-                      updateProperty('annotation', e.target.checked)
-                    }
-                  />
-                }
-                label="Annotation"
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={state.uncertainty}
-                    onChange={e =>
-                      updateProperty('uncertainty', e.target.checked)
-                    }
-                  />
-                }
-                label="Uncertainty"
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <ConditionModal
-                label={state.condition ? 'Update Condition' : 'Add Condition'}
-                initial={state.condition}
-                onChange={conditionChanged}
-                field={fieldName}
-              />
-            </Grid>
-
-            {/* Row 2: Annotation and Uncertainty Labels */}
-            <Grid item container spacing={2}>
-              <Grid item xs={12} md={6}>
-                {state.annotation ? (
-                  <DebouncedTextField
-                    fullWidth
-                    label="Annotation Label"
-                    value={state.annotationLabel}
-                    onChange={e =>
-                      updateProperty('annotationLabel', e.target.value)
-                    }
-                  />
-                ) : (
-                  <div />
-                )}
-              </Grid>
-              <Grid item xs={12} md={6}>
-                {state.uncertainty ? (
-                  <DebouncedTextField
-                    fullWidth
-                    label="Uncertainty Label"
-                    value={state.uncertaintyLabel}
-                    onChange={e =>
-                      updateProperty('uncertaintyLabel', e.target.value)
-                    }
-                  />
-                ) : (
-                  <div />
-                )}
-              </Grid>
-            </Grid>
-
-            {/* Row 3: Condition Alert */}
-            <Grid item xs={12}>
-              {state.condition && (
-                <Alert severity="info">
-                  <strong>Field Condition:</strong> Show this field if&nbsp;
-                  <ConditionTranslation condition={state.condition} />
-                </Alert>
-              )}
-            </Grid>
-
-            {/* Row 4: Persistent, Display Parent, Protection, Allow Hiding */}
-            <Grid item xs={12} sm={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={state.persistent}
-                    onChange={e =>
-                      updateProperty('persistent', e.target.checked)
-                    }
-                  />
-                }
-                label="Copy value to new records"
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={state.displayParent}
-                    onChange={e =>
-                      updateProperty('displayParent', e.target.checked)
-                    }
-                  />
-                }
-                label="Display in parent record"
-              />
-            </Grid>
-            {VITE_TEMPLATE_PROTECTIONS && (
-              <>
-                <Grid item xs={12} sm={3}>
-                  <Box display="flex" alignItems="center">
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={state.protection}
-                          onChange={e =>
-                            updateProperty('protection', e.target.checked)
-                          }
-                        />
+      {showExtraConfig && (
+        <Grid item xs={12}>
+          <Card variant="outlined" sx={{p: 2}}>
+            <Grid container spacing={2}>
+              {/* Row 1: Required, Annotation, Uncertainty, Condition */}
+              <Grid item xs={12} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={state.required}
+                      onChange={e =>
+                        updateProperty('required', e.target.checked)
                       }
-                      label="Protected Field"
                     />
-                    <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
-                      <InfoOutlinedIcon
-                        fontSize="small"
-                        sx={{marginLeft: 0, color: '#757575'}}
-                      />
-                    </Tooltip>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  {state.protection ? (
-                    <FormControlLabel
-                      control={
-                        <Checkbox
-                          checked={state.allowHiding}
-                          onChange={e =>
-                            updateProperty('allowHiding', e.target.checked)
-                          }
-                        />
+                  }
+                  label="Required"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={state.annotation}
+                      onChange={e =>
+                        updateProperty('annotation', e.target.checked)
                       }
-                      label="Allow Hiding"
+                    />
+                  }
+                  label="Annotation"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={state.uncertainty}
+                      onChange={e =>
+                        updateProperty('uncertainty', e.target.checked)
+                      }
+                    />
+                  }
+                  label="Uncertainty"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <ConditionModal
+                  label={state.condition ? 'Update Condition' : 'Add Condition'}
+                  initial={state.condition}
+                  onChange={conditionChanged}
+                  field={fieldName}
+                />
+              </Grid>
+
+              {/* Row 2: Annotation and Uncertainty Labels */}
+              <Grid item container spacing={2}>
+                <Grid item xs={12} md={6}>
+                  {state.annotation ? (
+                    <DebouncedTextField
+                      fullWidth
+                      label="Annotation Label"
+                      value={state.annotationLabel}
+                      onChange={e =>
+                        updateProperty('annotationLabel', e.target.value)
+                      }
                     />
                   ) : (
                     <div />
                   )}
                 </Grid>
-              </>
-            )}
-          </Grid>
-        </Card>
-      </Grid>
+                <Grid item xs={12} md={6}>
+                  {state.uncertainty ? (
+                    <DebouncedTextField
+                      fullWidth
+                      label="Uncertainty Label"
+                      value={state.uncertaintyLabel}
+                      onChange={e =>
+                        updateProperty('uncertaintyLabel', e.target.value)
+                      }
+                    />
+                  ) : (
+                    <div />
+                  )}
+                </Grid>
+              </Grid>
+
+              {/* Row 3: Condition Alert */}
+              <Grid item xs={12}>
+                {state.condition && (
+                  <Alert severity="info">
+                    <strong>Field Condition:</strong> Show this field if&nbsp;
+                    <ConditionTranslation condition={state.condition} />
+                  </Alert>
+                )}
+              </Grid>
+
+              {/* Row 4: Persistent, Display Parent, Protection, Allow Hiding */}
+              <Grid item xs={12} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={state.persistent}
+                      onChange={e =>
+                        updateProperty('persistent', e.target.checked)
+                      }
+                    />
+                  }
+                  label="Copy value to new records"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={state.displayParent}
+                      onChange={e =>
+                        updateProperty('displayParent', e.target.checked)
+                      }
+                    />
+                  }
+                  label="Display in child records"
+                />
+              </Grid>
+              {VITE_TEMPLATE_PROTECTIONS && (
+                <>
+                  <Grid item xs={12} sm={3}>
+                    <Box display="flex" alignItems="center">
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={state.protection}
+                            onChange={e =>
+                              updateProperty('protection', e.target.checked)
+                            }
+                          />
+                        }
+                        label="Protected Field"
+                      />
+                      <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
+                        <InfoOutlinedIcon
+                          fontSize="small"
+                          sx={{marginLeft: 0, color: '#757575'}}
+                        />
+                      </Tooltip>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={3}>
+                    {state.protection ? (
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            checked={state.allowHiding}
+                            onChange={e =>
+                              updateProperty('allowHiding', e.target.checked)
+                            }
+                          />
+                        }
+                        label="Allow Hiding"
+                      />
+                    ) : (
+                      <div />
+                    )}
+                  </Grid>
+                </>
+              )}
+            </Grid>
+          </Card>
+        </Grid>
+      )}
     </Grid>
   );
 };

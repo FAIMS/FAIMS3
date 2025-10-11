@@ -113,6 +113,35 @@ export function isAuthorized({
 }
 
 /**
+ * What resources does this user have permission for with a resource-specific
+ * action?
+ */
+export function getUserResourcesForAction({
+  decodedToken,
+  action,
+}: {
+  decodedToken?: DecodedTokenPermissions | null;
+  action: Action;
+}): Array<string> {
+  const authorizedResources: Array<string> = [];
+
+  // if token is not there, we can't access any resources
+  if (!decodedToken) return authorizedResources;
+
+  // Check resource-specific roles for access
+  for (const resourceRole of decodedToken.resourceRoles) {
+    if (
+      resourceRole.resourceId &&
+      roleGrantsAction({roles: [resourceRole.role], action})
+    ) {
+      authorizedResources.push(resourceRole.resourceId);
+    }
+  }
+
+  return authorizedResources;
+}
+
+/**
  * Maps a add/remove role operation to the corresponding action needed
  * @param add Whether this is an add operation (true) or remove operation (false)
  * @param role The role being added or removed
@@ -236,7 +265,7 @@ export function teamInviteToAction({
     } else {
       actionNeeded = Action.DELETE_MANAGER_TEAM_INVITE;
     }
-  } else if (role === Role.TEAM_MEMBER) {
+  } else if (role === Role.TEAM_MEMBER || role === Role.TEAM_MEMBER_CREATOR) {
     if (action === 'create') {
       actionNeeded = Action.CREATE_MEMBER_TEAM_INVITE;
     } else {
@@ -258,12 +287,15 @@ export function teamInviteToAction({
  * @returns The corresponding permission action
  */
 export function getTeamMembershipAction(role: Role, add: boolean): Action {
+  console.log('getTeamMembershipAction', role, add);
   switch (role) {
     case Role.TEAM_ADMIN:
       return add ? Action.ADD_ADMIN_TO_TEAM : Action.REMOVE_ADMIN_FROM_TEAM;
     case Role.TEAM_MANAGER:
       return add ? Action.ADD_MANAGER_TO_TEAM : Action.REMOVE_MANAGER_FROM_TEAM;
     case Role.TEAM_MEMBER:
+      return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
+    case Role.TEAM_MEMBER_CREATOR:
       return add ? Action.ADD_MEMBER_TO_TEAM : Action.REMOVE_MEMBER_FROM_TEAM;
     default:
       throw new Error(`Invalid team role: ${role}`);

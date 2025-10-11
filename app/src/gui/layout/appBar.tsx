@@ -57,7 +57,7 @@ import {
 } from '../../context/slices/authSlice';
 import {
   Project,
-  selectProjectsByServerId,
+  selectActiveServerProjects,
 } from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
@@ -129,7 +129,10 @@ export default function MainAppBar() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const activeServerId = useAppSelector(selectActiveServerId);
   const projectList = useAppSelector(state =>
-    activeServerId ? selectProjectsByServerId(state, activeServerId) : []
+    activeServerId
+      ? // Only show active projects in the side bar
+        selectActiveServerProjects(state).filter(p => p.isActivated)
+      : []
   );
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -152,7 +155,7 @@ export default function MainAppBar() {
       : isAuthenticated
         ? getNestedProjects(projectList)
         : {
-            title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+            title: `Active ${NOTEBOOK_NAME_CAPITALIZED}s`,
             icon: <AccountTree />,
             to: '/',
             disabled: true,
@@ -292,13 +295,15 @@ export default function MainAppBar() {
                     >
                       {item.title}{' '}
                     </ListItemText>
-                    {item.nested.length === 0 ? (
+                    {item.nested === null || item.nested === undefined ? (
                       <CircularProgress size={12} thickness={4} />
-                    ) : nestedMenuOpen[item.title] ? (
-                      <ExpandLess />
-                    ) : (
-                      <ExpandMore />
-                    )}
+                    ) : item.nested.length > 0 ? (
+                      nestedMenuOpen[item.title] ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )
+                    ) : null}
                   </ListItemButton>
                   <Collapse
                     in={nestedMenuOpen[item.title]}

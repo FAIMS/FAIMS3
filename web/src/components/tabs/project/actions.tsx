@@ -12,7 +12,7 @@ import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action} from '@faims3/data-model';
+import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {
@@ -22,6 +22,8 @@ import type {
 import {EditProjectDialog} from '@/components/dialogs/edit-project-dialog';
 import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
+import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
+import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
 
 /**
  * ProjectActions component renders action cards for editing and closing a project.
@@ -87,10 +89,27 @@ const ProjectActions = (): JSX.Element => {
     setEditorOpen(false);
   };
 
+  const canEditProject = useIsAuthorisedTo({
+    action: Action.UPDATE_PROJECT_UISPEC,
+    resourceId: projectId,
+  });
+
   const canChangeProjectStatus = useIsAuthorisedTo({
     action: Action.CHANGE_PROJECT_STATUS,
     resourceId: projectId,
   });
+
+  // can we change the project team?
+  const canAddProjectToTeam = useIsAuthorisedTo({
+    action: Action.CHANGE_PROJECT_TEAM,
+    resourceId: projectId,
+  });
+
+  const canCreateTemplateInTeam =
+    getUserResourcesForAction({
+      decodedToken: user?.decodedToken,
+      action: Action.CREATE_TEMPLATE_IN_TEAM,
+    }).length > 0;
 
   const handleCreateTestRecords = async () => {
     if (user)
@@ -130,25 +149,44 @@ const ProjectActions = (): JSX.Element => {
             </List>
           </Card>
         )}
-        <Card className="flex-1">
-          <List className="flex flex-col gap-4">
-            <ListItem>
-              <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-              <ListDescription>
-                Edit this {NOTEBOOK_NAME} in the Notebook Editor.
-              </ListDescription>
-            </ListItem>
-            <ListItem>
-              <Button
-                variant="outline"
-                disabled={isLoading}
-                onClick={() => setEditorOpen(true)}
-              >
-                Open in Editor
-              </Button>
-            </ListItem>
-          </List>
-        </Card>
+
+        {canEditProject && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+                <ListDescription>
+                  Edit this {NOTEBOOK_NAME} in the Notebook Editor.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <Button
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={() => setEditorOpen(true)}
+                >
+                  Open in Editor
+                </Button>
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {canAddProjectToTeam && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
+                <ListDescription>
+                  Assign this {NOTEBOOK_NAME} to a team.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <AddProjectToTeamDialog projectId={projectId} />
+              </ListItem>
+            </List>
+          </Card>
+        )}
 
         <Card className="flex-1">
           <List className="flex flex-col gap-4">
@@ -176,21 +214,43 @@ const ProjectActions = (): JSX.Element => {
           </List>
         </Card>
 
-        <Card className="flex-1">
-          <List className="flex flex-col gap-4">
-            <ListItem>
-              <ListLabel>
-                Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
-              </ListLabel>
-              <ListDescription>
-                Replace the {NOTEBOOK_NAME} JSON file.
-              </ListDescription>
-            </ListItem>
-            <ListItem>
-              <EditProjectDialog />
-            </ListItem>
-          </List>
-        </Card>
+        {canEditProject && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>
+                  Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
+                </ListLabel>
+                <ListDescription>
+                  Replace the {NOTEBOOK_NAME} JSON file.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <EditProjectDialog />
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {canCreateTemplateInTeam && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>
+                  Create Template from this {NOTEBOOK_NAME_CAPITALIZED}
+                </ListLabel>
+                <ListDescription>
+                  Create a new template from the current {NOTEBOOK_NAME}. You
+                  will then be able to create copies of this {NOTEBOOK_NAME}{' '}
+                  from the template.
+                </ListDescription>
+              </ListItem>
+              <ListItem>
+                <CreateTemplateFromProjectDialog projectId={projectId} />
+              </ListItem>
+            </List>
+          </Card>
+        )}
 
         {canChangeProjectStatus && (
           <Card className="flex-1">

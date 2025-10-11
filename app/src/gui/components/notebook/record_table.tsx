@@ -144,8 +144,8 @@ export const RECORD_GRID_LABELS = {
  * @param record The record to get data from
  * @param column The column type
  * @param uiSpecification ui Spec
- * @returns {string | undefined} The formatted string value for the column, or
- * undefined if data is missing or invalid
+ * @returns {string} The formatted string value for the column, or
+ * a fallback ('-') if data is missing or invalid
  */
 function getDataForColumn({
   record,
@@ -156,17 +156,18 @@ function getDataForColumn({
   column: ColumnType;
   uiSpecification: ProjectUIModel;
 }): string | undefined {
-  if (!record) return undefined;
+  const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
+  if (!record) return fallback;
 
   try {
     switch (column) {
       case 'LAST_UPDATED':
         return record.updated
           ? getLocalDate(record.updated).replace('T', ' ')
-          : undefined;
+          : fallback;
 
       case 'LAST_UPDATED_BY':
-        return record.updated_by || undefined;
+        return record.updated_by || fallback;
 
       case 'CONFLICTS':
         return record.conflicts ? 'Yes' : 'No';
@@ -174,10 +175,10 @@ function getDataForColumn({
       case 'CREATED':
         return record.created
           ? getLocalDate(record.created).replace('T', ' ')
-          : undefined;
+          : fallback;
 
       case 'CREATED_BY':
-        return record.created_by || undefined;
+        return record.created_by || fallback;
 
       case 'KIND':
         return uiSpecification.viewsets[record.type]?.label ?? record.type;
@@ -186,11 +187,11 @@ function getDataForColumn({
         return record.synced ? 'synced' : 'pending';
 
       default:
-        return undefined;
+        return fallback;
     }
   } catch (error) {
     console.warn(`Error getting data for column ${column}:`, error);
-    return undefined;
+    return fallback;
   }
 }
 
@@ -218,16 +219,11 @@ export function buildColumnsFromSummaryFields({
     type: 'string',
     filterable: true,
     flex: 1,
-    renderCell: (params: GridCellParams) => {
-      const displayValue = getDisplayDataFromRecordMetadata({
+    valueGetter: params => {
+      return getDisplayDataFromRecordMetadata({
         field,
         data: params.row.data || {},
       });
-      return (
-        <Typography>
-          {displayValue || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
-        </Typography>
-      );
     },
   }));
 }
@@ -266,35 +262,18 @@ export function buildColumnFromSystemField({
         sortComparator: (v1, v2) => {
           return new Date(v1).getTime() - new Date(v2).getTime();
         },
-        renderCell: (params: GridCellParams) => {
-          const value = getDataForColumn({
-            record: params.row,
-            column: columnType,
-            uiSpecification,
-          });
-          return (
-            <Typography>
-              {value || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
-            </Typography>
-          );
-        },
       };
 
     case 'CREATED':
       return {
         ...baseColumn,
-        type: 'dateTime',
-        renderCell: (params: GridCellParams) => {
-          const value = getDataForColumn({
+        type: 'string',
+        valueGetter: params => {
+          return getDataForColumn({
             record: params.row,
             column: columnType,
             uiSpecification,
           });
-          return (
-            <Typography>
-              {value || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
-            </Typography>
-          );
         },
       };
     case 'SYNC_STATUS':
@@ -320,17 +299,12 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'string',
-        renderCell: (params: GridCellParams) => {
-          const value = getDataForColumn({
+        valueGetter: params => {
+          return getDataForColumn({
             record: params.row,
             column: columnType,
             uiSpecification,
           });
-          return (
-            <Typography>
-              {value || RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER}
-            </Typography>
-          );
         },
       };
     case 'CONFLICTS':
@@ -358,7 +332,7 @@ export function buildColumnFromSystemField({
  *
  * @param field - The field name to extract from the data
  * @param data - The data object containing the field
- * @returns {string | undefined} A string representation of the field value, or undefined if:
+ * @returns {string} A string representation of the field value, or a fallback value if:
  *   - The data object is undefined/null
  *   - The field doesn't exist in the data
  *   - The value cannot be converted to a meaningful string
@@ -369,28 +343,29 @@ function getDisplayDataFromRecordMetadata({
 }: {
   field: string;
   data: {[key: string]: any};
-}): string | undefined {
+}): string {
+  const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
   try {
     // Handle undefined/null data object
-    if (!data) return undefined;
+    if (!data) return fallback;
 
     const value = data[field];
 
     // Handle undefined/null value
-    if (value === undefined || value === null) return undefined;
+    if (value === undefined || value === null) return fallback;
 
     // Handle different types
     switch (typeof value) {
       case 'string':
-        return value.trim() || undefined; // Return undefined if empty string
+        return value.trim() || fallback; // Return fallback if empty string
       case 'number':
-        return Number.isFinite(value) ? value.toString() : undefined;
+        return Number.isFinite(value) ? value.toString() : fallback;
       case 'boolean':
         return value.toString();
       case 'object':
         if (Array.isArray(value)) {
           // Filter out null/undefined and join array elements
-          return value.filter(item => item !== null).join(', ') || undefined;
+          return value.filter(item => item !== null).join(', ') || fallback;
         }
         // For dates
         if (value instanceof Date) {
@@ -399,16 +374,16 @@ function getDisplayDataFromRecordMetadata({
         // For other objects, try JSON stringify if they're not too complex
         try {
           const str = JSON.stringify(value);
-          return str === '{}' ? undefined : str;
+          return str === '{}' ? fallback : str;
         } catch {
-          return undefined;
+          return fallback;
         }
       default:
-        return undefined;
+        return fallback;
     }
   } catch (error) {
     console.warn(`Error formatting field ${field}:`, error);
-    return undefined;
+    return fallback;
   }
 }
 
@@ -905,7 +880,7 @@ export function RecordsTable(props: RecordsTableProps) {
           toolbar: {handleQueryFunction: props.handleQueryFunction},
         }}
         initialState={{
-          sorting: {sortModel: [{field: 'last_updated', sort: 'desc'}]},
+          // sorting: {sortModel: [{field: 'last_updated', sort: 'desc'}]},
           pagination: {paginationModel: {pageSize: pageSize(maxRows)}},
         }}
         sx={styles.grid}

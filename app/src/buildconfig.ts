@@ -20,7 +20,6 @@
  */
 
 import {MapStylesheetNameType} from './gui/components/map/styles';
-import {BUILD_VERSION, BUILD_VERSION_DEFAULT} from './version';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -41,9 +40,7 @@ const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
  */
 
 function commit_version(): string {
-  // BUILD_VERSION is updated by the 'set-version' script in package.json
-  // use that if it's not just the default
-  if (BUILD_VERSION !== BUILD_VERSION_DEFAULT) return BUILD_VERSION;
+  if (process.env.__APP_VERSION__) return __APP_VERSION__;
   // otherwise look in the environment
   const commitVersion = import.meta.env.VITE_COMMIT_VERSION;
   if (
@@ -87,8 +84,8 @@ function include_app_debugging(): boolean {
   }
 }
 
-function show_minifauxton(): boolean {
-  const debug_app = import.meta.env.VITE_SHOW_MINIFAUXTON;
+function show_pouchdb_browser(): boolean {
+  const debug_app = import.meta.env.VITE_SHOW_POUCHDB_BROWSER;
   if (debug_app === '' || debug_app === undefined) {
     return true;
   }
@@ -97,7 +94,7 @@ function show_minifauxton(): boolean {
   } else if (TRUTHY_STRINGS.includes(debug_app.toLowerCase())) {
     return true;
   } else {
-    logError('VITE_SHOW_MINIFAUXTON badly defined, assuming true');
+    logError('VITE_SHOW_POUCHDB_BROWSER badly defined, assuming true');
     return true;
   }
 }
@@ -138,13 +135,13 @@ function show_new_notebook(): boolean {
 function pouch_batch_size(): number {
   const pouch_batch_size = import.meta.env.VITE_POUCH_BATCH_SIZE;
   if (pouch_batch_size === '' || pouch_batch_size === undefined) {
-    return 1000;
+    return 10;
   }
   try {
     return parseInt(pouch_batch_size);
   } catch (err) {
     logError(err);
-    return 1000;
+    return 10;
   }
 }
 
@@ -447,6 +444,18 @@ function showRecordLinks(): boolean {
   return import.meta.env.VITE_SHOW_RECORD_LINKS === 'true';
 }
 
+/**
+ * Should we automatically migrate old v1.0 style databases on startup?
+ */
+function migrateOldDatabases(): boolean {
+  const migrateOldDatabases: string | undefined = import.meta.env
+    .VITE_MIGRATE_OLD_DATABASES;
+  return (
+    !!migrateOldDatabases &&
+    TRUTHY_STRINGS.includes(migrateOldDatabases.toLowerCase())
+  );
+}
+
 // this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
@@ -458,7 +467,7 @@ export const COMMIT_VERSION = commit_version();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
-export const SHOW_MINIFAUXTON = show_minifauxton();
+export const SHOW_POUCHDB_BROWSER = show_pouchdb_browser();
 export const SHOW_WIPE = show_wipe();
 export const SHOW_NEW_NOTEBOOK = show_new_notebook();
 export const BUGSNAG_KEY = get_bugsnag_key();
@@ -480,3 +489,4 @@ export const SHOW_RECORD_LINKS = showRecordLinks();
 export const SUPPORT_EMAIL = get_support_email();
 export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
 export const CONTACT_URL = get_app_contact_url();
+export const MIGRATE_OLD_DATABASES = migrateOldDatabases();

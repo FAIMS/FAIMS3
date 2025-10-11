@@ -67,6 +67,9 @@ export interface FaimsFrontEndProps {
 
   /** Maximum long-lived token duration in days (undefined = infinite) */
   maximumLongLivedDurationDays?: number;
+
+  /** Bugsnag key - enables app monitoring if desired */
+  bugsnagKey?: string;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -127,7 +130,7 @@ export class FaimsFrontEnd extends Construct {
     // this allows connections to various map services supported as well as the
     // API and couch domains
     const csp =
-      `connect-src 'self' https://${props.couchDbDomainOnly} ${props.conductorUrl} ` +
+      `connect-src 'self' https://${props.couchDbDomainOnly} ${props.conductorUrl} *.bugsnag.com ` +
       MAP_ORIGINS_SHARED.join(' ');
 
     const website = new StaticWebsite(this, 'faims-website', {
@@ -184,10 +187,9 @@ export class FaimsFrontEnd extends Construct {
       // Debugging has performance implications
       VITE_DEBUG_APP: this.debugMode ? 'true' : 'false',
       VITE_DEBUG_POUCHDB: this.debugMode ? 'true' : 'false',
-
       VITE_SHOW_WIPE: 'true',
       VITE_SHOW_NEW_NOTEBOOK: 'true',
-      VITE_SHOW_MINIFAUXTON: 'true',
+      VITE_SHOW_POUCHDB_BROWSER: 'true',
       VITE_APP_NAME: props.appName,
       VITE_APP_ID: props.appId,
       VITE_HEADING_APP_NAME: props.headingAppName ?? props.appName,
@@ -214,6 +216,9 @@ export class FaimsFrontEnd extends Construct {
       ...(props.offlineMaps.mapSourceKey
         ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
         : {}),
+
+      // Monitoring
+      ...(props.bugsnagKey ? {VITE_BUGSNAG_KEY: props.bugsnagKey} : {}),
     };
 
     // Setup a deployment into this bucket with static files
@@ -343,6 +348,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_WEB_URL: `https://${props.webDomainName}`,
       VITE_API_URL: props.conductorUrl,
       VITE_APP_NAME: props.appName,
+      VITE_APP_SHORT_NAME: props.headingAppName ?? props.appName,
       // FAIMS /app URL (uses first domain if multiple provided)
       VITE_APP_URL: this.faimsAppUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,

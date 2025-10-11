@@ -452,7 +452,7 @@ export const deleteRefreshToken = async (
 
   // If we've reached this point, we have a valid tokenDoc
   try {
-    await authDB.remove(tokenDoc._id, tokenDoc._rev);
+    await authDB.remove(tokenDoc);
   } catch (error) {
     throw new Error(
       `Failed to delete refresh token: ${(error as Error).message}`

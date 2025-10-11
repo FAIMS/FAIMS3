@@ -2,6 +2,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {z} from 'zod';
 
+/** Monitoring configuration */
+const BugMonitoringConfigurationSchema = z.object({
+  /** To enable BugSnag - include API key here */
+  bugsnagKey: z.string().min(1).optional(),
+});
+
 /** Configuration for the maps/offline maps */
 const OfflineMapsConfigSchema = z.object({
   /** Map source provider ('osm', 'maptiler', or empty string) */
@@ -299,6 +305,8 @@ export const ConfigSchema = z.object({
   security: SecurityConfigSchema.optional().default({
     maximumLongLivedTokenDurationDays: 90,
   }),
+  /** Bugsnag/monitoring */
+  bugMonitoring: BugMonitoringConfigurationSchema,
 });
 
 // Infer the types from the schemas
@@ -306,6 +314,9 @@ export type Config = z.infer<typeof ConfigSchema>;
 export type CouchConfig = z.infer<typeof CouchConfigSchema>;
 export type BackupConfig = z.infer<typeof BackupConfigSchema>;
 export type MonitoringConfig = z.infer<typeof MonitoringConfigSchema>;
+export type BugMonitoringConfiguration = z.infer<
+  typeof BugMonitoringConfigurationSchema
+>;
 export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;

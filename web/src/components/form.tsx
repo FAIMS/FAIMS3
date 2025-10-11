@@ -36,7 +36,12 @@ export interface Field {
   schema: z.ZodSchema;
   type?: string;
   options?: {label: string; value: string}[];
-  excludes?: string;
+  excludedBy?: string;
+  excludedByFunction?: {
+    field: string;
+    checkFunction: (formValue: any) => boolean;
+    explanation?: string;
+  };
   min?: number | string;
   max?: number | string;
   step?: number;
@@ -57,6 +62,7 @@ interface Divider {
  * @param {(data: TSchema) => Promise<ErrorOption | undefined>} props.onSubmit - A function to handle form submission.
  * @param {string} props.submitButtonText - The text to display on the submit button.
  * @param {DefaultValues<TSchema>} props.defaultValues - Default values for form fields.
+ * @param {{disabled: boolean | ((data: TSchema) => boolean); reason: string}} props.disableSubmission - Optional object to disable form submission with a reason.
  * @returns {JSX.Element} The rendered Form component.
  */
 export function Form<
@@ -73,6 +79,7 @@ export function Form<
   warningMessage,
   defaultValues,
   footer = undefined,
+  disableSubmission,
 }: {
   fields: TFields;
   dividers?: Divider[];
@@ -82,6 +89,10 @@ export function Form<
   warningMessage?: string;
   defaultValues?: DefaultValues<TSchema>;
   footer?: React.ReactNode;
+  disableSubmission?: {
+    disabled: boolean | ((data: TSchema) => boolean);
+    reason: string;
+  };
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -96,6 +107,20 @@ export function Form<
     ),
     defaultValues,
   });
+
+  const isSubmitDisabled =
+    isSubmitting ||
+    (disableSubmission
+      ? typeof disableSubmission.disabled === 'function'
+        ? disableSubmission.disabled(form.watch() as TSchema)
+        : disableSubmission.disabled
+      : false);
+
+  const shouldShowDisableMessage =
+    disableSubmission &&
+    (typeof disableSubmission.disabled === 'function'
+      ? disableSubmission.disabled(form.watch() as TSchema)
+      : disableSubmission.disabled);
 
   return (
     <FormProvider {...form}>
@@ -120,7 +145,8 @@ export function Form<
                 description,
                 type,
                 options,
-                excludes,
+                excludedBy,
+                excludedByFunction,
                 min,
                 max,
                 step,
@@ -130,7 +156,15 @@ export function Form<
             ) => {
               const fieldName = name as Path<TSchema>;
               const isDisabled =
-                excludes !== undefined && form.watch(excludes as Path<TSchema>);
+                (excludedBy !== undefined &&
+                  form.watch(excludedBy as Path<TSchema>)) ||
+                (excludedByFunction !== undefined &&
+                  excludedByFunction.checkFunction(
+                    form.watch(excludedByFunction.field as Path<TSchema>)
+                  ));
+
+              const showExclusionWarning =
+                isDisabled && excludedByFunction?.explanation;
 
               return (
                 <div key={name}>
@@ -209,6 +243,11 @@ export function Form<
                             />
                           )}
                         </FormControl>
+                        {showExclusionWarning && (
+                          <p className="text-sm text-amber-600 dark:text-amber-500 mt-1.5">
+                            {excludedByFunction.explanation}
+                          </p>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -226,11 +265,14 @@ export function Form<
           </Alert>
         )}
         <FormMessage>{form.formState.errors.root?.message}</FormMessage>
+        {shouldShowDisableMessage && (
+          <p className="text-sm text-destructive">{disableSubmission.reason}</p>
+        )}
         <Button
           type="submit"
           variant={submitButtonVariant}
           className="w-full"
-          disabled={isSubmitting}
+          disabled={isSubmitDisabled}
         >
           {submitButtonText}
         </Button>

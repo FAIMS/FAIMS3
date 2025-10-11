@@ -23,13 +23,13 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 PouchDB.plugin(PouchDBFind);
 
+import {PostLoginInput} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
-import {AUTH_PROVIDER_DETAILS} from '../src/auth/strategies/applyStrategies';
-import {CONDUCTOR_AUTH_PROVIDERS, LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
+import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
+import {LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
-import {PostLoginInput} from '@faims3/data-model';
 
 const adminPassword = LOCAL_COUCHDB_AUTH ? LOCAL_COUCHDB_AUTH.password : '';
 
@@ -71,14 +71,13 @@ describe('Auth', () => {
   });
 
   it('shows the configured login button(s)', done => {
+    const providers = getAuthProviderConfig();
     request(app)
       .get('/login')
       .expect(200)
       .then(response => {
-        CONDUCTOR_AUTH_PROVIDERS.forEach(provider => {
-          expect(response.text).to.include(
-            AUTH_PROVIDER_DETAILS[provider].displayName
-          );
+        Object.values(providers || {}).forEach(provider => {
+          if (providers) expect(response.text).to.include(provider.displayName);
         });
         done();
       });

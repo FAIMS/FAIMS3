@@ -1,6 +1,7 @@
 import {
   extendTokenWithVirtualRoles,
   generateVirtualResourceRoles,
+  getUserResourcesForAction,
   isTokenAuthorized,
   necessaryActionToCouchRoleList,
   ResourceAssociation,
@@ -225,6 +226,7 @@ describe('Authorization Helper Functions', () => {
               Action.UPDATE_PROJECT_DETAILS,
               Action.UPDATE_PROJECT_UISPEC,
               Action.CHANGE_PROJECT_STATUS,
+              Action.CHANGE_PROJECT_TEAM,
               Action.EXPORT_PROJECT_DATA,
 
               // Inherited from PROJECT_CONTRIBUTOR
@@ -245,6 +247,7 @@ describe('Authorization Helper Functions', () => {
       // Direct actions from PROJECT_MANAGER
       expect(actions).toContain(Action.UPDATE_PROJECT_DETAILS);
       expect(actions).toContain(Action.CHANGE_PROJECT_STATUS);
+      expect(actions).toContain(Action.CHANGE_PROJECT_TEAM);
 
       // Inherited from PROJECT_CONTRIBUTOR
       expect(actions).toContain(Action.READ_ALL_PROJECT_RECORDS);
@@ -391,6 +394,49 @@ describe('Authorization Helper Functions', () => {
         })
       ).toBe(false);
     });
+  });
+});
+
+describe('getUserResourcesForAction', () => {
+  it('returns an array of resource IDs for a given action', () => {
+    const token: DecodedTokenPermissions = {
+      resourceRoles: [
+        {resourceId: 'template123', role: Role.TEAM_MANAGER},
+        {resourceId: 'project123', role: Role.PROJECT_MANAGER},
+      ],
+      globalRoles: [],
+    };
+
+    const resources = getUserResourcesForAction({
+      decodedToken: token,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    });
+
+    expect(resources).toContain('project123');
+    expect(resources).not.toContain('template123');
+  });
+
+  it('returns an empty array if no resources are authorized', () => {
+    const token: DecodedTokenPermissions = {
+      resourceRoles: [{resourceId: 'template123', role: Role.TEAM_MANAGER}],
+      globalRoles: [],
+    };
+
+    const resources = getUserResourcesForAction({
+      decodedToken: token,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    });
+
+    expect(resources).toHaveLength(0);
+  });
+
+  it('returns an empty array if token is undefined', () => {
+    const resources = getUserResourcesForAction({
+      decodedToken: undefined,
+      action: Action.UPDATE_PROJECT_DETAILS,
+    });
+
+    expect(resources).toHaveLength(0);
   });
 });
 

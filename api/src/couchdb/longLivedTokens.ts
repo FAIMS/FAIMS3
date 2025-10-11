@@ -12,6 +12,7 @@ import {
   GetLongLivedTokenIndex,
   LongLivedTokenExistingDocument,
   LongLivedTokenFields,
+  safeWriteDocument,
 } from '@faims3/data-model';
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
@@ -242,7 +243,19 @@ export const validateLongLivedToken = async (
     // Update last used timestamp if requested
     if (updateLastUsed) {
       tokenDoc.lastUsedTimestampMs = Date.now();
-      await getAuthDB().put(tokenDoc);
+      try {
+        await safeWriteDocument({
+          db: getAuthDB(),
+          data: tokenDoc,
+          writeOnClash: true,
+        });
+      } catch (e) {
+        console.error(
+          'Error updating last used timestamp for long-lived token:',
+          e
+        );
+        throw e;
+      }
     }
 
     return {valid: true, user, token: tokenDoc};
@@ -375,7 +388,7 @@ export const deleteLongLivedToken = async (
   }
 
   try {
-    await authDB.remove(tokenDoc!._id, tokenDoc!._rev);
+    if (tokenDoc) await authDB.remove(tokenDoc);
   } catch (error) {
     throw new Error(
       `Failed to delete long-lived token: ${(error as Error).message}`
