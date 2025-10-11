@@ -45,18 +45,20 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
 
   const close = () => setOpen(false);
 
+  const [confirmCancel, setConfirmCancel] = useState(false);
+
   // Warn when cancelling
   const handleCancel = useCallback(() => {
     const changed =
       JSON.stringify(draft) !== JSON.stringify(props.initial || null);
-    if (changed) {
-      const confirm = window.confirm(
-        'Discard unsaved changes to this condition?'
-      );
-      if (!confirm) return;
-    }
-    close();
+    if (changed) setConfirmCancel(true);
+    else close();
   }, [draft, props.initial]);
+
+  const handleCancelConfirm = () => {
+    setConfirmCancel(false);
+    close();
+  };
 
   // Commit draft
   const handleSave = () => {
@@ -81,18 +83,37 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
         </DialogContent>
 
         <DialogActions>
-          <Stack direction="row" spacing={2}>
-            <Button variant="outlined" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              onClick={handleSave}
-              disabled={draft === null}
-            >
-              Save
-            </Button>
-          </Stack>
+          {confirmCancel && (
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                onClick={() => setConfirmCancel(false)}
+              >
+                Continue Editing
+              </Button>
+              <Button
+                color="warning"
+                variant="contained"
+                onClick={handleCancelConfirm}
+              >
+                Confirm discard changes
+              </Button>
+            </Stack>
+          )}
+          {!confirmCancel && (
+            <Stack direction="row" spacing={2}>
+              <Button variant="outlined" onClick={handleCancel}>
+                Cancel Edit
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSave}
+                disabled={draft === null}
+              >
+                Save Changes
+              </Button>
+            </Stack>
+          )}
         </DialogActions>
       </Dialog>
     </>
