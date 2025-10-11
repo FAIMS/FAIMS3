@@ -48,6 +48,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
+import {transformExtent} from 'ol/proj';
 
 export type MapAction = 'save' | 'close';
 
@@ -58,8 +59,7 @@ interface MapProps extends ButtonProps {
   projection?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   zoom: number;
-  center: [number, number];
-  fallbackCenter: boolean;
+  center?: [number, number];
   setFeatures: (features: object, action: MapAction) => void;
   setNoPermission: (flag: boolean) => void;
   isLocationSelected: boolean;
@@ -86,9 +86,6 @@ function MapWrapper(props: MapProps) {
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
-
-  // notifications
-  const notify = useNotification();
 
   // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
@@ -138,7 +135,13 @@ function MapWrapper(props: MapProps) {
         });
         vectorSource.addFeatures(parsedFeatures);
 
-        const extent = vectorSource.getExtent();
+        // pass the extent in the EPSG:4326 projection
+        const extent = transformExtent(
+          vectorSource.getExtent(),
+          theMap.getView().getProjection(),
+          'EPSG:4326'
+        );
+
         if (!extent.includes(Infinity)) setFeaturesExtent(extent);
       }
 
@@ -187,11 +190,6 @@ function MapWrapper(props: MapProps) {
 
   // open map
   const handleClickOpen = () => {
-    if (props.fallbackCenter) {
-      notify.showWarning(
-        'Using default map location - no current GPS or center.'
-      );
-    }
     setMapOpen(true);
     setTimeout(() => {
       if (map) {
