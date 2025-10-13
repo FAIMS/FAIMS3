@@ -24,19 +24,20 @@ export const csvFormatValue = (
         result[fieldName] = '';
         return result;
       }
-      const valueList = value.map(
-        // We actually don't need any specific information from the file
-        (_: FAIMSAttachmentReference) => {
+      const valueList = (value as FAIMSAttachmentReference[])
+        .filter(f => !!f.file_type)
+        .map((fInfo: FAIMSAttachmentReference) => {
           const filename = generateFilenameForAttachment({
             fieldId: fieldName,
             hrid,
             viewID: viewsetId,
+            // Pass in the file type
+            fileMimeType: fInfo.file_type,
             filenames,
           });
           filenames.push(filename);
           return filename;
-        }
-      );
+        });
       result[fieldName] = valueList.join(';');
     } else {
       result[fieldName] = value;
