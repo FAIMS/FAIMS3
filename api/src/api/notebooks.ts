@@ -49,15 +49,18 @@ import {
   slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
-import express, { Response } from 'express';
-import { jwtVerify, SignJWT } from 'jose';
-import { z } from 'zod';
-import { processRequest } from 'zod-express-middleware';
-import { DEVELOPER_MODE, KEY_SERVICE } from '../buildconfig';
-import { getDataDb } from '../couchdb';
-import { createManyRandomRecords } from '../couchdb/devtools';
-import { generateFilenameForAttachment, streamNotebookFilesAsZip } from '../couchdb/export/attachmentExport';
-import { streamNotebookRecordsAsCSV } from '../couchdb/export/csvExport';
+import express, {Response} from 'express';
+import {jwtVerify, SignJWT} from 'jose';
+import {z} from 'zod';
+import {processRequest} from 'zod-express-middleware';
+import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
+import {getDataDb} from '../couchdb';
+import {createManyRandomRecords} from '../couchdb/devtools';
+import {
+  generateFilenameForAttachment,
+  streamNotebookFilesAsZip,
+} from '../couchdb/export/attachmentExport';
+import {streamNotebookRecordsAsCSV} from '../couchdb/export/csvExport';
 import {
   streamNotebookRecordsAsGeoJSON,
   streamNotebookRecordsAsKML,
@@ -76,7 +79,7 @@ import {
   getUserProjectsDetailed,
   updateNotebook,
 } from '../couchdb/notebooks';
-import { getTemplate } from '../couchdb/templates';
+import {getTemplate} from '../couchdb/templates';
 import {
   getCouchUserFromEmailOrUserId,
   getUserInfoForProject,
@@ -90,7 +93,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
-import { mockTokenContentsForUser } from '../utils';
+import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used

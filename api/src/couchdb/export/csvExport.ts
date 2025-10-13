@@ -20,7 +20,6 @@ export const streamNotebookRecordsAsCSV = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
-  console.log('streaming notebook records as CSV', projectId, viewID);
   const dataDb = await getDataDb(projectId);
   const uiSpecification = await getProjectUIModel(projectId);
   const iterator = await notebookRecordIterator({
