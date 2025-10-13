@@ -29,7 +29,7 @@ export const streamNotebookRecordsAsCSV = async (
     viewID,
     // Don't use the attachment loader to download attachments - we don't need
     // the actual data, just the HRID of the record + fieldname is sufficient
-    includeAttachments: false
+    includeAttachments: false,
   });
   const fields = getNotebookFieldTypes({uiSpecification, viewID});
 
