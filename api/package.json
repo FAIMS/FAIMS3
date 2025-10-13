@@ -1,6 +1,6 @@
 {
   "name": "@faims3/api",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "private": true,
   "main": "build/src/index.js",
   "packageManager": "npm@10.7.0",
@@ -48,7 +48,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "node-cache": "^5.1.2",
-    "nodemailer": "^6.10.0",
+    "nodemailer": "^7.0.7",
     "nyc": "^15.1.0",
     "oauth": "0.10.0",
     "passport": "^0.7.0",
