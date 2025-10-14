@@ -19,6 +19,8 @@ const AWS_SM_CACHE_TIMEOUT_S = 300;
 export enum KeySource {
   /** Keys are stored in local files */
   FILE = 'FILE',
+  /** Keys are stored in the environment */
+  ENV = 'ENV',
   /** Keys are stored in AWS Secrets Manager */
   AWS_SM = 'AWS_SM',
 }
@@ -150,6 +152,68 @@ class FileKeyService extends BaseKeyService {
       alg: this.config.signingAlgorithm,
       kid: this.config.keyId,
     };
+  }
+}
+
+/**
+ * Environment-based key service implementation.
+ */
+class EnvKeyService extends BaseKeyService {
+  private signingKey?: SigningKey;
+
+  /**
+   * Creates an instance of EnvKeyService.
+   * @param config - The key configuration.
+   * @param fileServiceConfig - The file-specific configuration.
+   */
+  constructor(config: KeyConfig) {
+    super(config);
+    this.cacheSigningKey();
+  }
+
+  async getSigningKey(): Promise<SigningKey> {
+    if (!this.signingKey) {
+      await this.cacheSigningKey();
+    }
+    return this.signingKey!;
+  }
+
+  /**
+   * Retrieves the signing key from files.
+   * @returns A Promise resolving to the SigningKey.
+   * @throws Error if unable to read key files.
+   */
+  async cacheSigningKey() {
+    const privateKeyString = process.env.PRIVATE_SIGNING_KEY || '';
+    const publicKeyString = process.env.PUBLIC_SIGNING_KEY || '';
+    if (!privateKeyString || !publicKeyString) {
+      throw new Error(
+        'PRIVATE_SIGNING_KEY or PUBLIC_SIGNING_KEY environment variable not set but KEY_SOURCE is ENV'
+      );
+    }
+
+    try {
+      const private_key = await importPKCS8(
+        Buffer.from(privateKeyString, 'base64').toString('utf-8'),
+        this.config.signingAlgorithm
+      );
+      const public_key = await importSPKI(
+        Buffer.from(publicKeyString, 'base64').toString('utf-8'),
+        this.config.signingAlgorithm
+      );
+
+      this.signingKey = {
+        privateKey: private_key,
+        publicKey: public_key,
+        publicKeyString: publicKeyString,
+        instanceName: this.config.instanceName,
+        alg: this.config.signingAlgorithm,
+        kid: this.config.keyId,
+      };
+    } catch (e) {
+      console.error('Failed to decode keys from env', e);
+      throw e;
+    }
   }
 }
 
@@ -292,6 +356,8 @@ function createKeyService(keySource: KeySource = KeySource.FILE): IKeyService {
         publicKeyFile: public_key_path(),
         privateKeyFile: private_key_path(),
       });
+    case KeySource.ENV:
+      return new EnvKeyService(config);
     case KeySource.AWS_SM:
       if (!AWS_SECRET_KEY_ARN) {
         throw new Error(
