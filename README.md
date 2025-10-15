@@ -78,11 +78,28 @@ code ./app/.env
 
 ### Key Generation
 
+The system requires a key pair to sign the JWT used for communication with the CouchDB database.
+The private key must be known to the API server and is used to sign the JWT. The public key is shared
+with the CouchDB instance to verify JWTs.
+
+There are different ways for the API to get hold of the keys at runtime based on the KEY_SOURCE
+environment variable:
+
+- `KEY_SOURCE='FILE'` - look in the `keys` folder for the keys (default)
+- `KEY_SOURCE='ENV'` - look in the environment for `PRIVATE_SIGNING_KEY` and `PUBLIC_SIGNING_KEY` which
+  should be base64 encoded versions of the keys
+- `KEY_SOURCE='AWS_SM'` - use an AWS secret store, `AWS_SECRET_KEY_ARN` must be set to allow access
+
+For development the simplest way to work is with a file based source.  You can generate suitable keys
+by running:
+
 ```bash
 npm run generate-local-keys
 ```
 
-generates new key pair in the `keys` folder in the `api` folder and generates the `local.ini` file for couchdb that contains the public key and other information. This uses the script located at `./api/keymanagement/makeInstanceKeys.sh`.
+this generates new key pair in the `keys` folder in the `api` folder and generates the `local.ini` file
+for couchdb that contains the public key and other information. This uses the script
+located at `./api/keymanagement/makeInstanceKeys.sh`.
 
 ### Running with Docker
 
