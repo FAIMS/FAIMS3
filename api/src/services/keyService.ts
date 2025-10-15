@@ -164,7 +164,6 @@ class EnvKeyService extends BaseKeyService {
   /**
    * Creates an instance of EnvKeyService.
    * @param config - The key configuration.
-   * @param fileServiceConfig - The file-specific configuration.
    */
   constructor(config: KeyConfig) {
     super(config);
@@ -179,13 +178,11 @@ class EnvKeyService extends BaseKeyService {
   }
 
   /**
-   * Retrieves the signing key from files.
-   * @returns A Promise resolving to the SigningKey.
-   * @throws Error if unable to read key files.
+   * Retrieves the signing key from environment and stores it for later.
    */
   async cacheSigningKey() {
-    const privateKeyString = process.env.PRIVATE_SIGNING_KEY || '';
-    const publicKeyString = process.env.PUBLIC_SIGNING_KEY || '';
+    const privateKeyString = process.env.PRIVATE_SIGNING_KEY?.trim() || '';
+    const publicKeyString = process.env.PUBLIC_SIGNING_KEY?.trim() || '';
     if (!privateKeyString || !publicKeyString) {
       throw new Error(
         'PRIVATE_SIGNING_KEY or PUBLIC_SIGNING_KEY environment variable not set but KEY_SOURCE is ENV'
