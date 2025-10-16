@@ -57,6 +57,36 @@ This spins up three services
 - FAIMS3 app (/app) live reloading on http://localhost:3000
 - couchDB on http://localhost:5984/\_utils
 
+## DB Only local development
+
+If you would rather natively run the majority of services, and just use Docker for CouchDB, you can follow the below sequence.
+
+1. Local dev db only
+
+```
+./localdev.sh --db-only
+```
+
+2. Migrate the couch db
+
+```
+npm run migrate
+```
+
+3. Npm run dev (terminal 1) - and leave this running
+
+```
+npm run dev
+```
+
+The above runs
+
+- web: [http://localhost:3001](http://localhost:3001)
+- app: [http://localhost:3000](http://localhost:3000)
+- api: [http://localhost:8080](http://localhost:8080)
+
+With the user/pass from api/.env
+
 ## Initial step-by step setup
 
 Clone the repository and install node modules (note this only needs to be run from the parent folder)
@@ -90,7 +120,7 @@ environment variable:
   should be base64 encoded versions of the keys
 - `KEY_SOURCE='AWS_SM'` - use an AWS secret store, `AWS_SECRET_KEY_ARN` must be set to allow access
 
-For development the simplest way to work is with a file based source.  You can generate suitable keys
+For development the simplest way to work is with a file based source. You can generate suitable keys
 by running:
 
 ```bash
@@ -171,19 +201,19 @@ npm run load-notebooks
 
 ## IOS Notes
 
-To build the IOS app locally you need to be on MacOS.  A number of the build
-files for IOS are generated from configuration variables in the `app/.env` 
-file.   These must be set for the build to work, in particular the
+To build the IOS app locally you need to be on MacOS. A number of the build
+files for IOS are generated from configuration variables in the `app/.env`
+file. These must be set for the build to work, in particular the
 development team might need to be set to a valid team id for the build
-to work.  
+to work.
 
-Before building the IOS app run 
+Before building the IOS app run
 
 ```bash
 npm run configIOSbuild
 ```
 
-in the `app` directory.  This modifies two build files.   See the notes on
+in the `app` directory. This modifies two build files. See the notes on
 [IOS Deployment](docs/developer/docs/source/markdown/IOS-Deployment.md) for
 more details. That documents the CI workflows but some of it applies for
 local builds.

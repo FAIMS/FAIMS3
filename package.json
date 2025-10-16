@@ -36,6 +36,7 @@
     "load-templates": "npm run load-templates --workspace=api",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
     "build-web": "turbo build --filter web",
+    "dev": "turbo dev --filter=@faims3/app --filter=web --filter=@faims3/api --filter=@faims3/data-model --parallel",
     "lint": "turbo lint",
     "clean": "turbo clean",
     "build": "turbo build"

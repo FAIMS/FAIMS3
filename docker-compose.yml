@@ -2,6 +2,9 @@ services:
   api:
     env_file:
       - ./api/.env
+    environment: 
+      # Override this so that the API refers to the internal DNS name
+      - COUCHDB_INTERNAL_URL="http://couchdb:5984/"
     build:
       target: api
     ports:
