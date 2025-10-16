@@ -264,7 +264,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
         currentValues,
         this.state.lastProcessedValues
       );
-
       if (!valuesUnchanged) {
         const changed = recomputeDerivedFields({
           context: this.state.recordContext,
@@ -621,6 +620,20 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
             revisionId: revision_id,
           })) ?? undefined)
         : undefined;
+
+      // if there is no existing revision then this is either a brand new
+      // record or an existing saved draft
+      if (!revision_id && this.props.draft_id) {
+        // if it is an existing draft, we want to pull the data from the draft
+        // db to populate the form, let's force a fetch of the draft data
+        await this.draftState._fetchData({
+          type: this.state.type_cached!,
+          field_types: getReturnedTypesForViewSet(
+            this.props.ui_specification,
+            this.getViewsetName()
+          ),
+        });
+      }
 
       // data and annotations or nothing
       const database_data = fromdb ? fromdb.data : {};
