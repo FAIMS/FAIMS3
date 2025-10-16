@@ -1,20 +1,30 @@
 #!/bin/bash -e
-# Takes down any running docker compose in this project, then prunes volumes,
-# and starts again with new volumes
-# Usage: ./script.sh [--db-only]
+# Takes down any running docker compose in this project, optionally prunes volumes,
+# and starts again
+# Usage: ./script.sh [--all] [--build] [--clear-db]
 
-DB_ONLY=false
+ALL_SERVICES=false
+BUILD_FLAG=""
+CLEAR_DB=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
-  --db-only)
-    DB_ONLY=true
+  --all)
+    ALL_SERVICES=true
+    shift
+    ;;
+  --build)
+    BUILD_FLAG="--build"
+    shift
+    ;;
+  --clear-db)
+    CLEAR_DB=true
     shift
     ;;
   *)
     echo "Unknown option: $1"
-    echo "Usage: $0 [--db-only]"
+    echo "Usage: $0 [--all] [--build] [--clear-db]"
     exit 1
     ;;
   esac
@@ -99,14 +109,18 @@ manage_docker_volumes() {
   echo "Stopping existing Docker containers..."
   ${docker_prefix} down
 
-  echo "Pruning volumes related to this Docker Compose setup..."
-  docker volume prune -f --filter "label=com.docker.compose.project=$(${docker_prefix} config --services)"
+  if [ "$CLEAR_DB" = true ]; then
+    echo "Pruning volumes related to this Docker Compose setup..."
+    docker volume prune -f --filter "label=com.docker.compose.project=$(${docker_prefix} config --services)"
+  else
+    echo "Skipping volume pruning (use --clear-db to clear volumes)"
+  fi
 
   echo "Starting Docker containers..."
-  if [ "$DB_ONLY" = true ]; then
-    ${docker_prefix} up --build -d couchdb
+  if [ "$ALL_SERVICES" = true ]; then
+    ${docker_prefix} up ${BUILD_FLAG} -d
   else
-    ${docker_prefix} up --build -d
+    ${docker_prefix} up ${BUILD_FLAG} -d couchdb
   fi
 }
 
@@ -201,6 +215,16 @@ echo "> cp ./.env.dist ./.env"
 cp ./.env.dist ./.env
 echo "> cp ./api/.env.dist ./api/.env"
 cp ./api/.env.dist ./api/.env
+
+# Override API configuration for Docker environment (only when running all services)
+# We need this since docker needs 8000 internal + couchdb dns (rather than localhost)
+if [ "$ALL_SERVICES" = true ]; then
+  echo "" >>./api/.env
+  echo "# Docker environment overrides" >>./api/.env
+  echo "CONDUCTOR_INTERNAL_PORT=8000" >>./api/.env
+  echo "COUCHDB_INTERNAL_URL=http://couchdb:5984" >>./api/.env
+fi
+
 echo "> cp ./app/.env.dist ./app/.env"
 cp ./app/.env.dist ./app/.env
 
@@ -212,7 +236,7 @@ npm run generate-local-keys
 echo "Starting docker service..."
 manage_docker_volumes
 
-if [ "$DB_ONLY" = true ]; then
+if [ "$ALL_SERVICES" = false ]; then
   echo "Waiting for CouchDB to become available..."
   if wait_for_couchdb; then
     echo "CouchDB is ready!"
@@ -223,7 +247,7 @@ if [ "$DB_ONLY" = true ]; then
     echo "CouchDB Admin UI: http://localhost:${COUCHDB_PORT}/_utils"
     echo "=========================================="
     echo ""
-    echo "Note: Database has not been initialized. To initialize and start full services, run without --db-only flag."
+    echo "Note: Only CouchDB is running. To start all services, run with --all flag."
   else
     echo "Failed to connect to CouchDB. Exiting."
     exit 1

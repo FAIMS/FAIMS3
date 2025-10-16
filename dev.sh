@@ -1,3 +1,3 @@
-./localdev.sh --db-only
+./localdev.sh
 npm run migrate
 npm run dev
