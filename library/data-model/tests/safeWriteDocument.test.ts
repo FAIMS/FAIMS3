@@ -58,7 +58,7 @@ async function safeWriteDocument<T extends {}>({
       } else {
         // writeOnClash is false, throw error
         throw Error(
-          `Failed to update due to a clash, and write on clash set to false.`
+          'Failed to update due to a clash, and write on clash set to false.'
         );
       }
     } else {

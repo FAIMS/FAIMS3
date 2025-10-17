@@ -63,7 +63,6 @@ import {
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
-import {meta} from '@typescript-eslint/parser';
 
 /**
  * Gets project IDs by teamID (who owns it)

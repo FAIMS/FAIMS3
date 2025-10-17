@@ -128,7 +128,7 @@ export async function safeWriteDocument<T extends {}>({
         throw Error(`Failed to update record after ${maxRetries} retries`);
       } else {
         throw Error(
-          `Failed to update due to a clash, and write on clash set to false.`
+          'Failed to update due to a clash, and write on clash set to false.'
         );
       }
     } else {
