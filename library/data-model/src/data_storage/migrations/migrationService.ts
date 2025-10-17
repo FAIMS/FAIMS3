@@ -1,10 +1,4 @@
-import {
-  DATABASE_TYPE,
-  MigrationDetails,
-  MigrationFunc,
-  DatabaseType,
-  IS_TESTING,
-} from './types';
+import {DatabaseInterface} from '../../types';
 import {
   MigrationLog,
   MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
@@ -13,7 +7,13 @@ import {
   MigrationsDBFields,
 } from '../migrationsDB';
 import {DB_MIGRATIONS, DB_TARGET_VERSIONS} from './migrations';
-import {DatabaseInterface} from '../../types';
+import {
+  DATABASE_TYPE,
+  DatabaseType,
+  IS_TESTING,
+  MigrationDetails,
+  MigrationFunc,
+} from './types';
 
 function generateErrorLog({
   reason,

@@ -12,6 +12,7 @@ import {
   EmailCodeFields,
   ExistingPeopleDBDocument,
   GetEmailCodeIndex,
+  safeWriteDocument,
 } from '@faims3/data-model';
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
@@ -275,7 +276,8 @@ export const markCodeAsUsed = async (
   codeDoc.used = true;
 
   const authDB = getAuthDB();
-  await authDB.put(codeDoc);
+  // Update safely
+  await safeWriteDocument({db: authDB, data: codeDoc, writeOnClash: true});
   return codeDoc;
 };
 

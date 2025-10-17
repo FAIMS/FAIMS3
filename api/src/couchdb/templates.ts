@@ -8,6 +8,7 @@ import {
   PostCreateTemplateInput,
   ProjectID,
   PutUpdateTemplateInput,
+  safeWriteDocument,
   slugify,
   TemplateDBFields,
   TemplateDocument,
@@ -250,7 +251,7 @@ export const updateExistingTemplate = async (
     name: name,
   } satisfies TemplateDocument;
   try {
-    await templateDb.put(newDocument);
+    await safeWriteDocument({db: templateDb, data: newDocument});
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to update an existing template.'

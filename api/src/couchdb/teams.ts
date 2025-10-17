@@ -1,5 +1,6 @@
 import {
   ExistingTeamsDBDocument,
+  safeWriteDocument,
   slugify,
   TeamsDBDocument,
   TeamsDBFields,
@@ -130,7 +131,7 @@ export const updateTeam = async (
 
   // Update the document
   try {
-    await teamsDb.put(updatedDoc);
+    await safeWriteDocument({db: teamsDb, data: updatedDoc});
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to update an existing team.'

@@ -12,6 +12,7 @@ import {
   GetRefreshTokenIndex,
   RefreshRecordExistingDocument,
   RefreshRecordFields,
+  safeWriteDocument,
 } from '@faims3/data-model';
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
@@ -339,7 +340,7 @@ export const invalidateToken = async (
 
   // put back with enabled as false
   try {
-    await authDB.put(existingTokenDoc);
+    await safeWriteDocument({db: authDB, data: existingTokenDoc});
   } catch (e) {
     throw new InternalSystemError(
       'Failed to update existing auth DB refresh token record during invalidation. Error: ' +

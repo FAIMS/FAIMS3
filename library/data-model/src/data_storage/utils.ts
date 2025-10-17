@@ -61,43 +61,80 @@ export type InitialisationContent<Document extends {} = any> = {
 };
 
 /**
- * Gets a record, updates the _rev, then puts or gracefully returns if
- * writeOnClash is false.
- * @param db The database to upsert document into
- * @param data The document to replace
- * @param writeOnClash If the document already exists by ID, should it
- * overwrite?
- * @returns The updated document or document that was found if existing and
- * writeOnClash = false
+ * Safely writes a document to the database with automatic conflict resolution.
+ *
+ * This function attempts to write a document to the database. If a conflict (409 error)
+ * occurs, it will retry by fetching the latest revision and attempting the write again.
+ *
+ * @param db - The database to write the document into
+ * @param data - The document to write (must include _id, optionally includes _rev)
+ * @param writeOnClash - If true, resolves conflicts by retrying with the latest _rev.
+ *                       If false, throws an error when a conflict is detected.
+ *                       Default: true
+ * @param maxRetries - Maximum number of retry attempts when conflicts occur.
+ *                     Only applies when writeOnClash is true.
+ *                     Default: 5
+ *
+ * @returns A Promise that resolves to the PouchDB response containing the new revision
+ *
+ * @throws Error when:
+ *   - A conflict occurs and writeOnClash is false
+ *   - Max retry attempts are exceeded during conflict resolution
+ *   - A non-409 database error occurs
+ *   - The document cannot be retrieved during conflict resolution
  */
 export async function safeWriteDocument<T extends {}>({
   db,
   data,
   writeOnClash = true,
+  maxRetries = 5,
 }: {
   db: DatabaseInterface<T>;
   data: PouchDB.Core.Document<T>;
   writeOnClash?: boolean;
+  maxRetries?: number;
 }) {
   // Try and put directly - if no clash or _rev already provided, all good
   try {
-    await db.put(data);
+    return await db.put(data);
   } catch (err: any) {
     // if 409 - that's conflict - get record then try again
     if (err.status === 409) {
       if (writeOnClash) {
-        try {
-          const existingRecord = await db.get<T>(data._id);
-          // Update _rev and otherwise put the original record
-          await db.put({...data, _rev: existingRecord._rev});
-        } catch (err) {
-          throw Error('Failed to update record in conflict. Error: ' + err);
+        let attempts = 0;
+
+        while (attempts < maxRetries) {
+          try {
+            const existingRecord = await db.get<T>(data._id);
+            // Update _rev and otherwise put the original record
+            return await db.put({...data, _rev: existingRecord._rev});
+          } catch (retryErr: any) {
+            attempts++;
+
+            // If it's another 409 and we haven't hit max retries, continue loop
+            if (retryErr.status === 409 && attempts < maxRetries) {
+              continue;
+            }
+
+            // Either hit max retries or encountered a different error
+            throw Error(
+              `Failed to update record after ${attempts} attempt(s). ` +
+                `Error: ${retryErr}`
+            );
+          }
         }
+
+        // This shouldn't be reached, but just in case
+        throw Error(`Failed to update record after ${maxRetries} retries`);
+      } else {
+        throw Error(
+          'Failed to update due to a clash, and write on clash set to false.'
+        );
       }
     } else {
       // Something else happened - unsure and throw
       console.log(err);
-      throw Error('Failed to update record - non 409 error' + err);
+      throw Error('Failed to update record - non 409 error: ' + err);
     }
   }
 }
