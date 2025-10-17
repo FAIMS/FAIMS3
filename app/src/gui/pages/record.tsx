@@ -98,7 +98,7 @@ export default function Record() {
     serverId,
     recordId: recordId,
     revisionId: revisionId,
-    draftId: draftId,
+    draftId: rawDraftId,
   } = useParams<{
     serverId: string;
     projectId: ProjectID;
@@ -161,6 +161,7 @@ export default function Record() {
     ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
   const [backLink, setBackLink] = useState<string>(projectLink);
   const [backIsParent, setBackIsParent] = useState(false);
+  const [draftId, setDraftId] = useState<string | undefined>(rawDraftId);
 
   // if there are no conflicts and the tab value is 4 then default back to tab 1
   useEffect(() => {
@@ -670,6 +671,7 @@ export default function Record() {
                                 revision_id={updatedRevisionId!}
                                 ui_specification={uiSpec}
                                 draft_id={draftId}
+                                setDraftId={setDraftId}
                                 conflictfields={conflictfields}
                                 handleChangeTab={handleChange}
                                 isSyncing={isSyncing.toString()}
@@ -702,6 +704,8 @@ export default function Record() {
                           revision_id={updatedRevisionId!}
                           ui_specification={uiSpec}
                           draft_id={draftId}
+
+                          setDraftId={setDraftId}
                           conflictfields={conflictfields}
                           handleChangeTab={handleChange}
                           isDraftSaving={isDraftSaving}

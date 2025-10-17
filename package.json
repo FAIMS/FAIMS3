@@ -32,7 +32,7 @@
     "watch-api": "npm run local --workspace=api",
     "web-dev": "npm run dev --workspace=web",
     "start-designer": "npm run start --workspace=designer",
-    "migrate": "npm run migrate --workspace=api",
+    "migrate": "npm run migrate --workspace=api -- --keys",
     "load-projects": "npm run load-projects --workspace=api",
     "load-templates": "npm run load-templates --workspace=api",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",

@@ -118,6 +118,7 @@ type RecordFormProps = ConnectedProps<typeof connector> & {
   ViewName?: string | null;
   draftLastSaved?: null | Date;
   mq_above_md?: boolean;
+  setDraftId: (draftId: string | undefined) => void;
 } & (
     | {
         // When editing existing record, we require the caller to know its revision
@@ -376,6 +377,8 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
   newDraftListener(draft_id: string) {
     this.setState({draft_created: draft_id});
+    // Update the parent state to ensure if we are not tracking draft id with navigational cues, we don't lose the fact we are part of a draft
+    this.props.setDraftId(draft_id)
   }
 
   // callback function for draftStorage that will be called with:
