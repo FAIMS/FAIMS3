@@ -16,6 +16,7 @@
     "prestart": "npm run-script compile",
     "start": "node --expose-gc --max-old-space-size=4096  .",
     "start:prod": "node --expose-gc --max-old-space-size=4096 build/src/index.js",
+    "dev": "npm run local",
     "local": "env-cmd nodemon --ignore build --ext ts --exec 'tsc --incremental && node --expose-gc --max-old-space-size=4096 .'",
     "load-projects": "env-cmd ts-node src/scripts/loadProjects.ts ./notebooks/*.json",
     "load-templates": "env-cmd ts-node src/scripts/loadTemplates.ts ./notebooks/*.json",

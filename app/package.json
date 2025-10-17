@@ -23,6 +23,7 @@
     "prestart": "npm run runconfig",
     "start": "vite",
     "force-start": "vite --force",
+    "dev" : "npm run start",
     "prebuild": "npm run runconfig",
     "build": "tsc && vite build",
     "pretest": "npm run compile",

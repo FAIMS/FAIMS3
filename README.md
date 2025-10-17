@@ -16,46 +16,90 @@ The repository contains the following:
 
 ## Local development quick start
 
-Ensure you have uuid installed e.g.
+### Prerequisites
+
+Ensure you have `uuidgen` installed:
 
 ```bash
 sudo apt-get install uuid
 ```
 
-Also check you have a modern npm installed, ideally v10.x.y and node v20+.
+You'll need Node.js 22 and npm. We strongly recommend using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager).
 
-We recommend using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager). To set this up
-
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-```
-
-You may then need to update your bash profile, for example by either starting another terminal session or running
+Install and activate Node v22:
 
 ```bash
-source ~/.bashrc
+nvm install 22
+nvm use 22
 ```
 
-You can then setup Node v20 and activate it
+You will also need Docker and Docker Compose installed.
+
+### Starting all services
+
+Run the script to get all services running locally:
 
 ```bash
-nvm install 20
-nvm use 20
+./localdev.sh --all
 ```
 
-You will also need docker and docker compose installed rootless.
+This spins up four services:
 
-Now run the script to get a docker service running locally.
+- Conductor API (`/api`) live reloading on http://localhost:8080
+- FAIMS3 app (`/app`) live reloading on http://localhost:3000
+- Web app (`/web`) live reloading on http://localhost:3001
+- CouchDB on http://localhost:5984/\_utils
+
+### Additional options
+
+- **Rebuild containers**: Use `--build` flag to rebuild Docker images
+
+  ```bash
+  ./localdev.sh --all --build
+  ```
+
+- **Clear database**: Use `--clear-db` flag to prune volumes and start fresh
+  ```bash
+  ./localdev.sh --all --clear-db
+  ```
+
+## CouchDB-only local development (recommended for live-reloading)
+
+If you prefer to run the application services natively and only use Docker for CouchDB:
+
+1. Start CouchDB only (default behavior without `--all` flag):
 
 ```bash
 ./localdev.sh
 ```
 
-This spins up three services
+This starts CouchDB on http://localhost:5984/\_utils
 
-- conductor API (/api) live reloading on http://localhost:8080
-- FAIMS3 app (/app) live reloading on http://localhost:3000
-- couchDB on http://localhost:5984/\_utils
+2. Migrate the CouchDB:
+
+```bash
+npm run migrate
+```
+
+3. Run development services natively (in a separate terminal):
+
+```bash
+npm run dev
+```
+
+This runs:
+
+- web: http://localhost:3001
+- app: http://localhost:3000
+- api: http://localhost:8080
+
+Use the user/password from `api/.env` to login.
+
+These three commands are bundled into `dev.sh` i.e.
+
+```
+./dev.sh
+```
 
 ## Initial step-by step setup
 
@@ -90,7 +134,7 @@ environment variable:
   should be base64 encoded versions of the keys
 - `KEY_SOURCE='AWS_SM'` - use an AWS secret store, `AWS_SECRET_KEY_ARN` must be set to allow access
 
-For development the simplest way to work is with a file based source.  You can generate suitable keys
+For development the simplest way to work is with a file based source. You can generate suitable keys
 by running:
 
 ```bash
@@ -171,19 +215,19 @@ npm run load-notebooks
 
 ## IOS Notes
 
-To build the IOS app locally you need to be on MacOS.  A number of the build
-files for IOS are generated from configuration variables in the `app/.env` 
-file.   These must be set for the build to work, in particular the
+To build the IOS app locally you need to be on MacOS. A number of the build
+files for IOS are generated from configuration variables in the `app/.env`
+file. These must be set for the build to work, in particular the
 development team might need to be set to a valid team id for the build
-to work.  
+to work.
 
-Before building the IOS app run 
+Before building the IOS app run
 
 ```bash
 npm run configIOSbuild
 ```
 
-in the `app` directory.  This modifies two build files.   See the notes on
+in the `app` directory. This modifies two build files. See the notes on
 [IOS Deployment](docs/developer/docs/source/markdown/IOS-Deployment.md) for
 more details. That documents the CI workflows but some of it applies for
 local builds.
