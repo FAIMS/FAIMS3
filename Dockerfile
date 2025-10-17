@@ -9,7 +9,7 @@ COPY turbo.json .
 # monorepo package* which are relevant here
 COPY api/package.json api/package-lock.json ./api/
 COPY app/package.json ./app/
-COPY web/package.json web/package-lock.json ./web/
+COPY web/package.json ./web/
 COPY library/data-model/package.json library/data-model/package-lock.json ./library/data-model/
 
 RUN --mount=type=cache,target=/usr/src/.npm \
