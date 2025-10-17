@@ -378,7 +378,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
   newDraftListener(draft_id: string) {
     this.setState({draft_created: draft_id});
     // Update the parent state to ensure if we are not tracking draft id with navigational cues, we don't lose the fact we are part of a draft
-    this.props.setDraftId(draft_id)
+    this.props.setDraftId(draft_id);
   }
 
   // callback function for draftStorage that will be called with:

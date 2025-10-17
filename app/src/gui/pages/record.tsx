@@ -704,7 +704,6 @@ export default function Record() {
                           revision_id={updatedRevisionId!}
                           ui_specification={uiSpec}
                           draft_id={draftId}
-
                           setDraftId={setDraftId}
                           conflictfields={conflictfields}
                           handleChangeTab={handleChange}
