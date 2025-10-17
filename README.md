@@ -43,10 +43,11 @@ Run the script to get all services running locally:
 ./localdev.sh --all
 ```
 
-This spins up three services:
+This spins up four services:
 
 - Conductor API (`/api`) live reloading on http://localhost:8080
 - FAIMS3 app (`/app`) live reloading on http://localhost:3000
+- Web app (`/web`) live reloading on http://localhost:3001
 - CouchDB on http://localhost:5984/\_utils
 
 ### Additional options

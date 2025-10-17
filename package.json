@@ -30,6 +30,7 @@
     "start-web": "npm start --workspace=web",
     "force-start-app": "npm force-start --workspace=app",
     "watch-api": "npm run local --workspace=api",
+    "web-dev": "npm run dev --workspace=web",
     "start-designer": "npm run start --workspace=designer",
     "migrate": "npm run migrate --workspace=api",
     "load-projects": "npm run load-projects --workspace=api",

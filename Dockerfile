@@ -35,3 +35,10 @@ WORKDIR /usr/src
 COPY --from=builder /usr/src .
 EXPOSE 3000
 CMD ["npm", "run", "force-start-app"]
+
+# Web service
+FROM node:20 AS web
+WORKDIR /usr/src
+COPY --from=builder /usr/src .
+EXPOSE 3001
+CMD ["npm", "run", "watch-api"]

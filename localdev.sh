@@ -215,6 +215,10 @@ echo "> cp ./.env.dist ./.env"
 cp ./.env.dist ./.env
 echo "> cp ./api/.env.dist ./api/.env"
 cp ./api/.env.dist ./api/.env
+echo "> cp ./web/.env.dist ./web/.env"
+cp ./web/.env.dist ./web/.env
+echo "> cp ./app/.env.dist ./app/.env"
+cp ./app/.env.dist ./app/.env
 
 # Override API configuration for Docker environment (only when running all services)
 # We need this since docker needs 8000 internal + couchdb dns (rather than localhost)
@@ -225,8 +229,6 @@ if [ "$ALL_SERVICES" = true ]; then
   echo "COUCHDB_INTERNAL_URL=http://couchdb:5984" >>./api/.env
 fi
 
-echo "> cp ./app/.env.dist ./app/.env"
-cp ./app/.env.dist ./app/.env
 
 # create local keys
 echo "Generating local keys"
