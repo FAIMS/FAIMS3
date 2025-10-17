@@ -149,7 +149,8 @@ export const updateLongLivedToken = async (
     // Always update the timestamp
     tokenDoc.updatedTimestampMs = Date.now();
 
-    await authDB.put(tokenDoc);
+    // Update doc
+    await safeWriteDocument({db: authDB, data: tokenDoc});
     return tokenDoc;
   } catch (error) {
     if ((error as any).status === 404) {
@@ -180,8 +181,7 @@ export const revokeLongLivedToken = async (
 
     tokenDoc.enabled = false;
     tokenDoc.updatedTimestampMs = Date.now();
-
-    await authDB.put(tokenDoc);
+    await safeWriteDocument({db: authDB, data: tokenDoc});
     return tokenDoc;
   } catch (error) {
     if ((error as any).status === 404) {

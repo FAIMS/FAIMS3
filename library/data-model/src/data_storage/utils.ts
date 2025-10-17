@@ -67,6 +67,7 @@ export type InitialisationContent<Document extends {} = any> = {
  * @param data The document to replace
  * @param writeOnClash If the document already exists by ID, should it
  * overwrite?
+ * @param maxRetries Maximum number of retry attempts on conflict (default: 5)
  * @returns The updated document or document that was found if existing and
  * writeOnClash = false
  */
@@ -74,30 +75,54 @@ export async function safeWriteDocument<T extends {}>({
   db,
   data,
   writeOnClash = true,
+  maxRetries = 5,
 }: {
   db: DatabaseInterface<T>;
   data: PouchDB.Core.Document<T>;
   writeOnClash?: boolean;
+  maxRetries?: number;
 }) {
   // Try and put directly - if no clash or _rev already provided, all good
   try {
-    await db.put(data);
+    return await db.put(data);
   } catch (err: any) {
     // if 409 - that's conflict - get record then try again
     if (err.status === 409) {
       if (writeOnClash) {
-        try {
-          const existingRecord = await db.get<T>(data._id);
-          // Update _rev and otherwise put the original record
-          await db.put({...data, _rev: existingRecord._rev});
-        } catch (err) {
-          throw Error('Failed to update record in conflict. Error: ' + err);
+        let attempts = 0;
+
+        while (attempts < maxRetries) {
+          try {
+            const existingRecord = await db.get<T>(data._id);
+            // Update _rev and otherwise put the original record
+            return await db.put({...data, _rev: existingRecord._rev});
+          } catch (retryErr: any) {
+            attempts++;
+
+            // If it's another 409 and we haven't hit max retries, continue loop
+            if (retryErr.status === 409 && attempts < maxRetries) {
+              continue;
+            }
+
+            // Either hit max retries or encountered a different error
+            throw Error(
+              `Failed to update record after ${attempts} attempt(s). ` +
+                `Error: ${retryErr}`
+            );
+          }
         }
+
+        // This shouldn't be reached, but just in case
+        throw Error(`Failed to update record after ${maxRetries} retries`);
+      } else {
+        throw Error(
+          `Failed to update due to a clash, and write on clash set to false.`
+        );
       }
     } else {
       // Something else happened - unsure and throw
       console.log(err);
-      throw Error('Failed to update record - non 409 error' + err);
+      throw Error('Failed to update record - non 409 error: ' + err);
     }
   }
 }

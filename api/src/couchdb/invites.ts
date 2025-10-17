@@ -27,6 +27,7 @@ import {
   Role,
   addProjectRole,
   addTeamRole,
+  safeWriteDocument,
   writeNewDocument,
 } from '@faims3/data-model';
 import {getInvitesDB} from '.';
@@ -231,7 +232,10 @@ export async function consumeInvite({
 
   // Save the updated invite
   const inviteDb = getInvitesDB();
-  const result = await inviteDb.put(updatedInvite);
+  const result = await safeWriteDocument({
+    db: inviteDb,
+    data: updatedInvite,
+  });
 
   // Now grant the associated role
   if (invite.resourceType === Resource.TEAM) {
