@@ -287,5 +287,6 @@ EOF
   echo "Services running:"
   echo "API (live reloading /api): http://localhost:8080"
   echo "App (live reloading /app): http://localhost:3000"
+  echo "Web (live reloading /web): http://localhost:3001"
   echo "CouchDB: http://localhost:5984/_utils"
 fi
