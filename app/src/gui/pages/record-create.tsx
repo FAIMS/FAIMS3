@@ -241,6 +241,8 @@ function DraftRecordEdit(props: DraftRecordEditProps) {
               type={type_name}
               ui_specification={uiSpec}
               draft_id={draft_id}
+              // This will never trigger because we already know the draft ID
+              setDraftId={() => {}}
               handleSetIsDraftSaving={setIsDraftSaving}
               handleSetDraftLastSaved={setDraftLastSaved}
               handleSetDraftError={setDraftError}

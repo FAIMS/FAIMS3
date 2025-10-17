@@ -23,23 +23,23 @@
  *   This is used from the Record form component,
  *   and relies on the sync/draft-storage.ts file for actual Databases access
  */
+import {
+  Annotations,
+  FAIMSTypeName,
+  ProjectID,
+  RecordID,
+  Relationship,
+  RevisionID,
+} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
 import {FormikValues} from 'formik';
+import {logError} from '../logging';
 import {
   deleteStagedData,
   getStagedData,
   newStagedData,
   setStagedData,
 } from './draft-storage';
-import {
-  ProjectID,
-  RecordID,
-  RevisionID,
-  Annotations,
-  FAIMSTypeName,
-  Relationship,
-} from '@faims3/data-model';
-import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 // how frequently do we trigger _saveData for the draft: 10 seconds
@@ -296,7 +296,8 @@ class RecordDraftState {
         return;
       }
 
-      // If anything changed, we create the draft:
+      // At this point, we are saying that a value has been edited in the form
+      // If anything changed, we create the draft: NOTE this seems important
       if (this.data.state === 'unedited') {
         this.props.dispatchSetEdited(true);
         this.data = {

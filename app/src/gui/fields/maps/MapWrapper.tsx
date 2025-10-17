@@ -40,15 +40,14 @@ import GeoJSON from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
+import {transformExtent} from 'ol/proj';
 import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
-import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
-import {transformExtent} from 'ol/proj';
 
 export type MapAction = 'save' | 'close';
 
