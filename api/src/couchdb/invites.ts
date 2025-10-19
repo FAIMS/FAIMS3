@@ -250,7 +250,8 @@ export async function consumeInvite({
 
   return {
     ...updatedInvite,
-    _rev: result.rev,
+    // This will be defined when writeOnClash = true (as default)
+    _rev: result?.rev!,
   };
 }
 

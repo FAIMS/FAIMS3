@@ -5,69 +5,10 @@
 
 import PouchDB from 'pouchdb';
 import PouchDBMemoryAdapter from 'pouchdb-adapter-memory';
-import {DatabaseInterface} from '../src';
+import {DatabaseInterface, safeWriteDocument} from '../src';
 
 // Register memory adapter
 PouchDB.plugin(PouchDBMemoryAdapter);
-
-// Import or define the safeWriteDocument function
-// (Adjust the import path as needed)
-async function safeWriteDocument<T extends {}>({
-  db,
-  data,
-  writeOnClash = true,
-  maxRetries = 5,
-}: {
-  db: DatabaseInterface<T>;
-  data: PouchDB.Core.Document<T>;
-  writeOnClash?: boolean;
-  maxRetries?: number;
-}) {
-  // Try and put directly - if no clash or _rev already provided, all good
-  try {
-    return await db.put(data);
-  } catch (err: any) {
-    // if 409 - that's conflict - get record then try again
-    if (err.status === 409) {
-      if (writeOnClash) {
-        let attempts = 0;
-
-        while (attempts < maxRetries) {
-          try {
-            const existingRecord = await db.get<T>(data._id);
-            // Update _rev and otherwise put the original record
-            return await db.put({...data, _rev: existingRecord._rev});
-          } catch (retryErr: any) {
-            attempts++;
-
-            // If it's another 409 and we haven't hit max retries, continue loop
-            if (retryErr.status === 409 && attempts < maxRetries) {
-              continue;
-            }
-
-            // Either hit max retries or encountered a different error
-            throw Error(
-              `Failed to update record after ${attempts} attempt(s). ` +
-                `Error: ${retryErr}`
-            );
-          }
-        }
-
-        // This shouldn't be reached, but just in case
-        throw Error(`Failed to update record after ${maxRetries} retries`);
-      } else {
-        // writeOnClash is false, throw error
-        throw Error(
-          'Failed to update due to a clash, and write on clash set to false.'
-        );
-      }
-    } else {
-      // Something else happened - unsure and throw
-      console.log(err);
-      throw Error('Failed to update record - non 409 error: ' + err);
-    }
-  }
-}
 
 describe('safeWriteDocument', () => {
   let testDb: DatabaseInterface;
@@ -93,9 +34,9 @@ describe('safeWriteDocument', () => {
 
       const result = await safeWriteDocument({db: testDb, data: doc});
 
-      expect(result.ok).toBe(true);
-      expect(result.id).toBe('doc1');
-      expect(result.rev).toBeDefined();
+      expect(result?.ok).toBe(true);
+      expect(result?.id).toBe('doc1');
+      expect(result?.rev).toBeDefined();
 
       // Verify the document was actually written
       const savedDoc = await testDb.get('doc1');
@@ -121,9 +62,9 @@ describe('safeWriteDocument', () => {
 
       const result = await safeWriteDocument({db: testDb, data: updatedDoc});
 
-      expect(result.ok).toBe(true);
-      expect(result.id).toBe('doc2');
-      expect(result.rev).not.toBe(initialResult.rev); // Rev should have changed
+      expect(result?.ok).toBe(true);
+      expect(result?.id).toBe('doc2');
+      expect(result?.rev).not.toBe(initialResult.rev); // Rev should have changed
 
       // Verify the update
       const savedDoc = await testDb.get('doc2');
@@ -153,8 +94,8 @@ describe('safeWriteDocument', () => {
         writeOnClash: true,
       });
 
-      expect(result.ok).toBe(true);
-      expect(result.id).toBe('doc3');
+      expect(result?.ok).toBe(true);
+      expect(result?.id).toBe('doc3');
 
       // Verify the document was updated with the new data
       const savedDoc = await testDb.get('doc3');
@@ -207,7 +148,7 @@ describe('safeWriteDocument', () => {
         maxRetries: 5,
       });
 
-      expect(result.ok).toBe(true);
+      expect(result?.ok).toBe(true);
       expect(conflictCount).toBe(2); // Should have had 2 conflicts before succeeding
 
       // Restore original functions
@@ -285,22 +226,19 @@ describe('safeWriteDocument', () => {
         }
       });
 
-      const conflictingDoc = {
+      const doc = {
         _id: 'doc6',
-        data: 'custom retry test',
+        data: 'updated',
       };
 
-      try {
-        await safeWriteDocument({
+      await expect(
+        safeWriteDocument({
           db: testDb,
-          data: conflictingDoc,
+          data: doc,
           writeOnClash: true,
-          maxRetries: 2, // Custom retry limit
-        });
-      } catch (error: any) {
-        expect(error.message).toContain('Failed to update record after 2');
-        expect(attemptCount).toBe(3); // Initial attempt + 2 retries
-      }
+          maxRetries: 2,
+        })
+      ).rejects.toThrow(/Failed to update record after 2 attempt/);
 
       // Restore original function
       testDb.put = originalPut;
@@ -308,31 +246,29 @@ describe('safeWriteDocument', () => {
   });
 
   describe('Conflict handling with writeOnClash=false', () => {
-    it('should throw error when conflict occurs and writeOnClash=false', async () => {
+    it('should return undefined when a conflict occurs and writeOnClash=false', async () => {
       // Create initial document
-      const initialDoc = {
+      const existingDoc = {
         _id: 'doc7',
         data: 'existing data',
         metadata: 'important',
       };
 
-      await testDb.put(initialDoc);
+      await testDb.put(existingDoc);
 
-      // Try to write without _rev, but with writeOnClash=false
+      // Try to write without the correct _rev (will cause 409)
       const newDoc = {
         _id: 'doc7',
         data: 'new data',
       };
 
-      await expect(
-        safeWriteDocument({
-          db: testDb,
-          data: newDoc,
-          writeOnClash: false,
-        })
-      ).rejects.toThrow(
-        /Failed to update due to a clash, and write on clash set to false/
-      );
+      const result = await safeWriteDocument({
+        db: testDb,
+        data: newDoc,
+        writeOnClash: false,
+      });
+
+      expect(result).toBeUndefined();
 
       // Verify the document was NOT updated
       const savedDoc = await testDb.get('doc7');
@@ -352,15 +288,15 @@ describe('safeWriteDocument', () => {
         writeOnClash: false,
       });
 
-      expect(result.ok).toBe(true);
-      expect(result.id).toBe('doc8');
+      expect(result?.ok).toBe(true);
+      expect(result?.id).toBe('doc8');
 
       // Verify the document was written
       const savedDoc = await testDb.get('doc8');
       expect((savedDoc as any).data).toBe('brand new data');
     });
 
-    it('should throw error when trying to update with _rev and writeOnClash=false causes conflict', async () => {
+    it('should return undefined when trying to update with _rev and writeOnClash=false causes conflict', async () => {
       // Create initial document
       const initialDoc = {
         _id: 'doc7b',
@@ -383,15 +319,13 @@ describe('safeWriteDocument', () => {
         data: 'conflicting update',
       };
 
-      await expect(
-        safeWriteDocument({
-          db: testDb,
-          data: staleDoc,
-          writeOnClash: false,
-        })
-      ).rejects.toThrow(
-        /Failed to update due to a clash, and write on clash set to false/
-      );
+      const result = await safeWriteDocument({
+        db: testDb,
+        data: staleDoc,
+        writeOnClash: false,
+      });
+
+      expect(result).toBeUndefined();
 
       // Verify the document still has v2 data
       const savedDoc = await testDb.get('doc7b');
