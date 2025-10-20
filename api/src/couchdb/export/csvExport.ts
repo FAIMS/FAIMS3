@@ -1,4 +1,6 @@
 import {
+  FieldSummary,
+  HydratedDataRecord,
   ProjectID,
   getNotebookFieldTypes,
   notebookRecordIterator,
@@ -7,6 +9,106 @@ import {Stringifier, stringify} from 'csv-stringify';
 import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
 import {convertDataForOutput} from './utils';
+
+export const CSV_PREFIX_HEADERS = [
+  'identifier',
+  'record_id',
+  'revision_id',
+  'type',
+  'created_by',
+  'created',
+  'updated_by',
+  'updated',
+] as const;
+
+function generateRecordPrefixInformation(record: HydratedDataRecord) {
+  const hrid = record.hrid || record.record_id;
+  return [
+    // identifier
+    hrid,
+    // record_id
+    record.record_id,
+    // revision_id
+    record.revision_id,
+    // type
+    record.type,
+    // created_by
+    record.created_by,
+    // created
+    record.created.toISOString(),
+    // updated_by
+    record.updated_by,
+    // updated
+    record.updated.toISOString(),
+  ];
+}
+
+// Type for a field header generator function
+type FieldHeaderGenerator = (fieldName: string) => string[];
+
+// Registry of field type header generators
+const FIELD_TYPE_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> = {
+  'faims-pos::Location': (fieldName: string) => [
+    fieldName,
+    `${fieldName}_latitude`,
+    `${fieldName}_longitude`,
+    `${fieldName}_accuracy`,
+  ],
+
+  'faims-core::JSON': (fieldName: string) => [
+    fieldName,
+    `${fieldName}_latitude`,
+    `${fieldName}_longitude`,
+  ],
+
+  'faims-attachment::Files': (fieldName: string) => [fieldName],
+
+  'faims-core::Relationship': (fieldName: string) => [fieldName],
+};
+
+// Default generator for unregistered field types
+const defaultHeaderGenerator: FieldHeaderGenerator = (fieldName: string) => [
+  fieldName,
+];
+
+/**
+ * Get the header generator for a given field type
+ */
+function getHeaderGeneratorForFieldType(
+  fieldType: string
+): FieldHeaderGenerator {
+  return FIELD_TYPE_HEADER_GENERATORS[fieldType] || defaultHeaderGenerator;
+}
+
+/**
+ * Generate CSV headers from UI specification fields
+ */
+export function getHeaderInfoFromUiSpecification({
+  fields,
+}: {
+  fields: FieldSummary[];
+}): string[] {
+  const additionalHeaders: string[] = [];
+
+  for (const field of fields) {
+    // Get the appropriate header generator for this field type
+    const generator = getHeaderGeneratorForFieldType(field.type);
+
+    // Generate base headers for this field type
+    const fieldHeaders = generator(field.name);
+    additionalHeaders.push(...fieldHeaders);
+
+    // Add annotation and uncertainty columns if present
+    if (field.annotation !== '') {
+      additionalHeaders.push(`${field.name}_${field.annotation}`);
+    }
+    if (field.uncertainty !== '') {
+      additionalHeaders.push(`${field.name}_${field.uncertainty}`);
+    }
+  }
+
+  return additionalHeaders;
+}
 
 /**
  * Stream the records in a notebook as a CSV file
@@ -20,8 +122,14 @@ export const streamNotebookRecordsAsCSV = async (
   viewID: string,
   res: NodeJS.WritableStream
 ) => {
+  // Fetch the data DB
   const dataDb = await getDataDb(projectId);
+
+  // Grab the UI spec
   const uiSpecification = await getProjectUIModel(projectId);
+
+  // Loop through records in an efficient iterator - each dumping a hydrated
+  // record
   const iterator = await notebookRecordIterator({
     dataDb,
     projectId,
@@ -31,26 +139,40 @@ export const streamNotebookRecordsAsCSV = async (
     // the actual data, just the HRID of the record + fieldname is sufficient
     includeAttachments: false,
   });
+
+  // Get information about the fields that are present - from the UI specification
   const fields = getNotebookFieldTypes({uiSpecification, viewID});
 
-  let stringifier: Stringifier | null = null;
+  // Extrapolate from the fields, the final set of CSV column headings
+  const dataHeaderInfo = getHeaderInfoFromUiSpecification({fields});
+
+  // setup stringifier (and write header row)
+  const stringifier: Stringifier = stringify({
+    // We include the base headers + data headers
+    columns: [...CSV_PREFIX_HEADERS, ...dataHeaderInfo],
+    header: true,
+    escape_formulas: true,
+  });
+
+  // pipe output to the respose
+  stringifier.pipe(res);
+
+  // Await iterator
   let {record, done} = await iterator.next();
-  let header_done = false;
+
+  // Track generated filenames
   const filenames: string[] = [];
+
   while (!done) {
     // record might be null if there was an invalid db entry
     if (record) {
+      // Determine the HRID, which helps with some export serialisations
       const hrid = record.hrid || record.record_id;
-      const row = [
-        hrid,
-        record.record_id,
-        record.revision_id,
-        record.type,
-        record.created_by,
-        record.created.toISOString(),
-        record.updated_by,
-        record.updated.toISOString(),
-      ];
+
+      // Start by generating the general record info
+      const row = [...generateRecordPrefixInformation(record)];
+
+      // Then ask each field to dump out its data
       const outputData = convertDataForOutput(
         fields,
         record.data,
@@ -59,54 +181,36 @@ export const streamNotebookRecordsAsCSV = async (
         filenames,
         viewID
       );
-      Object.keys(outputData).forEach((property: string) => {
-        row.push(outputData[property]);
-      });
 
-      if (!header_done) {
-        const columns = [
-          'identifier',
-          'record_id',
-          'revision_id',
-          'type',
-          'created_by',
-          'created',
-          'updated_by',
-          'updated',
-        ];
-        // take the keys in the generated output data which may have more than
-        // the original data
-        Object.keys(outputData).forEach((key: string) => {
-          columns.push(key);
-        });
-        stringifier = stringify({columns, header: true, escape_formulas: true});
-        // pipe output to the respose
-        stringifier.pipe(res);
-        header_done = true;
+      // Iterate through the header info
+      for (const header of dataHeaderInfo) {
+        // Dump the appropriate data value, or blank if not present
+        if (header in outputData) {
+          row.push(outputData[header]);
+        } else {
+          row.push('');
+        }
       }
-      if (stringifier) stringifier.write(row);
+
+      // Sanity check - error here is pretty bad - we should always generate
+      // internally consistent exports
+      if (row.length !== CSV_PREFIX_HEADERS.length + dataHeaderInfo.length) {
+        throw new Error(
+          `CSV row length mismatch: expected ${
+            CSV_PREFIX_HEADERS.length + dataHeaderInfo.length
+          } but got ${row.length}`
+        );
+      }
+
+      // Write this out
+      stringifier.write(row);
     }
+
     const next = await iterator.next();
     record = next.record;
     done = next.done;
   }
-  if (stringifier) {
-    stringifier.end();
-  } else {
-    // no records to export so just send the bare column headings
-    const columns = [
-      'identifier',
-      'record_id',
-      'revision_id',
-      'type',
-      'created_by',
-      'created',
-      'updated_by',
-      'updated',
-    ];
-    stringifier = stringify({columns, header: true});
-    // pipe output to the respose
-    stringifier.pipe(res);
-    stringifier.end();
-  }
+
+  // Finished!
+  stringifier.end();
 };
