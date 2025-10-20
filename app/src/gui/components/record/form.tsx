@@ -31,7 +31,7 @@ import {
   RevisionID,
   upsertFAIMSData,
 } from '@faims3/data-model';
-import {Alert, Box, Divider, Typography} from '@mui/material';
+import {Alert, Box, Button, Divider, Typography} from '@mui/material';
 import {Form, Formik, FormikProps} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
@@ -179,6 +179,7 @@ type RecordFormState = {
   isRecordSubmitted: boolean;
   recordContext: RecordContext;
   lastProcessedValues: ValuesObject | null;
+  formDisabled?: boolean;
 };
 
 // utility type used in the save method for RecordForm
@@ -305,6 +306,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       isRecordSubmitted: false,
       recordContext: {},
       lastProcessedValues: null,
+      formDisabled: !this.props.draft_id, // disable editing if not a draft
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -312,6 +314,24 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     this.onChangeStepper = this.onChangeStepper.bind(this);
     this.onChangeTab = this.onChangeTab.bind(this);
   }
+
+  // Enable editing of the form -
+  //  when we open an existing record, the initial view is read-only
+  //  when the user clicks "Enable Editing", we enable the form
+  // and trigger creation of a new draft,
+  // this means that whenever we are editing, we're in a draft view
+  handleEnableEditing = () => {
+    this.setState({formDisabled: false});
+    // force creation of a new draft
+    this.draftState &&
+      this.draftState.data.state === 'unedited' &&
+      this.draftState.renderHook({
+        values: this.draftState.data.fields || {},
+        annotations: this.state.annotation,
+        relationship: this.state.relationship ?? {},
+        force_new_draft: true,
+      });
+  };
 
   // function to update visited steps when needed
   updateVisitedSteps = (stepId: string) => {
@@ -1617,6 +1637,16 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       return (
         <Box>
           <div>
+            {this.state.formDisabled && (
+              <Button
+                fullWidth
+                variant="contained"
+                color="primary"
+                onClick={() => this.handleEnableEditing()
+              }>
+                Enable Editing
+              </Button>
+            )}
             <Formik
               innerRef={this.formikRef}
               initialValues={initialValues}
@@ -1717,11 +1747,11 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                 // to be called here on every render and as a side-effect will
                 // save the current draft.
                 this.draftState &&
-                  this.draftState.renderHook(
-                    formProps.values,
-                    this.state.annotation,
-                    this.state.relationship ?? {}
-                  );
+                  this.draftState.renderHook({
+                    values: formProps.values,
+                    annotations: this.state.annotation,
+                    relationship: this.state.relationship ?? {},
+                  });
 
                 // handle submission of the fall - one of three options
                 // basically just call save after a short pause
@@ -1770,6 +1800,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                                 fieldNames={fieldNames}
                                 hideErrors={true}
                                 formErrors={formProps.errors}
+                                disabled={this.state.formDisabled}
                                 visitedSteps={this.state.visitedSteps}
                                 currentStepId={this.state.view_cached ?? ''}
                                 isRevisiting={this.state.isRevisiting}
@@ -1904,6 +1935,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         currentStepId={this.state.view_cached ?? ''}
                         isRevisiting={this.state.isRevisiting}
                         handleSectionClick={this.handleSectionClick}
+                        disabled={this.state.formDisabled}
                         forceSave={async () => {
                           return await this.forceSave(formProps);
                         }}

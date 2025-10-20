@@ -236,11 +236,17 @@ class RecordDraftState {
    * @param values FormikProps.values object, retrieved from the First argument
    *               of the callback to the Formik element's children:
    */
-  renderHook(
-    values: FormikValues,
-    annotations: StagedAnnotations,
-    relationship: Relationship
-  ) {
+  renderHook({
+    values,
+    annotations,
+    relationship,
+    force_new_draft = false,
+  }: {
+    values: FormikValues;
+    annotations: StagedAnnotations;
+    relationship: Relationship;
+    force_new_draft?: boolean;
+  }) {
     if (this.fetch_error === null && this.data.state !== 'uninitialised') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being
@@ -292,7 +298,7 @@ class RecordDraftState {
         }
       }
 
-      if (this.touched_fields.size === 0) {
+      if (this.touched_fields.size === 0 && !force_new_draft) {
         return;
       }
 
