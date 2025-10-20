@@ -92,6 +92,7 @@ const useStyles = createUseStyles({
 
 export interface QRCodeFieldProps extends FieldProps {
   label?: string;
+  disabled?: boolean;
 }
 
 export function QRCodeFormField({
