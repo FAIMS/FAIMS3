@@ -87,6 +87,7 @@ import {AppDispatch} from '../../../context/store';
 // Import the actions from recordSlice
 import {setEdited, setPercent} from '../../../context/slices/recordSlice';
 import {isEqual} from 'lodash';
+import EditIcon from '@mui/icons-material/Edit';
 
 // Define mapDispatchToProps
 const mapDispatchToProps = (dispatch: AppDispatch) => {
@@ -1642,9 +1643,9 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                 fullWidth
                 variant="contained"
                 color="primary"
-                onClick={() => this.handleEnableEditing()
-              }>
-                Enable Editing
+                onClick={() => this.handleEnableEditing()}
+              >
+                <EditIcon /> &nbsp; Edit this Record
               </Button>
             )}
             <Formik
