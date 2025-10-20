@@ -128,8 +128,9 @@ export const ExpandedChecklist = ({
                 checked={value.includes(option.value)}
                 onChange={() => handleChange(option.value)}
                 disabled={
-                  selectedExclusiveOption !== undefined &&
-                  option.value !== selectedExclusiveOption
+                  (selectedExclusiveOption !== undefined &&
+                    option.value !== selectedExclusiveOption) ||
+                  disabled
                 }
                 sx={{
                   padding: '4px 8px 0 0',
