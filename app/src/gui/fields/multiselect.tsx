@@ -51,6 +51,7 @@ interface Props {
   ElementProps: ElementProps;
   select_others?: string;
   advancedHelperText?: ReactNode;
+  disabled?: boolean;
 }
 
 /**
@@ -63,6 +64,7 @@ interface ExpandedChecklistProps {
   label?: ReactNode;
   helperText?: ReactNode;
   exclusiveOptions?: Array<string>;
+  disabled?: boolean;
 }
 
 /**
@@ -75,6 +77,7 @@ interface MuiMultiSelectProps {
   label?: ReactNode;
   helperText?: ReactNode;
   exclusiveOptions?: Array<string>;
+  disabled?: boolean;
 }
 
 /**
@@ -85,6 +88,7 @@ export const ExpandedChecklist = ({
   value,
   onChange,
   exclusiveOptions = [],
+  disabled,
 }: ExpandedChecklistProps) => {
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
@@ -106,7 +110,7 @@ export const ExpandedChecklist = ({
   };
 
   return (
-    <FormControl sx={{width: '100%'}}>
+    <FormControl sx={{width: '100%'}} disabled={disabled}>
       <Box
         sx={{
           display: 'flex',
@@ -170,6 +174,7 @@ export const MuiMultiSelect = ({
   value,
   onChange,
   exclusiveOptions = [],
+  disabled,
 }: MuiMultiSelectProps) => {
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
@@ -206,6 +211,7 @@ export const MuiMultiSelect = ({
           padding: '12px',
         },
       }}
+      disabled={disabled}
     >
       <Select
         multiple
@@ -287,6 +293,7 @@ export const MultiSelect = (props: FieldProps & Props & TextFieldProps) => {
     helperText: props.helperText,
     exclusiveOptions: props.ElementProps.exclusiveOptions,
     advancedHelperText: props.ElementProps.advancedHelperText,
+    disabled: props.disabled,
   };
 
   return (

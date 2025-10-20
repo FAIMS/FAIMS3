@@ -35,6 +35,7 @@ import _ from 'lodash';
 interface Props {
   helperText?: string;
   label?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -110,7 +111,7 @@ export const AddressField = (props: FieldProps & Props) => {
   };
 
   const handleEdit = () => {
-    setCollapsed(!collapsed);
+    if (!props.disabled) setCollapsed(!collapsed);
   };
 
   return (
@@ -123,7 +124,11 @@ export const AddressField = (props: FieldProps & Props) => {
 
         <Grid item xs={1}>
           <IconButton ref={iconRef} onClick={handleEdit} size={'small'}>
-            {collapsed ? <ExpandLessIcon /> : <EditIcon />}
+            {props.disabled ? null : collapsed ? (
+              <ExpandLessIcon />
+            ) : (
+              <EditIcon />
+            )}
           </IconButton>
         </Grid>
       </Grid>
