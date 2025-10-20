@@ -10,6 +10,8 @@ import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
 import {convertDataForOutput} from './utils';
 
+// The set of headers which come first in CSV exports, and are always present -
+// the function below will map a record into these values
 export const CSV_PREFIX_HEADERS = [
   'identifier',
   'record_id',
@@ -21,6 +23,11 @@ export const CSV_PREFIX_HEADERS = [
   'updated',
 ] as const;
 
+/**
+ * Generate the prefix information for a record
+ * @param record The record data to convert
+ * @returns An array of values for the CSV prefix headers
+ */
 function generateRecordPrefixInformation(record: HydratedDataRecord) {
   const hrid = record.hrid || record.record_id;
   return [
@@ -82,6 +89,8 @@ function getHeaderGeneratorForFieldType(
 
 /**
  * Generate CSV headers from UI specification fields
+ * Uses the registered field type header generators to produce the
+ * additional headers for each data type.
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
