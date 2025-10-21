@@ -62,6 +62,7 @@ interface RecordDataTypes {
   setRevision_id?: Function;
   mq_above_md: boolean;
   buttonRef: React.RefObject<HTMLDivElement>;
+  setDraftId: (draftId: string | undefined) => void;
 }
 
 export default function RecordData(props: RecordDataTypes) {
@@ -110,6 +111,7 @@ export default function RecordData(props: RecordDataTypes) {
         revision_id={props.revision_id}
         ui_specification={props.ui_specification}
         draft_id={props.draft_id}
+        setDraftId={props.setDraftId}
         handleChangeTab={props.handleChangeTab}
         conflictfields={props.conflictfields}
         isSyncing={props.isSyncing}

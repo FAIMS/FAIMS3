@@ -23,23 +23,23 @@
  *   This is used from the Record form component,
  *   and relies on the sync/draft-storage.ts file for actual Databases access
  */
+import {
+  Annotations,
+  FAIMSTypeName,
+  ProjectID,
+  RecordID,
+  Relationship,
+  RevisionID,
+} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
 import {FormikValues} from 'formik';
+import {logError} from '../logging';
 import {
   deleteStagedData,
   getStagedData,
   newStagedData,
   setStagedData,
 } from './draft-storage';
-import {
-  ProjectID,
-  RecordID,
-  RevisionID,
-  Annotations,
-  FAIMSTypeName,
-  Relationship,
-} from '@faims3/data-model';
-import {logError} from '../logging';
 
 const MAX_CONSEQUTIVE_SAVE_ERRORS = 5;
 // how frequently do we trigger _saveData for the draft: 10 seconds
@@ -236,11 +236,17 @@ class RecordDraftState {
    * @param values FormikProps.values object, retrieved from the First argument
    *               of the callback to the Formik element's children:
    */
-  renderHook(
-    values: FormikValues,
-    annotations: StagedAnnotations,
-    relationship: Relationship
-  ) {
+  renderHook({
+    values,
+    annotations,
+    relationship,
+    force_new_draft = false,
+  }: {
+    values: FormikValues;
+    annotations: StagedAnnotations;
+    relationship: Relationship;
+    force_new_draft?: boolean;
+  }) {
     if (this.fetch_error === null && this.data.state !== 'uninitialised') {
       // determine newly touched fields
       // This is usually done by createNativeFieldHook's onBlur event being
@@ -292,11 +298,12 @@ class RecordDraftState {
         }
       }
 
-      if (this.touched_fields.size === 0) {
+      if (this.touched_fields.size === 0 && !force_new_draft) {
         return;
       }
 
-      // If anything changed, we create the draft:
+      // At this point, we are saying that a value has been edited in the form
+      // If anything changed, we create the draft: NOTE this seems important
       if (this.data.state === 'unedited') {
         this.props.dispatchSetEdited(true);
         this.data = {

@@ -56,6 +56,7 @@ interface Props {
   ElementProps: ElementProps;
   select_others?: string;
   advancedHelperText?: string;
+  disabled?: boolean;
 }
 
 import {useTheme} from '@mui/material/styles';
@@ -93,6 +94,7 @@ export const Select = (props: Props & TextFieldProps) => {
           onChange={handleChange}
           value={props.field.value}
           input={<OutlinedInput />}
+          disabled={props.disabled}
         >
           {props.ElementProps.options.map((option: any) => (
             <MenuItem
@@ -125,54 +127,6 @@ export const Select = (props: Props & TextFieldProps) => {
     </FieldWrapper>
   );
 };
-
-export class Selectx extends React.Component<TextFieldProps & Props> {
-  handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    this.props.form.setFieldValue(this.props.field.name, e.target.value, true);
-  }
-
-  render() {
-    const {ElementProps, children, ...textFieldProps} = this.props;
-    /***make select not multiple to avoid error */
-    // ensure we have a valid default value to avoid warnings
-    if (textFieldProps.defaultValue === undefined) {
-      textFieldProps.defaultValue = '';
-    }
-    return (
-      <>
-        <MuiTextField
-          {...fieldToTextField(textFieldProps)}
-          select={true}
-          SelectProps={{
-            multiple: false,
-          }}
-          onChange={e => this.handleChange(e)}
-        >
-          {children}
-          {ElementProps.options.map((option: any) => (
-            <MenuItem
-              key={option.key ? option.key : option.value}
-              value={option.value}
-            >
-              {option.label}
-            </MenuItem>
-          ))}
-        </MuiTextField>
-        {/* {this.props.form.values[this.props.field.name].includes('Others')&&this.props.select_others==='otherswith'&&
-      <TextField
-      label='Others'
-      id={this.props.field.name+'others'}
-      variant="outlined"
-      onChange={(event: any) => {
-        this.props.form.setFieldValue(this.props.field.name+'others', event.target.value);
-
-      }}
-      />
-      }*/}
-      </>
-    );
-  }
-}
 
 // const uiSpec = {
 //   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from

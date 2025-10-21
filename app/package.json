@@ -23,6 +23,7 @@
     "prestart": "npm run runconfig",
     "start": "vite",
     "force-start": "vite --force",
+    "dev" : "npm run start",
     "prebuild": "npm run runconfig",
     "build": "tsc && vite build",
     "pretest": "npm run compile",
@@ -166,7 +167,7 @@
     "node-gyp": "^9.3.1",
     "type-fest": "^4.20.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.5",
+    "vite": "^7.1.11",
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.8"

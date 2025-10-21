@@ -26,17 +26,17 @@ PouchDB.plugin(SecurityPlugin);
 
 import {
   Action,
-  Annotations,
   APINotebookList,
   CouchProjectUIModel,
   DatabaseInterface,
+  decodeUiSpec,
   EncodedProjectUIModel,
   ExistingProjectDocument,
-  FieldSummary,
-  getNotebookFieldTypes,
+  file_attachments_to_data,
+  file_data_to_attachments,
+  getDataDB,
   GetNotebookListResponse,
   logError,
-  notebookRecordIterator,
   PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
@@ -47,11 +47,13 @@ import {
   Resource,
   resourceRoles,
   Role,
+  safeWriteDocument,
+  setAttachmentDumperForType,
+  setAttachmentLoaderForType,
   slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {
-  getDataDb,
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
@@ -60,18 +62,7 @@ import {
 } from '.';
 import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-
-import {
-  decodeUiSpec,
-  file_attachments_to_data,
-  file_data_to_attachments,
-  getDataDB,
-  setAttachmentDumperForType,
-  setAttachmentLoaderForType,
-} from '@faims3/data-model';
-import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
-import {generateFilenameForAttachment} from './attachmentExport';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -324,9 +315,7 @@ export const createNotebook = async (
     // first add an entry to the projects db about this project
     // this is used to find the other databases below
     const projectsDB = localGetProjectsDb();
-    if (projectsDB) {
-      await projectsDB.put(projectDoc);
-    }
+    await projectsDB.put(projectDoc);
   } catch (error) {
     console.log('Error creating project entry in projects database:', error);
     return undefined;
@@ -339,9 +328,10 @@ export const createNotebook = async (
   });
 
   const payload = {_id: 'ui-specification', ...uispec};
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
+  await safeWriteDocument({
+    db: metaDB,
+    data: payload satisfies EncodedProjectUIModel,
+  });
 
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
@@ -388,10 +378,7 @@ export const updateNotebook = async (
     ...uispec,
   };
   // now store it to update the spec
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
-
+  await safeWriteDocument({db: metaDB, data: payload});
   await writeProjectMetadata(metaDB, metadata);
 
   // update the name if required
@@ -517,7 +504,8 @@ export const writeProjectMetadata = async (
     } catch {
       // no existing document, so don't set the rev
     }
-    await metaDB.put(doc);
+
+    await safeWriteDocument({db: metaDB, data: doc});
   }
   // also add the whole metadata as 'projectvalue'
   metadata._id = PROJECT_METADATA_PREFIX + '-projectvalue';
@@ -527,7 +515,7 @@ export const writeProjectMetadata = async (
   } catch {
     // no existing document, so don't set the rev
   }
-  await metaDB.put(metadata);
+  await safeWriteDocument({db: metaDB, data: metadata});
   return metadata;
 };
 
@@ -631,264 +619,6 @@ export const validateNotebookID = async (
     return false;
   }
   return false;
-};
-
-/**
- * generate a suitable value for the CSV export from a field
- * value.  Serialise filenames, gps coordinates, etc.
- */
-const csvFormatValue = (
-  fieldName: string,
-  fieldType: string,
-  value: any,
-  hrid: string,
-  filenames: string[],
-  viewsetId: string
-) => {
-  const result: {[key: string]: any} = {};
-  if (fieldType === 'faims-attachment::Files') {
-    if (value instanceof Array) {
-      if (value.length === 0) {
-        result[fieldName] = '';
-        return result;
-      }
-      const valueList = value.map((possibleFileValue: any) => {
-        if (possibleFileValue instanceof File) {
-          const filename = generateFilenameForAttachment({
-            file: possibleFileValue,
-            fieldId: fieldName,
-            hrid,
-            viewID: viewsetId,
-            filenames,
-          });
-          filenames.push(filename);
-          return filename;
-        } else {
-          return possibleFileValue;
-        }
-      });
-      result[fieldName] = valueList.join(';');
-    } else {
-      result[fieldName] = value;
-    }
-    return result;
-  }
-
-  // gps locations
-  if (fieldType === 'faims-pos::Location') {
-    if (
-      value instanceof Object &&
-      'geometry' in value &&
-      value.geometry.coordinates.length === 2
-    ) {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = value.geometry.coordinates[1];
-      result[fieldName + '_longitude'] = value.geometry.coordinates[0];
-      result[fieldName + '_accuracy'] = value.properties.accuracy || '';
-    } else {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
-      result[fieldName + '_accuracy'] = '';
-    }
-    return result;
-  }
-
-  if (fieldType === 'faims-core::JSON') {
-    // map location, if it's a point we can pull out lat/long
-    if (
-      value instanceof Object &&
-      'features' in value &&
-      value.features.length > 0 &&
-      value.features[0]?.geometry?.type === 'Point' &&
-      value.features[0].geometry.coordinates.length === 2
-    ) {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] =
-        value.features[0].geometry.coordinates[1];
-      result[fieldName + '_longitude'] =
-        value.features[0].geometry.coordinates[0];
-      return result;
-    } else {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
-    }
-  }
-
-  if (fieldType === 'faims-core::Relationship') {
-    if (value instanceof Array) {
-      result[fieldName] = value
-        .map((v: any) => {
-          const relation_name = v.relation_type_vocabPair
-            ? v.relation_type_vocabPair[0]
-            : 'unknown relation';
-          return `${relation_name}/${v.record_id}`;
-        })
-        .join(';');
-    } else {
-      result[fieldName] = value;
-    }
-    return result;
-  }
-
-  // default to just the value
-  result[fieldName] = value;
-  return result;
-};
-
-/**
- * Convert annotations on a field to a format suitable for CSV export
- */
-const csvFormatAnnotation = (
-  field: FieldSummary,
-  {annotation, uncertainty}: Annotations
-) => {
-  const result: {[key: string]: any} = {};
-  if (field.annotation !== '')
-    result[field.name + '_' + field.annotation] = annotation;
-  if (field.uncertainty !== '')
-    result[field.name + '_' + field.uncertainty] = uncertainty
-      ? 'true'
-      : 'false';
-  return result;
-};
-
-/**
- * Format the data for a single record for CSV export
- *
- * @returns a map of column headings to values
- */
-export const convertDataForOutput = (
-  fields: FieldSummary[],
-  data: any,
-  annotations: {[name: string]: Annotations},
-  hrid: string,
-  filenames: string[],
-  viewsetId: string
-) => {
-  let result: {[key: string]: any} = {};
-  fields.map((field: any) => {
-    if (field.name in data) {
-      const formattedValue = csvFormatValue(
-        field.name,
-        field.type,
-        data[field.name],
-        hrid,
-        filenames,
-        viewsetId
-      );
-      const formattedAnnotation = csvFormatAnnotation(
-        field,
-        annotations[field.name] || {}
-      );
-      result = {...result, ...formattedValue, ...formattedAnnotation};
-    } else {
-      console.error('field missing in data', field.name, data);
-    }
-  });
-  return result;
-};
-
-/**
- * Stream the records in a notebook as a CSV file
- *
- * @param projectId Project ID
- * @param viewID View ID
- * @param res writeable stream
- */
-export const streamNotebookRecordsAsCSV = async (
-  projectId: ProjectID,
-  viewID: string,
-  res: NodeJS.WritableStream
-) => {
-  console.log('streaming notebook records as CSV', projectId, viewID);
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-  const iterator = await notebookRecordIterator({
-    dataDb,
-    projectId,
-    uiSpecification,
-    viewID,
-  });
-  const fields = getNotebookFieldTypes({uiSpecification, viewID});
-
-  let stringifier: Stringifier | null = null;
-  let {record, done} = await iterator.next();
-  let header_done = false;
-  const filenames: string[] = [];
-  while (!done) {
-    // record might be null if there was an invalid db entry
-    if (record) {
-      const hrid = record.hrid || record.record_id;
-      const row = [
-        hrid,
-        record.record_id,
-        record.revision_id,
-        record.type,
-        record.created_by,
-        record.created.toISOString(),
-        record.updated_by,
-        record.updated.toISOString(),
-      ];
-      const outputData = convertDataForOutput(
-        fields,
-        record.data,
-        record.annotations,
-        hrid,
-        filenames,
-        viewID
-      );
-      Object.keys(outputData).forEach((property: string) => {
-        row.push(outputData[property]);
-      });
-
-      if (!header_done) {
-        const columns = [
-          'identifier',
-          'record_id',
-          'revision_id',
-          'type',
-          'created_by',
-          'created',
-          'updated_by',
-          'updated',
-        ];
-        // take the keys in the generated output data which may have more than
-        // the original data
-        Object.keys(outputData).forEach((key: string) => {
-          columns.push(key);
-        });
-        stringifier = stringify({columns, header: true, escape_formulas: true});
-        // pipe output to the respose
-        stringifier.pipe(res);
-        header_done = true;
-      }
-      if (stringifier) stringifier.write(row);
-    }
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
-  if (stringifier) {
-    stringifier.end();
-  } else {
-    // no records to export so just send the bare column headings
-    const columns = [
-      'identifier',
-      'record_id',
-      'revision_id',
-      'type',
-      'created_by',
-      'created',
-      'updated_by',
-      'updated',
-    ];
-    stringifier = stringify({columns, header: true});
-    // pipe output to the respose
-    stringifier.pipe(res);
-    stringifier.end();
-  }
 };
 
 /**

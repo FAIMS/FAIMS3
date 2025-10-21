@@ -75,11 +75,7 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+root.render(<App />);
 
 //ReactDOM.render(EFooter, document.getElementById('footer')); The footer is
 //already being toggeled between in footer, we don't need to call it twice.

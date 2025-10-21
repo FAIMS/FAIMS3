@@ -55,15 +55,16 @@ import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
 import {getDataDb} from '../couchdb';
+import {createManyRandomRecords} from '../couchdb/devtools';
 import {
   generateFilenameForAttachment,
   streamNotebookFilesAsZip,
-} from '../couchdb/attachmentExport';
-import {createManyRandomRecords} from '../couchdb/devtools';
+} from '../couchdb/export/attachmentExport';
+import {streamNotebookRecordsAsCSV} from '../couchdb/export/csvExport';
 import {
   streamNotebookRecordsAsGeoJSON,
   streamNotebookRecordsAsKML,
-} from '../couchdb/geospatialExport';
+} from '../couchdb/export/geospatialExport';
 import {
   changeNotebookStatus,
   changeNotebookTeam,
@@ -76,7 +77,6 @@ import {
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
-  streamNotebookRecordsAsCSV,
   updateNotebook,
 } from '../couchdb/notebooks';
 import {getTemplate} from '../couchdb/templates';

@@ -40,15 +40,14 @@ import GeoJSON from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
+import {transformExtent} from 'ol/proj';
 import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
-import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
-import {transformExtent} from 'ol/proj';
 
 export type MapAction = 'save' | 'close';
 
@@ -64,6 +63,7 @@ interface MapProps extends ButtonProps {
   setNoPermission: (flag: boolean) => void;
   isLocationSelected: boolean;
   openMap?: () => void;
+  disabled?: boolean;
 }
 
 // define some EPSG codes - these are for two sample images
@@ -190,6 +190,8 @@ function MapWrapper(props: MapProps) {
 
   // open map
   const handleClickOpen = () => {
+    console.log('MapWrapper: handleClickOpen', props.disabled);
+    if (props.disabled) return;
     setMapOpen(true);
     setTimeout(() => {
       if (map) {
@@ -214,6 +216,8 @@ function MapWrapper(props: MapProps) {
     if (mapOpen && map) addDrawInteraction(map, props);
   }, [mapOpen, map]);
 
+  console.log('MapWrapper: rendering, isLocationSelected=', props.isLocationSelected, ' disabled=', props.disabled);
+
   return (
     <>
       <div>
@@ -221,6 +225,7 @@ function MapWrapper(props: MapProps) {
           <Button
             variant="contained"
             fullWidth
+            disabled={props.disabled}
             onClick={handleClickOpen}
             sx={{
               width: {xs: '100%', sm: '50%', md: '40%'},
@@ -262,35 +267,37 @@ function MapWrapper(props: MapProps) {
           </Button>
         ) : (
           <Box>
-            <Tooltip title="Edit location">
-              <Box
-                id="edit-location-container"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 80,
-                  height: 80,
-                  backgroundColor: '#dfdfdf',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: '#e0e0e0',
-                    transform: 'scale(1.1)',
-                    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
-                  },
-                }}
-                onClick={handleClickOpen}
-              >
-                <EditIcon
+            {!props.disabled && (
+              <Tooltip title="Edit location">
+                <Box
+                  id="edit-location-container"
                   sx={{
-                    fontSize: 26,
-                    color: theme.palette.primary.main,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 80,
+                    height: 80,
+                    backgroundColor: '#dfdfdf',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: '#e0e0e0',
+                      transform: 'scale(1.1)',
+                      boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
+                    },
                   }}
-                />
-              </Box>
-            </Tooltip>
+                  onClick={handleClickOpen}
+                >
+                  <EditIcon
+                    sx={{
+                      fontSize: 26,
+                      color: theme.palette.primary.main,
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+            )}
           </Box>
         )}
 

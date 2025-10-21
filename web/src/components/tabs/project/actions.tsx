@@ -84,6 +84,11 @@ const ProjectActions = (): JSX.Element => {
     },
   });
 
+  // need to invalidate the project query after upload
+  const uploadProjectCallback = () => {
+    queryClient.invalidateQueries({queryKey: ['projects', projectId]});
+  };
+
   const handleEditorClose = (file?: File) => {
     if (file) saveFile.mutate(file);
     setEditorOpen(false);
@@ -226,7 +231,7 @@ const ProjectActions = (): JSX.Element => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <EditProjectDialog />
+                <EditProjectDialog onSuccess={uploadProjectCallback} />
               </ListItem>
             </List>
           </Card>
