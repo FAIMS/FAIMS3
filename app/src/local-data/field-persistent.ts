@@ -22,7 +22,12 @@
  *  persistent state will be updated when record been saved( to be discussed)
  */
 
-import {Annotations, FAIMSTypeName, ProjectID, safeWriteDocument} from '@faims3/data-model';
+import {
+  Annotations,
+  FAIMSTypeName,
+  ProjectID,
+  safeWriteDocument,
+} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
 import {databaseService} from '../context/slices/helpers/databaseService';
 import {logError} from '../logging';

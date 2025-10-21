@@ -18,7 +18,11 @@
  *   Manage autoincrementer state for a project
  */
 
-import {ProjectID, ProjectUIFields, safeWriteDocument} from '@faims3/data-model';
+import {
+  ProjectID,
+  ProjectUIFields,
+  safeWriteDocument,
+} from '@faims3/data-model';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../context/slices/projectSlice';
 import {store} from '../context/store';
