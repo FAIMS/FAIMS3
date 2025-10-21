@@ -7,10 +7,9 @@ export const FieldDebugger: RenderFunctionComponent = props => {
   return (
     <div
       style={{
-        border: '2px solid #ff6b6b',
         borderRadius: '4px',
         margin: '8px 0',
-        backgroundColor: '#fff5f5',
+        backgroundColor: 'lightblue',
       }}
     >
       {/* Toggle Header */}
@@ -19,8 +18,8 @@ export const FieldDebugger: RenderFunctionComponent = props => {
         style={{
           width: '100%',
           padding: '12px',
-          backgroundColor: '#ff6b6b',
-          color: 'white',
+          backgroundColor: 'lightblue',
+          color: 'black',
           border: 'none',
           cursor: 'pointer',
           fontSize: '14px',

@@ -153,6 +153,8 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
 
   // Debugging content to inject, if configured (config.debugMode)
   const debugContent = props.config.debugMode ? (
+    // This is a component which provides a rich expandable menu of all the
+    // field context- helpful for developing or debugging fields
     <FieldDebugger {...props} value={data} rendererContext={rendererContext} />
   ) : null;
 
