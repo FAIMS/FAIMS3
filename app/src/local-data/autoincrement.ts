@@ -18,7 +18,11 @@
  *   Manage autoincrementer state for a project
  */
 
-import {ProjectID, ProjectUIFields} from '@faims3/data-model';
+import {
+  ProjectID,
+  ProjectUIFields,
+  safeWriteDocument,
+} from '@faims3/data-model';
 import {compiledSpecService} from '../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../context/slices/projectSlice';
 import {store} from '../context/store';
@@ -87,8 +91,7 @@ export class AutoIncrementer {
   // update the state for this incrementer
   async setState(state: LocalAutoIncrementState) {
     try {
-      // force due to error 409
-      return await this.db.put(state, {force: true});
+      await safeWriteDocument({db: this.db, data: state, writeOnClash: true});
     } catch (err) {
       logError(err);
       throw Error('Unable to set local increment state');
