@@ -10,6 +10,7 @@ import {DefaultRenderer, getRendererFromFieldConfig} from '../fields/register';
 import {RenderContext, RenderFunctionConfiguration} from '../types';
 import {EmptyResponsePlaceholder} from '../fields/wrappers';
 import {FieldDebugger} from '../fields/specialised/util';
+import {currentlyVisibleFields} from '../../../lib/form-utils';
 
 export interface FormRendererProps {
   viewsetId: string;
@@ -42,6 +43,14 @@ export const FormRenderer: React.FC<FormRendererProps> = props => {
     return viewMap;
   }, [props.uiSpecification]);
 
+  const visibleFields = useMemo(() => {
+    return currentlyVisibleFields({
+      uiSpec: props.uiSpecification,
+      values: props.hydratedRecord.data ?? {},
+      viewsetId: props.viewsetId,
+    });
+  }, [props.uiSpecification, props.hydratedRecord]);
+
   return (
     <Box sx={{padding: '12px'}}>
       {Array.from(fieldsByView.entries()).map(([viewId, sectionFields]) => {
@@ -49,7 +58,10 @@ export const FormRenderer: React.FC<FormRendererProps> = props => {
           <FormRendererSection
             {...props}
             viewId={viewId}
-            sectionFields={sectionFields}
+            // Filter for only visible
+            sectionFields={sectionFields.filter(f =>
+              visibleFields.includes(f.name)
+            )}
             key={viewId}
           ></FormRendererSection>
         );
@@ -65,6 +77,9 @@ export interface FormRendererSectionProps extends FormRendererProps {
 const FormRendererSection: React.FC<FormRendererSectionProps> = props => {
   // Get the section label
   const sectionLabel = props.uiSpecification.views[props.viewId]?.label;
+
+  // filter the section fields based on what should be visible in the form
+
   return (
     <>
       <h2>{sectionLabel ?? props.viewId}</h2>
