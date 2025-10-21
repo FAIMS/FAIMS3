@@ -36,6 +36,7 @@ const NumberField: React.FC<FieldProps & any> = ({field, form, ...props}) => {
       <TextField
         {...field}
         fullWidth
+        disabled={props.disabled}
         type="number"
         error={error}
         helperText={error || isInvalid ? errorMessage : helperText}

@@ -31,7 +31,7 @@ import {
   RevisionID,
   upsertFAIMSData,
 } from '@faims3/data-model';
-import {Alert, Box, Divider, Typography} from '@mui/material';
+import {Alert, Box, Button, Divider, Typography} from '@mui/material';
 import {Form, Formik, FormikProps} from 'formik';
 import React from 'react';
 import {NavigateFunction} from 'react-router-dom';
@@ -87,6 +87,7 @@ import {AppDispatch} from '../../../context/store';
 // Import the actions from recordSlice
 import {setEdited, setPercent} from '../../../context/slices/recordSlice';
 import {isEqual} from 'lodash';
+import EditIcon from '@mui/icons-material/Edit';
 
 // Define mapDispatchToProps
 const mapDispatchToProps = (dispatch: AppDispatch) => {
@@ -118,6 +119,7 @@ type RecordFormProps = ConnectedProps<typeof connector> & {
   ViewName?: string | null;
   draftLastSaved?: null | Date;
   mq_above_md?: boolean;
+  setDraftId: (draftId: string | undefined) => void;
 } & (
     | {
         // When editing existing record, we require the caller to know its revision
@@ -178,6 +180,7 @@ type RecordFormState = {
   isRecordSubmitted: boolean;
   recordContext: RecordContext;
   lastProcessedValues: ValuesObject | null;
+  formDisabled?: boolean;
 };
 
 // utility type used in the save method for RecordForm
@@ -304,6 +307,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       isRecordSubmitted: false,
       recordContext: {},
       lastProcessedValues: null,
+      formDisabled: !this.props.draft_id, // disable editing if not a draft
     };
     this.setState = this.setState.bind(this);
     this.setInitialValues = this.setInitialValues.bind(this);
@@ -311,6 +315,24 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
     this.onChangeStepper = this.onChangeStepper.bind(this);
     this.onChangeTab = this.onChangeTab.bind(this);
   }
+
+  // Enable editing of the form -
+  //  when we open an existing record, the initial view is read-only
+  //  when the user clicks "Enable Editing", we enable the form
+  // and trigger creation of a new draft,
+  // this means that whenever we are editing, we're in a draft view
+  handleEnableEditing = () => {
+    this.setState({formDisabled: false});
+    // force creation of a new draft
+    this.draftState &&
+      this.draftState.data.state === 'unedited' &&
+      this.draftState.renderHook({
+        values: this.draftState.data.fields || {},
+        annotations: this.state.annotation,
+        relationship: this.state.relationship ?? {},
+        force_new_draft: true,
+      });
+  };
 
   // function to update visited steps when needed
   updateVisitedSteps = (stepId: string) => {
@@ -376,6 +398,8 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
 
   newDraftListener(draft_id: string) {
     this.setState({draft_created: draft_id});
+    // Update the parent state to ensure if we are not tracking draft id with navigational cues, we don't lose the fact we are part of a draft
+    this.props.setDraftId(draft_id);
   }
 
   // callback function for draftStorage that will be called with:
@@ -1614,6 +1638,16 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
       return (
         <Box>
           <div>
+            {this.state.formDisabled && (
+              <Button
+                fullWidth
+                variant="contained"
+                color="primary"
+                onClick={() => this.handleEnableEditing()}
+              >
+                <EditIcon /> &nbsp; Edit this Record
+              </Button>
+            )}
             <Formik
               innerRef={this.formikRef}
               initialValues={initialValues}
@@ -1714,11 +1748,11 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                 // to be called here on every render and as a side-effect will
                 // save the current draft.
                 this.draftState &&
-                  this.draftState.renderHook(
-                    formProps.values,
-                    this.state.annotation,
-                    this.state.relationship ?? {}
-                  );
+                  this.draftState.renderHook({
+                    values: formProps.values,
+                    annotations: this.state.annotation,
+                    relationship: this.state.relationship ?? {},
+                  });
 
                 // handle submission of the fall - one of three options
                 // basically just call save after a short pause
@@ -1767,6 +1801,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                                 fieldNames={fieldNames}
                                 hideErrors={true}
                                 formErrors={formProps.errors}
+                                disabled={this.state.formDisabled}
                                 visitedSteps={this.state.visitedSteps}
                                 currentStepId={this.state.view_cached ?? ''}
                                 isRevisiting={this.state.isRevisiting}
@@ -1815,21 +1850,23 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                             </div>
                           </Alert>
                         )}
-                      <FormButtonGroup
-                        is_final_view={true}
-                        record_type={this.state.type_cached}
-                        onChangeStepper={this.onChangeStepper}
-                        visitedSteps={this.state.visitedSteps}
-                        isRecordSubmitted={isRecordSubmitted}
-                        view_index={0}
-                        formProps={formProps}
-                        ui_specification={ui_specification}
-                        views={views}
-                        publishButtonBehaviour={publishButtonBehaviour}
-                        showPublishButton={showPublishButton}
-                        handleFormSubmit={handleFormSubmit}
-                        layout={layout}
-                      />
+                      {!this.state.formDisabled && (
+                        <FormButtonGroup
+                          is_final_view={true}
+                          record_type={this.state.type_cached}
+                          onChangeStepper={this.onChangeStepper}
+                          visitedSteps={this.state.visitedSteps}
+                          isRecordSubmitted={isRecordSubmitted}
+                          view_index={0}
+                          formProps={formProps}
+                          ui_specification={ui_specification}
+                          views={views}
+                          publishButtonBehaviour={publishButtonBehaviour}
+                          showPublishButton={showPublishButton}
+                          handleFormSubmit={handleFormSubmit}
+                          layout={layout}
+                        />
+                      )}
                       {/* {UGCReport ONLY for the saved record} */}
                       {this.state.revision_cached !== undefined && (
                         <Box mt={3}>
@@ -1901,25 +1938,28 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                         currentStepId={this.state.view_cached ?? ''}
                         isRevisiting={this.state.isRevisiting}
                         handleSectionClick={this.handleSectionClick}
+                        disabled={this.state.formDisabled}
                         forceSave={async () => {
                           return await this.forceSave(formProps);
                         }}
                       />
-                      <FormButtonGroup
-                        record_type={this.state.type_cached}
-                        is_final_view={is_final_view}
-                        onChangeStepper={this.onChangeStepper}
-                        visitedSteps={this.state.visitedSteps}
-                        isRecordSubmitted={isRecordSubmitted}
-                        view_index={view_index}
-                        formProps={formProps}
-                        ui_specification={ui_specification}
-                        views={views}
-                        publishButtonBehaviour={publishButtonBehaviour}
-                        showPublishButton={showPublishButton}
-                        handleFormSubmit={handleFormSubmit}
-                        layout={layout}
-                      />
+                      {!this.state.formDisabled && (
+                        <FormButtonGroup
+                          record_type={this.state.type_cached}
+                          is_final_view={is_final_view}
+                          onChangeStepper={this.onChangeStepper}
+                          visitedSteps={this.state.visitedSteps}
+                          isRecordSubmitted={isRecordSubmitted}
+                          view_index={view_index}
+                          formProps={formProps}
+                          ui_specification={ui_specification}
+                          views={views}
+                          publishButtonBehaviour={publishButtonBehaviour}
+                          showPublishButton={showPublishButton}
+                          handleFormSubmit={handleFormSubmit}
+                          layout={layout}
+                        />
+                      )}
                       {this.state.revision_cached !== undefined && (
                         <Box mt={3}>
                           <Divider />

@@ -78,6 +78,11 @@ const TemplateActions = () => {
     setEditorOpen(false);
   };
 
+  // need to invalidate the project query after upload
+  const uploadTemplateCallback = () => {
+    queryClient.invalidateQueries({queryKey: ['templates', templateId]});
+  };
+
   const canEditTemplate = useIsAuthorisedTo({
     action: Action.UPDATE_TEMPLATE_UISPEC,
     resourceId: templateId,
@@ -180,7 +185,7 @@ const TemplateActions = () => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <EditTemplateDialog />
+                <EditTemplateDialog onSuccess={uploadTemplateCallback} />
               </ListItem>
             </List>
           </Card>

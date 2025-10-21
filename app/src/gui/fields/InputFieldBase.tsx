@@ -24,6 +24,7 @@ export interface InputBaseProps extends FieldProps {
   fullWidth?: boolean;
   advancedHelperText?: ReactNode;
   type: HTMLInputTypeAttribute;
+  disabled?: boolean;
 }
 
 export const InputBaseWrapper = (props: InputBaseProps) => {
@@ -41,6 +42,7 @@ export const InputBaseWrapper = (props: InputBaseProps) => {
         {...props.field}
         variant="outlined"
         fullWidth={props.fullWidth ?? true}
+        disabled={props.disabled}
         required={props.required}
         value={props.field.value ?? ''} //  no undefined values
         onChange={e => {

@@ -1,4 +1,6 @@
+import {ExpirySelector} from '@/components/expiry-selector';
 import {Field, Form} from '@/components/form';
+import {INVITE_TOKEN_HINTS} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {
@@ -11,7 +13,7 @@ import {
 } from '@faims3/data-model';
 import {useQueryClient} from '@tanstack/react-query';
 import {ErrorComponent} from '@tanstack/react-router';
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
 import {z} from 'zod';
 
 interface UpdateTemplateFormProps {
@@ -30,8 +32,10 @@ export function CreateTeamInviteForm({
   teamId,
 }: UpdateTemplateFormProps) {
   const {user} = useAuth();
-
   const QueryClient = useQueryClient();
+  const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>(
+    undefined
+  );
 
   if (!user) {
     return <ErrorComponent error="Not authenticated" />;
@@ -76,12 +80,6 @@ export function CreateTeamInviteForm({
       type: 'number',
       min: 1,
     },
-    {
-      name: 'expiry',
-      label: 'Invite expiration time',
-      type: 'datetime-local',
-      schema: z.string().min(1, 'Please select a date and time'),
-    },
   ];
 
   /**
@@ -93,14 +91,32 @@ export function CreateTeamInviteForm({
     role,
     uses,
     name,
-    expiry,
   }: {
     role: string;
     uses?: number;
     name: string;
-    expiry: string;
   }) => {
     if (!user) return {type: 'submit', message: 'Not logged in'};
+
+    // Validate expiry selection
+    if (!selectedDateTime) {
+      return {type: 'submit', message: 'Please select an expiry date'};
+    }
+
+    // Get expiry timestamp
+    let expiryTimestampMs: number | undefined = undefined;
+
+    if (selectedDateTime === 'never') {
+      // Never expires - we'll pass undefined
+      expiryTimestampMs = undefined;
+    } else {
+      const expiryDate = new Date(selectedDateTime);
+      expiryTimestampMs = expiryDate.getTime();
+
+      if (isNaN(expiryTimestampMs)) {
+        return {type: 'submit', message: 'Invalid expiry date'};
+      }
+    }
 
     const response = await fetch(
       `${import.meta.env.VITE_API_URL}/api/invites/team/${teamId}`,
@@ -114,7 +130,7 @@ export function CreateTeamInviteForm({
           name,
           role: role as Role,
           uses,
-          expiry: expiry ? new Date(expiry).getTime() : undefined,
+          expiry: expiryTimestampMs,
         } satisfies PostCreateInviteInput),
       }
     );
@@ -123,7 +139,6 @@ export function CreateTeamInviteForm({
       return {type: 'submit', message: 'Error creating invite.'};
 
     QueryClient.invalidateQueries({queryKey: ['teaminvites', teamId]});
-
     setDialogOpen(false);
   };
 
@@ -132,6 +147,17 @@ export function CreateTeamInviteForm({
       fields={fields}
       onSubmit={onSubmit}
       submitButtonText={'Create Invite'}
+      footer={
+        <ExpirySelector
+          hints={INVITE_TOKEN_HINTS}
+          maxDurationDays={365}
+          maximumDurationPrefix="Maximum invite duration"
+          selectedDateTime={selectedDateTime}
+          setSelectedDateTime={setSelectedDateTime}
+          title="Invite Duration"
+          subtitle="Choose how long this invite should remain valid"
+        />
+      }
     />
   );
 }

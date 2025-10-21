@@ -82,6 +82,7 @@ interface Props {
   isconflict?: boolean;
   required?: boolean;
   advancedHelperText?: string;
+  disabled?: boolean;
 }
 
 interface ImageListProps {
@@ -97,7 +98,13 @@ interface ImageListProps {
 /**
  * Displays a placeholder component when no images are present
  */
-const EmptyState = ({onAddPhoto}: {onAddPhoto: () => void}) => {
+const EmptyState = ({
+  onAddPhoto,
+  disabled,
+}: {
+  disabled: boolean;
+  onAddPhoto: () => void;
+}) => {
   const theme = useTheme();
   return (
     <Paper
@@ -117,6 +124,7 @@ const EmptyState = ({onAddPhoto}: {onAddPhoto: () => void}) => {
         variant="contained"
         color="primary"
         onClick={onAddPhoto}
+        disabled={disabled}
         startIcon={<CameraAltIcon />}
       >
         Take First Photo
@@ -507,7 +515,7 @@ export const TakePhoto: React.FC<
         )}
 
         {images.length === 0 ? (
-          <EmptyState onAddPhoto={takePhoto} />
+          <EmptyState onAddPhoto={takePhoto} disabled={disabled} />
         ) : (
           <ImageGallery
             images={images}
