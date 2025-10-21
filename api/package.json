@@ -24,6 +24,7 @@
     "test:watch": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha -w",
     "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
     "migrate": "env-cmd ts-node src/scripts/migrate.ts",
+    "migrate-with-keys": "env-cmd ts-node src/scripts/migrate.ts --keys",
     "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts"
   },
   "dependencies": {

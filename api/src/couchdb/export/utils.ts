@@ -6,8 +6,13 @@ import {
 import {generateFilenameForAttachment} from './attachmentExport';
 
 /**
- * generate a suitable value for the CSV export from a field
- * value.  Serialise filenames, gps coordinates, etc.
+ * TODO it would be better to merge the header generation and value formatting
+ * logic together - currently some parts are encoded twice in two different
+ * ways.
+ *
+ *
+ * generate a suitable value for the CSV export from a field value.  Serialise
+ * filenames, gps coordinates, etc.
  */
 export const csvFormatValue = (
   fieldName: string,
