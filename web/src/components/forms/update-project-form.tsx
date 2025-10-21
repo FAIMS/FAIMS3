@@ -22,8 +22,10 @@ const fields = [
  */
 export function UpdateProjectForm({
   setDialogOpen,
+  callback,
 }: {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  callback: () => void;
 }) {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
@@ -46,6 +48,9 @@ export function UpdateProjectForm({
         body: jsonString,
       }
     );
+
+    // call the callback to invalidate the project query
+    callback();
 
     if (!response.ok)
       return {type: 'submit', message: 'Error updating template'};

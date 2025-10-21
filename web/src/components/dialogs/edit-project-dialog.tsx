@@ -18,7 +18,7 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
  *
  * @returns {JSX.Element} The rendered EditProjectDialog component.
  */
-export const EditProjectDialog = () => {
+export const EditProjectDialog = ({callback}: {callback: () => void}) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,7 +37,7 @@ export const EditProjectDialog = () => {
             new file must be a valid JSON file.
           </DialogDescription>
         </DialogHeader>
-        <UpdateProjectForm setDialogOpen={setOpen} />
+        <UpdateProjectForm setDialogOpen={setOpen} callback={callback} />
       </DialogContent>
     </Dialog>
   );
