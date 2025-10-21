@@ -22,7 +22,7 @@
  *  persistent state will be updated when record been saved( to be discussed)
  */
 
-import {Annotations, FAIMSTypeName, ProjectID} from '@faims3/data-model';
+import {Annotations, FAIMSTypeName, ProjectID, safeWriteDocument} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
 import {databaseService} from '../context/slices/helpers/databaseService';
 import {logError} from '../logging';
@@ -87,7 +87,11 @@ export async function setFieldPersistentData(
   doc.annotations = new_state.annotations;
   try {
     const local_state_db = databaseService.getLocalStateDatabase();
-    return await local_state_db.put(doc);
+    return await safeWriteDocument({
+      db: local_state_db,
+      data: doc,
+      writeOnClash: true,
+    });
   } catch (err: any) {
     logError(err);
     throw Error('Unable to set local increment state');
