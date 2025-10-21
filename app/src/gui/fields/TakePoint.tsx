@@ -55,6 +55,7 @@ interface Props {
   instruction_text?: string;
   helperText?: string;
   label?: string;
+  disabled?: boolean;
 }
 
 export const TakePoint = (
@@ -118,6 +119,7 @@ export const TakePoint = (
         fullWidth={true}
         color={'primary'}
         style={{marginRight: '10px'}}
+        disabled={props.disabled}
         onClick={async () => {
           await takePoint();
         }}

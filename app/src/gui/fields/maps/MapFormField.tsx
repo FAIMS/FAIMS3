@@ -42,6 +42,7 @@ export interface MapFieldProps extends FieldProps {
   helperText: string;
   required: boolean;
   advancedHelperText?: string;
+  disabled?: boolean;
 }
 
 const createPointFeature = (
@@ -203,7 +204,11 @@ export function MapFormField({
                   and there is no downloaded map covering this location. Use the
                   button below to submit your current GPS location.
                 </Alert>
-                <Button variant="outlined" onClick={handleCurrentLocation}>
+                <Button
+                  variant="outlined" 
+                  onClick={handleCurrentLocation}
+                  disabled={props.disabled}
+                >
                   Use my current location
                 </Button>
               </>
@@ -229,6 +234,7 @@ export function MapFormField({
             projection={props.projection}
             setNoPermission={setNoPermission}
             isLocationSelected={isLocationSelected}
+            disabled={props.disabled}
           />
         )}
         <Box
