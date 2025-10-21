@@ -9,6 +9,7 @@
 import {
   AUTH_RECORD_ID_PREFIXES,
   ExistingPeopleDBDocument,
+  safeWriteDocument,
   VerificationChallengeExistingDocument,
   VerificationChallengeFields,
 } from '@faims3/data-model';
@@ -298,7 +299,7 @@ export const consumeVerificationChallenge = async ({
 
   // Update the document in the database
   const authDB = getAuthDB();
-  await authDB.put(challenge);
+  await safeWriteDocument({db: authDB, data: challenge});
 
   return challenge;
 };
