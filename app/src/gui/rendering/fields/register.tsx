@@ -145,6 +145,7 @@ const FieldRendererList: FieldRendererEntry[] = [
     componentName: 'RelatedRecordSelector',
     renderComponent: RelatedRecordRenderer,
     config: {},
+    attributes: {singleColumn: true},
   },
   {
     componentNamespace: 'faims-custom',
@@ -221,6 +222,7 @@ const FieldRendererList: FieldRendererEntry[] = [
     componentName: 'MapFormField',
     renderComponent: MapRenderer,
     config: {},
+    attributes: {singleColumn: true},
   },
 
   // DEPRECATED/UNUSED - okay to use default renderer for now

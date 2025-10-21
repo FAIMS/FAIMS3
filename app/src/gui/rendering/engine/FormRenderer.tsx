@@ -4,7 +4,15 @@ import {
   RecordMetadata,
   UISpecification,
 } from '@faims3/data-model';
-import {Box, Stack, Typography} from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  Stack,
+  Typography,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React, {useMemo} from 'react';
 import {DefaultRenderer, getRendererFromFieldConfig} from '../fields/register';
 import {RenderContext, RenderFunctionConfiguration} from '../types';
@@ -52,21 +60,37 @@ export const FormRenderer: React.FC<FormRendererProps> = props => {
   }, [props.uiSpecification, props.hydratedRecord]);
 
   return (
-    <Box sx={{padding: '12px'}}>
+    <Stack spacing={2} sx={{padding: 2}}>
       {Array.from(fieldsByView.entries()).map(([viewId, sectionFields]) => {
+        // Filter for only visible fields
+        const visibleSectionFields = sectionFields.filter(f =>
+          visibleFields.includes(f.name)
+        );
+
+        // Check if any fields in this section are actually visible (not hidden)
+        const hasVisibleContent = visibleSectionFields.some(field => {
+          // Check if field is hidden via component-parameters
+          const isHidden =
+            props.uiSpecification.fields[field.name]?.['component-parameters']
+              ?.hidden === true;
+          return !isHidden;
+        });
+
+        // Don't render the section if there's no visible content
+        if (!hasVisibleContent) {
+          return null;
+        }
+
         return (
           <FormRendererSection
             {...props}
             viewId={viewId}
-            // Filter for only visible
-            sectionFields={sectionFields.filter(f =>
-              visibleFields.includes(f.name)
-            )}
+            sectionFields={visibleSectionFields}
             key={viewId}
           ></FormRendererSection>
         );
       })}
-    </Box>
+    </Stack>
   );
 };
 
@@ -78,19 +102,89 @@ const FormRendererSection: React.FC<FormRendererSectionProps> = props => {
   // Get the section label
   const sectionLabel = props.uiSpecification.views[props.viewId]?.label;
 
-  // filter the section fields based on what should be visible in the form
-
   return (
-    <>
-      <h2>{sectionLabel ?? props.viewId}</h2>
-      <Stack spacing={2}>
-        {props.sectionFields.map(field => {
-          return (
-            <FormRendererField {...props} fieldInfo={field} key={field.name} />
-          );
-        })}
-      </Stack>
-    </>
+    <Accordion
+      defaultExpanded
+      disableGutters
+      elevation={1}
+      sx={{
+        backgroundColor: 'grey.50',
+        borderRadius: '4px !important',
+        '&:before': {
+          display: 'none',
+        },
+        '&:not(:last-child)': {
+          marginBottom: 2,
+        },
+      }}
+    >
+      <AccordionSummary
+        expandIcon={<ExpandMoreIcon />}
+        sx={{
+          padding: '0 16px',
+          minHeight: 56,
+          '&.Mui-expanded': {
+            minHeight: 56,
+          },
+          '& .MuiAccordionSummary-content': {
+            margin: '12px 0',
+            '&.Mui-expanded': {
+              margin: '12px 0',
+            },
+          },
+        }}
+      >
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 700,
+            color: 'text.primary',
+          }}
+        >
+          {sectionLabel ?? props.viewId}
+        </Typography>
+      </AccordionSummary>
+      <AccordionDetails
+        sx={{
+          padding: 2,
+          paddingTop: 0,
+        }}
+      >
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)',
+            },
+            gap: 1.5,
+            columnGap: 3,
+          }}
+        >
+          {props.sectionFields.map(field => {
+            // Get the renderer for this field to check its attributes
+            const renderer = getRendererFromFieldConfig({
+              uiSpecification: props.uiSpecification,
+              fieldName: field.name,
+            });
+
+            // Check if this field should span full width based on renderer attributes
+            const singleColumn = renderer?.attributes?.singleColumn === true;
+
+            return (
+              <Box
+                key={field.name}
+                sx={{
+                  gridColumn: singleColumn ? '1 / -1' : 'auto',
+                }}
+              >
+                <FormRendererField {...props} fieldInfo={field} />
+              </Box>
+            );
+          })}
+        </Box>
+      </AccordionDetails>
+    </Accordion>
   );
 };
 
@@ -120,40 +214,26 @@ export interface FormRendererFieldProps extends FormRendererSectionProps {
 
 const FormRendererField: React.FC<FormRendererFieldProps> = props => {
   // Get the data for this field
-  const data = useMemo(() => {
-    return props.hydratedRecord.data?.[props.fieldInfo.name];
-  }, [props.fieldInfo, props.uiSpecification, props.hydratedRecord]);
+  const data = props.hydratedRecord.data?.[props.fieldInfo.name];
 
   // Get the renderer for the field
-  const fieldRenderInfo = useMemo(() => {
-    const renderer = getRendererFromFieldConfig({
-      uiSpecification: props.uiSpecification,
-      fieldName: props.fieldInfo.name,
-    });
-    if (!renderer) {
-      return undefined;
-    }
-    return renderer;
-  }, []);
+  const fieldRenderInfo = getRendererFromFieldConfig({
+    uiSpecification: props.uiSpecification,
+    fieldName: props.fieldInfo.name,
+  });
 
   const FieldRenderer = fieldRenderInfo?.renderComponent;
 
   // Grab the UI label for this field
-  const uiLabel = useMemo(() => {
-    // This is the configured UI label for this field, i.e. the title
-    return props.uiSpecification.fields[props.fieldInfo.name]?.[
-      'component-parameters'
-    ]?.label;
-  }, [props.uiSpecification, props.fieldInfo]);
+  // This is the configured UI label for this field, i.e. the title
+  const uiLabel =
+    props.uiSpecification.fields[props.fieldInfo.name]?.['component-parameters']
+      ?.label;
 
   // hidden when component-parameters.hidden: true
-  const isHidden = useMemo(() => {
-    return (
-      props.uiSpecification.fields[props.fieldInfo.name]?.[
-        'component-parameters'
-      ]?.hidden === true
-    );
-  }, [props.uiSpecification, props.fieldInfo]);
+  const isHidden =
+    props.uiSpecification.fields[props.fieldInfo.name]?.['component-parameters']
+      ?.hidden === true;
 
   const isEmpty = isResponseEmpty(data);
 
@@ -183,9 +263,18 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
   } else {
     // Return the custom renderer for this field
     return (
-      <div>
-        <Stack direction="column" spacing={1}>
-          <Typography variant="h5">{uiLabel}</Typography>
+      <Box>
+        <Stack direction="column" spacing={0.5}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 600,
+              color: 'text.secondary',
+              fontSize: '0.875rem',
+            }}
+          >
+            {uiLabel}
+          </Typography>
           {debugContent}
           {
             // Note that we check here whether to bypass null checks
@@ -208,7 +297,7 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
             />
           )}
         </Stack>
-      </div>
+      </Box>
     );
   }
 };

@@ -39,6 +39,9 @@ export type RendererAttributes = {
   // If true, then the renderer will always be called, even if the default null
   // check suggests it shouldn't
   bypassNullChecks?: boolean;
+  // Default layout is two column, but this allows forcing to single column e.g.
+  // for map / related
+  singleColumn?: boolean;
 };
 
 export type FieldRendererEntry = {
