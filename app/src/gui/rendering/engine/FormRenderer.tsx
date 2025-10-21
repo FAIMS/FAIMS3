@@ -4,15 +4,12 @@ import {
   RecordMetadata,
   UISpecification,
 } from '@faims3/data-model';
-import React, {useMemo} from 'react';
-import {
-  DefaultRenderer,
-  getRendererFromFieldConfig,
-  RENDERER_REGISTRY,
-} from '../fields/register';
-import {RenderFunctionComponent} from '../fields/types';
 import {Box, Stack, Typography} from '@mui/material';
-import {getSummaryFieldInformation} from '../../../uiSpecification';
+import React, {useMemo} from 'react';
+import {DefaultRenderer, getRendererFromFieldConfig} from '../fields/register';
+import {RenderContext, RenderFunctionConfiguration} from '../types';
+import {EmptyResponsePlaceholder} from '../fields/wrappers';
+import {FieldDebugger} from '../fields/specialised/util';
 
 export interface FormRendererProps {
   viewsetId: string;
@@ -82,6 +79,26 @@ const FormRendererSection: React.FC<FormRendererSectionProps> = props => {
   );
 };
 
+/**
+ * Checks if a value (which could be anything) appears to be empty
+ * @param val The value to check
+ * @returns True iff response is empty
+ */
+function isResponseEmpty(val: any): boolean {
+  return (
+    // null case
+    val === null ||
+    // undefined case
+    val === undefined ||
+    // empty string response - sometimes happens with text fields or geometries
+    (typeof val === 'string' &&
+      (val.trim() === '' ||
+        // It's worth noting FAIMS sometimes includes the literal string '""' to
+        // represent empty values
+        val === '""'))
+  );
+}
+
 export interface FormRendererFieldProps extends FormRendererSectionProps {
   fieldInfo: FieldSummary;
 }
@@ -93,7 +110,7 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
   }, [props.fieldInfo, props.uiSpecification, props.hydratedRecord]);
 
   // Get the renderer for the field
-  const FieldRenderer: RenderFunctionComponent | undefined = useMemo(() => {
+  const fieldRenderInfo = useMemo(() => {
     const renderer = getRendererFromFieldConfig({
       uiSpecification: props.uiSpecification,
       fieldName: props.fieldInfo.name,
@@ -101,8 +118,10 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
     if (!renderer) {
       return undefined;
     }
-    return renderer.renderComponent;
+    return renderer;
   }, []);
+
+  const FieldRenderer = fieldRenderInfo?.renderComponent;
 
   // Grab the UI label for this field
   const uiLabel = useMemo(() => {
@@ -121,28 +140,26 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
     );
   }, [props.uiSpecification, props.fieldInfo]);
 
+  const isEmpty = isResponseEmpty(data);
+
+  // Map state -> render context
+  const rendererContext: RenderContext = {
+    fieldId: props.fieldInfo.name,
+    recordMetadata: props.hydratedRecord,
+    viewId: props.viewId,
+    viewsetId: props.viewsetId,
+    uiSpecification: props.uiSpecification,
+  };
+
   // Debugging content to inject, if configured (config.debugMode)
   const debugContent = props.config.debugMode ? (
-    <Typography variant="caption" color="gray">
-      <Stack direction="column">
-        <span>Field Name: {props.fieldInfo.name}</span>
-        <span>Type Key: {props.fieldInfo.type}</span>
-        <span>Data: {JSON.stringify(data)}</span>
-        <span>
-          Namespace:{' '}
-          {
-            props.uiSpecification.fields[props.fieldInfo.name]?.[
-              'component-namespace'
-            ]
-          }
-        </span>
-        <span>
-          Name:{' '}
-          {props.uiSpecification.fields[props.fieldInfo.name]['component-name']}
-        </span>
-      </Stack>
-    </Typography>
+    <FieldDebugger {...props} value={data} rendererContext={rendererContext} />
   ) : null;
+
+  // Map config -> render context
+  const renderConfig: RenderFunctionConfiguration = {
+    debugMode: props.config.debugMode,
+  };
 
   if (isHidden) {
     return null;
@@ -153,12 +170,25 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
         <Stack direction="column" spacing={1}>
           <Typography variant="h5">{uiLabel}</Typography>
           {debugContent}
-          {FieldRenderer ? (
+          {
+            // Note that we check here whether to bypass null checks
+          }
+          {!fieldRenderInfo?.attributes?.bypassNullChecks && isEmpty ? (
+            <EmptyResponsePlaceholder />
+          ) : FieldRenderer ? (
             // Render the field with the appropriate renderer
-            <FieldRenderer value={data} config={props.config} />
+            <FieldRenderer
+              value={data}
+              config={renderConfig}
+              rendererContext={rendererContext}
+            />
           ) : (
             // Or use default fallback
-            <DefaultRenderer config={props.config} value={data} />
+            <DefaultRenderer
+              value={data}
+              config={renderConfig}
+              rendererContext={rendererContext}
+            />
           )}
         </Stack>
       </div>

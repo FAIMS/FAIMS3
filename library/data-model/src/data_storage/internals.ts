@@ -77,6 +77,7 @@ export const RECORD_AUDIT_INDEX = 'record_audit/by_record_id';
 export const REVISION_TYPE_FIELD = 'revision_format_version';
 export const RECORD_TYPE_FIELD = 'record_format_version';
 export const AVP_TYPE_FIELD = 'avp_format_version';
+export const ATT_TYPE_FIELD = 'attach_format_version';
 
 export interface FormData {
   data: {[field_name: string]: any};
@@ -111,16 +112,19 @@ export async function getCouchDocument<DocType extends {[key: string]: any}>({
   id,
   typeField = undefined,
   conflicts = false,
+  includeAttachments = false,
 }: {
   db: DatabaseInterface;
   id: string;
   typeField?: string;
   conflicts?: boolean;
+  includeAttachments?: boolean;
 }): Promise<PouchDB.Core.ExistingDocument<DocType> | undefined> {
   try {
     // Get is the most efficient method for single document retrieval
     const doc = (await db.get(id, {
       conflicts,
+      attachments: includeAttachments,
     })) as PouchDB.Core.ExistingDocument<DocType>;
 
     // Validate the document type if expectedType is provided
@@ -393,6 +397,38 @@ export async function getAvp({
 }
 
 /**
+ * Finds the attachment (att-)
+ * @returns Attachment document
+ */
+export async function getAtt({
+  dataDb,
+  attId,
+  includeAttachments = false,
+}: {
+  dataDb: DataDbType;
+  attId: AttributeValuePairID;
+  includeAttachments?: boolean;
+}): Promise<FAIMSAttachment> {
+  try {
+    const result = await getCouchDocument<FAIMSAttachment>({
+      db: dataDb,
+      id: attId,
+      typeField: ATT_TYPE_FIELD,
+      includeAttachments,
+    });
+    if (result) {
+      return result;
+    } else {
+      throw Error('AVP not found.');
+    }
+  } catch (e) {
+    throw Error(
+      `Could not find the attachment record with ID ${attId}. Error: {e}.`
+    );
+  }
+}
+
+/**
  * Returns the recommended HRID for this record (which is a revision) - this is
  * achieved by a) get the ui spec for the project b) look at fields in the
  * revision (via avp keys) c) determine which viewset these fields are in d)
@@ -537,7 +573,7 @@ export async function fetchAndHydrateRecord({
   recordId,
   dataDb,
   uiSpecification,
-  revisionId = undefined
+  revisionId = undefined,
 }: {
   projectId: string;
   recordId: string;

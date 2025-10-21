@@ -10,31 +10,58 @@ import VectorLayer from 'ol/layer/Vector';
 import 'ol/ol.css';
 import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
+import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useRef} from 'react';
-import {RenderFunctionComponentProps} from '../types';
+import {RenderFunctionComponentProps} from '../../types';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value
  * @param value - The raw field value that should contain GeoJSON
  * @returns A valid GeoJSON object or null if invalid
  */
-const extractGeoJSON = (value: any): object | null => {
+const extractGeoJSON = (value: any): object | undefined => {
   try {
     // If it's already an object, use it directly
-    if (typeof value === 'object' && value !== null) {
+    if (typeof value === 'object' && value !== undefined && value !== null) {
       return value;
     }
-
     // If it's a string, try to parse it
     if (typeof value === 'string') {
       return JSON.parse(value);
     }
-
-    return null;
+    return undefined;
   } catch (e) {
     console.error('Failed to parse GeoJSON:', e);
-    return null;
+    return undefined;
   }
+};
+
+/**
+ * Creates a style for vector features with enhanced visibility
+ */
+const createFeatureStyle = () => {
+  return new Style({
+    // Style for point geometries
+    image: new CircleStyle({
+      radius: 8,
+      fill: new Fill({
+        color: 'rgba(255, 69, 0, 0.8)', // Bright orange-red with opacity
+      }),
+      stroke: new Stroke({
+        color: '#fff',
+        width: 2,
+      }),
+    }),
+    // Style for line geometries
+    stroke: new Stroke({
+      color: 'rgba(255, 69, 0, 0.9)',
+      width: 3,
+    }),
+    // Style for polygon geometries
+    fill: new Fill({
+      color: 'rgba(255, 69, 0, 0.2)',
+    }),
+  });
 };
 
 /**
@@ -50,7 +77,6 @@ export const MapRenderer: React.FC<RenderFunctionComponentProps> = props => {
 
     // Extract GeoJSON from the value
     const geoJSON = extractGeoJSON(props.value);
-
     if (!geoJSON) {
       console.warn('No valid GeoJSON found in MapFormField value');
       return;
@@ -66,9 +92,10 @@ export const MapRenderer: React.FC<RenderFunctionComponentProps> = props => {
       }),
     });
 
-    // Create vector layer for the GeoJSON data
+    // Create vector layer for the GeoJSON data with custom styling
     const vectorLayer = new VectorLayer({
       source: vectorSource,
+      style: createFeatureStyle(),
     });
 
     // Create base map layer (OpenStreetMap)
@@ -124,7 +151,7 @@ export const MapRenderer: React.FC<RenderFunctionComponentProps> = props => {
       ref={mapRef}
       style={{
         width: '100%',
-        height: '400px',
+        height: '450px',
         border: '1px solid #ccc',
         borderRadius: '4px',
         position: 'relative',

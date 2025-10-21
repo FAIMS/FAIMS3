@@ -3,9 +3,11 @@ import {
   FieldRendererEntry,
   RendererRegistry,
   RenderFunctionComponentProps,
-} from './types';
-import {ListWrapper, TextWrapper} from './wrappers';
-import {MapRenderer} from './wrappers/Mapping';
+} from '../types';
+import {ListWrapper, StringTypeWrapper, TextWrapper} from './wrappers';
+import {MapRenderer} from './specialised/Mapping';
+import {TakePhotoRender} from './specialised/TakePhoto';
+import {RelatedRecordRenderer} from './specialised/RelatedRecord';
 
 /**
  * The default fallback renderer. Just JSON stringifies.
@@ -103,7 +105,7 @@ const FieldRendererList: FieldRendererEntry[] = [
   {
     componentNamespace: 'faims-custom',
     componentName: 'RadioGroup',
-    renderComponent: DefaultRenderer,
+    renderComponent: StringTypeWrapper,
     config: {},
   },
   {
@@ -121,8 +123,10 @@ const FieldRendererList: FieldRendererEntry[] = [
   {
     componentNamespace: 'faims-custom',
     componentName: 'TakePhoto',
-    renderComponent: DefaultRenderer,
+    renderComponent: TakePhotoRender,
     config: {},
+    // For attachments, we need to be more careful about this
+    attributes: {bypassNullChecks: true},
   },
   {
     componentNamespace: 'faims-custom',
@@ -139,7 +143,7 @@ const FieldRendererList: FieldRendererEntry[] = [
   {
     componentNamespace: 'faims-custom',
     componentName: 'RelatedRecordSelector',
-    renderComponent: DefaultRenderer,
+    renderComponent: RelatedRecordRenderer,
     config: {},
   },
   {
@@ -193,13 +197,7 @@ const FieldRendererList: FieldRendererEntry[] = [
   {
     componentNamespace: 'faims-custom',
     componentName: 'FAIMSTextField',
-    renderComponent: props => {
-      let content = 'Invalid';
-      if (typeof props.value === 'string') {
-        content = props.value as string;
-      }
-      return <TextWrapper content={content}></TextWrapper>;
-    },
+    renderComponent: StringTypeWrapper,
     config: {},
   },
   {
