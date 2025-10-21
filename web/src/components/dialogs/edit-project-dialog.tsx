@@ -16,9 +16,11 @@ import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
  * EditProjectDialog component renders a dialog for editing a project.
  * It provides a button to open the dialog and a form to update the project.
  *
+ * The onSuccess callback is called after a successful update.
+ *
  * @returns {JSX.Element} The rendered EditProjectDialog component.
  */
-export const EditProjectDialog = ({callback}: {callback: () => void}) => {
+export const EditProjectDialog = ({onSuccess}: {onSuccess: () => void}) => {
   const [open, setOpen] = useState(false);
 
   return (
@@ -37,7 +39,7 @@ export const EditProjectDialog = ({callback}: {callback: () => void}) => {
             new file must be a valid JSON file.
           </DialogDescription>
         </DialogHeader>
-        <UpdateProjectForm setDialogOpen={setOpen} callback={callback} />
+        <UpdateProjectForm setDialogOpen={setOpen} onSuccess={onSuccess} />
       </DialogContent>
     </Dialog>
   );

@@ -231,7 +231,7 @@ const ProjectActions = (): JSX.Element => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <EditProjectDialog callback={uploadProjectCallback} />
+                <EditProjectDialog onSuccess={uploadProjectCallback} />
               </ListItem>
             </List>
           </Card>

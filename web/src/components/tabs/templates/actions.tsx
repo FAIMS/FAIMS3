@@ -185,7 +185,7 @@ const TemplateActions = () => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <EditTemplateDialog callback={uploadTemplateCallback} />
+                <EditTemplateDialog onSuccess={uploadTemplateCallback} />
               </ListItem>
             </List>
           </Card>

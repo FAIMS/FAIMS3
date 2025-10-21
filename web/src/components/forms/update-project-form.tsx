@@ -16,16 +16,17 @@ const fields = [
 /**
  * UpdateProjectForm component renders a form for updating a project.
  * It provides a button to submit the form and a file input for selecting a JSON file.
+ * The onSuccess callback is called after a successful update.
  *
  * @param {React.Dispatch<React.SetStateAction<boolean>>} setDialogOpen - A function to set the dialog open state.
  * @returns {JSX.Element} The rendered UpdateProjectForm component.
  */
 export function UpdateProjectForm({
   setDialogOpen,
-  callback,
+  onSuccess,
 }: {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  callback: () => void;
+  onSuccess: () => void;
 }) {
   const {user} = useAuth();
   const {projectId} = Route.useParams();
@@ -49,11 +50,11 @@ export function UpdateProjectForm({
       }
     );
 
-    // call the callback to invalidate the project query
-    callback();
-
     if (!response.ok)
       return {type: 'submit', message: 'Error updating template'};
+
+    // call the onSuccess callback if everything worked
+    onSuccess();
 
     setDialogOpen(false);
   };
