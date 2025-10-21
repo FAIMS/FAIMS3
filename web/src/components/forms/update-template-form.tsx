@@ -15,6 +15,7 @@ export const fields = [
 
 interface UpdateTemplateFormProps {
   setDialogOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  callback: () => void;
 }
 
 /**
@@ -23,7 +24,10 @@ interface UpdateTemplateFormProps {
  *
  * @returns {JSX.Element} The rendered UpdateTemplateForm component.
  */
-export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
+export function UpdateTemplateForm({
+  setDialogOpen,
+  callback,
+}: UpdateTemplateFormProps) {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
 
@@ -45,6 +49,9 @@ export function UpdateTemplateForm({setDialogOpen}: UpdateTemplateFormProps) {
         body: jsonString,
       }
     );
+
+    // call the callback to invalidate the project query
+    callback();
 
     if (!response.ok)
       return {type: 'submit', message: 'Error updating template'};

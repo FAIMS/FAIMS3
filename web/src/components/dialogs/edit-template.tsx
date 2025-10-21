@@ -26,7 +26,7 @@ import {Pencil} from 'lucide-react';
  *
  * @returns {JSX.Element} The rendered EditTemplateDialog component.
  */
-export const EditTemplateDialog = () => {
+export const EditTemplateDialog = ({callback}: {callback: () => void}) => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
   const {data} = useGetTemplate(user, templateId);
@@ -64,7 +64,7 @@ export const EditTemplateDialog = () => {
                 new file must be a valid JSON file.
               </DialogDescription>
             </DialogHeader>
-            <UpdateTemplateForm setDialogOpen={setOpen} />
+            <UpdateTemplateForm setDialogOpen={setOpen} callback={callback} />
           </DialogContent>
         </Dialog>
       )}
