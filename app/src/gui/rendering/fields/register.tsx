@@ -5,6 +5,7 @@ import {
   RenderFunctionComponentProps,
 } from './types';
 import {ListWrapper, TextWrapper} from './wrappers';
+import {MapRenderer} from './wrappers/Mapping';
 
 /**
  * The default fallback renderer. Just JSON stringifies.
@@ -23,7 +24,6 @@ export const DefaultRenderer = (props: RenderFunctionComponentProps) => {
 // NOTE: This is the list of all supported field renderers. To add a new
 // renderer, add it here.
 const FieldRendererList: FieldRendererEntry[] = [
-  // core-material-ui namespace
   {
     componentNamespace: 'core-material-ui',
     componentName: 'Input',
@@ -221,9 +221,12 @@ const FieldRendererList: FieldRendererEntry[] = [
   {
     componentNamespace: 'mapping-plugin',
     componentName: 'MapFormField',
-    renderComponent: DefaultRenderer,
+    renderComponent: MapRenderer,
     config: {},
   },
+
+  // DEPRECATED/UNUSED - okay to use default renderer for now
+  // ========================================================
 ];
 
 // Build the map from the componentNamespace::componentName to the renderer

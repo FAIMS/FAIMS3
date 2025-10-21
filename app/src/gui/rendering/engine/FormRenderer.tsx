@@ -11,7 +11,7 @@ import {
   RENDERER_REGISTRY,
 } from '../fields/register';
 import {RenderFunctionComponent} from '../fields/types';
-import {Stack, Typography} from '@mui/material';
+import {Box, Stack, Typography} from '@mui/material';
 import {getSummaryFieldInformation} from '../../../uiSpecification';
 
 export interface FormRendererProps {
@@ -46,7 +46,7 @@ export const FormRenderer: React.FC<FormRendererProps> = props => {
   }, [props.uiSpecification]);
 
   return (
-    <div>
+    <Box sx={{padding: '12px'}}>
       {Array.from(fieldsByView.entries()).map(([viewId, sectionFields]) => {
         return (
           <FormRendererSection
@@ -57,7 +57,7 @@ export const FormRenderer: React.FC<FormRendererProps> = props => {
           ></FormRendererSection>
         );
       })}
-    </div>
+    </Box>
   );
 };
 
