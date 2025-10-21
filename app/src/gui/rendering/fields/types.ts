@@ -15,8 +15,10 @@ export type RenderFunctionComponent = React.FC<RenderFunctionComponentProps>;
 export type RenderConfiguration = {};
 
 export type FieldRendererEntry = {
-  // What is the type of field e.g. FAIMS::FaimsTextField
-  type: string;
+  // Namespace and name (combination uniquely identifies the field type)
+  componentNamespace: string;
+  componentName: string;
+
   // The React component that will render this field
   renderComponent: RenderFunctionComponent;
   // Any other configuration about how this should be rendered

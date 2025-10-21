@@ -57,6 +57,7 @@ import {
 import {createHash} from './utils';
 import {chunk} from 'lodash';
 import {logError} from '../logging';
+import {HydratedDataRecord} from './storageFunctions';
 
 // INDEX NAMES
 
@@ -523,6 +524,90 @@ export async function getDataForRevision({
   }
 }
 
+/**
+ * A convenient entrypoint for the app.
+ *
+ * Given a project, record, data DB, UI spec (all things known in the app), will
+ * return a fully hydrated record.
+ *
+ * This is an expensive operation, so consider caching.
+ */
+export async function fetchAndHydrateRecord({
+  projectId,
+  recordId,
+  dataDb,
+  uiSpecification,
+  revisionId = undefined
+}: {
+  projectId: string;
+  recordId: string;
+  revisionId?: string;
+  dataDb: DataDbType;
+  uiSpecification: ProjectUIModel;
+}): Promise<RecordMetadata | undefined> {
+  // Grab field map for HRID
+  const hridFieldMap = getHridFieldMap(uiSpecification);
+
+  // Get the individual record
+  const record = await getRecord({recordId, dataDb});
+  if (!record) {
+    return undefined;
+  }
+  const revId = revisionId ?? record.heads[0];
+
+  // Abort if revision not found
+  if (!revId) {
+    console.warn(
+      `There exists a record in the data DB with no heads[0]. Id: ${record._id}`
+    );
+    return undefined;
+  }
+
+  const revision = await getRevision({dataDb: dataDb, revisionId: revId});
+
+  // Abort if revision not found
+  if (!revision) {
+    logError(
+      `There exists a record in the data DB with a revision which is missing. ID: ${record._id}. Revision ID: ${revId}`
+    );
+    return undefined;
+  }
+
+  // Get data for the revision and hrid
+
+  // Hydrate with data by fetching AVPs
+  const data = await getDataForRevision({dataDb, revision});
+
+  // Ensure it's defined
+  if (!data) {
+    logError(
+      `There exists a record in the data DB where data hydration failed. ID: ${record._id}. Revision ID: ${revId}`
+    );
+    return undefined;
+  }
+
+  // Determine HRID based on field mapping or fall back to record ID
+  const hridFieldName = hridFieldMap[revision.type];
+  const hrid = (hridFieldName ? data[hridFieldName] : record._id) ?? record._id;
+
+  // Return record metadata
+  return {
+    project_id: projectId,
+    record_id: record._id,
+    revision_id: revId,
+    created: new Date(record.created),
+    created_by: record.created_by,
+    updated: new Date(revision.created),
+    updated_by: revision.created_by,
+    conflicts: record.heads.length > 1,
+    deleted: revision.deleted ? true : false,
+    type: record.type,
+    relationship: revision.relationship,
+    avps: revision.avps,
+    data: data,
+    hrid: hrid,
+  } satisfies RecordMetadata;
+}
 /**
  * Retrieves a list of non-deleted record metadata.
  *

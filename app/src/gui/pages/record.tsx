@@ -83,6 +83,8 @@ import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
 import Breadcrumbs from '../components/ui/breadcrumbs';
+import {FormRenderer} from '../rendering';
+import {useIndividualHydratedRecord} from '../../utils/customHooks';
 
 export default function Record() {
   /**
@@ -162,6 +164,15 @@ export default function Record() {
   const [backLink, setBackLink] = useState<string>(projectLink);
   const [backIsParent, setBackIsParent] = useState(false);
   const [draftId, setDraftId] = useState<string | undefined>(rawDraftId);
+
+  // Get the hydrated data for the target record
+  // TODO improve this by validating the record and revision ID exists
+  const hydratedRecord = useIndividualHydratedRecord({
+    projectId: projectId,
+    recordId: recordId!,
+    revisionId: updatedRevisionId!,
+    uiSpec: uiSpec,
+  }).data;
 
   // if there are no conflicts and the tab value is 4 then default back to tab 1
   useEffect(() => {
@@ -693,35 +704,14 @@ export default function Record() {
                           </Box>
                         </Box>
                       ) : (
-                        <RecordData
-                          // here we are in an existing record
-                          isExistingRecord={true}
-                          serverId={serverId}
-                          project_id={projectId!}
-                          record_id={recordId!}
-                          hrid={hrid}
-                          record_type={record_type}
-                          revision_id={updatedRevisionId!}
-                          ui_specification={uiSpec}
-                          draft_id={draftId}
-                          setDraftId={setDraftId}
-                          conflictfields={conflictfields}
-                          handleChangeTab={handleChange}
-                          isDraftSaving={isDraftSaving}
-                          isSyncing={isSyncing.toString()}
-                          handleSetIsDraftSaving={setIsDraftSaving}
-                          handleSetDraftLastSaved={setDraftLastSaved}
-                          handleSetDraftError={setDraftError}
-                          draftLastSaved={draftLastSaved}
-                          draftError={draftError}
-                          parentRecords={parentLinks}
-                          record_to_field_links={relatedRecords}
-                          is_link_ready={is_link_ready}
-                          handleUnlink={handleUnlink}
-                          setRevision_id={setUpdatedRevisionId}
-                          mq_above_md={mq_above_md}
-                          buttonRef={buttonRef}
-                        />
+                        hydratedRecord && (
+                          <FormRenderer
+                            config={{debugMode: true}}
+                            hydratedRecord={hydratedRecord}
+                            uiSpecification={uiSpec}
+                            viewsetId={type}
+                          />
+                        )
                       )}
                     </Box>
                   </TabPanel>
