@@ -726,6 +726,8 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   }
 
   // Authenticate if we have credentials - if we haven't then this isn't going to work anyway...
+  // note that we do this every time even though we get a cookie and could use that
+  // cookie expires every 600s so to be safe we re-authenticate each time
   if (LOCAL_COUCHDB_AUTH) {
     await _nanoInstance.auth(
       LOCAL_COUCHDB_AUTH.username,
