@@ -431,6 +431,5 @@ export const generateFilenameForAttachment = ({
     postfix += 1;
   }
 
-  console.log(`[ZIP] Generated filename: ${fullFilename}`);
   return fullFilename;
 };
