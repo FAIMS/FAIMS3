@@ -552,7 +552,7 @@ export const getNotebookMetadata = async (
         console.error('no metadata database found for', project_id);
       }
     } catch (error) {
-      console.log('unknown project', project_id);
+      console.error('error reading project metadata', project_id, error);
     }
   } else {
     console.log('unknown project', project_id);
@@ -580,7 +580,7 @@ export const getEncodedNotebookUISpec = async (
       console.error('no metadata database found for', projectId);
     }
   } catch (error) {
-    console.log('unknown project', projectId);
+    console.error('error reading metadata db for project', projectId, error);
   }
   return null;
 };
