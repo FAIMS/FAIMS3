@@ -718,8 +718,6 @@ export const initialiseAndMigrateDBs = async ({
 
 // Initialize nano instance
 let _nanoInstance: Nano.ServerScope | undefined;
-// Track whether we have awaited auth yet
-let _authInitialized = false;
 
 const getNanoInstance = async (): Promise<Nano.ServerScope> => {
   if (!_nanoInstance) {
@@ -727,13 +725,14 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
     _nanoInstance = Nano(COUCHDB_INTERNAL_URL);
   }
 
-  // Authenticate if we have credentials and haven't already authenticated
-  if (LOCAL_COUCHDB_AUTH && !_authInitialized) {
+  // Authenticate if we have credentials - if we haven't then this isn't going to work anyway...
+  if (LOCAL_COUCHDB_AUTH) {
     await _nanoInstance.auth(
       LOCAL_COUCHDB_AUTH.username,
       LOCAL_COUCHDB_AUTH.password
     );
-    _authInitialized = true;
+  } else {
+    console.error("No local CouchDB auth configured - can't talk to CouchDB!");
   }
 
   return _nanoInstance;
