@@ -1,7 +1,7 @@
 {
   "name": "@faims3/app",
   "packageManager": "npm@10.7.0",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "private": true,
   "type": "module",
   "browserslist": {
@@ -23,7 +23,7 @@
     "prestart": "npm run runconfig",
     "start": "vite",
     "force-start": "vite --force",
-    "dev" : "npm run start",
+    "dev": "npm run start",
     "prebuild": "npm run runconfig",
     "build": "tsc && vite build",
     "pretest": "npm run compile",
