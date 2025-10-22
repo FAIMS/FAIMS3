@@ -1,22 +1,21 @@
-import {z} from 'zod';
-import {RenderFunctionComponent} from '../../types';
-import {FieldDebugger} from './util';
-import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
-import {useQueries} from '@tanstack/react-query';
 import {fetchAndHydrateRecord} from '@faims3/data-model';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
+  CircularProgress,
+  Paper,
+  Typography,
+} from '@mui/material';
+import {useQueries} from '@tanstack/react-query';
+import {useState} from 'react';
+import {z} from 'zod';
 import {localGetDataDb} from '../../../..';
 import {FormRenderer, FormRendererProps} from '../../engine';
-import {
-  CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography,
-  Box,
-  Paper,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {useState} from 'react';
+import {RenderFunctionComponent} from '../../types';
+import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
 
 // Define the Zod schema
 const RecordReferenceSchema = z.object({
@@ -179,6 +178,16 @@ export const RelatedRecordRenderer: RenderFunctionComponent = props => {
           uiSpecification: uiSpec,
           hydratedRecord: hydrated,
           config: props.config,
+          trace: [
+            ...props.rendererContext.trace,
+            {
+              callType: 'relatedRecord',
+              fieldId: props.rendererContext.fieldId,
+              recordId: props.rendererContext.recordMetadata.record_id,
+              viewId: props.rendererContext.viewId,
+              viewsetId: props.rendererContext.viewsetId,
+            },
+          ],
         } satisfies FormRendererProps;
       },
       queryKey: ['related-hydration', relId],

@@ -1,6 +1,7 @@
 // This is the types for rendering a field
 
 import {ProjectUIModel, RecordMetadata} from '@faims3/data-model';
+import { FormRendererTrace } from './engine';
 
 // A renderer function component
 export type RenderFunctionComponentProps = {
@@ -27,6 +28,8 @@ export type RenderContext = {
   recordMetadata: RecordMetadata;
   // UI specification
   uiSpecification: ProjectUIModel;
+  // The form render trace (to help build new entries)
+  trace: FormRendererTrace[]
 };
 
 // TODO consider configuration we may need

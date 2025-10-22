@@ -20,6 +20,21 @@ import {EmptyResponsePlaceholder} from '../fields/wrappers';
 import {FieldDebugger} from '../fields/specialised/util';
 import {currentlyVisibleFields} from '../../../lib/form-utils';
 
+/** Trace entry - helps to understand lineage when recursively rendering a form
+ * renderer */
+export type FormRendererTrace = {
+  // ID of the record
+  recordId: string;
+  // The viewsetID called from
+  viewsetId: string;
+  // The view ID called from
+  viewId: string;
+  // Which field called this form?
+  fieldId: string;
+  // Call type - at the moment only related records call out
+  callType: 'relatedRecord';
+};
+
 export interface FormRendererProps {
   viewsetId: string;
   // The UI Spec
@@ -29,6 +44,8 @@ export interface FormRendererProps {
   config: {
     debugMode?: boolean;
   };
+  // track history
+  trace: FormRendererTrace[];
 }
 export const FormRenderer: React.FC<FormRendererProps> = props => {
   // List of field info for this viewset
@@ -244,6 +261,7 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
     viewId: props.viewId,
     viewsetId: props.viewsetId,
     uiSpecification: props.uiSpecification,
+    trace: props.trace
   };
 
   // Debugging content to inject, if configured (config.debugMode)

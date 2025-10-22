@@ -704,51 +704,48 @@ export default function Record() {
                           </Box>
                         </Box>
                       ) : (
-                        hydratedRecord && (
-                          <>
-                            {/*
-
-                            <RecordData
-                              // here we are in an existing record
-                              isExistingRecord={true}
-                              serverId={serverId}
-                              project_id={projectId!}
-                              record_id={recordId!}
-                              hrid={hrid}
-                              record_type={record_type}
-                              revision_id={updatedRevisionId!}
-                              ui_specification={uiSpec}
-                              draft_id={draftId}
-                              setDraftId={setDraftId}
-                              conflictfields={conflictfields}
-                              handleChangeTab={handleChange}
-                              isSyncing={isSyncing.toString()}
-                              isDraftSaving={isDraftSaving}
-                              draftLastSaved={draftLastSaved}
-                              draftError={draftError}
-                              handleSetIsDraftSaving={setIsDraftSaving}
-                              handleSetDraftLastSaved={setDraftLastSaved}
-                              handleSetDraftError={setDraftError}
-                              parentRecords={parentLinks}
-                              record_to_field_links={relatedRecords}
-                              is_link_ready={is_link_ready}
-                              handleUnlink={handleUnlink}
-                              setRevision_id={setUpdatedRevisionId}
-                              mq_above_md={mq_above_md}
-                              buttonRef={buttonRef}
-                            />
-
-                          */}
+                        <>
+                          <RecordData
+                            // here we are in an existing record
+                            isExistingRecord={true}
+                            serverId={serverId}
+                            project_id={projectId!}
+                            record_id={recordId!}
+                            hrid={hrid}
+                            record_type={record_type}
+                            revision_id={updatedRevisionId!}
+                            ui_specification={uiSpec}
+                            draft_id={draftId}
+                            setDraftId={setDraftId}
+                            conflictfields={conflictfields}
+                            handleChangeTab={handleChange}
+                            isSyncing={isSyncing.toString()}
+                            isDraftSaving={isDraftSaving}
+                            draftLastSaved={draftLastSaved}
+                            draftError={draftError}
+                            handleSetIsDraftSaving={setIsDraftSaving}
+                            handleSetDraftLastSaved={setDraftLastSaved}
+                            handleSetDraftError={setDraftError}
+                            parentRecords={parentLinks}
+                            record_to_field_links={relatedRecords}
+                            is_link_ready={is_link_ready}
+                            handleUnlink={handleUnlink}
+                            setRevision_id={setUpdatedRevisionId}
+                            mq_above_md={mq_above_md}
+                            buttonRef={buttonRef}
+                          />
+                          {hydratedRecord && (
                             <FormRenderer
                               // Enabling debugging here helps by providing
                               // expandable detailed panel for each field
-                              config={{debugMode: false}}
+                              config={{debugMode: true}}
                               hydratedRecord={hydratedRecord}
                               uiSpecification={uiSpec}
                               viewsetId={type}
+                              trace={[]}
                             />
-                          </>
-                        )
+                          )}
+                        </>
                       )}
                     </Box>
                   </TabPanel>
