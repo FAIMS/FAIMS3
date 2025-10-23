@@ -20,61 +20,39 @@ import {FormRenderer, FormRendererProps, FormRendererTrace} from '../../engine';
 import {RenderFunctionComponent} from '../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
 
-// Define the Zod schema
+// ============================================================================
+// Type Definitions & Schemas
+// ============================================================================
+
+/**
+ * Schema for a single record reference containing project and record identifiers
+ */
 const RecordReferenceSchema = z.object({
   project_id: z.string(),
   record_id: z.string(),
   record_label: z.string(),
   relation_type_vocabPair: z.array(z.string()).optional(),
 });
-const RecordReferenceArraySchema = z.array(RecordReferenceSchema);
-
-// NOTE: you can change this to determine how many nestings can occur - e.g. 2
-// means you can have 3 total renderers (in one chain)
-export const RENDER_NEST_LIMIT = 0;
 
 /**
- * Determines the appropriate related records nesting behaviour based on depth
- * @param trace The trace history
- * @returns Behaviour for nesting
+ * Schema for an array of record references
  */
-function determineBehaviourFromTrace(
-  trace: FormRendererTrace[]
-): 'nest' | 'link' {
-  // The trace refers to the number of parent entities - so if we have 1 parent, we have nested once
-  if (trace.length >= RENDER_NEST_LIMIT) {
-    return 'link';
-  } else {
-    return 'nest';
-  }
-}
+const RecordReferenceArraySchema = z.array(RecordReferenceSchema);
 
-// Component for loading state
-const LoadingPlaceholder = () => (
-  <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
-    <CircularProgress size={24} />
-  </Box>
-);
+/**
+ * Inferred TypeScript type for a single record reference
+ */
+type RecordReference = z.infer<typeof RecordReferenceSchema>;
 
-// Component for empty state
-const EmptyState = () => <EmptyResponsePlaceholder />;
+/**
+ * Display behavior for related records based on nesting depth
+ */
+type DisplayBehavior = 'nest' | 'link';
 
-// Component for accordion title
-interface RelatedRecordTitleProps {
-  recordLabel: string;
-}
-
-const RelatedRecordTitle = ({recordLabel}: RelatedRecordTitleProps) => (
-  <Box sx={{width: '100%', pr: 2}}>
-    <Typography variant="subtitle1" sx={{fontWeight: 500}}>
-      {recordLabel}
-    </Typography>
-  </Box>
-);
-
-// Component for linked record (when nesting limit exceeded)
-interface LinkedRecordItemProps {
-  recordInfo: z.infer<typeof RecordReferenceSchema>;
+/**
+ * Props for components that display related record information
+ */
+interface RelatedRecordDisplayProps {
   recordLabel: string;
   recordId: string;
   revisionId: string;
@@ -82,13 +60,119 @@ interface LinkedRecordItemProps {
   projectId: string;
 }
 
+/**
+ * Props for the nested accordion view of a related record
+ */
+interface NestedRecordProps {
+  recordInfo: RecordReference;
+  formRendererProps?: FormRendererProps;
+  isLoading: boolean;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/**
+ * Maximum nesting depth for related records renderer. E.g. 2 means two "parents".
+ */
+export const RENDER_NEST_LIMIT = 2;
+
+/**
+ * Error message displayed when record references are invalid
+ */
+const INVALID_REFERENCES_MESSAGE =
+  'Invalid references. Contact an administrator.';
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Determines whether to nest or link related records based on current depth
+ *
+ * @param trace - The renderer trace history showing parent chain
+ * @returns 'nest' if within limit, 'link' if at or beyond limit
+ *
+ */
+function determineBehaviorFromTrace(
+  trace: FormRendererTrace[]
+): DisplayBehavior {
+  return trace.length >= RENDER_NEST_LIMIT ? 'link' : 'nest';
+}
+
+// ============================================================================
+// UI Components
+// ============================================================================
+
+/**
+ * Loading indicator for async record fetching
+ */
+const LoadingPlaceholder = () => (
+  <Box sx={{display: 'flex', justifyContent: 'center', p: 3}}>
+    <CircularProgress size={24} />
+  </Box>
+);
+
+/**
+ * Empty state component when no related records exist
+ */
+const EmptyState = () => <EmptyResponsePlaceholder />;
+
+/**
+ * Title display for related record items
+ */
+const RelatedRecordTitle = ({recordLabel}: {recordLabel: string}) => (
+  <Box sx={{width: '100%', pr: 2}}>
+    <Typography variant="subtitle1" sx={{fontWeight: 500}}>
+      {recordLabel}
+    </Typography>
+  </Box>
+);
+
+/**
+ * Section header showing count of related records
+ */
+const RelatedRecordsHeader = ({count}: {count: number}) => (
+  <Typography
+    variant="h6"
+    sx={{
+      mb: 2,
+      color: 'text.secondary',
+      fontWeight: 500,
+      fontSize: '1rem',
+    }}
+  >
+    Related Records ({count})
+  </Typography>
+);
+
+/**
+ * Error message for records that failed to load
+ */
+const RecordLoadError = () => (
+  <Typography color="error" variant="body2">
+    Unable to load related record
+  </Typography>
+);
+
+// ============================================================================
+// Related Record Display Components
+// ============================================================================
+
+/**
+ * Displays a related record as a clickable link (used when nesting limit exceeded)
+ *
+ * Shows record information with a link to view the full record in a new context.
+ * Used when RENDER_NEST_LIMIT is reached to prevent infinite nesting.
+ */
 const LinkedRecordItem = ({
   recordLabel,
   recordId,
   revisionId,
   serverId,
   projectId,
-}: LinkedRecordItemProps) => {
+}: RelatedRecordDisplayProps) => {
   const recordRoute = getExistingRecordRoute({
     serverId,
     projectId,
@@ -137,20 +221,21 @@ const LinkedRecordItem = ({
   );
 };
 
-// Component for individual related record (nested view)
-interface RelatedRecordItemProps {
-  recordInfo: z.infer<typeof RecordReferenceSchema>;
-  formRendererProps?: FormRendererProps;
-  isLoading: boolean;
-  index: number;
-}
-
-const RelatedRecordItem = ({
+/**
+ * Displays a related record as an expandable accordion with nested content
+ *
+ * Renders the full record content inline using FormRenderer when expanded.
+ * Used when within the RENDER_NEST_LIMIT to show hierarchical relationships.
+ */
+const NestedRecordItem = ({
   recordInfo,
   formRendererProps,
   isLoading,
-}: RelatedRecordItemProps) => {
+}: NestedRecordProps) => {
   const [expanded, setExpanded] = useState(false);
+
+  const displayLabel =
+    formRendererProps?.hydratedRecord.hrid ?? recordInfo.record_id;
 
   return (
     <Accordion
@@ -180,11 +265,7 @@ const RelatedRecordItem = ({
           },
         }}
       >
-        <RelatedRecordTitle
-          recordLabel={
-            formRendererProps?.hydratedRecord.hrid ?? recordInfo.record_id
-          }
-        />
+        <RelatedRecordTitle recordLabel={displayLabel} />
       </AccordionSummary>
       <AccordionDetails
         sx={{
@@ -207,9 +288,7 @@ const RelatedRecordItem = ({
           ) : formRendererProps ? (
             <FormRenderer {...formRendererProps} />
           ) : (
-            <Typography color="error" variant="body2">
-              Unable to load related record
-            </Typography>
+            <RecordLoadError />
           )}
         </Paper>
       </AccordionDetails>
@@ -217,140 +296,150 @@ const RelatedRecordItem = ({
   );
 };
 
-// Main component
+/**
+ * Wrapper for loading state of a single related record
+ */
+const LoadingRecordItem = ({recordId}: {recordId: string}) => (
+  <Paper key={recordId} sx={{mb: 2}}>
+    <LoadingPlaceholder />
+  </Paper>
+);
+
+/**
+ * Wrapper for error state of a single related record
+ */
+const ErrorRecordItem = ({recordId}: {recordId: string}) => (
+  <Paper key={recordId} sx={{mb: 2, p: 2}}>
+    <RecordLoadError />
+  </Paper>
+);
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * Renders related records for a given field value
+ *
+ * This component handles displaying records that are related to the current record.
+ * It supports two display modes:
+ * - **Nested**: Shows related records inline with expandable accordions
+ * - **Linked**: Shows related records as links when nesting limit is reached
+ *
+ * The component:
+ * 1. Validates the input value against the expected schema
+ * 2. Fetches and hydrates each related record
+ * 3. Determines display behavior based on nesting depth
+ * 4. Renders either nested accordions or link cards accordingly
+ *
+ * @param props - RenderFunctionComponent props containing value and context
+ * @returns JSX for displaying related records or appropriate fallback
+ */
 export const RelatedRecordRenderer: RenderFunctionComponent = props => {
-  const projectId = props.rendererContext.recordMetadata.project_id;
-  const serverId = props.rendererContext.recordMetadata.project_id; // Assuming serverId is same as projectId or available in metadata
-  const uiSpec = props.rendererContext.uiSpecification;
+  const {recordMetadata, uiSpecification, trace, fieldId, viewId, viewsetId} =
+    props.rendererContext;
+  const {project_id: projectId} = recordMetadata;
+
+  // Initialize data access
   const dataDb = localGetDataDb(projectId);
+  const behavior = determineBehaviorFromTrace(trace);
 
-  // Determine behavior based on trace depth
-  const behaviour = determineBehaviourFromTrace(props.rendererContext.trace);
-
-  // Parse with Zod
+  // Validate and parse input value
   const parseResult = RecordReferenceArraySchema.safeParse(props.value);
-  const fallbackText = 'Invalid references. Contact an administrator.';
-
   if (!parseResult.success) {
-    return <TextWrapper content={fallbackText} />;
+    return <TextWrapper content={INVALID_REFERENCES_MESSAGE} />;
   }
 
   const relatedRecords = parseResult.data;
-  const relatedRecordInfo = relatedRecords.map(r => r.record_id);
 
-  // For each related record, go and fetch a bunch of stuff
-  const relatedRecordDetails = useQueries({
-    queries: relatedRecordInfo.map(relId => ({
+  // Fetch and hydrate all related records
+  const relatedRecordQueries = useQueries({
+    queries: relatedRecords.map(({record_id}) => ({
+      queryKey: ['related-hydration', record_id, behavior],
       queryFn: async () => {
-        // Grab and hydrate the record
-        const hydrated = await fetchAndHydrateRecord({
-          projectId: props.rendererContext.recordMetadata.project_id,
+        const hydratedRecord = await fetchAndHydrateRecord({
+          projectId,
           dataDb,
-          recordId: relId,
-          uiSpecification: uiSpec,
+          recordId: record_id,
+          uiSpecification,
         });
-        if (!hydrated) {
+
+        if (!hydratedRecord) {
           return undefined;
         }
 
-        // If we're in link mode, return minimal data needed for link
-        if (behaviour === 'link') {
-          return {
-            hydratedRecord: hydrated,
-            isLink: true,
-          };
-        }
-
-        // Otherwise, prepare full renderer props for nesting
+        // Return full renderer props for nested mode
         return {
-          viewsetId: hydrated.type,
-          uiSpecification: uiSpec,
-          hydratedRecord: hydrated,
+          viewsetId: hydratedRecord.type,
+          uiSpecification,
+          hydratedRecord,
           config: props.config,
           trace: [
-            ...props.rendererContext.trace,
+            ...trace,
             {
-              callType: 'relatedRecord',
-              fieldId: props.rendererContext.fieldId,
-              recordId: props.rendererContext.recordMetadata.record_id,
-              viewId: props.rendererContext.viewId,
-              viewsetId: props.rendererContext.viewsetId,
+              callType: 'relatedRecord' as const,
+              fieldId,
+              recordId: recordMetadata.record_id,
+              viewId,
+              viewsetId,
             },
           ],
-          isLink: false,
-        } satisfies FormRendererProps & {isLink: boolean};
+        } satisfies FormRendererProps;
       },
-      queryKey: ['related-hydration', relId, behaviour],
-      networkMode: 'always',
+      networkMode: 'always' as const,
     })),
   });
 
+  // Handle empty state
+  if (relatedRecordQueries.length === 0) {
+    return <EmptyState />;
+  }
+
+  // Render related records list
   return (
     <Box sx={{mt: 2, mb: 2}}>
-      {relatedRecordDetails.length > 0 ? (
-        <>
-          <Typography
-            variant="h6"
-            sx={{
-              mb: 2,
-              color: 'text.secondary',
-              fontWeight: 500,
-              fontSize: '1rem',
-            }}
-          >
-            Related Records ({relatedRecordDetails.length})
-          </Typography>
+      <RelatedRecordsHeader count={relatedRecordQueries.length} />
 
-          {relatedRecordDetails.map((related, index) => {
-            if (related.isLoading) {
-              return (
-                <Paper key={relatedRecords[index].record_id} sx={{mb: 2}}>
-                  <LoadingPlaceholder />
-                </Paper>
-              );
-            }
+      {relatedRecordQueries.map((query, index) => {
+        const recordInfo = relatedRecords[index];
+        const key = recordInfo.record_id;
 
-            if (!related.data) {
-              return (
-                <Paper key={relatedRecords[index].record_id} sx={{mb: 2, p: 2}}>
-                  <Typography color="error" variant="body2">
-                    Unable to load related record
-                  </Typography>
-                </Paper>
-              );
-            }
+        // Handle loading state
+        if (query.isLoading) {
+          return <LoadingRecordItem key={key} recordId={key} />;
+        }
 
-            // Render as link if behaviour is 'link'
-            if (behaviour === 'link' && related.data.isLink) {
-              const hydrated = related.data.hydratedRecord;
-              return (
-                <LinkedRecordItem
-                  key={relatedRecords[index].record_id}
-                  recordInfo={relatedRecords[index]}
-                  recordLabel={hydrated.hrid ?? relatedRecords[index].record_id}
-                  recordId={relatedRecords[index].record_id}
-                  revisionId={hydrated.revision_id}
-                  serverId={serverId}
-                  projectId={projectId}
-                />
-              );
-            }
+        // Handle error state
+        if (!query.data) {
+          return <ErrorRecordItem key={key} recordId={key} />;
+        }
 
-            // Otherwise render nested accordion
-            return (
-              <RelatedRecordItem
-                key={relatedRecords[index].record_id}
-                recordInfo={relatedRecords[index]}
-                formRendererProps={related.data as FormRendererProps}
-                isLoading={false}
-                index={index}
-              />
-            );
-          })}
-        </>
-      ) : (
-        <EmptyState />
-      )}
+        const {hydratedRecord} = query.data;
+
+        // Render link mode
+        if (behavior === 'link') {
+          return (
+            <LinkedRecordItem
+              key={key}
+              recordLabel={hydratedRecord.hrid ?? recordInfo.record_id}
+              recordId={recordInfo.record_id}
+              revisionId={hydratedRecord.revision_id}
+              serverId={projectId}
+              projectId={projectId}
+            />
+          );
+        }
+
+        // Render nested mode
+        return (
+          <NestedRecordItem
+            key={key}
+            recordInfo={recordInfo}
+            formRendererProps={query.data}
+            isLoading={false}
+          />
+        );
+      })}
     </Box>
   );
 };
