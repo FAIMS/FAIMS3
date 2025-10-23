@@ -1,18 +1,18 @@
 import {ProjectUIModel} from '@faims3/data-model';
 import {
-  FieldRendererEntry,
-  RendererRegistry,
-  RenderFunctionComponentProps,
+  DataViewFieldRegistryEntry,
+  DataViewFieldRenderProps,
+  FieldRegistry,
+  FieldRegistryEntry,
 } from '../types';
-import {ListWrapper, StringTypeWrapper, TextWrapper} from './wrappers';
-import {MapRenderer} from './specialised/Mapping';
-import {TakePhotoRender} from './specialised/TakePhoto';
-import {RelatedRecordRenderer} from './specialised/RelatedRecord';
+import {ListWrapper, MapRenderer, StringTypeWrapper} from './view';
+import {RelatedRecordRenderer} from './view/specialised/RelatedRecord';
+import {TakePhotoRender} from './view/specialised/TakePhoto';
 
 /**
- * The default fallback renderer. Just JSON stringifies.
+ * The default fallback renderer. Just JSON stringifies the data.
  */
-export const DefaultRenderer = (props: RenderFunctionComponentProps) => {
+export const DefaultRenderer = (props: DataViewFieldRenderProps) => {
   // Try and json stringify the value for display
   let val = 'Cannot display value';
   try {
@@ -25,204 +25,189 @@ export const DefaultRenderer = (props: RenderFunctionComponentProps) => {
 
 // NOTE: This is the list of all supported field renderers. To add a new
 // renderer, add it here.
-const FieldRendererList: FieldRendererEntry[] = [
+const FieldRegistryList: FieldRegistryEntry[] = [
   {
     componentNamespace: 'core-material-ui',
     componentName: 'Input',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {
+      component: DefaultRenderer,
+      config: {},
+    },
   },
   {
     componentNamespace: 'core-material-ui',
     componentName: 'Checkbox',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'core-material-ui',
     componentName: 'TextField',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
 
   // formik-material-ui namespace
   {
     componentNamespace: 'formik-material-ui',
     componentName: 'TextField',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'formik-material-ui',
     componentName: 'Select',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'formik-material-ui',
     componentName: 'RadioGroup',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'formik-material-ui',
     componentName: 'MultipleTextField',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
 
   // faims-custom namespace
   {
     componentNamespace: 'faims-custom',
     componentName: 'Select',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'MultiSelect',
-    renderComponent: props => {
-      let content: string[] = [];
-      if (Array.isArray(props.value)) {
-        content = props.value;
-      }
-      return <ListWrapper content={content}></ListWrapper>;
+    view: {
+      component: props => {
+        let content: string[] = [];
+        if (Array.isArray(props.value)) {
+          content = props.value;
+        }
+        return <ListWrapper content={content}></ListWrapper>;
+      },
+      config: {},
     },
-    config: {},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'AdvancedSelect',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'Checkbox',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'RadioGroup',
-    renderComponent: StringTypeWrapper,
-    config: {},
+    view: {component: StringTypeWrapper, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'ActionButton',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'TakePoint',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'TakePhoto',
-    renderComponent: TakePhotoRender,
-    config: {},
-    // For attachments, we need to be more careful about this
-    attributes: {bypassNullChecks: true},
+    view: {
+      component: TakePhotoRender,
+      config: {},
+      // For attachments, we need to be more careful about this
+      attributes: {bypassNullChecks: true},
+    },
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'TemplatedStringField',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'BasicAutoIncrementer',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'RelatedRecordSelector',
-    renderComponent: RelatedRecordRenderer,
-    config: {},
-    attributes: {singleColumn: true},
+    view: {
+      component: RelatedRecordRenderer,
+      config: {},
+      attributes: {singleColumn: true},
+    },
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'AddressField',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'FileUploader',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'RandomStyle',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'RichText',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'DateTimePicker',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'DatePicker',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'MonthPicker',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'DateTimeNow',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'FAIMSTextField',
-    renderComponent: StringTypeWrapper,
-    config: {},
+    view: {component: StringTypeWrapper, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
     componentName: 'NumberField',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
 
   // qrcode namespace
   {
     componentNamespace: 'qrcode',
     componentName: 'QRCodeFormField',
-    renderComponent: DefaultRenderer,
-    config: {},
+    view: {component: DefaultRenderer, config: {}},
   },
 
   // mapping-plugin namespace
   {
     componentNamespace: 'mapping-plugin',
     componentName: 'MapFormField',
-    renderComponent: MapRenderer,
-    config: {},
-    attributes: {singleColumn: true},
+    view: {
+      component: MapRenderer,
+      config: {},
+      attributes: {singleColumn: true},
+    },
   },
 
   // DEPRECATED/UNUSED - okay to use default renderer for now
@@ -231,13 +216,13 @@ const FieldRendererList: FieldRendererEntry[] = [
 
 // Build the map from the componentNamespace::componentName to the renderer
 // entry
-export const RENDERER_REGISTRY: RendererRegistry = new Map();
-for (const entry of FieldRendererList) {
+export const FIELD_REGISTRY: FieldRegistry = new Map();
+for (const entry of FieldRegistryList) {
   const typeKey = buildKey({
     componentName: entry.componentName,
     componentNamespace: entry.componentNamespace,
   });
-  RENDERER_REGISTRY.set(typeKey, entry);
+  FIELD_REGISTRY.set(typeKey, entry);
 }
 
 // Internal helper to build the registry key
@@ -279,7 +264,7 @@ export function getRendererFromFieldConfig({
 }: {
   uiSpecification: ProjectUIModel;
   fieldName: string;
-}): FieldRendererEntry | undefined {
+}): DataViewFieldRegistryEntry | undefined {
   // Build the lookup key
   const fieldConfig = uiSpecification.fields[fieldName];
   const namespace = fieldConfig['component-namespace'];
@@ -289,10 +274,10 @@ export function getRendererFromFieldConfig({
     componentNamespace: namespace,
   });
 
-  return RENDERER_REGISTRY.get(typeKey);
+  return FIELD_REGISTRY.get(typeKey)?.view;
 }
 
-const validateRendererRegistry = (registry: RendererRegistry) => {
+const validateRendererRegistry = (registry: FieldRegistry) => {
   for (const [type, entry] of registry) {
     const {componentNamespace, componentName} = splitKey(type);
     if (
@@ -307,4 +292,4 @@ const validateRendererRegistry = (registry: RendererRegistry) => {
 };
 
 // Always validate the registry on load
-validateRendererRegistry(RENDERER_REGISTRY);
+validateRendererRegistry(FIELD_REGISTRY);

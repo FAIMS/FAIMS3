@@ -4,6 +4,7 @@ import {
   RecordMetadata,
   UISpecification,
 } from '@faims3/data-model';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
   Accordion,
   AccordionDetails,
@@ -12,17 +13,22 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import React, {useMemo} from 'react';
-import {DefaultRenderer, getRendererFromFieldConfig} from '../fields/register';
-import {RenderContext, RenderFunctionConfiguration} from '../types';
-import {EmptyResponsePlaceholder} from '../fields/wrappers';
-import {FieldDebugger} from '../fields/specialised/util';
-import {currentlyVisibleFields} from '../../../lib/form-utils';
+import {currentlyVisibleFields} from '../../lib/form-utils';
+import {
+  DefaultRenderer,
+  getRendererFromFieldConfig,
+} from './fields/fieldRegistry';
+import {EmptyResponsePlaceholder} from './fields/view';
+import {FieldDebugger} from './fields/view/specialised/util';
+import {
+  DataViewFieldRenderConfiguration,
+  DataViewFieldRenderContext,
+} from './types';
 
 /** Trace entry - helps to understand lineage when recursively rendering a form
  * renderer */
-export type FormRendererTrace = {
+export type DataViewTrace = {
   // ID of the record
   recordId: string;
   // The viewsetID called from
@@ -35,7 +41,7 @@ export type FormRendererTrace = {
   callType: 'relatedRecord';
 };
 
-export interface FormRendererProps {
+export interface DataViewProps {
   viewsetId: string;
   // The UI Spec
   uiSpecification: UISpecification;
@@ -45,9 +51,9 @@ export interface FormRendererProps {
     debugMode?: boolean;
   };
   // track history
-  trace: FormRendererTrace[];
+  trace: DataViewTrace[];
 }
-export const FormRenderer: React.FC<FormRendererProps> = props => {
+export const DataView: React.FC<DataViewProps> = props => {
   // List of field info for this viewset
   const fieldInfo: FieldSummary[] = useMemo(() => {
     return getNotebookFieldTypes({
@@ -99,23 +105,23 @@ export const FormRenderer: React.FC<FormRendererProps> = props => {
         }
 
         return (
-          <FormRendererSection
+          <DataViewSection
             {...props}
             viewId={viewId}
             sectionFields={visibleSectionFields}
             key={viewId}
-          ></FormRendererSection>
+          ></DataViewSection>
         );
       })}
     </Stack>
   );
 };
 
-export interface FormRendererSectionProps extends FormRendererProps {
+export interface DataViewSectionProps extends DataViewProps {
   viewId: string;
   sectionFields: FieldSummary[];
 }
-const FormRendererSection: React.FC<FormRendererSectionProps> = props => {
+const DataViewSection: React.FC<DataViewSectionProps> = props => {
   // Get the section label
   const sectionLabel = props.uiSpecification.views[props.viewId]?.label;
 
@@ -195,7 +201,7 @@ const FormRendererSection: React.FC<FormRendererSectionProps> = props => {
                   gridColumn: singleColumn ? '1 / -1' : 'auto',
                 }}
               >
-                <FormRendererField {...props} fieldInfo={field} />
+                <DataViewField {...props} fieldInfo={field} />
               </Box>
             );
           })}
@@ -225,11 +231,11 @@ function isResponseEmpty(val: any): boolean {
   );
 }
 
-export interface FormRendererFieldProps extends FormRendererSectionProps {
+export interface DataViewFieldProps extends DataViewSectionProps {
   fieldInfo: FieldSummary;
 }
 
-const FormRendererField: React.FC<FormRendererFieldProps> = props => {
+const DataViewField: React.FC<DataViewFieldProps> = props => {
   // Get the data for this field
   const data = props.hydratedRecord.data?.[props.fieldInfo.name];
 
@@ -239,7 +245,7 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
     fieldName: props.fieldInfo.name,
   });
 
-  const FieldRenderer = fieldRenderInfo?.renderComponent;
+  const FieldRenderer = fieldRenderInfo?.component;
 
   // Grab the UI label for this field
   // This is the configured UI label for this field, i.e. the title
@@ -255,24 +261,24 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
   const isEmpty = isResponseEmpty(data);
 
   // Map state -> render context
-  const rendererContext: RenderContext = {
+  const rendererContext: DataViewFieldRenderContext = {
     fieldId: props.fieldInfo.name,
     recordMetadata: props.hydratedRecord,
     viewId: props.viewId,
     viewsetId: props.viewsetId,
     uiSpecification: props.uiSpecification,
-    trace: props.trace
+    trace: props.trace,
   };
 
   // Debugging content to inject, if configured (config.debugMode)
   const debugContent = props.config.debugMode ? (
     // This is a component which provides a rich expandable menu of all the
     // field context- helpful for developing or debugging fields
-    <FieldDebugger {...props} value={data} rendererContext={rendererContext} />
+    <FieldDebugger {...props} value={data} renderContext={rendererContext} />
   ) : null;
 
   // Map config -> render context
-  const renderConfig: RenderFunctionConfiguration = {
+  const renderConfig: DataViewFieldRenderConfiguration = {
     debugMode: props.config.debugMode,
   };
 
@@ -304,14 +310,14 @@ const FormRendererField: React.FC<FormRendererFieldProps> = props => {
             <FieldRenderer
               value={data}
               config={renderConfig}
-              rendererContext={rendererContext}
+              renderContext={rendererContext}
             />
           ) : (
             // Or use default fallback
             <DefaultRenderer
               value={data}
               config={renderConfig}
-              rendererContext={rendererContext}
+              renderContext={rendererContext}
             />
           )}
         </Stack>

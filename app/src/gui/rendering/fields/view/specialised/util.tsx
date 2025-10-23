@@ -1,7 +1,7 @@
-import {useState} from 'react';
-import {RenderFunctionComponent} from '../../types';
+import { useState } from 'react';
+import { DataViewFieldRender } from '../../../types';
 
-export const FieldDebugger: RenderFunctionComponent = props => {
+export const FieldDebugger: DataViewFieldRender = props => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -30,7 +30,7 @@ export const FieldDebugger: RenderFunctionComponent = props => {
           alignItems: 'center',
         }}
       >
-        <span>🐛 Field Debugger: {props.rendererContext.fieldId}</span>
+        <span>🐛 Field Debugger: {props.renderContext.fieldId}</span>
         <span>{isOpen ? '▼' : '►'}</span>
       </button>
 
@@ -44,13 +44,13 @@ export const FieldDebugger: RenderFunctionComponent = props => {
             <h4 style={{margin: '0 0 8px 0', color: '#333'}}>Render Context</h4>
             <ul style={{margin: 0, paddingLeft: '20px'}}>
               <li>
-                <strong>Field ID:</strong> {props.rendererContext.fieldId}
+                <strong>Field ID:</strong> {props.renderContext.fieldId}
               </li>
               <li>
-                <strong>View ID:</strong> {props.rendererContext.viewId}
+                <strong>View ID:</strong> {props.renderContext.viewId}
               </li>
               <li>
-                <strong>Viewset ID:</strong> {props.rendererContext.viewsetId}
+                <strong>Viewset ID:</strong> {props.renderContext.viewsetId}
               </li>
             </ul>
           </section>
@@ -104,7 +104,7 @@ export const FieldDebugger: RenderFunctionComponent = props => {
                 border: '1px solid #ddd',
               }}
             >
-              {JSON.stringify(props.rendererContext.recordMetadata, null, 2)}
+              {JSON.stringify(props.renderContext.recordMetadata, null, 2)}
             </pre>
           </section>
         </div>

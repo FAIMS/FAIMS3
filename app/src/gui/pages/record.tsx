@@ -83,7 +83,7 @@ import BoxTab from '../components/ui/boxTab';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
 import Breadcrumbs from '../components/ui/breadcrumbs';
-import {FormRenderer} from '../rendering';
+import {DataView} from '../rendering';
 import {useIndividualHydratedRecord} from '../../utils/customHooks';
 
 export default function Record() {
@@ -735,7 +735,7 @@ export default function Record() {
                             buttonRef={buttonRef}
                           />
                           {hydratedRecord && (
-                            <FormRenderer
+                            <DataView
                               // Enabling debugging here helps by providing
                               // expandable detailed panel for each field
                               config={{debugMode: false}}

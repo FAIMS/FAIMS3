@@ -14,10 +14,10 @@ import {
 import {useQueries} from '@tanstack/react-query';
 import {useState} from 'react';
 import {z} from 'zod';
-import {localGetDataDb} from '../../../..';
-import {getExistingRecordRoute} from '../../../../constants/routes';
-import {FormRenderer, FormRendererProps, FormRendererTrace} from '../../engine';
-import {RenderFunctionComponent} from '../../types';
+import {localGetDataDb} from '../../../../..';
+import {getExistingRecordRoute} from '../../../../../constants/routes';
+import {DataView, DataViewProps, DataViewTrace} from '../../../DataView';
+import {DataViewFieldRender} from '../../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
 
 // ============================================================================
@@ -65,7 +65,7 @@ interface RelatedRecordDisplayProps {
  */
 interface NestedRecordProps {
   recordInfo: RecordReference;
-  formRendererProps?: FormRendererProps;
+  formRendererProps?: DataViewProps;
   isLoading: boolean;
 }
 
@@ -95,9 +95,7 @@ const INVALID_REFERENCES_MESSAGE =
  * @returns 'nest' if within limit, 'link' if at or beyond limit
  *
  */
-function determineBehaviorFromTrace(
-  trace: FormRendererTrace[]
-): DisplayBehavior {
+function determineBehaviorFromTrace(trace: DataViewTrace[]): DisplayBehavior {
   return trace.length >= RENDER_NEST_LIMIT ? 'link' : 'nest';
 }
 
@@ -286,7 +284,7 @@ const NestedRecordItem = ({
           {isLoading ? (
             <LoadingPlaceholder />
           ) : formRendererProps ? (
-            <FormRenderer {...formRendererProps} />
+            <DataView {...formRendererProps} />
           ) : (
             <RecordLoadError />
           )}
@@ -335,9 +333,9 @@ const ErrorRecordItem = ({recordId}: {recordId: string}) => (
  * @param props - RenderFunctionComponent props containing value and context
  * @returns JSX for displaying related records or appropriate fallback
  */
-export const RelatedRecordRenderer: RenderFunctionComponent = props => {
+export const RelatedRecordRenderer: DataViewFieldRender = props => {
   const {recordMetadata, uiSpecification, trace, fieldId, viewId, viewsetId} =
-    props.rendererContext;
+    props.renderContext;
   const {project_id: projectId} = recordMetadata;
 
   // Initialize data access
@@ -384,7 +382,7 @@ export const RelatedRecordRenderer: RenderFunctionComponent = props => {
               viewsetId,
             },
           ],
-        } satisfies FormRendererProps;
+        } satisfies DataViewProps;
       },
       networkMode: 'always' as const,
     })),

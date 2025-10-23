@@ -12,7 +12,7 @@ import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useRef} from 'react';
-import {RenderFunctionComponentProps} from '../../types';
+import {DataViewFieldRenderProps} from '../../../types';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value
@@ -67,7 +67,7 @@ const createFeatureStyle = () => {
 /**
  * MapRenderer component that displays GeoJSON data on an OpenLayers map
  */
-export const MapRenderer: React.FC<RenderFunctionComponentProps> = props => {
+export const MapRenderer: React.FC<DataViewFieldRenderProps> = props => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
 

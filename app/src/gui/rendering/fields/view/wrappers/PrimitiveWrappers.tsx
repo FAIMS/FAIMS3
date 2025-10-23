@@ -1,6 +1,6 @@
 import {Typography} from '@mui/material';
 import React from 'react';
-import {RenderFunctionComponent} from '../../types';
+import {DataViewFieldRender} from '../../../types';
 
 /** Used to provide a consistent simple styling for primitives */
 const PrimitiveStylingWrapper: React.FC<{
@@ -43,7 +43,7 @@ export const EmptyResponsePlaceholder: React.FC = () => {
 };
 
 /** A render function which tries to interpret the data as a string */
-export const StringTypeWrapper: RenderFunctionComponent = props => {
+export const StringTypeWrapper: DataViewFieldRender = props => {
   let content = 'Invalid';
   if (typeof props.value === 'string') {
     content = props.value as string;

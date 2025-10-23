@@ -1,2 +1,3 @@
-export * from './register';
+export * from './fieldRegistry';
 export * from '../types';
+export * from './view';

@@ -1,23 +1,23 @@
 // This is the types for rendering a field
 
 import {ProjectUIModel, RecordMetadata} from '@faims3/data-model';
-import { FormRendererTrace } from './engine';
+import {DataViewTrace as DataViewFieldTrace} from './DataView';
 
 // A renderer function component
-export type RenderFunctionComponentProps = {
+export type DataViewFieldRenderProps = {
   // Value - this is a controlled component - will re-render on value change. A
   // component may wish to cast this to their own known data type for usage
   value: any;
   // Configuration for this renderer (this is available in the function body)
-  config: RenderFunctionConfiguration;
+  config: DataViewFieldRenderConfiguration;
   // Additional contextual information, which helps more specialised types
   // reason about how to render
-  rendererContext: RenderContext;
+  renderContext: DataViewFieldRenderContext;
 };
 
-export type RenderFunctionComponent = React.FC<RenderFunctionComponentProps>;
+export type DataViewFieldRender = React.FC<DataViewFieldRenderProps>;
 
-export type RenderContext = {
+export type DataViewFieldRenderContext = {
   // The viewsetId
   viewsetId: string;
   // The view/section ID
@@ -29,16 +29,16 @@ export type RenderContext = {
   // UI specification
   uiSpecification: ProjectUIModel;
   // The form render trace (to help build new entries)
-  trace: FormRendererTrace[]
+  trace: DataViewFieldTrace[];
 };
 
 // TODO consider configuration we may need
-export type RenderFunctionConfiguration = {
+export type DataViewFieldRenderConfiguration = {
   // Should this component be rendering in debug mode?
   debugMode?: boolean;
 };
 
-export type RendererAttributes = {
+export type DataViewFieldRenderAttributes = {
   // If true, then the renderer will always be called, even if the default null
   // check suggests it shouldn't
   bypassNullChecks?: boolean;
@@ -47,18 +47,26 @@ export type RendererAttributes = {
   singleColumn?: boolean;
 };
 
-export type FieldRendererEntry = {
+export type DataViewFieldRegistryEntry = {
+  // The React component that will render this field
+  component: DataViewFieldRender;
+  // Any other configuration about how this should be rendered
+  config: DataViewFieldRenderConfiguration;
+  // Attributes/info about this renderer - can inform behaviour
+  attributes?: DataViewFieldRenderAttributes;
+};
+
+export type FieldRegistryEntry = {
   // Namespace and name (combination uniquely identifies the field type)
   componentNamespace: string;
   componentName: string;
 
-  // The React component that will render this field
-  renderComponent: RenderFunctionComponent;
-  // Any other configuration about how this should be rendered
-  config: RenderFunctionConfiguration;
-  // Attributes/info about this renderer - can inform behaviour
-  attributes?: RendererAttributes;
+  // The view entry
+  view: DataViewFieldRegistryEntry;
+
+  // TODO - form entry?
+  // form: FormFieldRegistryEntry
 };
 
 // Maps the field type -> to the renderer entry
-export type RendererRegistry = Map<string, FieldRendererEntry>;
+export type FieldRegistry = Map<string, FieldRegistryEntry>;

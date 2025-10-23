@@ -1,15 +1,15 @@
 import {FAIMSAttachment, getAtt, getAvp} from '@faims3/data-model';
-import {useQueries, useQuery} from '@tanstack/react-query';
-import {localGetDataDb} from '../../../..';
-import {RenderFunctionComponent} from '../../types';
-import {Box, Typography, Paper} from '@mui/material';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import * as ROUTES from '../../../../constants/routes';
+import {Box, Paper, Typography} from '@mui/material';
+import {useQueries, useQuery} from '@tanstack/react-query';
 import {Link as RouterLink} from 'react-router-dom';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
-import {selectActiveServerId} from '../../../../context/slices/authSlice';
-import {useAppSelector} from '../../../../context/store';
+import {localGetDataDb} from '../../../../..';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../../buildconfig';
+import {selectActiveServerId} from '../../../../../context/slices/authSlice';
+import {useAppSelector} from '../../../../../context/store';
+import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
+import * as ROUTES from '../../../../../constants/routes';
 
 // Image types we are interested in displaying
 const imageTypes = [
@@ -20,17 +20,15 @@ const imageTypes = [
   'image/gif',
 ];
 
-export const TakePhotoRender: RenderFunctionComponent = props => {
+export const TakePhotoRender: DataViewFieldRender = props => {
   // What server is this?
   const serverId = useAppSelector(selectActiveServerId);
   // Photo details are not properly hydrated out of the box, we need to grab the
   // AVP record directly (which we can find easily)
-  const dataDb = localGetDataDb(
-    props.rendererContext.recordMetadata.project_id
-  );
+  const dataDb = localGetDataDb(props.renderContext.recordMetadata.project_id);
   // What is the AVP?
   const avpId =
-    props.rendererContext.recordMetadata.avps[props.rendererContext.fieldId];
+    props.renderContext.recordMetadata.avps[props.renderContext.fieldId];
   // Now get the actual record
   const avpRecordQuery = useQuery({
     queryFn: async () => {
@@ -155,7 +153,7 @@ export const TakePhotoRender: RenderFunctionComponent = props => {
                 >
                   To download attachments, go to{' '}
                   <RouterLink
-                    to={`${ROUTES.getNotebookRoute({serverId, projectId: props.rendererContext.recordMetadata.project_id})}?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`}
+                    to={`${ROUTES.getNotebookRoute({serverId, projectId: props.renderContext.recordMetadata.project_id})}?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`}
                     style={{
                       color: 'inherit',
                       textDecoration: 'underline',
