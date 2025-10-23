@@ -738,7 +738,7 @@ export default function Record() {
                             <FormRenderer
                               // Enabling debugging here helps by providing
                               // expandable detailed panel for each field
-                              config={{debugMode: true}}
+                              config={{debugMode: false}}
                               hydratedRecord={hydratedRecord}
                               uiSpecification={uiSpec}
                               viewsetId={type}
