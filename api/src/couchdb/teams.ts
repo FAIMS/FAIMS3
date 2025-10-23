@@ -1,11 +1,12 @@
 import {
   ExistingTeamsDBDocument,
+  safeWriteDocument,
+  slugify,
   TeamsDBDocument,
   TeamsDBFields,
 } from '@faims3/data-model';
 import {getTeamsDB} from '.';
 import * as Exceptions from '../exceptions';
-import {slugify} from '../utils';
 
 /**
  * Lists all documents in the teams DB.
@@ -130,7 +131,7 @@ export const updateTeam = async (
 
   // Update the document
   try {
-    await teamsDb.put(updatedDoc);
+    await safeWriteDocument({db: teamsDb, data: updatedDoc});
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to update an existing team.'

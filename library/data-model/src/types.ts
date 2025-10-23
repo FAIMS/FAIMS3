@@ -226,43 +226,13 @@ export interface FAIMSAttachment {
 }
 
 /*
- * Autoincrementing types
- */
-export interface LocalAutoIncrementRange {
-  start: number;
-  stop: number;
-  fully_used: boolean;
-  using: boolean;
-}
-
-export interface LocalAutoIncrementState {
-  _id: string;
-  _rev?: string;
-  last_used_id: number | null;
-  ranges: LocalAutoIncrementRange[];
-}
-
-export interface AutoIncrementReference {
-  form_id: string;
-  field_id: string;
-  label?: string;
-}
-
-export interface AutoIncrementReferenceDoc {
-  _id: string;
-  _rev?: string;
-  references: AutoIncrementReference[];
-}
-
-/*
  * Elements of a Project's metadataDB can be any one of these,
  * discriminated by the prefix of the object's id
  */
 export type ProjectMetaObject =
   | ProjectSchema
   | EncodedProjectUIModel
-  | EncodedProjectMetadata
-  | AutoIncrementReferenceDoc;
+  | EncodedProjectMetadata;
 
 /*
  * Elements of a Project's dataDB can be any one of these,

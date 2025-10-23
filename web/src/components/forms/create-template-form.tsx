@@ -182,5 +182,5 @@ export function CreateTemplateForm({
         />
       </>
     );
-}
+  }
 }

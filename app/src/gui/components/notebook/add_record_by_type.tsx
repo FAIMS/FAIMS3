@@ -33,7 +33,7 @@ export default function AddRecordButtons({
   const [selectedRecord, setSelectedRecord] = useState<
     RecordMetadata | undefined
   >(undefined);
-  const showQRButton = metadata['showQRCodeButton'] === true;
+  const showQRButton = !!metadata['showQRCodeButton'];
   const buttonLabel = `Add new ${recordLabel}`;
   const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
 
@@ -161,7 +161,7 @@ export default function AddRecordButtons({
           {showQRButton && (
             <QRCodeButton
               key="scan-qr"
-              label="Scan QR"
+              label="Search By QR Code"
               onScanResult={handleScanResult}
             />
           )}

@@ -22,7 +22,12 @@
  *  persistent state will be updated when record been saved( to be discussed)
  */
 
-import {Annotations, FAIMSTypeName, ProjectID} from '@faims3/data-model';
+import {
+  Annotations,
+  FAIMSTypeName,
+  ProjectID,
+  safeWriteDocument,
+} from '@faims3/data-model';
 import stable_stringify from 'fast-json-stable-stringify';
 import {databaseService} from '../context/slices/helpers/databaseService';
 import {logError} from '../logging';
@@ -30,7 +35,7 @@ import {logError} from '../logging';
 const LOCAL_FIELD_PERSISTENT_PREFIX = 'local-fieldpersistent-state';
 
 //interface for field persistent state
-interface fieldPersistentData {
+export interface FieldPersistentData {
   _id?: string;
   project_id?: ProjectID;
   type: FAIMSTypeName;
@@ -49,7 +54,7 @@ function get_pouch_id(project_id: ProjectID, form_id: string): string {
 export async function getFieldPersistentData(
   project_id: ProjectID,
   form_id: string
-): Promise<fieldPersistentData> {
+): Promise<FieldPersistentData> {
   const pouch_id = get_pouch_id(project_id, form_id);
   try {
     const local_state_db = databaseService.getLocalStateDatabase();
@@ -76,7 +81,7 @@ export async function getFieldPersistentData(
 export async function setFieldPersistentData(
   project_id: ProjectID,
   form_id: string,
-  new_state: fieldPersistentData
+  new_state: FieldPersistentData
 ) {
   const doc = await getFieldPersistentData(project_id, form_id);
   //check if changes
@@ -87,7 +92,11 @@ export async function setFieldPersistentData(
   doc.annotations = new_state.annotations;
   try {
     const local_state_db = databaseService.getLocalStateDatabase();
-    return await local_state_db.put(doc);
+    return await safeWriteDocument({
+      db: local_state_db,
+      data: doc,
+      writeOnClash: true,
+    });
   } catch (err: any) {
     logError(err);
     throw Error('Unable to set local increment state');
@@ -96,8 +105,8 @@ export async function setFieldPersistentData(
 
 // Check if the persistent value has been updated
 const checkIfUpdated = (
-  new_state: fieldPersistentData,
-  old_state: fieldPersistentData
+  new_state: FieldPersistentData,
+  old_state: FieldPersistentData
 ) => {
   //if the origin data empty, always save the value
   if (Object.keys(old_state.data).length === 0) return true;

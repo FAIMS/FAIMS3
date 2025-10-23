@@ -23,6 +23,7 @@ export interface User {
 
 export interface AuthContext {
   isAuthenticated: boolean;
+  isExpired: () => boolean;
   getUserDetails: (
     token?: string,
     refreshToken?: string
@@ -98,7 +99,14 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
     }
   });
 
-  const isAuthenticated = !!user;
+  const isExpired = () => {
+    // Safe backout if no token present
+    if (!user || !user.decodedToken || !user.token) return true;
+    // Consider a token expired if it's within 1 minute of expiry
+    return user.decodedToken.exp * 1000 < Date.now();
+  };
+
+  const isAuthenticated = !!user && !isExpired();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -216,7 +224,14 @@ export function AuthProvider({children}: {children: React.ReactNode}) {
 
   return (
     <AuthContext.Provider
-      value={{isAuthenticated, user, getUserDetails, logout, refreshToken}}
+      value={{
+        isAuthenticated,
+        user,
+        getUserDetails,
+        logout,
+        refreshToken,
+        isExpired,
+      }}
     >
       {children}
     </AuthContext.Provider>

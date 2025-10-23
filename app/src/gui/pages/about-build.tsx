@@ -265,7 +265,7 @@ export default function AboutBuild() {
                   Damage local databases
                 </Button>
               </Grid>
-          </>
+            </>
           )}
           {(SHOW_WIPE || SHOW_POUCHDB_BROWSER) && (
             <React.Fragment>

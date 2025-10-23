@@ -130,7 +130,7 @@ export const Route = createFileRoute('/_protected')({
 });
 
 function RouteComponent() {
-  const {user, isAuthenticated} = useAuth();
+  const {user, isAuthenticated, isExpired} = useAuth();
   const {mutate: verify, isPending: verifyLoading} = useRequestVerify();
 
   const verification = {
@@ -139,7 +139,7 @@ function RouteComponent() {
   };
 
   // Show the SessionExpiredOverlay instead of redirecting immediately
-  if (!isAuthenticated) {
+  if (!isAuthenticated || isExpired()) {
     return <SessionExpiredOverlay />;
   }
 

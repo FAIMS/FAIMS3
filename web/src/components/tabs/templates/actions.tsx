@@ -78,6 +78,11 @@ const TemplateActions = () => {
     setEditorOpen(false);
   };
 
+  // need to invalidate the project query after upload
+  const uploadTemplateCallback = () => {
+    queryClient.invalidateQueries({queryKey: ['templates', templateId]});
+  };
+
   const canEditTemplate = useIsAuthorisedTo({
     action: Action.UPDATE_TEMPLATE_UISPEC,
     resourceId: templateId,
@@ -175,10 +180,12 @@ const TemplateActions = () => {
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Replace Template JSON File</ListLabel>
-                <ListDescription>Replace the template JSON file.</ListDescription>
+                <ListDescription>
+                  Replace the template JSON file.
+                </ListDescription>
               </ListItem>
               <ListItem>
-                <EditTemplateDialog />
+                <EditTemplateDialog onSuccess={uploadTemplateCallback} />
               </ListItem>
             </List>
           </Card>

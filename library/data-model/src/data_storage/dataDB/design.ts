@@ -206,6 +206,11 @@ export const indexDocument = {
         if (doc.revision_format_version === 1) emit(doc._id, 1);
       }),
     },
+    attachments: {
+      map: convertToCouchDBString(doc => {
+        if (doc.attach_format_version === 1) emit(doc._id, 1);
+      }),
+    },
     avp: {
       map: convertToCouchDBString(doc => {
         if (doc.avp_format_version === 1) emit(doc._id, 1);

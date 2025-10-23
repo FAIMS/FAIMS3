@@ -2,6 +2,9 @@ services:
   api:
     env_file:
       - ./api/.env
+    environment: 
+      # Override this so that the API refers to the internal DNS name
+      - COUCHDB_INTERNAL_URL=http://couchdb:5984
     build:
       context: .
       dockerfile: Dockerfile
@@ -28,7 +31,18 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-      
+  web:
+    env_file:
+      - ./web/.env
+    build:
+      target: web
+    ports:
+      - "0.0.0.0:3001:3001"
+    volumes:
+      - ./web/src:/usr/src/web/src
+      - ./web/.env:/usr/src/web/.env
+    command: npm run web-dev
+
   app:
     env_file:
       - ./app/.env

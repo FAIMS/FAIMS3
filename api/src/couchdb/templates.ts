@@ -8,13 +8,15 @@ import {
   PostCreateTemplateInput,
   ProjectID,
   PutUpdateTemplateInput,
+  safeWriteDocument,
+  slugify,
   TemplateDBFields,
   TemplateDocument,
   TEMPLATES_BY_TEAM_ID,
 } from '@faims3/data-model';
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
-import {generateRandomString, slugify} from '../utils';
+import {generateRandomString} from '../utils';
 import {getTeamById} from './teams';
 
 /**
@@ -249,7 +251,7 @@ export const updateExistingTemplate = async (
     name: name,
   } satisfies TemplateDocument;
   try {
-    await templateDb.put(newDocument);
+    await safeWriteDocument({db: templateDb, data: newDocument});
   } catch (e) {
     throw new Exceptions.InternalSystemError(
       'An unexpected error occurred while trying to update an existing template.'

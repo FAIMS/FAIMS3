@@ -1,6 +1,6 @@
 {
   "name": "faims3",
-  "version": "1.2.0",
+  "version": "1.2.8",
   "main": "index.js",
   "engines": {
     "node": "22"
@@ -21,12 +21,15 @@
     "start-web": "pnpm start --workspace=web",
     "force-start-app": "pnpm force-start --workspace=app",
     "watch-api": "pnpm run local --workspace=api",
+    "web-dev": "pnpm run dev --workspace=web",
     "start-designer": "pnpm run start --workspace=designer",
     "migrate": "pnpm run migrate --workspace=api",
+    "migrate-with-keys": "pnpm run migrate-with-keys --workspace=api",
     "load-projects": "pnpm run load-projects --workspace=api",
     "load-templates": "pnpm run load-templates --workspace=api",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
     "build-web": "turbo build --filter web",
+    "dev": "turbo dev --filter=@faims3/app --filter=web --filter=@faims3/api --filter=@faims3/data-model --parallel",
     "lint": "turbo lint",
     "clean": "turbo clean",
     "build": "turbo build"

@@ -14,6 +14,7 @@ COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
 # Copy monorepo package.json files
 COPY api/package.json ./api/
 COPY app/package.json ./app/
+COPY web/package.json ./web/
 COPY library/data-model/package.json ./library/data-model/
 
 # Turbo config
@@ -23,6 +24,7 @@ COPY turbo.json ./
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
   pnpm install --frozen-lockfile
 
+
 # Build stage
 FROM base AS builder
 
@@ -30,7 +32,7 @@ FROM base AS builder
 COPY . .
 
 # Build the app and api
-RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app
+RUN pnpm turbo build --filter=@faims3/api --filter=@faims3/app --filter=@faims3/web
 
 # API service
 FROM node:22-slim AS api
@@ -63,3 +65,10 @@ COPY --from=builder /usr/src .
 
 EXPOSE 3000
 CMD ["pnpm", "run", "force-start-app"]
+
+# Web service
+FROM node:20 AS web
+WORKDIR /usr/src
+COPY --from=builder /usr/src .
+EXPOSE 3001
+CMD [pnpm", "run", "web-dev"]

@@ -1,6 +1,6 @@
 {
   "name": "@faims3/api",
-  "version": "1.2.5",
+  "version": "1.2.8",
   "private": true,
   "main": "build/src/index.js",
   "packageManager": "pnpm@10.7.0",
@@ -16,6 +16,7 @@
     "prestart": "pnpm run-script compile",
     "start": "node --expose-gc --max-old-space-size=4096  .",
     "start:prod": "node --expose-gc --max-old-space-size=4096 build/src/index.js",
+    "dev": "npm run local",
     "local": "env-cmd nodemon --ignore build --ext ts --exec 'tsc --incremental && node --expose-gc --max-old-space-size=4096 .'",
     "load-projects": "env-cmd ts-node src/scripts/loadProjects.ts ./notebooks/*.json",
     "load-templates": "env-cmd ts-node src/scripts/loadTemplates.ts ./notebooks/*.json",
@@ -23,6 +24,7 @@
     "test:watch": "env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha -w",
     "coverage": "nyc --reporter=html --reporter=lcov env-cmd cross-env NODE_ENV=test TS_NODE_PROJECT='./tsconfig.json' mocha",
     "migrate": "env-cmd ts-node src/scripts/migrate.ts",
+    "migrate-with-keys": "env-cmd ts-node src/scripts/migrate.ts --keys",
     "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts"
   },
   "dependencies": {
@@ -48,7 +50,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "node-cache": "^5.1.2",
-    "nodemailer": "^6.10.0",
+    "nodemailer": "^7.0.7",
     "nyc": "^15.1.0",
     "oauth": "0.10.0",
     "passport": "^0.7.0",

@@ -40,13 +40,3 @@ export function AppUrlListener() {
 
   return null;
 }
-
-export function addNativeHooks() {
-  CapacitorApp.addListener('appStateChange', ({isActive}) => {
-    console.log('App state changed. Is active?', isActive);
-  });
-
-  CapacitorApp.addListener('appRestoredResult', data => {
-    console.log('Restored state:', data);
-  });
-}

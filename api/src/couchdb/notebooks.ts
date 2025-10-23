@@ -28,11 +28,16 @@ import {
   Action,
   APINotebookList,
   CouchProjectUIModel,
+  DatabaseInterface,
+  decodeUiSpec,
   EncodedProjectUIModel,
   ExistingProjectDocument,
+  file_attachments_to_data,
+  file_data_to_attachments,
+  getDataDB,
   GetNotebookListResponse,
   logError,
-  notebookRecordIterator,
+  PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
   ProjectID,
@@ -42,35 +47,22 @@ import {
   Resource,
   resourceRoles,
   Role,
+  safeWriteDocument,
+  setAttachmentDumperForType,
+  setAttachmentLoaderForType,
+  slugify,
   userHasProjectRole,
-  PROJECT_METADATA_PREFIX,
-  Annotations,
-  DatabaseInterface,
 } from '@faims3/data-model';
-import archiver from 'archiver';
-import {Stream} from 'stream';
 import {
-  getDataDb,
   getMetadataDb,
   initialiseDataDb,
   initialiseMetadataDb,
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL, DEVELOPER_MODE} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL} from '../buildconfig';
 import * as Exceptions from '../exceptions';
-
-import {
-  decodeUiSpec,
-  file_attachments_to_data,
-  file_data_to_attachments,
-  getDataDB,
-  setAttachmentDumperForType,
-  setAttachmentLoaderForType,
-} from '@faims3/data-model';
-import {Stringifier, stringify} from 'csv-stringify';
 import {userCanDo} from '../middleware';
-import {slugify} from '../utils';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -323,9 +315,7 @@ export const createNotebook = async (
     // first add an entry to the projects db about this project
     // this is used to find the other databases below
     const projectsDB = localGetProjectsDb();
-    if (projectsDB) {
-      await projectsDB.put(projectDoc);
-    }
+    await projectsDB.put(projectDoc);
   } catch (error) {
     console.log('Error creating project entry in projects database:', error);
     return undefined;
@@ -338,9 +328,10 @@ export const createNotebook = async (
   });
 
   const payload = {_id: 'ui-specification', ...uispec};
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
+  await safeWriteDocument({
+    db: metaDB,
+    data: payload satisfies EncodedProjectUIModel,
+  });
 
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
@@ -387,10 +378,7 @@ export const updateNotebook = async (
     ...uispec,
   };
   // now store it to update the spec
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
-
+  await safeWriteDocument({db: metaDB, data: payload});
   await writeProjectMetadata(metaDB, metadata);
 
   // update the name if required
@@ -516,7 +504,8 @@ export const writeProjectMetadata = async (
     } catch {
       // no existing document, so don't set the rev
     }
-    await metaDB.put(doc);
+
+    await safeWriteDocument({db: metaDB, data: doc});
   }
   // also add the whole metadata as 'projectvalue'
   metadata._id = PROJECT_METADATA_PREFIX + '-projectvalue';
@@ -526,7 +515,7 @@ export const writeProjectMetadata = async (
   } catch {
     // no existing document, so don't set the rev
   }
-  await metaDB.put(metadata);
+  await safeWriteDocument({db: metaDB, data: metadata});
   return metadata;
 };
 
@@ -561,7 +550,7 @@ export const getNotebookMetadata = async (
         console.error('no metadata database found for', project_id);
       }
     } catch (error) {
-      console.log('unknown project', project_id);
+      console.error('error reading project metadata', project_id, error);
     }
   } else {
     console.log('unknown project', project_id);
@@ -589,7 +578,7 @@ export const getEncodedNotebookUISpec = async (
       console.error('no metadata database found for', projectId);
     }
   } catch (error) {
-    console.log('unknown project', projectId);
+    console.error('error reading metadata db for project', projectId, error);
   }
   return null;
 };
@@ -630,487 +619,6 @@ export const validateNotebookID = async (
     return false;
   }
   return false;
-};
-
-/**
- * generate a suitable value for the CSV export from a field
- * value.  Serialise filenames, gps coordinates, etc.
- */
-const csvFormatValue = (
-  fieldName: string,
-  fieldType: string,
-  value: any,
-  hrid: string,
-  filenames: string[]
-) => {
-  const result: {[key: string]: any} = {};
-  if (fieldType === 'faims-attachment::Files') {
-    if (value instanceof Array) {
-      if (value.length === 0) {
-        result[fieldName] = '';
-        return result;
-      }
-      const valueList = value.map((v: any) => {
-        if (v instanceof File) {
-          const filename = generateFilenameForAttachment(
-            v,
-            fieldName,
-            hrid,
-            filenames
-          );
-          filenames.push(filename);
-          return filename;
-        } else {
-          return v;
-        }
-      });
-      result[fieldName] = valueList.join(';');
-    } else {
-      result[fieldName] = value;
-    }
-    return result;
-  }
-
-  // gps locations
-  if (fieldType === 'faims-pos::Location') {
-    if (
-      value instanceof Object &&
-      'geometry' in value &&
-      value.geometry.coordinates.length === 2
-    ) {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = value.geometry.coordinates[1];
-      result[fieldName + '_longitude'] = value.geometry.coordinates[0];
-      result[fieldName + '_accuracy'] = value.properties.accuracy || '';
-    } else {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
-      result[fieldName + '_accuracy'] = '';
-    }
-    return result;
-  }
-
-  if (fieldType === 'faims-core::JSON') {
-    // map location, if it's a point we can pull out lat/long
-    if (
-      value instanceof Object &&
-      'features' in value &&
-      value.features.length > 0 &&
-      value.features[0]?.geometry?.type === 'Point' &&
-      value.features[0].geometry.coordinates.length === 2
-    ) {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] =
-        value.features[0].geometry.coordinates[1];
-      result[fieldName + '_longitude'] =
-        value.features[0].geometry.coordinates[0];
-      return result;
-    } else {
-      result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
-    }
-  }
-
-  if (fieldType === 'faims-core::Relationship') {
-    if (value instanceof Array) {
-      result[fieldName] = value
-        .map((v: any) => {
-          const relation_name = v.relation_type_vocabPair
-            ? v.relation_type_vocabPair[0]
-            : 'unknown relation';
-          return `${relation_name}/${v.record_id}`;
-        })
-        .join(';');
-    } else {
-      result[fieldName] = value;
-    }
-    return result;
-  }
-
-  // default to just the value
-  result[fieldName] = value;
-  return result;
-};
-
-type FieldSummary = {
-  name: string;
-  type: string;
-  annotation?: string;
-  uncertainty?: string;
-};
-
-/**
- * Convert annotations on a field to a format suitable for CSV export
- */
-const csvFormatAnnotation = (
-  field: FieldSummary,
-  {annotation, uncertainty}: Annotations
-) => {
-  const result: {[key: string]: any} = {};
-  if (field.annotation !== '')
-    result[field.name + '_' + field.annotation] = annotation;
-  if (field.uncertainty !== '')
-    result[field.name + '_' + field.uncertainty] = uncertainty
-      ? 'true'
-      : 'false';
-  return result;
-};
-
-/**
- * Format the data for a single record for CSV export
- *
- * @returns a map of column headings to values
- */
-const convertDataForOutput = (
-  fields: FieldSummary[],
-  data: any,
-  annotations: {[name: string]: Annotations},
-  hrid: string,
-  filenames: string[]
-) => {
-  let result: {[key: string]: any} = {};
-  fields.map((field: any) => {
-    if (field.name in data) {
-      const formattedValue = csvFormatValue(
-        field.name,
-        field.type,
-        data[field.name],
-        hrid,
-        filenames
-      );
-      const formattedAnnotation = csvFormatAnnotation(
-        field,
-        annotations[field.name] || {}
-      );
-      result = {...result, ...formattedValue, ...formattedAnnotation};
-    } else {
-      console.error('field missing in data', field.name, data);
-    }
-  });
-  return result;
-};
-
-/**
- * Get a list of fields for a notebook with relevant information
- * on each for the export
- *
- * @param project_id Project ID
- * @param viewID View ID
- * @returns an array of FieldSummary objects
- */
-const getNotebookFieldTypes = async (project_id: ProjectID, viewID: string) => {
-  const uiSpec = await getEncodedNotebookUISpec(project_id);
-  if (!uiSpec) {
-    throw new Error("can't find project " + project_id);
-  }
-  if (!(viewID in uiSpec.viewsets)) {
-    throw new Error(`invalid form ${viewID} not found in notebook`);
-  }
-  const views = uiSpec.viewsets[viewID].views;
-  const fields: FieldSummary[] = [];
-  views.forEach((view: any) => {
-    uiSpec.fviews[view].fields.forEach((field: any) => {
-      const fieldInfo = uiSpec.fields[field];
-      fields.push({
-        name: field,
-        type: fieldInfo['type-returned'],
-        annotation: fieldInfo.meta.annotation.include
-          ? slugify(fieldInfo.meta.annotation.label)
-          : '',
-        uncertainty: fieldInfo.meta.uncertainty.include
-          ? slugify(fieldInfo.meta.uncertainty.label)
-          : '',
-      });
-    });
-  });
-  return fields;
-};
-
-/**
- * Stream the records in a notebook as a CSV file
- *
- * @param projectId Project ID
- * @param viewID View ID
- * @param res writeable stream
- */
-export const streamNotebookRecordsAsCSV = async (
-  projectId: ProjectID,
-  viewID: string,
-  res: NodeJS.WritableStream
-) => {
-  console.log('streaming notebook records as CSV', projectId, viewID);
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-  const iterator = await notebookRecordIterator({
-    dataDb,
-    projectId,
-    uiSpecification,
-    viewID,
-  });
-  const fields = await getNotebookFieldTypes(projectId, viewID);
-
-  let stringifier: Stringifier | null = null;
-  let {record, done} = await iterator.next();
-  let header_done = false;
-  const filenames: string[] = [];
-  while (!done) {
-    // record might be null if there was an invalid db entry
-    if (record) {
-      const hrid = record.hrid || record.record_id;
-      const row = [
-        hrid,
-        record.record_id,
-        record.revision_id,
-        record.type,
-        record.created_by,
-        record.created.toISOString(),
-        record.updated_by,
-        record.updated.toISOString(),
-      ];
-      const outputData = convertDataForOutput(
-        fields,
-        record.data,
-        record.annotations,
-        hrid,
-        filenames
-      );
-      Object.keys(outputData).forEach((property: string) => {
-        row.push(outputData[property]);
-      });
-
-      if (!header_done) {
-        const columns = [
-          'identifier',
-          'record_id',
-          'revision_id',
-          'type',
-          'created_by',
-          'created',
-          'updated_by',
-          'updated',
-        ];
-        // take the keys in the generated output data which may have more than
-        // the original data
-        Object.keys(outputData).forEach((key: string) => {
-          columns.push(key);
-        });
-        stringifier = stringify({columns, header: true, escape_formulas: true});
-        // pipe output to the respose
-        stringifier.pipe(res);
-        header_done = true;
-      }
-      if (stringifier) stringifier.write(row);
-    }
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
-  if (stringifier) {
-    stringifier.end();
-  } else {
-    // no records to export so just send the bare column headings
-    const columns = [
-      'identifier',
-      'record_id',
-      'revision_id',
-      'type',
-      'created_by',
-      'created',
-      'updated_by',
-      'updated',
-    ];
-    stringifier = stringify({columns, header: true});
-    // pipe output to the respose
-    stringifier.pipe(res);
-    stringifier.end();
-  }
-};
-
-export const streamNotebookFilesAsZip = async (
-  projectId: ProjectID,
-  viewID: string,
-  res: NodeJS.WritableStream
-) => {
-  const logMemory = (stage: string, extraInfo = '') => {
-    if (DEVELOPER_MODE) {
-      const used = process.memoryUsage();
-      console.log(
-        `[ZIP ${stage}] ${extraInfo} - RSS: ${Math.round(used.rss / 1024 / 1024)}MB, ArrayBuffers: ${Math.round(used.arrayBuffers / 1024 / 1024)}MB, External: ${Math.round(used.external / 1024 / 1024)}MB`
-      );
-    }
-  };
-
-  logMemory('START');
-
-  let allFilesAdded = false;
-  let doneFinalize = false;
-
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-  const iterator = await notebookRecordIterator({
-    dataDb,
-    projectId,
-    uiSpecification,
-    viewID,
-  });
-  const archive = archiver('zip', {zlib: {level: 9}});
-  // good practice to catch warnings (ie stat failures and other non-blocking errors)
-  archive.on('warning', err => {
-    if (err.code === 'ENOENT') {
-      // log warning
-    } else {
-      // throw error
-      throw err;
-    }
-  });
-
-  // good practice to catch this error explicitly
-  archive.on('error', err => {
-    throw err;
-  });
-
-  // check on progress, if we've finished adding files and they are
-  // all processed then we can finalize the archive
-  archive.on('progress', (ev: any) => {
-    if (
-      !doneFinalize &&
-      allFilesAdded &&
-      ev.entries.total === ev.entries.processed
-    ) {
-      try {
-        archive.finalize();
-        doneFinalize = true;
-      } catch {
-        // ignore ArchiveError
-      }
-    }
-  });
-
-  let recordCount = 0;
-  let fileCount = 0;
-
-  archive.pipe(res);
-  let dataWritten = false;
-  let {record, done} = await iterator.next();
-  const fileNames: string[] = [];
-  while (!done) {
-    // iterate over the fields, if it's a file, then
-    // append it to the archive
-    if (record !== null) {
-      const hrid = record.hrid || record.record_id;
-      recordCount++;
-      logMemory('RECORD', `Record ${recordCount} (${hrid})`);
-
-      // Process files sequentially to avoid memory spikes
-      for (const key of Object.keys(record.data)) {
-        if (record.data[key] instanceof Array && record.data[key].length > 0) {
-          if (record.data[key][0] instanceof File) {
-            const file_list = record.data[key] as File[];
-
-            // Process files one at a time
-            for (const file of file_list) {
-              fileCount++;
-              const fileSizeMB = Math.round(file.size / 1024 / 1024);
-              logMemory(
-                'BEFORE_FILE',
-                `File ${fileCount}, Size: ${fileSizeMB}MB`
-              );
-
-              const filename = generateFilenameForAttachment(
-                file,
-                key,
-                hrid,
-                fileNames
-              );
-              fileNames.push(filename);
-
-              // Convert Web ReadableStream to Node.js Readable stream
-              const webStream = file.stream();
-              const reader = webStream.getReader();
-
-              // Create a Node.js Readable stream from the chunks
-              const nodeStream = new Stream.Readable({
-                async read() {
-                  try {
-                    const {done, value} = await reader.read();
-                    if (done) {
-                      this.push(null); // End the stream
-                    } else {
-                      this.push(Buffer.from(value)); // Convert Uint8Array to Buffer
-                    }
-                  } catch (error) {
-                    this.destroy(error as Error);
-                  }
-                },
-              });
-
-              await archive.append(nodeStream, {
-                name: filename,
-              });
-              dataWritten = true;
-
-              logMemory('AFTER_FILE', `File ${fileCount} processed`);
-            }
-
-            // Clear the file array after processing to help GC
-            record.data[key] = [];
-            logMemory('AFTER_CLEAR', 'Files cleared');
-            // Force garbage collection if available (Node.js --expose-gc flag)
-            if (global.gc && recordCount % 5 === 0) {
-              global.gc();
-              logMemory('AFTER_GC', `Forced GC after record ${recordCount}`);
-            }
-          }
-        }
-      }
-    }
-    // Clear the record reference before getting the next one
-    record = null;
-
-    const next = await iterator.next();
-    record = next.record;
-    done = next.done;
-  }
-  // if we didn't write any data then finalise because that won't happen elsewhere
-  if (!dataWritten) {
-    console.log('no data written');
-    archive.abort();
-  }
-  allFilesAdded = true;
-  // fire a progress event here because short/empty zip files don't
-  // trigger it late enough for us to call finalize above
-  archive.emit('progress', {entries: {processed: 0, total: 0}});
-
-  logMemory('COMPLETE');
-};
-
-export const generateFilenameForAttachment = (
-  file: File,
-  key: string,
-  hrid: string,
-  filenames: string[]
-) => {
-  const fileTypes: {[key: string]: string} = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/gif': 'gif',
-    'image/tiff': 'tif',
-    'text/plain': 'txt',
-    'application/pdf': 'pdf',
-    'application/json': 'json',
-  };
-
-  const type = file.type;
-  const extension = fileTypes[type] || 'dat';
-  let filename = `${key}/${hrid}-${key}.${extension}`;
-  let postfix = 1;
-  while (filenames.find(f => f.localeCompare(filename) === 0)) {
-    filename = `${key}/${hrid}-${key}_${postfix}.${extension}`;
-    postfix += 1;
-  }
-  return filename;
 };
 
 /**
