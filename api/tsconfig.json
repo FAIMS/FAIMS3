@@ -21,13 +21,18 @@
       "../node_modules/@types",
       "./node_modules/@types",
       "./src/types"
-    ],
+    ]
   },
   "ts-node": {
-    "files": true
+    "files": true,
+    "typeCheck": true
   },
   "include": [
     "src",
-    "test"
+    "test",
+    "src/types/*.d.ts"
+  ],
+  "files": [
+    "src/types/supertest.d.ts"
   ]
 }

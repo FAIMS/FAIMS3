@@ -71,6 +71,7 @@
   },
   "devDependencies": {
     "@types/archiver": "^6.0.2",
+    "@types/body-parser": "^1.19.6",
     "@types/chai": "^4.3.9",
     "@types/cookie-session": "2.0.47",
     "@types/cors": "2.8.17",
@@ -91,6 +92,7 @@
     "@types/pouchdb-find": "^7.3.3",
     "@types/qrcode": "^1.5.2",
     "@types/sinon": "^10.0.20",
+    "@types/superagent": "^8.1.9",
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-dist": "^3.30.3",
     "@types/uuid": "9.0.7",
