@@ -108,7 +108,7 @@
     "nodemon": "^2.0.20",
     "pouchdb-adapter-memory": "^9.0.0",
     "sinon": "^17.0.1",
-    "supertest": "^6.3.4",
+    "supertest": "^7.1.4",
     "ts-node": "10.9.1",
     "typescript": "^5.9.2"
   }

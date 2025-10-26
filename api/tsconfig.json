@@ -1,7 +1,6 @@
 {
   "extends": "../node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
-    "preserveSymlinks": true,
     "rootDir": ".",
     "outDir": "build",
     "target": "es6",
@@ -16,12 +15,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false,
-    "typeRoots": [
-      "../node_modules/@types",
-      "./node_modules/@types",
-      "./src/types"
-    ]
+    "noEmit": false
   },
   "ts-node": {
     "files": true,
@@ -29,10 +23,6 @@
   },
   "include": [
     "src",
-    "test",
-    "src/types/*.d.ts"
-  ],
-  "files": [
-    "src/types/supertest.d.ts"
+    "test"
   ]
 }

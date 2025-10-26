@@ -124,7 +124,7 @@ export const beforeApiTests = async () => {
  * @returns The wrapped request object
  */
 export const requestAuthAndType = (
-  request: ReturnType<typeof supertest>, 
+  request: supertest.Test,
   token: string = adminToken
 ) => {
   return request
