@@ -82,7 +82,7 @@ import patch from './utils/patchExpressAsync';
 // This must occur before express app is used
 patch();
 
-export const app: express.Router = express();
+export const app: express.Express = express();
 app.use(morgan('combined'));
 
 const IS_TEST = process.env.NODE_ENV === 'test';
