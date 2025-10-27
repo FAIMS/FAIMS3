@@ -20,7 +20,7 @@
 
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 // eslint-disable-next-line n/no-extraneous-import
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 import memoryAdapter from 'pouchdb-adapter-memory';
 import {AutoIncrementer} from './autoincrement';
 import {
