@@ -55,6 +55,10 @@ jobs:
       - id: install-aws-cli
         uses: unfor19/install-aws-cli-action@v1
       - run: aws sts get-caller-identity
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:

@@ -46,6 +46,10 @@ jobs:
           cd app/ios/App
           bundle install
           bundle exec fastlane install_plugins
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
       - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
