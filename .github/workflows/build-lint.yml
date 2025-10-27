@@ -46,7 +46,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm ci
+          pnpm install
 
       - name: Configure Turborepo Remote Cache
         run: |
