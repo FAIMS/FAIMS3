@@ -11,17 +11,6 @@ jobs:
       # note not using Turbo build as it caused a problem with missing assets
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.pnpm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
       - name: Install jq
         run: |
           brew update
@@ -50,7 +39,7 @@ jobs:
         name: Install pnpm
         with:
           run_install: false
-      - name: Use Node.js 20
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -92,11 +81,11 @@ jobs:
           export VITE_OFFLINE_MAPS=true
           export VITE_MAP_STYLE=basic
 
-          pnpm ci --python=python3.10
-          # we install these here because of a bug in pnpm with platform specific
+          pnpm install --frozen-lockfile --python=python3.10
+          # we install these here because of a bug in npm with platform specific
           # dependencies
           pnpm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
-          pnpm run configIOSbuild --workspace app
+          pnpm --filter=@faims3/app run configIOSbuild 
           pnpm run build          
           # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY and uses VITE_APPLE_BUNDLE_IDENTIFIER on IOS)
           cd app

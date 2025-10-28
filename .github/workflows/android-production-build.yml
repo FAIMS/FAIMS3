@@ -43,7 +43,7 @@ jobs:
         name: Install pnpm
         with:
           run_install: false
-      - name: Use Node.js 20
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -106,13 +106,13 @@ jobs:
           export VITE_OFFLINE_MAPS=true
           export VITE_MAP_STYLE=basic
 
-          pnpm ci
+          pnpm install --frozen-lockfile
           pnpm run build
           # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY)
           cd app
           ./bin/bugsnag-sourcemaps.sh ANDROID
-      - run: pnpm run app-update android --workspace=@faims3/app
-      - run: pnpm run webapp-sync --workspace=@faims3/app -- --deployment android
+      - run: pnpm --filter=@faims3/app run app-update android 
+      - run: pnpm --filter=@faims3/app run webapp-sync -- --deployment android
       - name: Fastlane
         run: |
           cd app/android

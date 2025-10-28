@@ -35,17 +35,6 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           run_install: false
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.pnpm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
       - name: Install jq
         run: sudo apt-get install -y jq
 
@@ -132,8 +121,8 @@ jobs:
           pnpm run build
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...
-      - run: pnpm run app-update android --workspace=@faims3/app
-      - run: pnpm run webapp-sync --workspace=@faims3/app -- --deployment android
+      - run: pnpm --filter=@faims3/app run app-update android 
+      - run: pnpm --filter=@faims3/app run webapp-sync -- --deployment android
       - name: Fastlane
         run: |
           cd app/android

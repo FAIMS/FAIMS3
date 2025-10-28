@@ -31,22 +31,10 @@ jobs:
         with:
           node-version: 22.18.0
           cache: 'pnpm'
-          cache-dependency-path: |
-            package-lock.json
-            app/package-lock.json
-            web/package-lock.json
-
-      - name: Setup node cache
-        id: node-cache
-        uses: actions/cache@v3
-        with:
-          path: '**/node_modules'
-          key: pnpm-${{ hashFiles('package-lock.json') }}-${{ hashFiles('package.json') }}
-          restore-keys: pnpm-
 
       - name: Install dependencies
         run: |
-          pnpm install
+          pnpm install --frozen-lockfile
 
       - name: Configure Turborepo Remote Cache
         run: |
