@@ -18,13 +18,8 @@ The repository contains the following:
 
 ### Prerequisites
 
-Ensure you have `uuidgen` installed:
-
-```bash
-sudo apt-get install uuid
-```
-
-You'll need Node.js 22 and pnpm. We strongly recommend using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager).
+You'll need Node.js 22 and pnpm installed. We strongly recommend
+using [`nvm`](https://github.com/nvm-sh/nvm) (node version manager).
 
 Install and activate Node v22:
 
@@ -58,7 +53,9 @@ This spins up four services:
   ./localdev.sh --all --build
   ```
 
-- **Clear database**: Use `--clear-db` flag to prune volumes and start fresh
+- **Clear database**: Use `--clear-db` flag to prune volumes and so clear
+any existing database content
+
   ```bash
   ./localdev.sh --all --clear-db
   ```
@@ -67,7 +64,7 @@ This spins up four services:
 
 If you prefer to run the application services natively and only use Docker for CouchDB:
 
-1. Start CouchDB only (default behavior without `--all` flag):
+1. Start CouchDB only (default behaviour without `--all` flag):
 
 ```bash
 ./localdev.sh
@@ -78,13 +75,13 @@ This starts CouchDB on http://localhost:5984/\_utils
 2. Migrate the CouchDB:
 
 ```bash
-npm run migrate
+pnpm run migrate-with-keys
 ```
 
 3. Run development services natively (in a separate terminal):
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 This runs:
@@ -93,15 +90,19 @@ This runs:
 - app: http://localhost:3000
 - api: http://localhost:8080
 
-Use the user/password from `api/.env` to login.
+Use the admin user/password from `api/.env` to login.
 
 These three commands are bundled into `dev.sh` i.e.
 
-```
+```bash
 ./dev.sh
 ```
 
-## Initial step-by step setup
+## Manual Setup 
+
+These steps are done by the `localdev.sh` script but in case you want to do them manually they are listed here.
+
+### Initial step-by step setup
 
 Clone the repository and install node modules (note this only needs to be run from the parent folder)
 
@@ -118,9 +119,9 @@ code ./api/.env &&
 code ./app/.env
 ```
 
-## API Setup
+### API Setup
 
-### Key Generation
+#### Key Generation
 
 The system requires a key pair to sign the JWT used for communication with the CouchDB database.
 The private key must be known to the API server and is used to sign the JWT. The public key is shared
@@ -145,7 +146,7 @@ this generates new key pair in the `keys` folder in the `api` folder and generat
 for couchdb that contains the public key and other information. This uses the script
 located at `./api/keymanagement/makeInstanceKeys.sh`.
 
-### Running with Docker
+#### Running with Docker
 
 Build the two docker images:
 
@@ -167,7 +168,7 @@ docker compose -f api/docker-compose.dev.yml up -d
 
 will start the couchdb and conductor servers to listen on the configured port.
 
-### Running with Node
+#### Running with Node
 
 If you don't plan to use Docker to run or deploy Conductor, you need to get CouchDB
 running on your host and enter the appropriate addresses in the `.env` file.
@@ -186,7 +187,7 @@ pnpm run watch-api
 
 instead, which will monitor for changes with `nodemon`.
 
-### Initialisation
+#### Initialisation
 
 Once the services are up and running we need to initialise the CouchDB
 database. This is done by sending a request to the API via a short script.
@@ -195,19 +196,12 @@ as configured for CouchDB (`COUCHDB_PASSWORD` in `.env`). The script will
 have no effect if the admin user is already set up. Run the script with:
 
 ```bash
-pnpm run migrate
+pnpm run migrate-with-keys
 ```
 
 There is also a script that will populate the database with notebooks that are
 stored in the `notebooks` directory. There should be two sample notebooks in
 there but you can also create new ones.
-
-This script requires authentication, so you need to get a user token for the admin
-user. First, connect to the conductor instance on <http://localhost:8080/> or whatever
-port you have configured. Login using the local `admin` user and password.
-Now, from the Conductor home page (<http://localhost:8080/>) scroll down to "Copy
-Bearer Token to Clipboard". Paste this value into your .env file as the
-value of USER_TOKEN.
 
 ```bash
 pnpm run load-notebooks

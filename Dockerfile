@@ -67,7 +67,14 @@ EXPOSE 3000
 CMD ["pnpm", "run", "force-start-app"]
 
 # Web service
-FROM node:20 AS web
+FROM node:22-slim AS web
+
+# Install pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+
 WORKDIR /usr/src
 COPY --from=builder /usr/src .
 EXPOSE 3001

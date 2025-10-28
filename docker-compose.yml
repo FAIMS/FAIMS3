@@ -41,7 +41,7 @@ services:
     volumes:
       - ./web/src:/usr/src/web/src
       - ./web/.env:/usr/src/web/.env
-    command: npm run web-dev
+    command: pnpm run web-dev
 
   app:
     env_file:
