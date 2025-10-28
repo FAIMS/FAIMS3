@@ -295,10 +295,10 @@ current working directory inside the container so that you can work on
 code in real time. To use this you also need a local `node_modules` folder
 since the current directory will shadow the one inside the container.
 
-To create `node_modules` run `pnpm ci` inside the container:
+To create `node_modules` run `pnpm install` inside the container:
 
 ```bash
-docker compose -f api/docker-compose.dev.yml run conductor pnpm ci
+docker compose -f api/docker-compose.dev.yml run conductor pnpm install
 ```
 
 Then start the services:
