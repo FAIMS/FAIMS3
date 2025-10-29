@@ -40,7 +40,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.1.0",
     "@eslint/js": "^9.9.0",
-    "@types/node": "^22.2.0",
+    "@types/node": "^22.13.14",
     "eslint-plugin-prettier": "^5.2.1",
     "gts": "^5.3.1",
     "turbo": "^2.0.11",
