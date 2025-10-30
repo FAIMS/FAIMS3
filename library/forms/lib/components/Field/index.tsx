@@ -1,16 +1,27 @@
 import {createElement} from 'react';
-import {registeredFieldTypes} from '../fields';
+import {getFieldInfo} from '../fields';
 import React from 'react';
 
 interface FieldProps {
-  fieldType: string;
-  [key: string]: any;
+  fieldSpec: any;
 }
 export const Field = React.memo((props: FieldProps) => {
-  console.log('Rendering Field of type:', props.fieldType, props.name);
-  const fieldInfo = registeredFieldTypes[props.fieldType];
+  console.log(
+    'Rendering Field of type:',
+    props.fieldSpec['component-namespace'],
+    props.fieldSpec['component-name']
+  );
+  const fieldInfo = getFieldInfo({
+    namespace: props.fieldSpec['component-namespace'],
+    name: props.fieldSpec['component-name'],
+  });
   if (!fieldInfo) {
-    throw new Error(`Field type ${props.fieldType} not registered`);
+    throw new Error(
+      `Field type ${props.fieldSpec['component-namespace']}::${props.fieldSpec['component-name']} not registered`
+    );
   }
-  return createElement(fieldInfo.component, props);
+  return createElement(
+    fieldInfo.component,
+    props.fieldSpec['component-parameters']
+  );
 });

@@ -34,14 +34,14 @@ const TextField = React.memo((props: BaseFieldProps) => {
 });
 
 const validateTextField = (value: any) => {
-  return true;
+  return typeof value === 'string';
 };
 
 // Export a constant with the information required to
 // register this field type
 export const textFieldSpec: FieldInfo = {
-  namespace: 'formik-material-ui',
-  name: 'TextField',
+  namespace: 'faims-custom',
+  name: 'FAIMSTextField',
   returns: 'faims-core::String',
   component: TextField,
   validator: validateTextField,

@@ -2,10 +2,7 @@ import {textFieldSpec} from '../fields/TextField';
 import {richTextFieldSpec} from '../fields/RichText';
 import {FieldInfo} from '../../types';
 
-export const registeredFieldTypes: {[key: string]: FieldInfo} = {
-  FAIMSTextField: textFieldSpec,
-  RichText: richTextFieldSpec,
-};
+const registeredFieldTypes: {[key: string]: FieldInfo} = {};
 
 const registerField = (fieldSpec: FieldInfo) => {
   const key = `${fieldSpec.namespace}::${fieldSpec.name}`;
@@ -22,3 +19,7 @@ export const getFieldInfo = ({
   const key = `${namespace}::${name}`;
   return registeredFieldTypes[key] || null;
 };
+
+// Field Registrations here
+registerField(textFieldSpec);
+registerField(richTextFieldSpec);

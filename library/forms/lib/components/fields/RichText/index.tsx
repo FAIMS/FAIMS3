@@ -40,8 +40,8 @@ export const RichTextField: React.FC<Props> = ({content}) => {
 };
 
 export const richTextFieldSpec: FieldInfo = {
-  namespace: 'formik-material-ui',
-  name: 'RichTextField',
+  namespace: 'faims-custom',
+  name: 'RichText',
   returns: null,
   component: RichTextField,
   validator: () => true,

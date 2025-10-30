@@ -21,13 +21,7 @@ export const FormSection = React.memo(({uiSpec, section}: FormSectionProps) => {
       <h2>Section: {sectionSpec.label}</h2>
       {sectionSpec.fields.map((fieldName: string) => {
         const fieldSpec = uiSpec.fields[fieldName];
-        return (
-          <Field
-            {...fieldSpec['component-parameters']}
-            fieldType={fieldSpec['component-name']}
-            key={fieldName}
-          />
-        );
+        return <Field fieldSpec={fieldSpec} key={fieldName} />;
       })}
     </div>
   );
