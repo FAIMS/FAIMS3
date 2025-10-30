@@ -1,16 +1,15 @@
-import './App.css'
-import {FormManager} from '../lib'
+import './App.css';
+import {FormManager} from '../lib';
 
-function App() {
-
+function App(props: {project: any}) {
   return (
     <>
       <h1>FAIMS3 Forms</h1>
       <div className="card">
-        <FormManager someProp="someValue" />
+        <FormManager project={props.project} formName="Person" />
       </div>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
