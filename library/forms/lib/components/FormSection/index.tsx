@@ -1,26 +1,20 @@
 import {EncodedUISpecification} from '@faims3/data-model';
 import {Field} from '../Field';
+import React from 'react';
 
 interface FormSectionProps {
   uiSpec: EncodedUISpecification;
   section: string;
-  setValue: (fieldName: string, value: any) => void;
-  values: Record<string, any>;
 }
 
 // A form section contains the fields defined for one section of a form
-export const FormSection = ({
-  uiSpec,
-  section,
-  setValue,
-  values,
-}: FormSectionProps) => {
+export const FormSection = React.memo(({uiSpec, section}: FormSectionProps) => {
   const sectionSpec = uiSpec.fviews[section];
   if (!sectionSpec) {
     throw new Error(`Section ${section} not found in UISpec`);
   }
 
-  console.log('Section spec:', sectionSpec);
+  console.log('Section:', sectionSpec.label);
 
   return (
     <div>
@@ -31,12 +25,10 @@ export const FormSection = ({
           <Field
             {...fieldSpec['component-parameters']}
             fieldType={fieldSpec['component-name']}
-            setValue={(value: any) => setValue(fieldName, value)}
-            value={values[fieldName]}
             key={fieldName}
           />
         );
       })}
     </div>
   );
-};
+});

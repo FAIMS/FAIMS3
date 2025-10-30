@@ -4,8 +4,6 @@ import React from 'react';
 export interface BaseFieldProps {
   label?: string;
   name: string;
-  value?: any;
-  setValue: (value: any) => void;
   helperText?: string;
   required?: boolean;
   advancedHelperText?: string;

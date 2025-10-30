@@ -2,16 +2,19 @@ import {TextField as MuiTextField} from '@mui/material';
 import FieldWrapper from '../../FieldWrapper';
 import {BaseFieldProps, FieldInfo} from '../../../types';
 import {useState} from 'react';
+import {useFormField} from '../../FormManager/FormContext';
+import React from 'react';
 
-const TextField = (props: BaseFieldProps) => {
+const TextField = React.memo((props: BaseFieldProps) => {
   console.log('TextField:', props.name);
 
-  const [currentValue, setCurrentValue] = useState(props.value || '');
+  const {value, setValue} = useFormField(props.name);
+  const [currentValue, setCurrentValue] = useState(value || '');
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
     setCurrentValue(newValue);
-    props.setValue(newValue);
+    setValue(newValue);
   };
 
   return (
@@ -28,7 +31,7 @@ const TextField = (props: BaseFieldProps) => {
       />
     </FieldWrapper>
   );
-};
+});
 
 const validateTextField = (value: any) => {
   return true;
