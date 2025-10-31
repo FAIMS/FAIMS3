@@ -229,7 +229,7 @@ fi
 # create local keys
 echo "Generating local keys"
 echo "> pnpm run generate-local-keys"
-npm run generate-local-keys
+pnpm run generate-local-keys
 
 echo "Starting docker service..."
 manage_docker_volumes
