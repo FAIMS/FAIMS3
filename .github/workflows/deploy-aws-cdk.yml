@@ -141,16 +141,22 @@ jobs:
           echo "AWS CLI installed:"
           aws --version
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: 'pnpm'
 
-      - name: Display Node.js Version
+      - name: Display Node.js and pnpm Versions
         run: |
-          echo "Node.js setup complete:"
+          echo "Node.js and pnpm setup complete:"
           echo "Node version: $(node --version)"
-          echo "NPM version: $(pnpm --version)"
+          echo "pnpm version: $(pnpm --version)"
 
       - name: Install dependencies
         working-directory: infrastructure/aws-cdk
