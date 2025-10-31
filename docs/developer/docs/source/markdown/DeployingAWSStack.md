@@ -45,7 +45,7 @@ Follow the usual repository pre-requisites, i.e. ensure
 **From the repo root**, install dependencies as per usual i.e.
 
 ```
-npm i
+pnpm i
 ```
 
 ## AWS Pre-requisites
@@ -59,7 +59,7 @@ Follow the guide at [CDK Bootstrap](https://docs.aws.amazon.com/cdk/v2/guide/boo
 i.e.
 
 ```
-npm i aws-cdk -g
+pnpm i aws-cdk -g
 # ensuring credentials are setup for target AWS account(!)
 cdk bootstrap <aws://123456789012/ap-southeast-2>
 ```
@@ -529,9 +529,9 @@ value from above.
 From within `api` (again ensuring your have AWS creds active!)
 
 ```
-npm i
+pnpm i
 npx turbo build
-npm run migrate -- --keys
+pnpm run migrate -- --keys
 ```
 
 This will migrate all the databases, and force push the JWT signing keys. In the future, you do not need to include the `-- --keys` postfix for routine migrations.

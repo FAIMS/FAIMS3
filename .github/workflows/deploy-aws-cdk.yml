@@ -150,13 +150,13 @@ jobs:
         run: |
           echo "Node.js setup complete:"
           echo "Node version: $(node --version)"
-          echo "NPM version: $(npm --version)"
+          echo "NPM version: $(pnpm --version)"
 
       - name: Install dependencies
         working-directory: infrastructure/aws-cdk
         run: |
           echo "Installing project dependencies..."
-          npm install
+          pnpm install --frozen-lockfile
           echo "Dependencies installed successfully"
 
       - name: Display Final Configuration Before CDK

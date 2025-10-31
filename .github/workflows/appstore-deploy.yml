@@ -2,7 +2,7 @@ name: Deploy to Apple App Store Production, Manual
 
 on:
   workflow_dispatch:
-    
+
 jobs:
   ios-deploy:
     name: Deploying to Production
@@ -11,17 +11,6 @@ jobs:
       # note not using Turbo build as it caused a problem with missing assets
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
       - name: Install jq
         run: |
           brew update
@@ -34,8 +23,8 @@ jobs:
       - name: Create version string
         shell: bash
         run: |
-          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"        
-      
+          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"
+
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
         with:
@@ -46,15 +35,19 @@ jobs:
           cd app/ios/App
           bundle install
           bundle exec fastlane install_plugins
-      - name: Use Node.js 20
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Use Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10' 
+          python-version: '3.10'
       - name: Building webapp
         run: |
           export platform="github-actions-ios"
@@ -87,13 +80,13 @@ jobs:
           # could make these configurable but enable by default for now
           export VITE_OFFLINE_MAPS=true
           export VITE_MAP_STYLE=basic
-          
-          npm ci --python=python3.10
+
+          pnpm install --frozen-lockfile --python=python3.10
           # we install these here because of a bug in npm with platform specific
           # dependencies
-          npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
-          npm run configIOSbuild --workspace app
-          npm run build          
+          pnpm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          pnpm --filter=@faims3/app run configIOSbuild 
+          pnpm run build          
           # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY and uses VITE_APPLE_BUNDLE_IDENTIFIER on IOS)
           cd app
           ./bin/bugsnag-sourcemaps.sh IOS
@@ -102,7 +95,7 @@ jobs:
           cd app
           npx cap update ios
           npx cap sync --deployment ios
-          cd ios/App; pod install     
+          cd ios/App; pod install
       - name: Set up XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:

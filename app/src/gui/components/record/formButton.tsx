@@ -205,7 +205,11 @@ export default function FormButtonGroup({
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
             />
-            <FormSubmitButton
+            {/** Disabled for now because there is a bug that loses the link to the
+             * first child record when this is used
+             * TODO: re-enable when bug is fixed
+             */
+            /* <FormSubmitButton
               color="secondary"
               data-testid="finish-new-record"
               disabled={!showPublishButton}
@@ -214,7 +218,7 @@ export default function FormButtonGroup({
               action="new"
               handleFormSubmit={handleFormSubmit}
               is_final_view={is_final_view}
-            />
+            /> */}
 
             <FormSubmitButton
               color="warning"

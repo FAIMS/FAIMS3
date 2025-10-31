@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '39 20 * * 1-5'
-  
+
 jobs:
   check_date:
     runs-on: ubuntu-latest
@@ -22,7 +22,7 @@ jobs:
         name: check latest commit is less than a day
         if: ${{ github.event_name == 'schedule' }}
         run: test -z $(git rev-list --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
-    
+
   ios-deploy:
     name: Deploying to Testflight
     runs-on: macOS-latest
@@ -32,17 +32,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-            
+          run_install: false
       - name: Install jq
         run: |
           brew update
@@ -55,7 +48,7 @@ jobs:
       - name: Create version string
         shell: bash
         run: |
-          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"        
+          echo "version_string=v${{env.app_version}}-ios-#${{env.sha_short}}" >> "$GITHUB_ENV"
 
       - name: Set up ruby env
         uses: ruby/setup-ruby@v1
@@ -67,11 +60,11 @@ jobs:
           cd app/ios/App
           bundle install
           bundle exec fastlane install_plugins
-      - name: Use Node.js 20
+      - name: Use Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: 'pnpm'
       - name: Use Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -109,12 +102,12 @@ jobs:
           export VITE_MAP_STYLE=basic
 
           printenv
-          npm ci --python=python3.10
+          pnpm install --frozen-lockfile --python=python3.10
           # we install these here because of a bug in npm with platform specific
           # dependencies
-          npm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
-          npm run configIOSbuild --workspace app
-          npm run build
+          pnpm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          pnpm --filter=@faims3/app run configIOSbuild 
+          pnpm run build
       - name: Update IOS Build
         run: |
           cd app

@@ -8,15 +8,15 @@ This document will describe the necessary steps to migrate existing deployments 
 
 This functionality will not work until you apply the following migration
 
-- setup npm env cd /api && npm i
-- run the migrate action `npm run migrate`
+- setup pnpm env cd /api && pnpm i
+- run the migrate action `pnpm run migrate`
 - Try generating a code and make sure the workflow is functional.
 
 **Note** If you are running inside a container, then the above command needs to be
 run in the container rather than from your local environment:
 
 ```bash
-docker compose exec conductor npm run migrate
+docker compose exec conductor pnpm run migrate
 ```
 
 ### Deployment configuration
@@ -33,19 +33,19 @@ After deployment, the system will likely not function until the DB migration is 
 
 ### Setup your environment
 
-- ensure your environment is updated/installed - I'd recommend a cleanse and then rebuild e.g. from `FAIMS3` root of repo `./scripts/purge.sh . && npm i && npx turbo build```
+- ensure your environment is updated/installed - I'd recommend a cleanse and then rebuild e.g. from `FAIMS3` root of repo `./scripts/purge.sh . && pnpm i && npx turbo build```
 - setup a working local dev environment for `api`
 - ensure the `.env` of your API is accurately configured for the target deployment (being careful of secrets here)
 
 ### Run the migration command
 
-- run the migration command `npm run migrate`
+- run the migration command `pnpm run migrate`
 
 **Note** If you are running inside a container, then the above command needs to be
 run in the container rather than from your local environment:
 
 ```bash
-docker compose exec conductor npm run migrate
+docker compose exec conductor pnpm run migrate
 ```
 
 You should see output indicating that a) the invites DB has been migrated without errors b) the people DB has been migrated without errors. If either fails, login to your couchDB and interrogate the migration DB logs.

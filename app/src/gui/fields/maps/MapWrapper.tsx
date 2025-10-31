@@ -216,8 +216,6 @@ function MapWrapper(props: MapProps) {
     if (mapOpen && map) addDrawInteraction(map, props);
   }, [mapOpen, map]);
 
-  console.log('MapWrapper: rendering, isLocationSelected=', props.isLocationSelected, ' disabled=', props.disabled);
-
   return (
     <>
       <div>
