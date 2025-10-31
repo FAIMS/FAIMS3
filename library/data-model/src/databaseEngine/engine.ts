@@ -64,19 +64,11 @@ export type HydratedRecordConfig = z.infer<typeof hydratedRecordConfigSchema>;
  * Configuration for form record operations
  *
  * @property getEqualityFunctionForType - Function to get equality checker for field type comparison
- * @property getAttachmentDumperForType - Optional function to convert AVP data into attachment documents
- * @property getAttachmentLoaderForType - Optional function to load attachment data into AVPs
  */
 export interface FormRecordEngineConfig {
   getEqualityFunctionForType: (
     type: FAIMSTypeName
   ) => (a: any, b: any) => Promise<boolean>;
-  getAttachmentDumperForType?: (
-    type: FAIMSTypeName
-  ) => ((avp: AvpDBDocument) => Array<AvpDBDocument | any>) | null;
-  getAttachmentLoaderForType?: (
-    type: FAIMSTypeName
-  ) => ((avp: AvpDBDocument, attachments: any[]) => AvpDBDocument) | null;
 }
 
 export type ConflictBehavior = z.infer<
