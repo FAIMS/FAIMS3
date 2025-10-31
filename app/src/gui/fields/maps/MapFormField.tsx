@@ -205,7 +205,7 @@ export function MapFormField({
                   button below to submit your current GPS location.
                 </Alert>
                 <Button
-                  variant="outlined" 
+                  variant="outlined"
                   onClick={handleCurrentLocation}
                   disabled={props.disabled}
                 >

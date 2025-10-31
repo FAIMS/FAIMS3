@@ -78,34 +78,34 @@ nvm use 20
 or if you have it installed already
 
 ```
-npm i aws-cdk -g
-npm i
+pnpm i aws-cdk -g
+pnpm i
 ```
 
 Now follow the below steps to setup your configuration.
 
 ## Building artifacts
 
-NPM is used to manage building some utility lambda functions separately to CDK process.
+PNPM is used to manage building some utility lambda functions separately to CDK process.
 
 **Note**: These are intended to completely standalone from the monorepo in which this project lives.
 
 To build the project
 
 ```
-npm run build
+pnpm run build
 ```
 
 To package for deployment.
 
 ```
-npm run package
+pnpm run package
 ```
 
 or just
 
 ```
-npm run build && npm run package
+pnpm run build && pnpm run package
 ```
 
 This should build all the projects in `src`. If you add a new project, please update the `package.json` build scripts.
@@ -179,7 +179,7 @@ We provide a script called `config.sh` to manage configurations. This script can
    or
 
    ```bash
-   npm run config -- <push/pull> <environment> [options]
+   pnpm run config -- <push/pull> <environment> [options]
    ```
 
    - `<push/pull>`: Use `pull` to fetch configurations, `push` to update the repository.
@@ -187,7 +187,6 @@ We provide a script called `config.sh` to manage configurations. This script can
    - `[options]`: Additional options (see below).
 
    Options:
-
    - `--force`: Overwrite existing files without confirmation.
    - `--branch <branch_name>`: Specify a git branch (default: main).
    - `--message <commit_message>`: Specify a custom commit message (push only).
@@ -233,7 +232,7 @@ To switch between different environments:
    or
 
    ```bash
-   npm run config -- pull prod
+   pnpm run config -- pull prod
    ```
 
 2. The script will copy the environment-specific files into your project and tell you to set the `CONFIG_FILE_NAME` environment variable. Set it like this:
@@ -277,7 +276,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
 2. The validation script is already set up in the `package.json`. To run it, use the following command:
 
    ```bash
-   npm run validate-config
+   pnpm run validate-config
    ```
 
    This will validate the configuration file specified by `CONFIG_FILE_NAME`.
@@ -472,7 +471,7 @@ Ensure you have sufficient permissions for the target account and that they are 
 
 Then follow the above steps to
 
-- build the package artifacts `npm run build && npm run package`
+- build the package artifacts `pnpm run build && pnpm run package`
 - generate your keys i.e. `./scripts/genKeysAWS.sh <host_target> [profile_name] [--replace]`
 - setup your config
   - download your config from private repo, put in `configs`, `export CONFIG_FILE_NAME=dev.json` for example
@@ -513,14 +512,12 @@ TODO: Verify and test these instructions with real data.
 If you need to recover your CouchDB data from a previously created EBS snapshot, follow these steps:
 
 1. **Locate your EBS snapshot ID**
-
    - Go to the AWS Management Console
    - Navigate to EC2 > Snapshots
    - Find the snapshot you want to use for recovery
    - Copy the Snapshot ID (it should look like `snap-0123456789abcdef0`)
 
 2. **Update your configuration file**
-
    - Open your infrastructure configuration file (typically `configs/<stage>.json`)
    - Locate the `couch` section
    - Add or update the `ebsRecoverySnapshotId` field with your snapshot ID:
@@ -535,7 +532,6 @@ If you need to recover your CouchDB data from a previously created EBS snapshot,
    - The `volumeSize` field will be ignored if a snapshot ID is provided
 
 3. **Deploy your updated infrastructure**
-
    - Run your deployment command, for example:
      ```
      export CONFIG_FILE_NAME=<stage>.json
@@ -543,7 +539,6 @@ If you need to recover your CouchDB data from a previously created EBS snapshot,
      ```
 
 4. **Verify the recovery**
-
    - Once deployment is complete, SSM or SSH connect into your EC2 instance
      - TODO: verify a process to do this in production context - right now permissions would not allow this connection
    - Check that the CouchDB data volume is mounted correctly:

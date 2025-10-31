@@ -33,6 +33,7 @@ const snakeToCamel = (str: string): string => {
 export const readAuthProviderConfigFromEnv =
   (): AuthProviderConfigMap | null => {
     // Gather env variables that start with AUTH_
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const envVars = Object.entries(process.env).filter(([key, _]) =>
       key.startsWith('AUTH_')
     );

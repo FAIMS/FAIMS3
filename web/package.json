@@ -1,5 +1,5 @@
 {
-  "name": "web",
+  "name": "@faims3/web",
   "version": "1.2.8",
   "private": true,
   "type": "module",
@@ -27,7 +27,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
-    "@faims3/data-model": "*",
+    "@faims3/data-model": "workspace:*",
     "@hookform/resolvers": "^3.9.1",
     "@lexical/react": "^0.12.4",
     "@mdxeditor/editor": "^1.13.5",

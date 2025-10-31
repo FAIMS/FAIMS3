@@ -26,7 +26,7 @@ export default defineConfig({
     alias: {
       events: 'rollup-plugin-node-polyfills/polyfills/events',
     },
-    preserveSymlinks: true,
+    preserveSymlinks: false,
   },
   define: {
     global: 'globalThis',

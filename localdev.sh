@@ -39,31 +39,31 @@ setup_node_version() {
     echo "Loading nvm..."
     source "$HOME/.nvm/nvm.sh"
 
-    # Try to use Node 22
-    echo "Attempting to switch to Node.js 22..."
-    if nvm use 22 2>/dev/null; then
-      echo "Successfully switched to Node.js 22 using nvm"
+    # Try to use Node 
+    echo "Attempting to switch to Node.js ${required_major_version}..."
+    if nvm use $required_major_version 2>/dev/null; then
+      echo "Successfully switched to Node.js ${required_major_version} using nvm"
     else
-      echo "Node.js 22 not found in nvm. Attempting to install..."
-      if nvm install 22; then
-        nvm use 22
-        echo "Successfully installed and switched to Node.js 22"
+      echo "Node.js ${required_major_version} not found in nvm. Attempting to install..."
+      if nvm install $required_major_version; then
+        nvm use $required_major_version
+        echo "Successfully installed and switched to Node.js ${required_major_version}"
       else
-        echo "Failed to install Node.js 22 via nvm"
+        echo "Failed to install Node.js ${required_major_version} via nvm"
       fi
     fi
   elif command -v nvm &>/dev/null; then
     # nvm command exists but not sourced from standard location
-    echo "nvm command found, attempting to use Node.js 22..."
-    if nvm use 22 2>/dev/null; then
-      echo "Successfully switched to Node.js 22 using nvm"
+    echo "nvm command found, attempting to use Node.js ${required_major_version}..."
+    if nvm use $required_major_version 2>/dev/null; then
+      echo "Successfully switched to Node.js $required_major_version using nvm"
     else
-      echo "Node.js 22 not found. Attempting to install..."
-      if nvm install 22; then
-        nvm use 22
-        echo "Successfully installed and switched to Node.js 22"
+      echo "Node.js ${required_major_version} not found. Attempting to install..."
+      if nvm install $required_major_version; then
+        nvm use $required_major_version
+        echo "Successfully installed and switched to Node.js ${required_major_version}"
       else
-        echo "Failed to install Node.js 22 via nvm"
+        echo "Failed to install Node.js ${required_major_version} via nvm"
       fi
     fi
   else
@@ -73,7 +73,7 @@ setup_node_version() {
   # Check current Node.js version
   if ! command -v node &>/dev/null; then
     echo "ERROR: Node.js is not installed!"
-    echo "Please install Node.js 22 or install nvm to manage Node.js versions."
+    echo "Please install Node.js ${required_major_version} or install nvm to manage Node.js versions."
     echo "Visit https://nodejs.org/ or https://github.com/nvm-sh/nvm"
     exit 1
   fi
@@ -87,15 +87,15 @@ setup_node_version() {
     echo ""
     echo "=========================================="
     echo "ERROR: Node.js version mismatch!"
-    echo "Required: Node.js 22.x"
+    echo "Required: Node.js ${required_major_version}.x"
     echo "Current:  Node.js $current_version"
     echo "=========================================="
     echo ""
     if [ -f "$HOME/.nvm/nvm.sh" ] || command -v nvm &>/dev/null; then
-      echo "NVM is available but couldn't switch to Node.js 22."
-      echo "Try manually running: nvm install 22 && nvm use 22"
+      echo "NVM is available but couldn't switch to Node.js ${required_major_version}."
+      echo "Try manually running: nvm install ${required_major_version} && nvm use ${required_major_version}"
     else
-      echo "Please install Node.js 22 or use nvm to manage Node.js versions."
+      echo "Please install Node.js ${required_major_version} or use nvm to manage Node.js versions."
       echo "To install nvm: https://github.com/nvm-sh/nvm"
     fi
     exit 1
@@ -188,22 +188,18 @@ echo "Using docker build kit"
 echo "export DOCKER_BUILDKIT=1"
 export DOCKER_BUILDKIT=1
 
-echo "checking npm install"
-echo "> npm --version"
-npm --version
+echo "checking pnpm install"
+echo "> pnpm --version"
+pnpm --version
 
 echo "checking docker install"
 echo "> docker --version"
 docker --version
 
-echo "checking uuidgen install"
-echo "> uuidgen"
-uuidgen
-
 # install dependencies
 echo "Installing monorepo dependencies"
-echo "> npm install"
-npm install
+echo "> pnpm install"
+pnpm install
 
 # turbo build
 echo "Turbo build"
@@ -211,6 +207,7 @@ echo "> npx turbo build"
 npx turbo build
 
 # create .env files
+echo "Creating .env files from .env.dist templates"
 echo "> cp ./.env.dist ./.env"
 cp ./.env.dist ./.env
 echo "> cp ./api/.env.dist ./api/.env"
@@ -229,11 +226,10 @@ if [ "$ALL_SERVICES" = true ]; then
   echo "COUCHDB_INTERNAL_URL=http://couchdb:5984" >>./api/.env
 fi
 
-
 # create local keys
 echo "Generating local keys"
-echo "> npm run generate-local-keys"
-npm run generate-local-keys
+echo "> pnpm run generate-local-keys"
+pnpm run generate-local-keys
 
 echo "Starting docker service..."
 manage_docker_volumes
@@ -263,9 +259,10 @@ else
     exit 1
   fi
 
-  echo "Initialising database using API container"
-  echo ">docker compose exec api sh -c \"cd api && npm run migrate --keys\""
-  docker compose exec api sh -c "cd api && npm run migrate --keys"
+echo "Initialising database using API container"
+echo ">docker compose exec api sh -c \"cd api && pnpm run migrate --keys\""
+docker compose exec api sh -c "cd api && pnpm run migrate --keys"
+
 
   echo "Service is setup, to load notebooks and templates follow the below steps"
   cat <<EOF
@@ -278,10 +275,11 @@ Bearer Token to Clipboard". Paste this value into your .env file as the
 value of USER_TOKEN.
 
 Then run: 
-\$> npm run load-notebooks
+
+$> pnpm run load-notebooks
 
 And:
-\$> npm run load-templates
+$> pnpm run load-templates
 EOF
 
   echo "Services running:"
