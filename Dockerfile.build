@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1
-
 # BASED ON https://turbo.build/repo/docs/guides/tools/docker
 # AND https://github.com/ThaddeusJiang/turborepo-starter/blob/main/apps/api/Dockerfile
 
@@ -15,6 +14,11 @@ ENV PACKAGE_NAME=${PACKAGE_NAME}
 ARG NODE_RUN_DIR
 ENV NODE_RUN_DIR=${NODE_RUN_DIR}
 
+# Setup pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
 # install some dependencies
 RUN apk update && apk add --no-cache libc6-compat
 
@@ -23,7 +27,6 @@ FROM alpine AS base
 
 # PRUNE TO GET DEPENDENCIES [pruner]
 # ===================================
-
 # Use turbo to prune package dependencies
 FROM base AS pruner
 
@@ -31,7 +34,8 @@ FROM base AS pruner
 WORKDIR /app
 
 # install turbo global
-RUN npm install turbo@^2.0.11 -g
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm add -g turbo@^2.0.11
 
 # copy everything into pruner
 COPY . .
@@ -41,10 +45,8 @@ COPY . .
 # only)
 RUN turbo prune ${PACKAGE_NAME} --docker
 
-
 # INSTALL PACKAGES [builder]
 # ============================
-
 # add lockfiles dependencies
 FROM base AS builder
 
@@ -52,12 +54,16 @@ WORKDIR /app
 
 # Install dependencies
 COPY .gitignore .gitignore
+COPY --from=pruner /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=pruner /app/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=pruner /app/out/json/ .
 
-# install turbo global
-RUN npm install turbo@^2.0.11 -g
-RUN npm install
+# install turbo global and dependencies with cache
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm add -g turbo@^2.0.11
 
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Build the project 
 COPY --from=pruner /app/out/full/ .
@@ -72,8 +78,8 @@ RUN sh bundle.sh json . out && cp -R json/* /app/out/
 
 # PRODUCTION RUNNER [runner]
 # ==========================
-
 FROM alpine AS runner
+
 WORKDIR /app
 
 # Don't run production as root
@@ -86,8 +92,4 @@ COPY --from=builder /app/out .
 
 # Run the node app
 WORKDIR /app/${NODE_RUN_DIR}
-
 CMD ["node", "index.js"]
-
-
-

@@ -70,7 +70,7 @@ const upload = multer({dest: '/tmp/'});
 // This must occur before express api is used
 patch();
 
-export const api = express.Router();
+export const api: express.Router = express.Router();
 
 api.get('/hello/', requireAuthenticationAPI, (_req: any, res: any) => {
   res.send({message: 'hello from the api!'});
