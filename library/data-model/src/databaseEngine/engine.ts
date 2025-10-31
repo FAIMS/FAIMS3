@@ -1,29 +1,36 @@
-import PouchDB from 'pouchdb';
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
+import {FAIMSTypeName} from '../types';
 import {
-  AttachmentDBDocument,
   AvpDBDocument,
+  DataDocument,
   ExistingAttachmentDBDocument,
   ExistingAvpDBDocument,
-  existingAvpDocumentSchema,
   ExistingRecordDBDocument,
-  existingRecordDocumentSchema,
   ExistingRevisionDBDocument,
-  existingRevisionDocumentSchema,
+  FormRecord,
+  formRecordSchema,
   getDocumentType,
+  HydratedRecord,
   isExistingAttachmentDocument,
   isExistingAvpDocument,
   isExistingRecordDocument,
   isExistingRevisionDocument,
-  RecordDBDocument,
-  RevisionDBDocument,
+  NewAttachmentDBDocument,
+  NewAvpDBDocument,
+  NewRecordDBDocument,
+  NewRevisionDBDocument,
   validateExistingAttachmentDocument,
   validateExistingAvpDocument,
   validateExistingRecordDocument,
   validateExistingRevisionDocument,
 } from './types';
-import {FAIMSTypeName} from '../types';
+
+// =========
+// CONSTANTS
+// =========
+
+export const UNKNOWN_TYPE_FALLBACK = '??:??';
 
 // ============================================================================
 // Configuration Schemas and Types
@@ -36,7 +43,7 @@ import {FAIMSTypeName} from '../types';
  * @property pouchConfig - Optional PouchDB configuration options
  */
 export interface DataEngineConfig {
-  dbName: string;
+  dataDb: PouchDB.Database<DataDocument>;
   pouchConfig?: PouchDB.Configuration.DatabaseConfiguration;
 }
 
@@ -75,59 +82,6 @@ export interface FormRecordEngineConfig {
 export type ConflictBehavior = z.infer<
   typeof hydratedRecordConfigSchema
 >['behaviorOnConflict'];
-
-// ============================================================================
-// Schema Definitions
-// ============================================================================
-
-export const annotationsSchema = z.object({
-  annotation: z.string(),
-  uncertainty: z.boolean(),
-});
-
-export type Annotations = z.infer<typeof annotationsSchema>;
-
-export const relationshipSchema = z.object({
-  parent: z.object({
-    record_id: z.string(),
-    field_id: z.string(),
-    relation_type_vocabPair: z.tuple([z.string(), z.string()]),
-  }),
-});
-
-export type Relationship = z.infer<typeof relationshipSchema>;
-
-export const formRecordSchema = z.object({
-  project_id: z.string().optional(),
-  record_id: z.string(),
-  revision_id: z.string().nullable(),
-  type: z.string(),
-  data: z.record(z.string(), z.unknown()),
-  updated: z.date(),
-  updated_by: z.string().email(),
-  field_types: z.record(z.string(), z.string()),
-  annotations: z.record(z.string(), annotationsSchema),
-  ugc_comment: z.string().optional(),
-  created: z.date().optional(),
-  created_by: z.string().email().optional(),
-  relationship: relationshipSchema.optional().or(z.object({})),
-  deleted: z.boolean().optional(),
-});
-
-export type FormRecord = z.infer<typeof formRecordSchema>;
-
-export const hydratedRecordSchema = z.object({
-  record: existingRecordDocumentSchema,
-  revision: existingRevisionDocumentSchema,
-  data: z.record(z.string(), existingAvpDocumentSchema),
-  metadata: z.object({
-    hadConflict: z.boolean(),
-    conflictResolution: z.enum(['throw', 'pickFirst', 'pickLast']).optional(),
-    allHeads: z.array(z.string()),
-  }),
-});
-
-export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;
 
 // ============================================================================
 // Error Classes
@@ -263,7 +217,7 @@ export class DataEngine {
    * @param config - Database configuration including name and project ID
    */
   constructor(config: DataEngineConfig) {
-    this.db = new PouchDB(config.dbName, config.pouchConfig);
+    this.db = config.dataDb;
     this.core = new CoreOperations(this.db);
     this.hydrated = new HydratedOperations(this.core);
     this.form = new FormOperations(this.core);
@@ -385,28 +339,90 @@ class CoreOperations {
   }
 
   /**
-   * Generic update operation with validation
+   * Generic update operation with validation and automatic conflict resolution
    *
    * @param doc - The document to update, must include _id and _rev
    * @param config - The document type configuration for validation
-   * @returns The updated document with new _rev
-   * @throws Error if update fails
+   * @param writeOnClash - If true, resolves conflicts by retrying with the latest _rev.
+   *                       If false, returns undefined when a conflict is detected.
+   *                       Default: true
+   * @param maxRetries - Maximum number of retry attempts when conflicts occur.
+   *                     Only applies when writeOnClash is true.
+   *                     Default: 5
+   * @returns The updated document with new _rev, or undefined if conflict occurs and writeOnClash is false
+   * @throws Error if update fails (non-conflict error or max retries exceeded)
    */
   private async updateDocument<T extends {_id: string; _rev: string}>(
     doc: T,
-    config: DocumentTypeConfig<T>
-  ): Promise<T> {
+    config: DocumentTypeConfig<T>,
+    writeOnClash: boolean = true,
+    maxRetries: number = 5
+  ): Promise<T | undefined> {
     const validated = config.validator(doc);
-    const response = await this.db.put(validated);
 
-    if (!response.ok) {
-      throw new Error(`Failed to update ${config.typeName}: ${response}`);
+    // Try to put directly - if no clash, succeeds immediately
+    try {
+      const response = await this.db.put(validated);
+      if (!response.ok) {
+        throw new Error(`Failed to update ${config.typeName}: ${response}`);
+      }
+      return {
+        ...validated,
+        _rev: response.rev,
+      };
+    } catch (err: any) {
+      // If 409 - that's a conflict - handle based on writeOnClash setting
+      if (err.status === 409) {
+        if (writeOnClash) {
+          // Retry logic: fetch latest _rev and attempt write again
+          let attempts = 0;
+          while (attempts < maxRetries) {
+            try {
+              const existingRecord = await this.db.get<T>(doc._id);
+              // Update _rev with latest version, revalidate, and retry the write
+              const updatedDoc = config.validator({
+                ...validated,
+                _rev: existingRecord._rev,
+              });
+              const response = await this.db.put(updatedDoc);
+              if (!response.ok) {
+                throw new Error(
+                  `Failed to update ${config.typeName}: ${response}`
+                );
+              }
+              return {
+                ...updatedDoc,
+                _rev: response.rev,
+              };
+            } catch (retryErr: any) {
+              attempts++;
+              // If it's another 409 and we haven't hit max retries, continue loop
+              if (retryErr.status === 409 && attempts < maxRetries) {
+                continue;
+              }
+              // Either hit max retries or encountered a different error
+              throw new Error(
+                `Failed to update ${config.typeName} after ${attempts} attempt(s). ` +
+                  `Error: ${retryErr}`
+              );
+            }
+          }
+          // This shouldn't be reached, but just in case
+          throw new Error(
+            `Failed to update ${config.typeName} after ${maxRetries} retries`
+          );
+        } else {
+          // Conflict occurred but writeOnClash is false - return undefined
+          return undefined;
+        }
+      } else {
+        // Non-conflict error occurred - log and throw
+        console.log(err);
+        throw new Error(
+          `Failed to update ${config.typeName} - non 409 error: ${err}`
+        );
+      }
     }
-
-    return {
-      ...validated,
-      _rev: response.rev,
-    };
   }
 
   // ============================================================================
@@ -469,7 +485,7 @@ class CoreOperations {
    * @throws Error if creation fails
    */
   async createRecord(
-    record: Omit<RecordDBDocument, '_rev'>
+    record: NewRecordDBDocument
   ): Promise<ExistingRecordDBDocument> {
     return this.createDocument(record, CoreOperations.TYPE_CONFIGS.record);
   }
@@ -482,7 +498,7 @@ class CoreOperations {
    * @throws Error if creation fails
    */
   async createRevision(
-    revision: Omit<RevisionDBDocument, '_rev'>
+    revision: NewRevisionDBDocument
   ): Promise<ExistingRevisionDBDocument> {
     return this.createDocument(revision, CoreOperations.TYPE_CONFIGS.revision);
   }
@@ -494,9 +510,7 @@ class CoreOperations {
    * @returns The created AVP with _rev
    * @throws Error if creation fails
    */
-  async createAvp(
-    avp: Omit<AvpDBDocument, '_rev'>
-  ): Promise<ExistingAvpDBDocument> {
+  async createAvp(avp: NewAvpDBDocument): Promise<ExistingAvpDBDocument> {
     return this.createDocument(avp, CoreOperations.TYPE_CONFIGS.avp);
   }
 
@@ -508,7 +522,7 @@ class CoreOperations {
    * @throws Error if creation fails
    */
   async createAttachment(
-    attachment: Omit<AttachmentDBDocument, '_rev'>
+    attachment: NewAttachmentDBDocument
   ): Promise<ExistingAttachmentDBDocument> {
     return this.createDocument(
       attachment,
@@ -530,7 +544,11 @@ class CoreOperations {
   async updateRecord(
     record: ExistingRecordDBDocument
   ): Promise<ExistingRecordDBDocument> {
-    return this.updateDocument(record, CoreOperations.TYPE_CONFIGS.record);
+    // This will throw - not be undefined
+    return (await this.updateDocument(
+      record,
+      CoreOperations.TYPE_CONFIGS.record
+    ))!;
   }
 
   /**
@@ -543,7 +561,11 @@ class CoreOperations {
   async updateRevision(
     revision: ExistingRevisionDBDocument
   ): Promise<ExistingRevisionDBDocument> {
-    return this.updateDocument(revision, CoreOperations.TYPE_CONFIGS.revision);
+    // This will throw - not be undefined
+    return (await this.updateDocument(
+      revision,
+      CoreOperations.TYPE_CONFIGS.revision
+    ))!;
   }
 
   /**
@@ -554,7 +576,8 @@ class CoreOperations {
    * @throws Error if update fails or document doesn't exist
    */
   async updateAvp(avp: ExistingAvpDBDocument): Promise<ExistingAvpDBDocument> {
-    return this.updateDocument(avp, CoreOperations.TYPE_CONFIGS.avp);
+    // This will throw - not be undefined
+    return (await this.updateDocument(avp, CoreOperations.TYPE_CONFIGS.avp))!;
   }
 
   /**
@@ -567,10 +590,11 @@ class CoreOperations {
   async updateAttachment(
     attachment: ExistingAttachmentDBDocument
   ): Promise<ExistingAttachmentDBDocument> {
-    return this.updateDocument(
+    return (await this.updateDocument(
+      // This will throw - not be undefined
       attachment,
       CoreOperations.TYPE_CONFIGS.attachment
-    );
+    ))!;
   }
 
   // ============================================================================
@@ -639,7 +663,7 @@ class CoreOperations {
    *
    * @returns The PouchDB database
    */
-  getDb(): PouchDB.Database {
+  getDb() {
     return this.db;
   }
 }
@@ -685,11 +709,13 @@ class HydratedOperations {
     switch (behavior) {
       case 'throw':
         throw new RecordConflictError(recordId, heads);
+      // Take the first one
       case 'pickFirst':
         return {
           selectedHead: heads[0],
           hadConflict: true,
         };
+      // Take the last one
       case 'pickLast':
         return {
           selectedHead: heads[heads.length - 1],
@@ -829,18 +855,8 @@ class FormOperations {
   private getEqualityFn?: (
     type: FAIMSTypeName
   ) => (a: any, b: any) => Promise<boolean>;
-  private getAttachmentDumper: (
-    type: FAIMSTypeName
-  ) => ((avp: AvpDBDocument) => Array<AvpDBDocument | any>) | null;
-  private getAttachmentLoader: (
-    type: FAIMSTypeName
-  ) => ((avp: AvpDBDocument, attachments: any[]) => AvpDBDocument) | null;
 
-  constructor(private readonly core: CoreOperations) {
-    // Default implementations
-    this.getAttachmentDumper = () => null;
-    this.getAttachmentLoader = () => null;
-  }
+  constructor(private readonly core: CoreOperations) {}
 
   /**
    * Configure the form operations with type-specific handlers
@@ -849,14 +865,16 @@ class FormOperations {
    */
   configure(config: FormRecordEngineConfig): void {
     this.getEqualityFn = config.getEqualityFunctionForType;
-    this.getAttachmentDumper =
-      config.getAttachmentDumperForType ?? (() => null);
-    this.getAttachmentLoader =
-      config.getAttachmentLoaderForType ?? (() => null);
   }
 
   /**
-   * Create a brand new record from form data
+   * Create a brand new record from form data.
+   *
+   * The input here is the form data which the app currently produces.
+   *
+   * NOTE we may wish to consider moving the ID generation functions to this
+   * module, and a 'seed' method rather than create which allows for
+   * incomplete/empty data.
    *
    * @param formRecord - The form data to create a record from
    * @returns The ID of the newly created revision
@@ -877,7 +895,7 @@ class FormOperations {
     const revisionId = generateRevisionID();
 
     // Step 1: Create Record document
-    const recordDoc: Omit<RecordDBDocument, '_rev'> = {
+    const recordDoc: NewRecordDBDocument = {
       _id: validated.record_id,
       record_format_version: 1,
       created: validated.updated.toISOString(),
@@ -890,7 +908,8 @@ class FormOperations {
     try {
       await this.core.createRecord(recordDoc);
     } catch (err: any) {
-      // If record already exists, that's fine - we just want to ensure it exists
+      // NOTE we should validate this assertion... If record already exists,
+      // that's fine - we just want to ensure it exists
       if (err.status !== 409) {
         throw err;
       }
@@ -903,7 +922,7 @@ class FormOperations {
     });
 
     // Step 3: Create Revision document
-    const revisionDoc: Omit<RevisionDBDocument, '_rev'> = {
+    const revisionDoc: NewRevisionDBDocument = {
       _id: revisionId,
       revision_format_version: 1,
       avps: avpMap,
@@ -922,7 +941,7 @@ class FormOperations {
   }
 
   /**
-   * Update an existing record from form data using intelligent change detection
+   * Update an existing record from form data using equality based change detection
    *
    * @param formRecord - The form data with changes to apply
    * @returns The ID of the newly created revision
@@ -954,7 +973,7 @@ class FormOperations {
     });
 
     // Step 3: Create new Revision document
-    const revisionDoc: Omit<RevisionDBDocument, '_rev'> = {
+    const revisionDoc: NewRevisionDBDocument = {
       _id: newRevisionId,
       revision_format_version: 1,
       avps: avpMap,
@@ -980,24 +999,11 @@ class FormOperations {
   }
 
   /**
-   * Convenience method that routes to create or update based on revision_id
-   *
-   * @param formRecord - The form data to upsert
-   * @returns The ID of the created or updated revision
-   * @throws Error if operation fails
-   */
-  async upsertRecord(formRecord: FormRecord): Promise<string> {
-    const validated = formRecordSchema.parse(formRecord);
-
-    if (validated.revision_id === null) {
-      return this.createRecord(validated);
-    } else {
-      return this.updateRecord(validated);
-    }
-  }
-
-  /**
    * Create AVPs for all fields in a new record
+   *
+   * This iterates through the values from the form data, fetches the existing
+   * AVP, checks if different based on registered equality functions, and
+   * creates a new AVP if needed.
    *
    * @param params.formRecord - The validated form record data
    * @param params.revisionId - The revision ID these AVPs belong to
@@ -1012,16 +1018,16 @@ class FormOperations {
     revisionId: string;
   }): Promise<Record<string, string>> {
     const avpMap: Record<string, string> = {};
-    const avpsToCreate: Array<Omit<AvpDBDocument, '_rev'>> = [];
+    const avpsToCreate: Array<NewAvpDBDocument> = [];
 
     // Create AVP for each field
     for (const [fieldName, fieldValue] of Object.entries(formRecord.data)) {
       const avpId = generateAvpID();
 
-      const avp: Omit<AvpDBDocument, '_rev'> = {
+      const avp: NewAvpDBDocument = {
         _id: avpId,
         avp_format_version: 1,
-        type: formRecord.field_types[fieldName] ?? '??:??',
+        type: formRecord.field_types[fieldName] ?? UNKNOWN_TYPE_FALLBACK,
         data: fieldValue,
         revision_id: revisionId,
         record_id: formRecord.record_id,
@@ -1067,7 +1073,7 @@ class FormOperations {
     }
 
     const avpMap: Record<string, string> = {};
-    const avpsToCreate: Array<Omit<AvpDBDocument, '_rev'>> = [];
+    const avpsToCreate: Array<NewAvpDBDocument> = [];
 
     // Fetch all parent AVPs efficiently in parallel
     const parentAvpIds = Object.values(parentRevision.avps);
@@ -1085,7 +1091,8 @@ class FormOperations {
 
     // Check each field for changes
     for (const [fieldName, fieldValue] of Object.entries(formRecord.data)) {
-      const fieldType = formRecord.field_types[fieldName] ?? '??:??';
+      const fieldType =
+        formRecord.field_types[fieldName] ?? UNKNOWN_TYPE_FALLBACK;
       const fieldAnnotation = formRecord.annotations[fieldName];
 
       const parentAvp = parentAvpsByField.get(fieldName);
@@ -1107,7 +1114,7 @@ class FormOperations {
         // Create new AVP
         const avpId = generateAvpID();
 
-        const avp: Omit<AvpDBDocument, '_rev'> = {
+        const avp: NewAvpDBDocument = {
           _id: avpId,
           avp_format_version: 1,
           type: fieldType,
@@ -1149,6 +1156,8 @@ class FormOperations {
 
     // Process each AVP through its attachment dumper if available
     for (const avp of avps) {
+      // TODO fix this by instead providing a configurable service injection approach
+      /*
       const dumper = this.getAttachmentDumper(avp.type);
       if (dumper) {
         // Dumper returns array of [avp, ...attachment_docs]
@@ -1158,6 +1167,8 @@ class FormOperations {
         // No dumper for this type, just add the AVP
         allDocsToCreate.push(avp);
       }
+      */
+      allDocsToCreate.push(avp);
     }
 
     // Use PouchDB bulkDocs for efficiency

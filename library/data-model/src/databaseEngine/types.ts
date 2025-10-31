@@ -4,13 +4,15 @@ import {z} from 'zod';
 // Common Schemas
 // ============================================================================
 
-const pouchDBDocumentSchema = z.object({
+const newPouchDBDocumentSchema = z.object({
   _id: z.string(),
+});
+
+const pouchDBDocumentSchema = newPouchDBDocumentSchema.extend({
   _rev: z.string().optional(),
 });
 
-const existingPouchDBDocumentSchema = z.object({
-  _id: z.string(),
+const existingPouchDBDocumentSchema = newPouchDBDocumentSchema.extend({
   _rev: z.string(),
 });
 
@@ -32,6 +34,10 @@ export const v1RecordDBFieldsSchema = z
 export type V1RecordDBFields = z.infer<typeof v1RecordDBFieldsSchema>;
 export type RecordDBFields = V1RecordDBFields;
 
+export const newRecordDocumentSchema = newPouchDBDocumentSchema.merge(
+  v1RecordDBFieldsSchema
+);
+
 export const recordDocumentSchema = pouchDBDocumentSchema.merge(
   v1RecordDBFieldsSchema
 );
@@ -40,6 +46,7 @@ export const existingRecordDocumentSchema = existingPouchDBDocumentSchema.merge(
   v1RecordDBFieldsSchema
 );
 
+export type NewRecordDBDocument = z.infer<typeof newRecordDocumentSchema>;
 export type RecordDBDocument = z.infer<typeof recordDocumentSchema>;
 export type ExistingRecordDBDocument = z.infer<
   typeof existingRecordDocumentSchema
@@ -48,6 +55,16 @@ export type ExistingRecordDBDocument = z.infer<
 // ============================================================================
 // Revision Document
 // ============================================================================
+
+export const relationshipSchema = z.object({
+  parent: z.object({
+    record_id: z.string(),
+    field_id: z.string(),
+    relation_type_vocabPair: z.tuple([z.string(), z.string()]),
+  }),
+});
+
+export type Relationship = z.infer<typeof relationshipSchema>;
 
 export const v1RevisionDBFieldsSchema = z
   .object({
@@ -59,14 +76,7 @@ export const v1RevisionDBFieldsSchema = z
     created_by: z.string().email(),
     type: z.string(),
     ugc_comment: z.string().optional(),
-    relationship: z
-      .object({
-        parent: z.object({
-          record_id: z.string(),
-          field_id: z.string(),
-          relation_type_vocabPair: z.tuple([z.string(), z.string()]),
-        }),
-      })
+    relationship: relationshipSchema
       .optional()
       // This allows empty objects
       .or(z.object({})),
@@ -76,6 +86,10 @@ export const v1RevisionDBFieldsSchema = z
 export type V1RevisionDBFields = z.infer<typeof v1RevisionDBFieldsSchema>;
 export type RevisionDBFields = V1RevisionDBFields;
 
+export const newRevisionDocumentSchema = newPouchDBDocumentSchema.merge(
+  v1RevisionDBFieldsSchema
+);
+
 export const revisionDocumentSchema = pouchDBDocumentSchema.merge(
   v1RevisionDBFieldsSchema
 );
@@ -83,6 +97,7 @@ export const revisionDocumentSchema = pouchDBDocumentSchema.merge(
 export const existingRevisionDocumentSchema =
   existingPouchDBDocumentSchema.merge(v1RevisionDBFieldsSchema);
 
+export type NewRevisionDBDocument = z.infer<typeof newRevisionDocumentSchema>;
 export type RevisionDBDocument = z.infer<typeof revisionDocumentSchema>;
 export type ExistingRevisionDBDocument = z.infer<
   typeof existingRevisionDocumentSchema
@@ -92,6 +107,20 @@ export type ExistingRevisionDBDocument = z.infer<
 // AVP (Attribute-Value-Pair) Document
 // ============================================================================
 
+export const annotationsSchema = z.object({
+  annotation: z.string(),
+  uncertainty: z.boolean(),
+});
+
+export type Annotations = z.infer<typeof annotationsSchema>;
+
+export const attachmentSchema = z.object({
+  attachment_id: z.string(),
+  filename: z.string(),
+  file_type: z.string(),
+});
+export type Attachment = z.infer<typeof attachmentSchema>;
+
 export const v1AvpDBFieldsSchema = z
   .object({
     avp_format_version: z.number(),
@@ -99,28 +128,18 @@ export const v1AvpDBFieldsSchema = z
     data: z.unknown(),
     revision_id: z.string(),
     record_id: z.string(),
-    annotations: z
-      .object({
-        annotation: z.string(),
-        uncertainty: z.boolean(),
-      })
-      .optional(),
+    annotations: annotationsSchema.optional(),
     created: z.string().datetime(),
     created_by: z.string().email(),
-    faims_attachments: z
-      .array(
-        z.object({
-          attachment_id: z.string(),
-          filename: z.string(),
-          file_type: z.string(),
-        })
-      )
-      .optional(),
+    faims_attachments: z.array(attachmentSchema).optional(),
   })
   .strict();
 
 export type V1AvpDBFields = z.infer<typeof v1AvpDBFieldsSchema>;
 export type AvpDBFields = V1AvpDBFields;
+
+export const newAvpDocumentSchema =
+  newPouchDBDocumentSchema.merge(v1AvpDBFieldsSchema);
 
 export const avpDocumentSchema =
   pouchDBDocumentSchema.merge(v1AvpDBFieldsSchema);
@@ -128,6 +147,7 @@ export const avpDocumentSchema =
 export const existingAvpDocumentSchema =
   existingPouchDBDocumentSchema.merge(v1AvpDBFieldsSchema);
 
+export type NewAvpDBDocument = z.infer<typeof newAvpDocumentSchema>;
 export type AvpDBDocument = z.infer<typeof avpDocumentSchema>;
 export type ExistingAvpDBDocument = z.infer<typeof existingAvpDocumentSchema>;
 
@@ -160,6 +180,10 @@ export const v1AttachmentDBFieldsSchema = z
 export type V1AttachmentDBFields = z.infer<typeof v1AttachmentDBFieldsSchema>;
 export type AttachmentDBFields = V1AttachmentDBFields;
 
+export const newAttachmentDocumentSchema = newPouchDBDocumentSchema.merge(
+  v1AttachmentDBFieldsSchema
+);
+
 export const attachmentDocumentSchema = pouchDBDocumentSchema.merge(
   v1AttachmentDBFieldsSchema
 );
@@ -167,14 +191,23 @@ export const attachmentDocumentSchema = pouchDBDocumentSchema.merge(
 export const existingAttachmentDocumentSchema =
   existingPouchDBDocumentSchema.merge(v1AttachmentDBFieldsSchema);
 
+export type NewAttachmentDBDocument = z.infer<
+  typeof newAttachmentDocumentSchema
+>;
 export type AttachmentDBDocument = z.infer<typeof attachmentDocumentSchema>;
 export type ExistingAttachmentDBDocument = z.infer<
   typeof existingAttachmentDocumentSchema
 >;
-
 // ============================================================================
 // Union Types for All Data Documents
 // ============================================================================
+
+export const newDataDocumentSchema = z.union([
+  newRecordDocumentSchema,
+  newRevisionDocumentSchema,
+  newAvpDocumentSchema,
+  newAttachmentDocumentSchema,
+]);
 
 export const dataDocumentSchema = z.union([
   recordDocumentSchema,
@@ -327,3 +360,39 @@ export function validateExistingDataDocument(
 ): ExistingDataDocument {
   return existingDataDocumentSchema.parse(data);
 }
+
+// ============================================================================
+// General Definitions
+// ============================================================================
+
+export const formRecordSchema = z.object({
+  project_id: z.string().optional(),
+  record_id: z.string(),
+  revision_id: z.string().nullable(),
+  type: z.string(),
+  data: z.record(z.string(), z.unknown()),
+  updated: z.date(),
+  updated_by: z.string().email(),
+  field_types: z.record(z.string(), z.string()),
+  annotations: z.record(z.string(), annotationsSchema),
+  ugc_comment: z.string().optional(),
+  created: z.date().optional(),
+  created_by: z.string().email().optional(),
+  relationship: relationshipSchema.optional().or(z.object({})),
+  deleted: z.boolean().optional(),
+});
+
+export type FormRecord = z.infer<typeof formRecordSchema>;
+
+export const hydratedRecordSchema = z.object({
+  record: existingRecordDocumentSchema,
+  revision: existingRevisionDocumentSchema,
+  data: z.record(z.string(), existingAvpDocumentSchema),
+  metadata: z.object({
+    hadConflict: z.boolean(),
+    conflictResolution: z.enum(['throw', 'pickFirst', 'pickLast']).optional(),
+    allHeads: z.array(z.string()),
+  }),
+});
+
+export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;
