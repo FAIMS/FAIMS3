@@ -12,7 +12,7 @@ fi
 if [ -n "$VITE_BUGSNAG_KEY" ]; then
   echo "Uploading to BugSnag using BASE_URL: $BASE_URL"
   # build the sourcemap version of the app
-  npm run build-sourcemap
+  pnpm run build-sourcemap
   npx bugsnag-source-maps upload-browser \
     --api-key ${VITE_BUGSNAG_KEY} \
     --detect-app-version \

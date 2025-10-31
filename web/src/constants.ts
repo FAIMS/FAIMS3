@@ -146,6 +146,7 @@ function getLongLivedTokenDurationHints(): number[] {
 }
 
 export const LONG_LIVED_TOKEN_DURATION_HINTS = getLongLivedTokenDurationHints();
+export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
 
 // Help link to use for the long lived token docs
 export const LONG_LIVED_TOKEN_HELP_LINK =

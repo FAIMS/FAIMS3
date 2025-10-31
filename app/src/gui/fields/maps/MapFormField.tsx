@@ -23,17 +23,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import {Alert, Box, Button, Typography} from '@mui/material';
 import {FieldProps} from 'formik';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-import {useEffect, useMemo, useState} from 'react';
-import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
+import {useEffect, useState} from 'react';
+import {Geolocation} from '@capacitor/geolocation';
 import {canShowMapNear} from '../../components/map/map-component';
 import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
 import {theme} from '../../themes';
 import FieldWrapper from '../fieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
-
-// If no center is available - pass this through
-// Sydney CBD
-const FALLBACK_CENTER: [number, number] = [151.2093, -33.8688];
 
 export interface MapFieldProps extends FieldProps {
   label?: string;
@@ -46,6 +42,7 @@ export interface MapFieldProps extends FieldProps {
   helperText: string;
   required: boolean;
   advancedHelperText?: string;
+  disabled?: boolean;
 }
 
 const createPointFeature = (
@@ -95,29 +92,18 @@ export function MapFormField({
   // state for visual indicators
   const [animateCheck, setAnimateCheck] = useState(false);
 
-  // Use the custom hook for location
-  const {data: currentPosition} = useCurrentLocation();
-
-  // Determine map center based on props or current location
-  const center = useMemo(() => {
-    if (props.center) {
-      return props.center;
-    }
-    return getCoordinates(currentPosition);
-  }, [props.center, currentPosition]);
-
   // when the center changes, check if we can show this map
   useEffect(() => {
     if (isLocationSelected) {
       // can we draw a map around the drawn features?
       canShowMapNear(drawnFeatures).then(flag => setCanShowMap(flag));
-    } else if (center) {
+    } else if (props.center) {
       // can we draw a map around the configured center
-      canShowMapNear(createPointFeature(center)).then(flag =>
+      canShowMapNear(createPointFeature(props.center)).then(flag =>
         setCanShowMap(flag)
       );
     }
-  }, [center]);
+  }, [props.center, drawnFeatures]);
 
   // Callback function when a location is selected
   const setFeaturesCallback = (
@@ -134,11 +120,29 @@ export function MapFormField({
     }
   };
 
+  // User wants to use the current location as input, so go get it now
+  // and set the value of this field
   const handleCurrentLocation = () => {
-    if (center) {
-      const pointFeature = createPointFeature(center);
-      form.setFieldValue(field.name, pointFeature, true);
-    }
+    // get current location and set as point feature
+    Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 15000, // Longer timeout for accuracy
+      maximumAge: 0, // Force fresh position
+    })
+      .then(point => {
+        // set the field value to a point feature at this location
+        // we use lodash get here to avoid issues if form.values or field.name are undefined
+        const center: [number, number] = [
+          point.coords.longitude,
+          point.coords.latitude,
+        ];
+        const pointFeature = createPointFeature(center);
+        form.setFieldValue(field.name, pointFeature, true);
+      })
+      .catch(error => {
+        console.error('Failed to get current location:', error);
+        setNoPermission(true);
+      });
   };
 
   // dynamically determine feature label based on featureType
@@ -200,7 +204,11 @@ export function MapFormField({
                   and there is no downloaded map covering this location. Use the
                   button below to submit your current GPS location.
                 </Alert>
-                <Button variant="outlined" onClick={handleCurrentLocation}>
+                <Button
+                  variant="outlined"
+                  onClick={handleCurrentLocation}
+                  disabled={props.disabled}
+                >
                   Use my current location
                 </Button>
               </>
@@ -220,13 +228,13 @@ export function MapFormField({
             featureType={featureType}
             features={drawnFeatures}
             zoom={zoom}
-            center={center ?? FALLBACK_CENTER}
-            fallbackCenter={center === undefined}
+            center={props.center}
             setFeatures={setFeaturesCallback}
             geoTiff={props.geoTiff}
             projection={props.projection}
             setNoPermission={setNoPermission}
             isLocationSelected={isLocationSelected}
+            disabled={props.disabled}
           />
         )}
         <Box

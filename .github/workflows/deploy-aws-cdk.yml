@@ -55,14 +55,18 @@ jobs:
       - id: install-aws-cli
         uses: unfor19/install-aws-cli-action@v1
       - run: aws sts get-caller-identity
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "22"
+          node-version: '22'
       - name: Install dependencies and run CDK deploy
         run: |
           cd infrastructure/aws-cdk
-          npm install
+          pnpm install --frozen-lockfile
           export CONFIG_FILE_NAME=${{ vars.CDK_DEPLOY_ENVIRONMENT }}.json
           if [ "${{ github.event.inputs.action }}" = "deploy" ]; then
             npx cdk deploy --require-approval never

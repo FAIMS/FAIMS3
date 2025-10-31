@@ -40,12 +40,12 @@ import GeoJSON from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
+import {transformExtent} from 'ol/proj';
 import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
-import {useNotification} from '../../../context/popup';
 import {MapComponent} from '../../components/map/map-component';
 import {theme} from '../../themes';
 
@@ -58,12 +58,12 @@ interface MapProps extends ButtonProps {
   projection?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   zoom: number;
-  center: [number, number];
-  fallbackCenter: boolean;
+  center?: [number, number];
   setFeatures: (features: object, action: MapAction) => void;
   setNoPermission: (flag: boolean) => void;
   isLocationSelected: boolean;
   openMap?: () => void;
+  disabled?: boolean;
 }
 
 // define some EPSG codes - these are for two sample images
@@ -86,9 +86,6 @@ function MapWrapper(props: MapProps) {
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
-
-  // notifications
-  const notify = useNotification();
 
   // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
@@ -138,7 +135,13 @@ function MapWrapper(props: MapProps) {
         });
         vectorSource.addFeatures(parsedFeatures);
 
-        const extent = vectorSource.getExtent();
+        // pass the extent in the EPSG:4326 projection
+        const extent = transformExtent(
+          vectorSource.getExtent(),
+          theMap.getView().getProjection(),
+          'EPSG:4326'
+        );
+
         if (!extent.includes(Infinity)) setFeaturesExtent(extent);
       }
 
@@ -187,11 +190,8 @@ function MapWrapper(props: MapProps) {
 
   // open map
   const handleClickOpen = () => {
-    if (props.fallbackCenter) {
-      notify.showWarning(
-        'Using default map location - no current GPS or center.'
-      );
-    }
+    console.log('MapWrapper: handleClickOpen', props.disabled);
+    if (props.disabled) return;
     setMapOpen(true);
     setTimeout(() => {
       if (map) {
@@ -223,6 +223,7 @@ function MapWrapper(props: MapProps) {
           <Button
             variant="contained"
             fullWidth
+            disabled={props.disabled}
             onClick={handleClickOpen}
             sx={{
               width: {xs: '100%', sm: '50%', md: '40%'},
@@ -264,35 +265,37 @@ function MapWrapper(props: MapProps) {
           </Button>
         ) : (
           <Box>
-            <Tooltip title="Edit location">
-              <Box
-                id="edit-location-container"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 80,
-                  height: 80,
-                  backgroundColor: '#dfdfdf',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease-in-out',
-                  '&:hover': {
-                    backgroundColor: '#e0e0e0',
-                    transform: 'scale(1.1)',
-                    boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
-                  },
-                }}
-                onClick={handleClickOpen}
-              >
-                <EditIcon
+            {!props.disabled && (
+              <Tooltip title="Edit location">
+                <Box
+                  id="edit-location-container"
                   sx={{
-                    fontSize: 26,
-                    color: theme.palette.primary.main,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 80,
+                    height: 80,
+                    backgroundColor: '#dfdfdf',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: '#e0e0e0',
+                      transform: 'scale(1.1)',
+                      boxShadow: '0px 3px 8px rgba(0, 0, 0, 0.2)',
+                    },
                   }}
-                />
-              </Box>
-            </Tooltip>
+                  onClick={handleClickOpen}
+                >
+                  <EditIcon
+                    sx={{
+                      fontSize: 26,
+                      color: theme.palette.primary.main,
+                    }}
+                  />
+                </Box>
+              </Tooltip>
+            )}
           </Box>
         )}
 

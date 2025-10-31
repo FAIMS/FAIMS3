@@ -21,7 +21,7 @@ import {Directory, Encoding, Filesystem} from '@capacitor/filesystem';
 import {Share} from '@capacitor/share';
 import {databaseService} from '../context/slices/helpers/databaseService';
 // eslint-disable-next-line n/no-extraneous-import
-import PouchDB from 'pouchdb';
+import PouchDB from 'pouchdb-browser';
 
 /**
  * progressiveDump - dump a database in chunks

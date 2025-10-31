@@ -1,6 +1,6 @@
 {
-  "name": "web",
-  "version": "1.2.6",
+  "name": "@faims3/web",
+  "version": "1.2.8",
   "private": true,
   "type": "module",
   "engines": {
@@ -27,7 +27,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
-    "@faims3/data-model": "*",
+    "@faims3/data-model": "workspace:*",
     "@hookform/resolvers": "^3.9.1",
     "@lexical/react": "^0.12.4",
     "@mdxeditor/editor": "^1.13.5",
@@ -103,7 +103,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.9.2",
-    "vite": "^7.1.5",
+    "vite": "^7.1.11",
     "vitest": "^3.2.4",
     "webdriverio": "^9.12.2"
   }

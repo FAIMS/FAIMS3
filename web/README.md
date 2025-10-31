@@ -9,7 +9,7 @@ The web/ directory contains the source code for the web application. It is built
 ## Prerequisites
 
 - Node.js (v20+)
-- npm (v8+)
+- pnpm (v8+)
 - Vite (v4+)
 
 ## Installation
@@ -17,7 +17,7 @@ The web/ directory contains the source code for the web application. It is built
 1. Install dependencies from the project root:
 
 ```bash
-npm i
+pnpm i
 ```
 
 2. Create environment configuration and edit configuration as needed:
@@ -32,7 +32,7 @@ code .env
 Start the development server:
 
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 This will start the development server on port 3000 by default. Open your web browser and navigate to http://localhost:3000 to view the application.
@@ -42,7 +42,7 @@ This will start the development server on port 3000 by default. Open your web br
 To build the application for production, run the following command:
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 This will generate a production build in the `build` directory. The build artifacts will be optimized for production and will include only the necessary files for the application to run.
@@ -52,10 +52,11 @@ This will build the application and deploy it to the specified server.
 ## File Structure
 
 The `/src` directory contains the source code for the application. Including:
+
 - `/src/components` - React components for the application
-    - `/src/components/ui` - ShadCN provided UI components
-    - `/src/components/forms` - Form components leveraging `form.tsx`
-    - `/src/components/tables` - Table components leveraging `/src/components/data-table`
+  - `/src/components/ui` - ShadCN provided UI components
+  - `/src/components/forms` - Form components leveraging `form.tsx`
+  - `/src/components/tables` - Table components leveraging `/src/components/data-table`
 - `src/context` - React context providers for the application
 - `src/hooks` - React hooks for the application
 - `src/lib` - Utility functions for the application

@@ -1,7 +1,7 @@
 {
   "name": "@faims3/data-model",
-  "packageManager": "npm@10.7.0",
-  "version": "1.2.6",
+  "packageManager": "pnpm@10.7.0",
+  "version": "1.2.8",
   "description": "Database access layer for FAIMS3",
   "main": "./build/src/index.js",
   "module": "./build/esm/index.js",
@@ -27,16 +27,17 @@
     "!build/**/*.tsbuildinfo"
   ],
   "scripts": {
-    "build": "npm run build:cjs && npm run build:esm",
+    "build": "pnpm run build:cjs && pnpm run build:esm",
     "build:cjs": "tsc -p tsconfig.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "clean": "gts clean && rm -rf build",
+    "dev": "pnpm run watch",
     "watch": "tsc -p tsconfig.json --watch",
     "test": "NODE_ENV=test jest",
     "test:watch": "NODE_ENV=test jest --watchAll=true",
     "coverage": "NODE_ENV=test jest --coverage --watchAll=false",
     "circular-dep-check": "madge -c --extensions ts src/",
-    "lint": "npm run circular-dep-check && gts lint",
+    "lint": "pnpm run circular-dep-check && gts lint",
     "fix": "gts fix"
   },
   "author": "",

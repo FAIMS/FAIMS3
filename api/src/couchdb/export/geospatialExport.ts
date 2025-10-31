@@ -8,8 +8,9 @@ import {
   buildViewsetFieldSummaries,
   notebookRecordIterator,
 } from '@faims3/data-model';
-import {getDataDb} from '.';
-import {convertDataForOutput, getProjectUIModel} from './notebooks';
+import {getDataDb} from '..';
+import {getProjectUIModel} from '../notebooks';
+import {convertDataForOutput} from './utils';
 
 /**
  * Stream the records in a notebook as a GeoJSON file

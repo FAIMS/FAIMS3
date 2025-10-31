@@ -4,8 +4,8 @@ import {
   HydratedDataRecord,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import {getNanoDataDb, getDataDb} from '.';
-import {getProjectUIModel} from './notebooks';
+import {getNanoDataDb, getDataDb} from '..';
+import {getProjectUIModel} from '../notebooks';
 
 /**
  * Maximum number of file streams to process concurrently when building the ZIP archive.
@@ -431,6 +431,5 @@ export const generateFilenameForAttachment = ({
     postfix += 1;
   }
 
-  console.log(`[ZIP] Generated filename: ${fullFilename}`);
   return fullFilename;
 };

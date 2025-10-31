@@ -40,7 +40,7 @@ const config: any = {
     alias: {
       events: 'rollup-plugin-node-polyfills/polyfills/events',
     },
-    preserveSymlinks: true,
+    preserveSymlinks: false,
   },
   plugins: [react({jsxImportSource: '@emotion/react'})],
   define: {
