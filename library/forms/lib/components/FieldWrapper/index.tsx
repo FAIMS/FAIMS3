@@ -91,6 +91,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             {heading}
             {required && (
               <span
+                data-testid="required-indicator"
                 style={{
                   // color: theme.palette.alert.warningText,
                   marginLeft: 2,
@@ -108,6 +109,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             advancedHelperText.trim() && (
               <IconButton
                 aria-label="Advanced Help"
+                data-testid="advanced-help"
                 size="small"
                 onClick={() => setOpenDialog(true)}
                 sx={{

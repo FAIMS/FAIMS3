@@ -1,5 +1,19 @@
 import React from 'react';
 
+// Type describing the description of a field in the UISpec
+export interface EncodedFieldSpecification {
+  'component-namespace': string;
+  'component-name': string;
+  'component-parameters': {[key: string]: any};
+  initialValue: any;
+  persistent: boolean;
+  displayParent: boolean;
+  meta: {
+    annotation: {include: boolean; label: string};
+    uncertainty: {include: boolean; label: string};
+  };
+}
+
 // Field properties common to all fields
 export interface BaseFieldProps {
   label?: string;

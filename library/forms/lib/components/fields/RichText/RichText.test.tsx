@@ -1,41 +1,28 @@
-// import React from 'react';
-// import {it, expect} from 'vitest';
-// import {RichTextField} from '.';
+import React from 'react';
+import {render} from '@testing-library/react';
+import {it, expect, describe} from 'vitest';
+import {RichTextField} from '.';
 
-// export const initialValues = {test: {}};
-// export type Values = typeof initialValues;
+describe('RichTextField', () => {
+  it('renders some markdown', () => {
+    const content = 'Hello __World__';
+    const {container} = render(<RichTextField content={content} />);
+    expect(container.innerHTML).toContain('<strong>World</strong>');
+  });
 
-// it('renders some markdown', async () => {
-//   const content = 'Hello __World__';
-//   const {container} = renderForm(
-//     <Field component={RichTextField} content={content} />,
-//     initialValues
-//   );
-//   expect(container.innerHTML).toContain('<strong>World</strong>');
-// });
+  it('does not allow unsafe content', () => {
+    const content = 'Hello <script>alert("World")</script>';
+    const {container} = render(<RichTextField content={content} />);
+    expect(container.innerHTML).not.toContain('<script>alert("World")</script>');
+  });
 
-// it('does not allow unsafe content', async () => {
-//   const content = 'Hello <script>alert("World")</script>';
-//   const {container} = renderForm(
-//     <Field component={RichTextField} content={content} />,
-//     initialValues
-//   );
-//   expect(container.innerHTML).not.toContain('<script>alert("World")</script>');
-// });
+  it('renders nothing when content is empty', () => {
+    const {container} = render(<RichTextField content="" />);
+    expect(container.innerHTML).toBe('');
+  });
 
-// it('renders from the uiSpec', async () => {
-//   const uiSpec = {
-//     'component-namespace': 'faims-custom',
-//     'component-name': 'RichText',
-//     'type-returned': 'faims-core::String',
-//     'component-parameters': {
-//       label: 'Unused',
-//       content: 'Hello __World__',
-//     },
-//   };
-
-//   const {container} = instantiateField(uiSpec, initialValues);
-//   expect(container.innerHTML).toContain('<strong>World</strong>');
-// });
-
-// export {};
+  it('renders nothing when content is only whitespace', () => {
+    const {container} = render(<RichTextField content="   " />);
+    expect(container.innerHTML).toBe('');
+  });
+});
