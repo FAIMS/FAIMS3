@@ -1,6 +1,7 @@
 import {textFieldSpec} from '../fields/TextField';
 import {richTextFieldSpec} from '../fields/RichText';
 import {FieldInfo} from '../../types';
+import {selectFieldSpec} from './SelectField';
 
 const registeredFieldTypes: {[key: string]: FieldInfo} = {};
 
@@ -23,3 +24,4 @@ export const getFieldInfo = ({
 // Field Registrations here
 registerField(textFieldSpec);
 registerField(richTextFieldSpec);
+registerField(selectFieldSpec);

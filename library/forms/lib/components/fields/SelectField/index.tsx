@@ -27,11 +27,10 @@
  * - helperText (string, optional): The field help text displayed below the heading.
  * - ElementProps (object): Contains the dropdown options.
  * - field (object): Formik field object for managing value.
- * - reqired : To visually showif the field is required if it is.
+ * - required : To visually show if the field is required if it is.
  * - form (object): Formik form object for managing state and validation.
  */
 import React from 'react';
-import {TextFieldProps} from 'formik-mui';
 import {
   FormControl,
   ListItemText,
@@ -39,46 +38,47 @@ import {
   OutlinedInput,
   Select as MuiSelect,
 } from '@mui/material';
-
-interface ElementOption {
-  value: string;
-  label: string;
-  key?: string;
-}
-
-/**
- * Defines the properties for the dropdown options.
- */
-interface ElementProps {
-  options: Array<ElementOption>;
-}
-
-/**
- * Props for the Select component.
- */
-interface Props {
-  ElementProps: ElementProps;
-  select_others?: string;
-  advancedHelperText?: string;
-  disabled?: boolean;
-}
-
 import {useTheme} from '@mui/material/styles';
-import FieldWrapper from './fieldWrapper';
-import {contentToSanitizedHtml} from '../../utils/DomPurifier';
+import FieldWrapper from '../../FieldWrapper';
+import {contentToSanitizedHtml} from '../RichText/DomPurifier';
+import {BaseFieldPropsSchema, FieldInfo} from '../../../types';
+import {useFormField} from '../../FormManager/FormContext';
+import {z} from 'zod';
+
+export const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+  ElementProps: z.object({
+    options: z.array(
+      z.object({
+        value: z.string(),
+        label: z.string(),
+        key: z.string().optional(),
+      })
+    ),
+  }),
+  select_others: z.string().optional(),
+});
+type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
+
+// generate a zod schema for the value based on the options
+// defined in props
+const valueSchema = (props: SelectFieldProps) => {
+  const optionValues = props.ElementProps.options.map(option => option.value);
+  return z.union(optionValues.map(val => z.literal(val)));
+};
 
 /**
  * Select Component - A reusable dropdown select field with Formik integration.
  */
-export const Select = (props: Props & TextFieldProps) => {
+export const Select = (props: SelectFieldProps) => {
   const theme = useTheme();
+
+  const {value, setValue} = useFormField(props.name);
 
   /**
    * Handles the change event when a new option is selected.
-   * @param {React.ChangeEvent<HTMLInputElement>} e - The change event.
    */
   const handleChange = (e: any) => {
-    props.form.setFieldValue(props.field.name, e.target.value, true);
+    setValue(e.target.value);
   };
 
   return (
@@ -96,7 +96,7 @@ export const Select = (props: Props & TextFieldProps) => {
       >
         <MuiSelect
           onChange={handleChange}
-          value={props.field.value}
+          value={value || ''}
           input={<OutlinedInput />}
           disabled={props.disabled}
         >
@@ -130,6 +130,17 @@ export const Select = (props: Props & TextFieldProps) => {
       </FormControl>
     </FieldWrapper>
   );
+};
+
+// Export a constant with the information required to
+// register this field type
+export const selectFieldSpec: FieldInfo = {
+  namespace: 'faims-custom',
+  name: 'Select',
+  returns: 'faims-core::String',
+  component: Select,
+  fieldSchema: SelectFieldPropsSchema,
+  valueSchemaFunction: valueSchema,
 };
 
 // const uiSpec = {

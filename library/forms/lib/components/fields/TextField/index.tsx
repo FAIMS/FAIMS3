@@ -1,9 +1,10 @@
 import {TextField as MuiTextField} from '@mui/material';
 import FieldWrapper from '../../FieldWrapper';
-import {BaseFieldProps, FieldInfo} from '../../../types';
+import {BaseFieldProps, BaseFieldPropsSchema, FieldInfo} from '../../../types';
 import {useState} from 'react';
 import {useFormField} from '../../FormManager/FormContext';
 import React from 'react';
+import z from 'zod';
 
 const TextField = React.memo((props: BaseFieldProps) => {
   console.log('TextField:', props.name);
@@ -33,8 +34,9 @@ const TextField = React.memo((props: BaseFieldProps) => {
   );
 });
 
-const validateTextField = (value: any) => {
-  return typeof value === 'string';
+// generate a zod schema for the value. In this case, it's always a string
+const valueSchema = () => {
+  return z.string();
 };
 
 // Export a constant with the information required to
@@ -44,5 +46,6 @@ export const textFieldSpec: FieldInfo = {
   name: 'FAIMSTextField',
   returns: 'faims-core::String',
   component: TextField,
-  validator: validateTextField,
+  fieldSchema: BaseFieldPropsSchema,
+  valueSchemaFunction: valueSchema,
 };

@@ -1,34 +1,44 @@
 import React from 'react';
+import {z} from 'zod';
 
 // Type describing the description of a field in the UISpec
-export interface EncodedFieldSpecification {
-  'component-namespace': string;
-  'component-name': string;
-  'component-parameters': {[key: string]: any};
-  initialValue: any;
-  persistent: boolean;
-  displayParent: boolean;
-  meta: {
-    annotation: {include: boolean; label: string};
-    uncertainty: {include: boolean; label: string};
-  };
-}
+
+export const FieldSpecificationSchema = z.object({
+  'component-namespace': z.string(),
+  'component-name': z.string(),
+  'component-parameters': z.record(z.string(), z.any()),
+  initialValue: z.any(),
+  persistent: z.boolean(),
+  displayParent: z.boolean(),
+  meta: z.object({
+    annotation: z.object({include: z.boolean(), label: z.string()}),
+    uncertainty: z.object({include: z.boolean(), label: z.string()}),
+  }),
+});
+export type EncodedFieldSpecification = z.infer<
+  typeof FieldSpecificationSchema
+>;
 
 // Field properties common to all fields
-export interface BaseFieldProps {
-  label?: string;
-  name: string;
-  helperText?: string;
-  required?: boolean;
-  advancedHelperText?: string;
-}
+export const BaseFieldPropsSchema = z.object({
+  label: z.string().optional(),
+  name: z.string(),
+  helperText: z.string().optional(),
+  required: z.boolean().optional(),
+  advancedHelperText: z.string().optional(),
+  disabled: z.boolean().optional(),
+});
+export type BaseFieldProps = z.infer<typeof BaseFieldPropsSchema>;
 
 export type FieldReturnType = 'faims-core::String' | 'faims-core::Number';
 
+// FieldInfo is the information required to register a field type
+// and will be provided by each field implementation
 export interface FieldInfo {
-  namespace: string;
-  name: string;
-  returns: FieldReturnType | null;
-  component: React.FC<any>;
-  validator: (value: any) => boolean;
+  namespace: string; // Namespace of the field
+  name: string; // Field name within the namespace
+  returns: FieldReturnType | null; // The type returned by this field
+  component: React.FC<any>; // React component implementing the field
+  fieldSchema?: z.ZodTypeAny; // schema to validate the field properties
+  valueSchemaFunction?: (props: any) => z.ZodTypeAny; // function to generate a schema to validate the field value based on props
 }
