@@ -347,8 +347,8 @@ class CoreOperations {
   private async updateDocument<T extends {_id: string; _rev: string}>(
     doc: T,
     config: DocumentTypeConfig<T>,
-    writeOnClash: boolean = true,
-    maxRetries: number = 5
+    writeOnClash = true,
+    maxRetries = 5
   ): Promise<T | undefined> {
     const validated = config.validator(doc);
 

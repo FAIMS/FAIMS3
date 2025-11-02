@@ -670,7 +670,7 @@ async function validateDatabase(
     });
 
     console.log(`  Found ${result.rows.length} documents in ${dbName}`);
-    console.log(`  Validating documents...`);
+    console.log('  Validating documents...');
 
     // Collect record documents for hydration testing
     const recordDocs: any[] = [];
@@ -778,9 +778,9 @@ async function main() {
   console.log(
     '================================================================================'
   );
-  console.log(`Reports written to:`);
-  console.log(`  - report-summary.log (overview)`);
-  console.log(`  - report-full.log (detailed)`);
+  console.log('Reports written to:');
+  console.log('  - report-summary.log (overview)');
+  console.log('  - report-full.log (detailed)');
   console.log('');
 
   // Print summary to console
