@@ -1,3 +1,3 @@
 ./localdev.sh
-npm run migrate
-npm run dev
+pnpm run migrate-with-keys
+pnpm run dev

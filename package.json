@@ -1,43 +1,34 @@
 {
   "name": "faims3",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "main": "index.js",
   "engines": {
     "node": "22"
   },
-  "workspaces": [
-    "api",
-    "app",
-    "web",
-    "designer",
-    "library/data-model",
-    "tests",
-    "infrastructure/aws-cdk"
-  ],
   "scripts": {
-    "build-app": "npm run build --workspace=app",
-    "build-api": "npm run build --workspace=api",
-    "build-data-model": "npm run build --workspace=library/data-model",
-    "github-build-app": "npm run build --workspace=library/data-model --workspace=app",
-    "docker-build-api": "npm run build --workspace=library/data-model --workspace=api",
-    "build-aws": "npm run build --workspace=infrastructure/aws-cdk",
-    "package-aws": "npm run package --workspace=infrastructure/aws-cdk",
-    "test-app": "npm test --workspace=app",
-    "serve-app": "npm run serve --workspace=app",
-    "start": "npm start --workspace=api --workspace=app",
-    "start-api": "npm start --workspace=api",
-    "start-app": "npm start --workspace=app",
-    "start-web": "npm start --workspace=web",
-    "force-start-app": "npm force-start --workspace=app",
-    "watch-api": "npm run local --workspace=api",
-    "web-dev": "npm run dev --workspace=web",
-    "start-designer": "npm run start --workspace=designer",
-    "migrate": "npm run migrate --workspace=api -- --keys",
-    "load-projects": "npm run load-projects --workspace=api",
-    "load-templates": "npm run load-templates --workspace=api",
+    "build-app": "pnpm --filter=app run build",
+    "build-api": "pnpm --filter=api run build",
+    "build-data-model": "pnpm --filter=data-model run build",
+    "github-build-app": "pnpm --filter=data-model --filter=app run build",
+    "docker-build-api": "pnpm --filter=data-model --filter=api  run build ",
+    "build-aws": "pnpm --filter=aws-cdk run build",
+    "package-aws": "pnpm --filter=aws-cdk run package",
+    "test-app": "pnpm --filter=app test",
+    "serve-app": "pnpm --filter=app run serve",
+    "start": "pnpm --filter=api --filter=app start",
+    "start-api": "pnpm --filter=api start",
+    "start-app": "pnpm --filter=app start",
+    "start-web": "pnpm --filter=web start",
+    "force-start-app": "pnpm --filter=app force-start",
+    "watch-api": "pnpm --filter=api run local",
+    "web-dev": "pnpm --filter=web run dev",
+    "migrate": "pnpm --filter=api run migrate",
+    "migrate-with-keys": "pnpm --filter=api run migrate-with-keys",
+    "load-projects": "pnpm --filter=api run load-projects",
+    "load-templates": "pnpm --filter=api run load-templates",
     "generate-local-keys": "./api/keymanagement/makeInstanceKeys.sh",
-    "build-web": "turbo build --filter web",
-    "dev": "turbo dev --filter=@faims3/app --filter=web --filter=@faims3/api --filter=@faims3/data-model --parallel",
+    "build-web": "turbo build --filter @faims3/web",
+    "dev": "turbo dev --filter=@faims3/app --filter=@faims3/web --filter=@faims3/api --filter=@faims3/data-model --parallel",
     "lint": "turbo lint",
     "clean": "turbo clean",
     "build": "turbo build"
@@ -55,12 +46,18 @@
     "turbo": "^2.0.11",
     "typescript": "^5.9.2"
   },
-  "packageManager": "npm@10.7.0",
+  "packageManager": "pnpm@10.7.0",
   "dependencies": {
     "@capacitor-community/exif": "^7.0.0",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "env-cmd": "^10.1.0",
     "esbuild": "^0.25.0",
     "eslint": "^8.57.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@mui/base": "5.0.0-beta.40"
+    }
   }
 }

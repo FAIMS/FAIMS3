@@ -47,6 +47,7 @@ import {
   Resource,
   resourceRoles,
   Role,
+  safeWriteDocument,
   setAttachmentDumperForType,
   setAttachmentLoaderForType,
   slugify,
@@ -314,9 +315,7 @@ export const createNotebook = async (
     // first add an entry to the projects db about this project
     // this is used to find the other databases below
     const projectsDB = localGetProjectsDb();
-    if (projectsDB) {
-      await projectsDB.put(projectDoc);
-    }
+    await projectsDB.put(projectDoc);
   } catch (error) {
     console.log('Error creating project entry in projects database:', error);
     return undefined;
@@ -329,9 +328,10 @@ export const createNotebook = async (
   });
 
   const payload = {_id: 'ui-specification', ...uispec};
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
+  await safeWriteDocument({
+    db: metaDB,
+    data: payload satisfies EncodedProjectUIModel,
+  });
 
   // ensure that the name is in the metadata
   metadata.name = projectName.trim();
@@ -378,10 +378,7 @@ export const updateNotebook = async (
     ...uispec,
   };
   // now store it to update the spec
-  await metaDB.put(
-    payload satisfies PouchDB.Core.PutDocument<EncodedProjectUIModel>
-  );
-
+  await safeWriteDocument({db: metaDB, data: payload});
   await writeProjectMetadata(metaDB, metadata);
 
   // update the name if required
@@ -507,7 +504,8 @@ export const writeProjectMetadata = async (
     } catch {
       // no existing document, so don't set the rev
     }
-    await metaDB.put(doc);
+
+    await safeWriteDocument({db: metaDB, data: doc});
   }
   // also add the whole metadata as 'projectvalue'
   metadata._id = PROJECT_METADATA_PREFIX + '-projectvalue';
@@ -517,7 +515,7 @@ export const writeProjectMetadata = async (
   } catch {
     // no existing document, so don't set the rev
   }
-  await metaDB.put(metadata);
+  await safeWriteDocument({db: metaDB, data: metadata});
   return metadata;
 };
 
@@ -552,7 +550,7 @@ export const getNotebookMetadata = async (
         console.error('no metadata database found for', project_id);
       }
     } catch (error) {
-      console.log('unknown project', project_id);
+      console.error('error reading project metadata', project_id, error);
     }
   } else {
     console.log('unknown project', project_id);
@@ -580,7 +578,7 @@ export const getEncodedNotebookUISpec = async (
       console.error('no metadata database found for', projectId);
     }
   } catch (error) {
-    console.log('unknown project', projectId);
+    console.error('error reading metadata db for project', projectId, error);
   }
   return null;
 };

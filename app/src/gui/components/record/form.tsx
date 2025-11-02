@@ -1850,21 +1850,23 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                             </div>
                           </Alert>
                         )}
-                      <FormButtonGroup
-                        is_final_view={true}
-                        record_type={this.state.type_cached}
-                        onChangeStepper={this.onChangeStepper}
-                        visitedSteps={this.state.visitedSteps}
-                        isRecordSubmitted={isRecordSubmitted}
-                        view_index={0}
-                        formProps={formProps}
-                        ui_specification={ui_specification}
-                        views={views}
-                        publishButtonBehaviour={publishButtonBehaviour}
-                        showPublishButton={showPublishButton}
-                        handleFormSubmit={handleFormSubmit}
-                        layout={layout}
-                      />
+                      {!this.state.formDisabled && (
+                        <FormButtonGroup
+                          is_final_view={true}
+                          record_type={this.state.type_cached}
+                          onChangeStepper={this.onChangeStepper}
+                          visitedSteps={this.state.visitedSteps}
+                          isRecordSubmitted={isRecordSubmitted}
+                          view_index={0}
+                          formProps={formProps}
+                          ui_specification={ui_specification}
+                          views={views}
+                          publishButtonBehaviour={publishButtonBehaviour}
+                          showPublishButton={showPublishButton}
+                          handleFormSubmit={handleFormSubmit}
+                          layout={layout}
+                        />
+                      )}
                       {/* {UGCReport ONLY for the saved record} */}
                       {this.state.revision_cached !== undefined && (
                         <Box mt={3}>
@@ -1941,21 +1943,23 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                           return await this.forceSave(formProps);
                         }}
                       />
-                      <FormButtonGroup
-                        record_type={this.state.type_cached}
-                        is_final_view={is_final_view}
-                        onChangeStepper={this.onChangeStepper}
-                        visitedSteps={this.state.visitedSteps}
-                        isRecordSubmitted={isRecordSubmitted}
-                        view_index={view_index}
-                        formProps={formProps}
-                        ui_specification={ui_specification}
-                        views={views}
-                        publishButtonBehaviour={publishButtonBehaviour}
-                        showPublishButton={showPublishButton}
-                        handleFormSubmit={handleFormSubmit}
-                        layout={layout}
-                      />
+                      {!this.state.formDisabled && (
+                        <FormButtonGroup
+                          record_type={this.state.type_cached}
+                          is_final_view={is_final_view}
+                          onChangeStepper={this.onChangeStepper}
+                          visitedSteps={this.state.visitedSteps}
+                          isRecordSubmitted={isRecordSubmitted}
+                          view_index={view_index}
+                          formProps={formProps}
+                          ui_specification={ui_specification}
+                          views={views}
+                          publishButtonBehaviour={publishButtonBehaviour}
+                          showPublishButton={showPublishButton}
+                          handleFormSubmit={handleFormSubmit}
+                          layout={layout}
+                        />
+                      )}
                       {this.state.revision_cached !== undefined && (
                         <Box mt={3}>
                           <Divider />

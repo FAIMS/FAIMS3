@@ -21,11 +21,7 @@
         "inlineSources": true,
         "experimentalDecorators": true,
         "strictPropertyInitialization": false,
-        "skipLibCheck": true,
-        "typeRoots": [
-            "./node_modules/@types",
-            "../../node_modules/@types"
-        ]
+        "skipLibCheck": true
     },
     "exclude": [
         "node_modules",

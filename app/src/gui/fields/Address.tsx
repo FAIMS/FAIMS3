@@ -74,7 +74,9 @@ export const AddressField = (props: FieldProps & Props) => {
   const [displayName, setDisplayName] = useState(
     props.field.value?.display_name || ''
   );
-  const [collapsed, setCollapsed] = useState(displayName === '');
+  const [collapsed, setCollapsed] = useState(
+    displayName === '' && !props.disabled
+  );
 
   const iconRef = useRef(null);
 
