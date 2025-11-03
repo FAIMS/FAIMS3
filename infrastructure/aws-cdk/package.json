@@ -2,9 +2,6 @@
     "name": "@faims3/infra-aws-cdk",
     "packageManager": "pnpm@10.7.0",
     "version": "0.1.0",
-    "bin": {
-        "@faims3/infra-aws-cdk": "bin/@faims3/infra-aws-cdk.js"
-    },
     "engines": {
         "node": "22"
     },

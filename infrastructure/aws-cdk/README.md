@@ -86,7 +86,7 @@ Now follow the below steps to setup your configuration.
 
 ## Building artifacts
 
-NPM is used to manage building some utility lambda functions separately to CDK process.
+PNPM is used to manage building some utility lambda functions separately to CDK process.
 
 **Note**: These are intended to completely standalone from the monorepo in which this project lives.
 
