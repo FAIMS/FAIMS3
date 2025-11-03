@@ -31,8 +31,7 @@
  * - form (object): Formik form object for managing state and validation.
  */
 import React from 'react';
-import MuiTextField from '@mui/material/TextField';
-import {fieldToTextField, TextFieldProps} from 'formik-mui';
+import {TextFieldProps} from 'formik-mui';
 import {
   FormControl,
   ListItemText,

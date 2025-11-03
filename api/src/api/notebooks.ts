@@ -99,7 +99,7 @@ import patch from '../utils/patchExpressAsync';
 // This must occur before express api is used
 patch();
 
-export const api = express.Router();
+export const api: express.Router = express.Router();
 
 /**
  * Gets a list of notebooks

@@ -208,18 +208,15 @@ describe('safeWriteDocument', () => {
 
       await testDb.put(initialDoc);
 
-      let attemptCount = 0;
       const originalPut = testDb.put.bind(testDb);
 
       // Mock put to always throw 409
       testDb.put = jest.fn().mockImplementation(async (doc: any) => {
         if (!doc._rev) {
-          attemptCount++;
           const error = new Error('Document update conflict') as any;
           error.status = 409;
           throw error;
         } else {
-          attemptCount++;
           const error = new Error('Document update conflict') as any;
           error.status = 409;
           throw error;

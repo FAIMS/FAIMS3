@@ -1,27 +1,27 @@
 {
-  "appId": "org.fedarch.faims3",
-  "appName": "APPNAME",
-  "npmClient": "npm",
-  "webDir": "build",
-  "plugins": {
-    "SplashScreen": {
-      "launchShowDuration": 0
+    "appId": "org.fedarch.faims3",
+    "appName": "APPNAME",
+    "npmClient": "pnpm",
+    "webDir": "build",
+    "plugins": {
+        "SplashScreen": {
+            "launchShowDuration": 0
+        },
+        "StatusBar": {
+            "style": "Light",
+            "backgroundColor": "#FAFAFB",
+            "overlaysWebView": false
+        },
+        "CapacitorHttp": {
+            "enabled": false
+        }
     },
-    "StatusBar": {
-      "style": "Light",
-      "backgroundColor": "#FAFAFB",
-      "overlaysWebView": false
+    "server": {
+        "allowNavigation": [],
+        "iosScheme": "org.fedarch.faims3"
     },
-    "CapacitorHttp": {
-      "enabled": false
-    }
-  },
-  "server": {
-    "allowNavigation": [],
-    "iosScheme": "org.fedarch.faims3"
-  },
-  "android": {
-    "webContentsDebuggingEnabled": true
-  },
-  "cordova": {}
+    "android": {
+        "webContentsDebuggingEnabled": true
+    },
+    "cordova": {}
 }

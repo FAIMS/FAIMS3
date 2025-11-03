@@ -142,8 +142,8 @@ const generateValue = (field: any) => {
     case 'faims-core::String':
       return 'Bobalooba';
     case 'faims-attachment::Files': {
-      const image = readFileSync(SAMPLE_IMAGE_FILE);
-      const buffer = Buffer.from(image);
+      const buffer = readFileSync(SAMPLE_IMAGE_FILE);
+      //const buffer = Buffer.from(image);
       return [{type: 'image/jpeg', data: buffer}];
     }
     case 'faims-core::Integer':
