@@ -1,7 +1,6 @@
 import {TextField as MuiTextField} from '@mui/material';
 import FieldWrapper from '../../FieldWrapper';
 import {BaseFieldProps, BaseFieldPropsSchema, FieldInfo} from '../../../types';
-import {useState} from 'react';
 import {useFormField} from '../../FormManager/FormContext';
 import React from 'react';
 import z from 'zod';
@@ -10,11 +9,9 @@ const TextField = React.memo((props: BaseFieldProps) => {
   console.log('TextField:', props.name);
 
   const {value, setValue} = useFormField(props.name);
-  const [currentValue, setCurrentValue] = useState(value || '');
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
-    setCurrentValue(newValue);
     setValue(newValue);
   };
 
@@ -25,7 +22,7 @@ const TextField = React.memo((props: BaseFieldProps) => {
       advancedHelperText={props.advancedHelperText}
     >
       <MuiTextField
-        value={currentValue}
+        value={value || ''}
         fullWidth
         onChange={onChange}
         variant="outlined"
