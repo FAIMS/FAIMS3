@@ -13,7 +13,9 @@ describe('RichTextField', () => {
   it('does not allow unsafe content', () => {
     const content = 'Hello <script>alert("World")</script>';
     const {container} = render(<RichTextField content={content} />);
-    expect(container.innerHTML).not.toContain('<script>alert("World")</script>');
+    expect(container.innerHTML).not.toContain(
+      '<script>alert("World")</script>'
+    );
   });
 
   it('renders nothing when content is empty', () => {
