@@ -30,7 +30,18 @@ export const BaseFieldPropsSchema = z.object({
 });
 export type BaseFieldProps = z.infer<typeof BaseFieldPropsSchema>;
 
-export type FieldReturnType = 'faims-core::String' | 'faims-core::Number';
+export type FieldReturnType =
+  | 'faims-attachment::Files'
+  | 'faims-core::Array'
+  | 'faims-core::Bool'
+  | 'faims-core::Date'
+  | 'faims-core::Email'
+  | 'faims-core::Integer'
+  | 'faims-core::JSON'
+  | 'faims-core::Number'
+  | 'faims-core::Relationship'
+  | 'faims-core::String'
+  | 'faims-pos::Location';
 
 // FieldInfo is the information required to register a field type
 // and will be provided by each field implementation

@@ -45,7 +45,7 @@ import {BaseFieldPropsSchema, FieldInfo} from '../../../types';
 import {useFormField} from '../../FormManager/FormContext';
 import {z} from 'zod';
 
-export const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
     options: z.array(
       z.object({
