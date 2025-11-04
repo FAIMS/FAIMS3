@@ -362,49 +362,202 @@ export function validateExistingDataDocument(
 }
 
 // ============================================================================
-// General Definitions
+// High level Engine IO schemas
 // ============================================================================
 
-export const baseFormRecordSchema = z.object({
-  // The project this belongs to
-  projectId: z.string().optional(),
-  // The ID of the form (also known as viewsetId)
-  formId: z.string(),
-  // The actual form data Map string -> any
-  data: z.record(z.string(), z.unknown()),
-  // Annotations
-  annotations: z.record(z.string(), annotationsSchema),
-  // Author
-  createdBy: z.string(),
-  // Is this a related record? - leave empty if needed
-  relationship: relationshipSchema.optional(),
+/**
+ * Schema for an annotation on a form field.
+ * Annotations provide additional context and metadata about field values.
+ */
+const formAnnotationSchema = z.object({
+  /** Human-readable annotation text describing the field value */
+  annotation: z.string(),
+  /** Flag indicating if there is uncertainty about this field's value */
+  uncertainty: z.boolean(),
 });
 
+export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
+
+/**
+ * Schema for a relationship between records.
+ * Used when a record is related to another record through a specific field.
+ */
+const formRelationshipSchema = z.object({
+  parent: z.object({
+    /** The ID of the parent record this record is related to */
+    recordId: z.string(),
+    /** The field ID in the parent record that defines this relationship */
+    fieldId: z.string(),
+    /** The relationship type as a vocabulary pair */
+    relationTypeVocabPair: z.tuple([z.string(), z.string()]),
+  }),
+});
+
+export type FormRelationship = z.infer<typeof formRelationshipSchema>;
+
+/**
+ * For submitting data from forms, this is the starting point
+ */
+const baseFormRecordSchema = z.object({
+  /** The project this record belongs to (optional for backwards compatibility) */
+  projectId: z.string().optional(),
+  /** The ID of the form/viewset this record is an instance of */
+  formId: z.string(),
+  /** The actual form data as a map of field IDs to their values */
+  data: z.record(z.string(), z.unknown()),
+  /** Annotations for each field, mapped by field ID */
+  annotations: z.record(z.string(), formAnnotationSchema),
+  /** Username of the user who created this record */
+  createdBy: z.string(),
+  /** Optional relationship information if this is a related/child record */
+  relationship: formRelationshipSchema.optional(),
+});
+
+/**
+ * Schema for a new form record being created.
+ * Contains all necessary information to create a new record in the system.
+ */
 export const newFormRecordSchema = baseFormRecordSchema;
+
 export type NewFormRecord = z.infer<typeof newFormRecordSchema>;
+
+/**
+ * Schema for an existing form record being updated.
+ * Extends the base schema with identifiers and update tracking.
+ */
 export const existingFormRecordSchema = baseFormRecordSchema.extend({
-  // The existing record
+  /** The unique identifier of the existing record */
   recordId: z.string(),
-  // The existing revision
+  /** The current revision identifier of the record */
   revisionId: z.string(),
-  // Who performed this update?
+  /** Username of the user performing this update */
   updatedBy: z.string(),
 });
+
 export type ExistingFormRecord = z.infer<typeof existingFormRecordSchema>;
 
-// Other fields not sure if we need them
-//  relationship: relationshipSchema.optional().or(z.object({})),
-//  deleted: z.boolean().optional(),
+/**
+ * Schema for file attachments associated with a field.
+ */
+export const faimsAttachmentSchema = z.object({
+  /** Unique identifier for the attachment document - corresponds to
+   * an att- prefixed attachment document */
+  attachmentId: z.string(),
+  /** Original filename of the attachment */
+  filename: z.string(),
+  /** MIME type of the file */
+  fileType: z.string(),
+});
 
+export type FaimsAttachment = z.infer<typeof faimsAttachmentSchema>;
+
+export const hydratedDataFieldSchema = z.object({
+  /** Unique identifier for this AVP document */
+  _id: z.string(),
+  /** Current revision string from PouchDB */
+  _rev: z.string(),
+  /** Type identifier for this field */
+  type: z.string(),
+  /** The actual field value (can be any valid JSON type) */
+  data: z.unknown(),
+  /** The revision ID this AVP belongs to */
+  revisionId: z.string(),
+  /** The record ID this AVP belongs to */
+  recordId: z.string(),
+  /** Optional annotations for this field value */
+  annotations: formAnnotationSchema.optional(),
+  /** ISO datetime when this AVP was created */
+  created: z.string().datetime(),
+  /** User who created this AVP */
+  createdBy: z.string(),
+  /** Optional array of file attachments associated with this field */
+  faimsAttachments: z.array(faimsAttachmentSchema).optional(),
+});
+
+export type HydratedDataField = z.infer<typeof hydratedDataFieldSchema>;
+
+/**
+ * Schema for the core record document containing record-level metadata.
+ */
+export const hydratedRecordDocumentSchema = z.object({
+  /** Unique identifier for this record */
+  _id: z.string(),
+  /** Current revision string from PouchDB */
+  _rev: z.string(),
+  /** ISO 8601 datetime when the record was created */
+  created: z.string().datetime(),
+  /** User who created the record */
+  createdBy: z.string(),
+  /** Array of all revision IDs that make up this record's history */
+  revisions: z.array(z.string()),
+  /** Array of current head revision IDs (usually one, multiple if conflicted) */
+  heads: z.array(z.string()),
+  /** Form identifier for this document */
+  formId: z.string(),
+});
+
+export type HydratedRecordDocument = z.infer<
+  typeof hydratedRecordDocumentSchema
+>;
+
+/**
+ * Schema for a revision document containing field values at a point in time.
+ */
+export const hydratedRevisionDocumentSchema = z.object({
+  /** Unique identifier for this revision */
+  _id: z.string(),
+  /** Current revision string from PouchDB */
+  _rev: z.string(),
+  /** Attribute-value pairs mapping field IDs to AVP document IDs */
+  avps: z.record(z.string(), z.string()),
+  /** The record ID this revision belongs to */
+  recordId: z.string(),
+  /** Array of parent revision IDs (for tracking revision history) */
+  parents: z.array(z.string()),
+  /** ISO datetime when this revision was created */
+  created: z.string().datetime(),
+  /** User who created this revision */
+  createdBy: z.string(),
+  /** Type identifier for this form */
+  formId: z.string(),
+  /** Optional relationship information if this is a related record */
+  relationship: formRelationshipSchema.optional().or(z.object({})),
+});
+
+export type HydratedRevisionDocument = z.infer<
+  typeof hydratedRevisionDocumentSchema
+>;
+
+/**
+ * Schema for metadata about record retrieval and conflict resolution.
+ */
+export const hydratedRecordMetadataSchema = z.object({
+  /** Whether this record had conflicting heads when retrieved */
+  hadConflict: z.boolean(),
+  /** The strategy used to resolve conflicts, if any were present */
+  conflictResolution: z.enum(['throw', 'pickFirst', 'pickLast']).optional(),
+  /** All head revision IDs that existed before conflict resolution */
+  allHeads: z.array(z.string()),
+});
+
+export type HydratedRecordMetadata = z.infer<
+  typeof hydratedRecordMetadataSchema
+>;
+
+/**
+ * Schema for a fully hydrated record with all related data.
+ * This represents a complete record retrieved from the database with all
+ * its components and metadata assembled together.
+ */
 export const hydratedRecordSchema = z.object({
-  record: existingRecordDocumentSchema,
-  revision: existingRevisionDocumentSchema,
-  data: z.record(z.string(), existingAvpDocumentSchema),
-  metadata: z.object({
-    hadConflict: z.boolean(),
-    conflictResolution: z.enum(['throw', 'pickFirst', 'pickLast']).optional(),
-    allHeads: z.array(z.string()),
-  }),
+  /** The core record document containing record-level metadata */
+  record: hydratedRecordDocumentSchema,
+  /** The current revision document containing the latest field values */
+  revision: hydratedRevisionDocumentSchema,
+  /** Map of field IDs to their complete AVP (Attribute-Value-Pair) documents */
+  data: z.record(z.string(), hydratedDataFieldSchema),
+  /** Metadata about the record retrieval and conflict resolution */
+  metadata: hydratedRecordMetadataSchema,
 });
 
 export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;

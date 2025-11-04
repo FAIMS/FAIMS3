@@ -11,6 +11,7 @@ import {
   ExistingRecordDBDocument,
   ExistingRevisionDBDocument,
   getDocumentType,
+  HydratedDataField,
   HydratedRecord,
   isExistingAttachmentDocument,
   isExistingAvpDocument,
@@ -812,11 +813,53 @@ class HydratedOperations {
     // Step 4: Fetch all AVPs efficiently
     const data = await this.fetchAvps(revision.avps);
 
-    // Step 5: Build the hydrated record
+    // Map the AVPs into our preferred external interface
+    const mappedData: Record<string, HydratedDataField> = {};
+    Array.from(Object.keys(data)).forEach(k => {
+      const val = data[k];
+      mappedData[k] = {
+        _id: val._id,
+        _rev: val._rev,
+        created: val.created,
+        createdBy: val.created_by,
+        recordId: val.record_id,
+        revisionId: val.revision_id,
+        type: val.type,
+        annotations: val.annotations,
+        data: val.data,
+        faimsAttachments: val.faims_attachments
+          ? val.faims_attachments.map(att => ({
+              attachmentId: att.attachment_id,
+              filename: att.filename,
+              fileType: att.file_type,
+            }))
+          : undefined,
+      };
+    });
+
+    // Step 5: Build the hydrated record (in our external interface)
     return {
-      record,
-      revision,
-      data,
+      record: {
+        _id: record._id,
+        _rev: record._rev,
+        created: record.created,
+        createdBy: record.created_by,
+        formId: record.type,
+        heads: record.heads,
+        revisions: record.revisions,
+      },
+      revision: {
+        _id: revision._id,
+        _rev: revision._rev,
+        avps: revision.avps,
+        created: revision.created,
+        createdBy: revision.created_by,
+        formId: revision.type,
+        parents: revision.parents,
+        recordId: revision.record_id,
+        relationship: revision.relationship,
+      },
+      data: mappedData,
       metadata: {
         hadConflict,
         conflictResolution: hadConflict
