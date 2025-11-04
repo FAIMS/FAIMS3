@@ -1,3 +1,5 @@
+/* eslint-disable n/no-process-exit */
+
 /**
  * A helper script which pulls and validates all records in a FAIMS deployment.
  */
@@ -54,7 +56,7 @@ function getConfig(): Config {
     console.error(
       '  --test-hydration    Test hydration of all record documents'
     );
-    throw new Error();
+    process.exit(1);
   }
 
   return {
@@ -696,7 +698,7 @@ async function validateDatabase(
     }
   } catch (error) {
     console.error(`  ✗ Error validating ${dbName}:`, error);
-    throw error;
+    process.exit(1);
   }
 
   return stats;
@@ -809,7 +811,7 @@ async function main() {
         '⚠️  Hydration errors found. Check report-full.log for details.'
       );
     }
-    throw new Error();
+    process.exit(1);
   } else {
     console.log('');
     console.log(
