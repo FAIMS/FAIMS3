@@ -6,8 +6,8 @@ import {
   ValuesObject,
 } from '@faims3/data-model';
 import Mustache from 'mustache';
-import { RecordContext } from '../gui/components/record/form';
-import { ParentLinkProps } from '../gui/components/record/relationships/types';
+import {RecordContext} from '../gui/components/record/form';
+import {ParentLinkProps} from '../gui/components/record/relationships/types';
 
 /*
 Patch mustache to not escape values.

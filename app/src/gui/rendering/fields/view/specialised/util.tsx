@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { DataViewFieldRender } from '../../../types';
+import {useState} from 'react';
+import {DataViewFieldRender} from '../../../types';
 
 export const FieldDebugger: DataViewFieldRender = props => {
   const [isOpen, setIsOpen] = useState(false);

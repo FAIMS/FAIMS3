@@ -583,6 +583,9 @@ importers:
       workbox-strategies:
         specifier: 6.5.4
         version: 6.5.4
+      zod:
+        specifier: ^4.1.12
+        version: 4.1.12
     devDependencies:
       '@capacitor/assets':
         specifier: ^3.0.5

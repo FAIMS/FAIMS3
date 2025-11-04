@@ -14,13 +14,13 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import React, { useMemo } from 'react';
+import React, {useMemo} from 'react';
 import {
   DefaultRenderer,
   getRendererFromFieldConfig,
 } from './fields/fieldRegistry';
-import { EmptyResponsePlaceholder } from './fields/view';
-import { FieldDebugger } from './fields/view/specialised/util';
+import {EmptyResponsePlaceholder} from './fields/view';
+import {FieldDebugger} from './fields/view/specialised/util';
 import {
   DataViewFieldRenderConfiguration,
   DataViewFieldRenderContext,

@@ -13,11 +13,11 @@ import {
 } from '@mui/material';
 import {useQueries} from '@tanstack/react-query';
 import {useState} from 'react';
-import {z} from 'zod';
+import z from 'zod';
+import {getExistingRecordRoute} from '../../../../../constants/routes';
 import {DataView, DataViewProps, DataViewTrace} from '../../../DataView';
 import {DataViewFieldRender} from '../../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
-import {getExistingRecordRoute} from '../../../../../constants/routes';
 
 // ============================================================================
 // Type Definitions & Schemas
