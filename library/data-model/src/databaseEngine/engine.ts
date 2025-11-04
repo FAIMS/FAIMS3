@@ -22,13 +22,11 @@ import {
   newFormRecordSchema,
   NewRecordDBDocument,
   NewRevisionDBDocument,
-  validateDataDocument,
   validateExistingAttachmentDocument,
   validateExistingAvpDocument,
   validateExistingRecordDocument,
   validateExistingRevisionDocument,
 } from './types';
-import {getFieldNamesForViewset} from '../utils';
 
 // Helpers
 
