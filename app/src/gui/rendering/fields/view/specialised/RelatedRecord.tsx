@@ -1,4 +1,4 @@
-import {fetchAndHydrateRecord} from '@faims3/data-model';
+import {fetchAndHydrateRecord, getDataDB} from '@faims3/data-model';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
@@ -14,11 +14,10 @@ import {
 import {useQueries} from '@tanstack/react-query';
 import {useState} from 'react';
 import {z} from 'zod';
-import {localGetDataDb} from '../../../../..';
-import {getExistingRecordRoute} from '../../../../../constants/routes';
 import {DataView, DataViewProps, DataViewTrace} from '../../../DataView';
 import {DataViewFieldRender} from '../../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
+import {getExistingRecordRoute} from '../../../../../constants/routes';
 
 // ============================================================================
 // Type Definitions & Schemas
@@ -339,7 +338,6 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   const {project_id: projectId} = recordMetadata;
 
   // Initialize data access
-  const dataDb = localGetDataDb(projectId);
   const behavior = determineBehaviorFromTrace(trace);
 
   // Validate and parse input value
@@ -355,6 +353,10 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
     queries: relatedRecords.map(({record_id}) => ({
       queryKey: ['related-hydration', record_id, behavior],
       queryFn: async () => {
+        const dataDb = await getDataDB(projectId);
+        if (!dataDb) {
+          return undefined;
+        }
         const hydratedRecord = await fetchAndHydrateRecord({
           projectId,
           dataDb,

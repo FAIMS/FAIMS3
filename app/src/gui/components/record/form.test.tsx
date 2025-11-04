@@ -18,8 +18,7 @@
  *   Record/Draft form file
  */
 
-import {expect, vi, afterEach, describe, it} from 'vitest';
-import {TestWrapper} from '../../fields/utils';
+import {compileUiSpecConditionals} from '@faims3/data-model';
 import {
   act,
   cleanup,
@@ -29,9 +28,10 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-import RecordForm from './form';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {TestWrapper} from '../../fields/utils';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {compileUiSpecConditionals} from '../../../uiSpecification';
+import RecordForm from './form';
 
 const testProjectId = 'default||1685527104147-campus-survey-demo';
 

@@ -17,12 +17,12 @@
  */
 
 // eslint-disable-next-line n/no-unpublished-import
-import {expect, it, describe} from 'vitest';
+import {describe, expect, it} from 'vitest';
 import {
   compileExpression,
   getDependantFields,
   isStringArray,
-} from './conditionals';
+} from '../src/uiSpecification/conditionals';
 
 describe('get dependant fields', () => {
   it('finds dependant fields in a nested expression', () => {

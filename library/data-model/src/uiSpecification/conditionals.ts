@@ -17,7 +17,8 @@
  * Description:  Evaluate conditional expressions for branching logic etc.
  *
  */
-import {RecordValues, ConditionalExpression} from '@faims3/data-model';
+
+import {ConditionalExpression, RecordValues} from '../types';
 
 // Create a register of compiler functions
 type FieldCompilerFn = (

@@ -19,12 +19,11 @@
  */
 
 import {transformAll} from '@demvsystems/yup-ast';
-
-import {ProjectUIModel} from '@faims3/data-model';
 import {
-  getFieldsForViewSet,
   getFieldNamesFromFields,
-} from '../../uiSpecification';
+  getFieldsForViewSet,
+  ProjectUIModel,
+} from '@faims3/data-model';
 
 function expand_validation_schema(
   ui_specification: ProjectUIModel,

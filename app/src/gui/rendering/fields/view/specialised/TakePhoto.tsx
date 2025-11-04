@@ -10,6 +10,7 @@ import {useAppSelector} from '../../../../../context/store';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 import * as ROUTES from '../../../../../constants/routes';
+import PouchDB from 'pouchdb-browser'
 
 // Image types we are interested in displaying
 const imageTypes = [

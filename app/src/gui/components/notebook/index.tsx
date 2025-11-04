@@ -1,5 +1,5 @@
 import styled from '@emotion/styled';
-import {Action, ProjectStatus} from '@faims3/data-model';
+import {Action, getVisibleTypes, ProjectStatus} from '@faims3/data-model';
 import {
   Alert,
   AlertTitle,
@@ -16,10 +16,11 @@ import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project, selectProjectById} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
-import {getVisibleTypes} from '../../../uiSpecification';
+import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
@@ -35,8 +36,6 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './overview_map';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
-import {selectActiveUser} from '../../../context/slices/authSlice';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =

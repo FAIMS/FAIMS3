@@ -18,6 +18,7 @@
  *   Helper functions to handle converting data between the GUI and pouchdb.
  */
 
+import {chunk} from 'lodash';
 import {v4 as uuidv4} from 'uuid';
 import {HRID_STRING} from '../datamodel/core';
 import {
@@ -25,12 +26,7 @@ import {
   getAttachmentLoaderForType,
   getEqualityFunctionForType,
 } from '../datamodel/typesystem';
-import {
-  getHridFieldMap,
-  getHridFieldNameForViewset,
-  getIdsByFieldName,
-  HridFieldMap,
-} from '../utils';
+import {logError} from '../logging';
 import {
   Annotations,
   AttachmentDbType,
@@ -54,10 +50,13 @@ import {
   RevisionID,
   UnhydratedRecord,
 } from '../types';
+import {
+  getHridFieldMap,
+  getHridFieldNameForViewset,
+  getIdsByFieldName,
+  HridFieldMap,
+} from '../uiSpecification';
 import {createHash} from './utils';
-import {chunk} from 'lodash';
-import {logError} from '../logging';
-import {HydratedDataRecord} from './storageFunctions';
 
 // INDEX NAMES
 

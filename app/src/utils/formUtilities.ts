@@ -3,10 +3,11 @@ import {
   getHridFieldMap,
   ProjectUIModel,
   Record,
+  ValuesObject,
 } from '@faims3/data-model';
 import Mustache from 'mustache';
-import {RecordContext} from '../gui/components/record/form';
-import {ParentLinkProps} from '../gui/components/record/relationships/types';
+import { RecordContext } from '../gui/components/record/form';
+import { ParentLinkProps } from '../gui/components/record/relationships/types';
 
 /*
 Patch mustache to not escape values.
@@ -138,7 +139,6 @@ export function formatTimestamp(
 }
 
 const TEMPLATED_STRING_FIELD_NAME = 'TemplatedStringField';
-export type ValuesObject = {[fieldName: string]: any};
 
 // What system variables can we inject
 const CREATOR_NAME_ID = '_CREATOR_NAME';

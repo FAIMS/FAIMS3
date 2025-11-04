@@ -18,7 +18,13 @@
  *   TODO need to check created draft route
  */
 
-import {DraftMetadata, ProjectID, ProjectUIViewsets} from '@faims3/data-model';
+import {
+  DraftMetadata,
+  getSummaryFieldInformation,
+  getVisibleTypes,
+  ProjectID,
+  ProjectUIViewsets,
+} from '@faims3/data-model';
 import {
   Box,
   Paper,
@@ -41,10 +47,6 @@ import React, {useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {
-  getSummaryFieldInformation,
-  getVisibleTypes,
-} from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
