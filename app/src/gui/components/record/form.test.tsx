@@ -1273,20 +1273,25 @@ vi.mock('../../../index.tsx', () => ({
   localGetDataDb: () => {},
 }));
 
-vi.mock('@faims3/data-model', () => ({
-  getFirstRecordHead: mockGetFirstRecordHead,
-  getPossibleRelatedRecords: mockGetRecordsByType,
-  getFullRecordData: vi.fn(() => {
-    return testRecordsByType[0];
-  }),
-  setAttachmentLoaderForType: vi.fn(() => {}),
-  setAttachmentDumperForType: vi.fn(() => {}),
-  generateFAIMSDataID: vi.fn(() => {}),
-  upsertFAIMSData: mockUpsertFAIMSData,
-  file_data_to_attachments: vi.fn(() => {}),
-  file_attachments_to_data: vi.fn(() => {}),
-  registerClient: vi.fn(() => {}),
-}));
+vi.mock('@faims3/data-model', async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    // allow this spread - its the vi recommended mock approach
+    ...(actual as any),
+    getFirstRecordHead: mockGetFirstRecordHead,
+    getPossibleRelatedRecords: mockGetRecordsByType,
+    getFullRecordData: vi.fn(() => {
+      return testRecordsByType[0];
+    }),
+    setAttachmentLoaderForType: vi.fn(() => {}),
+    setAttachmentDumperForType: vi.fn(() => {}),
+    generateFAIMSDataID: vi.fn(() => {}),
+    upsertFAIMSData: mockUpsertFAIMSData,
+    file_data_to_attachments: vi.fn(() => {}),
+    file_attachments_to_data: vi.fn(() => {}),
+    registerClient: vi.fn(() => {}),
+  };
+});
 
 // need doMock here to enable use of the global variable
 vi.doMock('../validation', () => ({
