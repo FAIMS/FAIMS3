@@ -47,6 +47,16 @@ export const CREATE_NEW_SURVEY = '/create-new-survey';
 export const USER_ACTIVE_TESTR = '/test';
 export const POUCH_EXPLORER = '/pouchDB';
 
+export function getNotebookRoute({
+  serverId,
+  projectId,
+}: {
+  serverId: string;
+  projectId: string;
+}) {
+  return INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+}
+
 /**
  * Generates a route to a record in the format
  *

@@ -1,5 +1,6 @@
 import {
   Action,
+  fetchAndHydrateRecord,
   getHridFieldMap,
   getMinimalRecordData,
   getMinimalRecordDataWithRegex,
@@ -558,6 +559,48 @@ export const useRecordList = ({
     initialQuery: unhydratedRecordQuery,
     hydrateQuery: hydrateQueries,
   };
+};
+
+/** useQuery to fetch and hydrate individual targeted revision of record */
+export const useIndividualHydratedRecord = ({
+  projectId,
+  recordId,
+  revisionId,
+  uiSpec,
+}: {
+  projectId: string;
+  recordId: string;
+  revisionId: string;
+  uiSpec: ProjectUIModel;
+}) => {
+  // Work out our context e.g. active user, token, data db etc
+  const activeUser = useAppSelector(selectActiveUser);
+  const token = activeUser?.parsedToken;
+  const dataDb = localGetDataDb(projectId);
+
+  return useQuery({
+    queryKey: [
+      activeUser?.username,
+      token?.globalRoles,
+      token?.resourceRoles,
+      ...buildHydrateKeys({
+        projectId,
+        recordId,
+        revisionId,
+      }),
+    ],
+    queryFn: () => {
+      // Grab the minimal metadata
+      return fetchAndHydrateRecord({
+        dataDb,
+        uiSpecification: uiSpec,
+        projectId,
+        recordId,
+        revisionId,
+      });
+    },
+    networkMode: 'always',
+  });
 };
 
 /**
