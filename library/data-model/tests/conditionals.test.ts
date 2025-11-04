@@ -16,7 +16,6 @@
  * Filename: branchingLogic.test.tsx
  */
 
-import {describe, expect, it} from 'vitest';
 import {
   compileExpression,
   getDependantFields,
@@ -347,12 +346,12 @@ describe('compiling expressions', () => {
 
     for (const should of shouldBeArrays) {
       const res = isStringArray(should);
-      expect(res).to.be.true;
+      expect(res).toBe(true);
     }
 
     for (const shouldNot of shouldNotBeArrays) {
       const res = isStringArray(shouldNot);
-      expect(res).to.be.false;
+      expect(res).toBe(false);
     }
   });
 });
