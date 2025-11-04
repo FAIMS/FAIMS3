@@ -365,24 +365,36 @@ export function validateExistingDataDocument(
 // General Definitions
 // ============================================================================
 
-export const formRecordSchema = z.object({
-  project_id: z.string().optional(),
-  record_id: z.string(),
-  revision_id: z.string().nullable(),
-  type: z.string(),
+export const baseFormRecordSchema = z.object({
+  // The project this belongs to
+  projectId: z.string().optional(),
+  // The ID of the form (also known as viewsetId)
+  formId: z.string(),
+  // The actual form data Map string -> any
   data: z.record(z.string(), z.unknown()),
-  updated: z.date(),
-  updated_by: z.string().email(),
-  field_types: z.record(z.string(), z.string()),
+  // Annotations
   annotations: z.record(z.string(), annotationsSchema),
-  ugc_comment: z.string().optional(),
-  created: z.date().optional(),
-  created_by: z.string().email().optional(),
-  relationship: relationshipSchema.optional().or(z.object({})),
-  deleted: z.boolean().optional(),
+  // Author
+  createdBy: z.string(),
+  // Is this a related record? - leave empty if needed
+  relationship: relationshipSchema.optional(),
 });
 
-export type FormRecord = z.infer<typeof formRecordSchema>;
+export const newFormRecordSchema = baseFormRecordSchema;
+export type NewFormRecord = z.infer<typeof newFormRecordSchema>;
+export const existingFormRecordSchema = baseFormRecordSchema.extend({
+  // The existing record
+  recordId: z.string(),
+  // The existing revision
+  revisionId: z.string(),
+  // Who performed this update?
+  updatedBy: z.string(),
+});
+export type ExistingFormRecord = z.infer<typeof existingFormRecordSchema>;
+
+// Other fields not sure if we need them
+//  relationship: relationshipSchema.optional().or(z.object({})),
+//  deleted: z.boolean().optional(),
 
 export const hydratedRecordSchema = z.object({
   record: existingRecordDocumentSchema,

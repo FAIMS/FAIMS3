@@ -41,13 +41,11 @@ function getConfig(): Config {
 
   if (args.length !== 3) {
     console.error(
-      'Usage: tsx validate-database.ts <url> <username> <password> [--test-hydration]'
+      'Usage: tsx check.ts <url> <username> <password> [--test-hydration]'
     );
+    console.error('Example: tsx check.ts http://localhost:5984 admin password');
     console.error(
-      'Example: tsx validate-database.ts http://localhost:5984 admin password'
-    );
-    console.error(
-      'Example: tsx validate-database.ts http://localhost:5984 admin password --test-hydration'
+      'Example: tsx check.ts http://localhost:5984 admin password --test-hydration'
     );
     console.error('');
     console.error('This will validate all databases starting with "data-"');
@@ -56,7 +54,7 @@ function getConfig(): Config {
     console.error(
       '  --test-hydration    Test hydration of all record documents'
     );
-    process.exit(1);
+    throw new Error();
   }
 
   return {
@@ -311,6 +309,8 @@ async function testAllRecordsHydration(
 
   const engine = new DataEngine({
     dataDb: db,
+    // NOTE: placeholder
+    uiSpec: {} as any,
   });
 
   let processed = 0;
@@ -809,7 +809,7 @@ async function main() {
         '⚠️  Hydration errors found. Check report-full.log for details.'
       );
     }
-    process.exit(1);
+    throw new Error();
   } else {
     console.log('');
     console.log(

@@ -1,15 +1,15 @@
 import {v4 as uuidv4} from 'uuid';
 import {z} from 'zod';
-import {FAIMSTypeName} from '../types';
+import {DatabaseInterface, FAIMSTypeName, UISpecification} from '../types';
 import {
   AvpDBDocument,
   DataDocument,
   ExistingAttachmentDBDocument,
   ExistingAvpDBDocument,
+  ExistingFormRecord,
+  existingFormRecordSchema,
   ExistingRecordDBDocument,
   ExistingRevisionDBDocument,
-  FormRecord,
-  formRecordSchema,
   getDocumentType,
   HydratedRecord,
   isExistingAttachmentDocument,
@@ -18,13 +18,23 @@ import {
   isExistingRevisionDocument,
   NewAttachmentDBDocument,
   NewAvpDBDocument,
+  NewFormRecord,
+  newFormRecordSchema,
   NewRecordDBDocument,
   NewRevisionDBDocument,
+  validateDataDocument,
   validateExistingAttachmentDocument,
   validateExistingAvpDocument,
   validateExistingRecordDocument,
   validateExistingRevisionDocument,
 } from './types';
+import {getFieldNamesForViewset} from '../utils';
+
+// Helpers
+
+function getCurrentTimestamp(): string {
+  return new Date().toISOString();
+}
 
 // =========
 // CONSTANTS
@@ -43,8 +53,9 @@ export const UNKNOWN_TYPE_FALLBACK = '??:??';
  * @property pouchConfig - Optional PouchDB configuration options
  */
 export interface DataEngineConfig {
-  dataDb: PouchDB.Database<DataDocument>;
+  dataDb: DatabaseInterface<DataDocument>;
   pouchConfig?: PouchDB.Configuration.DatabaseConfiguration;
+  uiSpec: UISpecification;
 }
 
 /**
@@ -131,6 +142,15 @@ export class NoHeadsError extends Error {
 // ============================================================================
 
 /**
+ * Generate a unique Record ID with the 'rec-' prefix
+ *
+ * @returns A new UUID-based record ID
+ */
+export function generateRecordID(): string {
+  return 'rec-' + uuidv4();
+}
+
+/**
  * Generate a unique revision ID with the 'frev-' prefix
  *
  * @returns A new UUID-based revision ID
@@ -146,6 +166,15 @@ export function generateRevisionID(): string {
  */
 export function generateAvpID(): string {
   return 'avp-' + uuidv4();
+}
+
+/**
+ * Generate a unique attachment ID with the 'att-' prefix
+ *
+ * @returns A new UUID-based Attachment ID
+ */
+export function generateAttID(): string {
+  return 'att-' + uuidv4();
 }
 
 // ============================================================================
@@ -165,9 +194,9 @@ type DocumentTypeConfig<T> = {
   validator: (doc: unknown) => T;
 };
 
-// ============================================================================
-// DataEngine - Unified Data Management System
-// ============================================================================
+// ===========
+// DataEngine
+// ===========
 
 /**
  * Unified data engine providing typed, ergonomic API for all database operations.
@@ -186,7 +215,7 @@ type DocumentTypeConfig<T> = {
  * await engine.form.createRecord(formData);
  */
 export class DataEngine {
-  private db: PouchDB.Database;
+  private db: DatabaseInterface;
 
   /**
    * Core database operations - direct CRUD on typed documents
@@ -204,15 +233,22 @@ export class DataEngine {
   public readonly form: FormOperations;
 
   /**
+   * UI Specification
+   * NOTE: Currently unused, but placeholder for future where we may validate.
+   */
+  public readonly uiSpec: UISpecification;
+
+  /**
    * Create a new DataEngine instance
    *
    * @param config - Database configuration including name and project ID
    */
   constructor(config: DataEngineConfig) {
     this.db = config.dataDb;
+    this.uiSpec = config.uiSpec;
     this.core = new CoreOperations(this.db);
     this.hydrated = new HydratedOperations(this.core);
-    this.form = new FormOperations(this.core);
+    this.form = new FormOperations(this.core, this.uiSpec);
   }
 
   /**
@@ -220,7 +256,7 @@ export class DataEngine {
    *
    * @returns The PouchDB database
    */
-  getDb(): PouchDB.Database {
+  getDb(): DatabaseInterface {
     return this.db;
   }
 
@@ -266,7 +302,7 @@ class CoreOperations {
     },
   } as const;
 
-  constructor(private readonly db: PouchDB.Database) {}
+  constructor(private readonly db: DatabaseInterface) {}
 
   // ============================================================================
   // Generic Helper Methods
@@ -844,11 +880,18 @@ class HydratedOperations {
  * Handles complex logic like change detection, AVP reuse, and attachment processing.
  */
 class FormOperations {
+  private readonly uiSpec: UISpecification;
+
   private getEqualityFn?: (
     type: FAIMSTypeName
   ) => (a: any, b: any) => Promise<boolean>;
 
-  constructor(private readonly core: CoreOperations) {}
+  constructor(
+    private readonly core: CoreOperations,
+    uiSpec: UISpecification
+  ) {
+    this.uiSpec = uiSpec;
+  }
 
   /**
    * Configure the form operations with type-specific handlers
@@ -873,28 +916,28 @@ class FormOperations {
    * @throws Error if revision_id is not null (should use updateRecord instead)
    * @throws Error if record creation fails
    */
-  async createRecord(formRecord: FormRecord): Promise<string> {
+  async createRecord(formRecord: NewFormRecord): Promise<string> {
     // Validate form record
-    const validated = formRecordSchema.parse(formRecord);
+    const validated = newFormRecordSchema.parse(formRecord);
 
-    if (validated.revision_id !== null) {
-      throw new Error(
-        'Cannot create a new record with a non-null revision_id. Use updateRecord instead.'
-      );
-    }
+    // Generate new record Id
+    const recordId = generateRecordID();
 
     // Generate new revision ID
     const revisionId = generateRevisionID();
 
     // Step 1: Create Record document
     const recordDoc: NewRecordDBDocument = {
-      _id: validated.record_id,
+      _id: recordId,
+      // Type marker
       record_format_version: 1,
-      created: validated.updated.toISOString(),
-      created_by: validated.updated_by,
+      created: getCurrentTimestamp(),
+      created_by: validated.createdBy,
+      // Track a single revision and this is the active head
       revisions: [revisionId],
       heads: [revisionId],
-      type: validated.type,
+      // The type == the form ID
+      type: validated.formId,
     };
 
     try {
@@ -911,6 +954,7 @@ class FormOperations {
     const avpMap = await this.createAvpsForAllFields({
       formRecord: validated,
       revisionId,
+      recordId,
     });
 
     // Step 3: Create Revision document
@@ -918,12 +962,13 @@ class FormOperations {
       _id: revisionId,
       revision_format_version: 1,
       avps: avpMap,
-      record_id: validated.record_id,
+      record_id: recordId,
       parents: [],
-      created: validated.updated.toISOString(),
-      created_by: validated.updated_by,
-      type: validated.type,
-      ugc_comment: validated.ugc_comment,
+      created: getCurrentTimestamp(),
+      created_by: validated.createdBy,
+      type: validated.formId,
+      // This is about annotating documents with issues - but is unused
+      ugc_comment: '',
       relationship: validated.relationship ?? {},
     };
 
@@ -935,27 +980,27 @@ class FormOperations {
   /**
    * Update an existing record from form data using equality based change detection
    *
+   * NOTE: it is expected that
+   *
+   * a) the recordID refers to existing record
+   * b) the revisionID refers to _current_ revision
+   * c) the data is the _new_ data
+   *
    * @param formRecord - The form data with changes to apply
    * @returns The ID of the newly created revision
    * @throws Error if revision_id is null (should use createRecord instead)
    * @throws Error if parent revision not found
    * @throws Error if update fails
    */
-  async updateRecord(formRecord: FormRecord): Promise<string> {
+  async updateRecord(formRecord: ExistingFormRecord): Promise<string> {
     // Validate form record
-    const validated = formRecordSchema.parse(formRecord);
-
-    if (validated.revision_id === null) {
-      throw new Error(
-        'Cannot update a record with a null revision_id. Use createRecord instead.'
-      );
-    }
+    const validated = existingFormRecordSchema.parse(formRecord);
 
     // Generate new revision ID
     const newRevisionId = generateRevisionID();
 
     // Step 1: Fetch parent revision to compare
-    const parentRevision = await this.core.getRevision(validated.revision_id);
+    const parentRevision = await this.core.getRevision(validated.revisionId);
 
     // Step 2: Determine which AVPs need to be created (changed fields)
     const avpMap = await this.createOrReuseAvps({
@@ -969,12 +1014,13 @@ class FormOperations {
       _id: newRevisionId,
       revision_format_version: 1,
       avps: avpMap,
-      record_id: validated.record_id,
-      parents: [validated.revision_id],
-      created: validated.updated.toISOString(),
-      created_by: validated.updated_by,
-      type: validated.type,
-      ugc_comment: validated.ugc_comment,
+      record_id: validated.recordId,
+      parents: [validated.revisionId],
+      created: getCurrentTimestamp(),
+      created_by: validated.updatedBy,
+      type: validated.formId,
+      // This is about annotating documents with issues - but is unused
+      ugc_comment: '',
       relationship: validated.relationship ?? {},
     };
 
@@ -982,8 +1028,10 @@ class FormOperations {
 
     // Step 4: Update Record document heads
     await this.updateRecordHeads({
-      recordId: validated.record_id,
-      oldHeadId: validated.revision_id,
+      // Old
+      recordId: validated.recordId,
+      oldHeadId: validated.revisionId,
+      // New
       newHeadId: newRevisionId,
     });
 
@@ -1005,9 +1053,11 @@ class FormOperations {
   private async createAvpsForAllFields({
     formRecord,
     revisionId,
+    recordId,
   }: {
-    formRecord: FormRecord;
+    formRecord: NewFormRecord;
     revisionId: string;
+    recordId: string;
   }): Promise<Record<string, string>> {
     const avpMap: Record<string, string> = {};
     const avpsToCreate: Array<NewAvpDBDocument> = [];
@@ -1016,16 +1066,22 @@ class FormOperations {
     for (const [fieldName, fieldValue] of Object.entries(formRecord.data)) {
       const avpId = generateAvpID();
 
+      // Get the field type
+      const fieldType = this.uiSpec.fields[fieldName]?.['type-returned'];
+
       const avp: NewAvpDBDocument = {
         _id: avpId,
         avp_format_version: 1,
-        type: formRecord.field_types[fieldName] ?? UNKNOWN_TYPE_FALLBACK,
+        // TODO remove this - it's extraneous
+        type: fieldType ?? UNKNOWN_TYPE_FALLBACK,
         data: fieldValue,
         revision_id: revisionId,
-        record_id: formRecord.record_id,
+        record_id: recordId,
         annotations: formRecord.annotations[fieldName],
-        created: formRecord.updated.toISOString(),
-        created_by: formRecord.updated_by,
+        // NOTE we may want to consider what timing to use here
+        created: getCurrentTimestamp(),
+        // NOTE we may want to consider who created this, updater?
+        created_by: formRecord.createdBy,
       };
 
       avpsToCreate.push(avp);
@@ -1054,7 +1110,7 @@ class FormOperations {
     parentRevision,
     newRevisionId,
   }: {
-    formRecord: FormRecord;
+    formRecord: ExistingFormRecord;
     parentRevision: ExistingRevisionDBDocument;
     newRevisionId: string;
   }): Promise<Record<string, string>> {
@@ -1083,10 +1139,9 @@ class FormOperations {
 
     // Check each field for changes
     for (const [fieldName, fieldValue] of Object.entries(formRecord.data)) {
-      const fieldType =
-        formRecord.field_types[fieldName] ?? UNKNOWN_TYPE_FALLBACK;
+      // Get the field type
+      const fieldType = this.uiSpec.fields[fieldName]?.['type-returned'];
       const fieldAnnotation = formRecord.annotations[fieldName];
-
       const parentAvp = parentAvpsByField.get(fieldName);
 
       // Determine if data or annotations changed
@@ -1097,6 +1152,8 @@ class FormOperations {
           ? true
           : !(await equalityFn(parentAvp.data, fieldValue));
 
+      // Checking annotation equality is interesting - should we consider just
+      // changing the existing AVP with a new annotation?
       const hasAnnotationChanged =
         parentAvp === undefined
           ? true
@@ -1112,10 +1169,13 @@ class FormOperations {
           type: fieldType,
           data: fieldValue,
           revision_id: newRevisionId,
-          record_id: formRecord.record_id,
+          record_id: formRecord.recordId,
           annotations: fieldAnnotation,
-          created: formRecord.updated.toISOString(),
-          created_by: formRecord.updated_by,
+          // NOTE: do we want to consider timing on a per field basis as tracked
+          // in form - seems a bit overkill
+          created: getCurrentTimestamp(),
+          // NOTE: here we track the creator by update
+          created_by: formRecord.updatedBy,
         };
 
         avpsToCreate.push(avp);
