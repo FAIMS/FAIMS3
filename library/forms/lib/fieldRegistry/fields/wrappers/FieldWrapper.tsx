@@ -23,7 +23,7 @@ import {
   useTheme,
 } from '@mui/material';
 // import {theme} from '../themes';  TODO how do we apply the theme?
-import {RichTextField} from '../fields/RichText';
+import {RichTextField} from '../RichText';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 

@@ -1,1 +1,2 @@
-export * from './components/FormManager';
+export * from './formModule';
+export * from './fieldRegistry';

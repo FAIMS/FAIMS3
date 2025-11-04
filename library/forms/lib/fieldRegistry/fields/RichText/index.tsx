@@ -21,8 +21,8 @@
  */
 
 import React from 'react';
-import {FieldInfo} from '../../../types';
 import {contentToSanitizedHtml} from './DomPurifier';
+import {FieldInfo} from '../../types';
 
 interface Props {
   /** The markdown content to be rendered. May include safe HTML tags. */

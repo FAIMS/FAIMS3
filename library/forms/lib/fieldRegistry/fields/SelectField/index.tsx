@@ -40,13 +40,13 @@ import {
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {z} from 'zod';
+import {contentToSanitizedHtml} from '../RichText/DomPurifier';
+import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   BaseFieldPropsSchema,
-  FieldInfo,
   FormFieldContextProps,
-} from '../../../types';
-import FieldWrapper from '../../FieldWrapper';
-import {contentToSanitizedHtml} from '../RichText/DomPurifier';
+} from '../../../formModule/types';
+import {FieldInfo} from '../../types';
 
 const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({

@@ -1,6 +1,6 @@
-import React from 'react';
-import {EncodedFieldSpecification, FaimsForm} from '../../types';
-import {getFieldInfo} from '../fields';
+import React, {useMemo} from 'react';
+import {EncodedFieldSpecification, FaimsForm} from './types';
+import {getFieldInfo} from '../fieldRegistry/registry';
 
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
@@ -13,10 +13,16 @@ export const Field = React.memo((props: FieldProps) => {
     props.fieldSpec['component-namespace'],
     props.fieldSpec['component-name']
   );
-  const fieldInfo = getFieldInfo({
-    namespace: props.fieldSpec['component-namespace'],
-    name: props.fieldSpec['component-name'],
-  });
+
+  // Only reload the field info when needed
+  const fieldInfo = useMemo(
+    () =>
+      getFieldInfo({
+        namespace: props.fieldSpec['component-namespace'],
+        name: props.fieldSpec['component-name'],
+      }),
+    [props.fieldSpec]
+  );
 
   if (!fieldInfo) {
     throw new Error(

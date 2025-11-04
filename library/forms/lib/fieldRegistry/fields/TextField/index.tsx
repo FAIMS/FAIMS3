@@ -1,13 +1,13 @@
 import {TextField as MuiTextField} from '@mui/material';
 import React from 'react';
 import z from 'zod';
+import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   BaseFieldProps,
-  BaseFieldPropsSchema,
-  FieldInfo,
   FormFieldContextProps,
-} from '../../../types';
-import FieldWrapper from '../../FieldWrapper';
+  BaseFieldPropsSchema,
+} from '../../../formModule/types';
+import {FieldInfo} from '../../types';
 
 const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
   console.log('TextField:', props.name);

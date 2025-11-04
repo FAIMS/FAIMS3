@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom';
 import {render, screen} from '@testing-library/react';
 import {it, expect, describe} from 'vitest';
-import FieldWrapper from '.';
+import FieldWrapper from './FieldWrapper';
 
 describe('FieldWrapper', () => {
   it('renders children', () => {

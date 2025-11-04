@@ -1,8 +1,8 @@
-import React from 'react';
-import type {ComponentProps} from 'react';
 import type {EncodedNotebook} from '@faims3/data-model';
-import {FormSection} from '../FormSection';
 import {useForm, useStore} from '@tanstack/react-form';
+import type {ComponentProps} from 'react';
+import {FaimsForm, FaimsFormData} from './types';
+import {FormSection} from './FormSection';
 
 const formValues = {
   'Full-Name': 'Steve',
@@ -11,8 +11,8 @@ const formValues = {
   Selection: '',
 };
 
-const FormStateDisplay = ({form}: {form: any}) => {
-  const values = useStore(form.store, (state: any) => state.values);
+const FormStateDisplay = ({form}: {form: FaimsForm}) => {
+  const values = useStore(form.store, state => state.values);
 
   return (
     <div>
@@ -31,7 +31,7 @@ export const FormManager = (props: FormManagerProps) => {
   console.log('FormManager:', props.formName);
 
   const form = useForm({
-    defaultValues: formValues,
+    defaultValues: formValues as FaimsFormData,
     onSubmit: ({value}) => {
       console.log('Form submitted with value:', value);
     },
