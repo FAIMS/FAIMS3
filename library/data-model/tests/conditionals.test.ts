@@ -16,7 +16,6 @@
  * Filename: branchingLogic.test.tsx
  */
 
-// eslint-disable-next-line n/no-extraneous-import
 import {describe, expect, it} from 'vitest';
 import {
   compileExpression,
