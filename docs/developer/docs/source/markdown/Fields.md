@@ -3,6 +3,10 @@
 This document describes the requirements for adding a new field type to the FAIMS
 app.
 
+The form manager (FormManager) and individual field components are defined in the
+`library/forms` module in the project as a separate module that can be used in both
+the mobile app (for data entry) and the form designer (for form preview).
+
 ## How Fields Come to Be
 
 The forms presented by the app are defined in the JSON UI Specification which is part
@@ -10,19 +14,42 @@ of the JSON notebook definition/schema file (along with the notebook metadata). 
 UI specification defines a list of fields. Each field is a chunk of JSON that defines
 the type of the field and any option settings for this particular instance.
 
-The form component that is rendered is created by `getComponentFromFieldConfig` in
-`app/src/gui/components/record/fields.tsx`. This basically
-looks up a component in the component registry and then instantiates it using
-the Formik `<Field>` component which handles passing and updating form data.
-
 A FAIMS field consists of a component that renders the field and captures user
 data. This component is registered with the app and the rest happens automatically
 as long as the component does the right things.
 
 ## Adding a New Field Type
 
-Taking the example of the Address Field that has just been added, here is the overall
+Here is the overall
 process and requirements for a new field.
+
+### Define the Component Props Schema
+
+The field is configured with a set of properties that will be part of the field
+definition in the JSON UISpec.  There is a base set of properties defined
+as `BaseFieldPropsSchema` that includes the field name, label, required and disabled
+flags and helper text settings.   If your new field has no special settings then
+you can use this schema directly (and it's associated type `BaseFieldProps`).
+Otherwise you would extend this schema with your new options. For example, the
+select field adds a list of options:
+
+```typescript
+const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+  ElementProps: z.object({
+    options: z.array(
+      z.object({
+        value: z.string(),
+        label: z.string(),
+        key: z.string().optional(),
+      })
+    ),
+  }),
+  select_others: z.string().optional(),
+});
+type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
+```
+
+This schema will be used to validate fields of this type in the UISpec.
 
 ### Define the Field Component
 
@@ -34,43 +61,26 @@ of the address.
 The component signature should be:
 
 ```typescript
-import {FieldProps} from 'formik';
-
-interface Props {
-  helperText?: string;
-  label?: string;
-}
-
-export const AddressField = (props: FieldProps & Props)
+const Select = (props: SelectFieldProps)
 ```
 
-`FieldProps` provides the formik callback functions and Props defines any local
-properties that can be configured on the form. In the initial version of
-the address field there are only the standard `label` and `helperText` properties
-but this could also include eg. `country` if we wanted to have that be an
-option for the field.
-
-The initial value of the field, if any, will be passed in as `props.field.value`.
-This may be null so test this before setting up your initial values. Eg.:
+To get the current value of the field and a function for updating the value, call
+the `useFormField` hook in your component:
 
 ```typescript
-const [address, setAddress] = useState<AddressType>(
-  props.field.value?.address || {}
-);
-const [displayName, setDisplayName] = useState(
-  props.field.value?.display_name || ''
-);
+ const {value, setValue} = useFormField(props.name);
 ```
 
-The main requirement on the component is to call `props.form.setFieldValue`
-when a new value for the field is available. Eg.:
+The main requirement on the component is to call `setValue`
+when a new value for the field is available. For example,
+in the Address field:
 
 ```typescript
 const setFieldValue = (a: AddressType) => {
   const dn = `${a.house_number || ''} ${a.road || ''}, ${a.suburb || ''}, ${a.state || ''} ${a.postcode || ''}`;
   setDisplayName(dn);
   setAddress(a);
-  props.form.setFieldValue(props.field.name, {
+  setValue({
     display_name: dn,
     address: a,
   });
@@ -81,37 +91,64 @@ Note that the value that the field generates can be anything from a simple strin
 to an object. In this case we generate a fragment of a GeocodeJSON object
 containing the address data.
 
-The call to `setFieldValue` updates the current record with the new field
+The call to `setValue` updates the current record with the new field
 value.
 
-The component can handle any interaction locally. This component can show/hide the
-edit form when the user clicks the edit icon. The map field pops up a map overlay
+The component can handle any interaction locally. For example, it can show/hide an
+edit form when the user clicks the edit icon; the map field pops up a map overlay
 to capture map input. As long as the behaviour interacts well with the overall UI,
 anything is possible here.
 
-### Register the Field
+### Define a Value Schema Function
 
-You now need to register the field so that it is known to the form builder. Do this
-in `app/src/gui/component_registry/bundle_components.ts`
-as follows:
+Each field also defines a function that can be used to validate the value of the
+field by returning a zod schema for the value based on the field properties.
+The select field generates a schema that includes all of the select options
+as alternatives:
 
 ```typescript
-registerField(
-  'faims-custom', // namespace
-  'AddressField', // component name
-  'Address Field', // field name
-  'Enter a valid street address', // field description
-  'Geo', // category
-  AddressField // React Component
-);
+const valueSchema = (props: SelectFieldProps) => {
+  const optionValues = props.ElementProps.options.map(option => option.value);
+  return z.union(optionValues.map(val => z.literal(val)));
+};
 ```
 
-This call registers the new field. The register is indexed on the first two
-arguments namespace and component name. Note that the component name doesn't have
-to be the same as the name of the React component but by convention it is.
+### Export the FieldInfo Object
 
-(As it stands, the field name, description and category are not used since we
-refactored the form designer out of this app).
+The full definition of the field is contained in an instance of `FieldInfo` that
+should be exported from your field module.  This contains the following:
+
+```typescript
+export const selectFieldSpec: FieldInfo = {
+  namespace: 'faims-custom',
+  name: 'Select',
+  returns: 'faims-core::String',
+  component: Select,
+  fieldSchema: SelectFieldPropsSchema,
+  valueSchemaFunction: valueSchema,
+};
+```
+
+The field namespace and name are used to select this field from the UISpec, they should
+be unique in combination in the system.  Generally the namespace would be `faims-custom`
+until we have a good reason to use something else (some old fields use the `formik-material-ui`
+namespace but these may well be deprecated, the mapping and QR code fields have their own
+namespace because Steve didn't understand namespaces when he wrote them).
+
+The `returns` property defines the return type of the field and should be one of the
+values defined in `FieldReturnType` in the forms module.  We don't currently make much use of
+this and it might be superseded by the valueSchemaFunction.
+
+### Register the Field
+
+Each field must be registered in the `lib/components/fields/index.ts` module. This is done
+just by importing the relevant FieldInfo instance and calling `registerField`:
+
+```typescript
+import {selectFieldSpec} from './SelectField';
+
+registerField(selectFieldSpec);
+```
 
 ### Add the Field to Designer
 

@@ -24,12 +24,11 @@
     "outDir": "./dist/",
     "types": [
       "vite/client",
-      "vite-plugin-svgr/client",
-      "@testing-library/jest-dom"
     ]
   },
   "include": [
-    "./src/"
+    "src",
+    "lib"
   ],
   "exclude": [
     "node_modules/*",
