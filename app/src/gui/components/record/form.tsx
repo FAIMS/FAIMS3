@@ -637,12 +637,12 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
        * (in order high priority to last resort): draft storage, database, ui schema
        */
       const fromdb = revision_id
-        ? ((await getFullRecordData({
+        ? (await getFullRecordData({
             dataDb: localGetDataDb(this.props.project_id),
             projectId: this.props.project_id,
             recordId: this.props.record_id,
             revisionId: revision_id,
-          })) ?? undefined)
+          })) ?? undefined
         : undefined;
 
       // if there is no existing revision then this is either a brand new

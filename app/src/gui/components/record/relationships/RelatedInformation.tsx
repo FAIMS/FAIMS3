@@ -991,11 +991,11 @@ export async function addRecordLink({
     // Use the data and spec to get the HRID
     const childRecordHrid =
       latest_record?.data && uiSpec
-        ? (getHridFromValuesAndSpec({
+        ? getHridFromValuesAndSpec({
             values: latest_record?.data,
             uiSpecification: uiSpec,
-          }) ?? latest_record.record_id)
-        : (latest_record?.record_id ?? '');
+          }) ?? latest_record.record_id
+        : latest_record?.record_id ?? '';
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate
