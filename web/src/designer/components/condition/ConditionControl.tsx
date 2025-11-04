@@ -344,7 +344,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             <Select
               data-testid="value-input"
               label="Value"
-              value={isValidOption ? condition.value : condition.value ?? ''}
+              value={isValidOption ? condition.value : (condition.value ?? '')}
               onChange={e => updateValue(e.target.value)}
             >
               {possibleOptions.map((opt: any) => (
