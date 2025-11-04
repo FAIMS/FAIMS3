@@ -1,17 +1,16 @@
 import {TextField as MuiTextField} from '@mui/material';
-import FieldWrapper from '../../FieldWrapper';
-import {BaseFieldProps, BaseFieldPropsSchema, FieldInfo} from '../../../types';
 import React from 'react';
 import z from 'zod';
-import {useStore} from '@tanstack/react-form';
+import {
+  BaseFieldProps,
+  BaseFieldPropsSchema,
+  FieldInfo,
+  FormFieldContextProps,
+} from '../../../types';
+import FieldWrapper from '../../FieldWrapper';
 
-const TextField = React.memo((props: BaseFieldProps) => {
+const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
   console.log('TextField:', props.name);
-
-  const fieldValue = useStore(
-    props.field.form.store,
-    (state: any) => state.values[props.field.name]
-  );
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
@@ -27,7 +26,7 @@ const TextField = React.memo((props: BaseFieldProps) => {
       advancedHelperText={props.advancedHelperText}
     >
       <MuiTextField
-        value={fieldValue ?? ''}
+        value={props.field.state.value ?? ''}
         fullWidth
         onChange={onChange}
         onBlur={props.field.handleBlur}
@@ -35,7 +34,7 @@ const TextField = React.memo((props: BaseFieldProps) => {
       />
     </FieldWrapper>
   );
-});
+};
 
 // generate a zod schema for the value. In this case, it's always a string
 const valueSchema = () => {

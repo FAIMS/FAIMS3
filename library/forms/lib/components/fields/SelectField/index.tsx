@@ -30,21 +30,23 @@
  * - required : To visually show if the field is required if it is.
  * - form (object): Formik form object for managing state and validation.
  */
-import React from 'react';
 import {
   FormControl,
   ListItemText,
   MenuItem,
-  OutlinedInput,
   Select as MuiSelect,
+  OutlinedInput,
   SelectChangeEvent,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
+import {z} from 'zod';
+import {
+  BaseFieldPropsSchema,
+  FieldInfo,
+  FormFieldContextProps,
+} from '../../../types';
 import FieldWrapper from '../../FieldWrapper';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
-import {BaseFieldPropsSchema, FieldInfo} from '../../../types';
-import {z} from 'zod';
-import {useStore} from '@tanstack/react-form';
 
 const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
@@ -70,13 +72,9 @@ const valueSchema = (props: SelectFieldProps) => {
 /**
  * Select Component - A reusable dropdown select field with Formik integration.
  */
-export const Select = (props: SelectFieldProps) => {
+export const Select = (props: SelectFieldProps & FormFieldContextProps) => {
   const theme = useTheme();
-
-  const fieldValue = useStore(
-    props.field.form.store,
-    (state: any) => state.values[props.field.name]
-  );
+  const value = props.field.state.value;
 
   const onChange = (event: SelectChangeEvent) => {
     const newValue = event.target.value;
@@ -99,7 +97,7 @@ export const Select = (props: SelectFieldProps) => {
       >
         <MuiSelect
           onChange={onChange}
-          value={fieldValue ?? ''}
+          value={value ?? ''}
           input={<OutlinedInput />}
           disabled={props.disabled}
         >
@@ -145,27 +143,3 @@ export const selectFieldSpec: FieldInfo = {
   fieldSchema: SelectFieldPropsSchema,
   valueSchemaFunction: valueSchema,
 };
-
-// const uiSpec = {
-//   'component-namespace': 'faims-custom', // this says what web component to use to render/acquire value from
-//   'component-name': 'Select',
-//   'type-returned': 'faims-core::String', // matches a type in the Project Model
-//   'component-parameters': {
-//     fullWidth: true,
-//     helperText: 'Choose a field from the dropdown',
-//     variant: 'outlined',
-//     required: false,
-//     select: true,
-//     InputProps: {},
-//     SelectProps: {},
-//     ElementProps: {
-//       options: [],
-//     },
-//     // select_others:'otherswith',
-//     InputLabelProps: {
-//       label: 'Select Field',
-//     },
-//   },
-//   validationSchema: [['yup.string']],
-//   initialValue: '',
-// };

@@ -20,15 +20,18 @@
  * Safely injects markdown content directly into HTML - see DomPurifier.ts
  */
 
-import {FieldInfo} from '../../../types';
-import {contentToSanitizedHtml} from './DomPurifier';
 import React from 'react';
+import {FieldInfo, FormFieldContextProps} from '../../../types';
+import {contentToSanitizedHtml} from './DomPurifier';
+
 interface Props {
   /** The markdown content to be rendered. May include safe HTML tags. */
   content: string;
 }
 
-export const RichTextField: React.FC<Props> = ({content}) => {
+export const RichTextField: React.FC<Props & FormFieldContextProps> = ({
+  content,
+}) => {
   if (!content?.trim()) {
     // Return nothing if content is empty or whitespace
     return null;
@@ -44,5 +47,5 @@ export const richTextFieldSpec: FieldInfo = {
   name: 'RichText',
   returns: null,
   component: RichTextField,
-  validator: () => true,
+  //validator: () => true,
 };

@@ -1,12 +1,10 @@
-import {createElement} from 'react';
+import React, {createElement} from 'react';
+import {EncodedFieldSpecification, FaimsForm} from '../../types';
 import {getFieldInfo} from '../fields';
-import React from 'react';
-import {EncodedFieldSpecification} from '../../types';
-import {useForm} from '@tanstack/react-form';
 
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
-  form: ReturnType<typeof useForm>; // type of tanstack useForm is dynamic
+  form: FaimsForm;
 }
 
 export const Field = React.memo((props: FieldProps) => {
