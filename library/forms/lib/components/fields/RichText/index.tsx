@@ -21,7 +21,7 @@
  */
 
 import React from 'react';
-import {FieldInfo, FormFieldContextProps} from '../../../types';
+import {FieldInfo} from '../../../types';
 import {contentToSanitizedHtml} from './DomPurifier';
 
 interface Props {
@@ -29,9 +29,7 @@ interface Props {
   content: string;
 }
 
-export const RichTextField: React.FC<Props & FormFieldContextProps> = ({
-  content,
-}) => {
+export const RichTextField: React.FC<Props> = ({content}) => {
   if (!content?.trim()) {
     // Return nothing if content is empty or whitespace
     return null;
