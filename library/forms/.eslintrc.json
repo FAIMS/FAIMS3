@@ -1,11 +1,6 @@
 {
-  "extends": "../node_modules/gts/",
+  "extends": "../../node_modules/gts/",
   "ignorePatterns": ["*.js"],
-  "settings": {
-    "node": {
-      "version": ">=22.17.0"
-    }
-  },
   "overrides": [
     {
       "files": "**/*.test.ts",
