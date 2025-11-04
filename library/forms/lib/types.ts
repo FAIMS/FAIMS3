@@ -21,6 +21,7 @@ export type EncodedFieldSpecification = z.infer<
 
 // Field properties common to all fields
 export const BaseFieldPropsSchema = z.object({
+  field: z.any(), // would like to use the tanstack field type but it's too complex
   label: z.string().optional(),
   name: z.string(),
   helperText: z.string().optional(),

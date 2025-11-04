@@ -37,13 +37,14 @@ import {
   MenuItem,
   OutlinedInput,
   Select as MuiSelect,
+  SelectChangeEvent,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import FieldWrapper from '../../FieldWrapper';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import {BaseFieldPropsSchema, FieldInfo} from '../../../types';
-import {useFormField} from '../../FormManager/FormContext';
 import {z} from 'zod';
+import {useStore} from '@tanstack/react-form';
 
 const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
@@ -72,13 +73,15 @@ const valueSchema = (props: SelectFieldProps) => {
 export const Select = (props: SelectFieldProps) => {
   const theme = useTheme();
 
-  const {value, setValue} = useFormField(props.name);
+  const fieldValue = useStore(
+    props.field.form.store,
+    (state: any) => state.values[props.field.name]
+  );
 
-  /**
-   * Handles the change event when a new option is selected.
-   */
-  const handleChange = (e: any) => {
-    setValue(e.target.value);
+  const onChange = (event: SelectChangeEvent) => {
+    const newValue = event.target.value;
+    console.log('Select onChange:', newValue);
+    props.field.handleChange(newValue);
   };
 
   return (
@@ -95,8 +98,8 @@ export const Select = (props: SelectFieldProps) => {
         }}
       >
         <MuiSelect
-          onChange={handleChange}
-          value={value || ''}
+          onChange={onChange}
+          value={fieldValue ?? ''}
           input={<OutlinedInput />}
           disabled={props.disabled}
         >

@@ -6,7 +6,15 @@ function App(props: {project: any}) {
     <>
       <h1>FAIMS3 Forms</h1>
       <div className="card">
-        <FormManager project={props.project} formName="Person" />
+        <div
+          style={{
+            padding: '16px',
+            border: '1px solid #ccc',
+            borderRadius: '8px',
+          }}
+        >
+          <FormManager project={props.project} formName="Person" />
+        </div>
       </div>
     </>
   );

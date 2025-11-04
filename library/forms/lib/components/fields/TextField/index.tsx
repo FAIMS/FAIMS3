@@ -1,18 +1,23 @@
 import {TextField as MuiTextField} from '@mui/material';
 import FieldWrapper from '../../FieldWrapper';
 import {BaseFieldProps, BaseFieldPropsSchema, FieldInfo} from '../../../types';
-import {useFormField} from '../../FormManager/FormContext';
 import React from 'react';
 import z from 'zod';
+import {useStore} from '@tanstack/react-form';
 
 const TextField = React.memo((props: BaseFieldProps) => {
   console.log('TextField:', props.name);
 
-  const {value, setValue} = useFormField(props.name);
+  const fieldValue = useStore(
+    props.field.form.store,
+    (state: any) => state.values[props.field.name]
+  );
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = event.target.value;
-    setValue(newValue);
+    console.log('TextField onChange:', newValue);
+    console.log('TextField state', props.field.state);
+    props.field.handleChange(newValue);
   };
 
   return (
@@ -22,9 +27,10 @@ const TextField = React.memo((props: BaseFieldProps) => {
       advancedHelperText={props.advancedHelperText}
     >
       <MuiTextField
-        value={value || ''}
+        value={fieldValue ?? ''}
         fullWidth
         onChange={onChange}
+        onBlur={props.field.handleBlur}
         variant="outlined"
       />
     </FieldWrapper>
