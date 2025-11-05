@@ -1,9 +1,4 @@
-import {
-  DatabaseInterface,
-  DataDocument,
-  DataEngine,
-  LoadAttachmentBase64Result,
-} from '@faims3/data-model';
+import {DatabaseInterface, DataDocument, DataEngine} from '@faims3/data-model';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';
 import {useQueries, useQuery} from '@tanstack/react-query';
@@ -73,13 +68,9 @@ export const TakePhotoRender: DataViewFieldRender = props => {
     queries: (attachmentDocumentIdList || []).map(attId => {
       return {
         queryFn: async () => {
-          try {
-            return await attachmentService.loadAttachmentAsBase64({
-              identifier: {id: attId},
-            });
-          } catch (e) {
-            throw e;
-          }
+          return await attachmentService.loadAttachmentAsBase64({
+            identifier: {id: attId},
+          });
         },
         queryKey: ['attachment-fetch', attId],
       };
@@ -98,10 +89,7 @@ export const TakePhotoRender: DataViewFieldRender = props => {
   const allAttachments = allAttachmentDocs.filter(d => !!d).map(d => d);
 
   // Map the attachment documents into presentable images
-  const toDisplay: {
-    contentType: string;
-    data: string;
-  }[] = allAttachments.map(att => ({
+  const toDisplay = allAttachments.map(att => ({
     contentType: att.metadata.contentType,
     data: att.base64,
   }));

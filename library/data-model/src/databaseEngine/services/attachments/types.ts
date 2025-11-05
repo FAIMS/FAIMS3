@@ -26,8 +26,8 @@ export interface StorageMetadata {
   attachmentDetails: {
     /** A filename for the attachment */
     filename: string;
-    /** The mimetype */
-    mimeType: string;
+    /** The contentType */
+    contentType: string;
   };
   recordContext: {
     // Which AVP is this related to?
@@ -93,7 +93,7 @@ export interface IAttachmentService {
    * Stores a File as an attachment.
    * @param params - The parameters for storing the file.
    * @param params.file - The File object to store.
-   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @param params.metadata - Storage metadata including filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   storeAttachmentFromFile(params: {
@@ -105,7 +105,7 @@ export interface IAttachmentService {
    * Stores a Blob as an attachment.
    * @param params - The parameters for storing the blob.
    * @param params.blob - The Blob object to store.
-   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @param params.metadata - Storage metadata including filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   storeAttachmentFromBlob(params: {
@@ -117,7 +117,7 @@ export interface IAttachmentService {
    * Stores a base64-encoded string as an attachment.
    * @param params - The parameters for storing the base64 data.
    * @param params.base64 - The base64-encoded string to store.
-   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @param params.metadata - Storage metadata including filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   storeAttachmentFromBase64(params: {
@@ -167,7 +167,7 @@ export abstract class BaseAttachmentService implements IAttachmentService {
    * Stores a File as an attachment.
    * @param params - The parameters for storing the file.
    * @param params.file - The File object to store.
-   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @param params.metadata - Storage metadata including filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   abstract storeAttachmentFromFile(params: {
@@ -179,7 +179,7 @@ export abstract class BaseAttachmentService implements IAttachmentService {
    * Stores a Blob as an attachment.
    * @param params - The parameters for storing the blob.
    * @param params.blob - The Blob object to store.
-   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @param params.metadata - Storage metadata including filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   abstract storeAttachmentFromBlob(params: {
@@ -191,7 +191,7 @@ export abstract class BaseAttachmentService implements IAttachmentService {
    * Stores a base64-encoded string as an attachment.
    * @param params - The parameters for storing the base64 data.
    * @param params.base64 - The base64-encoded string to store.
-   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @param params.metadata - Storage metadata including filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   abstract storeAttachmentFromBase64(params: {
@@ -271,16 +271,16 @@ export abstract class BaseAttachmentService implements IAttachmentService {
   /**
    * Helper method to convert a base64 string to a Blob.
    * @param base64 - The base64-encoded string to convert.
-   * @param mimeType - The MIME type of the blob.
+   * @param contentType - The MIME type of the blob.
    * @returns A Blob object.
    */
-  protected base64ToBlob(base64: string, mimeType: string): Blob {
+  protected base64ToBlob(base64: string, contentType: string): Blob {
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
       byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
     const byteArray = new Uint8Array(byteNumbers);
-    return new Blob([byteArray], {type: mimeType});
+    return new Blob([byteArray], {type: contentType});
   }
 }

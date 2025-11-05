@@ -80,7 +80,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
    *
    * @param params - The parameters for storing the file.
    * @param params.file - The File object to store.
-   * @param params.metadata - Storage metadata with filename and mimeType.
+   * @param params.metadata - Storage metadata with filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   async storeAttachmentFromFile(params: {
@@ -95,7 +95,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
     // Build the attachments (pending - i.e. data directly in there)
     const _attachments: {[key: string]: PendingAttachment} = {
       [id]: {
-        content_type: metadata.attachmentDetails.mimeType,
+        content_type: metadata.attachmentDetails.contentType,
         data: base64Data,
       },
     };
@@ -126,7 +126,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
     return {
       identifier: {id: id, metadata: {}},
       metadata: {
-        contentType: metadata.attachmentDetails.mimeType,
+        contentType: metadata.attachmentDetails.contentType,
         filename: metadata.attachmentDetails.filename,
       },
     };
@@ -137,7 +137,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
    *
    * @param params - The parameters for storing the blob.
    * @param params.blob - The Blob object to store.
-   * @param params.metadata - Storage metadata with filename and mimeType.
+   * @param params.metadata - Storage metadata with filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   async storeAttachmentFromBlob(params: {
@@ -155,7 +155,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
     // Build the attachments (pending - i.e. data directly in there)
     const _attachments: {[key: string]: PendingAttachment} = {
       [id]: {
-        content_type: metadata.attachmentDetails.mimeType,
+        content_type: metadata.attachmentDetails.contentType,
         data: base64Data,
       },
     };
@@ -187,7 +187,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
     return {
       identifier: {id: id, metadata: {}},
       metadata: {
-        contentType: metadata.attachmentDetails.mimeType,
+        contentType: metadata.attachmentDetails.contentType,
         filename: metadata.attachmentDetails.filename,
       },
     };
@@ -288,7 +288,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
    *
    * @param params - The parameters for storing the base64 data.
    * @param params.base64 - The base64-encoded string to store.
-   * @param params.metadata - Storage metadata with filename and mimeType.
+   * @param params.metadata - Storage metadata with filename and contentType.
    * @returns A Promise resolving to the storage result with identifier and metadata.
    */
   async storeAttachmentFromBase64(params: {
@@ -303,7 +303,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
     // Build the attachments (pending - i.e. data directly in there)
     const _attachments: {[key: string]: PendingAttachment} = {
       [id]: {
-        content_type: metadata.attachmentDetails.mimeType,
+        content_type: metadata.attachmentDetails.contentType,
         data: base64,
       },
     };
@@ -335,7 +335,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
     return {
       identifier: {id: id, metadata: {}},
       metadata: {
-        contentType: metadata.attachmentDetails.mimeType,
+        contentType: metadata.attachmentDetails.contentType,
         filename: metadata.attachmentDetails.filename,
       },
     };
