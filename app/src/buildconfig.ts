@@ -19,7 +19,13 @@
  *   which server to use and whether to include test data
  */
 
-import {IAttachmentService} from '@faims3/data-model';
+import {
+  AttachmentServiceType,
+  createAttachmentService,
+  DatabaseInterface,
+  DataDocument,
+  IAttachmentService,
+} from '@faims3/data-model';
 import {localGetDataDb} from '.';
 import {MapStylesheetNameType} from './gui/components/map/styles';
 
@@ -493,15 +499,8 @@ export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
 export function createProjectAttachmentService(
   projectId: string
 ): IAttachmentService {
-  // Import the attachment service modules
-  // Note: These imports are done here to avoid circular dependencies
-  const {
-    createAttachmentService,
-    AttachmentServiceType,
-  } = require('./attachments');
-
   // Get the data database for this project
-  const dataDb = localGetDataDb(projectId);
+  const dataDb = localGetDataDb(projectId) as DatabaseInterface<DataDocument>;
 
   // Create the attachment service with the configured type
   return createAttachmentService({

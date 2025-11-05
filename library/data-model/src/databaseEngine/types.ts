@@ -24,7 +24,7 @@ export const v1RecordDBFieldsSchema = z
   .object({
     record_format_version: z.number(),
     created: z.string().datetime(),
-    created_by: z.string().email(),
+    created_by: z.string(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
     type: z.string(),
@@ -73,7 +73,7 @@ export const v1RevisionDBFieldsSchema = z
     record_id: z.string(),
     parents: z.array(z.string()),
     created: z.string().datetime(),
-    created_by: z.string().email(),
+    created_by: z.string(),
     type: z.string(),
     ugc_comment: z.string().optional(),
     relationship: relationshipSchema
@@ -130,7 +130,7 @@ export const v1AvpDBFieldsSchema = z
     record_id: z.string(),
     annotations: annotationsSchema.optional(),
     created: z.string().datetime(),
-    created_by: z.string().email(),
+    created_by: z.string(),
     faims_attachments: z.array(attachmentSchema).optional(),
   })
   .strict();
@@ -184,7 +184,7 @@ const v1AttachmentDBFieldsBaseSchema = z.object({
   revision_id: z.string(),
   record_id: z.string(),
   created: z.string().datetime(),
-  created_by: z.string().email(),
+  created_by: z.string(),
   filename: z.string(),
 });
 

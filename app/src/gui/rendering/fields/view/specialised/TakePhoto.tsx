@@ -1,9 +1,7 @@
 import {
-  AttachmentMetadata,
   DatabaseInterface,
   DataDocument,
   DataEngine,
-  FAIMSAttachment,
   LoadAttachmentBase64Result,
 } from '@faims3/data-model';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -44,51 +42,60 @@ export const TakePhotoRender: DataViewFieldRender = props => {
     });
   }, [dataDb, props.renderContext.uiSpecification]);
 
+  // Generate attachment service for this project
+  const attachmentService = useMemo(() => {
+    return createProjectAttachmentService(
+      props.renderContext.recordMetadata.project_id
+    );
+  }, [props.renderContext.recordMetadata.project_id]);
+
   // What is the AVP?
   const avpId =
     props.renderContext.recordMetadata.avps[props.renderContext.fieldId];
   // Now get the actual record
   const avpRecordQuery = useQuery({
     queryFn: async () => {
-      return await dataEngine.core.getAvp(avpId);
+      try {
+        return await dataEngine.core.getAvp(avpId);
+      } catch (e) {
+        console.error('Failed to fetch avp', e);
+      }
     },
     queryKey: ['avp-attachment-fetch', avpId],
   });
   const avpData = avpRecordQuery.data;
-  // For each faims attachment, get the attachment name/ref and fetch the att- records
+  // For each faims attachment, get the attachment name
   const attachmentDocumentIdList = avpData?.faims_attachments?.map(
     attInfo => attInfo.attachment_id
   );
+  // Fetch all attachments using base 64 attachment service
   const attRecordsQuery = useQueries({
     queries: (attachmentDocumentIdList || []).map(attId => {
       return {
         queryFn: async () => {
           try {
-            const attachmentService = createProjectAttachmentService(
-              props.renderContext.recordMetadata.project_id
-            );
-            return attachmentService.loadAttachmentAsBase64({
+            return await attachmentService.loadAttachmentAsBase64({
               identifier: {id: attId},
             });
           } catch (e) {
-            // Return a special object to indicate this attachment is not downloaded
-            return undefined;
+            throw e;
           }
         },
         queryKey: ['attachment-fetch', attId],
       };
     }),
   });
-  const allAttachmentDocs: Array<LoadAttachmentBase64Result | undefined> =
-    attRecordsQuery.map(d => {
-      return d.data;
-    });
+  const allAttachmentDocs = attRecordsQuery.map(d => {
+    // Not entirely unexpected given we may not have synced attachments
+    if (d.isError) {
+      return undefined;
+    }
+    return d.data;
+  });
 
   // Separate downloaded and not-downloaded attachments
   const notDownloadedCount = allAttachmentDocs.filter(d => !d).length;
-  const allAttachments: LoadAttachmentBase64Result[] = allAttachmentDocs
-    .filter(d => !!d)
-    .map(d => d);
+  const allAttachments = allAttachmentDocs.filter(d => !!d).map(d => d);
 
   // Map the attachment documents into presentable images
   const toDisplay: {
