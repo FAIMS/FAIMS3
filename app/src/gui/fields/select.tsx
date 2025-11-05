@@ -39,7 +39,12 @@ import {
   OutlinedInput,
   Select as MuiSelect,
 } from '@mui/material';
-import {ElementOption} from '@faims3/data-model';
+
+interface ElementOption {
+  value: string;
+  label: string;
+  key?: string;
+}
 
 /**
  * Defines the properties for the dropdown options.

@@ -1,14 +1,13 @@
-import {expect, it, describe} from 'vitest';
+import {ProjectUIModel, Record, ValuesObject} from '@faims3/data-model';
+import {describe, expect, it} from 'vitest';
+import {RecordContext} from '../gui/components/record/form';
 import {
   formatTimestamp,
   getHridFromValuesAndSpec,
   getRecordContextFromRecord,
+  prettifyFieldName,
   recomputeDerivedFields,
-  ValuesObject,
 } from './formUtilities';
-import {ProjectUIModel, Record} from '@faims3/data-model';
-import {RecordContext} from '../gui/components/record/form';
-import {prettifyFieldName} from './formUtilities';
 
 /**
  * Test suite for form utility functions including time stamp and templating logic

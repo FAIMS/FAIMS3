@@ -19,11 +19,15 @@
  */
 
 import {
+  getSummaryFieldInformation,
+  getVisibleTypes,
   PostRecordStatusResponse,
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
 } from '@faims3/data-model';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
+import PendingIcon from '@mui/icons-material/Pending';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
   Box,
@@ -35,8 +39,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
-import PendingIcon from '@mui/icons-material/Pending';
 import {useTheme} from '@mui/material/styles';
 import {
   DataGrid,
@@ -49,10 +51,6 @@ import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
-import {
-  getSummaryFieldInformation,
-  getVisibleTypes,
-} from '../../../uiSpecification';
 import {prettifyFieldName} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';

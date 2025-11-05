@@ -20,16 +20,24 @@
 
 import {
   Annotations,
+  currentlyVisibleFields,
   generateFAIMSDataID,
+  getFieldNamesFromFields,
+  getFieldsForViewSet,
+  getFieldsMatchingCondition,
   getFirstRecordHead,
   getFullRecordData,
+  getReturnedTypesForViewSet,
+  getViewsMatchingCondition,
   ProjectID,
   ProjectUIModel,
   RecordID,
   RecordReference,
   Relationship,
+  requiredFields,
   RevisionID,
   upsertFAIMSData,
+  ValuesObject,
 } from '@faims3/data-model';
 import {Alert, Box, Button, Divider, Typography} from '@mui/material';
 import {Form, Formik, FormikProps} from 'formik';
@@ -43,30 +51,16 @@ import {
 } from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {store} from '../../../context/store';
-import {
-  currentlyVisibleFields,
-  percentComplete,
-  requiredFields,
-} from '../../../lib/form-utils';
+import {percentComplete} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
 import {
-  getFieldNamesFromFields,
-  getFieldsForViewSet,
-  getReturnedTypesForViewSet,
-} from '../../../uiSpecification';
-import {
   getRecordContextFromRecord,
   recomputeDerivedFields,
-  ValuesObject,
 } from '../../../utils/formUtilities';
 import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
-import {
-  getFieldsMatchingCondition,
-  getViewsMatchingCondition,
-} from './branchingLogic';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import FormButtonGroup from './formButton';
 import {firstDefinedFromList} from './helpers';

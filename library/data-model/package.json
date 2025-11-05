@@ -62,7 +62,7 @@
     "@fast-check/jest": "^1.6.0",
     "@types/jest": "^29.4.0",
     "@types/lodash": "^4.14.191",
-    "@types/node": "^18.14.0",
+    "@types/node": "^22.13.14",
     "@types/uuid": "^9.0.0",
     "fast-check": "^3.6.3",
     "gts": "^5.3.1",
