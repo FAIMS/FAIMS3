@@ -64,7 +64,7 @@ export const relationshipSchema = z.object({
   }),
 });
 
-export type Relationship = z.infer<typeof relationshipSchema>;
+export type RecordRelationship = z.infer<typeof relationshipSchema>;
 
 export const v1RevisionDBFieldsSchema = z
   .object({
@@ -112,7 +112,7 @@ export const annotationsSchema = z.object({
   uncertainty: z.boolean(),
 });
 
-export type Annotations = z.infer<typeof annotationsSchema>;
+export type RecordAnnotations = z.infer<typeof annotationsSchema>;
 
 export const attachmentSchema = z.object({
   attachment_id: z.string(),

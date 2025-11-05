@@ -19,6 +19,8 @@
  *   which server to use and whether to include test data
  */
 
+import {IAttachmentService} from '@faims3/data-model';
+import {localGetDataDb} from '.';
 import {MapStylesheetNameType} from './gui/components/map/styles';
 
 // need to define a local logError here since logging.tsx imports this file
@@ -454,6 +456,64 @@ function migrateOldDatabases(): boolean {
     !!migrateOldDatabases &&
     TRUTHY_STRINGS.includes(migrateOldDatabases.toLowerCase())
   );
+}
+
+// Attachment service configuration
+
+/**
+ * Retrieves the configured attachment service type from environment variables.
+ * @returns {string} - The attachment service type (defaults to 'COUCH')
+ */
+function getAttachmentServiceType(): string {
+  const serviceType = import.meta.env.VITE_ATTACHMENT_SERVICE_TYPE;
+  return serviceType || 'COUCH';
+}
+
+/**
+ * Retrieves the attachment document ID prefix from environment variables.
+ * @returns {string | undefined} - Optional prefix for attachment document IDs
+ */
+function getAttachmentDocumentIdPrefix(): string | undefined {
+  const prefix = import.meta.env.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX;
+  return prefix || undefined;
+}
+
+export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
+export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
+
+/**
+ * Creates an attachment service for the given project.
+ *
+ * This factory function abstracts the attachment service implementation details,
+ * allowing the service type to be configured via environment variables.
+ *
+ * @param projectId - The project ID for which to create the attachment service
+ * @returns An IAttachmentService instance configured for the project
+ */
+export function createProjectAttachmentService(
+  projectId: string
+): IAttachmentService {
+  // Import the attachment service modules
+  // Note: These imports are done here to avoid circular dependencies
+  const {
+    createAttachmentService,
+    AttachmentServiceType,
+  } = require('./attachments');
+
+  // Get the data database for this project
+  const dataDb = localGetDataDb(projectId);
+
+  // Create the attachment service with the configured type
+  return createAttachmentService({
+    serviceType:
+      AttachmentServiceType[
+        ATTACHMENT_SERVICE_TYPE as keyof typeof AttachmentServiceType
+      ],
+    serviceConfig: {
+      dataDb,
+      documentIdPrefix: ATTACHMENT_DOCUMENT_ID_PREFIX,
+    },
+  });
 }
 
 // this should disappear once we have listing activation set up

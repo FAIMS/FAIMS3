@@ -1,16 +1,26 @@
-import {FAIMSAttachment, getAtt, getAvp} from '@faims3/data-model';
+import {
+  AttachmentMetadata,
+  DatabaseInterface,
+  DataDocument,
+  DataEngine,
+  FAIMSAttachment,
+  LoadAttachmentBase64Result,
+} from '@faims3/data-model';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';
 import {useQueries, useQuery} from '@tanstack/react-query';
+import {useMemo} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {localGetDataDb} from '../../../../..';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../../buildconfig';
+import {
+  createProjectAttachmentService,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../../../buildconfig';
+import * as ROUTES from '../../../../../constants/routes';
 import {selectActiveServerId} from '../../../../../context/slices/authSlice';
 import {useAppSelector} from '../../../../../context/store';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
-import * as ROUTES from '../../../../../constants/routes';
-import PouchDB from 'pouchdb-browser';
 
 // Image types we are interested in displaying
 const imageTypes = [
@@ -27,16 +37,20 @@ export const TakePhotoRender: DataViewFieldRender = props => {
   // Photo details are not properly hydrated out of the box, we need to grab the
   // AVP record directly (which we can find easily)
   const dataDb = localGetDataDb(props.renderContext.recordMetadata.project_id);
+  const dataEngine = useMemo(() => {
+    return new DataEngine({
+      dataDb: dataDb as DatabaseInterface<DataDocument>,
+      uiSpec: props.renderContext.uiSpecification,
+    });
+  }, [dataDb, props.renderContext.uiSpecification]);
+
   // What is the AVP?
   const avpId =
     props.renderContext.recordMetadata.avps[props.renderContext.fieldId];
   // Now get the actual record
   const avpRecordQuery = useQuery({
     queryFn: async () => {
-      return await getAvp({
-        avpId,
-        dataDb,
-      });
+      return await dataEngine.core.getAvp(avpId);
     },
     queryKey: ['avp-attachment-fetch', avpId],
   });
@@ -50,9 +64,12 @@ export const TakePhotoRender: DataViewFieldRender = props => {
       return {
         queryFn: async () => {
           try {
-            // Include attachments here - it's only local still and we are about to display them!
-            const res = await getAtt({dataDb, attId, includeAttachments: true});
-            return res;
+            const attachmentService = createProjectAttachmentService(
+              props.renderContext.recordMetadata.project_id
+            );
+            return attachmentService.loadAttachmentAsBase64({
+              identifier: {id: attId},
+            });
           } catch (e) {
             // Return a special object to indicate this attachment is not downloaded
             return undefined;
@@ -62,33 +79,24 @@ export const TakePhotoRender: DataViewFieldRender = props => {
       };
     }),
   });
-  const allAttachmentDocs: Array<FAIMSAttachment | undefined> =
+  const allAttachmentDocs: Array<LoadAttachmentBase64Result | undefined> =
     attRecordsQuery.map(d => {
       return d.data;
     });
 
   // Separate downloaded and not-downloaded attachments
   const notDownloadedCount = allAttachmentDocs.filter(d => !d).length;
-  const presentAttDocs: FAIMSAttachment[] = allAttachmentDocs.filter(d => !!d);
+  const allAttachments: LoadAttachmentBase64Result[] = allAttachmentDocs
+    .filter(d => !!d)
+    .map(d => d);
 
-  let allAttachments: (PouchDB.Core.Attachment & {
-    // Base 64 encoded (include_attachments = true, binary = false)
-    data: string;
-  })[] = [];
-  for (const doc of presentAttDocs) {
-    if (doc._attachments) {
-      allAttachments = allAttachments.concat(
-        Array.from(Object.values(doc._attachments as any))
-      );
-    }
-  }
   // Map the attachment documents into presentable images
   const toDisplay: {
     contentType: string;
     data: string;
   }[] = allAttachments.map(att => ({
-    contentType: att.content_type,
-    data: att.data,
+    contentType: att.metadata.contentType,
+    data: att.base64,
   }));
   const displayableImages = toDisplay.filter(item =>
     imageTypes.includes(item.contentType.toLowerCase())

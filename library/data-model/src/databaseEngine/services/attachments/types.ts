@@ -76,6 +76,16 @@ export interface LoadAttachmentResult {
 }
 
 /**
+ * Result of loading an attachment as base64.
+ */
+export interface LoadAttachmentBase64Result {
+  /** The attachment data as a base64 string */
+  base64: string;
+  /** Metadata about the attachment */
+  metadata: AttachmentMetadata;
+}
+
+/**
  * Interface for the attachment service.
  */
 export interface IAttachmentService {
@@ -104,6 +114,18 @@ export interface IAttachmentService {
   }): Promise<StoreAttachmentResult>;
 
   /**
+   * Stores a base64-encoded string as an attachment.
+   * @param params - The parameters for storing the base64 data.
+   * @param params.base64 - The base64-encoded string to store.
+   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @returns A Promise resolving to the storage result with identifier and metadata.
+   */
+  storeAttachmentFromBase64(params: {
+    base64: string;
+    metadata: StorageMetadata;
+  }): Promise<StoreAttachmentResult>;
+
+  /**
    * Loads an attachment and returns it as a Blob.
    * @param params - The parameters for loading the attachment.
    * @param params.identifier - The identifier of the attachment to load.
@@ -125,6 +147,16 @@ export interface IAttachmentService {
     identifier: AttachmentIdentifier;
     filename?: string;
   }): Promise<LoadAttachmentResult & {blob: File}>;
+
+  /**
+   * Loads an attachment and returns it as a base64-encoded string.
+   * @param params - The parameters for loading the attachment.
+   * @param params.identifier - The identifier of the attachment to load.
+   * @returns A Promise resolving to the attachment as a base64 string with metadata.
+   */
+  loadAttachmentAsBase64(params: {
+    identifier: AttachmentIdentifier;
+  }): Promise<LoadAttachmentBase64Result>;
 }
 
 /**
@@ -156,6 +188,18 @@ export abstract class BaseAttachmentService implements IAttachmentService {
   }): Promise<StoreAttachmentResult>;
 
   /**
+   * Stores a base64-encoded string as an attachment.
+   * @param params - The parameters for storing the base64 data.
+   * @param params.base64 - The base64-encoded string to store.
+   * @param params.metadata - Storage metadata including filename and mimeType.
+   * @returns A Promise resolving to the storage result with identifier and metadata.
+   */
+  abstract storeAttachmentFromBase64(params: {
+    base64: string;
+    metadata: StorageMetadata;
+  }): Promise<StoreAttachmentResult>;
+
+  /**
    * Loads an attachment and returns it as a Blob.
    * @param params - The parameters for loading the attachment.
    * @param params.identifier - The identifier of the attachment to load.
@@ -178,6 +222,16 @@ export abstract class BaseAttachmentService implements IAttachmentService {
   }): Promise<LoadAttachmentResult & {blob: File}>;
 
   /**
+   * Loads an attachment and returns it as a base64-encoded string.
+   * @param params - The parameters for loading the attachment.
+   * @param params.identifier - The identifier of the attachment to load.
+   * @returns A Promise resolving to the attachment as a base64 string with metadata.
+   */
+  abstract loadAttachmentAsBase64(params: {
+    identifier: AttachmentIdentifier;
+  }): Promise<LoadAttachmentBase64Result>;
+
+  /**
    * Helper method to convert a Blob to a File.
    * @param blob - The Blob to convert.
    * @param filename - The filename to use for the File.
@@ -193,5 +247,40 @@ export abstract class BaseAttachmentService implements IAttachmentService {
       type: blob.type,
       lastModified: lastModified || Date.now(),
     });
+  }
+
+  /**
+   * Helper method to convert a Blob to a base64 string.
+   * @param blob - The Blob to convert.
+   * @returns A Promise resolving to a base64-encoded string.
+   */
+  protected async blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:image/png;base64,")
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  /**
+   * Helper method to convert a base64 string to a Blob.
+   * @param base64 - The base64-encoded string to convert.
+   * @param mimeType - The MIME type of the blob.
+   * @returns A Blob object.
+   */
+  protected base64ToBlob(base64: string, mimeType: string): Blob {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], {type: mimeType});
   }
 }

@@ -7,15 +7,21 @@ import {
   PendingAttachment,
 } from '../../types';
 import {
-  BaseAttachmentService,
   AttachmentIdentifier,
-  StoreAttachmentResult,
+  BaseAttachmentService,
+  LoadAttachmentBase64Result,
   LoadAttachmentResult,
   StorageMetadata,
+  StoreAttachmentResult,
 } from './types';
+import {base64ToBlob, blobToBase64, fileToBase64} from './utils';
 
 // The default att- prefix
 export const ATTACHMENT_DEFAULT_PREFIX = 'att-';
+
+// ============================================================================
+// Service Implementation
+// ============================================================================
 
 /**
  * Configuration for CouchDB attachment service.
@@ -103,13 +109,13 @@ export class CouchAttachmentService extends BaseAttachmentService {
     const {file, metadata} = params;
     // Generate the att- ID
     const id = generateAttID();
-    // Convert file to array buffer
-    const arrayBuffer = await file.arrayBuffer();
+    // Convert file to base64
+    const base64Data = await fileToBase64(file);
     // Build the attachments (pending - i.e. data directly in there)
     const _attachments: {[key: string]: PendingAttachment} = {
       [id]: {
         content_type: metadata.attachmentDetails.mimeType,
-        data: this.arrayBufferToBase64(arrayBuffer),
+        data: base64Data,
       },
     };
     const attachmentDocument: NewPendingAttachmentDBDocument = {
@@ -181,14 +187,14 @@ export class CouchAttachmentService extends BaseAttachmentService {
     // Generate the att- ID
     const id = generateAttID();
 
-    // Convert blob to array buffer
-    const arrayBuffer = await blob.arrayBuffer();
+    // Convert blob to base64
+    const base64Data = await blobToBase64(blob);
 
     // Build the attachments (pending - i.e. data directly in there)
     const _attachments: {[key: string]: PendingAttachment} = {
       [id]: {
         content_type: metadata.attachmentDetails.mimeType,
-        data: this.arrayBufferToBase64(arrayBuffer),
+        data: base64Data,
       },
     };
 
@@ -271,15 +277,11 @@ export class CouchAttachmentService extends BaseAttachmentService {
       );
     }
 
-    // Convert base64 string to Blob
-    const binaryString = atob(attachmentDetails.data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    const blob = new Blob([bytes], {
-      type: attachmentDetails.content_type,
-    });
+    // Convert base64 string to Blob using utility function
+    const blob = base64ToBlob(
+      attachmentDetails.data,
+      attachmentDetails.content_type
+    );
 
     // Extract metadata from the attachment document
     const filename = attachment.filename || 'unknown';
@@ -334,21 +336,131 @@ export class CouchAttachmentService extends BaseAttachmentService {
   }
 
   /**
-   * Helper method to convert an ArrayBuffer to base64 string.
+   * Stores a base64-encoded string as an attachment in CouchDB.
    *
-   * @param buffer - The ArrayBuffer to convert.
-   * @returns A base64-encoded string.
+   * @param params - The parameters for storing the base64 data.
+   * @param params.base64 - The base64-encoded string to store.
+   * @param params.metadata - Storage metadata with filename and mimeType.
+   * @returns A Promise resolving to the storage result with identifier and metadata.
    *
-   * @remarks
-   * CouchDB expects attachment data in base64 format when using the
-   * _attachments field in document bodies.
+   * @example
+   * ```typescript
+   * const result = await service.storeAttachmentFromBase64({
+   *   base64: 'SGVsbG8sIHdvcmxkIQ==',
+   *   metadata: {
+   *     attachmentDetails: {
+   *       filename: 'hello.txt',
+   *       mimeType: 'text/plain'
+   *     },
+   *     recordContext: { ... }
+   *   }
+   * });
+   * ```
    */
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
+  async storeAttachmentFromBase64(params: {
+    base64: string;
+    metadata: StorageMetadata;
+  }): Promise<StoreAttachmentResult> {
+    const {base64, metadata} = params;
+
+    // Generate the att- ID
+    const id = generateAttID();
+
+    // Build the attachments (pending - i.e. data directly in there)
+    const _attachments: {[key: string]: PendingAttachment} = {
+      [id]: {
+        content_type: metadata.attachmentDetails.mimeType,
+        data: base64,
+      },
+    };
+
+    const attachmentDocument: NewPendingAttachmentDBDocument = {
+      _id: id,
+      _attachments,
+      avp_id: metadata.recordContext.avpId,
+      record_id: metadata.recordContext.recordId,
+      filename: metadata.attachmentDetails.filename,
+      revision_id: metadata.recordContext.revisionId,
+      created: metadata.recordContext.created,
+      created_by: metadata.recordContext.createdBy,
+      attach_format_version: 1,
+    };
+
+    // Now write it using special core op
+    try {
+      await this.core.createAttachment(attachmentDocument);
+    } catch (e) {
+      console.error(
+        'Failed to create attachment in couch DB attachment service. Error: ',
+        e
+      );
+      throw e;
     }
-    return btoa(binary);
+
+    // Return info about the new document
+    return {
+      identifier: {id: id, metadata: {}},
+      metadata: {
+        contentType: metadata.attachmentDetails.mimeType,
+        filename: metadata.attachmentDetails.filename,
+      },
+    };
+  }
+
+  /**
+   * Loads an attachment from CouchDB and returns it as a base64-encoded string.
+   *
+   * @param params - The parameters for loading the attachment.
+   * @param params.identifier - The identifier of the attachment to load.
+   * @returns A Promise resolving to the attachment as a base64 string with metadata.
+   *
+   * @example
+   * ```typescript
+   * const result = await service.loadAttachmentAsBase64({
+   *   identifier: { id: 'att-12345' }
+   * });
+   * console.log('Base64:', result.base64);
+   * console.log('Filename:', result.metadata.filename);
+   * ```
+   */
+  async loadAttachmentAsBase64(params: {
+    identifier: AttachmentIdentifier;
+  }): Promise<LoadAttachmentBase64Result> {
+    const {identifier} = params;
+
+    // Fetch the record, load attachments
+    const attachment = await this.core
+      .getDb()
+      .get<AttachmentDBDocument>(identifier.id, {
+        // include attachment
+        attachments: true,
+        // base 64 please
+        binary: false,
+      });
+
+    const attachmentDetails = attachment._attachments?.[identifier.id] as
+      | (PouchDB.Core.Attachment & {
+          // Base 64 encoded (include_attachments = true, binary = false)
+          data: string;
+        })
+      | undefined;
+
+    // Check if attachment exists
+    if (!attachmentDetails || !attachmentDetails.data) {
+      throw new Error(
+        `Attachment with ID "${identifier.id}" not found or has no data`
+      );
+    }
+
+    // Extract metadata from the attachment document
+    const filename = attachment.filename || 'unknown';
+
+    return {
+      base64: attachmentDetails.data,
+      metadata: {
+        contentType: attachmentDetails.content_type,
+        filename,
+      },
+    };
   }
 }
