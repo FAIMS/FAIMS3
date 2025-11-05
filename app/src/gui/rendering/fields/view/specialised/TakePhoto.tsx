@@ -4,18 +4,15 @@ import {Box, Paper, Typography} from '@mui/material';
 import {useQueries, useQuery} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
-import {localGetDataDb} from '../../../../..';
-import {
-  createProjectAttachmentService,
-  NOTEBOOK_NAME_CAPITALIZED,
-} from '../../../../../buildconfig';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../../buildconfig';
 import * as ROUTES from '../../../../../constants/routes';
 import {selectActiveServerId} from '../../../../../context/slices/authSlice';
 import {useAppSelector} from '../../../../../context/store';
+import {createProjectAttachmentService} from '../../../../../utils/attachmentService';
+import {localGetDataDb} from '../../../../../utils/database';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
-// Image types we are interested in displaying
 const imageTypes = [
   'image/png',
   'image/jpeg',

@@ -19,14 +19,6 @@
  *   which server to use and whether to include test data
  */
 
-import {
-  AttachmentServiceType,
-  createAttachmentService,
-  DatabaseInterface,
-  DataDocument,
-  IAttachmentService,
-} from '@faims3/data-model';
-import {localGetDataDb} from '.';
 import {MapStylesheetNameType} from './gui/components/map/styles';
 
 // need to define a local logError here since logging.tsx imports this file
@@ -486,36 +478,6 @@ function getAttachmentDocumentIdPrefix(): string | undefined {
 
 export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
 export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
-
-/**
- * Creates an attachment service for the given project.
- *
- * This factory function abstracts the attachment service implementation details,
- * allowing the service type to be configured via environment variables.
- *
- * @param projectId - The project ID for which to create the attachment service
- * @returns An IAttachmentService instance configured for the project
- */
-export function createProjectAttachmentService(
-  projectId: string
-): IAttachmentService {
-  // Get the data database for this project
-  const dataDb = localGetDataDb(projectId) as DatabaseInterface<DataDocument>;
-
-  // Create the attachment service with the configured type
-  return createAttachmentService({
-    serviceType:
-      AttachmentServiceType[
-        ATTACHMENT_SERVICE_TYPE as keyof typeof AttachmentServiceType
-      ],
-    serviceConfig: {
-      dataDb,
-      documentIdPrefix: ATTACHMENT_DOCUMENT_ID_PREFIX,
-    },
-  });
-}
-
-// this should disappear once we have listing activation set up
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();

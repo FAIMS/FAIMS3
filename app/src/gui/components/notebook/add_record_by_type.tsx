@@ -6,12 +6,12 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
 import {Navigate, Link as RouterLink} from 'react-router-dom';
-import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
+import {localGetDataDb} from '../../../utils/database';
 import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 
 type AddRecordButtonsProps = {

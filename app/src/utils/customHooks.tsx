@@ -15,12 +15,12 @@ import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
-import {localGetDataDb} from '..';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
+import {localGetDataDb} from './database';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
