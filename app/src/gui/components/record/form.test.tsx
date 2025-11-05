@@ -18,8 +18,7 @@
  *   Record/Draft form file
  */
 
-import {expect, vi, afterEach, describe, it} from 'vitest';
-import {TestWrapper} from '../../fields/utils';
+import {compileUiSpecConditionals} from '@faims3/data-model';
 import {
   act,
   cleanup,
@@ -29,9 +28,10 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-import RecordForm from './form';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {TestWrapper} from '../../fields/utils';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
-import {compileUiSpecConditionals} from '../../../uiSpecification';
+import RecordForm from './form';
 
 const testProjectId = 'default||1685527104147-campus-survey-demo';
 
@@ -1273,20 +1273,25 @@ vi.mock('../../../index.tsx', () => ({
   localGetDataDb: () => {},
 }));
 
-vi.mock('@faims3/data-model', () => ({
-  getFirstRecordHead: mockGetFirstRecordHead,
-  getPossibleRelatedRecords: mockGetRecordsByType,
-  getFullRecordData: vi.fn(() => {
-    return testRecordsByType[0];
-  }),
-  setAttachmentLoaderForType: vi.fn(() => {}),
-  setAttachmentDumperForType: vi.fn(() => {}),
-  generateFAIMSDataID: vi.fn(() => {}),
-  upsertFAIMSData: mockUpsertFAIMSData,
-  file_data_to_attachments: vi.fn(() => {}),
-  file_attachments_to_data: vi.fn(() => {}),
-  registerClient: vi.fn(() => {}),
-}));
+vi.mock('@faims3/data-model', async importOriginal => {
+  const actual = await importOriginal();
+  return {
+    // allow this spread - its the vi recommended mock approach
+    ...(actual as any),
+    getFirstRecordHead: mockGetFirstRecordHead,
+    getPossibleRelatedRecords: mockGetRecordsByType,
+    getFullRecordData: vi.fn(() => {
+      return testRecordsByType[0];
+    }),
+    setAttachmentLoaderForType: vi.fn(() => {}),
+    setAttachmentDumperForType: vi.fn(() => {}),
+    generateFAIMSDataID: vi.fn(() => {}),
+    upsertFAIMSData: mockUpsertFAIMSData,
+    file_data_to_attachments: vi.fn(() => {}),
+    file_attachments_to_data: vi.fn(() => {}),
+    registerClient: vi.fn(() => {}),
+  };
+});
 
 // need doMock here to enable use of the global variable
 vi.doMock('../validation', () => ({

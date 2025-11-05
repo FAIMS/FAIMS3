@@ -18,7 +18,12 @@
  *   TODO
  */
 
-import {generateFAIMSDataID, ProjectID, RecordID} from '@faims3/data-model';
+import {
+  generateFAIMSDataID,
+  getReturnedTypesForViewSet,
+  ProjectID,
+  RecordID,
+} from '@faims3/data-model';
 import {Box, CircularProgress, Grid, Paper} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
@@ -38,7 +43,6 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {Project, selectProjectById} from '../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
-import {getReturnedTypesForViewSet} from '../../uiSpecification';
 import ProgressBar from '../components/progress-bar';
 import RecordForm from '../components/record/form';
 import InheritedDataComponent from '../components/record/inherited_data';
