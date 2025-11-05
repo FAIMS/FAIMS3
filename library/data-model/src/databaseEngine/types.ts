@@ -24,7 +24,7 @@ export const v1RecordDBFieldsSchema = z
   .object({
     record_format_version: z.number(),
     created: z.string().datetime(),
-    created_by: z.string().email(),
+    created_by: z.string(),
     revisions: z.array(z.string()),
     heads: z.array(z.string()),
     type: z.string(),
@@ -64,7 +64,7 @@ export const relationshipSchema = z.object({
   }),
 });
 
-export type Relationship = z.infer<typeof relationshipSchema>;
+export type RecordRelationship = z.infer<typeof relationshipSchema>;
 
 export const v1RevisionDBFieldsSchema = z
   .object({
@@ -73,7 +73,7 @@ export const v1RevisionDBFieldsSchema = z
     record_id: z.string(),
     parents: z.array(z.string()),
     created: z.string().datetime(),
-    created_by: z.string().email(),
+    created_by: z.string(),
     type: z.string(),
     ugc_comment: z.string().optional(),
     relationship: relationshipSchema
@@ -112,7 +112,7 @@ export const annotationsSchema = z.object({
   uncertainty: z.boolean(),
 });
 
-export type Annotations = z.infer<typeof annotationsSchema>;
+export type RecordAnnotations = z.infer<typeof annotationsSchema>;
 
 export const attachmentSchema = z.object({
   attachment_id: z.string(),
@@ -130,7 +130,7 @@ export const v1AvpDBFieldsSchema = z
     record_id: z.string(),
     annotations: annotationsSchema.optional(),
     created: z.string().datetime(),
-    created_by: z.string().email(),
+    created_by: z.string(),
     faims_attachments: z.array(attachmentSchema).optional(),
   })
   .strict();
@@ -152,42 +152,69 @@ export type AvpDBDocument = z.infer<typeof avpDocumentSchema>;
 export type ExistingAvpDBDocument = z.infer<typeof existingAvpDocumentSchema>;
 
 // ============================================================================
-// Attachment Document
+// Attachment Schemas
 // ============================================================================
 
-export const v1AttachmentDBFieldsSchema = z
-  .object({
-    attach_format_version: z.number(),
-    avp_id: z.string(),
-    revision_id: z.string(),
-    record_id: z.string(),
-    created: z.string().datetime(),
-    created_by: z.string().email(),
-    filename: z.string(),
-    _attachments: z.record(
-      z.string(),
-      z.object({
-        content_type: z.string(),
-        revpos: z.number(),
-        digest: z.string(),
-        length: z.number(),
-        stub: z.boolean(),
-      })
-    ),
+// Encoded attachment (stub version - as stored in CouchDB after upload)
+export const encodedAttachmentSchema = z.object({
+  content_type: z.string(),
+  revpos: z.number(),
+  digest: z.string(),
+  length: z.number(),
+  stub: z.literal(true),
+});
+export type EncodedAttachment = z.infer<typeof encodedAttachmentSchema>;
+
+// Pending attachment (with data - for PUT operations)
+export const pendingAttachmentSchema = z.object({
+  content_type: z.string(),
+  // Base64 encoded data
+  data: z.string(),
+});
+export type PendingAttachment = z.infer<typeof pendingAttachmentSchema>;
+
+// ============================================================================
+// Attachment Document Base
+// ============================================================================
+
+// Base fields shared by all attachment documents
+const v1AttachmentDBFieldsBaseSchema = z.object({
+  attach_format_version: z.number(),
+  avp_id: z.string(),
+  revision_id: z.string(),
+  record_id: z.string(),
+  created: z.string().datetime(),
+  created_by: z.string(),
+  filename: z.string(),
+});
+
+// Encoded attachment document fields
+export const v1AttachmentDBFieldsSchema = v1AttachmentDBFieldsBaseSchema
+  .extend({
+    _attachments: z.record(z.string(), encodedAttachmentSchema),
   })
   .strict();
-
 export type V1AttachmentDBFields = z.infer<typeof v1AttachmentDBFieldsSchema>;
 export type AttachmentDBFields = V1AttachmentDBFields;
 
+// Pending attachment document fields
+export const v1PendingAttachmentDBFieldsSchema = v1AttachmentDBFieldsBaseSchema
+  .extend({
+    _attachments: z.record(z.string(), pendingAttachmentSchema),
+  })
+  .strict();
+export type V1PendingAttachmentDBFields = z.infer<
+  typeof v1PendingAttachmentDBFieldsSchema
+>;
+export type PendingAttachmentDBFields = V1PendingAttachmentDBFields;
+
+// Encoded attachment documents (current/stored state)
 export const newAttachmentDocumentSchema = newPouchDBDocumentSchema.merge(
   v1AttachmentDBFieldsSchema
 );
-
 export const attachmentDocumentSchema = pouchDBDocumentSchema.merge(
   v1AttachmentDBFieldsSchema
 );
-
 export const existingAttachmentDocumentSchema =
   existingPouchDBDocumentSchema.merge(v1AttachmentDBFieldsSchema);
 
@@ -197,6 +224,25 @@ export type NewAttachmentDBDocument = z.infer<
 export type AttachmentDBDocument = z.infer<typeof attachmentDocumentSchema>;
 export type ExistingAttachmentDBDocument = z.infer<
   typeof existingAttachmentDocumentSchema
+>;
+
+// Pending attachment documents (for PUT operations)
+export const newPendingAttachmentDocumentSchema =
+  newPouchDBDocumentSchema.merge(v1PendingAttachmentDBFieldsSchema);
+export const pendingAttachmentDocumentSchema = pouchDBDocumentSchema.merge(
+  v1PendingAttachmentDBFieldsSchema
+);
+export const existingPendingAttachmentDocumentSchema =
+  existingPouchDBDocumentSchema.merge(v1PendingAttachmentDBFieldsSchema);
+
+export type NewPendingAttachmentDBDocument = z.infer<
+  typeof newPendingAttachmentDocumentSchema
+>;
+export type PendingAttachmentDBDocument = z.infer<
+  typeof pendingAttachmentDocumentSchema
+>;
+export type ExistingPendingAttachmentDBDocument = z.infer<
+  typeof existingPendingAttachmentDocumentSchema
 >;
 // ============================================================================
 // Union Types for All Data Documents

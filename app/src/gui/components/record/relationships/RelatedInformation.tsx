@@ -35,10 +35,10 @@ import {
 import * as ROUTES from '../../../../constants/routes';
 import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
 import {logError} from '../../../../logging';
+import {localGetDataDb} from '../../../../utils/database';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
-import {localGetDataDb} from '../../../..';
 
 export type LocationState = {
   parent_record_id?: string; // parent or linked record id, set from parent or linked record

@@ -1,18 +1,18 @@
-import {FAIMSAttachment, getAtt, getAvp} from '@faims3/data-model';
+import {DatabaseInterface, DataDocument, DataEngine} from '@faims3/data-model';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';
 import {useQueries, useQuery} from '@tanstack/react-query';
+import {useMemo} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
-import {localGetDataDb} from '../../../../..';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../../buildconfig';
+import * as ROUTES from '../../../../../constants/routes';
 import {selectActiveServerId} from '../../../../../context/slices/authSlice';
 import {useAppSelector} from '../../../../../context/store';
+import {createProjectAttachmentService} from '../../../../../utils/attachmentService';
+import {localGetDataDb} from '../../../../../utils/database';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
-import * as ROUTES from '../../../../../constants/routes';
-import PouchDB from 'pouchdb-browser';
 
-// Image types we are interested in displaying
 const imageTypes = [
   'image/png',
   'image/jpeg',
@@ -27,68 +27,68 @@ export const TakePhotoRender: DataViewFieldRender = props => {
   // Photo details are not properly hydrated out of the box, we need to grab the
   // AVP record directly (which we can find easily)
   const dataDb = localGetDataDb(props.renderContext.recordMetadata.project_id);
+  const dataEngine = useMemo(() => {
+    return new DataEngine({
+      dataDb: dataDb as DatabaseInterface<DataDocument>,
+      uiSpec: props.renderContext.uiSpecification,
+    });
+  }, [dataDb, props.renderContext.uiSpecification]);
+
+  // Generate attachment service for this project
+  const attachmentService = useMemo(() => {
+    return createProjectAttachmentService(
+      props.renderContext.recordMetadata.project_id
+    );
+  }, [props.renderContext.recordMetadata.project_id]);
+
   // What is the AVP?
   const avpId =
     props.renderContext.recordMetadata.avps[props.renderContext.fieldId];
   // Now get the actual record
   const avpRecordQuery = useQuery({
     queryFn: async () => {
-      return await getAvp({
-        avpId,
-        dataDb,
-      });
+      try {
+        return await dataEngine.core.getAvp(avpId);
+      } catch (e) {
+        console.error('Failed to fetch avp', e);
+      }
     },
     queryKey: ['avp-attachment-fetch', avpId],
   });
   const avpData = avpRecordQuery.data;
-  // For each faims attachment, get the attachment name/ref and fetch the att- records
+  // For each faims attachment, get the attachment name
   const attachmentDocumentIdList = avpData?.faims_attachments?.map(
     attInfo => attInfo.attachment_id
   );
+  // Fetch all attachments using base 64 attachment service
   const attRecordsQuery = useQueries({
     queries: (attachmentDocumentIdList || []).map(attId => {
       return {
         queryFn: async () => {
-          try {
-            // Include attachments here - it's only local still and we are about to display them!
-            const res = await getAtt({dataDb, attId, includeAttachments: true});
-            return res;
-          } catch (e) {
-            // Return a special object to indicate this attachment is not downloaded
-            return undefined;
-          }
+          return await attachmentService.loadAttachmentAsBase64({
+            identifier: {id: attId},
+          });
         },
         queryKey: ['attachment-fetch', attId],
       };
     }),
   });
-  const allAttachmentDocs: Array<FAIMSAttachment | undefined> =
-    attRecordsQuery.map(d => {
-      return d.data;
-    });
+  const allAttachmentDocs = attRecordsQuery.map(d => {
+    // Not entirely unexpected given we may not have synced attachments
+    if (d.isError) {
+      return undefined;
+    }
+    return d.data;
+  });
 
   // Separate downloaded and not-downloaded attachments
   const notDownloadedCount = allAttachmentDocs.filter(d => !d).length;
-  const presentAttDocs: FAIMSAttachment[] = allAttachmentDocs.filter(d => !!d);
+  const allAttachments = allAttachmentDocs.filter(d => !!d).map(d => d);
 
-  let allAttachments: (PouchDB.Core.Attachment & {
-    // Base 64 encoded (include_attachments = true, binary = false)
-    data: string;
-  })[] = [];
-  for (const doc of presentAttDocs) {
-    if (doc._attachments) {
-      allAttachments = allAttachments.concat(
-        Array.from(Object.values(doc._attachments as any))
-      );
-    }
-  }
   // Map the attachment documents into presentable images
-  const toDisplay: {
-    contentType: string;
-    data: string;
-  }[] = allAttachments.map(att => ({
-    contentType: att.content_type,
-    data: att.data,
+  const toDisplay = allAttachments.map(att => ({
+    contentType: att.metadata.contentType,
+    data: att.base64,
   }));
   const displayableImages = toDisplay.filter(item =>
     imageTypes.includes(item.contentType.toLowerCase())

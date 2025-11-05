@@ -50,7 +50,6 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, {useEffect, useRef, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {localGetDataDb} from '../..';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {addAlert} from '../../context/slices/alertSlice';
@@ -58,6 +57,8 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
+import {useIndividualHydratedRecord} from '../../utils/customHooks';
+import {localGetDataDb} from '../../utils/database';
 import RecordDelete from '../components/notebook/delete';
 import ProgressBar from '../components/progress-bar';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
@@ -80,11 +81,10 @@ import {
 } from '../components/record/relationships/types';
 import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 import {DataView} from '../rendering';
-import {useIndividualHydratedRecord} from '../../utils/customHooks';
 
 export default function Record() {
   /**

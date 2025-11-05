@@ -33,8 +33,12 @@ import React, {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
 import * as ROUTES from '../../constants/routes';
 import {selectActiveToken} from '../../context/slices/authSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {selectAllProjects} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
+import {localGetDataDb} from '../../utils/database';
+import {prettifyFieldName} from '../../utils/formUtilities';
 import {
   addRecordLink,
   getRelatedRecords,
@@ -44,10 +48,6 @@ import {
 } from '../components/record/relationships/RelatedInformation';
 import CreateLinkComponent from '../components/record/relationships/create_links';
 import {DataGridFieldLinksComponent} from '../components/record/relationships/field_level_links/datagrid';
-import {selectAllProjects} from '../../context/slices/projectSlice';
-import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
-import {localGetDataDb} from '../..';
-import {prettifyFieldName} from '../../utils/formUtilities';
 import FieldWrapper from './fieldWrapper';
 
 function get_default_relation_label(

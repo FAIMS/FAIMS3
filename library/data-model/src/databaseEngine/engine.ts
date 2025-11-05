@@ -17,10 +17,10 @@ import {
   isExistingAvpDocument,
   isExistingRecordDocument,
   isExistingRevisionDocument,
-  NewAttachmentDBDocument,
   NewAvpDBDocument,
   NewFormRecord,
   newFormRecordSchema,
+  NewPendingAttachmentDBDocument,
   NewRecordDBDocument,
   NewRevisionDBDocument,
   validateExistingAttachmentDocument,
@@ -277,7 +277,7 @@ export class DataEngine {
  * Core database operations providing type-safe CRUD for all document types.
  * This is the lowest-level API for direct database access.
  */
-class CoreOperations {
+export class CoreOperations {
   private static readonly TYPE_CONFIGS = {
     record: {
       typeName: 'record',
@@ -544,17 +544,24 @@ class CoreOperations {
   /**
    * Create a new attachment document
    *
+   * NOTE: this is a special case as Couch converts behind the scenes pending ->
+   * attached. So you get a different object out than in.
+   *
    * @param attachment - The attachment document to create (without _rev)
    * @returns The created attachment with _rev
    * @throws Error if creation fails
    */
   async createAttachment(
-    attachment: NewAttachmentDBDocument
+    attachment: NewPendingAttachmentDBDocument
   ): Promise<ExistingAttachmentDBDocument> {
-    return this.createDocument(
-      attachment,
-      CoreOperations.TYPE_CONFIGS.attachment
-    );
+    const response = await this.db.put(attachment);
+
+    if (!response.ok) {
+      throw new Error(`Failed to create pending Couch Attachment: ${response}`);
+    }
+
+    // Fetch it back out to get the existing version (where it should be encoded nicely)
+    return this.getAttachment(attachment._id);
   }
 
   // ============================================================================

@@ -42,19 +42,20 @@ import {
 import {Alert, Box, Button, Divider, Typography} from '@mui/material';
 import {Form, Formik, FormikProps} from 'formik';
 import React from 'react';
+import {connect, ConnectedProps} from 'react-redux';
 import {NavigateFunction} from 'react-router-dom';
-import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {
   NotificationContext,
   NotificationContextType,
 } from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
-import {store} from '../../../context/store';
+import {AppDispatch, store} from '../../../context/store';
 import {percentComplete} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
+import {deleteDraftsForRecord} from '../../../sync/draft-storage';
 import {
   getRecordContextFromRecord,
   recomputeDerivedFields,
@@ -74,14 +75,12 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-import {deleteDraftsForRecord} from '../../../sync/draft-storage';
-import {connect, ConnectedProps} from 'react-redux';
-import {AppDispatch} from '../../../context/store';
 
 // Import the actions from recordSlice
-import {setEdited, setPercent} from '../../../context/slices/recordSlice';
-import {isEqual} from 'lodash';
 import EditIcon from '@mui/icons-material/Edit';
+import {isEqual} from 'lodash';
+import {setEdited, setPercent} from '../../../context/slices/recordSlice';
+import {localGetDataDb} from '../../../utils/database';
 
 // Define mapDispatchToProps
 const mapDispatchToProps = (dispatch: AppDispatch) => {
