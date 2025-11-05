@@ -1,7 +1,10 @@
 import './App.css';
-import {FormManager} from '../lib';
+import {FormConfig, FormManager} from '../lib';
 
 function App(props: {project: any}) {
+  const formConfig: FormConfig = {
+    context: {mode: 'preview'},
+  };
   return (
     <>
       <h1>FAIMS3 Forms</h1>
@@ -13,7 +16,11 @@ function App(props: {project: any}) {
             borderRadius: '8px',
           }}
         >
-          <FormManager project={props.project} formName="Person" />
+          <FormManager
+            project={props.project}
+            formName="Person"
+            config={formConfig}
+          />
         </div>
       </div>
     </>

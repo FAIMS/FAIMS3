@@ -1,10 +1,12 @@
 import React, {useMemo} from 'react';
 import {EncodedFieldSpecification, FaimsForm} from './types';
 import {getFieldInfo} from '../fieldRegistry/registry';
+import {FormContext} from './FormManager';
 
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
   form: FaimsForm;
+  context: FormContext;
 }
 
 export const Field = React.memo((props: FieldProps) => {
@@ -37,7 +39,11 @@ export const Field = React.memo((props: FieldProps) => {
     <props.form.Field
       name={props.fieldSpec['component-parameters'].name}
       children={field => (
-        <Component {...props.fieldSpec['component-parameters']} field={field} />
+        <Component
+          {...props.fieldSpec['component-parameters']}
+          field={field}
+          context={props.context}
+        />
       )}
     />
   );
