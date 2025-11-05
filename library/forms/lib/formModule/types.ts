@@ -1,6 +1,7 @@
 import {useForm} from '@tanstack/react-form';
 import React from 'react';
 import {z} from 'zod';
+import {FormContext} from './FormManager';
 
 export type FaimsFormData = Record<string, any>;
 
@@ -54,4 +55,5 @@ export type BaseFieldProps = z.infer<typeof BaseFieldPropsSchema>;
 // These are the additional FaimsForm props passed
 export type FormFieldContextProps = {
   field: FaimsFormField;
+  context: FormContext;
 };
