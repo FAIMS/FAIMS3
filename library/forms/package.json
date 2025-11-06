@@ -4,7 +4,15 @@
   "private": true,
   "version": "1.2.8",
   "type": "module",
-  "main": "src/index.tsx",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
   "engines": {
     "node": "22"
   },
