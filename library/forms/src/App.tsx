@@ -1,10 +1,10 @@
 import './App.css';
-import {FormConfig, FormManager} from '../lib';
+import {PreviewFormManager} from '../lib';
 
 function App(props: {project: any}) {
-  const formConfig: FormConfig = {
-    context: {mode: 'preview'},
-  };
+  const uiSpec = props.project['ui-specification'];
+  uiSpec.views = uiSpec.fviews;
+
   return (
     <>
       <h1>FAIMS3 Forms</h1>
@@ -16,11 +16,7 @@ function App(props: {project: any}) {
             borderRadius: '8px',
           }}
         >
-          <FormManager
-            project={props.project}
-            formName="Person"
-            config={formConfig}
-          />
+          <PreviewFormManager formName="Person" uiSpec={uiSpec} />
         </div>
       </div>
     </>

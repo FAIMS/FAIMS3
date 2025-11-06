@@ -53,6 +53,7 @@ import {OFFLINE_MAPS} from './buildconfig';
 import {PouchExplorer} from './gui/pages/pouchExplorer';
 
 import {SafeArea} from '@capacitor-community/safe-area';
+import {EditRecordPage} from './gui/pages/newRecord';
 
 SafeArea.enable({
   config: {
@@ -202,7 +203,7 @@ export default function App() {
                         }
                         element={
                           <TolerantPrivateRoute>
-                            <Record />
+                            <EditRecordPage />
                           </TolerantPrivateRoute>
                         }
                       />

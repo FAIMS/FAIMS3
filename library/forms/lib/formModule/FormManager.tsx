@@ -2,6 +2,7 @@ import type {
   DataEngine,
   EncodedNotebook,
   IAttachmentService,
+  ProjectUIModel,
 } from '@faims3/data-model';
 import {useForm, useStore} from '@tanstack/react-form';
 import type {ComponentProps} from 'react';
@@ -69,13 +70,14 @@ export interface FormConfig {
 }
 
 export interface FormManagerProps extends ComponentProps<any> {
-  project: EncodedNotebook;
   formName: string;
-  config: FormConfig;
+  config: {
+    context: FullFormContext;
+  };
 }
 
 export const FormManager = (props: FormManagerProps) => {
-  console.log('FormManager:', props.formName);
+  console.log('FormManager:', props);
 
   const form = useForm({
     defaultValues: formValues as FaimsFormData,
@@ -89,7 +91,8 @@ export const FormManager = (props: FormManagerProps) => {
     },
   });
 
-  const uiSpec = props.project['ui-specification'];
+  const dataEngine = props.config.context.dataEngine();
+  const uiSpec = dataEngine.uiSpec;
   const formSpec = uiSpec.viewsets[props.formName];
 
   return (
@@ -110,6 +113,60 @@ export const FormManager = (props: FormManagerProps) => {
             uiSpec={uiSpec}
             section={sectionName}
             config={props.config}
+          />
+        ))}
+      </form>
+      <FormStateDisplay form={form} />
+    </>
+  );
+};
+
+export interface PreviewFormManagerProps extends ComponentProps<any> {
+  formName: string;
+  uiSpec: ProjectUIModel;
+}
+
+export const PreviewFormManager = (props: PreviewFormManagerProps) => {
+  console.log('PreviewFormManager:', props);
+
+  const form = useForm({
+    defaultValues: formValues as FaimsFormData,
+    onSubmit: ({value}) => {
+      console.log('Form submitted with value:', value);
+    },
+    listeners: {
+      onChange: () => {
+        console.log('Form values changed:', form.state.values);
+      },
+    },
+  });
+
+  const config = {
+    context: {
+      mode: 'preview' as const,
+    },
+  };
+
+  const formSpec = props.uiSpec.viewsets[props.formName];
+
+  return (
+    <>
+      <h2>Form: {formSpec.label}</h2>
+
+      <form
+        onSubmit={e => {
+          e.preventDefault();
+          e.stopPropagation();
+          form.handleSubmit();
+        }}
+      >
+        {formSpec.views.map((sectionName: string) => (
+          <FormSection
+            key={sectionName}
+            form={form}
+            uiSpec={props.uiSpec}
+            section={sectionName}
+            config={config}
           />
         ))}
       </form>

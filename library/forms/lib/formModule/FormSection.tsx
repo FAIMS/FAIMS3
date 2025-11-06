@@ -1,10 +1,10 @@
-import {EncodedUISpecification} from '@faims3/data-model';
+import {ProjectUIModel} from '@faims3/data-model';
 import {FaimsForm} from './types';
 import {Field} from './Field';
 import {FormConfig} from './FormManager';
 
 interface FormSectionProps {
-  uiSpec: EncodedUISpecification;
+  uiSpec: ProjectUIModel;
   section: string;
   form: FaimsForm;
   config: FormConfig;
@@ -17,7 +17,7 @@ export const FormSection = ({
   form,
   config,
 }: FormSectionProps) => {
-  const sectionSpec = uiSpec.fviews[section];
+  const sectionSpec = uiSpec.views[section];
   if (!sectionSpec) {
     throw new Error(`Section ${section} not found in UISpec`);
   }
