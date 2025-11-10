@@ -77,11 +77,11 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   console.log('FormManager:', props);
 
   const [uiSpec, setUiSpec] = useState<ProjectUIModel | null>(null);
-  const [record, setRecord] = useState<HydratedRecord | null>(null);
+  const [record, setRecord] = useState<ExistingFormRecord | null>(null);
   const [dataEngine, setDataEngine] = useState<DataEngine | null>(null);
   const [formValues, setFormValues] = useState<FaimsFormData>({});
 
-  // TODO: probably want a useHydratedRecord hook to get the initial form
+  // TODO: probably want a hook to get the initial form
   // data, then we can populate the form with that data
   // https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values#basic-usage
 
@@ -97,16 +97,12 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         // here we can update the current version of the record with the new values
         if (record && dataEngine) {
           const updatedRecord: ExistingFormRecord = {
-            // projectId - optional here but not known
-            formId: record.record.formId,
-            createdBy: record.record.createdBy, // shouldn't have to specify this
-            updatedBy: record.record.createdBy, // should be current user
+            ...record,
             data: form.state.values,
-            annotations: {},
-            recordId: record.record._id,
-            revisionId: record.revision._id,
           };
-          dataEngine.form.updateRecord(updatedRecord).then(updatedRecord => {
+          dataEngine.form.updateRecord(updatedRecord, {
+            updatedBy: record.createdBy, // TODO need current user
+          }).then(updatedRecord => {
             console.log(
               '%cRecord updated:',
               'background-color: red',
@@ -125,17 +121,16 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       setDataEngine(engine);
       setUiSpec(engine.uiSpec);
 
-      engine.configureForm({
-        getEqualityFunctionForType: () => async (a, b) => a === b,
+      const record = await engine.form.getExistingFormRecord({
+        recordId: props.recordId,
+        revisionId: props.revisionId,
       });
-
-      const record = await engine.hydrated.getHydratedRecord(props.recordId);
       setRecord(record);
 
       // get the initial values from the form
       const values: FaimsFormData = {};
       for (const fieldName in record.data) {
-        values[fieldName] = record.data[fieldName].data;
+        values[fieldName] = record.data[fieldName];
       }
       setFormValues(values);
     };
@@ -150,7 +145,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     return (
       <FormManager
         form={form}
-        formName={record.record.formId}
+        formName={record.formId}
         uiSpec={uiSpec}
         config={props.config}
       />
