@@ -1,16 +1,20 @@
 import {v4 as uuidv4} from 'uuid';
-import {z} from 'zod';
 import {DatabaseInterface, FAIMSTypeName, UISpecification} from '../types';
+import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
   DataDocument,
   ExistingAttachmentDBDocument,
+  existingAttachmentDocumentSchema,
   ExistingAvpDBDocument,
+  existingAvpDocumentSchema,
   ExistingFormRecord,
   existingFormRecordSchema,
+  ExistingPouchDocument,
   ExistingRecordDBDocument,
+  existingRecordDocumentSchema,
   ExistingRevisionDBDocument,
-  getDocumentType,
+  existingRevisionDocumentSchema,
   HydratedDataField,
   HydratedRecord,
   isExistingAttachmentDocument,
@@ -18,127 +22,32 @@ import {
   isExistingRecordDocument,
   isExistingRevisionDocument,
   NewAvpDBDocument,
+  newAvpDocumentSchema,
   NewFormRecord,
   newFormRecordSchema,
   NewPendingAttachmentDBDocument,
   NewRecordDBDocument,
+  newRecordDocumentSchema,
   NewRevisionDBDocument,
+  newRevisionDocumentSchema,
+  pendingAttachmentDocumentSchema,
   validateExistingAttachmentDocument,
   validateExistingAvpDocument,
   validateExistingRecordDocument,
   validateExistingRevisionDocument,
+  validateNewAttachmentDocument,
+  validateNewAvpDocument,
+  validateNewRecordDocument,
+  validateNewRevisionDocument,
 } from './types';
 
-// Helpers
+// =======
+// HELPERS
+// =======
 
 function getCurrentTimestamp(): string {
   return new Date().toISOString();
 }
-
-// =========
-// CONSTANTS
-// =========
-
-export const UNKNOWN_TYPE_FALLBACK = '??:??';
-
-// ============================================================================
-// Configuration Schemas and Types
-// ============================================================================
-
-/**
- * Configuration options for the DataEngine
- *
- * @property dbName - The name of the PouchDB database
- * @property pouchConfig - Optional PouchDB configuration options
- */
-export interface DataEngineConfig {
-  dataDb: DatabaseInterface<DataDocument>;
-  pouchConfig?: PouchDB.Configuration.DatabaseConfiguration;
-  uiSpec: UISpecification;
-}
-
-/**
- * Configuration for hydrated record retrieval behavior
- *
- * @property behaviorOnConflict - Strategy for handling conflicting record heads
- */
-export const hydratedRecordConfigSchema = z.object({
-  behaviorOnConflict: z
-    .enum(['throw', 'pickFirst', 'pickLast'])
-    .default('throw'),
-});
-
-export type HydratedRecordConfig = z.infer<typeof hydratedRecordConfigSchema>;
-
-/**
- * Configuration for form record operations
- *
- * @property getEqualityFunctionForType - Function to get equality checker for field type comparison
- */
-export interface FormRecordEngineConfig {
-  getEqualityFunctionForType: (
-    type: FAIMSTypeName
-  ) => (a: any, b: any) => Promise<boolean>;
-}
-
-export type ConflictBehavior = z.infer<
-  typeof hydratedRecordConfigSchema
->['behaviorOnConflict'];
-
-// ============================================================================
-// Error Classes
-// ============================================================================
-
-/**
- * Error thrown when a document is not found in the database
- */
-export class DocumentNotFoundError extends Error {
-  constructor(id: string, type: string) {
-    super(`${type} document with id "${id}" not found`);
-    this.name = 'DocumentNotFoundError';
-  }
-}
-
-/**
- * Error thrown when a document has an unexpected type
- */
-export class InvalidDocumentTypeError extends Error {
-  constructor(id: string, expectedType: string, actualType: string) {
-    super(
-      `Document "${id}" is of type "${actualType}", expected "${expectedType}"`
-    );
-    this.name = 'InvalidDocumentTypeError';
-  }
-}
-
-/**
- * Error thrown when a record has multiple conflicting heads
- */
-export class RecordConflictError extends Error {
-  constructor(
-    recordId: string,
-    public readonly heads: string[]
-  ) {
-    super(
-      `Record "${recordId}" has ${heads.length} conflicting heads: ${heads.join(', ')}`
-    );
-    this.name = 'RecordConflictError';
-  }
-}
-
-/**
- * Error thrown when a record has no heads (invalid state)
- */
-export class NoHeadsError extends Error {
-  constructor(recordId: string) {
-    super(`Record "${recordId}" has no heads - invalid state`);
-    this.name = 'NoHeadsError';
-  }
-}
-
-// ============================================================================
-// ID Generation Utilities
-// ============================================================================
 
 /**
  * Generate a unique Record ID with the 'rec-' prefix
@@ -176,45 +85,61 @@ export function generateAttID(): string {
   return 'att-' + uuidv4();
 }
 
+// =========
+// CONSTANTS
+// =========
+
+export const UNKNOWN_TYPE_FALLBACK = '??:??';
+
 // ============================================================================
-// Document Type Configuration
+// Configuration Schemas and Types
 // ============================================================================
 
 /**
- * Document type metadata for type-safe operations
- *
- * @property typeName - Human-readable name of the document type
- * @property typeGuard - Function to check if a document matches this type
- * @property validator - Function to validate and parse document data
+ * Document type metadata
  */
-type DocumentTypeConfig<T> = {
+type DocumentTypeConfig = {
+  // Human-readable name of the document type
   typeName: string;
+  // Function to check if a document matches this type
   typeGuard: (doc: unknown) => boolean;
-  validator: (doc: unknown) => T;
+  // Function to validate and parse new document data. NOTE: new documents do
+  // not possess a _rev and may have other differences
+  newDocumentValidator: (doc: unknown) => any;
+  // Function to validate and parse existing document data. NOTE: existing
+  // documents possess a _rev and may have other differences
+  existingDocumentValidator: (doc: unknown) => any;
 };
+
+/**
+ * Configuration options for the DataEngine
+ */
+export interface DataEngineConfig {
+  // The name of the PouchDB database
+  dataDb: DatabaseInterface<DataDocument>;
+  // UI Specification related to this project
+  uiSpec: UISpecification;
+}
+
+// What options for conflict?
+export type ConflictBehaviour = 'throw' | 'pickFirst' | 'pickLast';
+
+// The configuration provided when hydrating a record
+export interface HydratedRecordConfig {
+  behaviourOnConflict: ConflictBehaviour;
+}
 
 // ===========
 // DataEngine
 // ===========
 
 /**
- * Unified data engine providing typed, ergonomic API for all database operations.
- * Includes embedded Core, Hydrated, and Form submodules for different access patterns.
- *
- * @example
- * const engine = new DataEngine({ dbName: 'mydb' });
- *
- * // Core operations
- * const record = await engine.core.getRecord('record-123');
- *
- * // Hydrated operations (with relationships loaded)
- * const hydrated = await engine.hydrated.getHydratedRecord('record-123');
- *
- * // Form operations (high-level CRUD)
- * await engine.form.createRecord(formData);
+ * Unified data engine providing typed API for all database operations. Includes
+ * embedded Core, Hydrated, and Form submodules for different access patterns.
  */
 export class DataEngine {
-  private db: DatabaseInterface;
+  // The PouchDB interface
+  public readonly db: DatabaseInterface;
 
   /**
    * Core database operations - direct CRUD on typed documents
@@ -249,24 +174,6 @@ export class DataEngine {
     this.hydrated = new HydratedOperations(this.core);
     this.form = new FormOperations(this.core, this.uiSpec);
   }
-
-  /**
-   * Get the underlying PouchDB database instance
-   *
-   * @returns The PouchDB database
-   */
-  getDb(): DatabaseInterface {
-    return this.db;
-  }
-
-  /**
-   * Configure the form operations module with type-specific handlers
-   *
-   * @param config - Configuration for form operations including equality and attachment handlers
-   */
-  configureForm(config: FormRecordEngineConfig): void {
-    this.form.configure(config);
-  }
 }
 
 // ============================================================================
@@ -278,30 +185,11 @@ export class DataEngine {
  * This is the lowest-level API for direct database access.
  */
 export class CoreOperations {
-  private static readonly TYPE_CONFIGS = {
-    record: {
-      typeName: 'record',
-      typeGuard: isExistingRecordDocument,
-      validator: validateExistingRecordDocument,
-    },
-    revision: {
-      typeName: 'revision',
-      typeGuard: isExistingRevisionDocument,
-      validator: validateExistingRevisionDocument,
-    },
-    avp: {
-      typeName: 'avp',
-      typeGuard: isExistingAvpDocument,
-      validator: validateExistingAvpDocument,
-    },
-    attachment: {
-      typeName: 'attachment',
-      typeGuard: isExistingAttachmentDocument,
-      validator: validateExistingAttachmentDocument,
-    },
-  } as const;
+  public readonly db: DatabaseInterface;
 
-  constructor(private readonly db: DatabaseInterface) {}
+  constructor(db: DatabaseInterface) {
+    this.db = db;
+  }
 
   // ============================================================================
   // Generic Helper Methods
@@ -318,23 +206,14 @@ export class CoreOperations {
    */
   private async getDocumentOfType<T>(
     id: string,
-    config: DocumentTypeConfig<T>
-  ): Promise<T & {_rev: string}> {
+    validator: (doc: unknown) => T
+  ): Promise<T> {
     try {
       const doc = await this.db.get(id);
-
-      if (!config.typeGuard(doc)) {
-        const actualType = getDocumentType(doc);
-        throw new InvalidDocumentTypeError(id, config.typeName, actualType);
-      }
-
-      return config.validator(doc) as T & {_rev: string};
+      return validator(doc);
     } catch (err: any) {
       if (err.status === 404) {
-        throw new DocumentNotFoundError(
-          id,
-          config.typeName.charAt(0).toUpperCase() + config.typeName.slice(1)
-        );
+        throw new Exceptions.DocumentNotFoundError(id);
       }
       throw err;
     }
@@ -348,15 +227,15 @@ export class CoreOperations {
    * @returns The created document with _rev
    * @throws Error if creation fails
    */
-  private async createDocument<T extends {_id: string}>(
-    doc: Omit<T, '_rev'>,
-    config: DocumentTypeConfig<T>
+  private async createDocument<T extends {}>(
+    doc: T,
+    validator: (doc: T) => T
   ): Promise<T & {_rev: string}> {
-    const validated = config.validator(doc);
+    const validated = validator(doc);
     const response = await this.db.put(validated);
 
     if (!response.ok) {
-      throw new Error(`Failed to create ${config.typeName}: ${response}`);
+      throw new Error(`Failed to create document: ${response}`);
     }
 
     return {
@@ -379,19 +258,22 @@ export class CoreOperations {
    * @returns The updated document with new _rev, or undefined if conflict occurs and writeOnClash is false
    * @throws Error if update fails (non-conflict error or max retries exceeded)
    */
-  private async updateDocument<T extends {_id: string; _rev: string}>(
+  private async updateDocument<T extends ExistingPouchDocument>(
     doc: T,
-    config: DocumentTypeConfig<T>,
+    validator: (doc: T) => T,
     writeOnClash = true,
     maxRetries = 5
   ): Promise<T | undefined> {
-    const validated = config.validator(doc);
+    // Validate
+    const validated = validator(doc);
 
     // Try to put directly - if no clash, succeeds immediately
     try {
       const response = await this.db.put(validated);
       if (!response.ok) {
-        throw new Error(`Failed to update ${config.typeName}: ${response}`);
+        throw new Error(
+          `Failed to update document with id ${validated._id}: ${response}`
+        );
       }
       return {
         ...validated,
@@ -407,14 +289,14 @@ export class CoreOperations {
             try {
               const existingRecord = await this.db.get<T>(doc._id);
               // Update _rev with latest version, revalidate, and retry the write
-              const updatedDoc = config.validator({
+              const updatedDoc = validator({
                 ...validated,
                 _rev: existingRecord._rev,
               });
               const response = await this.db.put(updatedDoc);
               if (!response.ok) {
                 throw new Error(
-                  `Failed to update ${config.typeName}: ${response}`
+                  `Failed to update document with id ${updatedDoc._id}: ${response}`
                 );
               }
               return {
@@ -429,14 +311,14 @@ export class CoreOperations {
               }
               // Either hit max retries or encountered a different error
               throw new Error(
-                `Failed to update ${config.typeName} after ${attempts} attempt(s). ` +
+                `Failed to update document after ${attempts} attempt(s). ` +
                   `Error: ${retryErr}`
               );
             }
           }
           // This shouldn't be reached, but just in case
           throw new Error(
-            `Failed to update ${config.typeName} after ${maxRetries} retries`
+            `Failed to update document after ${maxRetries} retries`
           );
         } else {
           // Conflict occurred but writeOnClash is false - return undefined
@@ -445,9 +327,7 @@ export class CoreOperations {
       } else {
         // Non-conflict error occurred - log and throw
         console.log(err);
-        throw new Error(
-          `Failed to update ${config.typeName} - non 409 error: ${err}`
-        );
+        throw new Error(`Failed to update document - non 409 error: ${err}`);
       }
     }
   }
@@ -464,7 +344,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if record doesn't exist
    */
   async getRecord(id: string): Promise<ExistingRecordDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.record);
+    return this.getDocumentOfType(id, existingRecordDocumentSchema.parse);
   }
 
   /**
@@ -475,7 +355,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if revision doesn't exist
    */
   async getRevision(id: string): Promise<ExistingRevisionDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.revision);
+    return this.getDocumentOfType(id, existingRevisionDocumentSchema.parse);
   }
 
   /**
@@ -486,7 +366,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if AVP doesn't exist
    */
   async getAvp(id: string): Promise<ExistingAvpDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.avp);
+    return this.getDocumentOfType(id, existingAvpDocumentSchema.parse);
   }
 
   /**
@@ -497,7 +377,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if attachment doesn't exist
    */
   async getAttachment(id: string): Promise<ExistingAttachmentDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.attachment);
+    return this.getDocumentOfType(id, existingAttachmentDocumentSchema.parse);
   }
 
   // ============================================================================
@@ -514,7 +394,7 @@ export class CoreOperations {
   async createRecord(
     record: NewRecordDBDocument
   ): Promise<ExistingRecordDBDocument> {
-    return this.createDocument(record, CoreOperations.TYPE_CONFIGS.record);
+    return this.createDocument(record, newRecordDocumentSchema.parse);
   }
 
   /**
@@ -527,7 +407,7 @@ export class CoreOperations {
   async createRevision(
     revision: NewRevisionDBDocument
   ): Promise<ExistingRevisionDBDocument> {
-    return this.createDocument(revision, CoreOperations.TYPE_CONFIGS.revision);
+    return this.createDocument(revision, newRevisionDocumentSchema.parse);
   }
 
   /**
@@ -538,7 +418,7 @@ export class CoreOperations {
    * @throws Error if creation fails
    */
   async createAvp(avp: NewAvpDBDocument): Promise<ExistingAvpDBDocument> {
-    return this.createDocument(avp, CoreOperations.TYPE_CONFIGS.avp);
+    return this.createDocument(avp, newAvpDocumentSchema.parse);
   }
 
   /**
@@ -554,11 +434,10 @@ export class CoreOperations {
   async createAttachment(
     attachment: NewPendingAttachmentDBDocument
   ): Promise<ExistingAttachmentDBDocument> {
-    const response = await this.db.put(attachment);
-
-    if (!response.ok) {
-      throw new Error(`Failed to create pending Couch Attachment: ${response}`);
-    }
+    await this.createDocument(
+      attachment,
+      pendingAttachmentDocumentSchema.parse
+    );
 
     // Fetch it back out to get the existing version (where it should be encoded nicely)
     return this.getAttachment(attachment._id);
@@ -581,7 +460,7 @@ export class CoreOperations {
     // This will throw - not be undefined
     return (await this.updateDocument(
       record,
-      CoreOperations.TYPE_CONFIGS.record
+      existingRecordDocumentSchema.parse
     ))!;
   }
 
@@ -598,7 +477,7 @@ export class CoreOperations {
     // This will throw - not be undefined
     return (await this.updateDocument(
       revision,
-      CoreOperations.TYPE_CONFIGS.revision
+      existingRevisionDocumentSchema.parse
     ))!;
   }
 
@@ -611,7 +490,7 @@ export class CoreOperations {
    */
   async updateAvp(avp: ExistingAvpDBDocument): Promise<ExistingAvpDBDocument> {
     // This will throw - not be undefined
-    return (await this.updateDocument(avp, CoreOperations.TYPE_CONFIGS.avp))!;
+    return (await this.updateDocument(avp, existingAvpDocumentSchema.parse))!;
   }
 
   /**
@@ -627,7 +506,7 @@ export class CoreOperations {
     return (await this.updateDocument(
       // This will throw - not be undefined
       attachment,
-      CoreOperations.TYPE_CONFIGS.attachment
+      existingAttachmentDocumentSchema.parse
     ))!;
   }
 
@@ -690,15 +569,6 @@ export class CoreOperations {
     attachment: ExistingAttachmentDBDocument
   ): Promise<void> {
     await this.deleteDocument(attachment._id, attachment._rev);
-  }
-
-  /**
-   * Get the underlying PouchDB database instance
-   *
-   * @returns The PouchDB database
-   */
-  getDb() {
-    return this.db;
   }
 }
 

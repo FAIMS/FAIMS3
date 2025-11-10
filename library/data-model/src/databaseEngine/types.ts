@@ -16,6 +16,10 @@ const existingPouchDBDocumentSchema = newPouchDBDocumentSchema.extend({
   _rev: z.string(),
 });
 
+export type ExistingPouchDocument = z.infer<
+  typeof existingPouchDBDocumentSchema
+>;
+
 // ============================================================================
 // Record Document
 // ============================================================================
@@ -208,13 +212,17 @@ export type V1PendingAttachmentDBFields = z.infer<
 >;
 export type PendingAttachmentDBFields = V1PendingAttachmentDBFields;
 
-// Encoded attachment documents (current/stored state)
+// New attachments are pending
 export const newAttachmentDocumentSchema = newPouchDBDocumentSchema.merge(
-  v1AttachmentDBFieldsSchema
+  v1PendingAttachmentDBFieldsSchema
 );
+
+// Documents are generally already encoded
 export const attachmentDocumentSchema = pouchDBDocumentSchema.merge(
   v1AttachmentDBFieldsSchema
 );
+
+// Existing attachments are encoded
 export const existingAttachmentDocumentSchema =
   existingPouchDBDocumentSchema.merge(v1AttachmentDBFieldsSchema);
 
@@ -274,6 +282,12 @@ export type DataDocument =
   | RevisionDBDocument
   | AvpDBDocument
   | AttachmentDBDocument;
+
+export type NewDataDocument =
+  | NewRecordDBDocument
+  | NewRevisionDBDocument
+  | NewAvpDBDocument
+  | NewAttachmentDBDocument;
 
 export type ExistingDataDocument =
   | ExistingRecordDBDocument
@@ -355,6 +369,10 @@ export function getDocumentType(
 // Validation Functions
 // ============================================================================
 
+// ===============
+// NEW OR EXISTING
+// ===============
+
 export function validateRecordDocument(data: unknown): RecordDBDocument {
   return recordDocumentSchema.parse(data);
 }
@@ -376,6 +394,38 @@ export function validateAttachmentDocument(
 export function validateDataDocument(data: unknown): DataDocument {
   return dataDocumentSchema.parse(data);
 }
+
+// ===============
+// NEW
+// ===============
+
+export function validateNewRecordDocument(data: unknown): NewRecordDBDocument {
+  return newRecordDocumentSchema.parse(data);
+}
+
+export function validateNewRevisionDocument(
+  data: unknown
+): NewRevisionDBDocument {
+  return newRevisionDocumentSchema.parse(data);
+}
+
+export function validateNewAvpDocument(data: unknown): NewAvpDBDocument {
+  return newAvpDocumentSchema.parse(data);
+}
+
+export function validateNewAttachmentDocument(
+  data: unknown
+): NewAttachmentDBDocument {
+  return newAttachmentDocumentSchema.parse(data);
+}
+
+export function validateNewDataDocument(data: unknown): NewDataDocument {
+  return newDataDocumentSchema.parse(data);
+}
+
+// ===============
+// EXISTING
+// ===============
 
 export function validateExistingRecordDocument(
   data: unknown
