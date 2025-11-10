@@ -1,20 +1,14 @@
 import type {
   DataEngine,
-  EncodedNotebook,
+  ExistingFormRecord,
+  HydratedRecord,
   IAttachmentService,
-  ProjectUIModel,
+  ProjectUIModel
 } from '@faims3/data-model';
 import {useForm, useStore} from '@tanstack/react-form';
-import type {ComponentProps} from 'react';
-import {FaimsForm, FaimsFormData} from './types';
+import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
-
-const formValues = {
-  'Full-Name': 'Steve',
-  Occupation: 'Developer',
-  Description: '',
-  Selection: '',
-};
+import {FaimsForm, FaimsFormData} from './types';
 
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
@@ -69,15 +63,27 @@ export interface FormConfig {
   context: FormContext;
 }
 
-export interface FormManagerProps extends ComponentProps<any> {
-  formName: string;
-  config: {
-    context: FullFormContext;
-  };
+export interface FullFormConfig {
+  context: FullFormContext;
 }
 
-export const FormManager = (props: FormManagerProps) => {
+export interface EditableFormManagerProps extends ComponentProps<any> {
+  recordId: string;
+  revisionId?: string;
+  config: FullFormConfig;
+}
+
+export const EditableFormManager = (props: EditableFormManagerProps) => {
   console.log('FormManager:', props);
+
+  const [uiSpec, setUiSpec] = useState<ProjectUIModel | null>(null);
+  const [record, setRecord] = useState<HydratedRecord | null>(null);
+  const [dataEngine, setDataEngine] = useState<DataEngine | null>(null);
+  const [formValues, setFormValues] = useState<FaimsFormData>({});
+
+  // TODO: probably want a useHydratedRecord hook to get the initial form
+  // data, then we can populate the form with that data
+  // https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values#basic-usage
 
   const form = useForm({
     defaultValues: formValues as FaimsFormData,
@@ -85,40 +91,71 @@ export const FormManager = (props: FormManagerProps) => {
       console.log('Form submitted with value:', value);
     },
     listeners: {
+      onChangeDebounceMs: 1000, // only run onChange every 500ms
       onChange: () => {
         console.log('Form values changed:', form.state.values);
+        // here we can update the current version of the record with the new values
+        if (record && dataEngine) {
+          const updatedRecord: ExistingFormRecord = {
+            // projectId - optional here but not known
+            formId: record.record.formId,
+            createdBy: record.record.createdBy, // shouldn't have to specify this
+            updatedBy: record.record.createdBy, // should be current user
+            data: form.state.values,
+            annotations: {},
+            recordId: record.record._id,
+            revisionId: record.revision._id,
+          };
+          dataEngine.form.updateRecord(updatedRecord).then(updatedRecord => {
+            console.log(
+              '%cRecord updated:',
+              'background-color: red',
+              updatedRecord
+            );
+          });
+        }
       },
     },
   });
 
-  const dataEngine = props.config.context.dataEngine();
-  const uiSpec = dataEngine.uiSpec;
-  const formSpec = uiSpec.viewsets[props.formName];
+  // Get the record data and populate the form values when it is available
+  useEffect(() => {
+    const fn = async () => {
+      const engine = props.config.context.dataEngine();
+      setDataEngine(engine);
+      setUiSpec(engine.uiSpec);
 
-  return (
-    <>
-      <h2>Form: {formSpec.label}</h2>
+      engine.configureForm({
+        getEqualityFunctionForType: () => async (a, b) => a === b,
+      });
 
-      <form
-        onSubmit={e => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
-        }}
-      >
-        {formSpec.views.map((sectionName: string) => (
-          <FormSection
-            key={sectionName}
-            form={form}
-            uiSpec={uiSpec}
-            section={sectionName}
-            config={props.config}
-          />
-        ))}
-      </form>
-      <FormStateDisplay form={form} />
-    </>
-  );
+      const record = await engine.hydrated.getHydratedRecord(props.recordId);
+      setRecord(record);
+
+      // get the initial values from the form
+      const values: FaimsFormData = {};
+      for (const fieldName in record.data) {
+        values[fieldName] = record.data[fieldName].data;
+      }
+      setFormValues(values);
+    };
+    fn();
+  }, [props.recordId, props.config]);
+
+  console.log('Loaded record:', record);
+
+  if (!record || !uiSpec || !form) {
+    return <div>Record {props.recordId} not found</div>;
+  } else {
+    return (
+      <FormManager
+        form={form}
+        formName={record.record.formId}
+        uiSpec={uiSpec}
+        config={props.config}
+      />
+    );
+  }
 };
 
 export interface PreviewFormManagerProps extends ComponentProps<any> {
@@ -129,6 +166,12 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
 export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   console.log('PreviewFormManager:', props);
 
+  const formValues = {
+    'Full-Name': 'Steve',
+    Occupation: 'Developer',
+    Description: '',
+    Selection: '',
+  };
   const form = useForm({
     defaultValues: formValues as FaimsFormData,
     onSubmit: ({value}) => {
@@ -147,7 +190,30 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     },
   };
 
+  return (
+    <FormManager
+      form={form}
+      formName={props.formName}
+      uiSpec={props.uiSpec}
+      config={config}
+    />
+  );
+};
+
+export interface FormManagerProps extends ComponentProps<any> {
+  formName: string;
+  form: FaimsForm;
+  uiSpec: ProjectUIModel;
+  config: {
+    context: FormContext;
+  };
+}
+
+export const FormManager = (props: FormManagerProps) => {
+  console.log('FormManager:', props);
+
   const formSpec = props.uiSpec.viewsets[props.formName];
+  console.log('Form Spec:', formSpec);
 
   return (
     <>
@@ -157,20 +223,20 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
         onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
-          form.handleSubmit();
+          props.form.handleSubmit();
         }}
       >
         {formSpec.views.map((sectionName: string) => (
           <FormSection
             key={sectionName}
-            form={form}
+            form={props.form}
             uiSpec={props.uiSpec}
             section={sectionName}
-            config={config}
+            config={props.config}
           />
         ))}
       </form>
-      <FormStateDisplay form={form} />
+      <FormStateDisplay form={props.form} />
     </>
   );
 };

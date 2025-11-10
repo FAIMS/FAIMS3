@@ -1,15 +1,21 @@
-import {ProjectID, RecordID, RevisionID, DataEngine, DatabaseInterface, DataDocument} from '@faims3/data-model';
+import {
+  ProjectID,
+  RecordID,
+  RevisionID,
+  DataEngine,
+  DatabaseInterface,
+  DataDocument,
+} from '@faims3/data-model';
 import {useParams} from 'react-router-dom';
-import {FormManager} from '@faims3/forms';
+import {EditableFormManager} from '@faims3/forms';
 import {localGetDataDb} from '../../utils/database';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {useAppSelector} from '../../context/store';
 import {selectProjectById} from '../../context/slices/projectSlice';
-import {useMemo} from 'react';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 
 export const EditRecordPage = () => {
-  const {projectId, serverId, recordId, revisionId} = useParams<{
+  const {projectId, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
     recordId: RecordID;
@@ -21,9 +27,12 @@ export const EditRecordPage = () => {
   // - breadcrumbs
   // - Tabbed view of the record (View, Edit, Info, Conflicts)
 
+  console.log('EditRecordPage params:', {projectId, recordId});
   if (!projectId) return <></>;
   const project = useAppSelector(state => selectProjectById(state, projectId));
   if (!project) return <></>;
+
+  if (!recordId) return <div>Record ID not specified</div>;
 
   const {uiSpecificationId: uiSpecId} = project;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
@@ -42,7 +51,6 @@ export const EditRecordPage = () => {
     return createProjectAttachmentService(projectId);
   };
 
-  const formName = 'Person'; // this is the type of the record we're editing
   const formConfig = {
     context: {
       mode: 'full' as const,
@@ -73,7 +81,7 @@ export const EditRecordPage = () => {
   return (
     <div>
       <h2>Editing {recordId}</h2>
-      <FormManager formName={formName} config={formConfig} />
+      <EditableFormManager recordId={recordId} config={formConfig} />
     </div>
   );
 };
