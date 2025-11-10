@@ -211,9 +211,7 @@ async function testHydration(
 ): Promise<void> {
   try {
     // Attempt to hydrate the record with pickFirst behavior to handle conflicts
-    const hydratedRecord = await engine.hydrated.getHydratedRecord(recordId, {
-      behaviorOnConflict: 'pickFirst',
-    });
+    const hydratedRecord = await engine.hydrated.getHydratedRecord({recordId});
 
     stats.recordsHydrated++;
 

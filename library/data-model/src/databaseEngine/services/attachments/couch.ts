@@ -208,14 +208,15 @@ export class CouchAttachmentService extends BaseAttachmentService {
     const {identifier} = params;
 
     // Fetch the record, load attachments
-    const attachment = await this.core
-      .getDb()
-      .get<AttachmentDBDocument>(identifier.id, {
+    const attachment = await this.core.db.get<AttachmentDBDocument>(
+      identifier.id,
+      {
         // include attachment
         attachments: true,
         // base 64 please
         binary: false,
-      });
+      }
+    );
 
     const attachmentDetails = attachment._attachments?.[identifier.id] as
       | (PouchDB.Core.Attachment & {
@@ -354,14 +355,15 @@ export class CouchAttachmentService extends BaseAttachmentService {
     const {identifier} = params;
 
     // Fetch the record, load attachments
-    const attachment = await this.core
-      .getDb()
-      .get<AttachmentDBDocument>(identifier.id, {
+    const attachment = await this.core.db.get<AttachmentDBDocument>(
+      identifier.id,
+      {
         // include attachment
         attachments: true,
         // base 64 please
         binary: false,
-      });
+      }
+    );
 
     const attachmentDetails = attachment._attachments?.[identifier.id] as
       | (PouchDB.Core.Attachment & {
