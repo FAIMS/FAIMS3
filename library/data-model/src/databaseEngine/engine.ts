@@ -903,7 +903,17 @@ class FormOperations {
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
-      relationship: validated.relationship ?? {},
+      // Convert back into ugly relationship format for storage
+      relationship: validated.relationship
+        ? {
+            parent: {
+              field_id: validated.relationship.parent.fieldId,
+              record_id: validated.relationship.parent.recordId,
+              relation_type_vocabPair:
+                validated.relationship.parent.relationTypeVocabPair,
+            },
+          }
+        : undefined,
     };
 
     await this.core.createRevision(revisionDoc);

@@ -7,11 +7,13 @@ import {
   DataDocument,
   DataEngine,
   ExistingFormRecord,
+  generateAttID,
   generateAvpID,
   generateRecordID,
   generateRevisionID,
   NewAvpDBDocument,
   NewFormRecord,
+  NewPendingAttachmentDBDocument,
   NewRecordDBDocument,
   NewRevisionDBDocument,
   UISpecification,
@@ -237,6 +239,251 @@ describe('DataEngine', () => {
         expect(retrieved._id).toBe(avpId);
         expect(retrieved.data).toBe('test value');
       });
+
+      test('should update an existing AVP', async () => {
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const newAvp: NewAvpDBDocument = {
+          _id: avpId,
+          avp_format_version: 1,
+          type: 'faims-core::String',
+          data: 'initial value',
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+        };
+
+        const created = await engine.core.createAvp(newAvp);
+
+        // Update the AVP with new data
+        const updated = await engine.core.updateAvp({
+          ...created,
+          data: 'updated value',
+        });
+
+        expect(updated._id).toBe(avpId);
+        expect(updated._rev).not.toBe(created._rev);
+        expect(updated.data).toBe('updated value');
+      });
+
+      test('should delete an AVP', async () => {
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const newAvp: NewAvpDBDocument = {
+          _id: avpId,
+          avp_format_version: 1,
+          type: 'faims-core::String',
+          data: 'test value',
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+        };
+
+        const created = await engine.core.createAvp(newAvp);
+        await engine.core.deleteAvp(created);
+
+        await expect(engine.core.getAvp(avpId)).rejects.toThrow();
+      });
+
+      test('should create AVP with annotations', async () => {
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const newAvp: NewAvpDBDocument = {
+          _id: avpId,
+          avp_format_version: 1,
+          type: 'faims-core::String',
+          data: 'test value',
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+          annotations: {
+            annotation: 'This is a test annotation',
+            uncertainty: true,
+          },
+        };
+
+        const created = await engine.core.createAvp(newAvp);
+
+        expect(created.annotations).toEqual({
+          annotation: 'This is a test annotation',
+          uncertainty: true,
+        });
+      });
+
+      test('should create AVP with complex data types', async () => {
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const complexData = {
+          name: 'Test',
+          count: 42,
+          items: ['a', 'b', 'c'],
+          nested: {key: 'value'},
+        };
+
+        const newAvp: NewAvpDBDocument = {
+          _id: avpId,
+          avp_format_version: 1,
+          type: 'faims-core::JSON',
+          data: complexData,
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+        };
+
+        const created = await engine.core.createAvp(newAvp);
+
+        expect(created.data).toEqual(complexData);
+      });
+    });
+
+    describe('Attachment CRUD', () => {
+      test('should create a new attachment', async () => {
+        const attachmentId = generateAttID();
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const testData = Buffer.from('test file content').toString('base64');
+
+        const newAttachment: NewPendingAttachmentDBDocument = {
+          _id: attachmentId,
+          attach_format_version: 1,
+          avp_id: avpId,
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+          filename: 'test.txt',
+          _attachments: {
+            'test.txt': {
+              content_type: 'text/plain',
+              data: testData,
+            },
+          },
+        };
+
+        const created = await engine.core.createAttachment(newAttachment);
+
+        expect(created._id).toBe(attachmentId);
+        expect(created._rev).toBeDefined();
+        expect(created.filename).toBe('test.txt');
+        expect(created._attachments['test.txt']).toBeDefined();
+      });
+
+      test('should retrieve an existing attachment', async () => {
+        const attachmentId = generateAttID();
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const testData = Buffer.from('test file content').toString('base64');
+
+        const newAttachment: NewPendingAttachmentDBDocument = {
+          _id: attachmentId,
+          attach_format_version: 1,
+          avp_id: avpId,
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+          filename: 'test.txt',
+          _attachments: {
+            'test.txt': {
+              content_type: 'text/plain',
+              data: testData,
+            },
+          },
+        };
+
+        await engine.core.createAttachment(newAttachment);
+        const retrieved = await engine.core.getAttachment(attachmentId);
+
+        expect(retrieved._id).toBe(attachmentId);
+        expect(retrieved.filename).toBe('test.txt');
+        // Attachment stored
+        expect(retrieved._attachments['test.txt'].digest).toBeDefined();
+      });
+
+      test('should update an existing attachment', async () => {
+        const attachmentId = generateAttID();
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const testData = Buffer.from('test file content').toString('base64');
+
+        const newAttachment: NewPendingAttachmentDBDocument = {
+          _id: attachmentId,
+          attach_format_version: 1,
+          avp_id: avpId,
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+          filename: 'test.txt',
+          _attachments: {
+            'test.txt': {
+              content_type: 'text/plain',
+              data: testData,
+            },
+          },
+        };
+
+        const created = await engine.core.createAttachment(newAttachment);
+
+        // Update the filename
+        const updated = await engine.core.updateAttachment({
+          ...created,
+          filename: 'updated.txt',
+        });
+
+        expect(updated._id).toBe(attachmentId);
+        expect(updated._rev).not.toBe(created._rev);
+        expect(updated.filename).toBe('updated.txt');
+      });
+
+      test('should delete an attachment', async () => {
+        const attachmentId = generateAttID();
+        const avpId = generateAvpID();
+        const revisionId = generateRevisionID();
+        const recordId = generateRecordID();
+
+        const testData = Buffer.from('test file content').toString('base64');
+
+        const newAttachment: NewPendingAttachmentDBDocument = {
+          _id: attachmentId,
+          attach_format_version: 1,
+          avp_id: avpId,
+          revision_id: revisionId,
+          record_id: recordId,
+          created: new Date().toISOString(),
+          created_by: 'test-user',
+          filename: 'test.txt',
+          _attachments: {
+            'test.txt': {
+              content_type: 'text/plain',
+              data: testData,
+            },
+          },
+        };
+
+        const created = await engine.core.createAttachment(newAttachment);
+        await engine.core.deleteAttachment(created);
+
+        await expect(engine.core.getAttachment(attachmentId)).rejects.toThrow();
+      });
     });
   });
 
@@ -363,6 +610,262 @@ describe('DataEngine', () => {
 
       const heads = await engine.hydrated.getHeads(recordId);
       expect(heads).toHaveLength(2);
+    });
+
+    test('should retrieve multiple hydrated records in parallel', async () => {
+      // Create two complete records
+      const recordId1 = generateRecordID();
+      const revisionId1 = generateRevisionID();
+      const avpId1 = generateAvpID();
+
+      const recordId2 = generateRecordID();
+      const revisionId2 = generateRevisionID();
+      const avpId2 = generateAvpID();
+
+      // Create first record
+      await engine.core.createRecord({
+        _id: recordId1,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId1],
+        heads: [revisionId1],
+        type: 'A',
+      });
+
+      await engine.core.createAvp({
+        _id: avpId1,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'Record 1 data',
+        revision_id: revisionId1,
+        record_id: recordId1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+      });
+
+      await engine.core.createRevision({
+        _id: revisionId1,
+        revision_format_version: 1,
+        avps: {'First-1': avpId1},
+        record_id: recordId1,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {},
+      });
+
+      // Create second record
+      await engine.core.createRecord({
+        _id: recordId2,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId2],
+        heads: [revisionId2],
+        type: 'B',
+      });
+
+      await engine.core.createAvp({
+        _id: avpId2,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'Record 2 data',
+        revision_id: revisionId2,
+        record_id: recordId2,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+      });
+
+      await engine.core.createRevision({
+        _id: revisionId2,
+        revision_format_version: 1,
+        avps: {'First-2': avpId2},
+        record_id: recordId2,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'B',
+        relationship: {},
+      });
+
+      // Retrieve multiple records
+      const hydrated = await engine.hydrated.getHydratedRecords([
+        recordId1,
+        recordId2,
+      ]);
+
+      expect(hydrated).toHaveLength(2);
+      expect(hydrated[0].record._id).toBe(recordId1);
+      expect(hydrated[1].record._id).toBe(recordId2);
+      expect(hydrated[0].data['First-1'].data).toBe('Record 1 data');
+      expect(hydrated[1].data['First-2'].data).toBe('Record 2 data');
+    });
+
+    test('should retrieve specific revision when specified', async () => {
+      const recordId = generateRecordID();
+      const revision1Id = generateRevisionID();
+      const revision2Id = generateRevisionID();
+      const avp1Id = generateAvpID();
+      const avp2Id = generateAvpID();
+
+      // Create record with two revisions
+      await engine.core.createRecord({
+        _id: recordId,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revision1Id, revision2Id],
+        heads: [revision2Id], // revision2 is the head
+        type: 'A',
+      });
+
+      // Create first revision
+      await engine.core.createAvp({
+        _id: avp1Id,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'Old value',
+        revision_id: revision1Id,
+        record_id: recordId,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+      });
+
+      await engine.core.createRevision({
+        _id: revision1Id,
+        revision_format_version: 1,
+        avps: {'First-1': avp1Id},
+        record_id: recordId,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {},
+      });
+
+      // Create second revision
+      await engine.core.createAvp({
+        _id: avp2Id,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'New value',
+        revision_id: revision2Id,
+        record_id: recordId,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+      });
+
+      await engine.core.createRevision({
+        _id: revision2Id,
+        revision_format_version: 1,
+        avps: {'First-1': avp2Id},
+        record_id: recordId,
+        parents: [revision1Id],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {},
+      });
+
+      // Retrieve specific old revision
+      const hydratedOld = await engine.hydrated.getHydratedRecord({
+        recordId,
+        revisionId: revision1Id,
+      });
+
+      expect(hydratedOld.revision._id).toBe(revision1Id);
+      expect(hydratedOld.data['First-1'].data).toBe('Old value');
+
+      // Retrieve head (default)
+      const hydratedNew = await engine.hydrated.getHydratedRecord({
+        recordId,
+      });
+
+      expect(hydratedNew.revision._id).toBe(revision2Id);
+      expect(hydratedNew.data['First-1'].data).toBe('New value');
+    });
+
+    test('should include attachment information in hydrated data', async () => {
+      const recordId = generateRecordID();
+      const revisionId = generateRevisionID();
+      const avpId = generateAvpID();
+      const attachmentId = generateAttID();
+
+      // Create attachment
+      const testData = Buffer.from('test content').toString('base64');
+      await engine.core.createAttachment({
+        _id: attachmentId,
+        attach_format_version: 1,
+        avp_id: avpId,
+        revision_id: revisionId,
+        record_id: recordId,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        filename: 'test.txt',
+        _attachments: {
+          'test.txt': {
+            content_type: 'text/plain',
+            data: testData,
+          },
+        },
+      });
+
+      // Create record
+      await engine.core.createRecord({
+        _id: recordId,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId],
+        heads: [revisionId],
+        type: 'A',
+      });
+
+      // Create AVP with attachment reference
+      await engine.core.createAvp({
+        _id: avpId,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'Field with attachment',
+        revision_id: revisionId,
+        record_id: recordId,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        faims_attachments: [
+          {
+            attachment_id: attachmentId,
+            filename: 'test.txt',
+            file_type: 'text/plain',
+          },
+        ],
+      });
+
+      await engine.core.createRevision({
+        _id: revisionId,
+        revision_format_version: 1,
+        avps: {'First-1': avpId},
+        record_id: recordId,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {},
+      });
+
+      // Hydrate the record
+      const hydrated = await engine.hydrated.getHydratedRecord({
+        recordId,
+      });
+
+      expect(hydrated.data['First-1'].faimsAttachments).toHaveLength(1);
+      expect(hydrated.data['First-1'].faimsAttachments?.[0].attachmentId).toBe(
+        attachmentId
+      );
+      expect(hydrated.data['First-1'].faimsAttachments?.[0].filename).toBe(
+        'test.txt'
+      );
     });
   });
 
@@ -515,6 +1018,227 @@ describe('DataEngine', () => {
       expect(newRevision.avps['Second-1']).not.toBe(
         initialRevision.avps['Second-1']
       );
+    });
+
+    test('should create new AVPs when annotations change', async () => {
+      // Create initial record
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Same value',
+        },
+        annotations: {
+          'First-1': {
+            annotation: 'Initial annotation',
+            uncertainty: false,
+          },
+        },
+      };
+
+      const initialRevisionId = await engine.form.createRecord(formRecord);
+      const initialRevision = await engine.core.getRevision(initialRevisionId);
+      const recordId = initialRevision.record_id;
+
+      // Get the initial AVP ID
+      const initialAvpId = initialRevision.avps['First-1'];
+
+      // Update with same data but different annotation
+      const updateFormRecord: ExistingFormRecord = {
+        recordId,
+        revisionId: initialRevisionId,
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Same value', // Same value
+        },
+        annotations: {
+          'First-1': {
+            annotation: 'Updated annotation', // Different annotation
+            uncertainty: true,
+          },
+        },
+      };
+
+      const newRevisionId = await engine.form.updateRecord(updateFormRecord, {
+        updatedBy: 'test-user',
+      });
+
+      const newRevision = await engine.core.getRevision(newRevisionId);
+
+      // The AVP ID should be different because annotation changed
+      expect(newRevision.avps['First-1']).not.toBe(initialAvpId);
+    });
+
+    test('should create record with relationship', async () => {
+      // First create a parent record
+      const parentFormRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Parent value',
+        },
+        annotations: {},
+      };
+
+      const parentRevisionId = await engine.form.createRecord(parentFormRecord);
+      const parentRevision = await engine.core.getRevision(parentRevisionId);
+      const parentRecordId = parentRevision.record_id;
+
+      // Create a child record with relationship
+      const childFormRecord: NewFormRecord = {
+        formId: 'B',
+        createdBy: 'test-user',
+        data: {
+          'First-2': 'Child value',
+        },
+        annotations: {},
+        relationship: {
+          parent: {
+            recordId: parentRecordId,
+            fieldId: 'First-1',
+            relationTypeVocabPair: ['parent', 'child'],
+          },
+        },
+      };
+
+      const childRevisionId = await engine.form.createRecord(childFormRecord);
+      const childRevision = await engine.core.getRevision(childRevisionId);
+
+      expect(childRevision.relationship).toEqual({
+        parent: {
+          record_id: parentRecordId,
+          field_id: 'First-1',
+          relation_type_vocabPair: ['parent', 'child'],
+        },
+      });
+    });
+
+    test('should handle multiple sequential updates', async () => {
+      // Create initial record
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Version 1',
+          'Second-1': 'Data 1',
+        },
+        annotations: {},
+      };
+
+      const revision1Id = await engine.form.createRecord(formRecord);
+      const revision1 = await engine.core.getRevision(revision1Id);
+      const recordId = revision1.record_id;
+
+      // First update
+      const update1: ExistingFormRecord = {
+        recordId,
+        revisionId: revision1Id,
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Version 2',
+          'Second-1': 'Data 1',
+        },
+        annotations: {},
+      };
+
+      const revision2Id = await engine.form.updateRecord(update1, {
+        updatedBy: 'test-user-2',
+      });
+
+      // Second update
+      const update2: ExistingFormRecord = {
+        recordId,
+        revisionId: revision2Id,
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Version 3',
+          'Second-1': 'Data 2',
+        },
+        annotations: {},
+      };
+
+      const revision3Id = await engine.form.updateRecord(update2, {
+        updatedBy: 'test-user-3',
+      });
+
+      // Verify revision history
+      const record = await engine.core.getRecord(recordId);
+      expect(record.revisions).toHaveLength(3);
+      expect(record.heads).toEqual([revision3Id]);
+
+      // Verify final data
+      const hydrated = await engine.hydrated.getHydratedRecord({
+        recordId,
+      });
+      expect(hydrated.data['First-1'].data).toBe('Version 3');
+      expect(hydrated.data['Second-1'].data).toBe('Data 2');
+    });
+
+    test('should handle empty data fields', async () => {
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': '',
+          'Second-1': null,
+        },
+        annotations: {},
+      };
+
+      const revisionId = await engine.form.createRecord(formRecord);
+
+      const existingFormRecord = await engine.form.getExistingFormRecord({
+        recordId: (await engine.core.getRevision(revisionId)).record_id,
+      });
+
+      expect(existingFormRecord.data['First-1']).toBe('');
+      expect(existingFormRecord.data['Second-1']).toBe(null);
+    });
+
+    test('should update record heads correctly', async () => {
+      // Create initial record
+      const formRecord: NewFormRecord = {
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Initial',
+        },
+        annotations: {},
+      };
+
+      const revision1Id = await engine.form.createRecord(formRecord);
+      const revision1 = await engine.core.getRevision(revision1Id);
+      const recordId = revision1.record_id;
+
+      // Verify initial state
+      let record = await engine.core.getRecord(recordId);
+      expect(record.heads).toEqual([revision1Id]);
+
+      // Update
+      const update: ExistingFormRecord = {
+        recordId,
+        revisionId: revision1Id,
+        formId: 'A',
+        createdBy: 'test-user',
+        data: {
+          'First-1': 'Updated',
+        },
+        annotations: {},
+      };
+
+      const revision2Id = await engine.form.updateRecord(update, {
+        updatedBy: 'test-user',
+      });
+
+      // Verify updated state
+      record = await engine.core.getRecord(recordId);
+      expect(record.heads).toEqual([revision2Id]);
+      expect(record.heads).not.toContain(revision1Id);
+      expect(record.revisions).toContain(revision1Id);
+      expect(record.revisions).toContain(revision2Id);
     });
   });
 });

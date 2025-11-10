@@ -83,7 +83,7 @@ export const v1RevisionDBFieldsSchema = z
     relationship: relationshipSchema
       .optional()
       // This allows empty objects
-      .or(z.object({})),
+      .or(z.object({}).strict()),
   })
   .strict();
 
