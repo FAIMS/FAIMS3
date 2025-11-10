@@ -1,5 +1,6 @@
 import {v4 as uuidv4} from 'uuid';
-import {DatabaseInterface, FAIMSTypeName, UISpecification} from '../types';
+import {isEqualFAIMS} from '../datamodel';
+import {DatabaseInterface, UISpecification} from '../types';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
@@ -17,10 +18,6 @@ import {
   existingRevisionDocumentSchema,
   HydratedDataField,
   HydratedRecord,
-  isExistingAttachmentDocument,
-  isExistingAvpDocument,
-  isExistingRecordDocument,
-  isExistingRevisionDocument,
   NewAvpDBDocument,
   newAvpDocumentSchema,
   NewFormRecord,
@@ -31,14 +28,6 @@ import {
   NewRevisionDBDocument,
   newRevisionDocumentSchema,
   pendingAttachmentDocumentSchema,
-  validateExistingAttachmentDocument,
-  validateExistingAvpDocument,
-  validateExistingRecordDocument,
-  validateExistingRevisionDocument,
-  validateNewAttachmentDocument,
-  validateNewAvpDocument,
-  validateNewRecordDocument,
-  validateNewRevisionDocument,
 } from './types';
 
 // =======
@@ -89,27 +78,12 @@ export function generateAttID(): string {
 // CONSTANTS
 // =========
 
+const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
 export const UNKNOWN_TYPE_FALLBACK = '??:??';
 
 // ============================================================================
 // Configuration Schemas and Types
 // ============================================================================
-
-/**
- * Document type metadata
- */
-type DocumentTypeConfig = {
-  // Human-readable name of the document type
-  typeName: string;
-  // Function to check if a document matches this type
-  typeGuard: (doc: unknown) => boolean;
-  // Function to validate and parse new document data. NOTE: new documents do
-  // not possess a _rev and may have other differences
-  newDocumentValidator: (doc: unknown) => any;
-  // Function to validate and parse existing document data. NOTE: existing
-  // documents possess a _rev and may have other differences
-  existingDocumentValidator: (doc: unknown) => any;
-};
 
 /**
  * Configuration options for the DataEngine
@@ -596,10 +570,10 @@ class HydratedOperations {
   private resolveHead(
     recordId: string,
     heads: string[],
-    behavior: ConflictBehavior
+    behavior: ConflictBehaviour
   ): {selectedHead: string; hadConflict: boolean} {
     if (heads.length === 0) {
-      throw new NoHeadsError(recordId);
+      throw new Exceptions.NoHeadsError(recordId);
     }
 
     if (heads.length === 1) {
@@ -612,7 +586,7 @@ class HydratedOperations {
     // Multiple heads - conflict detected
     switch (behavior) {
       case 'throw':
-        throw new RecordConflictError(recordId, heads);
+        throw new Exceptions.RecordConflictError(recordId, heads);
       // Take the first one
       case 'pickFirst':
         return {
@@ -671,9 +645,6 @@ class HydratedOperations {
     recordId: string,
     config: Partial<HydratedRecordConfig> = {}
   ): Promise<HydratedRecord> {
-    // Validate and set defaults for config
-    const validatedConfig = hydratedRecordConfigSchema.parse(config);
-
     // Step 1: Fetch the record
     const record = await this.core.getRecord(recordId);
 
@@ -681,7 +652,7 @@ class HydratedOperations {
     const {selectedHead, hadConflict} = this.resolveHead(
       recordId,
       record.heads,
-      validatedConfig.behaviorOnConflict
+      config.behaviourOnConflict ?? DEFAULT_CONFLICT_BEHAVIOUR
     );
 
     // Step 3: Fetch the revision
@@ -740,7 +711,7 @@ class HydratedOperations {
       metadata: {
         hadConflict,
         conflictResolution: hadConflict
-          ? validatedConfig.behaviorOnConflict
+          ? config.behaviourOnConflict
           : undefined,
         allHeads: record.heads,
       },
@@ -794,30 +765,17 @@ class HydratedOperations {
 // ============================================================================
 
 /**
- * Form record operations providing high-level create/update interface.
- * Handles complex logic like change detection, AVP reuse, and attachment processing.
+ * Form record operations providing high-level create/update interface. Handles
+ * complex logic like change detection, AVP reuse, and attachment processing.
  */
 class FormOperations {
   private readonly uiSpec: UISpecification;
-
-  private getEqualityFn?: (
-    type: FAIMSTypeName
-  ) => (a: any, b: any) => Promise<boolean>;
 
   constructor(
     private readonly core: CoreOperations,
     uiSpec: UISpecification
   ) {
     this.uiSpec = uiSpec;
-  }
-
-  /**
-   * Configure the form operations with type-specific handlers
-   *
-   * @param config - Configuration including equality and attachment handlers
-   */
-  configure(config: FormRecordEngineConfig): void {
-    this.getEqualityFn = config.getEqualityFunctionForType;
   }
 
   /**
@@ -1032,12 +990,6 @@ class FormOperations {
     parentRevision: ExistingRevisionDBDocument;
     newRevisionId: string;
   }): Promise<Record<string, string>> {
-    if (!this.getEqualityFn) {
-      throw new Error(
-        'Form operations not configured. Call configure() first.'
-      );
-    }
-
     const avpMap: Record<string, string> = {};
     const avpsToCreate: Array<NewAvpDBDocument> = [];
 
@@ -1062,8 +1014,7 @@ class FormOperations {
       const fieldAnnotation = formRecord.annotations[fieldName];
       const parentAvp = parentAvpsByField.get(fieldName);
 
-      // Determine if data or annotations changed
-      const equalityFn = this.getEqualityFn(fieldType);
+      const equalityFn = isEqualFAIMS;
 
       const hasDataChanged =
         parentAvp === undefined
@@ -1111,8 +1062,12 @@ class FormOperations {
   }
 
   /**
-   * Bulk create AVPs, handling attachments if dumper is configured.
-   * Uses PouchDB bulkDocs for efficient batch operations.
+   * Bulk create AVPs, handling attachments if dumper is configured. Uses
+   * PouchDB bulkDocs for efficient batch operations.
+   *
+   * NOTE: this operation does not 'dump' attachments - i.e. it does not manage
+   * attachments in any way. The /app layer should use the configured attachment
+   * service.
    *
    * @param avps - Array of AVP documents to create
    * @throws Error if bulk operation fails
@@ -1122,33 +1077,15 @@ class FormOperations {
       return;
     }
 
-    const allDocsToCreate: any[] = [];
-
-    // Process each AVP through its attachment dumper if available
-    for (const avp of avps) {
-      // TODO fix this by instead providing a configurable service injection approach
-      /*
-      const dumper = this.getAttachmentDumper(avp.type);
-      if (dumper) {
-        // Dumper returns array of [avp, ...attachment_docs]
-        const docs = dumper(avp);
-        allDocsToCreate.push(...docs);
-      } else {
-        // No dumper for this type, just add the AVP
-        allDocsToCreate.push(avp);
-      }
-      */
-      allDocsToCreate.push(avp);
-    }
-
     // Use PouchDB bulkDocs for efficiency
-    const db = this.core.getDb();
-    await db.bulkDocs(allDocsToCreate);
+    const db = this.core.db;
+    await db.bulkDocs(avps);
   }
 
   /**
-   * Update Record document's heads and revisions arrays after creating new revision.
-   * Removes old head, adds new head, and maintains complete revision history.
+   * Update Record document's heads and revisions arrays after creating new
+   * revision. Removes old head, adds new head, and maintains complete revision
+   * history.
    *
    * @param params.recordId - The record ID to update
    * @param params.oldHeadId - The old head revision ID to remove
