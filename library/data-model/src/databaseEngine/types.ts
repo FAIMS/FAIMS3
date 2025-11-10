@@ -495,14 +495,12 @@ export type FormRelationship = z.infer<typeof formRelationshipSchema>;
  * For submitting data from forms, this is the starting point
  */
 const baseFormRecordSchema = z.object({
-  /** The project this record belongs to (optional for backwards compatibility) */
-  projectId: z.string().optional(),
   /** The ID of the form/viewset this record is an instance of */
   formId: z.string(),
   /** The actual form data as a map of field IDs to their values */
   data: z.record(z.string(), z.unknown()),
   /** Annotations for each field, mapped by field ID */
-  annotations: z.record(z.string(), formAnnotationSchema),
+  annotations: z.record(z.string(), formAnnotationSchema.optional()),
   /** Username of the user who created this record */
   createdBy: z.string(),
   /** Optional relationship information if this is a related/child record */
@@ -526,8 +524,6 @@ export const existingFormRecordSchema = baseFormRecordSchema.extend({
   recordId: z.string(),
   /** The current revision identifier of the record */
   revisionId: z.string(),
-  /** Username of the user performing this update */
-  updatedBy: z.string(),
 });
 
 export type ExistingFormRecord = z.infer<typeof existingFormRecordSchema>;
@@ -617,7 +613,7 @@ export const hydratedRevisionDocumentSchema = z.object({
   /** Type identifier for this form */
   formId: z.string(),
   /** Optional relationship information if this is a related record */
-  relationship: formRelationshipSchema.optional().or(z.object({})),
+  relationship: formRelationshipSchema.optional(),
 });
 
 export type HydratedRevisionDocument = z.infer<

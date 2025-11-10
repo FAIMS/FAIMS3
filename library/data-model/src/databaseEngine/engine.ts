@@ -74,6 +74,24 @@ export function generateAttID(): string {
   return 'att-' + uuidv4();
 }
 
+/**
+ * A utility function to easily created mapped version of hydrated data
+ * @param data The record data to map through
+ * @param mapFn The function to apply to each
+ * @returns The mapped data
+ */
+export function dataMap<T>({
+  data,
+  mapFn,
+}: {
+  data: Record<string, HydratedDataField>;
+  mapFn: (data: HydratedDataField) => T;
+}): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, mapFn(value)])
+  );
+}
+
 // =========
 // CONSTANTS
 // =========
@@ -100,7 +118,7 @@ export type ConflictBehaviour = 'throw' | 'pickFirst' | 'pickLast';
 
 // The configuration provided when hydrating a record
 export interface HydratedRecordConfig {
-  behaviourOnConflict: ConflictBehaviour;
+  conflictBehaviour: ConflictBehaviour;
 }
 
 // ===========
@@ -146,7 +164,7 @@ export class DataEngine {
     this.uiSpec = config.uiSpec;
     this.core = new CoreOperations(this.db);
     this.hydrated = new HydratedOperations(this.core);
-    this.form = new FormOperations(this.core, this.uiSpec);
+    this.form = new FormOperations(this.core, this.hydrated, this.uiSpec);
   }
 }
 
@@ -544,18 +562,6 @@ export class CoreOperations {
   ): Promise<void> {
     await this.deleteDocument(attachment._id, attachment._rev);
   }
-}
-
-// ============================================================================
-// Hydrated Operations - Records with Full Relationships
-// ============================================================================
-
-/**
- * Hydrated record operations that fetch records with all their relationships loaded.
- * This includes the record, its head revision, and all AVPs (field data) in a single call.
- */
-class HydratedOperations {
-  constructor(private readonly core: CoreOperations) {}
 
   /**
    * Resolve which head revision to use when multiple heads exist (conflict)
@@ -567,11 +573,15 @@ class HydratedOperations {
    * @throws NoHeadsError if heads array is empty
    * @throws RecordConflictError if behavior is 'throw' and multiple heads exist
    */
-  private resolveHead(
-    recordId: string,
-    heads: string[],
-    behavior: ConflictBehaviour
-  ): {selectedHead: string; hadConflict: boolean} {
+  resolveHead({
+    recordId,
+    heads,
+    behavior,
+  }: {
+    recordId: string;
+    heads: string[];
+    behavior: ConflictBehaviour;
+  }): {selectedHead: string; hadConflict: boolean} {
     if (heads.length === 0) {
       throw new Exceptions.NoHeadsError(recordId);
     }
@@ -601,6 +611,18 @@ class HydratedOperations {
         };
     }
   }
+}
+
+// ============================================================================
+// Hydrated Operations - Records with Full Relationships
+// ============================================================================
+
+/**
+ * Hydrated record operations that fetch records with all their relationships loaded.
+ * This includes the record, its head revision, and all AVPs (field data) in a single call.
+ */
+class HydratedOperations {
+  constructor(private readonly core: CoreOperations) {}
 
   /**
    * Fetch all AVP documents for a revision efficiently in parallel
@@ -635,28 +657,44 @@ class HydratedOperations {
    * Get a fully hydrated record with its latest revision and all AVPs loaded
    *
    * @param recordId - The record ID to hydrate
-   * @param config - Configuration for conflict resolution
+   * @param revisionId - The revision to target (or use head according to
+   * conflict resolution)
+   * @param conflictBehaviour - Configuration for conflict resolution
    * @returns Hydrated record with all data and metadata
    * @throws DocumentNotFoundError if record doesn't exist
-   * @throws RecordConflictError if conflict behavior is 'throw' and multiple heads exist
+   * @throws RecordConflictError if conflict behavior is 'throw' and multiple
+   * heads exist
    * @throws NoHeadsError if record has no heads
    */
-  async getHydratedRecord(
-    recordId: string,
-    config: Partial<HydratedRecordConfig> = {}
-  ): Promise<HydratedRecord> {
+  async getHydratedRecord({
+    recordId,
+    revisionId,
+    config = {},
+  }: {
+    recordId: string;
+    revisionId?: string;
+    config?: Partial<HydratedRecordConfig>;
+  }): Promise<HydratedRecord> {
     // Step 1: Fetch the record
     const record = await this.core.getRecord(recordId);
 
     // Step 2: Resolve which head to use
-    const {selectedHead, hadConflict} = this.resolveHead(
-      recordId,
-      record.heads,
-      config.behaviourOnConflict ?? DEFAULT_CONFLICT_BEHAVIOUR
-    );
+    let targetRevisionId: string | undefined = revisionId;
+    let hadConflict = false;
+
+    // Only lookup heads if needed
+    if (!targetRevisionId) {
+      const {selectedHead, hadConflict: conflict} = this.core.resolveHead({
+        recordId,
+        heads: record.heads,
+        behavior: config.conflictBehaviour ?? DEFAULT_CONFLICT_BEHAVIOUR,
+      });
+      targetRevisionId = selectedHead;
+      hadConflict = conflict;
+    }
 
     // Step 3: Fetch the revision
-    const revision = await this.core.getRevision(selectedHead);
+    const revision = await this.core.getRevision(targetRevisionId);
 
     // Step 4: Fetch all AVPs efficiently
     const data = await this.fetchAvps(revision.avps);
@@ -685,6 +723,22 @@ class HydratedOperations {
       };
     });
 
+    // Get the correct relationship data
+    const relationship = revision.relationship;
+
+    // Map to formRelationshipSchema type
+    const formRelationship =
+      relationship && 'parent' in relationship
+        ? {
+            parent: {
+              recordId: relationship.parent.record_id,
+              fieldId: relationship.parent.field_id,
+              relationTypeVocabPair:
+                relationship.parent.relation_type_vocabPair,
+            },
+          }
+        : undefined;
+
     // Step 5: Build the hydrated record (in our external interface)
     return {
       record: {
@@ -705,14 +759,12 @@ class HydratedOperations {
         formId: revision.type,
         parents: revision.parents,
         recordId: revision.record_id,
-        relationship: revision.relationship,
+        relationship: formRelationship,
       },
       data: mappedData,
       metadata: {
         hadConflict,
-        conflictResolution: hadConflict
-          ? config.behaviourOnConflict
-          : undefined,
+        conflictResolution: hadConflict ? config.conflictBehaviour : undefined,
         allHeads: record.heads,
       },
     };
@@ -731,7 +783,12 @@ class HydratedOperations {
     config: Partial<HydratedRecordConfig> = {}
   ): Promise<HydratedRecord[]> {
     // Fetch all records in parallel
-    const promises = recordIds.map(id => this.getHydratedRecord(id, config));
+    const promises = recordIds.map(id =>
+      this.getHydratedRecord({
+        recordId: id,
+        config,
+      })
+    );
     return Promise.all(promises);
   }
 
@@ -773,6 +830,7 @@ class FormOperations {
 
   constructor(
     private readonly core: CoreOperations,
+    private readonly hydrated: HydratedOperations,
     uiSpec: UISpecification
   ) {
     this.uiSpec = uiSpec;
@@ -868,7 +926,13 @@ class FormOperations {
    * @throws Error if parent revision not found
    * @throws Error if update fails
    */
-  async updateRecord(formRecord: ExistingFormRecord): Promise<string> {
+  async updateRecord(
+    formRecord: ExistingFormRecord,
+    options: {
+      // What is the username of the user performing the update
+      updatedBy: string;
+    }
+  ): Promise<string> {
     // Validate form record
     const validated = existingFormRecordSchema.parse(formRecord);
 
@@ -883,6 +947,7 @@ class FormOperations {
       formRecord: validated,
       parentRevision,
       newRevisionId,
+      updatedBy: options.updatedBy,
     });
 
     // Step 3: Create new Revision document
@@ -893,7 +958,7 @@ class FormOperations {
       record_id: validated.recordId,
       parents: [validated.revisionId],
       created: getCurrentTimestamp(),
-      created_by: validated.updatedBy,
+      created_by: options.updatedBy,
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
@@ -912,6 +977,54 @@ class FormOperations {
     });
 
     return newRevisionId;
+  }
+
+  /**
+   * Given a record ID, and optionally a revision ID, gets the hydrated data,
+   * then maps it into the existing form record format. This is a nice utility
+   * function for loading data into a form for updated existing records in the
+   * app.
+   *
+   * @param recordId The record
+   * @param revisionId The revision if using specific one, otherwise head
+   * according to hydration config
+   * @param config The settings for hydration
+   * @returns The ready to go existing form record
+   */
+  async getExistingFormRecord({
+    recordId,
+    revisionId,
+    config = {},
+  }: {
+    recordId: string;
+    revisionId?: string;
+    config?: Partial<HydratedRecordConfig>;
+  }): Promise<ExistingFormRecord> {
+    // Now we have a revision - grab the hydrated version
+    const hydrated = await this.hydrated.getHydratedRecord({
+      recordId,
+      revisionId,
+      config,
+    });
+    const record = hydrated.record;
+    const revision = hydrated.revision;
+
+    // Package this up into an existing form record
+    return {
+      recordId,
+      createdBy: record.createdBy,
+      revisionId: revision._id,
+      formId: record.formId,
+      relationship: revision.relationship,
+      data: dataMap({
+        data: hydrated.data,
+        mapFn: d => d.data,
+      }),
+      annotations: dataMap({
+        data: hydrated.data,
+        mapFn: d => d.annotations,
+      }),
+    } satisfies ExistingFormRecord;
   }
 
   /**
@@ -977,6 +1090,7 @@ class FormOperations {
    * @param params.formRecord - The validated form record with changes
    * @param params.parentRevision - The parent revision to compare against
    * @param params.newRevisionId - The new revision ID being created
+   * @param params.updatedBy - Who updated - this is marked as creator of AVP
    * @returns Map of field names to AVP IDs (new or reused)
    * @throws Error if equality function not configured
    * @throws Error if AVP operations fail
@@ -985,10 +1099,12 @@ class FormOperations {
     formRecord,
     parentRevision,
     newRevisionId,
+    updatedBy,
   }: {
     formRecord: ExistingFormRecord;
     parentRevision: ExistingRevisionDBDocument;
     newRevisionId: string;
+    updatedBy: string;
   }): Promise<Record<string, string>> {
     const avpMap: Record<string, string> = {};
     const avpsToCreate: Array<NewAvpDBDocument> = [];
@@ -1044,7 +1160,7 @@ class FormOperations {
           // in form - seems a bit overkill
           created: getCurrentTimestamp(),
           // NOTE: here we track the creator by update
-          created_by: formRecord.updatedBy,
+          created_by: updatedBy,
         };
 
         avpsToCreate.push(avp);
