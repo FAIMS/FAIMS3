@@ -26,13 +26,12 @@ PouchDB.plugin(require('pouchdb-adapter-memory'));
 describe('DataEngine', () => {
   let db: DatabaseInterface<DataDocument>;
   let engine: DataEngine;
-  let uiSpec: UISpecification;
   const databaseName = 'test-db';
 
   // Load UI specification from JSON file
   const uiSpecPath = path.join(__dirname, 'engineTestUiSpec.json');
   const uiSpecData = fs.readFileSync(uiSpecPath, 'utf-8');
-  uiSpec = JSON.parse(uiSpecData)['ui-specification'];
+  const uiSpec: UISpecification = JSON.parse(uiSpecData)['ui-specification'];
 
   beforeEach(() => {
     // Create fresh in-memory database
