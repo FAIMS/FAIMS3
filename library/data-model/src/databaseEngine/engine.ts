@@ -1,144 +1,42 @@
 import {v4 as uuidv4} from 'uuid';
-import {z} from 'zod';
-import {DatabaseInterface, FAIMSTypeName, UISpecification} from '../types';
+import {isEqualFAIMS} from '../datamodel';
+import {DatabaseInterface, UISpecification} from '../types';
+import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
   DataDocument,
   ExistingAttachmentDBDocument,
+  existingAttachmentDocumentSchema,
   ExistingAvpDBDocument,
+  existingAvpDocumentSchema,
   ExistingFormRecord,
   existingFormRecordSchema,
+  ExistingPouchDocument,
   ExistingRecordDBDocument,
+  existingRecordDocumentSchema,
   ExistingRevisionDBDocument,
-  getDocumentType,
+  existingRevisionDocumentSchema,
   HydratedDataField,
   HydratedRecord,
-  isExistingAttachmentDocument,
-  isExistingAvpDocument,
-  isExistingRecordDocument,
-  isExistingRevisionDocument,
   NewAvpDBDocument,
+  newAvpDocumentSchema,
   NewFormRecord,
   newFormRecordSchema,
   NewPendingAttachmentDBDocument,
   NewRecordDBDocument,
+  newRecordDocumentSchema,
   NewRevisionDBDocument,
-  validateExistingAttachmentDocument,
-  validateExistingAvpDocument,
-  validateExistingRecordDocument,
-  validateExistingRevisionDocument,
+  newRevisionDocumentSchema,
+  pendingAttachmentDocumentSchema,
 } from './types';
 
-// Helpers
+// =======
+// HELPERS
+// =======
 
 function getCurrentTimestamp(): string {
   return new Date().toISOString();
 }
-
-// =========
-// CONSTANTS
-// =========
-
-export const UNKNOWN_TYPE_FALLBACK = '??:??';
-
-// ============================================================================
-// Configuration Schemas and Types
-// ============================================================================
-
-/**
- * Configuration options for the DataEngine
- *
- * @property dbName - The name of the PouchDB database
- * @property pouchConfig - Optional PouchDB configuration options
- */
-export interface DataEngineConfig {
-  dataDb: DatabaseInterface<DataDocument>;
-  pouchConfig?: PouchDB.Configuration.DatabaseConfiguration;
-  uiSpec: UISpecification;
-}
-
-/**
- * Configuration for hydrated record retrieval behavior
- *
- * @property behaviorOnConflict - Strategy for handling conflicting record heads
- */
-export const hydratedRecordConfigSchema = z.object({
-  behaviorOnConflict: z
-    .enum(['throw', 'pickFirst', 'pickLast'])
-    .default('throw'),
-});
-
-export type HydratedRecordConfig = z.infer<typeof hydratedRecordConfigSchema>;
-
-/**
- * Configuration for form record operations
- *
- * @property getEqualityFunctionForType - Function to get equality checker for field type comparison
- */
-export interface FormRecordEngineConfig {
-  getEqualityFunctionForType: (
-    type: FAIMSTypeName
-  ) => (a: any, b: any) => Promise<boolean>;
-}
-
-export type ConflictBehavior = z.infer<
-  typeof hydratedRecordConfigSchema
->['behaviorOnConflict'];
-
-// ============================================================================
-// Error Classes
-// ============================================================================
-
-/**
- * Error thrown when a document is not found in the database
- */
-export class DocumentNotFoundError extends Error {
-  constructor(id: string, type: string) {
-    super(`${type} document with id "${id}" not found`);
-    this.name = 'DocumentNotFoundError';
-  }
-}
-
-/**
- * Error thrown when a document has an unexpected type
- */
-export class InvalidDocumentTypeError extends Error {
-  constructor(id: string, expectedType: string, actualType: string) {
-    super(
-      `Document "${id}" is of type "${actualType}", expected "${expectedType}"`
-    );
-    this.name = 'InvalidDocumentTypeError';
-  }
-}
-
-/**
- * Error thrown when a record has multiple conflicting heads
- */
-export class RecordConflictError extends Error {
-  constructor(
-    recordId: string,
-    public readonly heads: string[]
-  ) {
-    super(
-      `Record "${recordId}" has ${heads.length} conflicting heads: ${heads.join(', ')}`
-    );
-    this.name = 'RecordConflictError';
-  }
-}
-
-/**
- * Error thrown when a record has no heads (invalid state)
- */
-export class NoHeadsError extends Error {
-  constructor(recordId: string) {
-    super(`Record "${recordId}" has no heads - invalid state`);
-    this.name = 'NoHeadsError';
-  }
-}
-
-// ============================================================================
-// ID Generation Utilities
-// ============================================================================
 
 /**
  * Generate a unique Record ID with the 'rec-' prefix
@@ -176,45 +74,64 @@ export function generateAttID(): string {
   return 'att-' + uuidv4();
 }
 
+/**
+ * A utility function to easily created mapped version of hydrated data
+ * @param data The record data to map through
+ * @param mapFn The function to apply to each
+ * @returns The mapped data
+ */
+export function dataMap<T>({
+  data,
+  mapFn,
+}: {
+  data: Record<string, HydratedDataField>;
+  mapFn: (data: HydratedDataField) => T;
+}): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [key, mapFn(value)])
+  );
+}
+
+// =========
+// CONSTANTS
+// =========
+
+const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
+export const UNKNOWN_TYPE_FALLBACK = '??:??';
+
 // ============================================================================
-// Document Type Configuration
+// Configuration Schemas and Types
 // ============================================================================
 
 /**
- * Document type metadata for type-safe operations
- *
- * @property typeName - Human-readable name of the document type
- * @property typeGuard - Function to check if a document matches this type
- * @property validator - Function to validate and parse document data
+ * Configuration options for the DataEngine
  */
-type DocumentTypeConfig<T> = {
-  typeName: string;
-  typeGuard: (doc: unknown) => boolean;
-  validator: (doc: unknown) => T;
-};
+export interface DataEngineConfig {
+  // The name of the PouchDB database
+  dataDb: DatabaseInterface<DataDocument>;
+  // UI Specification related to this project
+  uiSpec: UISpecification;
+}
+
+// What options for conflict?
+export type ConflictBehaviour = 'throw' | 'pickFirst' | 'pickLast';
+
+// The configuration provided when hydrating a record
+export interface HydratedRecordConfig {
+  conflictBehaviour: ConflictBehaviour;
+}
 
 // ===========
 // DataEngine
 // ===========
 
 /**
- * Unified data engine providing typed, ergonomic API for all database operations.
- * Includes embedded Core, Hydrated, and Form submodules for different access patterns.
- *
- * @example
- * const engine = new DataEngine({ dbName: 'mydb' });
- *
- * // Core operations
- * const record = await engine.core.getRecord('record-123');
- *
- * // Hydrated operations (with relationships loaded)
- * const hydrated = await engine.hydrated.getHydratedRecord('record-123');
- *
- * // Form operations (high-level CRUD)
- * await engine.form.createRecord(formData);
+ * Unified data engine providing typed API for all database operations. Includes
+ * embedded Core, Hydrated, and Form submodules for different access patterns.
  */
 export class DataEngine {
-  private db: DatabaseInterface;
+  // The PouchDB interface
+  public readonly db: DatabaseInterface;
 
   /**
    * Core database operations - direct CRUD on typed documents
@@ -247,25 +164,7 @@ export class DataEngine {
     this.uiSpec = config.uiSpec;
     this.core = new CoreOperations(this.db);
     this.hydrated = new HydratedOperations(this.core);
-    this.form = new FormOperations(this.core, this.uiSpec);
-  }
-
-  /**
-   * Get the underlying PouchDB database instance
-   *
-   * @returns The PouchDB database
-   */
-  getDb(): DatabaseInterface {
-    return this.db;
-  }
-
-  /**
-   * Configure the form operations module with type-specific handlers
-   *
-   * @param config - Configuration for form operations including equality and attachment handlers
-   */
-  configureForm(config: FormRecordEngineConfig): void {
-    this.form.configure(config);
+    this.form = new FormOperations(this.core, this.hydrated, this.uiSpec);
   }
 }
 
@@ -278,30 +177,11 @@ export class DataEngine {
  * This is the lowest-level API for direct database access.
  */
 export class CoreOperations {
-  private static readonly TYPE_CONFIGS = {
-    record: {
-      typeName: 'record',
-      typeGuard: isExistingRecordDocument,
-      validator: validateExistingRecordDocument,
-    },
-    revision: {
-      typeName: 'revision',
-      typeGuard: isExistingRevisionDocument,
-      validator: validateExistingRevisionDocument,
-    },
-    avp: {
-      typeName: 'avp',
-      typeGuard: isExistingAvpDocument,
-      validator: validateExistingAvpDocument,
-    },
-    attachment: {
-      typeName: 'attachment',
-      typeGuard: isExistingAttachmentDocument,
-      validator: validateExistingAttachmentDocument,
-    },
-  } as const;
+  public readonly db: DatabaseInterface;
 
-  constructor(private readonly db: DatabaseInterface) {}
+  constructor(db: DatabaseInterface) {
+    this.db = db;
+  }
 
   // ============================================================================
   // Generic Helper Methods
@@ -318,23 +198,14 @@ export class CoreOperations {
    */
   private async getDocumentOfType<T>(
     id: string,
-    config: DocumentTypeConfig<T>
-  ): Promise<T & {_rev: string}> {
+    validator: (doc: unknown) => T
+  ): Promise<T> {
     try {
       const doc = await this.db.get(id);
-
-      if (!config.typeGuard(doc)) {
-        const actualType = getDocumentType(doc);
-        throw new InvalidDocumentTypeError(id, config.typeName, actualType);
-      }
-
-      return config.validator(doc) as T & {_rev: string};
+      return validator(doc);
     } catch (err: any) {
       if (err.status === 404) {
-        throw new DocumentNotFoundError(
-          id,
-          config.typeName.charAt(0).toUpperCase() + config.typeName.slice(1)
-        );
+        throw new Exceptions.DocumentNotFoundError(id);
       }
       throw err;
     }
@@ -348,15 +219,15 @@ export class CoreOperations {
    * @returns The created document with _rev
    * @throws Error if creation fails
    */
-  private async createDocument<T extends {_id: string}>(
-    doc: Omit<T, '_rev'>,
-    config: DocumentTypeConfig<T>
+  private async createDocument<T extends {}>(
+    doc: T,
+    validator: (doc: T) => T
   ): Promise<T & {_rev: string}> {
-    const validated = config.validator(doc);
+    const validated = validator(doc);
     const response = await this.db.put(validated);
 
     if (!response.ok) {
-      throw new Error(`Failed to create ${config.typeName}: ${response}`);
+      throw new Error(`Failed to create document: ${response}`);
     }
 
     return {
@@ -379,19 +250,22 @@ export class CoreOperations {
    * @returns The updated document with new _rev, or undefined if conflict occurs and writeOnClash is false
    * @throws Error if update fails (non-conflict error or max retries exceeded)
    */
-  private async updateDocument<T extends {_id: string; _rev: string}>(
+  private async updateDocument<T extends ExistingPouchDocument>(
     doc: T,
-    config: DocumentTypeConfig<T>,
+    validator: (doc: T) => T,
     writeOnClash = true,
     maxRetries = 5
   ): Promise<T | undefined> {
-    const validated = config.validator(doc);
+    // Validate
+    const validated = validator(doc);
 
     // Try to put directly - if no clash, succeeds immediately
     try {
       const response = await this.db.put(validated);
       if (!response.ok) {
-        throw new Error(`Failed to update ${config.typeName}: ${response}`);
+        throw new Error(
+          `Failed to update document with id ${validated._id}: ${response}`
+        );
       }
       return {
         ...validated,
@@ -407,14 +281,14 @@ export class CoreOperations {
             try {
               const existingRecord = await this.db.get<T>(doc._id);
               // Update _rev with latest version, revalidate, and retry the write
-              const updatedDoc = config.validator({
+              const updatedDoc = validator({
                 ...validated,
                 _rev: existingRecord._rev,
               });
               const response = await this.db.put(updatedDoc);
               if (!response.ok) {
                 throw new Error(
-                  `Failed to update ${config.typeName}: ${response}`
+                  `Failed to update document with id ${updatedDoc._id}: ${response}`
                 );
               }
               return {
@@ -429,14 +303,14 @@ export class CoreOperations {
               }
               // Either hit max retries or encountered a different error
               throw new Error(
-                `Failed to update ${config.typeName} after ${attempts} attempt(s). ` +
+                `Failed to update document after ${attempts} attempt(s). ` +
                   `Error: ${retryErr}`
               );
             }
           }
           // This shouldn't be reached, but just in case
           throw new Error(
-            `Failed to update ${config.typeName} after ${maxRetries} retries`
+            `Failed to update document after ${maxRetries} retries`
           );
         } else {
           // Conflict occurred but writeOnClash is false - return undefined
@@ -445,9 +319,7 @@ export class CoreOperations {
       } else {
         // Non-conflict error occurred - log and throw
         console.log(err);
-        throw new Error(
-          `Failed to update ${config.typeName} - non 409 error: ${err}`
-        );
+        throw new Error(`Failed to update document - non 409 error: ${err}`);
       }
     }
   }
@@ -464,7 +336,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if record doesn't exist
    */
   async getRecord(id: string): Promise<ExistingRecordDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.record);
+    return this.getDocumentOfType(id, existingRecordDocumentSchema.parse);
   }
 
   /**
@@ -475,7 +347,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if revision doesn't exist
    */
   async getRevision(id: string): Promise<ExistingRevisionDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.revision);
+    return this.getDocumentOfType(id, existingRevisionDocumentSchema.parse);
   }
 
   /**
@@ -486,7 +358,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if AVP doesn't exist
    */
   async getAvp(id: string): Promise<ExistingAvpDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.avp);
+    return this.getDocumentOfType(id, existingAvpDocumentSchema.parse);
   }
 
   /**
@@ -497,7 +369,7 @@ export class CoreOperations {
    * @throws DocumentNotFoundError if attachment doesn't exist
    */
   async getAttachment(id: string): Promise<ExistingAttachmentDBDocument> {
-    return this.getDocumentOfType(id, CoreOperations.TYPE_CONFIGS.attachment);
+    return this.getDocumentOfType(id, existingAttachmentDocumentSchema.parse);
   }
 
   // ============================================================================
@@ -514,7 +386,7 @@ export class CoreOperations {
   async createRecord(
     record: NewRecordDBDocument
   ): Promise<ExistingRecordDBDocument> {
-    return this.createDocument(record, CoreOperations.TYPE_CONFIGS.record);
+    return this.createDocument(record, newRecordDocumentSchema.parse);
   }
 
   /**
@@ -527,7 +399,7 @@ export class CoreOperations {
   async createRevision(
     revision: NewRevisionDBDocument
   ): Promise<ExistingRevisionDBDocument> {
-    return this.createDocument(revision, CoreOperations.TYPE_CONFIGS.revision);
+    return this.createDocument(revision, newRevisionDocumentSchema.parse);
   }
 
   /**
@@ -538,7 +410,7 @@ export class CoreOperations {
    * @throws Error if creation fails
    */
   async createAvp(avp: NewAvpDBDocument): Promise<ExistingAvpDBDocument> {
-    return this.createDocument(avp, CoreOperations.TYPE_CONFIGS.avp);
+    return this.createDocument(avp, newAvpDocumentSchema.parse);
   }
 
   /**
@@ -554,11 +426,10 @@ export class CoreOperations {
   async createAttachment(
     attachment: NewPendingAttachmentDBDocument
   ): Promise<ExistingAttachmentDBDocument> {
-    const response = await this.db.put(attachment);
-
-    if (!response.ok) {
-      throw new Error(`Failed to create pending Couch Attachment: ${response}`);
-    }
+    await this.createDocument(
+      attachment,
+      pendingAttachmentDocumentSchema.parse
+    );
 
     // Fetch it back out to get the existing version (where it should be encoded nicely)
     return this.getAttachment(attachment._id);
@@ -581,7 +452,7 @@ export class CoreOperations {
     // This will throw - not be undefined
     return (await this.updateDocument(
       record,
-      CoreOperations.TYPE_CONFIGS.record
+      existingRecordDocumentSchema.parse
     ))!;
   }
 
@@ -598,7 +469,7 @@ export class CoreOperations {
     // This will throw - not be undefined
     return (await this.updateDocument(
       revision,
-      CoreOperations.TYPE_CONFIGS.revision
+      existingRevisionDocumentSchema.parse
     ))!;
   }
 
@@ -611,7 +482,7 @@ export class CoreOperations {
    */
   async updateAvp(avp: ExistingAvpDBDocument): Promise<ExistingAvpDBDocument> {
     // This will throw - not be undefined
-    return (await this.updateDocument(avp, CoreOperations.TYPE_CONFIGS.avp))!;
+    return (await this.updateDocument(avp, existingAvpDocumentSchema.parse))!;
   }
 
   /**
@@ -627,7 +498,7 @@ export class CoreOperations {
     return (await this.updateDocument(
       // This will throw - not be undefined
       attachment,
-      CoreOperations.TYPE_CONFIGS.attachment
+      existingAttachmentDocumentSchema.parse
     ))!;
   }
 
@@ -693,27 +564,6 @@ export class CoreOperations {
   }
 
   /**
-   * Get the underlying PouchDB database instance
-   *
-   * @returns The PouchDB database
-   */
-  getDb() {
-    return this.db;
-  }
-}
-
-// ============================================================================
-// Hydrated Operations - Records with Full Relationships
-// ============================================================================
-
-/**
- * Hydrated record operations that fetch records with all their relationships loaded.
- * This includes the record, its head revision, and all AVPs (field data) in a single call.
- */
-class HydratedOperations {
-  constructor(private readonly core: CoreOperations) {}
-
-  /**
    * Resolve which head revision to use when multiple heads exist (conflict)
    *
    * @param recordId - The record ID experiencing conflict
@@ -723,13 +573,17 @@ class HydratedOperations {
    * @throws NoHeadsError if heads array is empty
    * @throws RecordConflictError if behavior is 'throw' and multiple heads exist
    */
-  private resolveHead(
-    recordId: string,
-    heads: string[],
-    behavior: ConflictBehavior
-  ): {selectedHead: string; hadConflict: boolean} {
+  resolveHead({
+    recordId,
+    heads,
+    behavior,
+  }: {
+    recordId: string;
+    heads: string[];
+    behavior: ConflictBehaviour;
+  }): {selectedHead: string; hadConflict: boolean} {
     if (heads.length === 0) {
-      throw new NoHeadsError(recordId);
+      throw new Exceptions.NoHeadsError(recordId);
     }
 
     if (heads.length === 1) {
@@ -742,7 +596,7 @@ class HydratedOperations {
     // Multiple heads - conflict detected
     switch (behavior) {
       case 'throw':
-        throw new RecordConflictError(recordId, heads);
+        throw new Exceptions.RecordConflictError(recordId, heads);
       // Take the first one
       case 'pickFirst':
         return {
@@ -757,6 +611,18 @@ class HydratedOperations {
         };
     }
   }
+}
+
+// ============================================================================
+// Hydrated Operations - Records with Full Relationships
+// ============================================================================
+
+/**
+ * Hydrated record operations that fetch records with all their relationships loaded.
+ * This includes the record, its head revision, and all AVPs (field data) in a single call.
+ */
+class HydratedOperations {
+  constructor(private readonly core: CoreOperations) {}
 
   /**
    * Fetch all AVP documents for a revision efficiently in parallel
@@ -791,31 +657,44 @@ class HydratedOperations {
    * Get a fully hydrated record with its latest revision and all AVPs loaded
    *
    * @param recordId - The record ID to hydrate
-   * @param config - Configuration for conflict resolution
+   * @param revisionId - The revision to target (or use head according to
+   * conflict resolution)
+   * @param conflictBehaviour - Configuration for conflict resolution
    * @returns Hydrated record with all data and metadata
    * @throws DocumentNotFoundError if record doesn't exist
-   * @throws RecordConflictError if conflict behavior is 'throw' and multiple heads exist
+   * @throws RecordConflictError if conflict behavior is 'throw' and multiple
+   * heads exist
    * @throws NoHeadsError if record has no heads
    */
-  async getHydratedRecord(
-    recordId: string,
-    config: Partial<HydratedRecordConfig> = {}
-  ): Promise<HydratedRecord> {
-    // Validate and set defaults for config
-    const validatedConfig = hydratedRecordConfigSchema.parse(config);
-
+  async getHydratedRecord({
+    recordId,
+    revisionId,
+    config = {},
+  }: {
+    recordId: string;
+    revisionId?: string;
+    config?: Partial<HydratedRecordConfig>;
+  }): Promise<HydratedRecord> {
     // Step 1: Fetch the record
     const record = await this.core.getRecord(recordId);
 
     // Step 2: Resolve which head to use
-    const {selectedHead, hadConflict} = this.resolveHead(
-      recordId,
-      record.heads,
-      validatedConfig.behaviorOnConflict
-    );
+    let targetRevisionId: string | undefined = revisionId;
+    let hadConflict = false;
+
+    // Only lookup heads if needed
+    if (!targetRevisionId) {
+      const {selectedHead, hadConflict: conflict} = this.core.resolveHead({
+        recordId,
+        heads: record.heads,
+        behavior: config.conflictBehaviour ?? DEFAULT_CONFLICT_BEHAVIOUR,
+      });
+      targetRevisionId = selectedHead;
+      hadConflict = conflict;
+    }
 
     // Step 3: Fetch the revision
-    const revision = await this.core.getRevision(selectedHead);
+    const revision = await this.core.getRevision(targetRevisionId);
 
     // Step 4: Fetch all AVPs efficiently
     const data = await this.fetchAvps(revision.avps);
@@ -844,6 +723,22 @@ class HydratedOperations {
       };
     });
 
+    // Get the correct relationship data
+    const relationship = revision.relationship;
+
+    // Map to formRelationshipSchema type
+    const formRelationship =
+      relationship && 'parent' in relationship
+        ? {
+            parent: {
+              recordId: relationship.parent.record_id,
+              fieldId: relationship.parent.field_id,
+              relationTypeVocabPair:
+                relationship.parent.relation_type_vocabPair,
+            },
+          }
+        : undefined;
+
     // Step 5: Build the hydrated record (in our external interface)
     return {
       record: {
@@ -864,14 +759,12 @@ class HydratedOperations {
         formId: revision.type,
         parents: revision.parents,
         recordId: revision.record_id,
-        relationship: revision.relationship,
+        relationship: formRelationship,
       },
       data: mappedData,
       metadata: {
         hadConflict,
-        conflictResolution: hadConflict
-          ? validatedConfig.behaviorOnConflict
-          : undefined,
+        conflictResolution: hadConflict ? config.conflictBehaviour : undefined,
         allHeads: record.heads,
       },
     };
@@ -890,7 +783,12 @@ class HydratedOperations {
     config: Partial<HydratedRecordConfig> = {}
   ): Promise<HydratedRecord[]> {
     // Fetch all records in parallel
-    const promises = recordIds.map(id => this.getHydratedRecord(id, config));
+    const promises = recordIds.map(id =>
+      this.getHydratedRecord({
+        recordId: id,
+        config,
+      })
+    );
     return Promise.all(promises);
   }
 
@@ -924,30 +822,18 @@ class HydratedOperations {
 // ============================================================================
 
 /**
- * Form record operations providing high-level create/update interface.
- * Handles complex logic like change detection, AVP reuse, and attachment processing.
+ * Form record operations providing high-level create/update interface. Handles
+ * complex logic like change detection, AVP reuse, and attachment processing.
  */
 class FormOperations {
   private readonly uiSpec: UISpecification;
 
-  private getEqualityFn?: (
-    type: FAIMSTypeName
-  ) => (a: any, b: any) => Promise<boolean>;
-
   constructor(
     private readonly core: CoreOperations,
+    private readonly hydrated: HydratedOperations,
     uiSpec: UISpecification
   ) {
     this.uiSpec = uiSpec;
-  }
-
-  /**
-   * Configure the form operations with type-specific handlers
-   *
-   * @param config - Configuration including equality and attachment handlers
-   */
-  configure(config: FormRecordEngineConfig): void {
-    this.getEqualityFn = config.getEqualityFunctionForType;
   }
 
   /**
@@ -1017,7 +903,17 @@ class FormOperations {
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
-      relationship: validated.relationship ?? {},
+      // Convert back into ugly relationship format for storage
+      relationship: validated.relationship
+        ? {
+            parent: {
+              field_id: validated.relationship.parent.fieldId,
+              record_id: validated.relationship.parent.recordId,
+              relation_type_vocabPair:
+                validated.relationship.parent.relationTypeVocabPair,
+            },
+          }
+        : undefined,
     };
 
     await this.core.createRevision(revisionDoc);
@@ -1040,7 +936,13 @@ class FormOperations {
    * @throws Error if parent revision not found
    * @throws Error if update fails
    */
-  async updateRecord(formRecord: ExistingFormRecord): Promise<string> {
+  async updateRecord(
+    formRecord: ExistingFormRecord,
+    options: {
+      // What is the username of the user performing the update
+      updatedBy: string;
+    }
+  ): Promise<string> {
     // Validate form record
     const validated = existingFormRecordSchema.parse(formRecord);
 
@@ -1055,6 +957,7 @@ class FormOperations {
       formRecord: validated,
       parentRevision,
       newRevisionId,
+      updatedBy: options.updatedBy,
     });
 
     // Step 3: Create new Revision document
@@ -1065,7 +968,7 @@ class FormOperations {
       record_id: validated.recordId,
       parents: [validated.revisionId],
       created: getCurrentTimestamp(),
-      created_by: validated.updatedBy,
+      created_by: options.updatedBy,
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
@@ -1084,6 +987,54 @@ class FormOperations {
     });
 
     return newRevisionId;
+  }
+
+  /**
+   * Given a record ID, and optionally a revision ID, gets the hydrated data,
+   * then maps it into the existing form record format. This is a nice utility
+   * function for loading data into a form for updated existing records in the
+   * app.
+   *
+   * @param recordId The record
+   * @param revisionId The revision if using specific one, otherwise head
+   * according to hydration config
+   * @param config The settings for hydration
+   * @returns The ready to go existing form record
+   */
+  async getExistingFormRecord({
+    recordId,
+    revisionId,
+    config = {},
+  }: {
+    recordId: string;
+    revisionId?: string;
+    config?: Partial<HydratedRecordConfig>;
+  }): Promise<ExistingFormRecord> {
+    // Grab the hydrated version
+    const hydrated = await this.hydrated.getHydratedRecord({
+      recordId,
+      revisionId,
+      config,
+    });
+    const record = hydrated.record;
+    const revision = hydrated.revision;
+
+    // Package this up into an existing form record
+    return {
+      recordId,
+      createdBy: record.createdBy,
+      revisionId: revision._id,
+      formId: record.formId,
+      relationship: revision.relationship,
+      data: dataMap({
+        data: hydrated.data,
+        mapFn: d => d.data,
+      }),
+      annotations: dataMap({
+        data: hydrated.data,
+        mapFn: d => d.annotations,
+      }),
+    } satisfies ExistingFormRecord;
   }
 
   /**
@@ -1149,6 +1100,7 @@ class FormOperations {
    * @param params.formRecord - The validated form record with changes
    * @param params.parentRevision - The parent revision to compare against
    * @param params.newRevisionId - The new revision ID being created
+   * @param params.updatedBy - Who updated - this is marked as creator of AVP
    * @returns Map of field names to AVP IDs (new or reused)
    * @throws Error if equality function not configured
    * @throws Error if AVP operations fail
@@ -1157,17 +1109,13 @@ class FormOperations {
     formRecord,
     parentRevision,
     newRevisionId,
+    updatedBy,
   }: {
     formRecord: ExistingFormRecord;
     parentRevision: ExistingRevisionDBDocument;
     newRevisionId: string;
+    updatedBy: string;
   }): Promise<Record<string, string>> {
-    if (!this.getEqualityFn) {
-      throw new Error(
-        'Form operations not configured. Call configure() first.'
-      );
-    }
-
     const avpMap: Record<string, string> = {};
     const avpsToCreate: Array<NewAvpDBDocument> = [];
 
@@ -1192,8 +1140,7 @@ class FormOperations {
       const fieldAnnotation = formRecord.annotations[fieldName];
       const parentAvp = parentAvpsByField.get(fieldName);
 
-      // Determine if data or annotations changed
-      const equalityFn = this.getEqualityFn(fieldType);
+      const equalityFn = isEqualFAIMS;
 
       const hasDataChanged =
         parentAvp === undefined
@@ -1223,7 +1170,7 @@ class FormOperations {
           // in form - seems a bit overkill
           created: getCurrentTimestamp(),
           // NOTE: here we track the creator by update
-          created_by: formRecord.updatedBy,
+          created_by: updatedBy,
         };
 
         avpsToCreate.push(avp);
@@ -1241,8 +1188,12 @@ class FormOperations {
   }
 
   /**
-   * Bulk create AVPs, handling attachments if dumper is configured.
-   * Uses PouchDB bulkDocs for efficient batch operations.
+   * Bulk create AVPs, handling attachments if dumper is configured. Uses
+   * PouchDB bulkDocs for efficient batch operations.
+   *
+   * NOTE: this operation does not 'dump' attachments - i.e. it does not manage
+   * attachments in any way. The /app layer should use the configured attachment
+   * service.
    *
    * @param avps - Array of AVP documents to create
    * @throws Error if bulk operation fails
@@ -1252,33 +1203,15 @@ class FormOperations {
       return;
     }
 
-    const allDocsToCreate: any[] = [];
-
-    // Process each AVP through its attachment dumper if available
-    for (const avp of avps) {
-      // TODO fix this by instead providing a configurable service injection approach
-      /*
-      const dumper = this.getAttachmentDumper(avp.type);
-      if (dumper) {
-        // Dumper returns array of [avp, ...attachment_docs]
-        const docs = dumper(avp);
-        allDocsToCreate.push(...docs);
-      } else {
-        // No dumper for this type, just add the AVP
-        allDocsToCreate.push(avp);
-      }
-      */
-      allDocsToCreate.push(avp);
-    }
-
     // Use PouchDB bulkDocs for efficiency
-    const db = this.core.getDb();
-    await db.bulkDocs(allDocsToCreate);
+    const db = this.core.db;
+    await db.bulkDocs(avps);
   }
 
   /**
-   * Update Record document's heads and revisions arrays after creating new revision.
-   * Removes old head, adds new head, and maintains complete revision history.
+   * Update Record document's heads and revisions arrays after creating new
+   * revision. Removes old head, adds new head, and maintains complete revision
+   * history.
    *
    * @param params.recordId - The record ID to update
    * @param params.oldHeadId - The old head revision ID to remove

@@ -16,6 +16,10 @@ const existingPouchDBDocumentSchema = newPouchDBDocumentSchema.extend({
   _rev: z.string(),
 });
 
+export type ExistingPouchDocument = z.infer<
+  typeof existingPouchDBDocumentSchema
+>;
+
 // ============================================================================
 // Record Document
 // ============================================================================
@@ -79,7 +83,7 @@ export const v1RevisionDBFieldsSchema = z
     relationship: relationshipSchema
       .optional()
       // This allows empty objects
-      .or(z.object({})),
+      .or(z.object({}).strict()),
   })
   .strict();
 
@@ -208,13 +212,17 @@ export type V1PendingAttachmentDBFields = z.infer<
 >;
 export type PendingAttachmentDBFields = V1PendingAttachmentDBFields;
 
-// Encoded attachment documents (current/stored state)
+// New attachments are pending
 export const newAttachmentDocumentSchema = newPouchDBDocumentSchema.merge(
-  v1AttachmentDBFieldsSchema
+  v1PendingAttachmentDBFieldsSchema
 );
+
+// Documents are generally already encoded
 export const attachmentDocumentSchema = pouchDBDocumentSchema.merge(
   v1AttachmentDBFieldsSchema
 );
+
+// Existing attachments are encoded
 export const existingAttachmentDocumentSchema =
   existingPouchDBDocumentSchema.merge(v1AttachmentDBFieldsSchema);
 
@@ -274,6 +282,12 @@ export type DataDocument =
   | RevisionDBDocument
   | AvpDBDocument
   | AttachmentDBDocument;
+
+export type NewDataDocument =
+  | NewRecordDBDocument
+  | NewRevisionDBDocument
+  | NewAvpDBDocument
+  | NewAttachmentDBDocument;
 
 export type ExistingDataDocument =
   | ExistingRecordDBDocument
@@ -355,6 +369,10 @@ export function getDocumentType(
 // Validation Functions
 // ============================================================================
 
+// ===============
+// NEW OR EXISTING
+// ===============
+
 export function validateRecordDocument(data: unknown): RecordDBDocument {
   return recordDocumentSchema.parse(data);
 }
@@ -376,6 +394,38 @@ export function validateAttachmentDocument(
 export function validateDataDocument(data: unknown): DataDocument {
   return dataDocumentSchema.parse(data);
 }
+
+// ===============
+// NEW
+// ===============
+
+export function validateNewRecordDocument(data: unknown): NewRecordDBDocument {
+  return newRecordDocumentSchema.parse(data);
+}
+
+export function validateNewRevisionDocument(
+  data: unknown
+): NewRevisionDBDocument {
+  return newRevisionDocumentSchema.parse(data);
+}
+
+export function validateNewAvpDocument(data: unknown): NewAvpDBDocument {
+  return newAvpDocumentSchema.parse(data);
+}
+
+export function validateNewAttachmentDocument(
+  data: unknown
+): NewAttachmentDBDocument {
+  return newAttachmentDocumentSchema.parse(data);
+}
+
+export function validateNewDataDocument(data: unknown): NewDataDocument {
+  return newDataDocumentSchema.parse(data);
+}
+
+// ===============
+// EXISTING
+// ===============
 
 export function validateExistingRecordDocument(
   data: unknown
@@ -445,14 +495,12 @@ export type FormRelationship = z.infer<typeof formRelationshipSchema>;
  * For submitting data from forms, this is the starting point
  */
 const baseFormRecordSchema = z.object({
-  /** The project this record belongs to (optional for backwards compatibility) */
-  projectId: z.string().optional(),
   /** The ID of the form/viewset this record is an instance of */
   formId: z.string(),
   /** The actual form data as a map of field IDs to their values */
   data: z.record(z.string(), z.unknown()),
   /** Annotations for each field, mapped by field ID */
-  annotations: z.record(z.string(), formAnnotationSchema),
+  annotations: z.record(z.string(), formAnnotationSchema.optional()),
   /** Username of the user who created this record */
   createdBy: z.string(),
   /** Optional relationship information if this is a related/child record */
@@ -476,8 +524,6 @@ export const existingFormRecordSchema = baseFormRecordSchema.extend({
   recordId: z.string(),
   /** The current revision identifier of the record */
   revisionId: z.string(),
-  /** Username of the user performing this update */
-  updatedBy: z.string(),
 });
 
 export type ExistingFormRecord = z.infer<typeof existingFormRecordSchema>;
@@ -567,7 +613,7 @@ export const hydratedRevisionDocumentSchema = z.object({
   /** Type identifier for this form */
   formId: z.string(),
   /** Optional relationship information if this is a related record */
-  relationship: formRelationshipSchema.optional().or(z.object({})),
+  relationship: formRelationshipSchema.optional(),
 });
 
 export type HydratedRevisionDocument = z.infer<
