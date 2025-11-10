@@ -17,7 +17,7 @@
  * Description:
  *   TODO
  */
-import {isEqual, isNull} from 'lodash';
+import {isEqual, isNull, isUndefined} from 'lodash';
 import {logError} from '../logging';
 import {AttributeValuePair, FAIMSAttachment} from '../types';
 
@@ -86,7 +86,7 @@ export function setAttachmentDumperForType(
 //    browser and node environments
 //  use duck typing instead, blobs have 'size' and 'type' properties
 function isAttachment(a: any): boolean {
-  return !isNull(a) && a.size !== undefined && a.type !== undefined;
+  return !isNull(a) && !isUndefined(a) && a.size !== undefined && a.type !== undefined;
 }
 
 /*

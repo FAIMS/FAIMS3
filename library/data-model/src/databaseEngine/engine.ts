@@ -1000,7 +1000,7 @@ class FormOperations {
     revisionId?: string;
     config?: Partial<HydratedRecordConfig>;
   }): Promise<ExistingFormRecord> {
-    // Now we have a revision - grab the hydrated version
+    // Grab the hydrated version
     const hydrated = await this.hydrated.getHydratedRecord({
       recordId,
       revisionId,
