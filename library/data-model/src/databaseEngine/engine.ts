@@ -105,6 +105,12 @@ export const UNKNOWN_TYPE_FALLBACK = '??:??';
 // Configuration Schemas and Types
 // ============================================================================
 
+type AvpStrategy =
+  | {type: 'reuse_current'} // Use existing AVP from current revision
+  | {type: 'reuse_parent'} // Use AVP from parent revision (revert case)
+  | {type: 'create_new'} // Create a brand new AVP
+  | {type: 'update_inplace'}; // Update existing AVP in-place
+
 /**
  * Configuration options for the DataEngine
  */
@@ -1147,51 +1153,66 @@ class FormOperations {
     updatedBy: string;
     config: HydratedRecordConfig;
   }): Promise<Record<string, string>> {
-    // Helper function to build new AVPs
-    const buildAvp = (fieldname: string, data: FormDataEntry) => {
-      // We shouldn't have a missing type - but sometimes useful to avoid
-      // needing to comply fully to uiSpec for tests
-      const fieldType =
-        this.uiSpec.fields[fieldname]?.['type-returned'] ??
-        UNKNOWN_TYPE_FALLBACK;
-      return {
-        _id: generateAvpID(),
-        avp_format_version: 1,
-        created: getCurrentTimestamp(),
-        created_by: updatedBy,
-        record_id: currentRevision.record_id,
-        revision_id: currentRevision._id,
-        // This is the type of the data in the uiSpec
-        type: fieldType,
-        // data, annotations, attachments
-        annotations: data.annotation,
-        data: data.data,
-        faims_attachments: data.attachments?.map(a => ({
-          filename: a.filename,
-          attachment_id: a.attachmentId,
-          file_type: a.fileType,
-        })),
-      };
-    };
+    // ===== Setup: Fetch hydrated data and prepare comparison structures =====
 
-    // Helper function for comparisons
-    const isEqual = async (
-      a: FormDataEntry,
-      b: FormDataEntry
-    ): Promise<boolean> => {
-      return (
-        (await isEqualFAIMS(a.data, b.data)) &&
-        (await isEqualFAIMS(a.annotation, b.annotation)) &&
-        (await isEqualFAIMS(a.attachments, b.attachments))
-      );
-    };
+    const {current, parent} = await this.fetchHydratedData(
+      currentRevision,
+      parentRevision,
+      config
+    );
 
-    // Fetch current and parent hydrated revisions
+    // ===== Process each field and determine AVP strategy =====
+
+    const avpsToCreate: Array<NewAvpDBDocument> = [];
+    const avpsToUpdate: Array<ExistingAvpDBDocument> = [];
+    const outputAvpMap: Record<string, string> = {};
+
+    for (const [fieldname, newFieldData] of Object.entries(newData)) {
+      const strategy = await this.determineAvpStrategy({
+        fieldname,
+        newFieldData,
+        current,
+        parent,
+        currentRevision,
+        parentRevision,
+      });
+
+      await this.applyAvpStrategy({
+        strategy,
+        fieldname,
+        newFieldData,
+        currentRevision,
+        parentRevision,
+        updatedBy,
+        avpsToCreate,
+        avpsToUpdate,
+        outputAvpMap,
+      });
+    }
+
+    // ===== Persist all AVP changes =====
+
+    await this.bulkPutAvps(avpsToCreate);
+    await this.bulkPutAvps(avpsToUpdate);
+
+    return outputAvpMap;
+  }
+
+  /**
+   * Fetch and hydrate both current and parent revisions, extracting their data
+   * into a comparable format.
+   */
+  private async fetchHydratedData(
+    currentRevision: ExistingRevisionDBDocument,
+    parentRevision: ExistingRevisionDBDocument | undefined,
+    config: HydratedRecordConfig
+  ) {
     const currentRevisionHydrated = await this.hydrated.getHydratedRecord({
       recordId: currentRevision.record_id,
       revisionId: currentRevision._id,
       config,
     });
+
     const parentRevisionHydrated = parentRevision
       ? await this.hydrated.getHydratedRecord({
           recordId: parentRevision.record_id,
@@ -1200,165 +1221,297 @@ class FormOperations {
         })
       : undefined;
 
-    // Extract data and annotations etc
-    const current = dataMap({
-      data: currentRevisionHydrated.data,
+    const current = this.extractComparableData(currentRevisionHydrated);
+    const parent = parentRevisionHydrated
+      ? this.extractComparableData(parentRevisionHydrated)
+      : undefined;
+
+    return {current, parent};
+  }
+
+  /**
+   * Extract data, annotations, and attachments into a comparable format.
+   */
+  private extractComparableData(
+    hydratedRecord: any
+  ): Record<string, FormDataEntry> {
+    return dataMap({
+      data: hydratedRecord.data,
       mapFn: d => ({
         data: d.data,
         annotation: d.annotations,
         attachments: d.faimsAttachments,
       }),
     });
-    const parent = parentRevisionHydrated
-      ? dataMap({
-          data: parentRevisionHydrated.data,
-          mapFn: d => ({
-            data: d.data,
-            annotation: d.annotations,
-            attachments: d.faimsAttachments,
-          }),
-        })
-      : undefined;
+  }
 
-    // New AVPs to create
-    const avpsToCreate: Array<NewAvpDBDocument> = [];
-    // In-place updates to make
-    const avpsToUpdate: Array<ExistingAvpDBDocument> = [];
-    // Resulting output AVP map to update
-    const outputAvpMap: Record<string, string> = {};
+  /**
+   * Determine the appropriate AVP strategy for a field based on comparing
+   * new data against current and parent revisions.
+   */
+  private async determineAvpStrategy({
+    fieldname,
+    newFieldData,
+    current,
+    parent,
+    currentRevision,
+    parentRevision,
+  }: {
+    fieldname: string;
+    newFieldData: FormDataEntry;
+    current: Record<string, FormDataEntry>;
+    parent?: Record<string, FormDataEntry>;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
+  }): Promise<AvpStrategy> {
+    const existsInCurrent = fieldname in current;
+    const existsInParent = parent && fieldname in parent;
 
-    // Iterate through the new data
-    for (const [fieldname, data] of Object.entries(newData)) {
-      // If the new data is not in the old data, then we check if we want to
-      // restore from parent, or just create new
-      if (!Object.keys(current).includes(fieldname)) {
-        if (parent) {
-          // We have a parent, so check if it's data is equivalent
-          const parentField = parent[fieldname];
-          // Present on parent
-          if (parentField) {
-            if (await isEqual(parentField, data)) {
-              // The parent already has an identical AVP - this represents
-              // 'reverting' to the previous version - so we can reuse it!
-              outputAvpMap[fieldname] = parentRevision?.avps[fieldname]!;
-            } else {
-              // This is the case where the old data has a non-equal AVP for a
-              // new field - just create new one
-              const newAvp = buildAvp(fieldname, data);
-              avpsToCreate.push(newAvp);
-              outputAvpMap[fieldname] = newAvp._id;
-            }
-          } else {
-            // New field, not present on parent
-            const newAvp = buildAvp(fieldname, data);
-            avpsToCreate.push(newAvp);
-            outputAvpMap[fieldname] = newAvp._id;
-          }
-        } else {
-          // There is no parent - create
-          const newAvp = buildAvp(fieldname, data);
-          avpsToCreate.push(newAvp);
-          outputAvpMap[fieldname] = newAvp._id;
-        }
-      } else {
-        // This is the case where the current record already has this field
-        const currentData = current[fieldname];
-
-        // Firstly, has it changed?
-        if (await isEqual(currentData, data)) {
-          // It has not changed - we have a hit!
-          outputAvpMap[fieldname] = currentRevision.avps[fieldname];
-        } else {
-          // It has changed
-
-          // Do we have a parent?
-          if (parent) {
-            // Does the parent have this record?
-            const parentField = parent[fieldname];
-            if (parentField) {
-              if (await isEqual(parentField, data)) {
-                // The parent already has an identical AVP - this represents
-                // 'reverting' to the previous version - so we can reuse it!
-                outputAvpMap[fieldname] = parentRevision?.avps[fieldname]!;
-              } else {
-                // The parent does have this record, but it has changed from
-                // then - now check if the AVPs for this field match
-                if (
-                  currentRevision.avps[fieldname] ===
-                  parentRevision?.avps[fieldname]
-                ) {
-                  // This means the current has not already been updated with a
-                  // new AVP - lets create one
-                  const newAvp = buildAvp(fieldname, data);
-                  avpsToCreate.push(newAvp);
-                  outputAvpMap[fieldname] = newAvp._id;
-                } else {
-                  // This means that the current record has previously changed
-                  // from the parent and created a new AVP, so we inplace update
-                  // the new AVP. NOTE this doesn't warrant a change in the
-                  // revision!
-                  outputAvpMap[fieldname] = currentRevision.avps[fieldname];
-                  // get the raw AVP (to match database format)
-                  let currentAvp = await this.core.getAvp(
-                    currentRevision.avps[fieldname]
-                  );
-                  // Apply in place updates
-                  currentAvp = {
-                    ...currentAvp,
-                    // Annotations, data and attachments updated in place
-                    annotations: data.annotation,
-                    faims_attachments: data.attachments
-                      ? data.attachments.map(a => ({
-                          attachment_id: a.attachmentId,
-                          file_type: a.fileType,
-                          filename: a.filename,
-                        }))
-                      : undefined,
-                    data: data.data,
-                  };
-                  avpsToUpdate.push(currentAvp);
-                }
-              }
-            } else {
-              // The parent doesn't have this - and we have changed, so we
-              // create new
-              const newAvp = buildAvp(fieldname, data);
-              avpsToCreate.push(newAvp);
-              outputAvpMap[fieldname] = newAvp._id;
-            }
-          } else {
-            // There is no parent, and we have changed, so we can inplace update
-            outputAvpMap[fieldname] = currentRevision.avps[fieldname];
-            // get the raw AVP (to match database format)
-            let currentAvp = await this.core.getAvp(
-              currentRevision.avps[fieldname]
-            );
-            // Apply in place updates
-            currentAvp = {
-              ...currentAvp,
-              // Annotations, data and attachments updated in place
-              annotations: data.annotation,
-              faims_attachments: data.attachments
-                ? data.attachments.map(a => ({
-                    attachment_id: a.attachmentId,
-                    file_type: a.fileType,
-                    filename: a.filename,
-                  }))
-                : undefined,
-              data: data.data,
-            };
-            avpsToUpdate.push(currentAvp);
-          }
-        }
-      }
+    // Case 1: Field is new (not in current revision)
+    if (!existsInCurrent) {
+      return this.handleNewField(
+        newFieldData,
+        existsInParent ? parent[fieldname] : undefined
+      );
     }
 
-    // Create all new AVPs (with attachment handling if configured)
-    await this.bulkPutAvps(avpsToCreate);
-    // Update existing ones (these have _revs so will be inplace updated)
-    await this.bulkPutAvps(avpsToUpdate);
+    // Case 2: Field exists in current revision
+    const currentFieldData = current[fieldname];
+    const hasChanged = !(await this.isEqualFormData(
+      currentFieldData,
+      newFieldData
+    ));
 
-    return outputAvpMap;
+    if (!hasChanged) {
+      // Field unchanged - reuse existing AVP
+      return {type: 'reuse_current'};
+    }
+
+    // Field has changed - determine how to handle the change
+    return this.handleChangedField({
+      newFieldData,
+      currentRevision,
+      parentRevision,
+      parentFieldData: existsInParent ? parent[fieldname] : undefined,
+      fieldname,
+    });
+  }
+
+  /**
+   * Determine strategy for a field that doesn't exist in the current revision.
+   */
+  private async handleNewField(
+    newFieldData: FormDataEntry,
+    parentFieldData?: FormDataEntry
+  ): Promise<AvpStrategy> {
+    // If no parent or field doesn't exist in parent, create new AVP
+    if (!parentFieldData) {
+      return {type: 'create_new'};
+    }
+
+    // If parent has identical data, reuse parent's AVP (user is "reverting")
+    if (await this.isEqualFormData(parentFieldData, newFieldData)) {
+      return {type: 'reuse_parent'};
+    }
+
+    // Parent has different data, create new AVP
+    return {type: 'create_new'};
+  }
+
+  /**
+   * Determine strategy for a field that exists in current revision but has changed.
+   */
+  private async handleChangedField({
+    newFieldData,
+    currentRevision,
+    parentRevision,
+    parentFieldData,
+    fieldname,
+  }: {
+    newFieldData: FormDataEntry;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
+    parentFieldData?: FormDataEntry;
+    fieldname: string;
+  }): Promise<AvpStrategy> {
+    // If new data matches parent, reuse parent's AVP (user is "reverting")
+    if (
+      parentFieldData &&
+      (await this.isEqualFormData(parentFieldData, newFieldData))
+    ) {
+      return {type: 'reuse_parent'};
+    }
+
+    // Determine if we need a new AVP or can update in-place
+    const shouldCreateNew = await this.shouldCreateNewAvp(
+      currentRevision,
+      parentRevision,
+      fieldname
+    );
+
+    if (shouldCreateNew) {
+      return {type: 'create_new'};
+    } else {
+      return {type: 'update_inplace'};
+    }
+  }
+
+  /**
+   * Determine if we should create a new AVP or update the existing one in-place.
+   *
+   * We create a new AVP when:
+   * - There's no parent revision (first edit), OR
+   * - The current AVP ID matches the parent's AVP ID (not yet diverged)
+   *
+   * We update in-place when:
+   * - The current AVP ID differs from parent's (already diverged in a previous edit)
+   */
+  private async shouldCreateNewAvp(
+    currentRevision: ExistingRevisionDBDocument,
+    parentRevision: ExistingRevisionDBDocument | undefined,
+    fieldname: string
+  ): Promise<boolean> {
+    if (!parentRevision) {
+      // No parent - we can update in-place
+      return false;
+    }
+
+    const currentAvpId = currentRevision.avps[fieldname];
+    const parentAvpId = parentRevision.avps[fieldname];
+
+    // If AVP IDs match, this is the first divergence - create new AVP
+    // If AVP IDs differ, we've already diverged - update in-place
+    return currentAvpId === parentAvpId;
+  }
+
+  /**
+   * Apply the determined AVP strategy, updating the appropriate collections.
+   */
+  private async applyAvpStrategy({
+    strategy,
+    fieldname,
+    newFieldData,
+    currentRevision,
+    parentRevision,
+    updatedBy,
+    avpsToCreate,
+    avpsToUpdate,
+    outputAvpMap,
+  }: {
+    strategy: AvpStrategy;
+    fieldname: string;
+    newFieldData: FormDataEntry;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
+    updatedBy: string;
+    avpsToCreate: Array<NewAvpDBDocument>;
+    avpsToUpdate: Array<ExistingAvpDBDocument>;
+    outputAvpMap: Record<string, string>;
+  }) {
+    switch (strategy.type) {
+      case 'reuse_current':
+        // No changes needed, just reference the existing AVP
+        outputAvpMap[fieldname] = currentRevision.avps[fieldname];
+        break;
+
+      case 'reuse_parent':
+        if (!parentRevision) {
+          throw new Error(
+            'Cannot apply the reuse_parent AVP strategy when parentRevision is not provided.'
+          );
+        }
+        // Reference the parent's AVP (user reverted to previous version)
+        outputAvpMap[fieldname] = parentRevision.avps[fieldname];
+        break;
+
+      case 'create_new':
+        // Create a new AVP document
+        const newAvp = this.buildNewAvp(
+          fieldname,
+          newFieldData,
+          currentRevision,
+          updatedBy
+        );
+        avpsToCreate.push(newAvp);
+        outputAvpMap[fieldname] = newAvp._id;
+        break;
+
+      case 'update_inplace':
+        // Update existing AVP in-place
+        const currentAvpId = currentRevision.avps[fieldname];
+        const updatedAvp = await this.buildUpdatedAvp(
+          currentAvpId,
+          newFieldData
+        );
+        avpsToUpdate.push(updatedAvp);
+        outputAvpMap[fieldname] = currentAvpId;
+        break;
+    }
+  }
+
+  /**
+   * Build a new AVP document.
+   */
+  private buildNewAvp(
+    fieldname: string,
+    data: FormDataEntry,
+    currentRevision: ExistingRevisionDBDocument,
+    updatedBy: string
+  ): NewAvpDBDocument {
+    const fieldType =
+      this.uiSpec.fields[fieldname]?.['type-returned'] ?? UNKNOWN_TYPE_FALLBACK;
+
+    return {
+      _id: generateAvpID(),
+      avp_format_version: 1,
+      created: getCurrentTimestamp(),
+      created_by: updatedBy,
+      record_id: currentRevision.record_id,
+      revision_id: currentRevision._id,
+      type: fieldType,
+      annotations: data.annotation,
+      data: data.data,
+      faims_attachments: data.attachments?.map(a => ({
+        filename: a.filename,
+        attachment_id: a.attachmentId,
+        file_type: a.fileType,
+      })),
+    };
+  }
+
+  /**
+   * Build an updated AVP document (fetches existing and applies changes).
+   */
+  private async buildUpdatedAvp(
+    avpId: string,
+    newData: FormDataEntry
+  ): Promise<ExistingAvpDBDocument> {
+    const currentAvp = await this.core.getAvp(avpId);
+
+    return {
+      ...currentAvp,
+      annotations: newData.annotation,
+      data: newData.data,
+      faims_attachments: newData.attachments?.map(a => ({
+        attachment_id: a.attachmentId,
+        file_type: a.fileType,
+        filename: a.filename,
+      })),
+    };
+  }
+
+  /**
+   * Compare two FormDataEntry objects for equality.
+   */
+  private async isEqualFormData(
+    a: FormDataEntry,
+    b: FormDataEntry
+  ): Promise<boolean> {
+    return (
+      (await isEqualFAIMS(a.data, b.data)) &&
+      (await isEqualFAIMS(a.annotation, b.annotation)) &&
+      (await isEqualFAIMS(a.attachments, b.attachments))
+    );
   }
 
   /**
