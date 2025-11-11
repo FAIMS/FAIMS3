@@ -4,18 +4,22 @@ import {DatabaseInterface, UISpecification} from '../types';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
+  AvpUpdateMode,
   DataDocument,
   ExistingAttachmentDBDocument,
   existingAttachmentDocumentSchema,
   ExistingAvpDBDocument,
   existingAvpDocumentSchema,
   ExistingFormRecord,
-  existingFormRecordSchema,
   ExistingPouchDocument,
   ExistingRecordDBDocument,
   existingRecordDocumentSchema,
   ExistingRevisionDBDocument,
   existingRevisionDocumentSchema,
+  FaimsFormData,
+  FormAnnotations,
+  FormDataEntry,
+  FormUpdateData,
   HydratedDataField,
   HydratedRecord,
   NewAvpDBDocument,
@@ -841,9 +845,11 @@ class FormOperations {
    *
    * The input here is the form data which the app currently produces.
    *
-   * NOTE we may wish to consider moving the ID generation functions to this
-   * module, and a 'seed' method rather than create which allows for
-   * incomplete/empty data.
+   * This creates
+   *
+   * a) Record
+   * b) Revision
+   * c) (optional) new AVPs for each entry in data array
    *
    * @param formRecord - The form data to create a record from
    * @returns The ID of the newly created revision
@@ -884,12 +890,14 @@ class FormOperations {
       }
     }
 
-    // Step 2: Create AVPs for all fields
-    const avpMap = await this.createAvpsForAllFields({
-      formRecord: validated,
-      revisionId,
-      recordId,
-    });
+    // Step 2: Create AVPs for all fields (if data provided)
+    const avpMap = validated.data
+      ? await this.createAvpsForAllFields({
+          formRecord: validated,
+          revisionId,
+          recordId,
+        })
+      : {};
 
     // Step 3: Create Revision document
     const revisionDoc: NewRevisionDBDocument = {
@@ -903,7 +911,7 @@ class FormOperations {
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
-      // Convert back into ugly relationship format for storage
+      // Convert back into relationship format for storage
       relationship: validated.relationship
         ? {
             parent: {
@@ -922,35 +930,116 @@ class FormOperations {
   }
 
   /**
-   * Update an existing record from form data using equality based change detection
+   * Creates a new revision from a previous record/revision (ensure these are
+   * from the same record).
    *
-   * NOTE: it is expected that
+   * Does NOT create any new AVPs, instead seeds this new revision with a copy
+   * of previous revision AVP data.
    *
-   * a) the recordID refers to existing record
-   * b) the revisionID refers to _current_ revision
-   * c) the data is the _new_ data
-   *
-   * @param formRecord - The form data with changes to apply
-   * @returns The ID of the newly created revision
-   * @throws Error if revision_id is null (should use createRecord instead)
-   * @throws Error if parent revision not found
-   * @throws Error if update fails
+   * @param recordId The parent record ID
+   * @param revisionId The parent revision (from record above)
+   * @param createdBy Who is creating this new revision?
+   * @returns The new revision DB document
    */
-  async updateRecord(
-    formRecord: ExistingFormRecord,
-    options: {
-      // What is the username of the user performing the update
-      updatedBy: string;
+  async createRevision({
+    recordId,
+    revisionId,
+    createdBy,
+  }: {
+    recordId: string;
+    revisionId: string;
+    createdBy: string;
+  }): Promise<ExistingRevisionDBDocument> {
+    // Fetch the revision
+    const parentRevision = await this.core.getRevision(revisionId);
+
+    // Check that the revision record ID matches
+    if (parentRevision.record_id !== recordId) {
+      throw new Exceptions.RevisionMismatchError(recordId, revisionId);
     }
-  ): Promise<string> {
-    // Validate form record
-    const validated = existingFormRecordSchema.parse(formRecord);
 
-    // Generate new revision ID
-    const newRevisionId = generateRevisionID();
+    // Generate a new revision ID
+    const childRevisionId = generateRevisionID();
 
-    // Step 1: Fetch parent revision to compare
-    const parentRevision = await this.core.getRevision(validated.revisionId);
+    // Creates a new revision
+    const newRevision = await this.core.createRevision({
+      _id: childRevisionId,
+      avps: parentRevision.avps,
+      created: getCurrentTimestamp(),
+      created_by: createdBy,
+      // Mark the parent revision ID as the parent
+      parents: [revisionId],
+      record_id: recordId,
+      revision_format_version: 1,
+      type: parentRevision.type,
+      relationship: parentRevision.relationship,
+      ugc_comment: parentRevision.ugc_comment,
+    });
+
+    // Now go and update the record to indicate the new head
+    await this.updateRecordHeads({
+      recordId,
+      oldHeadId: revisionId,
+      newHeadId: childRevisionId,
+    });
+
+    // All done
+    return newRevision;
+  }
+
+  /**
+   *
+   */
+  async updateRevision({
+    revisionId,
+    recordId,
+    update,
+    mode,
+    updatedBy,
+  }: {
+    // The revision to target
+    revisionId: string;
+    recordId: string;
+
+    // The changes to make
+    update: FormUpdateData;
+
+    // The AVP update mode
+    mode: AvpUpdateMode;
+
+    // Who is doing the updates?
+    updatedBy: string;
+  }): Promise<ExistingRevisionDBDocument> {
+    // Step 1: Fetch the current revision
+    const currentRevision = await this.core.getRevision(revisionId);
+
+    // What parents does the revision have?
+    const parents = currentRevision.parents;
+
+    // Step 2: Check parent integrity
+    if (mode === 'parent') {
+      if (!parents) {
+        throw new Exceptions.MalformedParentsError(
+          recordId,
+          revisionId,
+          'Parents array not present on revision where parent mode requested.'
+        );
+      } else if (parents.length !== 1) {
+        throw new Exceptions.MalformedParentsError(
+          recordId,
+          revisionId,
+          'Parent mode for updating a revision requires exactly one parent to be present.'
+        );
+      }
+    } else if (mode === 'new') {
+      if (parents && parents.length > 0) {
+        throw new Exceptions.MalformedParentsError(
+          recordId,
+          revisionId,
+          'You have requested new updateRevision mode which is used for new records only - you have a parent. Erroneous AVP behaviour is likely.'
+        );
+      }
+    }
 
     // Step 2: Determine which AVPs need to be created (changed fields)
     const avpMap = await this.createOrReuseAvps({
@@ -1038,59 +1127,67 @@ class FormOperations {
   }
 
   /**
-   * Create AVPs for all fields in a new record
+   * Returns a filtered (unordered) set of new AVPs to make if either
+   * a) the new data key is not present in the old data key
+   * b) the data is present in both, but changed
    *
-   * This iterates through the values from the form data, fetches the existing
-   * AVP, checks if different based on registered equality functions, and
-   * creates a new AVP if needed.
-   *
-   * @param params.formRecord - The validated form record data
-   * @param params.revisionId - The revision ID these AVPs belong to
-   * @returns Map of field names to created AVP IDs
-   * @throws Error if AVP creation fails
+   * @param oldData Old data
+   * @param newData New data
+   * @returns The set of AVPs to create, indexed from new data keys
    */
-  private async createAvpsForAllFields({
-    formRecord,
-    revisionId,
-    recordId,
-  }: {
-    formRecord: NewFormRecord;
-    revisionId: string;
-    recordId: string;
-  }): Promise<Record<string, string>> {
-    const avpMap: Record<string, string> = {};
-    const avpsToCreate: Array<NewAvpDBDocument> = [];
+  private async dataDiff(
+    oldData: FaimsFormData,
+    newData: FaimsFormData
+  ): Promise<string[]> {
+    const oldSet = new Set(Object.keys(oldData));
+    const newSet = new Set(Object.keys(newData));
+    const updates: Set<string> = new Set([]);
 
-    // Create AVP for each field
-    for (const [fieldName, fieldValue] of Object.entries(formRecord.data)) {
-      const avpId = generateAvpID();
-
-      // Get the field type
-      const fieldType = this.uiSpec.fields[fieldName]?.['type-returned'];
-
-      const avp: NewAvpDBDocument = {
-        _id: avpId,
-        avp_format_version: 1,
-        // TODO remove this - it's extraneous
-        type: fieldType ?? UNKNOWN_TYPE_FALLBACK,
-        data: fieldValue,
-        revision_id: revisionId,
-        record_id: recordId,
-        annotations: formRecord.annotations[fieldName],
-        // NOTE we may want to consider what timing to use here
-        created: getCurrentTimestamp(),
-        // NOTE we may want to consider who created this, updater?
-        created_by: formRecord.createdBy,
-      };
-
-      avpsToCreate.push(avp);
-      avpMap[fieldName] = avpId;
+    for (const newKey of newSet) {
+      if (!oldSet.has(newKey)) {
+        // New - not in old data
+        updates.add(newKey);
+      } else {
+        // Present in both - is it changed?
+        if (!(await isEqualFAIMS(newData, oldData))) {
+          updates.add(newKey);
+        }
+      }
     }
 
-    // Create all AVPs (with attachment handling if configured)
-    await this.bulkCreateAvps(avpsToCreate);
+    return Array.from(updates);
+  }
 
-    return avpMap;
+  /**
+   * Returns a filtered (unordered) set of new AVPs to make if either
+   * a) the new annotation key is not present in the old annotation key
+   * b) the annotation is present in both, but changed
+   *
+   * @param oldAnnotations Old annotations
+   * @param newAnnotations New annotations
+   * @returns The set of AVPs to create, indexed from new data keys
+   */
+  private async annotationDiff(
+    oldData: FormAnnotations,
+    newData: FormAnnotations
+  ): Promise<string[]> {
+    const oldSet = new Set(Object.keys(oldData));
+    const newSet = new Set(Object.keys(newData));
+    const updates: Set<string> = new Set([]);
+
+    for (const newKey of newSet) {
+      if (!oldSet.has(newKey)) {
+        // New - not in old data
+        updates.add(newKey);
+      } else {
+        // Present in both - is it changed?
+        if (!(await isEqualFAIMS(newData, oldData))) {
+          updates.add(newKey);
+        }
+      }
+    }
+
+    return Array.from(updates);
   }
 
   /**
@@ -1106,30 +1203,193 @@ class FormOperations {
    * @throws Error if AVP operations fail
    */
   private async createOrReuseAvps({
-    formRecord,
+    currentRevision,
+    newData,
+    newAnnotations,
     parentRevision,
-    newRevisionId,
     updatedBy,
+    config,
   }: {
-    formRecord: ExistingFormRecord;
-    parentRevision: ExistingRevisionDBDocument;
-    newRevisionId: string;
+    newData: FormUpdateData;
+    newAnnotations: FormAnnotations;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
     updatedBy: string;
+    config: HydratedRecordConfig;
   }): Promise<Record<string, string>> {
-    const avpMap: Record<string, string> = {};
+    // Helper function to build new AVPs
+    const buildAvp = (fieldname: string, data: FormDataEntry) => {
+      const fieldType = this.uiSpec.fields[fieldname]?.['type-returned'];
+      return {
+        _id: generateAvpID(),
+        avp_format_version: 1,
+        created: getCurrentTimestamp(),
+        created_by: updatedBy,
+        record_id: currentRevision.record_id,
+        revision_id: currentRevision._id,
+        // This is the type of the data in the uiSpec
+        type: fieldType,
+        // data, annotations, attachments
+        annotations: data.annotation,
+        data: data.data,
+        faims_attachments: data.attachments?.map(a => ({
+          filename: a.filename,
+          attachment_id: a.attachmentId,
+          file_type: a.fileType,
+        })),
+      };
+    };
+
+    // Helper function for comparisons
+    const isEqual = async (
+      a: FormDataEntry,
+      b: FormDataEntry
+    ): Promise<boolean> => {
+      return (
+        (await isEqualFAIMS(a.data, b.data)) &&
+        (await isEqualFAIMS(a.annotation, b.annotation)) &&
+        (await isEqualFAIMS(a.attachments, b.attachments))
+      );
+    };
+
+    // Fetch current and parent hydrated revisions
+    const currentRevisionHydrated = await this.hydrated.getHydratedRecord({
+      recordId: currentRevision.record_id,
+      revisionId: currentRevision._id,
+      config,
+    });
+    const parentRevisionHydrated = parentRevision
+      ? await this.hydrated.getHydratedRecord({
+          recordId: parentRevision.record_id,
+          revisionId: parentRevision._id,
+          config,
+        })
+      : undefined;
+
+    // Extract data and annotations etc
+    const current = dataMap({
+      data: currentRevisionHydrated.data,
+      mapFn: d => ({
+        data: d.data,
+        annotation: d.annotations,
+        attachments: d.faimsAttachments,
+      }),
+    });
+    const parent = parentRevisionHydrated
+      ? dataMap({
+          data: parentRevisionHydrated.data,
+          mapFn: d => ({
+            data: d.data,
+            annotation: d.annotations,
+            attachments: d.faimsAttachments,
+          }),
+        })
+      : undefined;
+
+    // Did we detect a change
+    let changeDetected = false;
+    // New AVPs to create
     const avpsToCreate: Array<NewAvpDBDocument> = [];
+    // In-place updates to make
+    const avpsToUpdate: Array<ExistingAvpDBDocument> = [];
+    // Resulting output AVP map to update
+    const outputAvpMap: Record<string, string> = {};
 
-    // Fetch all parent AVPs efficiently in parallel
-    const parentAvpIds = Object.values(parentRevision.avps);
-    const parentAvpPromises = parentAvpIds.map(id => this.core.getAvp(id));
-    const parentAvps = await Promise.all(parentAvpPromises);
+    // Iterate through the new data
+    for (const [fieldname, data] of Object.entries(newData)) {
+      // If the new data is not in the old data, then we check if we want to
+      // restore from parent, or just create new
+      if (!Object.keys(current).includes(fieldname)) {
+        if (parent) {
+          // We have a parent, so check if it's data is equivalent
+          const parentField = parent[fieldname];
+          // Present on parent
+          if (parentField) {
+            if (await isEqual(parentField, data)) {
+              // The parent already has an identical AVP - this represents
+              // 'reverting' to the previous version - so we can reuse it!
+              outputAvpMap[fieldname] = parentRevision?.avps[fieldname]!;
+              changeDetected = true;
+            } else {
+              // This is the case where the old data has a non-equal AVP for a
+              // new field - just create new one
+              const newAvp = buildAvp(fieldname, data);
+              avpsToCreate.push(newAvp);
+              outputAvpMap[fieldname] = newAvp._id;
+              changeDetected = true;
+            }
+          } else {
+            // New field, not present on parent
+            const newAvp = buildAvp(fieldname, data);
+            avpsToCreate.push(newAvp);
+            outputAvpMap[fieldname] = newAvp._id;
+            changeDetected = true;
+          }
+        } else {
+          // There is no parent - create
+          const newAvp = buildAvp(fieldname, data);
+          avpsToCreate.push(newAvp);
+          outputAvpMap[fieldname] = newAvp._id;
+          changeDetected = true;
+        }
+      } else {
+        // This is the case where the current record already has this field
+        const currentData = current[fieldname];
 
-    // Build map of field name -> parent AVP
-    const parentAvpsByField = new Map<string, ExistingAvpDBDocument>();
-    for (const [fieldName, avpId] of Object.entries(parentRevision.avps)) {
-      const avp = parentAvps.find(a => a._id === avpId);
-      if (avp) {
-        parentAvpsByField.set(fieldName, avp);
+        // Firstly, has it changed?
+        if (await isEqual(currentData, data)) {
+          // It has not changed - we have a hit!
+          outputAvpMap[fieldname] = currentRevision.avps[fieldname];
+        } else {
+          // It has changed
+
+          // Do we have a parent?
+          if (parent) {
+            // Does the parent have this record?
+            const parentField = parent[fieldname];
+            if (parentField) {
+              if (await isEqual(parentField, data)) {
+                // The parent already has an identical AVP - this represents
+                // 'reverting' to the previous version - so we can reuse it!
+                outputAvpMap[fieldname] = parentRevision?.avps[fieldname]!;
+                changeDetected = true;
+              } else {
+                // The parent does have this record, but it has changed from
+                // then - now check if the AVPs for this field match
+                if (
+                  currentRevision.avps[fieldname] ===
+                  parentRevision?.avps[fieldname]
+                ) {
+                  // This means the current has not already been updated with a
+                  // new AVP - lets create one
+                  const newAvp = buildAvp(fieldname, data);
+                  avpsToCreate.push(newAvp);
+                  outputAvpMap[fieldname] = newAvp._id;
+                  changeDetected = true;
+                } else {
+                  // This means that the current record has previously changed
+                  // from the parent and created a new AVP, so we inplace update
+                  // the new AVP. NOTE this doesn't warrant a change in the
+                  // revision!
+                  outputAvpMap[fieldname] = currentRevision.avps[fieldname];
+                  const newAvp = buildAvp(fieldname, data);
+                  // TODO get the _rev
+                  newAvp._rev = currentRevision.avps[fieldname];
+                  avpsToUpdate.push(buildAvp(fieldname, data));
+                }
+              }
+            } else {
+              // The parent doesn't have this - and we have changed, so we
+              // create new
+              avpsToCreate.push(buildAvp(data));
+              changeDetected = true;
+            }
+          } else {
+            // There is no parent, and we have changed, so we have to create a new one
+            avpsToCreate.push(buildAvp(data));
+            changeDetected = true;
+          }
+        }
       }
     }
 

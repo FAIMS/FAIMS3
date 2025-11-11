@@ -3,6 +3,18 @@
 // ============================================================================
 
 /**
+ * Error thrown when revision does not match record
+ */
+export class RevisionMismatchError extends Error {
+  constructor(recordId: string, revisionId: string) {
+    super(
+      `The target revision ${revisionId} does not belong to the target record ${recordId}.`
+    );
+    this.name = 'RevisionMismatchError';
+  }
+}
+
+/**
  * Error thrown when a document is not found in the database
  */
 export class DocumentNotFoundError extends Error {
@@ -46,5 +58,17 @@ export class NoHeadsError extends Error {
   constructor(recordId: string) {
     super(`Record "${recordId}" has no heads - invalid state`);
     this.name = 'NoHeadsError';
+  }
+}
+
+/**
+ * Error thrown when a record has an illformed parent revisions
+ */
+export class MalformedParentsError extends Error {
+  constructor(recordId: string, revisionId: string, details: string) {
+    super(
+      `Record ${recordId}, revision ${revisionId} had a malformed parents array, details: ${details}`
+    );
+    this.name = 'MalformedParentsError';
   }
 }
