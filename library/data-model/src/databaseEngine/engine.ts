@@ -975,8 +975,8 @@ class FormOperations {
   }
 
   /**
-   * Updates a revision by creating or reusing AVPs for changed fields. Creates
-   * a new revision document only if AVPs have changed.
+   * Updates a revision by creating or reusing AVPs for changed fields. Updates
+   * revision document only if AVPs have changed.
    *
    * NOTE:
    *
@@ -1035,7 +1035,8 @@ class FormOperations {
           'Parent mode for updating a revision requires exactly one parent to be present.'
         );
       }
-      parentRevisionId = parents[1];
+      // Get the first entry in the parents array
+      parentRevisionId = parents[0];
     } else if (mode === 'new') {
       if (parents && parents.length > 0) {
         throw new Exceptions.MalformedParentsError(
