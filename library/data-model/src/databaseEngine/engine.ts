@@ -1149,7 +1149,11 @@ class FormOperations {
   }): Promise<Record<string, string>> {
     // Helper function to build new AVPs
     const buildAvp = (fieldname: string, data: FormDataEntry) => {
-      const fieldType = this.uiSpec.fields[fieldname]?.['type-returned'];
+      // We shouldn't have a missing type - but sometimes useful to avoid
+      // needing to comply fully to uiSpec for tests
+      const fieldType =
+        this.uiSpec.fields[fieldname]?.['type-returned'] ??
+        UNKNOWN_TYPE_FALLBACK;
       return {
         _id: generateAvpID(),
         avp_format_version: 1,

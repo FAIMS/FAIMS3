@@ -719,23 +719,6 @@ describe('Form Operations', () => {
         updatedBy: 'user-2',
       });
 
-      console.log('before: ', parentRev.avps);
-      console.log(
-        'before: ',
-        await engine.hydrated.getHydratedRecord({
-          recordId: parentRev.record_id,
-          revisionId: parentRev._id,
-        })
-      );
-      console.log('updated: ', updatedChildRev.avps);
-      console.log(
-        'after: ',
-        await engine.hydrated.getHydratedRecord({
-          recordId: updatedChildRev.record_id,
-          revisionId: updatedChildRev._id,
-        })
-      );
-
       // AVP ID should be different (new AVP created)
       expect(updatedChildRev.avps['First-1']).not.toBe(parentAvpId);
 
@@ -1072,14 +1055,21 @@ describe('Form Operations', () => {
         updatedBy: 'user-1',
       });
 
+      // Then create a new version
+      const res = await engine.form.createRevision({
+        revisionId: rev1._id,
+        recordId: initialResult.record._id,
+        createdBy: 'user-1'
+      })
+
       // Update 2
       await engine.form.updateRevision({
-        revisionId: rev1._id,
+        revisionId: res._id,
         recordId: initialResult.record._id,
         update: {
           'First-1': {data: 'new value'},
         },
-        mode: 'new',
+        mode: 'parent',
         updatedBy: 'user-1',
       });
 
