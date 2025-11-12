@@ -6,28 +6,42 @@ import {
   DatabaseInterface,
   DataDocument,
 } from '@faims3/data-model';
-import {useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import {EditableFormManager} from '@faims3/forms';
 import {localGetDataDb} from '../../utils/database';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {useAppSelector} from '../../context/store';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
+import {selectActiveUser} from '../../context/slices/authSlice';
+import {getNotebookRoute} from '../../constants/routes';
 
 export const EditRecordPage = () => {
-  const {projectId, recordId} = useParams<{
+  const {serverId, projectId, recordId} = useParams<{
     serverId: string;
     projectId: ProjectID;
     recordId: RecordID;
     revisionId: RevisionID;
   }>();
 
+  const navigate = useNavigate();
+
+  const activeUser = useAppSelector(selectActiveUser);
+
+  if (!activeUser) {
+    return <div>Please log in to edit records.</div>;
+  }
+  const userId = activeUser.username;
+
   // Main page elements
   // - Header with 'back' button and record HRID
   // - breadcrumbs
   // - Tabbed view of the record (View, Edit, Info, Conflicts)
 
-  console.log('EditRecordPage params:', {projectId, recordId});
+
+  // TODO: these missing info checks should probably just redirect back to the home page
+  //  maybe with a flash message.
+  if (!serverId) return <></>;
   if (!projectId) return <></>;
   const project = useAppSelector(state => selectProjectById(state, projectId));
   if (!project) return <></>;
@@ -73,6 +87,8 @@ export const EditRecordPage = () => {
       trigger: {
         commit: async () => {
           console.log('committing changes');
+          // navigate to the project page
+          navigate(getNotebookRoute({serverId, projectId}));
         },
       },
     },
@@ -81,7 +97,7 @@ export const EditRecordPage = () => {
   return (
     <div>
       <h2>Editing {recordId}</h2>
-      <EditableFormManager recordId={recordId} config={formConfig} />
+      <EditableFormManager activeUser={userId} recordId={recordId} config={formConfig} />
     </div>
   );
 };

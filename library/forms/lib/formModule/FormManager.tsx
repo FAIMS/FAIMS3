@@ -9,6 +9,7 @@ import {useForm, useStore} from '@tanstack/react-form';
 import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
 import {FaimsForm, FaimsFormData} from './types';
+import {Button} from '@mui/material';
 
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
@@ -70,6 +71,7 @@ export interface FullFormConfig {
 export interface EditableFormManagerProps extends ComponentProps<any> {
   recordId: string;
   revisionId?: string;
+  activeUser: string;
   config: FullFormConfig;
 }
 
@@ -101,7 +103,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             data: form.state.values,
           };
           dataEngine.form.updateRecord(updatedRecord, {
-            updatedBy: record.createdBy, // TODO need current user
+            updatedBy: props.activeUser,
           }).then(updatedRecord => {
             console.log(
               '%cRecord updated:',
@@ -143,12 +145,18 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     return <div>Record {props.recordId} not found</div>;
   } else {
     return (
+      <>
+      <Button variant="contained" onClick={() => props.config.context.trigger.commit()}>Finish</Button>
+      <Button variant="contained" onClick={() => props.config.context.trigger.commit()}>Finish and New</Button>
+      <Button variant="contained" onClick={() => props.config.context.trigger.commit()}>Cancel</Button>
+
       <FormManager
         form={form}
         formName={record.formId}
         uiSpec={uiSpec}
         config={props.config}
       />
+      </>
     );
   }
 };
