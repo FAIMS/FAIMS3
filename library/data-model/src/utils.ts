@@ -22,3 +22,17 @@ export const slugify = (str: string) => {
 
   return str;
 };
+
+/**
+ * Finds the difference between sets A and B, i.e. the elements which are in A,
+ * but not in B.
+ */
+export function differenceSets<T>(setA: Set<T>, setB: Set<T>): Set<T> {
+  const result = new Set<T>();
+  for (const element of setA) {
+    if (!setB.has(element)) {
+      result.add(element);
+    }
+  }
+  return result;
+}
