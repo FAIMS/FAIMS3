@@ -1,7 +1,7 @@
-import {isEqual as deepEquals} from 'lodash';
 import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
+import {differenceSets} from '../utils';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
@@ -106,10 +106,10 @@ export const UNKNOWN_TYPE_FALLBACK = '??:??';
 // ============================================================================
 
 type AvpStrategy =
-  | {type: 'reuse_current'} // Use existing AVP from current revision
-  | {type: 'reuse_parent'} // Use AVP from parent revision (revert case)
-  | {type: 'create_new'} // Create a brand new AVP
-  | {type: 'update_inplace'}; // Update existing AVP in-place
+  | 'reuse_current' // Use existing AVP from current revision
+  | 'reuse_parent' // Use AVP from parent revision (revert case)
+  | 'create_new' // Create a brand new AVP
+  | 'update_inplace'; // Update existing AVP in-place
 
 /**
  * Configuration options for the DataEngine
@@ -845,17 +845,14 @@ class FormOperations {
   }
 
   /**
-   * Create a brand new record from form data.
-   *
-   * The input here is the form data which the app currently produces.
+   * Create a brand new record. This does not create any AVPs/data.
    *
    * This creates
    *
-   * a) Record
-   * b) Revision
-   * c) (optional) new AVPs for each entry in data array
+   * a) Record b) Revision
    *
-   * @param formRecord - The form data to create a record from
+   * @param formRecord - Basic information about the new record to create - does
+   * not include data
    * @returns The ID of the newly created revision
    * @throws Error if revision_id is not null (should use updateRecord instead)
    * @throws Error if record creation fails
@@ -984,13 +981,14 @@ class FormOperations {
    * Updates a revision by creating or reusing AVPs for changed fields. Updates
    * revision document only if AVPs have changed.
    *
-   * NOTE:
-   *
    * mode = new - update inplace AVPs where possible, otherwise create new ones.
+   * Requires that parents be empty/undefined on the revision, or will throw an
+   * error.
    *
    * mode = parent - same as new, except if the parent AVP equals child AVP,
    * then a new AVP is created, rather than inplace updating. Subsequent updates
-   * may be inplace.
+   * may be inplace. Requires that parents have a singular entry, or error is
+   * thrown.
    *
    * @param revisionId - The revision to update
    * @param recordId - The parent record ID
@@ -1057,7 +1055,7 @@ class FormOperations {
       : undefined;
 
     // Step 2: Determine which AVPs need to be created (changed fields)
-    const avpMap = await this.createOrReuseAvps({
+    const {avpMap, changeDetected} = await this.createOrReuseAvps({
       config,
       currentRevision,
       newData: update,
@@ -1066,7 +1064,7 @@ class FormOperations {
     });
 
     // This may have created new AVPs, or removed them - is there any change?
-    if (!deepEquals(currentRevision.avps, avpMap)) {
+    if (changeDetected) {
       // Change detected, create new revision
       const revisionDoc: ExistingRevisionDBDocument = {
         // Change AVP map
@@ -1152,7 +1150,7 @@ class FormOperations {
     parentRevision?: ExistingRevisionDBDocument;
     updatedBy: string;
     config: HydratedRecordConfig;
-  }): Promise<Record<string, string>> {
+  }): Promise<{avpMap: Record<string, string>; changeDetected: boolean}> {
     // ===== Setup: Fetch hydrated data and prepare comparison structures =====
 
     const {current, parent} = await this.fetchHydratedData(
@@ -1161,11 +1159,15 @@ class FormOperations {
       config
     );
 
+    // These types of strategies flag a change
+    const changeStrategies: AvpStrategy[] = ['create_new', 'reuse_parent'];
+
     // ===== Process each field and determine AVP strategy =====
 
     const avpsToCreate: Array<NewAvpDBDocument> = [];
     const avpsToUpdate: Array<ExistingAvpDBDocument> = [];
     const outputAvpMap: Record<string, string> = {};
+    let changeDetected = false;
 
     for (const [fieldname, newFieldData] of Object.entries(newData)) {
       const strategy = await this.determineAvpStrategy({
@@ -1176,6 +1178,11 @@ class FormOperations {
         currentRevision,
         parentRevision,
       });
+
+      // change check
+      if (changeStrategies.includes(strategy)) {
+        changeDetected = true;
+      }
 
       await this.applyAvpStrategy({
         strategy,
@@ -1195,7 +1202,21 @@ class FormOperations {
     await this.bulkPutAvps(avpsToCreate);
     await this.bulkPutAvps(avpsToUpdate);
 
-    return outputAvpMap;
+    // Updating inplace AVPs doesn't necessarily, however we may have a
+    // situation where we removed data completely - check for missing keys from
+    // the prior data
+    if (!changeDetected) {
+      // Build sets of the old/new keys
+      const oldKeys = new Set(Object.keys(currentRevision.avps));
+      const newKeys = new Set(Object.keys(newData));
+
+      if (differenceSets(oldKeys, newKeys).size > 0) {
+        // There is a field in the old data no longer in the new data
+        changeDetected = true;
+      }
+    }
+
+    return {avpMap: outputAvpMap, changeDetected};
   }
 
   /**
@@ -1284,7 +1305,7 @@ class FormOperations {
 
     if (!hasChanged) {
       // Field unchanged - reuse existing AVP
-      return {type: 'reuse_current'};
+      return 'reuse_current';
     }
 
     // Field has changed - determine how to handle the change
@@ -1306,16 +1327,16 @@ class FormOperations {
   ): Promise<AvpStrategy> {
     // If no parent or field doesn't exist in parent, create new AVP
     if (!parentFieldData) {
-      return {type: 'create_new'};
+      return 'create_new';
     }
 
     // If parent has identical data, reuse parent's AVP (user is "reverting")
     if (await this.isEqualFormData(parentFieldData, newFieldData)) {
-      return {type: 'reuse_parent'};
+      return 'reuse_parent';
     }
 
     // Parent has different data, create new AVP
-    return {type: 'create_new'};
+    return 'create_new';
   }
 
   /**
@@ -1339,7 +1360,7 @@ class FormOperations {
       parentFieldData &&
       (await this.isEqualFormData(parentFieldData, newFieldData))
     ) {
-      return {type: 'reuse_parent'};
+      return 'reuse_parent';
     }
 
     // Determine if we need a new AVP or can update in-place
@@ -1350,9 +1371,9 @@ class FormOperations {
     );
 
     if (shouldCreateNew) {
-      return {type: 'create_new'};
+      return 'create_new';
     } else {
-      return {type: 'update_inplace'};
+      return 'update_inplace';
     }
   }
 
@@ -1408,44 +1429,33 @@ class FormOperations {
     avpsToUpdate: Array<ExistingAvpDBDocument>;
     outputAvpMap: Record<string, string>;
   }) {
-    switch (strategy.type) {
-      case 'reuse_current':
-        // No changes needed, just reference the existing AVP
-        outputAvpMap[fieldname] = currentRevision.avps[fieldname];
-        break;
-
-      case 'reuse_parent':
-        if (!parentRevision) {
-          throw new Error(
-            'Cannot apply the reuse_parent AVP strategy when parentRevision is not provided.'
-          );
-        }
-        // Reference the parent's AVP (user reverted to previous version)
-        outputAvpMap[fieldname] = parentRevision.avps[fieldname];
-        break;
-
-      case 'create_new':
-        // Create a new AVP document
-        const newAvp = this.buildNewAvp(
-          fieldname,
-          newFieldData,
-          currentRevision,
-          updatedBy
+    if (strategy === 'reuse_current') {
+      // No changes needed, just reference the existing AVP
+      outputAvpMap[fieldname] = currentRevision.avps[fieldname];
+    } else if (strategy === 'reuse_parent') {
+      if (!parentRevision) {
+        throw new Error(
+          'Cannot apply the reuse_parent AVP strategy when parentRevision is not provided.'
         );
-        avpsToCreate.push(newAvp);
-        outputAvpMap[fieldname] = newAvp._id;
-        break;
-
-      case 'update_inplace':
-        // Update existing AVP in-place
-        const currentAvpId = currentRevision.avps[fieldname];
-        const updatedAvp = await this.buildUpdatedAvp(
-          currentAvpId,
-          newFieldData
-        );
-        avpsToUpdate.push(updatedAvp);
-        outputAvpMap[fieldname] = currentAvpId;
-        break;
+      }
+      // Reference the parent's AVP (user reverted to previous version)
+      outputAvpMap[fieldname] = parentRevision.avps[fieldname];
+    } else if (strategy === 'create_new') {
+      // Create a new AVP document
+      const newAvp = this.buildNewAvp(
+        fieldname,
+        newFieldData,
+        currentRevision,
+        updatedBy
+      );
+      avpsToCreate.push(newAvp);
+      outputAvpMap[fieldname] = newAvp._id;
+    } else if (strategy === 'update_inplace') {
+      // Update existing AVP in-place
+      const currentAvpId = currentRevision.avps[fieldname];
+      const updatedAvp = await this.buildUpdatedAvp(currentAvpId, newFieldData);
+      avpsToUpdate.push(updatedAvp);
+      outputAvpMap[fieldname] = currentAvpId;
     }
   }
 

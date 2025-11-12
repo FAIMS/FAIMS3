@@ -1059,8 +1059,8 @@ describe('Form Operations', () => {
       const res = await engine.form.createRevision({
         revisionId: rev1._id,
         recordId: initialResult.record._id,
-        createdBy: 'user-1'
-      })
+        createdBy: 'user-1',
+      });
 
       // Update 2
       await engine.form.updateRevision({
