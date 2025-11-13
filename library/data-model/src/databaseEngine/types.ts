@@ -502,6 +502,16 @@ export type FormDataEntry = z.infer<typeof formDataEntry>;
 const formUpdateData = z.record(z.string(), formDataEntry);
 export type FormUpdateData = z.infer<typeof formUpdateData>;
 
+
+// A packet of data needed to create a editable form
+const initialFormData = z.object({
+  revisionId: z.string(),
+  formId: z.string(),
+  data: formUpdateData,
+});
+
+export type InitialFormData = z.infer<typeof initialFormData>;
+
 // AVP update modes
 export type AvpUpdateMode = 'new' | 'parent';
 
