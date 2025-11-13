@@ -84,7 +84,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   const [dataEngine, setDataEngine] = useState<DataEngine | null>(null);
   const [formValues, setFormValues] = useState<FormUpdateData>({});
   const [formId, setFormId] = useState<string | null>(null);
-  const [firstEdit, setFirstEdit] = useState<boolean>(false);
+  const [edited, setEdited] = useState<boolean>(false);
 
   const [workingRevisionId, setWorkingRevisionId] = useState<string | null>(
     null
@@ -102,28 +102,36 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     listeners: {
       onChangeDebounceMs: 1000, // only run onChange so often
       onChange: async () => {
-        console.log('Form values changed:', form.state.values);
+        console.log(
+          '%cForm values changed:',
+          'background-color: green',
+          form.state.values
+        );
+        console.log('FirstEdit:', edited);
+
+        // this might change if we make a new revision below
+        let revisionToUpdate = workingRevisionId;
 
         // without these we can't do anything
         // need to know the revision we need to update and have a data engine
         // and if we don't have the current record then we're a bit lost
-        if (record && workingRevisionId && dataEngine) {
+        if (record && revisionToUpdate && dataEngine) {
           // if this is the first change, and this is not a new record,
           // we create a new revision and this becomes our working revision
           // Q: do we need to remember the parent revision?
-          if (!firstEdit) {
+          if (!edited) {
             console.log('First edit');
-            setFirstEdit(true);
+            setEdited(true);
 
-            if (props.mode === 'new') {
-              console.log('Creating new revision for edit');
-
+            if (props.mode === 'parent') {
               const newRevision = await dataEngine?.form.createRevision({
                 recordId: props.recordId,
-                revisionId: workingRevisionId,
+                revisionId: revisionToUpdate,
                 createdBy: props.activeUser,
               });
               setWorkingRevisionId(newRevision._id);
+              revisionToUpdate = newRevision._id;
+              console.log('New working revision:', newRevision);
             }
           }
 
@@ -133,10 +141,15 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             ...record,
             ...form.state.values,
           };
-          console.log('Updating record with:', updatedRecord);
+          console.log(
+            '%cUpdating revision:',
+            'background-color: pink',
+            revisionToUpdate,
+            updatedRecord
+          );
           dataEngine.form
             .updateRevision({
-              revisionId: workingRevisionId,
+              revisionId: revisionToUpdate,
               recordId: props.recordId,
               updatedBy: props.activeUser,
               update: updatedRecord,

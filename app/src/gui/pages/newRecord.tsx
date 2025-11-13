@@ -97,7 +97,7 @@ export const EditRecordPage = () => {
   return (
     <div>
       <h2>Editing {recordId}</h2>
-      <EditableFormManager activeUser={userId} recordId={recordId} config={formConfig} />
+      <EditableFormManager mode="parent" activeUser={userId} recordId={recordId} config={formConfig} />
     </div>
   );
 };
