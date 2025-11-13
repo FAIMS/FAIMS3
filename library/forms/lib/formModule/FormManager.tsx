@@ -1,16 +1,15 @@
 import type {
   AvpUpdateMode,
   DataEngine,
-  ExistingFormRecord,
   FormUpdateData,
   IAttachmentService,
   ProjectUIModel,
 } from '@faims3/data-model';
-import {Button} from '@mui/material';
-import {useForm, useStore} from '@tanstack/react-form';
-import {useEffect, useState, type ComponentProps} from 'react';
-import {FormSection} from './FormSection';
-import {FaimsForm, FaimsFormData} from './types';
+import { Button } from '@mui/material';
+import { useForm, useStore } from '@tanstack/react-form';
+import { useEffect, useState, type ComponentProps } from 'react';
+import { FormSection } from './FormSection';
+import { FaimsForm, FaimsFormData } from './types';
 
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);

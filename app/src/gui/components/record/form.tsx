@@ -1247,7 +1247,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
               serverId: this.props.serverId,
               projectId: this.props.project_id,
               recordId: relationState.parent_record_id,
-              revisionId,
             });
             this.navigateTo(revLink);
           });
@@ -1497,7 +1496,6 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                     serverId: this.props.serverId,
                     projectId: this.props.project_id,
                     recordId: (locationState.parent_record_id || '').toString(),
-                    revisionId: (new_revision_id || '').toString(),
                   });
                   // and add the reference ot the child record id
                   locationState['child_record_id'] = new_record_id;
