@@ -5,8 +5,9 @@ import {
   DataEngine,
   DatabaseInterface,
   DataDocument,
+  AvpUpdateMode,
 } from '@faims3/data-model';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {EditableFormManager} from '@faims3/forms';
 import {localGetDataDb} from '../../utils/database';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
@@ -21,8 +22,11 @@ export const EditRecordPage = () => {
     serverId: string;
     projectId: ProjectID;
     recordId: RecordID;
-    revisionId: RevisionID;
   }>();
+
+  // Get mode=XXX from the query params
+  const [searchParams, setSearchParams] = useSearchParams();
+  const mode = searchParams.get('mode') as AvpUpdateMode | 'parent';
 
   const navigate = useNavigate();
 
@@ -97,7 +101,7 @@ export const EditRecordPage = () => {
   return (
     <div>
       <h2>Editing {recordId}</h2>
-      <EditableFormManager mode="parent" activeUser={userId} recordId={recordId} config={formConfig} />
+      <EditableFormManager mode={mode} activeUser={userId} recordId={recordId} config={formConfig} />
     </div>
   );
 };

@@ -46,13 +46,12 @@ export function AddNewRecordButton(props: {
     if (props.handleSubmit !== undefined) {
       props
         .handleSubmit()
-        .then((revisionID: RevisionID) => {
+        .then(() => {
           const newState = props.state;
           newState['parent_link'] = ROUTES.getExistingRecordRoute({
             serverId: props.serverId,
             projectId: props.project_id,
             recordId: (props.state.parent_record_id || '').toString(),
-            revisionId: (revisionID || '').toString(),
           });
           newState['child_record_id'] = childRecordId;
           // wait for 300ms and then jump to the new pathname with the new state

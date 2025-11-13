@@ -233,8 +233,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
                 to={ROUTES.getExistingRecordRoute({
                   serverId: props.serverId,
                   projectId: props.project_id,
-                  recordId: selectedFeature.record_id,
-                  revisionId: selectedFeature.revision_id,
+                  recordId: selectedFeature.record_id
                 })}
               >
                 {selectedFeature.name}
