@@ -1,15 +1,16 @@
 import type {
+  AvpUpdateMode,
   DataEngine,
   ExistingFormRecord,
-  HydratedRecord,
+  FormUpdateData,
   IAttachmentService,
-  ProjectUIModel
+  ProjectUIModel,
 } from '@faims3/data-model';
+import {Button} from '@mui/material';
 import {useForm, useStore} from '@tanstack/react-form';
 import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
 import {FaimsForm, FaimsFormData} from './types';
-import {Button} from '@mui/material';
 
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
@@ -70,8 +71,8 @@ export interface FullFormConfig {
 
 export interface EditableFormManagerProps extends ComponentProps<any> {
   recordId: string;
-  revisionId?: string;
   activeUser: string;
+  mode: AvpUpdateMode;
   config: FullFormConfig;
 }
 
@@ -79,9 +80,15 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   console.log('FormManager:', props);
 
   const [uiSpec, setUiSpec] = useState<ProjectUIModel | null>(null);
-  const [record, setRecord] = useState<ExistingFormRecord | null>(null);
+  const [record, setRecord] = useState<FormUpdateData | null>(null);
   const [dataEngine, setDataEngine] = useState<DataEngine | null>(null);
-  const [formValues, setFormValues] = useState<FaimsFormData>({});
+  const [formValues, setFormValues] = useState<FormUpdateData>({});
+  const [formId, setFormId] = useState<string | null>(null);
+  const [firstEdit, setFirstEdit] = useState<boolean>(false);
+
+  const [workingRevisionId, setWorkingRevisionId] = useState<string | null>(
+    null
+  );
 
   // TODO: probably want a hook to get the initial form
   // data, then we can populate the form with that data
@@ -93,24 +100,55 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       console.log('Form submitted with value:', value);
     },
     listeners: {
-      onChangeDebounceMs: 1000, // only run onChange every 500ms
-      onChange: () => {
+      onChangeDebounceMs: 1000, // only run onChange so often
+      onChange: async () => {
         console.log('Form values changed:', form.state.values);
-        // here we can update the current version of the record with the new values
-        if (record && dataEngine) {
-          const updatedRecord: ExistingFormRecord = {
+
+        // without these we can't do anything
+        // need to know the revision we need to update and have a data engine
+        // and if we don't have the current record then we're a bit lost
+        if (record && workingRevisionId && dataEngine) {
+          // if this is the first change, and this is not a new record,
+          // we create a new revision and this becomes our working revision
+          // Q: do we need to remember the parent revision?
+          if (!firstEdit) {
+            console.log('First edit');
+            setFirstEdit(true);
+
+            if (props.mode === 'new') {
+              console.log('Creating new revision for edit');
+
+              const newRevision = await dataEngine?.form.createRevision({
+                recordId: props.recordId,
+                revisionId: workingRevisionId,
+                createdBy: props.activeUser,
+              });
+              setWorkingRevisionId(newRevision._id);
+            }
+          }
+
+          console.log('form state', form.state.values);
+          // then we update the working revision with the new data
+          const updatedRecord: FormUpdateData = {
             ...record,
-            data: form.state.values,
+            ...form.state.values,
           };
-          dataEngine.form.updateRecord(updatedRecord, {
-            updatedBy: props.activeUser,
-          }).then(updatedRecord => {
-            console.log(
-              '%cRecord updated:',
-              'background-color: red',
-              updatedRecord
-            );
-          });
+          console.log('Updating record with:', updatedRecord);
+          dataEngine.form
+            .updateRevision({
+              revisionId: workingRevisionId,
+              recordId: props.recordId,
+              updatedBy: props.activeUser,
+              update: updatedRecord,
+              mode: props.mode,
+            })
+            .then(updatedRecord => {
+              console.log(
+                '%cRecord updated:',
+                'background-color: red',
+                updatedRecord
+              );
+            });
         }
       },
     },
@@ -123,39 +161,51 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       setDataEngine(engine);
       setUiSpec(engine.uiSpec);
 
-      const record = await engine.form.getExistingFormRecord({
+      const {revisionId, formId, data} = await engine.form.getExistingFormData({
         recordId: props.recordId,
         revisionId: props.revisionId,
       });
-      setRecord(record);
-
-      // get the initial values from the form
-      const values: FaimsFormData = {};
-      for (const fieldName in record.data) {
-        values[fieldName] = record.data[fieldName];
-      }
-      setFormValues(values);
+      setFormId(formId);
+      setWorkingRevisionId(revisionId);
+      setRecord(data);
+      console.log('Loaded form data:', revisionId, formId, data);
+      setFormValues(data);
     };
     fn();
   }, [props.recordId, props.config]);
 
   console.log('Loaded record:', record);
 
-  if (!record || !uiSpec || !form) {
+  if (!record || !uiSpec || !form || !formId) {
     return <div>Record {props.recordId} not found</div>;
   } else {
     return (
       <>
-      <Button variant="contained" onClick={() => props.config.context.trigger.commit()}>Finish</Button>
-      <Button variant="contained" onClick={() => props.config.context.trigger.commit()}>Finish and New</Button>
-      <Button variant="contained" onClick={() => props.config.context.trigger.commit()}>Cancel</Button>
+        <Button
+          variant="contained"
+          onClick={() => props.config.context.trigger.commit()}
+        >
+          Finish
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => props.config.context.trigger.commit()}
+        >
+          Finish and New
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => props.config.context.trigger.commit()}
+        >
+          Cancel
+        </Button>
 
-      <FormManager
-        form={form}
-        formName={record.formId}
-        uiSpec={uiSpec}
-        config={props.config}
-      />
+        <FormManager
+          form={form}
+          formName={formId}
+          uiSpec={uiSpec}
+          config={props.config}
+        />
       </>
     );
   }

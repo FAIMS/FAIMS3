@@ -74,11 +74,13 @@ const valueSchema = (props: SelectFieldProps) => {
  */
 export const Select = (props: SelectFieldProps & FormFieldContextProps) => {
   const theme = useTheme();
-  const value = props.field.state.value;
+  const value = props.field.state.value?.data;
 
   const onChange = (event: SelectChangeEvent) => {
-    const newValue = event.target.value;
-    console.log('Select onChange:', newValue);
+    const newValue = {
+      ...props.field.state.value,
+      data: event.target.value,
+    };
     props.field.handleChange(newValue);
   };
 

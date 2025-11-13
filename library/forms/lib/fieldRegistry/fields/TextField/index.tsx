@@ -13,9 +13,10 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
   console.log('TextField:', props.name);
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = event.target.value;
-    console.log('TextField onChange:', newValue);
-    console.log('TextField state', props.field.state);
+    const newValue = {
+      ...props.field.state.value,
+      data: event.target.value,
+    };
     props.field.handleChange(newValue);
   };
 
@@ -26,7 +27,7 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
       advancedHelperText={props.advancedHelperText}
     >
       <MuiTextField
-        value={props.field.state.value ?? ''}
+        value={props.field.state.value?.data ?? ''}
         fullWidth
         onChange={onChange}
         onBlur={props.field.handleBlur}
