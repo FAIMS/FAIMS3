@@ -26,6 +26,7 @@ import {
   NewFormRecord,
   newFormRecordSchema,
   NewPendingAttachmentDBDocument,
+  NewPouchDocument,
   NewRecordDBDocument,
   newRecordDocumentSchema,
   NewRevisionDBDocument,
@@ -209,14 +210,26 @@ export class CoreOperations {
     id: string,
     validator: (doc: unknown) => T
   ): Promise<T> {
+    // Fetch doc
+    let doc;
     try {
-      const doc = await this.db.get(id);
-      return validator(doc);
+      doc = await this.db.get(id);
     } catch (err: any) {
       if (err.status === 404) {
         throw new Exceptions.DocumentNotFoundError(id);
       }
       throw err;
+    }
+    // Validate doc
+    try {
+      return validator(doc);
+    } catch (e) {
+      throw new Exceptions.DocumentValidationError({
+        recordId: id,
+        doc,
+        validationErr: e,
+        operation: 'get (core.getDocumentOfType)',
+      });
     }
   }
 
@@ -228,11 +241,24 @@ export class CoreOperations {
    * @returns The created document with _rev
    * @throws Error if creation fails
    */
-  private async createDocument<T extends {}>(
+  private async createDocument<T extends NewPouchDocument>(
     doc: T,
     validator: (doc: T) => T
   ): Promise<T & {_rev: string}> {
-    const validated = validator(doc);
+    let validated: T;
+
+    // Validate doc
+    try {
+      validated = validator(doc);
+    } catch (e) {
+      throw new Exceptions.DocumentValidationError({
+        recordId: doc._id,
+        doc,
+        validationErr: e,
+        operation: 'create (core.createDocument)',
+      });
+    }
+
     const response = await this.db.put(validated);
 
     if (!response.ok) {
@@ -265,8 +291,19 @@ export class CoreOperations {
     writeOnClash = true,
     maxRetries = 5
   ): Promise<T | undefined> {
-    // Validate
-    const validated = validator(doc);
+    let validated: T;
+
+    // Validate doc
+    try {
+      validated = validator(doc);
+    } catch (e) {
+      throw new Exceptions.DocumentValidationError({
+        recordId: doc._id,
+        doc,
+        validationErr: e,
+        operation: 'update (core.updateDocument)',
+      });
+    }
 
     // Try to put directly - if no clash, succeeds immediately
     try {

@@ -19,6 +19,7 @@ const existingPouchDBDocumentSchema = newPouchDBDocumentSchema.extend({
 export type ExistingPouchDocument = z.infer<
   typeof existingPouchDBDocumentSchema
 >;
+export type NewPouchDocument = z.infer<typeof newPouchDBDocumentSchema>;
 
 // ============================================================================
 // Record Document
