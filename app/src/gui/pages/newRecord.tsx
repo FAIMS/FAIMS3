@@ -42,7 +42,6 @@ export const EditRecordPage = () => {
   // - breadcrumbs
   // - Tabbed view of the record (View, Edit, Info, Conflicts)
 
-
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
   if (!serverId) return <></>;
