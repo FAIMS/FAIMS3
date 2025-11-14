@@ -1,21 +1,21 @@
 import {
+  AvpUpdateMode,
+  DatabaseInterface,
+  DataDocument,
+  DataEngine,
   ProjectID,
   RecordID,
   RevisionID,
-  DataEngine,
-  DatabaseInterface,
-  DataDocument,
-  AvpUpdateMode,
 } from '@faims3/data-model';
-import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {EditableFormManager} from '@faims3/forms';
-import {localGetDataDb} from '../../utils/database';
-import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
-import {useAppSelector} from '../../context/store';
-import {selectProjectById} from '../../context/slices/projectSlice';
-import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {selectActiveUser} from '../../context/slices/authSlice';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {getNotebookRoute} from '../../constants/routes';
+import {selectActiveUser} from '../../context/slices/authSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../../context/slices/projectSlice';
+import {useAppSelector} from '../../context/store';
+import {createProjectAttachmentService} from '../../utils/attachmentService';
+import {localGetDataDb} from '../../utils/database';
 
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
@@ -25,8 +25,8 @@ export const EditRecordPage = () => {
   }>();
 
   // Get mode=XXX from the query params
-  const [searchParams, setSearchParams] = useSearchParams();
-  const mode = searchParams.get('mode') as AvpUpdateMode | 'parent';
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode') as AvpUpdateMode;
 
   const navigate = useNavigate();
 
@@ -44,11 +44,9 @@ export const EditRecordPage = () => {
 
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
-  if (!serverId) return <></>;
-  if (!projectId) return <></>;
+  if (!serverId || !projectId) return <></>;
   const project = useAppSelector(state => selectProjectById(state, projectId));
   if (!project) return <></>;
-
   if (!recordId) return <div>Record ID not specified</div>;
 
   const {uiSpecificationId: uiSpecId} = project;
@@ -100,7 +98,12 @@ export const EditRecordPage = () => {
   return (
     <div>
       <h2>Editing {recordId}</h2>
-      <EditableFormManager mode={mode} activeUser={userId} recordId={recordId} config={formConfig} />
+      <EditableFormManager
+        mode={mode}
+        activeUser={userId}
+        recordId={recordId}
+        config={formConfig}
+      />
     </div>
   );
 };

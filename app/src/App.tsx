@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import '@capacitor-community/safe-area';
 import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
@@ -31,30 +32,28 @@ import * as ROUTES from './constants/routes';
 import MainLayout from './gui/layout';
 import AboutBuild from './gui/pages/about-build';
 import Notebook from './gui/pages/notebook';
-import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import {SignIn} from './gui/pages/signin';
 import Workspace from './gui/pages/workspace';
-import '@capacitor-community/safe-area';
 
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
+import {OFFLINE_MAPS} from './buildconfig';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
+import {MapDownloadComponent} from './gui/components/map/map-download';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
+import {PouchExplorer} from './gui/pages/pouchExplorer';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {MapDownloadComponent} from './gui/components/map/map-download';
-import {OFFLINE_MAPS} from './buildconfig';
-import {PouchExplorer} from './gui/pages/pouchExplorer';
 
 import {SafeArea} from '@capacitor-community/safe-area';
-import {EditRecordPage} from './gui/pages/newRecord';
 import {getExistingRecordRoute} from './constants/routes';
+import {EditRecordPage} from './gui/pages/newRecord';
 
 SafeArea.enable({
   config: {
@@ -148,7 +147,7 @@ export default function App() {
                           </OnlineOnlyRoute>
                         }
                       />
-                    
+
                       <Route
                         path={
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
@@ -175,7 +174,7 @@ export default function App() {
                           </TolerantPrivateRoute>
                         }
                       />
-                     
+
                       <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
                       {OFFLINE_MAPS && (
                         <Route

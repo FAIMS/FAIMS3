@@ -630,12 +630,12 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
        * (in order high priority to last resort): draft storage, database, ui schema
        */
       const fromdb = revision_id
-        ? ((await getFullRecordData({
+        ? (await getFullRecordData({
             dataDb: localGetDataDb(this.props.project_id),
             projectId: this.props.project_id,
             recordId: this.props.record_id,
             revisionId: revision_id,
-          })) ?? undefined)
+          })) ?? undefined
         : undefined;
 
       // if there is no existing revision then this is either a brand new
@@ -1240,7 +1240,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
             );
           }
           parentRecord.data[relationState.field_id] = newFieldValue;
-          upsertFAIMSData({dataDb, record: parentRecord}).then(revisionId => {
+          upsertFAIMSData({dataDb, record: parentRecord}).then(() => {
             // now parent link will be out of date as it refers to
             // the old revision so we need a new one
             const revLink = ROUTES.getExistingRecordRoute({
@@ -1490,7 +1490,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                 dataDb: localGetDataDb(this.props.project_id),
                 record: new_doc,
               })
-                .then(new_revision_id => {
+                .then(() => {
                   // update location state to point to the parent record
                   locationState['parent_link'] = ROUTES.getExistingRecordRoute({
                     serverId: this.props.serverId,

@@ -846,11 +846,11 @@ class FormOperations {
   }
 
   /**
-   * 
+   *
    * @param recordId record Id of interest
-   * @returns the current 
+   * @returns the current
    */
-  async getCurrentRevisionId({recordId} : {recordId: string}): Promise<string> {
+  async getCurrentRevisionId({recordId}: {recordId: string}): Promise<string> {
     const heads = await this.hydrated.getHeads(recordId);
     if (heads.length === 0) {
       throw new Exceptions.NoHeadsError(recordId);
@@ -1104,8 +1104,6 @@ class FormOperations {
     }
   }
 
-
-
   /**
    * Given a record ID, and optionally a revision ID, gets the hydrated data,
    * then maps it into the existing form data format. This is a nice utility
@@ -1135,7 +1133,7 @@ class FormOperations {
       config,
     });
 
-    const data =  dataMap({
+    const data = dataMap({
       data: hydrated.data,
       mapFn: d => ({
         annotation: d.annotations,
@@ -1143,12 +1141,12 @@ class FormOperations {
         data: d.data,
       }),
     });
-    
+
     return {
-        revisionId: hydrated.revision._id,
-        formId: hydrated.record.formId,
-        data,
-      }
+      revisionId: hydrated.revision._id,
+      formId: hydrated.record.formId,
+      data,
+    };
   }
 
   /**

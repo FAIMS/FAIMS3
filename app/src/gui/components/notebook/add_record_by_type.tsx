@@ -11,7 +11,7 @@ import {Button, ButtonGroup, CircularProgress, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
-import {Navigate, Link as RouterLink, useNavigate} from 'react-router-dom';
+import {Navigate, useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
