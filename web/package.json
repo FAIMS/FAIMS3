@@ -28,6 +28,7 @@
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@faims3/data-model": "workspace:*",
+    "@faims3/forms": "workspace:*",
     "@hookform/resolvers": "^3.9.1",
     "@lexical/react": "^0.12.4",
     "@mdxeditor/editor": "^1.13.5",
