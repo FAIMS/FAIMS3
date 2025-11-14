@@ -5,7 +5,7 @@ import type {
   IAttachmentService,
   ProjectUIModel,
 } from '@faims3/data-model';
-import {Button} from '@mui/material';
+import {Box, Button} from '@mui/material';
 import {useForm, useStore} from '@tanstack/react-form';
 import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
@@ -218,6 +218,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           uiSpec={uiSpec}
           config={props.config}
         />
+        <FormStateDisplay form={form} />
       </>
     );
   }
@@ -256,12 +257,22 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   };
 
   return (
-    <FormManager
-      form={form}
-      formName={props.formName}
-      uiSpec={props.uiSpec}
-      config={config}
-    />
+    <Box
+      sx={{
+        border: '1px solid gray',
+        padding: 2,
+        borderRadius: 2,
+        width: '100%',
+      }}
+    >
+      <h2>Preview</h2>
+      <FormManager
+        form={form}
+        formName={props.formName}
+        uiSpec={props.uiSpec}
+        config={config}
+      />
+    </Box>
   );
 };
 
@@ -281,7 +292,7 @@ export const FormManager = (props: FormManagerProps) => {
   console.log('Form Spec:', formSpec);
 
   return (
-    <>
+    <Box>
       <h2>Form: {formSpec.label}</h2>
 
       <form
@@ -301,7 +312,6 @@ export const FormManager = (props: FormManagerProps) => {
           />
         ))}
       </form>
-      <FormStateDisplay form={props.form} />
-    </>
+    </Box>
   );
 };

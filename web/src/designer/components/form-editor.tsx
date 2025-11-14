@@ -33,6 +33,7 @@ import {
   Grid,
   IconButton,
   InputAdornment,
+  Stack,
   Step,
   StepButton,
   Stepper,
@@ -50,6 +51,8 @@ import {useLocation} from 'react-router-dom';
 import {findFormExternalUsage} from './condition/utils';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import DebouncedTextField from './debounced-text-field';
+import {PreviewFormManager} from '@faims3/forms';
+import {ProjectUIModel} from '@faims3/data-model';
 
 type Props = {
   viewSetId: string;
@@ -73,6 +76,12 @@ export const FormEditor = ({
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
+
+  const uiSpec = useAppSelector(
+    state => state.notebook['ui-specification'].present
+  );
+  // we need this to be a ProjectUIModel type for the PreviewFormManager
+  const uiSpecInternal: ProjectUIModel = {views: uiSpec.fviews, ...uiSpec};
 
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].present.visible_types
@@ -376,303 +385,308 @@ export const FormEditor = ({
   }, [sectionParam, sections.length]);
 
   return (
-    <Grid container spacing={2} pt={3}>
-      <Grid container item xs={12} spacing={1.75}>
-        <Grid item xs={12} sm={2.8}>
-          <Button
-            variant="text"
-            color="error"
-            size="medium"
-            startIcon={<DeleteRoundedIcon />}
-            onClick={deleteConfirmation}
-          >
-            Delete form
-          </Button>
-          <Dialog
-            open={open}
-            onClose={handleClose}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-dialog-title">
-              {deleteAlertTitle}
-            </DialogTitle>
-            <DialogContent>
-              <DialogContentText id="alert-dialog-description">
-                {deleteAlertMessage}
-              </DialogContentText>
-            </DialogContent>
-            {preventDeleteDialog ? (
-              <DialogActions>
-                <Button onClick={handleClose}>OK</Button>
-              </DialogActions>
-            ) : (
-              <DialogActions>
-                <Button onClick={deleteForm}>Yes</Button>
-                <Button onClick={handleClose}>No</Button>
-              </DialogActions>
-            )}
-          </Dialog>
-          <DeletionWarningDialog
-            open={showConditionAlert}
-            title="Form cannot be deleted due to active references"
-            references={conditionReferences}
-            onClose={() => setShowConditionAlert(false)}
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={2.825}>
-          <Button
-            variant="text"
-            size="medium"
-            startIcon={<EditRoundedIcon />}
-            onClick={() => setEditMode(true)}
-          >
-            Edit form name
-          </Button>
-          {editMode && (
-            <form
-              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                setEditMode(false);
-              }}
+    <Stack direction="row" spacing={2}>
+      <Grid container spacing={2} pt={3}>
+        <Grid container item xs={12} spacing={1.75}>
+          <Grid item xs={12} sm={2.8}>
+            <Button
+              variant="text"
+              color="error"
+              size="medium"
+              startIcon={<DeleteRoundedIcon />}
+              onClick={deleteConfirmation}
             >
-              <DebouncedTextField
-                size="small"
-                margin="dense"
-                label="Form Name"
-                name="label"
-                data-testid="label"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Tooltip title="Done">
-                        <IconButton size="small" type="submit">
-                          <DoneRoundedIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Close">
-                        <IconButton
-                          size="small"
-                          onClick={() => setEditMode(false)}
-                        >
-                          <CloseRoundedIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </InputAdornment>
-                  ),
-                }}
-                value={viewSet.label}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  updateFormLabel(event.target.value);
-                }}
-                sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
-              />
-            </form>
-          )}
-        </Grid>
-
-        {moveButtonsDisabled ? (
-          <Grid item xs={12} sm={2.5}>
-            <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
-              <span>
-                <IconButton disabled={true} aria-label="left" size="medium">
-                  <ArrowBackRoundedIcon />
-                </IconButton>
-                <IconButton disabled={true} aria-label="right" size="medium">
-                  <ArrowForwardRoundedIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
+              Delete form
+            </Button>
+            <Dialog
+              open={open}
+              onClose={handleClose}
+              aria-labelledby="alert-dialog-title"
+              aria-describedby="alert-dialog-description"
+            >
+              <DialogTitle id="alert-dialog-title">
+                {deleteAlertTitle}
+              </DialogTitle>
+              <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                  {deleteAlertMessage}
+                </DialogContentText>
+              </DialogContent>
+              {preventDeleteDialog ? (
+                <DialogActions>
+                  <Button onClick={handleClose}>OK</Button>
+                </DialogActions>
+              ) : (
+                <DialogActions>
+                  <Button onClick={deleteForm}>Yes</Button>
+                  <Button onClick={handleClose}>No</Button>
+                </DialogActions>
+              )}
+            </Dialog>
+            <DeletionWarningDialog
+              open={showConditionAlert}
+              title="Form cannot be deleted due to active references"
+              references={conditionReferences}
+              onClose={() => setShowConditionAlert(false)}
+            />
           </Grid>
-        ) : (
-          <Grid item xs={12} sm={2.5}>
-            <Tooltip title="Move form left">
-              <span>
-                <IconButton
-                  disabled={visibleTypes.indexOf(viewSetId) === 0}
-                  onClick={() => moveForm(viewSetId, 'left')}
-                  aria-label="left"
-                  size="medium"
-                >
-                  <ArrowBackRoundedIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Move form right">
-              <span>
-                <IconButton
-                  disabled={
-                    visibleTypes.indexOf(viewSetId) === visibleTypes.length - 1
-                  }
-                  onClick={() => moveForm(viewSetId, 'right')}
-                  aria-label="right"
-                  size="medium"
-                >
-                  <ArrowForwardRoundedIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Grid>
-        )}
 
-        <Grid item xs={12} sm={3.5}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={visibleTypes.includes(viewSetId)}
-                size="small"
-                onChange={e => handleChange(e.target.checked)}
-              />
-            }
-            label={'Include "Add New Record" button'}
-          />
-          {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
-        </Grid>
-      </Grid>
-
-      <Grid container item xs={12}>
-        <FormSettingsPanel viewSetId={viewSetId} />
-      </Grid>
-      <Grid item xs={12}>
-        <Card variant="outlined">
-          <Grid container spacing={2} p={3}>
-            <Grid item xs={12}>
-              <Box sx={{position: 'relative'}}>
-                {/* outer scroll container */}
-                <Box
-                  ref={scrollContainerRef}
-                  sx={{
-                    overflowX: 'auto',
-                    display: 'flex',
-                    justifyContent: 'center',
-                  }}
-                  onScroll={handleScroll}
-                >
-                  {/*
-                    inner scroll container:
-                    - min width of 70% of  available space.
-                    - uses flex layout.
-                    - if only a few steps, they expand to fill the space.
-                    - once  there are many steps each step shrinks only to its minimum width (120px)
-                      and the container’s total width exceeds the viewport so scrolling is enabled.
-                  */}
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexWrap: 'nowrap',
-                      minWidth: '70%',
-                      width: '100%',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <Stepper
-                      nonLinear
-                      activeStep={activeStep}
-                      alternativeLabel
-                      sx={{my: 3, width: '100%'}}
-                    >
-                      {sections.map((section: string, index: number) => (
-                        <Step
-                          key={section}
-                          // each step is flexible and has a minimum width.
-                          sx={{flex: '1 1 0', minWidth: '120px'}}
-                        >
-                          <StepButton
-                            color="inherit"
-                            onClick={handleStep(index)}
+          <Grid item xs={12} sm={2.825}>
+            <Button
+              variant="text"
+              size="medium"
+              startIcon={<EditRoundedIcon />}
+              onClick={() => setEditMode(true)}
+            >
+              Edit form name
+            </Button>
+            {editMode && (
+              <form
+                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                  e.preventDefault();
+                  setEditMode(false);
+                }}
+              >
+                <DebouncedTextField
+                  size="small"
+                  margin="dense"
+                  label="Form Name"
+                  name="label"
+                  data-testid="label"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title="Done">
+                          <IconButton size="small" type="submit">
+                            <DoneRoundedIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Close">
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditMode(false)}
                           >
-                            <Typography>{views[section].label}</Typography>
-                          </StepButton>
-                        </Step>
-                      ))}
-                    </Stepper>
-                  </Box>
-                </Box>
-                {showRightGradient && (
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      top: 0,
-                      right: 0,
-                      width: 40,
-                      height: '100%',
-                      pointerEvents: 'none',
-                      background: theme =>
-                        `linear-gradient(to left, ${theme.palette.background.paper}, transparent)`,
-                    }}
-                  />
-                )}
-              </Box>
-            </Grid>
+                            <CloseRoundedIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  }}
+                  value={viewSet.label}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    updateFormLabel(event.target.value);
+                  }}
+                  sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+                />
+              </form>
+            )}
+          </Grid>
 
-            {sections.length === 0 ? (
-              <Grid item xs={12}>
-                <Grid
-                  container
-                  justifyContent="center"
-                  alignItems="center"
-                  item
-                  xs={12}
-                  direction="column"
-                >
-                  <Alert severity="success">
-                    Form has been created. Add a section to get started.
-                  </Alert>
-                  <form
-                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                      e.preventDefault();
-                      addNewSection(viewSetId, newSectionName);
-                    }}
+          {moveButtonsDisabled ? (
+            <Grid item xs={12} sm={2.5}>
+              <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
+                <span>
+                  <IconButton disabled={true} aria-label="left" size="medium">
+                    <ArrowBackRoundedIcon />
+                  </IconButton>
+                  <IconButton disabled={true} aria-label="right" size="medium">
+                    <ArrowForwardRoundedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Grid>
+          ) : (
+            <Grid item xs={12} sm={2.5}>
+              <Tooltip title="Move form left">
+                <span>
+                  <IconButton
+                    disabled={visibleTypes.indexOf(viewSetId) === 0}
+                    onClick={() => moveForm(viewSetId, 'left')}
+                    aria-label="left"
+                    size="medium"
                   >
-                    <DebouncedTextField
-                      required
-                      label="Section Name"
-                      name="sectionName"
-                      data-testid="sectionName"
-                      value={newSectionName}
-                      onChange={(
-                        event: React.ChangeEvent<HTMLInputElement>
-                      ) => {
-                        setNewSectionName(event.target.value);
+                    <ArrowBackRoundedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Move form right">
+                <span>
+                  <IconButton
+                    disabled={
+                      visibleTypes.indexOf(viewSetId) ===
+                      visibleTypes.length - 1
+                    }
+                    onClick={() => moveForm(viewSetId, 'right')}
+                    aria-label="right"
+                    size="medium"
+                  >
+                    <ArrowForwardRoundedIcon />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Grid>
+          )}
+
+          <Grid item xs={12} sm={3.5}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={visibleTypes.includes(viewSetId)}
+                  size="small"
+                  onChange={e => handleChange(e.target.checked)}
+                />
+              }
+              label={'Include "Add New Record" button'}
+            />
+            {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
+          </Grid>
+        </Grid>
+        <Grid container item xs={12}>
+          <FormSettingsPanel viewSetId={viewSetId} />
+        </Grid>
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <Grid container spacing={2} p={3}>
+              <Grid item xs={12}>
+                <Box sx={{position: 'relative'}}>
+                  {/* outer scroll container */}
+                  <Box
+                    ref={scrollContainerRef}
+                    sx={{
+                      overflowX: 'auto',
+                      display: 'flex',
+                      justifyContent: 'center',
+                    }}
+                    onScroll={handleScroll}
+                  >
+                    {/*
+                      inner scroll container:
+                      - min width of 70% of  available space.
+                      - uses flex layout.
+                      - if only a few steps, they expand to fill the space.
+                      - once  there are many steps each step shrinks only to its minimum width (120px)
+                        and the container’s total width exceeds the viewport so scrolling is enabled.
+                    */}
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        flexWrap: 'nowrap',
+                        minWidth: '70%',
+                        width: '100%',
+                        justifyContent: 'space-between',
                       }}
-                      sx={{'& .MuiInputBase-root': {paddingRight: 1}, mt: 3}}
-                      InputProps={{
-                        endAdornment: (
-                          <InputAdornment position="end">
-                            <Tooltip title="Add">
-                              <IconButton type="submit">
-                                <AddRoundedIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </InputAdornment>
-                        ),
+                    >
+                      <Stepper
+                        nonLinear
+                        activeStep={activeStep}
+                        alternativeLabel
+                        sx={{my: 3, width: '100%'}}
+                      >
+                        {sections.map((section: string, index: number) => (
+                          <Step
+                            key={section}
+                            // each step is flexible and has a minimum width.
+                            sx={{flex: '1 1 0', minWidth: '120px'}}
+                          >
+                            <StepButton
+                              color="inherit"
+                              onClick={handleStep(index)}
+                            >
+                              <Typography>{views[section].label}</Typography>
+                            </StepButton>
+                          </Step>
+                        ))}
+                      </Stepper>
+                    </Box>
+                  </Box>
+                  {showRightGradient && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        width: 40,
+                        height: '100%',
+                        pointerEvents: 'none',
+                        background: theme =>
+                          `linear-gradient(to left, ${theme.palette.background.paper}, transparent)`,
                       }}
                     />
-                  </form>
+                  )}
+                </Box>
+              </Grid>
+
+              {sections.length === 0 ? (
+                <Grid item xs={12}>
+                  <Grid
+                    container
+                    justifyContent="center"
+                    alignItems="center"
+                    item
+                    xs={12}
+                    direction="column"
+                  >
+                    <Alert severity="success">
+                      Form has been created. Add a section to get started.
+                    </Alert>
+                    <form
+                      onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                        e.preventDefault();
+                        addNewSection(viewSetId, newSectionName);
+                      }}
+                    >
+                      <DebouncedTextField
+                        required
+                        label="Section Name"
+                        name="sectionName"
+                        data-testid="sectionName"
+                        value={newSectionName}
+                        onChange={(
+                          event: React.ChangeEvent<HTMLInputElement>
+                        ) => {
+                          setNewSectionName(event.target.value);
+                        }}
+                        sx={{'& .MuiInputBase-root': {paddingRight: 1}, mt: 3}}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <Tooltip title="Add">
+                                <IconButton type="submit">
+                                  <AddRoundedIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </form>
+                  </Grid>
+                  {addAlertMessage && (
+                    <Alert severity="error">{addAlertMessage}</Alert>
+                  )}
                 </Grid>
-                {addAlertMessage && (
-                  <Alert severity="error">{addAlertMessage}</Alert>
-                )}
-              </Grid>
-            ) : (
-              <Grid item xs={12}>
-                <SectionEditor
-                  viewSetId={viewSetId}
-                  viewId={viewSet.views[activeStep] || viewSet.views[0]}
-                  viewSet={viewSet}
-                  deleteCallback={deleteSection}
-                  moveSectionCallback={moveSectionToForm}
-                  addCallback={addNewSection}
-                  moveCallback={moveSection}
-                  handleSectionMoveCallback={handleSectionMoveCallback}
-                  moveFieldCallback={moveFieldToSection}
-                />
-              </Grid>
-            )}
-          </Grid>
-        </Card>
+              ) : (
+                <Grid item xs={12}>
+                  <SectionEditor
+                    viewSetId={viewSetId}
+                    viewId={viewSet.views[activeStep] || viewSet.views[0]}
+                    viewSet={viewSet}
+                    deleteCallback={deleteSection}
+                    moveSectionCallback={moveSectionToForm}
+                    addCallback={addNewSection}
+                    moveCallback={moveSection}
+                    handleSectionMoveCallback={handleSectionMoveCallback}
+                    moveFieldCallback={moveFieldToSection}
+                  />
+                </Grid>
+              )}
+            </Grid>
+          </Card>
+        </Grid>
       </Grid>
-    </Grid>
+      <Grid container item xs={6}>
+        <PreviewFormManager formName={viewSetId} uiSpec={uiSpecInternal} />
+      </Grid>
+    </Stack>
   );
 };
