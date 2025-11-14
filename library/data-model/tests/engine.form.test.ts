@@ -987,9 +987,9 @@ describe('Form Operations', () => {
         recordId: initialResult.record._id,
       });
 
-      expect(formData['First-1'].data).toBe('test value');
-      expect(formData['First-1'].annotation?.annotation).toBe('test note');
-      expect(formData['First-1'].annotation?.uncertainty).toBe(true);
+      expect(formData.data['First-1'].data).toBe('test value');
+      expect(formData.data['First-1'].annotation?.annotation).toBe('test note');
+      expect(formData.data['First-1'].annotation?.uncertainty).toBe(true);
     });
 
     test('should retrieve latest data after multiple updates', async () => {
@@ -1035,7 +1035,7 @@ describe('Form Operations', () => {
         recordId: initialResult.record._id,
       });
 
-      expect(formData['First-1'].data).toBe('version 3');
+      expect(formData.data['First-1'].data).toBe('version 3');
     });
 
     test('should retrieve specific revision data when specified', async () => {
@@ -1079,14 +1079,14 @@ describe('Form Operations', () => {
         revisionId: rev1._id,
       });
 
-      expect(oldFormData['First-1'].data).toBe('old value');
+      expect(oldFormData.data['First-1'].data).toBe('old value');
 
       // Get latest (default)
       const latestFormData = await engine.form.getExistingFormData({
         recordId: initialResult.record._id,
       });
 
-      expect(latestFormData['First-1'].data).toBe('new value');
+      expect(latestFormData.data['First-1'].data).toBe('new value');
     });
 
     test('should include attachment information', async () => {
@@ -1120,11 +1120,13 @@ describe('Form Operations', () => {
         recordId: initialResult.record._id,
       });
 
-      expect(formData['First-1'].attachments).toHaveLength(1);
-      expect(formData['First-1'].attachments?.[0].attachmentId).toBe(
+      expect(formData.data['First-1'].attachments).toHaveLength(1);
+      expect(formData.data['First-1'].attachments?.[0].attachmentId).toBe(
         attachmentId
       );
-      expect(formData['First-1'].attachments?.[0].filename).toBe('test.txt');
+      expect(formData.data['First-1'].attachments?.[0].filename).toBe(
+        'test.txt'
+      );
     });
 
     test('should handle empty data', async () => {
@@ -1137,7 +1139,7 @@ describe('Form Operations', () => {
         recordId: initialResult.record._id,
       });
 
-      expect(Object.keys(formData)).toHaveLength(0);
+      expect(Object.keys(formData.data)).toHaveLength(0);
     });
 
     test('should handle multiple fields with different types of data', async () => {
@@ -1189,19 +1191,19 @@ describe('Form Operations', () => {
         recordId: initialResult.record._id,
       });
 
-      expect(formData['First-1'].data).toBe('simple string');
-      expect(formData['First-1'].annotation).toBeUndefined();
-      expect(formData['First-1'].attachments).toBeUndefined();
+      expect(formData.data['First-1'].data).toBe('simple string');
+      expect(formData.data['First-1'].annotation).toBeUndefined();
+      expect(formData.data['First-1'].attachments).toBeUndefined();
 
-      expect(formData['Second-1'].data).toBe('with annotation');
-      expect(formData['Second-1'].annotation?.annotation).toBe('note');
+      expect(formData.data['Second-1'].data).toBe('with annotation');
+      expect(formData.data['Second-1'].annotation?.annotation).toBe('note');
 
-      expect(formData['Third-1'].data).toBe('with attachment');
-      expect(formData['Third-1'].attachments).toHaveLength(1);
+      expect(formData.data['Third-1'].data).toBe('with attachment');
+      expect(formData.data['Third-1'].attachments).toHaveLength(1);
 
-      expect(formData['Fourth-1'].data).toBe('complete');
-      expect(formData['Fourth-1'].annotation?.annotation).toBe('full');
-      expect(formData['Fourth-1'].attachments).toHaveLength(1);
+      expect(formData.data['Fourth-1'].data).toBe('complete');
+      expect(formData.data['Fourth-1'].annotation?.annotation).toBe('full');
+      expect(formData.data['Fourth-1'].attachments).toHaveLength(1);
     });
   });
 });
