@@ -3,6 +3,35 @@
 // ============================================================================
 
 /**
+ * Error thrown when document fails validation
+ */
+export class DocumentValidationError extends Error {
+  constructor({
+    recordId,
+    doc,
+    validationErr,
+    operation,
+  }: {
+    recordId: string;
+    doc: any;
+    validationErr: any;
+    operation: string;
+  }) {
+    // Try and stringify the doc
+    let docMsg: string | undefined;
+    try {
+      docMsg = JSON.stringify(doc, undefined, 2);
+    } catch {
+      docMsg = undefined;
+    }
+    super(
+      `The target record (id = ${recordId}) failed validation.\nOperation: ${operation}.\nValidation error: ${validationErr}.\nDocument contents:\n${docMsg ?? 'Could not be serialised as JSON...'}.`
+    );
+    this.name = 'DocumentValidationError';
+  }
+}
+
+/**
  * Error thrown when revision does not match record
  */
 export class RevisionMismatchError extends Error {
