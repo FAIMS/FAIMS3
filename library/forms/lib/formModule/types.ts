@@ -63,7 +63,7 @@ export type FormFieldContextProps = {
   state: FaimsFormFieldState;
   setFieldData: (value: any) => void;
   setFieldAnnotation: (value: FormAnnotation) => void;
-  setFieldAttachment: (value: FaimsAttachment) => void;
+  setFieldAttachment: (value: FaimsAttachments) => void;
   handleBlur: () => void;
   context: FormContext;
 };

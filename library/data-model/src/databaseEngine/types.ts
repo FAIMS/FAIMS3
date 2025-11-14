@@ -473,8 +473,11 @@ export const faimsAttachmentSchema = z.object({
   /** MIME type of the file */
   fileType: z.string(),
 });
-
 export type FaimsAttachment = z.infer<typeof faimsAttachmentSchema>;
+
+// and we use an array of these for multiple attachments
+export const faimsAttachmentsSchema = z.array(faimsAttachmentSchema).optional();
+export type FaimsAttachments = z.infer<typeof faimsAttachmentsSchema>;
 
 /**
  * Schema for an annotation on a form field.
@@ -497,7 +500,7 @@ const formDataEntry = z.object({
   // NOTE: do we want to use the internal representation
   annotation: formAnnotationSchema.optional(),
   // NOTE: do we want to use the internal representation?
-  attachments: z.array(faimsAttachmentSchema).optional(),
+  attachments: faimsAttachmentsSchema,
 });
 export type FormDataEntry = z.infer<typeof formDataEntry>;
 const formUpdateData = z.record(z.string(), formDataEntry);

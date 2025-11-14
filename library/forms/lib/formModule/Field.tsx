@@ -1,8 +1,12 @@
+import {
+  FaimsAttachments,
+  FormAnnotation,
+  FormDataEntry
+} from '@faims3/data-model';
 import React, {useMemo} from 'react';
-import {EncodedFieldSpecification, FaimsForm, FaimsFormField} from './types';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {FormContext} from './FormManager';
-import {FaimsAttachment, FormAnnotation, FormAnnotations, FormDataEntry, FormUpdateData} from '@faims3/data-model';
+import {EncodedFieldSpecification, FaimsForm} from './types';
 
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
@@ -54,10 +58,10 @@ export const Field = React.memo((props: FieldProps) => {
           };
           field.handleChange(newValue as any);
         };
-        const setFieldAttachment = (value: FaimsAttachment) => {
+        const setFieldAttachment = (value: FaimsAttachments) => {
           const newValue: FormDataEntry = {
             ...(field.state.value || {}),
-            attachment: value,
+            attachments: value,
           };
           field.handleChange(newValue as any);
         };
