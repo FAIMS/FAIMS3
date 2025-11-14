@@ -1,9 +1,14 @@
+import {
+  FaimsAttachments,
+  FormAnnotation,
+  FormUpdateData,
+} from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import React from 'react';
 import {z} from 'zod';
 import {FormContext} from './FormManager';
 
-export type FaimsFormData = Record<string, any>;
+export type FaimsFormData = FormUpdateData;
 
 // Extract the Field type from the form instance
 type ExtractFieldType<T> = T extends {
@@ -18,12 +23,19 @@ type ExtractFieldType<T> = T extends {
 // we need
 const myUseForm = () =>
   useForm({
-    defaultValues: {} as Record<string, any>,
+    defaultValues: {} as FaimsFormData,
   });
 export type FaimsForm = ReturnType<typeof myUseForm>;
 export type FaimsFormField = ExtractFieldType<FaimsForm>;
+export type FaimsFormFieldState = FaimsFormField['state'];
 
 // Type describing the description of a field in the UISpec
+
+export const FieldSpecificationMeta = z.object({
+  annotation: z.object({include: z.boolean(), label: z.string()}),
+  uncertainty: z.object({include: z.boolean(), label: z.string()}),
+});
+export type FieldSpecificationMeta = z.infer<typeof FieldSpecificationMeta>;
 
 export const FieldSpecificationSchema = z.object({
   'component-namespace': z.string(),
@@ -32,10 +44,7 @@ export const FieldSpecificationSchema = z.object({
   initialValue: z.any(),
   persistent: z.boolean(),
   displayParent: z.boolean(),
-  meta: z.object({
-    annotation: z.object({include: z.boolean(), label: z.string()}),
-    uncertainty: z.object({include: z.boolean(), label: z.string()}),
-  }),
+  meta: FieldSpecificationMeta,
 });
 export type EncodedFieldSpecification = z.infer<
   typeof FieldSpecificationSchema
@@ -54,6 +63,10 @@ export type BaseFieldProps = z.infer<typeof BaseFieldPropsSchema>;
 
 // These are the additional FaimsForm props passed
 export type FormFieldContextProps = {
-  field: FaimsFormField;
+  state: FaimsFormFieldState;
+  setFieldData: (value: any) => void;
+  setFieldAnnotation: (value: FormAnnotation) => void;
+  setFieldAttachment: (value: FaimsAttachments) => void;
+  handleBlur: () => void;
   context: FormContext;
 };

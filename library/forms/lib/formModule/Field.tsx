@@ -1,7 +1,13 @@
+import {
+  FaimsAttachments,
+  FormAnnotation,
+  FormDataEntry,
+} from '@faims3/data-model';
 import React, {useMemo} from 'react';
-import {EncodedFieldSpecification, FaimsForm} from './types';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {FormContext} from './FormManager';
+import {EncodedFieldSpecification, FaimsForm} from './types';
+import {FieldAnnotation} from './Annotation';
 
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
@@ -38,13 +44,48 @@ export const Field = React.memo((props: FieldProps) => {
   return (
     <props.form.Field
       name={props.fieldSpec['component-parameters'].name}
-      children={field => (
-        <Component
-          {...props.fieldSpec['component-parameters']}
-          field={field}
-          context={props.context}
-        />
-      )}
+      children={field => {
+        const setFieldData = (value: any) => {
+          const newValue: FormDataEntry = {
+            ...(field.state.value || {}),
+            data: value,
+          };
+          field.handleChange(newValue as any);
+        };
+        const setFieldAnnotation = (value: FormAnnotation) => {
+          const newValue: FormDataEntry = {
+            ...(field.state.value || {}),
+            annotation: value,
+          };
+          field.handleChange(newValue as any);
+        };
+        const setFieldAttachment = (value: FaimsAttachments) => {
+          const newValue: FormDataEntry = {
+            ...(field.state.value || {}),
+            attachments: value,
+          };
+          field.handleChange(newValue as any);
+        };
+
+        return (
+          <>
+            <Component
+              {...props.fieldSpec['component-parameters']}
+              state={field.state}
+              context={props.context}
+              setFieldData={setFieldData}
+              setFieldAnnotation={setFieldAnnotation}
+              setFieldAttachment={setFieldAttachment}
+              handleBlur={field.handleBlur}
+            />
+            <FieldAnnotation
+              config={props.fieldSpec.meta}
+              state={field.state as any} // avoid Typescript complaint
+              setFieldAnnotation={setFieldAnnotation}
+            />
+          </>
+        );
+      }}
     />
   );
 });

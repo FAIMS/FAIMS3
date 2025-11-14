@@ -20,6 +20,7 @@ import {
   FormUpdateData,
   HydratedDataField,
   HydratedRecord,
+  InitialFormData,
   NewAvpDBDocument,
   newAvpDocumentSchema,
   NewFormRecord,
@@ -845,6 +846,21 @@ class FormOperations {
   }
 
   /**
+   *
+   * @param recordId record Id of interest
+   * @returns the current
+   */
+  async getCurrentRevisionId({recordId}: {recordId: string}): Promise<string> {
+    const heads = await this.hydrated.getHeads(recordId);
+    if (heads.length === 0) {
+      throw new Exceptions.NoHeadsError(recordId);
+    } else if (heads.length > 1) {
+      throw new Exceptions.RecordConflictError(recordId, heads);
+    }
+    return heads[0];
+  }
+
+  /**
    * Create a brand new record. This does not create any AVPs/data.
    *
    * This creates
@@ -1092,13 +1108,14 @@ class FormOperations {
    * Given a record ID, and optionally a revision ID, gets the hydrated data,
    * then maps it into the existing form data format. This is a nice utility
    * function for loading data into a form for updated existing records in the
-   * app.
+   * app.  Also included are the revision ID and the form ID which are needed
+   * to set up the form.
    *
    * @param recordId The record
    * @param revisionId The revision if using specific one, otherwise head
    * according to hydration config
    * @param config The settings for hydration
-   * @returns The ready to go existing form data
+   * @returns The ready to go existing form data + revision/form IDs
    */
   async getExistingFormData({
     recordId,
@@ -1108,7 +1125,7 @@ class FormOperations {
     recordId: string;
     revisionId?: string;
     config?: Partial<HydratedRecordConfig>;
-  }): Promise<FormUpdateData> {
+  }): Promise<InitialFormData> {
     // Grab the hydrated version
     const hydrated = await this.hydrated.getHydratedRecord({
       recordId,
@@ -1116,7 +1133,7 @@ class FormOperations {
       config,
     });
 
-    return dataMap({
+    const data = dataMap({
       data: hydrated.data,
       mapFn: d => ({
         annotation: d.annotations,
@@ -1124,6 +1141,12 @@ class FormOperations {
         data: d.data,
       }),
     });
+
+    return {
+      revisionId: hydrated.revision._id,
+      formId: hydrated.record.formId,
+      data,
+    };
   }
 
   /**

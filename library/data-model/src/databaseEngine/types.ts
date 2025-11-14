@@ -473,8 +473,11 @@ export const faimsAttachmentSchema = z.object({
   /** MIME type of the file */
   fileType: z.string(),
 });
-
 export type FaimsAttachment = z.infer<typeof faimsAttachmentSchema>;
+
+// and we use an array of these for multiple attachments
+export const faimsAttachmentsSchema = z.array(faimsAttachmentSchema).optional();
+export type FaimsAttachments = z.infer<typeof faimsAttachmentsSchema>;
 
 /**
  * Schema for an annotation on a form field.
@@ -489,6 +492,7 @@ const formAnnotationSchema = z.object({
 
 const formAnnotations = z.record(z.string(), formAnnotationSchema.optional());
 export type FormAnnotations = z.infer<typeof formAnnotations>;
+export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
 
 // Form data
 const formDataEntry = z.object({
@@ -496,16 +500,23 @@ const formDataEntry = z.object({
   // NOTE: do we want to use the internal representation
   annotation: formAnnotationSchema.optional(),
   // NOTE: do we want to use the internal representation?
-  attachments: z.array(faimsAttachmentSchema).optional(),
+  attachments: faimsAttachmentsSchema,
 });
 export type FormDataEntry = z.infer<typeof formDataEntry>;
 const formUpdateData = z.record(z.string(), formDataEntry);
 export type FormUpdateData = z.infer<typeof formUpdateData>;
 
+// A packet of data needed to create a editable form
+const initialFormData = z.object({
+  revisionId: z.string(),
+  formId: z.string(),
+  data: formUpdateData,
+});
+
+export type InitialFormData = z.infer<typeof initialFormData>;
+
 // AVP update modes
 export type AvpUpdateMode = 'new' | 'parent';
-
-export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
 
 /**
  * Schema for a relationship between records.

@@ -4,13 +4,24 @@
   "private": true,
   "version": "1.2.8",
   "type": "module",
-  "main": "src/index.tsx",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
   "engines": {
     "node": "22"
   },
   "scripts": {
     "dev": "vite",
     "build": "tsc --p ./tsconfig-build.json && vite build",
+    "watch": "pnpm run watch:types & pnpm run watch:build",
+    "watch:types": "tsc --p ./tsconfig-build.json --watch",
+    "watch:build": "vite build --watch",
     "lint": "eslint .",
     "fix": "gts fix",
     "preview": "vite preview",

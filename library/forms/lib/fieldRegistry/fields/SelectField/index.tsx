@@ -74,12 +74,10 @@ const valueSchema = (props: SelectFieldProps) => {
  */
 export const Select = (props: SelectFieldProps & FormFieldContextProps) => {
   const theme = useTheme();
-  const value = props.field.state.value;
+  const value = (props.state.value?.data as string) ?? '';
 
   const onChange = (event: SelectChangeEvent) => {
-    const newValue = event.target.value;
-    console.log('Select onChange:', newValue);
-    props.field.handleChange(newValue);
+    props.setFieldData(event.target.value);
   };
 
   return (
@@ -97,9 +95,10 @@ export const Select = (props: SelectFieldProps & FormFieldContextProps) => {
       >
         <MuiSelect
           onChange={onChange}
-          value={value ?? ''}
+          value={value}
           input={<OutlinedInput />}
           disabled={props.disabled}
+          onBlur={props.handleBlur}
         >
           {props.ElementProps.options.map((option: any) => (
             <MenuItem

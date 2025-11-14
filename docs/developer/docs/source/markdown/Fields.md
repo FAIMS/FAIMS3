@@ -61,18 +61,36 @@ of the address.
 The component signature should be:
 
 ```typescript
-const Select = (props: SelectFieldProps)
+const Select = (props: SelectFieldProps & FormFieldContextProps)
 ```
 
-To get the current value of the field and a function for updating the value, call
-the `useFormField` hook in your component:
+`FormFieldContextProps` are additional properties that help control the form
+field behaviour.
 
 ```typescript
- const {value, setValue} = useFormField(props.name);
+export type FormFieldContextProps = {
+  state: FaimsFormFieldState;
+  setFieldData: (value: any) => void;
+  setFieldAnnotation: (value: FormAnnotation) => void;
+  setFieldAttachment: (value: FaimsAttachment) => void;
+  handleBlur: () => void;
+  context: FormContext;
+};
 ```
 
-The main requirement on the component is to call `setValue`
-when a new value for the field is available. For example,
+The current value of the field can be found in `props.state.value`, this is of 
+type `FormDataEntry` and contains properties for the `data`, `annotations` and
+`attachments`. Note that this might
+be undefined and the `data` property will have unknown type so you will want to use something like
+this to get the current field value:
+
+```typescript
+  const value = (props.state.value?.data as string) || '';
+```
+
+The main requirement on the component is to use the callback functions
+when a new value for the field is available. `props.setFieldData` will update the data part
+of the For example,
 in the Address field:
 
 ```typescript
@@ -80,7 +98,7 @@ const setFieldValue = (a: AddressType) => {
   const dn = `${a.house_number || ''} ${a.road || ''}, ${a.suburb || ''}, ${a.state || ''} ${a.postcode || ''}`;
   setDisplayName(dn);
   setAddress(a);
-  setValue({
+  props.setFieldData({
     display_name: dn,
     address: a,
   });
@@ -91,8 +109,7 @@ Note that the value that the field generates can be anything from a simple strin
 to an object. In this case we generate a fragment of a GeocodeJSON object
 containing the address data.
 
-The call to `setValue` updates the current record with the new field
-value.
+The call to `props.setFieldData` etc updates the current record with the new data.
 
 The component can handle any interaction locally. For example, it can show/hide an
 edit form when the user clicks the edit icon; the map field pops up a map overlay

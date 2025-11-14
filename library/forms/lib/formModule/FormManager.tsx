@@ -1,19 +1,15 @@
 import type {
+  AvpUpdateMode,
   DataEngine,
-  EncodedNotebook,
+  FormUpdateData,
   IAttachmentService,
+  ProjectUIModel,
 } from '@faims3/data-model';
+import {Button} from '@mui/material';
 import {useForm, useStore} from '@tanstack/react-form';
-import type {ComponentProps} from 'react';
-import {FaimsForm, FaimsFormData} from './types';
+import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
-
-const formValues = {
-  'Full-Name': 'Steve',
-  Occupation: 'Developer',
-  Description: '',
-  Selection: '',
-};
+import {FaimsForm, FaimsFormData} from './types';
 
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
@@ -68,15 +64,179 @@ export interface FormConfig {
   context: FormContext;
 }
 
-export interface FormManagerProps extends ComponentProps<any> {
-  project: EncodedNotebook;
-  formName: string;
-  config: FormConfig;
+export interface FullFormConfig {
+  context: FullFormContext;
 }
 
-export const FormManager = (props: FormManagerProps) => {
-  console.log('FormManager:', props.formName);
+export interface EditableFormManagerProps extends ComponentProps<any> {
+  recordId: string;
+  activeUser: string;
+  mode: AvpUpdateMode;
+  config: FullFormConfig;
+}
 
+export const EditableFormManager = (props: EditableFormManagerProps) => {
+  console.log('FormManager:', props);
+
+  const [uiSpec, setUiSpec] = useState<ProjectUIModel | null>(null);
+  const [record, setRecord] = useState<FormUpdateData | null>(null);
+  const [dataEngine, setDataEngine] = useState<DataEngine | null>(null);
+  const [formValues, setFormValues] = useState<FormUpdateData>({});
+  const [formId, setFormId] = useState<string | null>(null);
+  const [edited, setEdited] = useState<boolean>(false);
+
+  const [workingRevisionId, setWorkingRevisionId] = useState<string | null>(
+    null
+  );
+
+  // TODO: probably want a hook to get the initial form
+  // data, then we can populate the form with that data
+  // https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values#basic-usage
+
+  const form = useForm({
+    defaultValues: formValues as FaimsFormData,
+    onSubmit: ({value}) => {
+      console.log('Form submitted with value:', value);
+    },
+    listeners: {
+      onChangeDebounceMs: 1000, // only run onChange so often
+      onChange: async () => {
+        console.log(
+          '%cForm values changed:',
+          'background-color: green',
+          form.state.values
+        );
+        console.log('FirstEdit:', edited);
+
+        // this might change if we make a new revision below
+        let revisionToUpdate = workingRevisionId;
+
+        // without these we can't do anything
+        // need to know the revision we need to update and have a data engine
+        // and if we don't have the current record then we're a bit lost
+        if (record && revisionToUpdate && dataEngine) {
+          // if this is the first change, and this is not a new record,
+          // we create a new revision and this becomes our working revision
+          // Q: do we need to remember the parent revision?
+          if (!edited) {
+            console.log('First edit');
+            setEdited(true);
+
+            if (props.mode === 'parent') {
+              const newRevision = await dataEngine?.form.createRevision({
+                recordId: props.recordId,
+                revisionId: revisionToUpdate,
+                createdBy: props.activeUser,
+              });
+              setWorkingRevisionId(newRevision._id);
+              revisionToUpdate = newRevision._id;
+              console.log('New working revision:', newRevision);
+            }
+          }
+
+          console.log('form state', form.state.values);
+          // then we update the working revision with the new data
+          const updatedRecord: FormUpdateData = {
+            ...record,
+            ...form.state.values,
+          };
+          console.log(
+            '%cUpdating revision:',
+            'background-color: pink',
+            revisionToUpdate,
+            updatedRecord
+          );
+          dataEngine.form
+            .updateRevision({
+              revisionId: revisionToUpdate,
+              recordId: props.recordId,
+              updatedBy: props.activeUser,
+              update: updatedRecord,
+              mode: props.mode,
+            })
+            .then(updatedRecord => {
+              console.log(
+                '%cRecord updated:',
+                'background-color: red',
+                updatedRecord
+              );
+            });
+        }
+      },
+    },
+  });
+
+  // Get the record data and populate the form values when it is available
+  useEffect(() => {
+    const fn = async () => {
+      const engine = props.config.context.dataEngine();
+      setDataEngine(engine);
+      setUiSpec(engine.uiSpec);
+
+      const {revisionId, formId, data} = await engine.form.getExistingFormData({
+        recordId: props.recordId,
+        revisionId: props.revisionId,
+      });
+      setFormId(formId);
+      setWorkingRevisionId(revisionId);
+      setRecord(data);
+      console.log('Loaded form data:', revisionId, formId, data);
+      setFormValues(data);
+    };
+    fn();
+  }, [props.recordId, props.config]);
+
+  console.log('Loaded record:', record);
+
+  if (!record || !uiSpec || !form || !formId) {
+    return <div>Record {props.recordId} not found</div>;
+  } else {
+    return (
+      <>
+        <Button
+          variant="contained"
+          onClick={() => props.config.context.trigger.commit()}
+        >
+          Finish
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => props.config.context.trigger.commit()}
+        >
+          Finish and New
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => props.config.context.trigger.commit()}
+        >
+          Cancel
+        </Button>
+
+        <FormManager
+          form={form}
+          formName={formId}
+          uiSpec={uiSpec}
+          config={props.config}
+        />
+      </>
+    );
+  }
+};
+
+export interface PreviewFormManagerProps extends ComponentProps<any> {
+  formName: string;
+  uiSpec: ProjectUIModel;
+}
+
+export const PreviewFormManager = (props: PreviewFormManagerProps) => {
+  console.log('PreviewFormManager:', props);
+
+  const formValues = {
+    'Full-Name': 'Steve',
+    Occupation: 'Developer',
+    Description: '',
+    Selection: '',
+  };
   const form = useForm({
     defaultValues: formValues as FaimsFormData,
     onSubmit: ({value}) => {
@@ -89,8 +249,36 @@ export const FormManager = (props: FormManagerProps) => {
     },
   });
 
-  const uiSpec = props.project['ui-specification'];
-  const formSpec = uiSpec.viewsets[props.formName];
+  const config = {
+    context: {
+      mode: 'preview' as const,
+    },
+  };
+
+  return (
+    <FormManager
+      form={form}
+      formName={props.formName}
+      uiSpec={props.uiSpec}
+      config={config}
+    />
+  );
+};
+
+export interface FormManagerProps extends ComponentProps<any> {
+  formName: string;
+  form: FaimsForm;
+  uiSpec: ProjectUIModel;
+  config: {
+    context: FormContext;
+  };
+}
+
+export const FormManager = (props: FormManagerProps) => {
+  console.log('FormManager:', props);
+
+  const formSpec = props.uiSpec.viewsets[props.formName];
+  console.log('Form Spec:', formSpec);
 
   return (
     <>
@@ -100,20 +288,20 @@ export const FormManager = (props: FormManagerProps) => {
         onSubmit={e => {
           e.preventDefault();
           e.stopPropagation();
-          form.handleSubmit();
+          props.form.handleSubmit();
         }}
       >
         {formSpec.views.map((sectionName: string) => (
           <FormSection
             key={sectionName}
-            form={form}
-            uiSpec={uiSpec}
+            form={props.form}
+            uiSpec={props.uiSpec}
             section={sectionName}
             config={props.config}
           />
         ))}
       </form>
-      <FormStateDisplay form={form} />
+      <FormStateDisplay form={props.form} />
     </>
   );
 };

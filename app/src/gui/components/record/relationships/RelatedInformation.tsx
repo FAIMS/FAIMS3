@@ -82,7 +82,6 @@ export async function generateLocationState(
           serverId,
           projectId: project_id,
           recordId: parentLink.record_id,
-          revisionId: revision_id,
         }),
         parent_record_id: parentLink.record_id,
         type: 'Child',
@@ -544,7 +543,6 @@ async function get_field_RelatedFields(
             serverId,
             projectId: child_record.project_id,
             recordId: child_record.record_id,
-            revisionId: revision_id,
           }),
           linked_vocab,
           record_id,
@@ -559,7 +557,6 @@ async function get_field_RelatedFields(
             serverId,
             projectId: child_record?.project_id,
             recordId: record_id,
-            revisionId: current_revision_id,
           }),
           relation_type,
           latest_record?.deleted ?? false,
@@ -672,7 +669,6 @@ export async function getRelationshipDisplayData(
               serverId,
               projectId: child_record.project_id,
               recordId: child_record.record_id,
-              revisionId: current_revision_id,
             }),
         linked_vocab,
         parent_link.record_id,
@@ -689,7 +685,6 @@ export async function getRelationshipDisplayData(
               serverId,
               projectId: child_record.project_id,
               recordId: parent_link.record_id,
-              revisionId: revision_id,
             }),
         has_parent === true && index === '0' ? 'Child' : 'Linked',
         false,
@@ -764,7 +759,7 @@ export async function getParentPersistenceData({
 }): Promise<ParentLinkProps[]> {
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
-    const {latest_record, revision_id} = await getRecordInformation({
+    const {latest_record} = await getRecordInformation({
       project_id: projectId,
       record_id: parent.parent.record_id,
       record_label: parent.parent.record_id,
@@ -817,7 +812,6 @@ export async function getParentPersistenceData({
             serverId,
             projectId,
             recordId: parent.parent.record_id,
-            revisionId: revision_id,
           }),
           children: [],
           deleted: latest_record?.deleted,
@@ -991,11 +985,11 @@ export async function addRecordLink({
     // Use the data and spec to get the HRID
     const childRecordHrid =
       latest_record?.data && uiSpec
-        ? (getHridFromValuesAndSpec({
+        ? getHridFromValuesAndSpec({
             values: latest_record?.data,
             uiSpecification: uiSpec,
-          }) ?? latest_record.record_id)
-        : (latest_record?.record_id ?? '');
+          }) ?? latest_record.record_id
+        : latest_record?.record_id ?? '';
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate
