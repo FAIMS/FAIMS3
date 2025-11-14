@@ -9,7 +9,6 @@ import {FormContext} from './FormManager';
 import {EncodedFieldSpecification, FaimsForm} from './types';
 import {FieldAnnotation} from './Annotation';
 
-
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
   form: FaimsForm;
