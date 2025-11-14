@@ -26,7 +26,7 @@ export const EditRecordPage = () => {
 
   // Get mode=XXX from the query params
   const [searchParams] = useSearchParams();
-  const mode = searchParams.get('mode') as AvpUpdateMode | 'parent';
+  const mode = searchParams.get('mode') as AvpUpdateMode;
 
   const navigate = useNavigate();
 
@@ -44,11 +44,9 @@ export const EditRecordPage = () => {
 
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
-  if (!serverId) return <></>;
-  if (!projectId) return <></>;
+  if (!serverId || !projectId) return <></>;
   const project = useAppSelector(state => selectProjectById(state, projectId));
   if (!project) return <></>;
-
   if (!recordId) return <div>Record ID not specified</div>;
 
   const {uiSpecificationId: uiSpecId} = project;
