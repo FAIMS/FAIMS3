@@ -6,6 +6,7 @@ settings:
 
 overrides:
   '@mui/base': 5.0.0-beta.40
+  '@tanstack/form-core': 1.24.4
 
 importers:
 

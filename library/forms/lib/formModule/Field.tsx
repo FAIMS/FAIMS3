@@ -1,12 +1,14 @@
 import {
   FaimsAttachments,
   FormAnnotation,
-  FormDataEntry
+  FormDataEntry,
 } from '@faims3/data-model';
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {FormContext} from './FormManager';
 import {EncodedFieldSpecification, FaimsForm} from './types';
+import {FieldAnnotation} from './Annotation';
+
 
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
@@ -66,17 +68,23 @@ export const Field = React.memo((props: FieldProps) => {
           field.handleChange(newValue as any);
         };
 
-
         return (
-          <Component
-            {...props.fieldSpec['component-parameters']}
-            state={field.state}
-            context={props.context}
-            setFieldData={setFieldData}
-            setFieldAnnotation={setFieldAnnotation}
-            setFieldAttachment={setFieldAttachment}
-            handleBlur={field.handleBlur}
-          />
+          <>
+            <Component
+              {...props.fieldSpec['component-parameters']}
+              state={field.state}
+              context={props.context}
+              setFieldData={setFieldData}
+              setFieldAnnotation={setFieldAnnotation}
+              setFieldAttachment={setFieldAttachment}
+              handleBlur={field.handleBlur}
+            />
+            <FieldAnnotation
+              config={props.fieldSpec.meta}
+              state={field.state as any} // avoid Typescript complaint
+              setFieldAnnotation={setFieldAnnotation}
+            />
+          </>
         );
       }}
     />

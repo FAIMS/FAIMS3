@@ -1,5 +1,5 @@
 import {
-  FaimsAttachment,
+  FaimsAttachments,
   FormAnnotation,
   FormUpdateData,
 } from '@faims3/data-model';
@@ -31,6 +31,12 @@ export type FaimsFormFieldState = FaimsFormField['state'];
 
 // Type describing the description of a field in the UISpec
 
+export const FieldSpecificationMeta = z.object({
+  annotation: z.object({include: z.boolean(), label: z.string()}),
+  uncertainty: z.object({include: z.boolean(), label: z.string()}),
+});
+export type FieldSpecificationMeta = z.infer<typeof FieldSpecificationMeta>;
+
 export const FieldSpecificationSchema = z.object({
   'component-namespace': z.string(),
   'component-name': z.string(),
@@ -38,10 +44,7 @@ export const FieldSpecificationSchema = z.object({
   initialValue: z.any(),
   persistent: z.boolean(),
   displayParent: z.boolean(),
-  meta: z.object({
-    annotation: z.object({include: z.boolean(), label: z.string()}),
-    uncertainty: z.object({include: z.boolean(), label: z.string()}),
-  }),
+  meta: FieldSpecificationMeta,
 });
 export type EncodedFieldSpecification = z.infer<
   typeof FieldSpecificationSchema
