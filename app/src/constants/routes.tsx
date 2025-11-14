@@ -18,7 +18,12 @@
  *   TODO
  */
 
-import {ProjectID, RecordID, RevisionID} from '@faims3/data-model';
+import {
+  AvpUpdateMode,
+  ProjectID,
+  RecordID,
+  RevisionID,
+} from '@faims3/data-model';
 import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';
@@ -47,6 +52,16 @@ export const CREATE_NEW_SURVEY = '/create-new-survey';
 export const USER_ACTIVE_TESTR = '/test';
 export const POUCH_EXPLORER = '/pouchDB';
 
+export function getNotebookRoute({
+  serverId,
+  projectId,
+}: {
+  serverId: string;
+  projectId: string;
+}) {
+  return INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId;
+}
+
 /**
  * Generates a route to a record in the format
  *
@@ -56,14 +71,14 @@ export function getExistingRecordRoute({
   serverId,
   projectId,
   recordId,
-  revisionId,
+  mode,
 }: {
   serverId: string;
   projectId: ProjectID;
   recordId: RecordID;
-  revisionId: RevisionID;
+  mode?: AvpUpdateMode;
 }) {
-  if (!!serverId && !!projectId && !!recordId && !!revisionId) {
+  if (!!serverId && !!projectId && !!recordId) {
     return (
       INDIVIDUAL_NOTEBOOK_ROUTE +
       serverId +
@@ -71,12 +86,11 @@ export function getExistingRecordRoute({
       projectId +
       RECORD_EXISTING +
       recordId +
-      REVISION +
-      revisionId
+      (mode ? `?mode=${mode}` : '')
     );
   }
   console.error('Trying to create record route with missing details!');
-  console.error({serverId, projectId, recordId, revisionId});
+  console.error({serverId, projectId, recordId});
   throw Error(
     'project_id, record_id and revision_id are required for this route'
   );

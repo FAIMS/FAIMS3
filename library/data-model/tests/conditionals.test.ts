@@ -16,13 +16,11 @@
  * Filename: branchingLogic.test.tsx
  */
 
-// eslint-disable-next-line n/no-unpublished-import
-import {expect, it, describe} from 'vitest';
 import {
   compileExpression,
   getDependantFields,
   isStringArray,
-} from './conditionals';
+} from '../src/uiSpecification/conditionals';
 
 describe('get dependant fields', () => {
   it('finds dependant fields in a nested expression', () => {
@@ -348,12 +346,12 @@ describe('compiling expressions', () => {
 
     for (const should of shouldBeArrays) {
       const res = isStringArray(should);
-      expect(res).to.be.true;
+      expect(res).toBe(true);
     }
 
     for (const shouldNot of shouldNotBeArrays) {
       const res = isStringArray(shouldNot);
-      expect(res).to.be.false;
+      expect(res).toBe(false);
     }
   });
 });

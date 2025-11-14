@@ -46,10 +46,11 @@ import React, {useEffect, useState} from 'react';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../../context/store';
 import {logError} from '../../../../logging';
+import {localGetDataDb} from '../../../../utils/database';
 import {theme} from '../../../themes';
 import {
-  getRelationshipDisplayData,
   check_if_record_relationship,
+  getRelationshipDisplayData,
   update_child_records_conflict,
 } from '../relationships/RelatedInformation';
 import {RecordLinkProps} from '../relationships/types';
@@ -60,7 +61,6 @@ import ConflictLinkBar from './conflictLinkBar';
 import ConflictPanel from './conflictpanel';
 import ConflictToolBar from './conflicttoolbar';
 import RecordTabBar from './recordTab';
-import {localGetDataDb} from '../../../..';
 
 type ConflictFormProps = {
   project_id: ProjectID;

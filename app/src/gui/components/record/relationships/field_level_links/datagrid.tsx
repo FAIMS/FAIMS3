@@ -18,7 +18,12 @@
  *   TODO
  */
 
-import {RecordID, RecordMetadata} from '@faims3/data-model';
+import {
+  getFieldLabel,
+  getSummaryFieldInformation,
+  RecordID,
+  RecordMetadata,
+} from '@faims3/data-model';
 import LinkOffIcon from '@mui/icons-material/LinkOff';
 import {
   Alert,
@@ -45,10 +50,6 @@ import {getExistingRecordRoute} from '../../../../../constants/routes';
 import {compiledSpecService} from '../../../../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../../../context/store';
-import {
-  getFieldLabel,
-  getSummaryFieldInformation,
-} from '../../../../../uiSpecification';
 import {useDataGridStyles} from '../../../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../../../utils/useScreenSize';
 import {
@@ -153,7 +154,6 @@ export function DataGridFieldLinksComponent(
           serverId: props.serverId,
           projectId: props.project_id,
           recordId: (params.row.record_id || '').toString(),
-          revisionId: (params.row.revision_id || '').toString(),
         })
       );
     },

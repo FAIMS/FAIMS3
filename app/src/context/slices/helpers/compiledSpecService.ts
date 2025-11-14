@@ -11,10 +11,9 @@
  * function which takes the server and project and combines them to form an ID.
  */
 
-import {ProjectUIModel} from '@faims3/data-model';
+import {compileUiSpecConditionals, ProjectUIModel} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
-import {compileUiSpecConditionals} from '../../../uiSpecification';
 PouchDB.plugin(PouchDBFind);
 
 class CompiledUiSpecService {

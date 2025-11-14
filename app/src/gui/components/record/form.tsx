@@ -20,53 +20,48 @@
 
 import {
   Annotations,
+  currentlyVisibleFields,
   generateFAIMSDataID,
+  getFieldNamesFromFields,
+  getFieldsForViewSet,
+  getFieldsMatchingCondition,
   getFirstRecordHead,
   getFullRecordData,
+  getReturnedTypesForViewSet,
+  getViewsMatchingCondition,
   ProjectID,
   ProjectUIModel,
   RecordID,
   RecordReference,
   Relationship,
+  requiredFields,
   RevisionID,
   upsertFAIMSData,
+  ValuesObject,
 } from '@faims3/data-model';
 import {Alert, Box, Button, Divider, Typography} from '@mui/material';
 import {Form, Formik, FormikProps} from 'formik';
 import React from 'react';
+import {connect, ConnectedProps} from 'react-redux';
 import {NavigateFunction} from 'react-router-dom';
-import {localGetDataDb} from '../../..';
 import * as ROUTES from '../../../constants/routes';
 import {
   NotificationContext,
   NotificationContextType,
 } from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
-import {store} from '../../../context/store';
-import {
-  currentlyVisibleFields,
-  percentComplete,
-  requiredFields,
-} from '../../../lib/form-utils';
+import {AppDispatch, store} from '../../../context/store';
+import {percentComplete} from '../../../lib/form-utils';
 import {getFieldPersistentData} from '../../../local-data/field-persistent';
 import {logError} from '../../../logging';
 import RecordDraftState from '../../../sync/draft-state';
-import {
-  getFieldNamesFromFields,
-  getFieldsForViewSet,
-  getReturnedTypesForViewSet,
-} from '../../../uiSpecification';
+import {deleteDraftsForRecord} from '../../../sync/draft-storage';
 import {
   getRecordContextFromRecord,
   recomputeDerivedFields,
-  ValuesObject,
 } from '../../../utils/formUtilities';
 import CircularLoading from '../ui/circular_loading';
 import {getValidationSchemaForViewset} from '../validation';
-import {
-  getFieldsMatchingCondition,
-  getViewsMatchingCondition,
-} from './branchingLogic';
 import {savefieldpersistentSetting} from './fieldPersistentSetting';
 import FormButtonGroup from './formButton';
 import {firstDefinedFromList} from './helpers';
@@ -80,14 +75,12 @@ import {
 } from './relationships/RelatedInformation';
 import UGCReport from './UGCReport';
 import {getUsefulFieldNameFromUiSpec, ViewComponent} from './view';
-import {deleteDraftsForRecord} from '../../../sync/draft-storage';
-import {connect, ConnectedProps} from 'react-redux';
-import {AppDispatch} from '../../../context/store';
 
 // Import the actions from recordSlice
-import {setEdited, setPercent} from '../../../context/slices/recordSlice';
-import {isEqual} from 'lodash';
 import EditIcon from '@mui/icons-material/Edit';
+import {isEqual} from 'lodash';
+import {setEdited, setPercent} from '../../../context/slices/recordSlice';
+import {localGetDataDb} from '../../../utils/database';
 
 // Define mapDispatchToProps
 const mapDispatchToProps = (dispatch: AppDispatch) => {
@@ -637,12 +630,12 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
        * (in order high priority to last resort): draft storage, database, ui schema
        */
       const fromdb = revision_id
-        ? ((await getFullRecordData({
+        ? (await getFullRecordData({
             dataDb: localGetDataDb(this.props.project_id),
             projectId: this.props.project_id,
             recordId: this.props.record_id,
             revisionId: revision_id,
-          })) ?? undefined)
+          })) ?? undefined
         : undefined;
 
       // if there is no existing revision then this is either a brand new
@@ -1247,14 +1240,13 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
             );
           }
           parentRecord.data[relationState.field_id] = newFieldValue;
-          upsertFAIMSData({dataDb, record: parentRecord}).then(revisionId => {
+          upsertFAIMSData({dataDb, record: parentRecord}).then(() => {
             // now parent link will be out of date as it refers to
             // the old revision so we need a new one
             const revLink = ROUTES.getExistingRecordRoute({
               serverId: this.props.serverId,
               projectId: this.props.project_id,
               recordId: relationState.parent_record_id,
-              revisionId,
             });
             this.navigateTo(revLink);
           });
@@ -1498,13 +1490,12 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
                 dataDb: localGetDataDb(this.props.project_id),
                 record: new_doc,
               })
-                .then(new_revision_id => {
+                .then(() => {
                   // update location state to point to the parent record
                   locationState['parent_link'] = ROUTES.getExistingRecordRoute({
                     serverId: this.props.serverId,
                     projectId: this.props.project_id,
                     recordId: (locationState.parent_record_id || '').toString(),
-                    revisionId: (new_revision_id || '').toString(),
                   });
                   // and add the reference ot the child record id
                   locationState['child_record_id'] = new_record_id;

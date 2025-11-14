@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import '@capacitor-community/safe-area';
 import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
@@ -31,28 +32,28 @@ import * as ROUTES from './constants/routes';
 import MainLayout from './gui/layout';
 import AboutBuild from './gui/pages/about-build';
 import Notebook from './gui/pages/notebook';
-import Record from './gui/pages/record';
 import RecordCreate from './gui/pages/record-create';
 import {SignIn} from './gui/pages/signin';
 import Workspace from './gui/pages/workspace';
-import '@capacitor-community/safe-area';
 
 // import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
 // https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
 // will be resolved in material-ui v5
 
+import {OFFLINE_MAPS} from './buildconfig';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
+import {MapDownloadComponent} from './gui/components/map/map-download';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import NotFound404 from './gui/pages/404';
+import {PouchExplorer} from './gui/pages/pouchExplorer';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {MapDownloadComponent} from './gui/components/map/map-download';
-import {OFFLINE_MAPS} from './buildconfig';
-import {PouchExplorer} from './gui/pages/pouchExplorer';
 
 import {SafeArea} from '@capacitor-community/safe-area';
+import {getExistingRecordRoute} from './constants/routes';
+import {EditRecordPage} from './gui/pages/newRecord';
 
 SafeArea.enable({
   config: {
@@ -146,28 +147,7 @@ export default function App() {
                           </OnlineOnlyRoute>
                         }
                       />
-                      {/* Draft creation happens by redirecting to a fresh minted UUID
-                  This is to keep it stable until the user navigates away. So the
-                  draft_id is optional, and when RecordCreate is instantiated
-                  without one, it immediately mints a UUID and redirects to it */}
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':serverId/' +
-                          ':projectId' +
-                          ROUTES.RECORD_CREATE +
-                          ':typeName' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draftId' + //added for keep the record id same for draft
-                          ROUTES.RECORD_RECORD +
-                          ':recordId'
-                        }
-                        element={
-                          <TolerantPrivateRoute>
-                            <RecordCreate />
-                          </TolerantPrivateRoute>
-                        }
-                      />
+
                       <Route
                         path={
                           ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
@@ -182,48 +162,19 @@ export default function App() {
                           </TolerantPrivateRoute>
                         }
                       />
-                      {/*Record editing and viewing is a separate affair, separated by
-                  the presence/absence of draft_id prop OR draft_id being in the
-                  state of the Record component. So if the user clicks a draft to
-                  make continued changes, the draft_id is in the URL here.
-                  Otherwise, they can make changes to a record they view (Which
-                  should at some point, TODO, redirect to the same Record form but
-                  with the newly minted draft_id attached. BUt this TODO is in the
-                  record/form.tsx*/}
                       <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':serverId/' +
-                          ':projectId' +
-                          ROUTES.RECORD_EXISTING +
-                          ':recordId' +
-                          ROUTES.REVISION +
-                          ':revisionId'
-                        }
+                        path={getExistingRecordRoute({
+                          serverId: ':serverId',
+                          projectId: ':projectId',
+                          recordId: ':recordId',
+                        })}
                         element={
                           <TolerantPrivateRoute>
-                            <Record />
+                            <EditRecordPage />
                           </TolerantPrivateRoute>
                         }
                       />
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':serverId/' +
-                          ':projectId' +
-                          ROUTES.RECORD_EXISTING +
-                          ':recordId' +
-                          ROUTES.REVISION +
-                          ':revisionId' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draftId'
-                        }
-                        element={
-                          <TolerantPrivateRoute>
-                            <Record />
-                          </TolerantPrivateRoute>
-                        }
-                      />
+
                       <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
                       {OFFLINE_MAPS && (
                         <Route
