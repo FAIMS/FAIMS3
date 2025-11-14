@@ -759,7 +759,7 @@ export async function getParentPersistenceData({
 }): Promise<ParentLinkProps[]> {
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
-    const {latest_record, revision_id} = await getRecordInformation({
+    const {latest_record} = await getRecordInformation({
       project_id: projectId,
       record_id: parent.parent.record_id,
       record_label: parent.parent.record_id,
@@ -985,11 +985,11 @@ export async function addRecordLink({
     // Use the data and spec to get the HRID
     const childRecordHrid =
       latest_record?.data && uiSpec
-        ? (getHridFromValuesAndSpec({
+        ? getHridFromValuesAndSpec({
             values: latest_record?.data,
             uiSpecification: uiSpec,
-          }) ?? latest_record.record_id)
-        : (latest_record?.record_id ?? '');
+          }) ?? latest_record.record_id
+        : latest_record?.record_id ?? '';
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate

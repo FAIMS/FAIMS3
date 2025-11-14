@@ -1,5 +1,5 @@
 import {
-  FaimsAttachment,
+  FaimsAttachments,
   FormAnnotation,
   FormUpdateData,
 } from '@faims3/data-model';

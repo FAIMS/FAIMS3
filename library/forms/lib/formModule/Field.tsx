@@ -1,7 +1,7 @@
 import {
   FaimsAttachments,
   FormAnnotation,
-  FormDataEntry
+  FormDataEntry,
 } from '@faims3/data-model';
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
@@ -65,7 +65,6 @@ export const Field = React.memo((props: FieldProps) => {
           };
           field.handleChange(newValue as any);
         };
-
 
         return (
           <Component
