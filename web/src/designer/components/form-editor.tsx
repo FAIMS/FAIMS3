@@ -63,6 +63,8 @@ type Props = {
   handleDeleteCallback: (viewSetID: string) => void;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
   handleFieldMoveCallback: (targetViewId: string) => void;
+  previewForm: boolean;
+  setPreviewForm: (preview: boolean) => void;
 };
 
 export const FormEditor = ({
@@ -73,6 +75,8 @@ export const FormEditor = ({
   handleDeleteCallback,
   handleSectionMoveCallback,
   handleFieldMoveCallback,
+  previewForm,
+  setPreviewForm,
 }: Props) => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -119,7 +123,6 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
-  const [showPreview, setShowPreview] = useState(false);
 
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
@@ -548,8 +551,8 @@ export const FormEditor = ({
               label={'Preview'}
               control={
                 <Switch
-                  checked={showPreview}
-                  onChange={e => setShowPreview(e.target.checked)}
+                  checked={previewForm}
+                  onChange={e => setPreviewForm(e.target.checked)}
                 />
               }
             />
@@ -698,7 +701,7 @@ export const FormEditor = ({
           </Card>
         </Grid>
       </Grid>
-      {showPreview && (
+      {previewForm && (
         <Grid container item sx={{minWidth: '300px'}} xs={6}>
           <PreviewFormManager formName={viewSetId} uiSpec={uiSpecInternal} />
         </Grid>
