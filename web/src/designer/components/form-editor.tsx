@@ -37,6 +37,7 @@ import {
   Step,
   StepButton,
   Stepper,
+  Switch,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -118,6 +119,7 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
+  const [showPreview, setShowPreview] = useState(false);
 
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
@@ -387,8 +389,8 @@ export const FormEditor = ({
   return (
     <Stack direction="row" spacing={2}>
       <Grid container spacing={2} pt={3}>
-        <Grid container item xs={12} spacing={1.75}>
-          <Grid item xs={12} sm={2.8}>
+        <Grid container item xs={12} spacing={0}>
+          <Grid item xs={12} md={2} sm={2.8}>
             <Button
               variant="text"
               color="error"
@@ -431,7 +433,7 @@ export const FormEditor = ({
             />
           </Grid>
 
-          <Grid item xs={12} sm={2.825}>
+          <Grid item xs={12} md={2} sm={2.825}>
             <Button
               variant="text"
               size="medium"
@@ -483,7 +485,7 @@ export const FormEditor = ({
           </Grid>
 
           {moveButtonsDisabled ? (
-            <Grid item xs={12} sm={2.5}>
+            <Grid item xs={12} md={2} sm={2.5}>
               <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
                 <span>
                   <IconButton disabled={true} aria-label="left" size="medium">
@@ -496,7 +498,7 @@ export const FormEditor = ({
               </Tooltip>
             </Grid>
           ) : (
-            <Grid item xs={12} sm={2.5}>
+            <Grid item sx={{margin: 'auto'}} xs={12} md={2} sm={2.5}>
               <Tooltip title="Move form left">
                 <span>
                   <IconButton
@@ -527,7 +529,7 @@ export const FormEditor = ({
             </Grid>
           )}
 
-          <Grid item xs={12} sm={3.5}>
+          <Grid item xs={12} md={2} sm={3.5}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -539,6 +541,18 @@ export const FormEditor = ({
               label={'Include "Add New Record" button'}
             />
             {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
+          </Grid>
+
+          <Grid item xs={12} md={2} sm={2}>
+            <FormControlLabel
+              label={'Preview'}
+              control={
+                <Switch
+                  checked={showPreview}
+                  onChange={e => setShowPreview(e.target.checked)}
+                />
+              }
+            />
           </Grid>
         </Grid>
         <Grid container item xs={12}>
@@ -684,9 +698,11 @@ export const FormEditor = ({
           </Card>
         </Grid>
       </Grid>
-      <Grid container item xs={6}>
-        <PreviewFormManager formName={viewSetId} uiSpec={uiSpecInternal} />
-      </Grid>
+      {showPreview && (
+        <Grid container item sx={{minWidth: '300px'}} xs={6}>
+          <PreviewFormManager formName={viewSetId} uiSpec={uiSpecInternal} />
+        </Grid>
+      )}
     </Stack>
   );
 };
