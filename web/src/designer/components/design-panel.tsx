@@ -440,6 +440,8 @@ export const DesignPanel = () => {
                     handleDeleteCallback={handleDeleteFormTabChange}
                     handleSectionMoveCallback={handleSectionMove}
                     handleFieldMoveCallback={handleFieldMove}
+                    previewForm={previewForm}
+                    setPreviewForm={setPreviewForm}
                   />
                 }
               />
