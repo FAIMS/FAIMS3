@@ -47,6 +47,15 @@ export interface FullFormContext extends BaseFormContext {
     // This forces a commit of the record
     commit: () => void;
   };
+  // Additional context needed for full mode
+  recordInformation: {
+    recordId: string;
+    revisionId: string;
+  };
+
+  // Who is the active user - this helps when we need to create attachments
+  // etc
+  user: string;
 }
 
 // Preview mode - used for form previews which aren't in the context of a fully
@@ -65,7 +74,7 @@ export interface FormConfig {
 }
 
 export interface FullFormConfig {
-  context: FullFormContext;
+  context: Omit<FullFormContext, 'recordInformation'>;
 }
 
 export interface EditableFormManagerProps extends ComponentProps<any> {
@@ -84,7 +93,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   const [formValues, setFormValues] = useState<FormUpdateData>({});
   const [formId, setFormId] = useState<string | null>(null);
   const [edited, setEdited] = useState<boolean>(false);
-
   const [workingRevisionId, setWorkingRevisionId] = useState<string | null>(
     null
   );
@@ -106,7 +114,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           'background-color: green',
           form.state.values
         );
-        console.log('FirstEdit:', edited);
 
         // this might change if we make a new revision below
         let revisionToUpdate = workingRevisionId;
@@ -216,7 +223,18 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           form={form}
           formName={formId}
           uiSpec={uiSpec}
-          config={props.config}
+          config={{
+            context: {
+              ...props.config.context,
+              recordInformation: {
+                recordId: props.recordId,
+                // TODO validate this behaviour - as soon as we click on
+                // something we should have a revision ID - I don't personally
+                // like that this is potentially undefined
+                revisionId: workingRevisionId || '',
+              },
+            },
+          }}
         />
       </>
     );

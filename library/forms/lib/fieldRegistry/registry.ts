@@ -1,5 +1,6 @@
 import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
+import {takePhotoFieldSpec} from './fields/TakePhoto';
 import {textFieldSpec} from './fields/TextField';
 import {FieldInfo} from './types';
 
@@ -9,6 +10,7 @@ const FieldSpecList: FieldInfo[] = [
   textFieldSpec,
   richTextFieldSpec,
   selectFieldSpec,
+  takePhotoFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info
