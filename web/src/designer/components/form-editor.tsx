@@ -86,7 +86,12 @@ export const FormEditor = ({
     state => state.notebook['ui-specification'].present
   );
   // we need this to be a ProjectUIModel type for the PreviewFormManager
-  const uiSpecInternal: ProjectUIModel = {views: uiSpec.fviews, ...uiSpec};
+  const uiSpecInternal: ProjectUIModel = {
+    fields: uiSpec.fields,
+    viewsets: uiSpec.viewsets,
+    views: uiSpec.fviews,
+    visible_types: uiSpec.visible_types,
+  };
 
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].present.visible_types
