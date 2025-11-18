@@ -12,7 +12,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": "22"
   },
@@ -34,6 +36,7 @@
     "@mui/icons-material": "5.15.8",
     "@mui/material": "5.15.14",
     "@tanstack/react-form": "^1.23.8",
+    "@tanstack/react-query": "^5.62.16",
     "dompurify": "^3.2.4",
     "markdown-it": "^14.1.0",
     "react": "^18.3.1",

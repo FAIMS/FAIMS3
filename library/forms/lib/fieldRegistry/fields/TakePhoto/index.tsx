@@ -1,22 +1,3 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: TakePhoto.tsx
- * Description: Photo capture component with attachment management
- */
-
 import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
@@ -31,7 +12,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
-import {Alert, Box, Link, Paper, Typography, useTheme} from '@mui/material';
+import {Alert, Box, Paper, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -40,9 +21,11 @@ import DialogContentText from '@mui/material/DialogContentText';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
+import {useQuery} from '@tanstack/react-query';
 import {Buffer} from 'buffer';
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {z} from 'zod';
+import {FullFormContext} from '../../../formModule';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,
@@ -55,14 +38,6 @@ type TakePhotoProps = z.infer<typeof takePhotoPropsSchema>;
 type TakePhotoFieldProps = TakePhotoProps & FormFieldContextProps;
 
 /**
- * Represents a photo that has been captured but not yet stored
- */
-interface LocalPhoto {
-  blob: Blob;
-  objectUrl: string;
-}
-
-/**
  * Represents a photo that has been stored as an attachment
  */
 interface StoredPhoto {
@@ -70,23 +45,12 @@ interface StoredPhoto {
 }
 
 /**
- * Union type representing either a local or stored photo
+ * Query key factory for attachment queries
  */
-type PhotoItem = LocalPhoto | StoredPhoto;
-
-/**
- * Type guard to check if a photo is stored
- */
-function isStoredPhoto(photo: PhotoItem): photo is StoredPhoto {
-  return 'attachmentId' in photo;
-}
-
-/**
- * Type guard to check if a photo is local
- */
-function isLocalPhoto(photo: PhotoItem): photo is LocalPhoto {
-  return 'blob' in photo && 'objectUrl' in photo;
-}
+const attachmentKeys = {
+  all: ['attachments'] as const,
+  attachment: (id: string) => [...attachmentKeys.all, id] as const,
+};
 
 /**
  * Converts a base64 encoded image to a Blob object
@@ -103,6 +67,45 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
     type: `image/${image.format}`,
   });
 }
+
+/**
+ * Preview mode component - shows placeholder for non-interactive display
+ */
+const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
+  const {label, helperText, required, advancedHelperText, state} = props;
+  const theme = useTheme();
+
+  const photoCount = state.value?.attachments?.length || 0;
+
+  return (
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}
+      required={required}
+      advancedHelperText={advancedHelperText}
+    >
+      <Paper
+        sx={{
+          padding: theme.spacing(4),
+          textAlign: 'center',
+          bgcolor: theme.palette.grey[100],
+          borderRadius: theme.spacing(2),
+          marginTop: theme.spacing(2),
+        }}
+      >
+        <CameraAltIcon sx={{fontSize: 48, color: 'text.secondary', mb: 2}} />
+        <Typography variant="h6" gutterBottom>
+          Photo Field (Preview Mode)
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {photoCount === 0
+            ? 'No photos captured'
+            : `${photoCount} photo${photoCount === 1 ? '' : 's'} attached`}
+        </Typography>
+      </Paper>
+    </FieldWrapper>
+  );
+};
 
 /**
  * Displays a placeholder component when no photos are present
@@ -140,17 +143,9 @@ const EmptyState: React.FC<{
 };
 
 /**
- * Displays a placeholder for photos that haven't been downloaded yet
+ * Displays a placeholder for photos that failed to load
  */
-const UnavailableImagePlaceholder: React.FC<{
-  //serverId?: string;
-  //projectId: string;
-}> = (
-  {
-    //serverId,
-    // projectId
-  }
-) => {
+const UnavailableImagePlaceholder: React.FC = () => {
   const theme = useTheme();
 
   return (
@@ -182,93 +177,94 @@ const UnavailableImagePlaceholder: React.FC<{
           textAlign: 'center',
         }}
       >
-        Attachment not synced
+        Attachment not available
       </Typography>
-      {
-        <Typography
-          variant="caption"
-          sx={{
-            color: 'rgba(0, 0, 0, 0.5)',
-            textAlign: 'center',
-          }}
-        >
-          Enable download in{' '}
-          <Link
-            component="button"
-            onClick={e => {
-              e.stopPropagation();
-              // TODO get this working again
-              // window.location.href = `${ROUTES.getNotebookRoute({serverId, projectId})}?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`;
-            }}
-            sx={{
-              verticalAlign: 'baseline',
-            }}
-          >
-            Settings
-          </Link>
-        </Typography>
-      }
+      <Typography
+        variant="caption"
+        sx={{
+          color: 'rgba(0, 0, 0, 0.5)',
+          textAlign: 'center',
+        }}
+      >
+        Enable download in Settings
+      </Typography>
     </Paper>
   );
+};
+
+/**
+ * Custom hook to fetch attachment using TanStack Query
+ */
+const useAttachment = (
+  attachmentId: string,
+  attachmentService: IAttachmentService
+) => {
+  return useQuery({
+    queryKey: attachmentKeys.attachment(attachmentId),
+    queryFn: async () => {
+      const result = await attachmentService.loadAttachmentAsBlob({
+        identifier: {id: attachmentId},
+      });
+      // Create object URL for display
+      const url = URL.createObjectURL(result.blob);
+      return {blob: result.blob, url};
+    },
+    // Keep data in cache for 10 minutes
+    staleTime: 10 * 60 * 1000,
+    // Cache for 30 minutes
+    gcTime: 30 * 60 * 1000,
+    // Retry 3 times with exponential backoff
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    // Continue retrying even when offline
+    networkMode: 'always',
+  });
 };
 
 /**
  * Displays a single photo in the gallery with loading state
  */
 const PhotoItem: React.FC<{
-  photo: PhotoItem;
+  photo: StoredPhoto;
   index: number;
   onDelete: () => void;
   onClick: () => void;
   disabled: boolean;
   attachmentService: IAttachmentService;
-}> = ({photo, index, onDelete, onClick, disabled, attachmentService}) => {
+  onLoadError: () => void;
+}> = ({
+  photo,
+  index,
+  onDelete,
+  onClick,
+  disabled,
+  attachmentService,
+  onLoadError,
+}) => {
   const theme = useTheme();
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState(false);
 
-  // Load stored photos
-  React.useEffect(() => {
-    if (isStoredPhoto(photo)) {
-      let mounted = true;
+  // Use TanStack Query to fetch attachment
+  const {data, isLoading, isError, error} = useAttachment(
+    photo.attachmentId,
+    attachmentService
+  );
 
-      attachmentService
-        .loadAttachmentAsBlob({
-          identifier: {id: photo.attachmentId},
-        })
-        .then(result => {
-          if (mounted) {
-            const url = URL.createObjectURL(result.blob);
-            setImageUrl(url);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to load attachment:', err);
-          if (mounted) {
-            setLoadError(true);
-          }
-        });
-
-      return () => {
-        mounted = false;
-        if (imageUrl) {
-          URL.revokeObjectURL(imageUrl);
-        }
-      };
-    } else {
-      // Local photo - use the existing object URL
-      setImageUrl(photo.objectUrl);
+  // Track error state for parent component
+  useEffect(() => {
+    if (isError) {
+      console.error('Failed to load attachment:', error);
+      onLoadError();
     }
-  }, [photo, attachmentService]);
+  }, [isError, error, onLoadError]);
 
-  // Cleanup object URLs on unmount
-  React.useEffect(() => {
+  // Cleanup object URL on unmount
+  useEffect(() => {
     return () => {
-      if (imageUrl && isLocalPhoto(photo)) {
-        URL.revokeObjectURL(imageUrl);
+      if (data?.url) {
+        URL.revokeObjectURL(data.url);
       }
     };
-  }, [imageUrl, photo]);
+  }, [data?.url]);
 
   return (
     <ImageListItem
@@ -293,16 +289,15 @@ const PhotoItem: React.FC<{
           bgcolor: theme.palette.grey[100],
         }}
       >
-        {loadError ? (
-          <UnavailableImagePlaceholder
-          //serverId={serverId}
-          //projectId={projectId}
-          />
-        ) : imageUrl ? (
+        {isError ? (
+          <UnavailableImagePlaceholder />
+        ) : isLoading ? (
+          <ImageIcon sx={{fontSize: 48, color: 'text.secondary'}} />
+        ) : data?.url ? (
           <>
             <Box
               component="img"
-              src={imageUrl}
+              src={data.url}
               onClick={onClick}
               alt={`Photo ${index + 1}`}
               sx={{
@@ -334,9 +329,7 @@ const PhotoItem: React.FC<{
               />
             )}
           </>
-        ) : (
-          <ImageIcon sx={{fontSize: 48, color: 'text.secondary'}} />
-        )}
+        ) : null}
       </Box>
     </ImageListItem>
   );
@@ -346,17 +339,44 @@ const PhotoItem: React.FC<{
  * Displays a grid of photos with add and delete functionality
  */
 const PhotoGallery: React.FC<{
-  photos: PhotoItem[];
+  photos: StoredPhoto[];
   onDelete: (index: number) => void;
   onAddPhoto: () => void;
   disabled: boolean;
   attachmentService: IAttachmentService;
-}> = ({photos, onDelete, onAddPhoto, disabled, attachmentService}) => {
+  onPhotoLoadError: () => void;
+}> = ({
+  photos,
+  onDelete,
+  onAddPhoto,
+  disabled,
+  attachmentService,
+  onPhotoLoadError,
+}) => {
   const theme = useTheme();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
+  // Use TanStack Query for lightbox image loading
+  const {data: lightboxData} = useQuery({
+    queryKey: attachmentKeys.attachment(lightboxImage || ''),
+    queryFn: async () => {
+      if (!lightboxImage) return null;
+      const result = await attachmentService.loadAttachmentAsBlob({
+        identifier: {id: lightboxImage},
+      });
+      const url = URL.createObjectURL(result.blob);
+      return {blob: result.blob, url};
+    },
+    enabled: !!lightboxImage && lightboxOpen,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    networkMode: 'offlineFirst',
+  });
 
   const handleDeleteClick = (index: number) => {
     setPhotoToDelete(index);
@@ -371,9 +391,17 @@ const PhotoGallery: React.FC<{
     setDeleteDialogOpen(false);
   };
 
-  const handleImageClick = (url: string) => {
-    setLightboxImage(url);
+  const handleImageClick = (attachmentId: string) => {
+    setLightboxImage(attachmentId);
     setLightboxOpen(true);
+  };
+
+  const handleLightboxClose = () => {
+    setLightboxOpen(false);
+    if (lightboxData?.url) {
+      URL.revokeObjectURL(lightboxData.url);
+    }
+    setLightboxImage(null);
   };
 
   // Reverse photos to show newest first
@@ -433,33 +461,14 @@ const PhotoGallery: React.FC<{
 
             return (
               <PhotoItem
-                key={originalIndex}
+                key={photo.attachmentId}
                 photo={photo}
                 index={displayIndex}
                 onDelete={() => handleDeleteClick(originalIndex)}
-                onClick={() => {
-                  if (isLocalPhoto(photo)) {
-                    handleImageClick(photo.objectUrl);
-                  } else {
-                    // For stored photos, we'll need to fetch them
-                    attachmentService
-                      .loadAttachmentAsBlob({
-                        identifier: {id: photo.attachmentId},
-                      })
-                      .then(result => {
-                        const url = URL.createObjectURL(result.blob);
-                        handleImageClick(url);
-                      })
-                      .catch(err => {
-                        console.error(
-                          'Failed to load image for lightbox:',
-                          err
-                        );
-                      });
-                  }
-                }}
+                onClick={() => handleImageClick(photo.attachmentId)}
                 disabled={disabled}
                 attachmentService={attachmentService}
+                onLoadError={onPhotoLoadError}
               />
             );
           })}
@@ -503,19 +512,7 @@ const PhotoGallery: React.FC<{
       {/* Image Lightbox */}
       <Dialog
         open={lightboxOpen}
-        onClose={() => {
-          setLightboxOpen(false);
-          if (lightboxImage) {
-            // Only revoke if it's a temporary URL we created
-            const isTemporary = displayPhotos.some(
-              p => isStoredPhoto(p) // Stored photos create temporary URLs
-            );
-            if (isTemporary) {
-              URL.revokeObjectURL(lightboxImage);
-            }
-          }
-          setLightboxImage(null);
-        }}
+        onClose={handleLightboxClose}
         maxWidth="lg"
         fullWidth
         sx={{
@@ -525,10 +522,11 @@ const PhotoGallery: React.FC<{
         }}
       >
         <DialogContent sx={{p: 0, display: 'flex', justifyContent: 'center'}}>
-          {lightboxImage && (
+          {lightboxData?.url && (
             <Box
               component="img"
-              src={lightboxImage}
+              src={lightboxData.url}
+              alt="Full size preview"
               sx={{
                 maxWidth: '100%',
                 maxHeight: '90vh',
@@ -542,11 +540,16 @@ const PhotoGallery: React.FC<{
   );
 };
 
+// Indicating that we have full context here
+interface FullTakePhotoFieldProps extends TakePhotoFieldProps {
+  context: FullFormContext;
+}
+
 /**
- * Main TakePhoto component
+ * Main TakePhoto component (Full mode)
  * Handles photo capture, storage, and display using the attachment service
  */
-export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
+const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const {
     label,
     helperText,
@@ -559,13 +562,13 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
   } = props;
 
   const [noPermission, setNoPermission] = useState(false);
+  const [hasLoadErrors, setHasLoadErrors] = useState(false);
 
-  // Get context info
-  const attachmentService =
-    context.mode === 'full' ? context.attachmentEngine() : null;
+  // Get attachment service (guaranteed to exist in full mode)
+  const attachmentService = context.attachmentEngine();
 
   // Get current photos from field state
-  const photos: PhotoItem[] = (state.value?.attachments || []).map(att => ({
+  const photos: StoredPhoto[] = (state.value?.attachments || []).map(att => ({
     attachmentId: att.attachmentId,
   }));
 
@@ -573,16 +576,11 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
    * Captures a photo from the device camera with geolocation on native platforms
    */
   const takePhoto = useCallback(async () => {
-    if (!attachmentService) {
-      console.error('Attachment service not available');
-      return;
-    }
-
     try {
       const isWeb = Capacitor.getPlatform() === 'web';
 
+      // Check/request camera permission
       if (isWeb) {
-        // Web platform: check camera permission
         const permission = await navigator.permissions.query({
           name: 'camera' as PermissionName,
         });
@@ -591,7 +589,6 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
           return;
         }
       } else {
-        // Native platform: request camera permission
         const permissions = await Camera.requestPermissions({
           permissions: ['camera'],
         });
@@ -613,7 +610,6 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
       let photoBlob: Blob;
 
       if (isWeb) {
-        // Convert base64 to blob
         photoBlob = await base64ImageToBlob(photoResult);
       } else {
         // Native: add geolocation EXIF data if possible
@@ -643,7 +639,7 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
-      // Store the attachment immediately
+      // Store the attachment
       const timestamp = new Date().toISOString();
       const filename = `photo_${timestamp}.${photoResult.format}`;
 
@@ -655,14 +651,10 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
             contentType: `image/${photoResult.format}`,
           },
           recordContext: {
-            recordId:
-              context.mode === 'full' ? context.recordInformation.recordId : '',
-            revisionId:
-              context.mode === 'full'
-                ? context.recordInformation.revisionId
-                : '',
+            recordId: context.recordInformation.recordId,
+            revisionId: context.recordInformation.revisionId,
             created: timestamp,
-            createdBy: context.mode === 'full' ? context.user : '',
+            createdBy: context.user,
           },
         },
       });
@@ -692,6 +684,8 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
   const handleDelete = useCallback(
     (index: number) => {
       const currentAttachments = state.value?.attachments || [];
+
+      // Remove from attachments
       const newAttachments = currentAttachments.filter(
         (_: any, i: number) => i !== index
       );
@@ -700,23 +694,9 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
     [state.value, setFieldAttachment]
   );
 
-  // Check if we're in a context where attachments might not be downloaded
-  const hasUndownloadedWarning = photos.length > 0 && context.mode === 'full';
-
-  if (!attachmentService) {
-    return (
-      <FieldWrapper
-        heading={label}
-        subheading={helperText}
-        required={required}
-        advancedHelperText={advancedHelperText}
-      >
-        <Alert severity="error">
-          Photo capture is not available in this context
-        </Alert>
-      </FieldWrapper>
-    );
-  }
+  const handlePhotoLoadError = useCallback(() => {
+    setHasLoadErrors(true);
+  }, []);
 
   return (
     <FieldWrapper
@@ -726,24 +706,22 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
       advancedHelperText={advancedHelperText}
     >
       <Box sx={{width: '100%'}}>
-        {/* Download Banner */}
-        {hasUndownloadedWarning && (
-          <Alert severity="info" sx={{mb: 2}}>
-            To download existing photos, please go to the{' '}
-            <Link
-              onClick={() => {
-                // TODO fix navigation
-                // navigate(
-                //   `${ROUTES.getNotebookRoute({serverId, projectId})}?${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q}=settings`
-                // );
-              }}
-              sx={{cursor: 'pointer'}}
-            >
-              Settings Tab
-            </Link>{' '}
-            and enable attachment download.
+        {/* Show download banner only if we have actual load errors */}
+        {hasLoadErrors && (
+          <Alert severity="warning" sx={{mb: 2}}>
+            Some photos could not be loaded. To download attachments, enable
+            attachment download in Settings.
           </Alert>
         )}
+
+        {/* Permission Issue Alert */}
+        {noPermission && (
+          <Alert severity="error" sx={{mb: 2}}>
+            Camera permission is required to take photos. Please enable camera
+            access in your device settings.
+          </Alert>
+        )}
+
         {/* Photo Display */}
         {photos.length === 0 ? (
           <EmptyState onAddPhoto={takePhoto} disabled={disabled} />
@@ -754,18 +732,32 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
             onAddPhoto={takePhoto}
             disabled={disabled}
             attachmentService={attachmentService}
+            onPhotoLoadError={handlePhotoLoadError}
           />
         )}
-        {/* Permission Issue Alert
-          TODO : include <LocationPermissionIssue /> back again 
-        */}
-        {noPermission && null}
-        {
-          // <LocationPermissionIssue />
-        }
       </Box>
     </FieldWrapper>
   );
+};
+
+/**
+ * Main TakePhoto component - routes to preview or full mode
+ */
+export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
+  const {context} = props;
+
+  // Route to preview mode if not in full context
+  if (context.mode === 'preview') {
+    return <TakePhotoPreview {...props} />;
+  } else if (context.mode === 'full') {
+    // Full mode
+    return (
+      <TakePhotoFull
+        // Type hackery
+        {...{...props, context: props.context as FullFormContext}}
+      />
+    );
+  }
 };
 
 /**

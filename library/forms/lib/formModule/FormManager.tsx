@@ -10,6 +10,7 @@ import {useForm, useStore} from '@tanstack/react-form';
 import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
 import {FaimsForm, FaimsFormData} from './types';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
@@ -82,6 +83,7 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
   activeUser: string;
   mode: AvpUpdateMode;
   config: FullFormConfig;
+  queryClient: QueryClient;
 }
 
 export const EditableFormManager = (props: EditableFormManagerProps) => {
@@ -223,6 +225,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           form={form}
           formName={formId}
           uiSpec={uiSpec}
+          queryClient={props.queryClient}
           config={{
             context: {
               ...props.config.context,
@@ -244,6 +247,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 export interface PreviewFormManagerProps extends ComponentProps<any> {
   formName: string;
   uiSpec: ProjectUIModel;
+  queryClient: QueryClient;
 }
 
 export const PreviewFormManager = (props: PreviewFormManagerProps) => {
@@ -279,6 +283,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
       formName={props.formName}
       uiSpec={props.uiSpec}
       config={config}
+      queryClient={props.queryClient}
     />
   );
 };
@@ -290,6 +295,7 @@ export interface FormManagerProps extends ComponentProps<any> {
   config: {
     context: FormContext;
   };
+  queryClient: QueryClient;
 }
 
 export const FormManager = (props: FormManagerProps) => {
@@ -299,7 +305,7 @@ export const FormManager = (props: FormManagerProps) => {
   console.log('Form Spec:', formSpec);
 
   return (
-    <>
+    <QueryClientProvider client={props.queryClient}>
       <h2>Form: {formSpec.label}</h2>
 
       <form
@@ -320,6 +326,6 @@ export const FormManager = (props: FormManagerProps) => {
         ))}
       </form>
       <FormStateDisplay form={props.form} />
-    </>
+    </QueryClientProvider>
   );
 };
