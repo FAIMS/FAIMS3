@@ -2,11 +2,7 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import {
-  FaimsAttachments,
-  IAttachmentService,
-  logError,
-} from '@faims3/data-model';
+import {FaimsAttachments, logError} from '@faims3/data-model';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -21,36 +17,25 @@ import DialogContentText from '@mui/material/DialogContentText';
 import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
-import {useQuery} from '@tanstack/react-query';
 import {Buffer} from 'buffer';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {z} from 'zod';
 import {FullFormContext} from '../../../formModule';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,
 } from '../../../formModule/types';
+import {
+  LoadedPhoto,
+  useAttachments,
+  useAttachmentsResult,
+} from '../../../hooks/useAttachment';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
 const takePhotoPropsSchema = BaseFieldPropsSchema.extend({});
 type TakePhotoProps = z.infer<typeof takePhotoPropsSchema>;
 type TakePhotoFieldProps = TakePhotoProps & FormFieldContextProps;
-
-/**
- * Represents a photo that has been stored as an attachment
- */
-interface StoredPhoto {
-  attachmentId: string;
-}
-
-/**
- * Query key factory for attachment queries
- */
-const attachmentKeys = {
-  all: ['attachments'] as const,
-  attachment: (id: string) => [...attachmentKeys.all, id] as const,
-};
 
 /**
  * Converts a base64 encoded image to a Blob object
@@ -146,8 +131,6 @@ const EmptyState: React.FC<{
  * Displays a placeholder for photos that failed to load
  */
 const UnavailableImagePlaceholder: React.FC = () => {
-  const theme = useTheme();
-
   return (
     <Paper
       sx={{
@@ -193,78 +176,15 @@ const UnavailableImagePlaceholder: React.FC = () => {
 };
 
 /**
- * Custom hook to fetch attachment using TanStack Query
- */
-const useAttachment = (
-  attachmentId: string,
-  attachmentService: IAttachmentService
-) => {
-  return useQuery({
-    queryKey: attachmentKeys.attachment(attachmentId),
-    queryFn: async () => {
-      const result = await attachmentService.loadAttachmentAsBlob({
-        identifier: {id: attachmentId},
-      });
-      // Create object URL for display
-      const url = URL.createObjectURL(result.blob);
-      return {blob: result.blob, url};
-    },
-    // Keep data in cache for 10 minutes
-    staleTime: 10 * 60 * 1000,
-    // Cache for 30 minutes
-    gcTime: 30 * 60 * 1000,
-    // Retry 3 times with exponential backoff
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    // Continue retrying even when offline
-    networkMode: 'always',
-  });
-};
-
-/**
- * Displays a single photo in the gallery with loading state
+ * Displays a single photo in the gallery.
+ * Photo must be loaded/managed by parent component.
  */
 const PhotoItem: React.FC<{
-  photo: StoredPhoto;
-  index: number;
+  data: LoadedPhoto;
   onDelete: () => void;
   onClick: () => void;
-  disabled: boolean;
-  attachmentService: IAttachmentService;
-  onLoadError: () => void;
-}> = ({
-  photo,
-  index,
-  onDelete,
-  onClick,
-  disabled,
-  attachmentService,
-  onLoadError,
-}) => {
+}> = ({data, onDelete, onClick}) => {
   const theme = useTheme();
-
-  // Use TanStack Query to fetch attachment
-  const {data, isLoading, isError, error} = useAttachment(
-    photo.attachmentId,
-    attachmentService
-  );
-
-  // Track error state for parent component
-  useEffect(() => {
-    if (isError) {
-      console.error('Failed to load attachment:', error);
-      onLoadError();
-    }
-  }, [isError, error, onLoadError]);
-
-  // Cleanup object URL on unmount
-  useEffect(() => {
-    return () => {
-      if (data?.url) {
-        URL.revokeObjectURL(data.url);
-      }
-    };
-  }, [data?.url]);
 
   return (
     <ImageListItem
@@ -289,49 +209,79 @@ const PhotoItem: React.FC<{
           bgcolor: theme.palette.grey[100],
         }}
       >
-        {isError ? (
-          <UnavailableImagePlaceholder />
-        ) : isLoading ? (
-          <ImageIcon sx={{fontSize: 48, color: 'text.secondary'}} />
-        ) : data?.url ? (
-          <>
-            <Box
-              component="img"
-              src={data.url}
-              onClick={onClick}
-              alt={`Photo ${index + 1}`}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                cursor: 'pointer',
-              }}
-            />
-            {!disabled && (
-              <ImageListItemBar
-                sx={{
-                  background: 'rgba(0, 0, 0, 0.7)',
+        <>
+          <Box
+            component="img"
+            src={data.url}
+            onClick={onClick}
+            alt={`Photo ${data.metadata.filename}`}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              cursor: 'pointer',
+            }}
+          />
+          <ImageListItemBar
+            sx={{
+              background: 'rgba(0, 0, 0, 0.7)',
+            }}
+            position="top"
+            actionIcon={
+              <IconButton
+                sx={{color: 'white'}}
+                onClick={e => {
+                  e.stopPropagation();
+                  onDelete();
                 }}
-                position="top"
-                actionIcon={
-                  <IconButton
-                    sx={{color: 'white'}}
-                    onClick={e => {
-                      e.stopPropagation();
-                      onDelete();
-                    }}
-                    size="large"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                }
-                actionPosition="right"
-              />
-            )}
-          </>
-        ) : null}
+                size="large"
+              >
+                <DeleteIcon />
+              </IconButton>
+            }
+            actionPosition="right"
+          />
+        </>
       </Box>
     </ImageListItem>
+  );
+};
+
+/**
+ * Lightbox bigger dialog.
+ *
+ * @param image The attachment ID to show
+ * @param onClose Close handler
+ */
+const Lightbox: React.FC<{
+  onClose: () => void;
+  data: LoadedPhoto;
+}> = ({data, onClose: close}) => {
+  return (
+    <Dialog
+      open={true}
+      onClose={close}
+      maxWidth="lg"
+      fullWidth
+      sx={{
+        '& .MuiDialog-paper': {
+          backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        },
+      }}
+    >
+      <DialogContent sx={{p: 0, display: 'flex', justifyContent: 'center'}}>
+        <Box
+          component="img"
+          src={data.url}
+          alt="Full size preview"
+          sx={{
+            maxWidth: '100%',
+            maxHeight: '90vh',
+            objectFit: 'contain',
+          }}
+        />
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -339,44 +289,21 @@ const PhotoItem: React.FC<{
  * Displays a grid of photos with add and delete functionality
  */
 const PhotoGallery: React.FC<{
-  photos: StoredPhoto[];
+  photos: useAttachmentsResult;
   onDelete: (index: number) => void;
   onAddPhoto: () => void;
   disabled: boolean;
-  attachmentService: IAttachmentService;
-  onPhotoLoadError: () => void;
-}> = ({
-  photos,
-  onDelete,
-  onAddPhoto,
-  disabled,
-  attachmentService,
-  onPhotoLoadError,
-}) => {
+}> = ({photos, onDelete, onAddPhoto, disabled}) => {
   const theme = useTheme();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
+
+  // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-
-  // Use TanStack Query for lightbox image loading
-  const {data: lightboxData} = useQuery({
-    queryKey: attachmentKeys.attachment(lightboxImage || ''),
-    queryFn: async () => {
-      if (!lightboxImage) return null;
-      const result = await attachmentService.loadAttachmentAsBlob({
-        identifier: {id: lightboxImage},
-      });
-      const url = URL.createObjectURL(result.blob);
-      return {blob: result.blob, url};
-    },
-    enabled: !!lightboxImage && lightboxOpen,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
-    retry: 3,
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
-    networkMode: 'offlineFirst',
-  });
+  const lightboxData = lightboxImage
+    ? photos.find(p => p.data?.id === lightboxImage)
+    : undefined;
 
   const handleDeleteClick = (index: number) => {
     setPhotoToDelete(index);
@@ -398,9 +325,6 @@ const PhotoGallery: React.FC<{
 
   const handleLightboxClose = () => {
     setLightboxOpen(false);
-    if (lightboxData?.url) {
-      URL.revokeObjectURL(lightboxData.url);
-    }
     setLightboxImage(null);
   };
 
@@ -459,16 +383,18 @@ const PhotoGallery: React.FC<{
             // Calculate original index (before reversal)
             const originalIndex = photos.length - 1 - displayIndex;
 
+            if (photo.isLoading)
+              return <ImageIcon sx={{fontSize: 48, color: 'text.secondary'}} />;
+
+            if (photo.isError || !photo.data) {
+              return <UnavailableImagePlaceholder key={displayIndex} />;
+            }
+
             return (
               <PhotoItem
-                key={photo.attachmentId}
-                photo={photo}
-                index={displayIndex}
+                data={photo.data}
                 onDelete={() => handleDeleteClick(originalIndex)}
-                onClick={() => handleImageClick(photo.attachmentId)}
-                disabled={disabled}
-                attachmentService={attachmentService}
-                onLoadError={onPhotoLoadError}
+                onClick={() => handleImageClick(photo.data.id)}
               />
             );
           })}
@@ -508,34 +434,9 @@ const PhotoGallery: React.FC<{
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Image Lightbox */}
-      <Dialog
-        open={lightboxOpen}
-        onClose={handleLightboxClose}
-        maxWidth="lg"
-        fullWidth
-        sx={{
-          '& .MuiDialog-paper': {
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          },
-        }}
-      >
-        <DialogContent sx={{p: 0, display: 'flex', justifyContent: 'center'}}>
-          {lightboxData?.url && (
-            <Box
-              component="img"
-              src={lightboxData.url}
-              alt="Full size preview"
-              sx={{
-                maxWidth: '100%',
-                maxHeight: '90vh',
-                objectFit: 'contain',
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {lightboxOpen && lightboxImage && lightboxData?.data && (
+        <Lightbox onClose={handleLightboxClose} data={lightboxData.data} />
+      )}
     </>
   );
 };
@@ -562,15 +463,17 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   } = props;
 
   const [noPermission, setNoPermission] = useState(false);
-  const [hasLoadErrors, setHasLoadErrors] = useState(false);
 
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
 
-  // Get current photos from field state
-  const photos: StoredPhoto[] = (state.value?.attachments || []).map(att => ({
-    attachmentId: att.attachmentId,
-  }));
+  // Query for all attachments
+  const loadedPhotos = useAttachments(
+    // Map att -> att ID
+    (state.value?.attachments || []).map(att => att.attachmentId),
+    // Pass in service
+    attachmentService
+  );
 
   /**
    * Captures a photo from the device camera with geolocation on native platforms
@@ -694,10 +597,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     [state.value, setFieldAttachment]
   );
 
-  const handlePhotoLoadError = useCallback(() => {
-    setHasLoadErrors(true);
-  }, []);
-
   return (
     <FieldWrapper
       heading={label}
@@ -707,7 +606,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     >
       <Box sx={{width: '100%'}}>
         {/* Show download banner only if we have actual load errors */}
-        {hasLoadErrors && (
+        {loadedPhotos.some(q => q.isError) && (
           <Alert severity="warning" sx={{mb: 2}}>
             Some photos could not be loaded. To download attachments, enable
             attachment download in Settings.
@@ -723,16 +622,14 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         )}
 
         {/* Photo Display */}
-        {photos.length === 0 ? (
+        {loadedPhotos.length === 0 ? (
           <EmptyState onAddPhoto={takePhoto} disabled={disabled} />
         ) : (
           <PhotoGallery
-            photos={photos}
+            photos={loadedPhotos}
             onDelete={handleDelete}
             onAddPhoto={takePhoto}
             disabled={disabled}
-            attachmentService={attachmentService}
-            onPhotoLoadError={handlePhotoLoadError}
           />
         )}
       </Box>
@@ -750,13 +647,9 @@ export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
   if (context.mode === 'preview') {
     return <TakePhotoPreview {...props} />;
   } else if (context.mode === 'full') {
+    const fullContext = props.context as FullFormContext;
     // Full mode
-    return (
-      <TakePhotoFull
-        // Type hackery
-        {...{...props, context: props.context as FullFormContext}}
-      />
-    );
+    return <TakePhotoFull {...{...props, context: fullContext}} />;
   }
 };
 
