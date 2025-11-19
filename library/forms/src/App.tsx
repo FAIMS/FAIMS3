@@ -1,8 +1,10 @@
 import './App.css';
 import {PreviewFormManager} from '../lib';
+import {useQueryClient} from '@tanstack/react-query';
 
 function App(props: {project: any}) {
   const uiSpec = props.project['ui-specification'];
+  const queryClient = useQueryClient();
   uiSpec.views = uiSpec.fviews;
 
   return (
@@ -16,7 +18,11 @@ function App(props: {project: any}) {
             borderRadius: '8px',
           }}
         >
-          <PreviewFormManager formName="Person" uiSpec={uiSpec} />
+          <PreviewFormManager
+            formName="Person"
+            uiSpec={uiSpec}
+            queryClient={queryClient}
+          />
         </div>
       </div>
     </>

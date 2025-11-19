@@ -24,18 +24,24 @@ const FormStateDisplay = ({form}: {form: FaimsForm}) => {
 };
 
 // Base interface for common properties
-interface BaseFormContext {
+interface BaseFormConfig {
   mode: 'full' | 'preview';
 }
 
 // Full mode - has access to data engine and full powers
-export interface FullFormContext extends BaseFormContext {
+export interface FullFormConfig extends BaseFormConfig {
   mode: 'full';
   // A function to generate an instance of the data engine - this is a function
   // as instance references may change due to DBs being updated
   dataEngine: () => DataEngine;
   // An attachment engine for use - again a function to generate
   attachmentEngine: () => IAttachmentService;
+  attachmentHandlers: {
+    // Add new attachment (at start of attachment list)
+    addAttachment: (params: {blob: Blob; contentType: string}) => Promise<void>;
+    // Delete an attachment with given ID
+    removeAttachment: (params: {attachmentId: string}) => Promise<void>;
+  };
   // Functions which redirect to other records
   redirect: {
     // Go to a record (no revision specified)
@@ -48,11 +54,6 @@ export interface FullFormContext extends BaseFormContext {
     // This forces a commit of the record
     commit: () => void;
   };
-  // Additional context needed for full mode
-  recordInformation: {
-    recordId: string;
-    revisionId: string;
-  };
 
   // Who is the active user - this helps when we need to create attachments
   // etc
@@ -61,22 +62,13 @@ export interface FullFormContext extends BaseFormContext {
 
 // Preview mode - used for form previews which aren't in the context of a fully
 // functional app - useful for designer (for example)
-export interface PreviewFormContext extends BaseFormContext {
+export interface PreviewFormConfig extends BaseFormConfig {
   mode: 'preview';
-
-  // Currently there is no special context provided
+  // Currently there is no special config provided
 }
 
 // Discriminated union
-export type FormContext = FullFormContext | PreviewFormContext;
-
-export interface FormConfig {
-  context: FormContext;
-}
-
-export interface FullFormConfig {
-  context: Omit<FullFormContext, 'recordInformation'>;
-}
+export type FormConfig = FullFormConfig | PreviewFormConfig;
 
 export interface EditableFormManagerProps extends ComponentProps<any> {
   recordId: string;
@@ -87,8 +79,6 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
 }
 
 export const EditableFormManager = (props: EditableFormManagerProps) => {
-  console.log('FormManager:', props);
-
   const [uiSpec, setUiSpec] = useState<ProjectUIModel | null>(null);
   const [record, setRecord] = useState<FormUpdateData | null>(null);
   const [dataEngine, setDataEngine] = useState<DataEngine | null>(null);
@@ -178,7 +168,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   // Get the record data and populate the form values when it is available
   useEffect(() => {
     const fn = async () => {
-      const engine = props.config.context.dataEngine();
+      const engine = props.config.dataEngine();
       setDataEngine(engine);
       setUiSpec(engine.uiSpec);
 
@@ -204,19 +194,19 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       <>
         <Button
           variant="contained"
-          onClick={() => props.config.context.trigger.commit()}
+          onClick={() => props.config.trigger.commit()}
         >
           Finish
         </Button>
         <Button
           variant="contained"
-          onClick={() => props.config.context.trigger.commit()}
+          onClick={() => props.config.trigger.commit()}
         >
           Finish and New
         </Button>
         <Button
           variant="contained"
-          onClick={() => props.config.context.trigger.commit()}
+          onClick={() => props.config.trigger.commit()}
         >
           Cancel
         </Button>
@@ -226,18 +216,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           formName={formId}
           uiSpec={uiSpec}
           queryClient={props.queryClient}
-          config={{
-            context: {
-              ...props.config.context,
-              recordInformation: {
-                recordId: props.recordId,
-                // TODO validate this behaviour - as soon as we click on
-                // something we should have a revision ID - I don't personally
-                // like that this is potentially undefined
-                revisionId: workingRevisionId || '',
-              },
-            },
-          }}
+          config={props.config}
         />
       </>
     );
@@ -271,10 +250,8 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     },
   });
 
-  const config = {
-    context: {
-      mode: 'preview' as const,
-    },
+  const config: PreviewFormConfig = {
+    mode: 'preview' as const,
   };
 
   return (
@@ -292,9 +269,7 @@ export interface FormManagerProps extends ComponentProps<any> {
   formName: string;
   form: FaimsForm;
   uiSpec: ProjectUIModel;
-  config: {
-    context: FormContext;
-  };
+  config: FormConfig;
   queryClient: QueryClient;
 }
 

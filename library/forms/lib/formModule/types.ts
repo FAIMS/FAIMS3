@@ -6,9 +6,9 @@ import {
 import {useForm} from '@tanstack/react-form';
 import React from 'react';
 import {z} from 'zod';
-import {FormContext} from './FormManager';
+import {FormConfig} from './FormManager';
 
-export type FaimsFormData = FormUpdateData;
+export type FaimsFormData = FormUpdateData | undefined;
 
 // Extract the Field type from the form instance
 type ExtractFieldType<T> = T extends {
@@ -68,5 +68,7 @@ export type FormFieldContextProps = {
   setFieldAnnotation: (value: FormAnnotation) => void;
   setFieldAttachment: (value: FaimsAttachments) => void;
   handleBlur: () => void;
-  context: FormContext;
+  config: FormConfig;
 };
+
+export type FullFieldProps = BaseFieldProps & FormFieldContextProps;

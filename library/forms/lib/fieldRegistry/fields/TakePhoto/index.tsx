@@ -2,7 +2,11 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import {FaimsAttachments, logError} from '@faims3/data-model';
+import {
+  FaimsAttachments,
+  logError,
+  StoreAttachmentResult,
+} from '@faims3/data-model';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -20,7 +24,7 @@ import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {Buffer} from 'buffer';
 import React, {useCallback, useMemo, useState} from 'react';
 import {z} from 'zod';
-import {FullFormContext} from '../../../formModule';
+import {FullFormConfig} from '../../../formModule';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,
@@ -42,7 +46,7 @@ type TakePhotoProps = z.infer<typeof takePhotoPropsSchema>;
 type TakePhotoFieldProps = TakePhotoProps & FormFieldContextProps;
 
 interface FullTakePhotoFieldProps extends TakePhotoFieldProps {
-  context: FullFormContext;
+  config: FullFormConfig;
 }
 
 // ============================================================================
@@ -497,7 +501,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     disabled = false,
     state,
     setFieldAttachment,
-    context,
+    config: context,
   } = props;
 
   const [noPermission, setNoPermission] = useState(false);
@@ -580,25 +584,39 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
-      // Store the attachment
-      const timestamp = new Date().toISOString();
-      const filename = `photo_${timestamp}.${photoResult.format}`;
-
-      const result = await attachmentService.storeAttachmentFromBlob({
-        blob: photoBlob,
-        metadata: {
-          attachmentDetails: {
-            filename,
-            contentType: `image/${photoResult.format}`,
-          },
-          recordContext: {
-            recordId: context.recordInformation.recordId,
-            revisionId: context.recordInformation.revisionId,
-            created: timestamp,
-            createdBy: context.user,
-          },
-        },
-      });
+      const store = async ({
+        format,
+        blob,
+      }: {
+        format: string;
+        blob: Blob;
+      }): Promise<StoreAttachmentResult> => {
+        // Current timestamp to disambiguate filenames
+        const timestamp = new Date().toISOString();
+        const filename = `photo_${timestamp}.${format}`;
+        try {
+          // Use the attachment service to store
+          return await attachmentService.storeAttachmentFromBlob({
+            blob: photoBlob,
+            metadata: {
+              attachmentDetails: {
+                filename,
+                contentType: `image/${photoResult.format}`,
+              },
+              recordContext: {
+                recordId: context.recordInformation.recordId,
+                revisionId: context.recordInformation.revisionId,
+                created: timestamp,
+                createdBy: context.user,
+              },
+            },
+          });
+        } catch (e: any) {
+          throw new Error(
+            'Failed to store attachment: ' + (e as Error).message
+          );
+        }
+      };
 
       // Update field attachments
       const currentAttachments: FaimsAttachments =
@@ -681,13 +699,13 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
  * TakePhoto field component - routes to preview or full mode based on context.
  */
 export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
-  const {context} = props;
+  const {config: context} = props;
 
   if (context.mode === 'preview') {
     return <TakePhotoPreview {...props} />;
   } else if (context.mode === 'full') {
-    const fullContext = props.context as FullFormContext;
-    return <TakePhotoFull {...{...props, context: fullContext}} />;
+    const fullConfig = props.config as FullFormConfig;
+    return <TakePhotoFull {...{...props, config: fullConfig}} />;
   }
 
   return null;

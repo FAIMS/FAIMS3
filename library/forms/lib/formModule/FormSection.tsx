@@ -34,7 +34,7 @@ export const FormSection = ({
             form={form}
             fieldSpec={fieldSpec}
             key={fieldName}
-            context={config.context}
+            config={config}
           />
         );
       })}

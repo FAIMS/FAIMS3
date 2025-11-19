@@ -1,3 +1,4 @@
+import { FullFieldProps } from '../formModule/types';
 import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
 import {takePhotoFieldSpec} from './fields/TakePhoto';
@@ -6,7 +7,7 @@ import {FieldInfo} from './types';
 
 // NOTE: This is the list of all field specifications. To add a new
 // field type, add it here.
-const FieldSpecList: FieldInfo[] = [
+const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   textFieldSpec,
   richTextFieldSpec,
   selectFieldSpec,

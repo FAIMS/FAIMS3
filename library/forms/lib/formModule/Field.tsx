@@ -5,14 +5,19 @@ import {
 } from '@faims3/data-model';
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
-import {FormContext} from './FormManager';
-import {EncodedFieldSpecification, FaimsForm} from './types';
 import {FieldAnnotation} from './Annotation';
+import {FormConfig} from './FormManager';
+import {
+  BaseFieldProps,
+  EncodedFieldSpecification,
+  FaimsForm,
+  FaimsFormFieldState,
+} from './types';
 
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
   form: FaimsForm;
-  context: FormContext;
+  config: FormConfig;
 }
 
 export const Field = React.memo((props: FieldProps) => {
@@ -70,9 +75,10 @@ export const Field = React.memo((props: FieldProps) => {
         return (
           <>
             <Component
-              {...props.fieldSpec['component-parameters']}
-              state={field.state}
-              context={props.context}
+              {...(props.fieldSpec['component-parameters'] as BaseFieldProps)}
+              // TODO fix the typing here - I think there is a minor issue
+              state={field.state as unknown as FaimsFormFieldState}
+              config={props.config}
               setFieldData={setFieldData}
               setFieldAnnotation={setFieldAnnotation}
               setFieldAttachment={setFieldAttachment}
