@@ -151,40 +151,83 @@ const EmptyState: React.FC<{
 };
 
 /**
+ * Common container wrapper for all image list items.
+ * Provides consistent sizing, spacing, and hover effects.
+ */
+const ImageItemContainer: React.FC<{
+  children: React.ReactNode;
+}> = ({children}) => {
+  const theme = useTheme();
+
+  return (
+    <ImageListItem
+      sx={{
+        borderRadius: theme.spacing(1),
+        overflow: 'hidden',
+        boxShadow: theme.shadows[2],
+        aspectRatio: '4/3',
+        '&:hover': {
+          boxShadow: theme.shadows[4],
+        },
+      }}
+    >
+      {children}
+    </ImageListItem>
+  );
+};
+
+/**
  * Placeholder shown when a photo attachment cannot be loaded.
  * Typically displayed when attachment download is disabled in settings.
  */
 const UnavailableImagePlaceholder: React.FC = () => {
   return (
-    <Paper
-      sx={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'rgba(0, 0, 0, 0.05)',
-        border: '2px dashed rgba(0, 0, 0, 0.2)',
-        gap: 1,
-        p: 2,
-        cursor: 'default',
-      }}
-    >
-      <CloudOffIcon sx={{fontSize: 48, color: 'rgba(0, 0, 0, 0.3)'}} />
-      <Typography
-        variant="body2"
-        sx={{color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center'}}
+    <ImageItemContainer>
+      <Paper
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'rgba(0, 0, 0, 0.05)',
+          border: '2px dashed rgba(0, 0, 0, 0.2)',
+          gap: 1,
+          p: 1,
+          cursor: 'default',
+        }}
       >
-        Attachment not available
-      </Typography>
-      <Typography
-        variant="caption"
-        sx={{color: 'rgba(0, 0, 0, 0.5)', textAlign: 'center'}}
+        <CloudOffIcon sx={{fontSize: 36, color: 'rgba(0, 0, 0, 0.3)'}} />
+        <Typography
+          variant="caption"
+          sx={{color: 'rgba(0, 0, 0, 0.5)', textAlign: 'center'}}
+        >
+          Attachment not available. Enable download in Settings
+        </Typography>
+      </Paper>
+    </ImageItemContainer>
+  );
+};
+
+/**
+ * Loading state placeholder for photos being fetched.
+ */
+const LoadingImagePlaceholder: React.FC = () => {
+  return (
+    <ImageItemContainer>
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
-        Enable download in Settings
-      </Typography>
-    </Paper>
+        <ImageIcon sx={{fontSize: 48, color: 'text.secondary'}} />
+      </Box>
+    </ImageItemContainer>
   );
 };
 
@@ -200,17 +243,7 @@ const PhotoItem: React.FC<{
   const theme = useTheme();
 
   return (
-    <ImageListItem
-      sx={{
-        borderRadius: theme.spacing(1),
-        overflow: 'hidden',
-        boxShadow: theme.shadows[2],
-        aspectRatio: '4/3',
-        '&:hover': {
-          boxShadow: theme.shadows[4],
-        },
-      }}
-    >
+    <ImageItemContainer>
       <Box
         sx={{
           width: '100%',
@@ -252,7 +285,7 @@ const PhotoItem: React.FC<{
           actionPosition="right"
         />
       </Box>
-    </ImageListItem>
+    </ImageItemContainer>
   );
 };
 
@@ -361,17 +394,7 @@ const PhotoGallery: React.FC<{
         >
           {/* Add Photo Button */}
           {!disabled && (
-            <ImageListItem
-              sx={{
-                borderRadius: theme.spacing(1),
-                overflow: 'hidden',
-                boxShadow: theme.shadows[2],
-                aspectRatio: '4/3',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                },
-              }}
-            >
+            <ImageItemContainer>
               <Paper
                 sx={{
                   height: '100%',
@@ -386,7 +409,7 @@ const PhotoGallery: React.FC<{
                   sx={{fontSize: 48, color: theme.palette.primary.main}}
                 />
               </Paper>
-            </ImageListItem>
+            </ImageItemContainer>
           )}
 
           {/* Photo Grid */}
@@ -395,12 +418,7 @@ const PhotoGallery: React.FC<{
             const originalIndex = photos.length - 1 - displayIndex;
 
             if (photo.isLoading) {
-              return (
-                <ImageIcon
-                  key={displayIndex}
-                  sx={{fontSize: 48, color: 'text.secondary'}}
-                />
-              );
+              return <LoadingImagePlaceholder key={displayIndex} />;
             }
 
             if (photo.isError || !photo.data) {
