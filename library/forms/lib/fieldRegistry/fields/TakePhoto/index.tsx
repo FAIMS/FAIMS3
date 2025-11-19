@@ -33,12 +33,25 @@ import {
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
+// ============================================================================
+// Types & Schema
+// ============================================================================
+
 const takePhotoPropsSchema = BaseFieldPropsSchema.extend({});
 type TakePhotoProps = z.infer<typeof takePhotoPropsSchema>;
 type TakePhotoFieldProps = TakePhotoProps & FormFieldContextProps;
 
+interface FullTakePhotoFieldProps extends TakePhotoFieldProps {
+  context: FullFormContext;
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
 /**
- * Converts a base64 encoded image to a Blob object
+ * Converts a base64 encoded image to a Blob object.
+ * Used for web platform photo handling.
  */
 async function base64ImageToBlob(image: Photo): Promise<Blob> {
   if (!image.base64String) {
@@ -53,13 +66,17 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   });
 }
 
+// ============================================================================
+// Preview Mode Component
+// ============================================================================
+
 /**
- * Preview mode component - shows placeholder for non-interactive display
+ * Preview mode component - shows a non-interactive placeholder display.
+ * Used when the form is in preview/read-only mode.
  */
 const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
   const {label, helperText, required, advancedHelperText, state} = props;
   const theme = useTheme();
-
   const photoCount = state.value?.attachments?.length || 0;
 
   return (
@@ -92,14 +109,20 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
   );
 };
 
+// ============================================================================
+// UI Components
+// ============================================================================
+
 /**
- * Displays a placeholder component when no photos are present
+ * Empty state component displayed when no photos have been captured yet.
+ * Shows a call-to-action button to take the first photo.
  */
 const EmptyState: React.FC<{
   onAddPhoto: () => void;
   disabled: boolean;
 }> = ({onAddPhoto, disabled}) => {
   const theme = useTheme();
+
   return (
     <Paper
       sx={{
@@ -128,7 +151,8 @@ const EmptyState: React.FC<{
 };
 
 /**
- * Displays a placeholder for photos that failed to load
+ * Placeholder shown when a photo attachment cannot be loaded.
+ * Typically displayed when attachment download is disabled in settings.
  */
 const UnavailableImagePlaceholder: React.FC = () => {
   return (
@@ -147,27 +171,16 @@ const UnavailableImagePlaceholder: React.FC = () => {
         cursor: 'default',
       }}
     >
-      <CloudOffIcon
-        sx={{
-          fontSize: 48,
-          color: 'rgba(0, 0, 0, 0.3)',
-        }}
-      />
+      <CloudOffIcon sx={{fontSize: 48, color: 'rgba(0, 0, 0, 0.3)'}} />
       <Typography
         variant="body2"
-        sx={{
-          color: 'rgba(0, 0, 0, 0.6)',
-          textAlign: 'center',
-        }}
+        sx={{color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center'}}
       >
         Attachment not available
       </Typography>
       <Typography
         variant="caption"
-        sx={{
-          color: 'rgba(0, 0, 0, 0.5)',
-          textAlign: 'center',
-        }}
+        sx={{color: 'rgba(0, 0, 0, 0.5)', textAlign: 'center'}}
       >
         Enable download in Settings
       </Typography>
@@ -176,8 +189,8 @@ const UnavailableImagePlaceholder: React.FC = () => {
 };
 
 /**
- * Displays a single photo in the gallery.
- * Photo must be loaded/managed by parent component.
+ * Individual photo item in the gallery grid.
+ * Displays the photo thumbnail with a delete button overlay.
  */
 const PhotoItem: React.FC<{
   data: LoadedPhoto;
@@ -209,58 +222,52 @@ const PhotoItem: React.FC<{
           bgcolor: theme.palette.grey[100],
         }}
       >
-        <>
-          <Box
-            component="img"
-            src={data.url}
-            onClick={onClick}
-            alt={`Photo ${data.metadata.filename}`}
-            sx={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              cursor: 'pointer',
-            }}
-          />
-          <ImageListItemBar
-            sx={{
-              background: 'rgba(0, 0, 0, 0.7)',
-            }}
-            position="top"
-            actionIcon={
-              <IconButton
-                sx={{color: 'white'}}
-                onClick={e => {
-                  e.stopPropagation();
-                  onDelete();
-                }}
-                size="large"
-              >
-                <DeleteIcon />
-              </IconButton>
-            }
-            actionPosition="right"
-          />
-        </>
+        <Box
+          component="img"
+          src={data.url}
+          onClick={onClick}
+          alt={`Photo ${data.metadata.filename}`}
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            cursor: 'pointer',
+          }}
+        />
+        <ImageListItemBar
+          sx={{background: 'rgba(0, 0, 0, 0.7)'}}
+          position="top"
+          actionIcon={
+            <IconButton
+              sx={{color: 'white'}}
+              onClick={e => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              size="large"
+            >
+              <DeleteIcon />
+            </IconButton>
+          }
+          actionPosition="right"
+        />
       </Box>
     </ImageListItem>
   );
 };
 
 /**
- * Lightbox bigger dialog.
- *
- * @param image The attachment ID to show
- * @param onClose Close handler
+ * Full-screen lightbox dialog for viewing photos at full size.
+ * Opens when a user clicks on a photo thumbnail.
  */
 const Lightbox: React.FC<{
-  onClose: () => void;
   data: LoadedPhoto;
-}> = ({data, onClose: close}) => {
+  onClose: () => void;
+}> = ({data, onClose}) => {
   return (
     <Dialog
       open={true}
-      onClose={close}
+      onClose={onClose}
       maxWidth="lg"
       fullWidth
       sx={{
@@ -286,7 +293,8 @@ const Lightbox: React.FC<{
 };
 
 /**
- * Displays a grid of photos with add and delete functionality
+ * Photo gallery component displaying all captured photos in a responsive grid.
+ * Includes add photo button, delete confirmation, and lightbox functionality.
  */
 const PhotoGallery: React.FC<{
   photos: useAttachmentsResult;
@@ -295,6 +303,8 @@ const PhotoGallery: React.FC<{
   disabled: boolean;
 }> = ({photos, onDelete, onAddPhoto, disabled}) => {
   const theme = useTheme();
+
+  // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
 
@@ -305,6 +315,7 @@ const PhotoGallery: React.FC<{
     ? photos.find(p => p.data?.id === lightboxImage)
     : undefined;
 
+  // Handlers
   const handleDeleteClick = (index: number) => {
     setPhotoToDelete(index);
     setDeleteDialogOpen(true);
@@ -378,13 +389,19 @@ const PhotoGallery: React.FC<{
             </ImageListItem>
           )}
 
-          {/* Photo Gallery */}
+          {/* Photo Grid */}
           {displayPhotos.map((photo, displayIndex) => {
             // Calculate original index (before reversal)
             const originalIndex = photos.length - 1 - displayIndex;
 
-            if (photo.isLoading)
-              return <ImageIcon sx={{fontSize: 48, color: 'text.secondary'}} />;
+            if (photo.isLoading) {
+              return (
+                <ImageIcon
+                  key={displayIndex}
+                  sx={{fontSize: 48, color: 'text.secondary'}}
+                />
+              );
+            }
 
             if (photo.isError || !photo.data) {
               return <UnavailableImagePlaceholder key={displayIndex} />;
@@ -392,6 +409,7 @@ const PhotoGallery: React.FC<{
 
             return (
               <PhotoItem
+                key={displayIndex}
                 data={photo.data}
                 onDelete={() => handleDeleteClick(originalIndex)}
                 onClick={() => handleImageClick(photo.data.id)}
@@ -434,6 +452,8 @@ const PhotoGallery: React.FC<{
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Lightbox */}
       {lightboxOpen && lightboxImage && lightboxData?.data && (
         <Lightbox onClose={handleLightboxClose} data={lightboxData.data} />
       )}
@@ -441,14 +461,14 @@ const PhotoGallery: React.FC<{
   );
 };
 
-// Indicating that we have full context here
-interface FullTakePhotoFieldProps extends TakePhotoFieldProps {
-  context: FullFormContext;
-}
+// ============================================================================
+// Main Component (Full Mode)
+// ============================================================================
 
 /**
- * Main TakePhoto component (Full mode)
- * Handles photo capture, storage, and display using the attachment service
+ * Main TakePhoto component in full interactive mode.
+ * Handles photo capture from device camera, geolocation tagging (native),
+ * attachment storage, and gallery display.
  */
 const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const {
@@ -467,16 +487,16 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
 
-  // Query for all attachments
+  // Load all attachments for this field
   const loadedPhotos = useAttachments(
-    // Map att -> att ID
     (state.value?.attachments || []).map(att => att.attachmentId),
-    // Pass in service
     attachmentService
   );
 
   /**
-   * Captures a photo from the device camera with geolocation on native platforms
+   * Captures a photo from the device camera.
+   * On native platforms, attempts to add geolocation EXIF data.
+   * On web, uses base64 encoding for photo transfer.
    */
   const takePhoto = useCallback(async () => {
     try {
@@ -515,7 +535,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       if (isWeb) {
         photoBlob = await base64ImageToBlob(photoResult);
       } else {
-        // Native: add geolocation EXIF data if possible
+        // Native: attempt to add geolocation EXIF data
         try {
           const position = await Geolocation.getCurrentPosition({
             enableHighAccuracy: true,
@@ -582,13 +602,11 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   }, [attachmentService, state.value, setFieldAttachment, context]);
 
   /**
-   * Deletes a photo at the specified index
+   * Deletes a photo at the specified index from the field's attachments.
    */
   const handleDelete = useCallback(
     (index: number) => {
       const currentAttachments = state.value?.attachments || [];
-
-      // Remove from attachments
       const newAttachments = currentAttachments.filter(
         (_: any, i: number) => i !== index
       );
@@ -605,7 +623,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       advancedHelperText={advancedHelperText}
     >
       <Box sx={{width: '100%'}}>
-        {/* Show download banner only if we have actual load errors */}
+        {/* Attachment Download Warning */}
         {loadedPhotos.some(q => q.isError) && (
           <Alert severity="warning" sx={{mb: 2}}>
             Some photos could not be loaded. To download attachments, enable
@@ -613,7 +631,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           </Alert>
         )}
 
-        {/* Permission Issue Alert */}
+        {/* Camera Permission Warning */}
         {noPermission && (
           <Alert severity="error" sx={{mb: 2}}>
             Camera permission is required to take photos. Please enable camera
@@ -637,24 +655,32 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   );
 };
 
+// ============================================================================
+// Main Export Component
+// ============================================================================
+
 /**
- * Main TakePhoto component - routes to preview or full mode
+ * TakePhoto field component - routes to preview or full mode based on context.
  */
 export const TakePhoto: React.FC<TakePhotoFieldProps> = props => {
   const {context} = props;
 
-  // Route to preview mode if not in full context
   if (context.mode === 'preview') {
     return <TakePhotoPreview {...props} />;
   } else if (context.mode === 'full') {
     const fullContext = props.context as FullFormContext;
-    // Full mode
     return <TakePhotoFull {...{...props, context: fullContext}} />;
   }
+
+  return null;
 };
 
+// ============================================================================
+// Field Registration
+// ============================================================================
+
 /**
- * Field registration information
+ * Field specification for registering the TakePhoto component with the form system.
  */
 export const takePhotoFieldSpec: FieldInfo = {
   namespace: 'faims-custom',
