@@ -6,10 +6,7 @@ import {
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {FieldAnnotation} from './Annotation';
-import {
-  FormManagerConfig,
-  FullFormManagerConfig,
-} from './FormManager';
+import {FormManagerConfig, FullFormManagerConfig} from './FormManager';
 import {
   BaseFieldProps,
   EncodedFieldSpecification,
@@ -18,6 +15,7 @@ import {
 } from './types';
 
 interface FieldProps {
+  fieldId: string;
   fieldSpec: EncodedFieldSpecification;
   form: FaimsForm;
   config: FormManagerConfig;
@@ -79,11 +77,12 @@ export const Field = React.memo((props: FieldProps) => {
         const addAttachmentHandler =
           props.config.mode === 'full'
             ? async (params: {blob: Blob; contentType: string}) => {
+                console.log('Adding attachment:', params.contentType);
                 return await (
                   props.config as FullFormManagerConfig
                 ).attachmentHandlers.addAttachment({
                   ...params,
-                  fieldId: fieldInfo.name,
+                  fieldId: props.fieldId,
                 });
               }
             : async () => {
@@ -92,11 +91,12 @@ export const Field = React.memo((props: FieldProps) => {
         const removeAttachmentHandler =
           props.config.mode === 'full'
             ? async (params: {attachmentId: string}) => {
+                console.log('Removing attachment:', params.attachmentId);
                 return await (
                   props.config as FullFormManagerConfig
                 ).attachmentHandlers.removeAttachment({
                   ...params,
-                  fieldId: fieldInfo.name,
+                  fieldId: props.fieldId,
                 });
               }
             : async () => {

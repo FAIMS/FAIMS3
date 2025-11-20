@@ -15,6 +15,9 @@ import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
 import {FaimsForm, FaimsFormData} from './types';
 
+// Debounce time for form syncs
+const FORM_SYNC_DEBOUNCE_MS = 1000;
+
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
 
@@ -31,7 +34,8 @@ interface BaseFormConfig {
   mode: 'full' | 'preview';
 }
 
-// These are additional config injected by the form manager(s) and passed down to fields
+// These are additional config injected by the form manager(s) and passed down
+// to fields
 export interface FormManagerAdditions {
   attachmentHandlers: {
     // Add new attachment (at start of attachment list)
@@ -108,79 +112,131 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     null
   );
 
+  /**
+   * Helper function to ensure we have a working revision ready for edits.
+   * On first edit of an existing record (parent mode), creates a new revision.
+   * Returns the revision ID to use for the update.
+   */
+  const ensureWorkingRevision = async (): Promise<string | null> => {
+    console.log(
+      '%c[ensureWorkingRevision] Called',
+      'background-color: purple; color: white',
+      {
+        edited,
+        workingRevisionId,
+        mode: props.mode,
+        hasDataEngine: !!dataEngine,
+      }
+    );
+
+    // If we don't have necessary data, we can't proceed
+    if (!dataEngine || !workingRevisionId) {
+      console.warn(
+        '[ensureWorkingRevision] Missing dataEngine or workingRevisionId'
+      );
+      return workingRevisionId;
+    }
+
+    // If this is the first edit and we're in parent mode, create new revision
+    if (!edited && props.mode === 'parent') {
+      console.log(
+        '%c[ensureWorkingRevision] Creating new revision',
+        'background-color: purple; color: white',
+        {
+          recordId: props.recordId,
+          parentRevisionId: workingRevisionId,
+        }
+      );
+
+      try {
+        const newRevision = await dataEngine.form.createRevision({
+          recordId: props.recordId,
+          revisionId: workingRevisionId,
+          createdBy: props.activeUser,
+        });
+
+        console.log(
+          '%c[ensureWorkingRevision] New revision created',
+          'background-color: purple; color: white',
+          newRevision
+        );
+
+        setWorkingRevisionId(newRevision._id);
+        setEdited(true);
+        return newRevision._id;
+      } catch (error) {
+        console.error(
+          '[ensureWorkingRevision] Failed to create revision:',
+          error
+        );
+        throw error;
+      }
+    }
+
+    // Mark as edited if not already (for new records or other modes)
+    if (!edited) {
+      console.log(
+        '[ensureWorkingRevision] Marking as edited (no new revision needed)'
+      );
+      setEdited(true);
+    }
+
+    return workingRevisionId;
+  };
+
+  const onChangeHandler = async () => {
+    console.log(
+      '%cForm values changed:',
+      'background-color: green',
+      form.state.values
+    );
+
+    // Ensure we have a working revision
+    const revisionToUpdate = await ensureWorkingRevision();
+
+    // Without these we can't do anything
+    if (record && revisionToUpdate && dataEngine) {
+      console.log('form state', form.state.values);
+      // Update the working revision with the new data
+      const updatedRecord: FormUpdateData = {
+        ...record,
+        ...form.state.values,
+      };
+      console.log(
+        '%cUpdating revision:',
+        'background-color: pink',
+        revisionToUpdate,
+        updatedRecord
+      );
+      dataEngine.form
+        .updateRevision({
+          revisionId: revisionToUpdate,
+          recordId: props.recordId,
+          updatedBy: props.activeUser,
+          update: updatedRecord,
+          mode: props.mode,
+        })
+        .then(updatedRecord => {
+          console.log(
+            '%cRecord updated:',
+            'background-color: red',
+            updatedRecord
+          );
+        });
+    }
+  };
+
   // TODO: probably want a hook to get the initial form
   // data, then we can populate the form with that data
   // https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values#basic-usage
-
   const form = useForm({
     defaultValues: formValues as FaimsFormData,
     onSubmit: ({value}) => {
       console.log('Form submitted with value:', value);
     },
     listeners: {
-      onChangeDebounceMs: 1000, // only run onChange so often
-      onChange: async () => {
-        console.log(
-          '%cForm values changed:',
-          'background-color: green',
-          form.state.values
-        );
-
-        // this might change if we make a new revision below
-        let revisionToUpdate = workingRevisionId;
-
-        // without these we can't do anything
-        // need to know the revision we need to update and have a data engine
-        // and if we don't have the current record then we're a bit lost
-        if (record && revisionToUpdate && dataEngine) {
-          // if this is the first change, and this is not a new record,
-          // we create a new revision and this becomes our working revision
-          // Q: do we need to remember the parent revision?
-          if (!edited) {
-            console.log('First edit');
-            setEdited(true);
-
-            if (props.mode === 'parent') {
-              const newRevision = await dataEngine?.form.createRevision({
-                recordId: props.recordId,
-                revisionId: revisionToUpdate,
-                createdBy: props.activeUser,
-              });
-              setWorkingRevisionId(newRevision._id);
-              revisionToUpdate = newRevision._id;
-              console.log('New working revision:', newRevision);
-            }
-          }
-
-          console.log('form state', form.state.values);
-          // then we update the working revision with the new data
-          const updatedRecord: FormUpdateData = {
-            ...record,
-            ...form.state.values,
-          };
-          console.log(
-            '%cUpdating revision:',
-            'background-color: pink',
-            revisionToUpdate,
-            updatedRecord
-          );
-          dataEngine.form
-            .updateRevision({
-              revisionId: revisionToUpdate,
-              recordId: props.recordId,
-              updatedBy: props.activeUser,
-              update: updatedRecord,
-              mode: props.mode,
-            })
-            .then(updatedRecord => {
-              console.log(
-                '%cRecord updated:',
-                'background-color: red',
-                updatedRecord
-              );
-            });
-        }
-      },
+      onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS, // only run onChange every so often
+      onChange: onChangeHandler,
     },
   });
 
@@ -190,13 +246,40 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     ...props.config,
     attachmentHandlers: {
       addAttachment: async ({fieldId, blob, contentType}) => {
-        // TODO: don't assume that working revision is defined/latest
+        console.log(
+          '%c[addAttachment] Starting',
+          'background-color: blue; color: white',
+          {
+            fieldId,
+            blobSize: blob.size,
+            contentType,
+            currentWorkingRevisionId: workingRevisionId,
+          }
+        );
+
+        // Ensure we have a working revision before adding attachment
+        const revisionToUse = await ensureWorkingRevision();
+
+        if (!revisionToUse) {
+          const error = 'No working revision available for attachment';
+          console.error('[addAttachment]', error);
+          throw new Error(error);
+        }
+
+        console.log('[addAttachment] Using revision:', revisionToUse);
+
         let attachmentResult: StoreAttachmentResult | undefined = undefined;
 
         // Current timestamp to disambiguate filenames
         const timestamp = new Date().toISOString();
         const filename = `photo_${timestamp}.${contentType}`;
+
         try {
+          console.log('[addAttachment] Storing attachment to service:', {
+            filename,
+            revisionId: revisionToUse,
+          });
+
           // Use the attachment service to store
           attachmentResult = await props.config
             .attachmentEngine()
@@ -205,17 +288,24 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
               metadata: {
                 attachmentDetails: {
                   filename,
-                  contentType: `image/${contentType}`,
+                  contentType,
                 },
                 recordContext: {
                   recordId: props.recordId,
-                  revisionId: workingRevisionId!,
+                  revisionId: revisionToUse,
                   created: timestamp,
                   createdBy: props.activeUser,
                 },
               },
             });
+
+          console.log(
+            '%c[addAttachment] Attachment stored successfully',
+            'background-color: blue; color: white',
+            attachmentResult
+          );
         } catch (e: any) {
+          console.error('[addAttachment] Failed to store attachment:', e);
           throw new Error(
             'Failed to store attachment: ' + (e as Error).message
           );
@@ -223,16 +313,19 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
         // Retrieve current state from the form
         const state = form.state.values[fieldId];
+        console.log('[addAttachment] Current field state:', state);
 
-        // We now have an attachment result - add in
+        // We now have an attachment result - add to the beginning
         const newAttachments: FaimsAttachments = [
-          ...(state?.attachments ?? []),
           {
             attachmentId: attachmentResult.identifier.id,
             filename: attachmentResult.metadata.filename,
             fileType: attachmentResult.metadata.contentType,
           },
+          ...(state?.attachments ?? []),
         ];
+
+        console.log('[addAttachment] New attachments array:', newAttachments);
 
         // Then create new overall field
         const newValue: FormDataEntry = {
@@ -240,11 +333,87 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           attachments: newAttachments,
         };
 
+        console.log('[addAttachment] Setting new field value:', newValue);
+
         // Update value
         form.setFieldValue(fieldId, newValue);
+
+        // Calling on change handler
+        console.log(
+          '%c[addAttachment] calling onChangeHandler',
+          'background-color: green; color: white'
+        );
+        await onChangeHandler();
+
+        console.log(
+          '%c[addAttachment] Complete',
+          'background-color: blue; color: white'
+        );
       },
       removeAttachment: async ({fieldId, attachmentId}) => {
-        // TODO: with full context build the attachment layer
+        console.log(
+          '%c[removeAttachment] Starting',
+          'background-color: orange; color: white',
+          {
+            fieldId,
+            attachmentId,
+            currentWorkingRevisionId: workingRevisionId,
+          }
+        );
+
+        // Ensure we have a working revision before removing attachment
+        const revisionToUse = await ensureWorkingRevision();
+
+        if (!revisionToUse) {
+          const error = 'No working revision available for attachment removal';
+          console.error('[removeAttachment]', error);
+          throw new Error(error);
+        }
+
+        console.log('[removeAttachment] Using revision:', revisionToUse);
+
+        // Retrieve current state from the form
+        const state = form.state.values[fieldId];
+        console.log('[removeAttachment] Current field state:', state);
+
+        if (!state?.attachments) {
+          console.warn('[removeAttachment] No attachments found in field');
+          return;
+        }
+
+        // Filter out the attachment to remove
+        const newAttachments: FaimsAttachments = state.attachments.filter(
+          attachment => attachment.attachmentId !== attachmentId
+        );
+
+        console.log('[removeAttachment] New attachments array:', {
+          originalCount: state.attachments.length,
+          newCount: newAttachments.length,
+          removedAttachment: attachmentId,
+        });
+
+        // Create new field value with updated attachments
+        const newValue: FormDataEntry = {
+          ...(state || {}),
+          attachments: newAttachments,
+        };
+
+        console.log('[removeAttachment] Setting new field value:', newValue);
+
+        // Update value
+        form.setFieldValue(fieldId, newValue);
+
+        // Calling on change handler
+        console.log(
+          '%c[addAttachment] calling onChangeHandler',
+          'background-color: green; color: white'
+        );
+        await onChangeHandler();
+
+        console.log(
+          '%c[removeAttachment] Complete',
+          'background-color: orange; color: white'
+        );
       },
     },
   };

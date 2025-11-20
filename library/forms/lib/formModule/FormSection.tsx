@@ -31,6 +31,7 @@ export const FormSection = ({
         const fieldSpec = uiSpec.fields[fieldName];
         return (
           <Field
+            fieldId={fieldName}
             form={form}
             fieldSpec={fieldSpec}
             key={fieldName}
