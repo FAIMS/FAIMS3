@@ -10,14 +10,31 @@ import type {
 } from '@faims3/data-model';
 import {Button} from '@mui/material';
 import {useForm, useStore} from '@tanstack/react-form';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useEffect, useState, type ComponentProps} from 'react';
+import {
+  QueryClient,
+  QueryClientProvider,
+  useQuery,
+} from '@tanstack/react-query';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentProps,
+} from 'react';
 import {FormSection} from './FormSection';
 import {FaimsForm, FaimsFormData} from './types';
 
-// Debounce time for form syncs
+/**
+ * Debounce time for form syncs to prevent excessive updates to the backend.
+ * Changes are batched and saved after this delay (in milliseconds).
+ */
 const FORM_SYNC_DEBOUNCE_MS = 1000;
 
+/**
+ * Debug component that displays the current form values in JSON format.
+ * Useful for development and testing to see form state in real-time.
+ */
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
 
@@ -29,22 +46,26 @@ const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   );
 };
 
-// Base interface for common properties
+/**
+ * Base interface for form configuration modes.
+ */
 interface BaseFormConfig {
   mode: 'full' | 'preview';
 }
 
-// These are additional config injected by the form manager(s) and passed down
-// to fields
+/**
+ * Additional handlers injected by the form manager and passed down to field components.
+ * These allow fields to interact with attachments (photos, files, etc.).
+ */
 export interface FormManagerAdditions {
   attachmentHandlers: {
-    // Add new attachment (at start of attachment list)
+    /** Add a new attachment to a field (inserted at start of attachment list) */
     addAttachment: (params: {
       fieldId: string;
       blob: Blob;
       contentType: string;
     }) => Promise<void>;
-    // Delete an attachment with given ID
+    /** Remove an attachment from a field by its ID */
     removeAttachment: (params: {
       fieldId: string;
       attachmentId: string;
@@ -52,36 +73,39 @@ export interface FormManagerAdditions {
   };
 }
 
-// Full mode - has access to data engine and full powers
+/**
+ * Full mode configuration - provides complete data engine access and functionality.
+ * Used when forms are embedded in the full application context.
+ */
 export interface FullFormConfig extends BaseFormConfig {
   mode: 'full';
-  // A function to generate an instance of the data engine - this is a function
-  // as instance references may change due to DBs being updated
+  /** Function to get current data engine instance (function allows for DB updates) */
   dataEngine: () => DataEngine;
-  // An attachment engine for use - again a function to generate
+  /** Function to get attachment service instance */
   attachmentEngine: () => IAttachmentService;
-  // Functions which redirect to other records
+  /** Navigation functions for redirecting to other records */
   redirect: {
-    // Go to a record (no revision specified)
+    /** Navigate to a record (latest revision) */
     toRecord: (params: {recordId: string}) => void;
-    // Go to a specific record revision
+    /** Navigate to a specific record revision */
     toRevision: (params: {recordId: string; revisionId: string}) => void;
   };
-  // Triggers for special behaviour
+  /** Special behavior triggers */
   trigger: {
-    // This forces a commit of the record
+    /** Force a commit/save of the current record */
     commit: () => void;
   };
-  // Who is the active user - this helps when we need to create attachments
-  // etc
+  /** Current active user identifier (for audit trails) */
   user: string;
 }
 
-// Preview mode - used for form previews which aren't in the context of a fully
-// functional app - useful for designer (for example)
+/**
+ * Preview mode configuration - limited functionality for form
+ * designer/previews. Used when forms are displayed outside the full application
+ * context.
+ */
 export interface PreviewFormConfig extends BaseFormConfig {
   mode: 'preview';
-  // Currently there is no special config provided
 }
 
 // Discriminated union
@@ -93,61 +117,91 @@ export type FormManagerConfig =
   | FullFormManagerConfig
   | PreviewFormManagerConfig;
 
+/**
+ * Props for the EditableFormManager component.
+ */
 export interface EditableFormManagerProps extends ComponentProps<any> {
+  /** The record ID being edited */
   recordId: string;
+  /** The currently active user */
   activeUser: string;
+  /** Update mode - determines revision creation behavior */
   mode: AvpUpdateMode;
+  /** Full configuration with data engine access */
   config: FullFormConfig;
+  /** React Query client for caching and data fetching */
   queryClient: QueryClient;
 }
 
+/**
+ * EditableFormManager - Manages a full-featured editable form with backend
+ * synchronization.
+ *
+ * This component handles:
+ * - Loading form data from the data engine
+ * - Creating new revisions when editing existing records (in 'parent' mode)
+ * - Debounced auto-saving of form changes
+ * - Attachment management (add/remove)
+ * - Form submission and completion
+ */
 export const EditableFormManager = (props: EditableFormManagerProps) => {
-  const [uiSpec, setUiSpec] = useState<ProjectUIModel | null>(null);
-  const [record, setRecord] = useState<FormUpdateData | null>(null);
-  const [dataEngine, setDataEngine] = useState<DataEngine | null>(null);
-  const [formValues, setFormValues] = useState<FormUpdateData>({});
-  const [formId, setFormId] = useState<string | null>(null);
-  const [edited, setEdited] = useState<boolean>(false);
+  // Track whether any edits have been made (triggers revision creation in
+  // parent mode)
+  const [edited, setEdited] = useState(false);
+
+  // The revision ID we're currently working with (may change after first edit
+  // in parent mode)
   const [workingRevisionId, setWorkingRevisionId] = useState<string | null>(
     null
   );
 
-  /**
-   * Helper function to ensure we have a working revision ready for edits.
-   * On first edit of an existing record (parent mode), creates a new revision.
-   * Returns the revision ID to use for the update.
-   */
-  const ensureWorkingRevision = async (): Promise<string | null> => {
-    console.log(
-      '%c[ensureWorkingRevision] Called',
-      'background-color: purple; color: white',
-      {
-        edited,
-        workingRevisionId,
-        mode: props.mode,
-        hasDataEngine: !!dataEngine,
-      }
-    );
+  // Get the data engine instance
+  const dataEngine = useMemo(() => {
+    return props.config.dataEngine();
+  }, [props.config.dataEngine]);
 
-    // If we don't have necessary data, we can't proceed
-    if (!dataEngine || !workingRevisionId) {
-      console.warn(
-        '[ensureWorkingRevision] Missing dataEngine or workingRevisionId'
-      );
-      return workingRevisionId;
+  // Fetch initial form data using TanStack Query for caching and loading states
+  const {data: formData, isLoading} = useQuery({
+    queryKey: ['formData', props.recordId],
+    queryFn: async () => {
+      // Get the hydrated record data in the form format
+      return await dataEngine.form.getExistingFormData({
+        recordId: props.recordId,
+        revisionId: props.revisionId,
+      });
+    },
+  });
+
+  // Update our working revision ID when form data loads
+  useEffect(() => {
+    if (formData?.revisionId) {
+      setWorkingRevisionId(formData.revisionId);
     }
+  }, [formData?.revisionId]);
 
-    // If this is the first edit and we're in parent mode, create new revision
+  /**
+   * Ensures we have a working revision ready for edits.
+   *
+   * In 'parent' mode, the first edit creates a new child revision to preserve
+   * history. This implements the AVP (Attribute-Value-Pair) versioning strategy
+   * where:
+   * - The original revision remains unchanged (parent)
+   * - A new revision is created as a child for edits
+   * - Subsequent edits continue on the same child revision
+   *
+   * @returns The revision ID to use for updates, or null if unavailable
+   */
+  const ensureWorkingRevision = useCallback(async (): Promise<
+    string | null
+  > => {
+    if (!workingRevisionId) {
+      console.warn('No working revision available');
+      return null;
+    }
+    let relevantRevisionId = workingRevisionId;
+
+    // Create new revision on first edit in parent mode
     if (!edited && props.mode === 'parent') {
-      console.log(
-        '%c[ensureWorkingRevision] Creating new revision',
-        'background-color: purple; color: white',
-        {
-          recordId: props.recordId,
-          parentRevisionId: workingRevisionId,
-        }
-      );
-
       try {
         const newRevision = await dataEngine.form.createRevision({
           recordId: props.recordId,
@@ -155,346 +209,296 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           createdBy: props.activeUser,
         });
 
-        console.log(
-          '%c[ensureWorkingRevision] New revision created',
-          'background-color: purple; color: white',
-          newRevision
-        );
-
         setWorkingRevisionId(newRevision._id);
-        setEdited(true);
-        return newRevision._id;
+        relevantRevisionId = newRevision._id;
       } catch (error) {
-        console.error(
-          '[ensureWorkingRevision] Failed to create revision:',
-          error
-        );
+        console.error('Failed to create revision:', error);
         throw error;
       }
     }
 
-    // Mark as edited if not already (for new records or other modes)
+    // Mark as edited for non-parent modes or subsequent edits
     if (!edited) {
-      console.log(
-        '[ensureWorkingRevision] Marking as edited (no new revision needed)'
-      );
       setEdited(true);
     }
 
-    return workingRevisionId;
-  };
+    // Either the current or newly created revision ID
+    return relevantRevisionId;
+  }, [
+    edited,
+    workingRevisionId,
+    props.mode,
+    props.recordId,
+    props.activeUser,
+    dataEngine,
+  ]);
 
-  const onChangeHandler = async () => {
-    console.log(
-      '%cForm values changed:',
-      'background-color: green',
-      form.state.values
-    );
-
-    // Ensure we have a working revision
+  /**
+   * Handler called when form values change (debounced).
+   * Merges current form state with existing data and saves to the backend.
+   */
+  const onChange = useCallback(async () => {
     const revisionToUpdate = await ensureWorkingRevision();
 
-    // Without these we can't do anything
-    if (record && revisionToUpdate && dataEngine) {
-      console.log('form state', form.state.values);
-      // Update the working revision with the new data
+    if (formData?.data && revisionToUpdate) {
+      // Merge existing data with current form values
       const updatedRecord: FormUpdateData = {
-        ...record,
+        ...formData.data,
         ...form.state.values,
       };
-      console.log(
-        '%cUpdating revision:',
-        'background-color: pink',
-        revisionToUpdate,
-        updatedRecord
-      );
-      dataEngine.form
-        .updateRevision({
+
+      try {
+        await dataEngine.form.updateRevision({
           revisionId: revisionToUpdate,
           recordId: props.recordId,
           updatedBy: props.activeUser,
           update: updatedRecord,
           mode: props.mode,
-        })
-        .then(updatedRecord => {
-          console.log(
-            '%cRecord updated:',
-            'background-color: red',
-            updatedRecord
-          );
         });
+      } catch (error) {
+        console.error('Failed to update revision:', error);
+      }
     }
-  };
+  }, [
+    formData?.data,
+    ensureWorkingRevision,
+    props.recordId,
+    props.activeUser,
+    props.mode,
+    dataEngine,
+  ]);
 
-  // TODO: probably want a hook to get the initial form
-  // data, then we can populate the form with that data
-  // https://tanstack.com/form/latest/docs/framework/react/guides/async-initial-values#basic-usage
+  // Initialize TanStack Form with loaded data and change handlers
   const form = useForm({
-    defaultValues: formValues as FaimsFormData,
+    defaultValues: (formData?.data ?? {}) as FaimsFormData,
     onSubmit: ({value}) => {
-      console.log('Form submitted with value:', value);
+      console.log('Form submitted:', value);
     },
     listeners: {
-      onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS, // only run onChange every so often
-      onChange: onChangeHandler,
+      // Debounce changes to avoid excessive backend calls
+      onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS,
+      onChange,
     },
   });
 
-  // Add additional handlers to produce a manager config
-  // TODO consider useCallback memoisation
+  /**
+   * Handles adding a new attachment (photo/file) to a field.
+   *
+   * Process:
+   * 1. Ensure we have a working revision (creates one if needed)
+   * 2. Store the blob in the attachment service with metadata
+   * 3. Add attachment reference to the beginning of the field's attachment list
+   * 4. Update form state and trigger save
+   *
+   * @param fieldId - The field to add the attachment to
+   * @param blob - The file data as a Blob
+   * @param contentType - MIME type of the file (e.g., 'image/jpeg')
+   */
+  const handleAddAttachment = useCallback(
+    async ({
+      fieldId,
+      blob,
+      contentType,
+    }: {
+      fieldId: string;
+      blob: Blob;
+      contentType: string;
+    }) => {
+      // Ensure we have a revision to attach to
+      const revisionToUse = await ensureWorkingRevision();
+
+      if (!revisionToUse) {
+        throw new Error('No working revision available for attachment');
+      }
+
+      // Generate unique filename with timestamp
+      const timestamp = new Date().toISOString();
+      const filename = `photo_${timestamp}.${contentType}`;
+
+      // Store attachment in the attachment service
+      const attachmentResult = await props.config
+        .attachmentEngine()
+        .storeAttachmentFromBlob({
+          blob,
+          metadata: {
+            attachmentDetails: {
+              filename,
+              contentType,
+            },
+            recordContext: {
+              recordId: props.recordId,
+              revisionId: revisionToUse,
+              created: timestamp,
+              createdBy: props.activeUser,
+            },
+          },
+        });
+
+      // Get current field state
+      const state = form.state.values[fieldId];
+
+      // Add new attachment to the beginning of the list
+      const newAttachments: FaimsAttachments = [
+        {
+          attachmentId: attachmentResult.identifier.id,
+          filename: attachmentResult.metadata.filename,
+          fileType: attachmentResult.metadata.contentType,
+        },
+        ...(state?.attachments ?? []),
+      ];
+
+      // Create updated field value
+      const newValue: FormDataEntry = {
+        ...(state || {}),
+        attachments: newAttachments,
+      };
+
+      // Update form and trigger save
+      form.setFieldValue(fieldId, newValue);
+      await onChange();
+    },
+    [
+      ensureWorkingRevision,
+      props.config,
+      props.recordId,
+      props.activeUser,
+      form,
+      onChange,
+    ]
+  );
+
+  /**
+   * Handles removing an attachment from a field.
+   *
+   * Process:
+   * 1. Ensure we have a working revision
+   * 2. Filter out the attachment with the given ID
+   * 3. Update form state and trigger save
+   *
+   * Note: This only removes the reference from the field - the actual attachment
+   * file remains in storage for historical/audit purposes.
+   *
+   * @param fieldId - The field to remove the attachment from
+   * @param attachmentId - The ID of the attachment to remove
+   */
+  const handleRemoveAttachment = useCallback(
+    async ({
+      fieldId,
+      attachmentId,
+    }: {
+      fieldId: string;
+      attachmentId: string;
+    }) => {
+      // Ensure we have a revision to modify
+      const revisionToUse = await ensureWorkingRevision();
+
+      if (!revisionToUse) {
+        throw new Error('No working revision available for attachment removal');
+      }
+
+      // Get current field state
+      const state = form.state.values[fieldId];
+
+      if (!state?.attachments) {
+        console.warn('No attachments found in field');
+        return;
+      }
+
+      // Filter out the attachment to remove
+      const newAttachments: FaimsAttachments = state.attachments.filter(
+        attachment => attachment.attachmentId !== attachmentId
+      );
+
+      // Create updated field value
+      const newValue: FormDataEntry = {
+        ...(state || {}),
+        attachments: newAttachments,
+      };
+
+      // Update form and trigger save
+      form.setFieldValue(fieldId, newValue);
+      await onChange();
+    },
+    [ensureWorkingRevision, form, onChange]
+  );
+
+  // Combine base config with attachment handlers for field components
   const formManagerConfig: FullFormManagerConfig = {
     ...props.config,
     attachmentHandlers: {
-      addAttachment: async ({fieldId, blob, contentType}) => {
-        console.log(
-          '%c[addAttachment] Starting',
-          'background-color: blue; color: white',
-          {
-            fieldId,
-            blobSize: blob.size,
-            contentType,
-            currentWorkingRevisionId: workingRevisionId,
-          }
-        );
-
-        // Ensure we have a working revision before adding attachment
-        const revisionToUse = await ensureWorkingRevision();
-
-        if (!revisionToUse) {
-          const error = 'No working revision available for attachment';
-          console.error('[addAttachment]', error);
-          throw new Error(error);
-        }
-
-        console.log('[addAttachment] Using revision:', revisionToUse);
-
-        let attachmentResult: StoreAttachmentResult | undefined = undefined;
-
-        // Current timestamp to disambiguate filenames
-        const timestamp = new Date().toISOString();
-        const filename = `photo_${timestamp}.${contentType}`;
-
-        try {
-          console.log('[addAttachment] Storing attachment to service:', {
-            filename,
-            revisionId: revisionToUse,
-          });
-
-          // Use the attachment service to store
-          attachmentResult = await props.config
-            .attachmentEngine()
-            .storeAttachmentFromBlob({
-              blob,
-              metadata: {
-                attachmentDetails: {
-                  filename,
-                  contentType,
-                },
-                recordContext: {
-                  recordId: props.recordId,
-                  revisionId: revisionToUse,
-                  created: timestamp,
-                  createdBy: props.activeUser,
-                },
-              },
-            });
-
-          console.log(
-            '%c[addAttachment] Attachment stored successfully',
-            'background-color: blue; color: white',
-            attachmentResult
-          );
-        } catch (e: any) {
-          console.error('[addAttachment] Failed to store attachment:', e);
-          throw new Error(
-            'Failed to store attachment: ' + (e as Error).message
-          );
-        }
-
-        // Retrieve current state from the form
-        const state = form.state.values[fieldId];
-        console.log('[addAttachment] Current field state:', state);
-
-        // We now have an attachment result - add to the beginning
-        const newAttachments: FaimsAttachments = [
-          {
-            attachmentId: attachmentResult.identifier.id,
-            filename: attachmentResult.metadata.filename,
-            fileType: attachmentResult.metadata.contentType,
-          },
-          ...(state?.attachments ?? []),
-        ];
-
-        console.log('[addAttachment] New attachments array:', newAttachments);
-
-        // Then create new overall field
-        const newValue: FormDataEntry = {
-          ...(state || {}),
-          attachments: newAttachments,
-        };
-
-        console.log('[addAttachment] Setting new field value:', newValue);
-
-        // Update value
-        form.setFieldValue(fieldId, newValue);
-
-        // Calling on change handler
-        console.log(
-          '%c[addAttachment] calling onChangeHandler',
-          'background-color: green; color: white'
-        );
-        await onChangeHandler();
-
-        console.log(
-          '%c[addAttachment] Complete',
-          'background-color: blue; color: white'
-        );
-      },
-      removeAttachment: async ({fieldId, attachmentId}) => {
-        console.log(
-          '%c[removeAttachment] Starting',
-          'background-color: orange; color: white',
-          {
-            fieldId,
-            attachmentId,
-            currentWorkingRevisionId: workingRevisionId,
-          }
-        );
-
-        // Ensure we have a working revision before removing attachment
-        const revisionToUse = await ensureWorkingRevision();
-
-        if (!revisionToUse) {
-          const error = 'No working revision available for attachment removal';
-          console.error('[removeAttachment]', error);
-          throw new Error(error);
-        }
-
-        console.log('[removeAttachment] Using revision:', revisionToUse);
-
-        // Retrieve current state from the form
-        const state = form.state.values[fieldId];
-        console.log('[removeAttachment] Current field state:', state);
-
-        if (!state?.attachments) {
-          console.warn('[removeAttachment] No attachments found in field');
-          return;
-        }
-
-        // Filter out the attachment to remove
-        const newAttachments: FaimsAttachments = state.attachments.filter(
-          attachment => attachment.attachmentId !== attachmentId
-        );
-
-        console.log('[removeAttachment] New attachments array:', {
-          originalCount: state.attachments.length,
-          newCount: newAttachments.length,
-          removedAttachment: attachmentId,
-        });
-
-        // Create new field value with updated attachments
-        const newValue: FormDataEntry = {
-          ...(state || {}),
-          attachments: newAttachments,
-        };
-
-        console.log('[removeAttachment] Setting new field value:', newValue);
-
-        // Update value
-        form.setFieldValue(fieldId, newValue);
-
-        // Calling on change handler
-        console.log(
-          '%c[addAttachment] calling onChangeHandler',
-          'background-color: green; color: white'
-        );
-        await onChangeHandler();
-
-        console.log(
-          '%c[removeAttachment] Complete',
-          'background-color: orange; color: white'
-        );
-      },
+      addAttachment: handleAddAttachment,
+      removeAttachment: handleRemoveAttachment,
     },
   };
 
-  // Get the record data and populate the form values when it is available
-  useEffect(() => {
-    const fn = async () => {
-      const engine = props.config.dataEngine();
-      setDataEngine(engine);
-      setUiSpec(engine.uiSpec);
-
-      const {revisionId, formId, data} = await engine.form.getExistingFormData({
-        recordId: props.recordId,
-        revisionId: props.revisionId,
-      });
-      setFormId(formId);
-      setWorkingRevisionId(revisionId);
-      setRecord(data);
-      console.log('Loaded form data:', revisionId, formId, data);
-      setFormValues(data);
-    };
-    fn();
-  }, [props.recordId, props.config]);
-
-  console.log('Loaded record:', record);
-
-  if (!record || !uiSpec || !form || !formId) {
-    return <div>Record {props.recordId} not found</div>;
-  } else {
-    return (
-      <>
-        <Button
-          variant="contained"
-          onClick={() => props.config.trigger.commit()}
-        >
-          Finish
-        </Button>
-        <Button
-          variant="contained"
-          onClick={() => props.config.trigger.commit()}
-        >
-          Finish and New
-        </Button>
-        <Button
-          variant="contained"
-          onClick={() => props.config.trigger.commit()}
-        >
-          Cancel
-        </Button>
-
-        <FormManager
-          form={form}
-          formName={formId}
-          uiSpec={uiSpec}
-          queryClient={props.queryClient}
-          config={formManagerConfig}
-        />
-      </>
-    );
+  // Loading state
+  if (isLoading || !formData) {
+    return <div>Loading...</div>;
   }
+
+  // Error state - record not found
+  if (!formData.data || !formData.formId) {
+    return <div>Record {props.recordId} not found</div>;
+  }
+
+  return (
+    <>
+      {/* Action buttons for form completion */}
+      <Button variant="contained" onClick={() => props.config.trigger.commit()}>
+        Finish
+      </Button>
+      <Button variant="contained" onClick={() => props.config.trigger.commit()}>
+        Finish and New
+      </Button>
+      <Button variant="contained" onClick={() => props.config.trigger.commit()}>
+        Cancel
+      </Button>
+
+      {/* Main form component */}
+      <FormManager
+        form={form}
+        formName={formData.formId}
+        uiSpec={dataEngine.uiSpec}
+        queryClient={props.queryClient}
+        config={formManagerConfig}
+      />
+    </>
+  );
 };
 
+/**
+ * Props for the PreviewFormManager component.
+ */
 export interface PreviewFormManagerProps extends ComponentProps<any> {
+  /** The name/ID of the form to preview */
   formName: string;
+  /** The UI specification containing form structure */
   uiSpec: ProjectUIModel;
+  /** React Query client for caching */
   queryClient: QueryClient;
 }
 
+/**
+ * PreviewFormManager - A simplified form manager for previewing forms.
+ *
+ * Used in contexts like the form designer where we want to show how a form
+ * will look and behave, but without backend integration or data persistence.
+ * Uses mock/test data for demonstration purposes.
+ */
 export const PreviewFormManager = (props: PreviewFormManagerProps) => {
-  console.log('PreviewFormManager:', props);
-
+  // Mock form values for preview
   const formValues = {
     'Full-Name': 'Steve',
     Occupation: 'Developer',
     Description: '',
     Selection: '',
   };
+
+  // Initialize form with mock data and simple logging
   const form = useForm({
     defaultValues: formValues as FaimsFormData,
     onSubmit: ({value}) => {
-      console.log('Form submitted with value:', value);
+      console.log('Form submitted:', value);
     },
     listeners: {
       onChange: () => {
@@ -503,6 +507,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     },
   });
 
+  // Preview mode config (no backend integration)
   const config: PreviewFormConfig = {
     mode: 'preview' as const,
   };
@@ -518,19 +523,35 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   );
 };
 
+/**
+ * Props for the base FormManager component.
+ */
 export interface FormManagerProps extends ComponentProps<any> {
+  /** The name/ID of the form to render */
   formName: string;
+  /** TanStack Form instance managing form state */
   form: FaimsForm;
+  /** UI specification containing form structure and field definitions */
   uiSpec: ProjectUIModel;
+  /** Configuration determining form mode and available features */
   config: FormManagerConfig;
+  /** React Query client for caching and data management */
   queryClient: QueryClient;
 }
 
+/**
+ * FormManager - Base form rendering component.
+ *
+ * This component handles the actual rendering of form sections and fields
+ * based on the UI specification. It's used by both EditableFormManager
+ * (full mode) and PreviewFormManager (preview mode).
+ *
+ * The form structure is defined in the uiSpec, which maps form names to
+ * viewsets containing sections (views), which in turn contain fields.
+ */
 export const FormManager = (props: FormManagerProps) => {
-  console.log('FormManager:', props);
-
+  // Get the form specification from the UI spec
   const formSpec = props.uiSpec.viewsets[props.formName];
-  console.log('Form Spec:', formSpec);
 
   return (
     <QueryClientProvider client={props.queryClient}>
@@ -543,6 +564,7 @@ export const FormManager = (props: FormManagerProps) => {
           props.form.handleSubmit();
         }}
       >
+        {/* Render each section defined in the form spec */}
         {formSpec.views.map((sectionName: string) => (
           <FormSection
             key={sectionName}
@@ -553,6 +575,8 @@ export const FormManager = (props: FormManagerProps) => {
           />
         ))}
       </form>
+
+      {/* Debug display of current form state */}
       <FormStateDisplay form={props.form} />
     </QueryClientProvider>
   );
