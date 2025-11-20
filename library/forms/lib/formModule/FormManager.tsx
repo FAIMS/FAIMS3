@@ -1,16 +1,19 @@
 import type {
   AvpUpdateMode,
   DataEngine,
+  FaimsAttachments,
+  FormDataEntry,
   FormUpdateData,
   IAttachmentService,
   ProjectUIModel,
+  StoreAttachmentResult,
 } from '@faims3/data-model';
 import {Button} from '@mui/material';
 import {useForm, useStore} from '@tanstack/react-form';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useEffect, useState, type ComponentProps} from 'react';
 import {FormSection} from './FormSection';
 import {FaimsForm, FaimsFormData} from './types';
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 
 const FormStateDisplay = ({form}: {form: FaimsForm}) => {
   const values = useStore(form.store, state => state.values);
@@ -28,6 +31,23 @@ interface BaseFormConfig {
   mode: 'full' | 'preview';
 }
 
+// These are additional config injected by the form manager(s) and passed down to fields
+export interface FormManagerAdditions {
+  attachmentHandlers: {
+    // Add new attachment (at start of attachment list)
+    addAttachment: (params: {
+      fieldId: string;
+      blob: Blob;
+      contentType: string;
+    }) => Promise<void>;
+    // Delete an attachment with given ID
+    removeAttachment: (params: {
+      fieldId: string;
+      attachmentId: string;
+    }) => Promise<void>;
+  };
+}
+
 // Full mode - has access to data engine and full powers
 export interface FullFormConfig extends BaseFormConfig {
   mode: 'full';
@@ -36,12 +56,6 @@ export interface FullFormConfig extends BaseFormConfig {
   dataEngine: () => DataEngine;
   // An attachment engine for use - again a function to generate
   attachmentEngine: () => IAttachmentService;
-  attachmentHandlers: {
-    // Add new attachment (at start of attachment list)
-    addAttachment: (params: {blob: Blob; contentType: string}) => Promise<void>;
-    // Delete an attachment with given ID
-    removeAttachment: (params: {attachmentId: string}) => Promise<void>;
-  };
   // Functions which redirect to other records
   redirect: {
     // Go to a record (no revision specified)
@@ -54,7 +68,6 @@ export interface FullFormConfig extends BaseFormConfig {
     // This forces a commit of the record
     commit: () => void;
   };
-
   // Who is the active user - this helps when we need to create attachments
   // etc
   user: string;
@@ -69,6 +82,12 @@ export interface PreviewFormConfig extends BaseFormConfig {
 
 // Discriminated union
 export type FormConfig = FullFormConfig | PreviewFormConfig;
+
+export type FullFormManagerConfig = FullFormConfig & FormManagerAdditions;
+export type PreviewFormManagerConfig = PreviewFormConfig;
+export type FormManagerConfig =
+  | FullFormManagerConfig
+  | PreviewFormManagerConfig;
 
 export interface EditableFormManagerProps extends ComponentProps<any> {
   recordId: string;
@@ -165,6 +184,71 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
   });
 
+  // Add additional handlers to produce a manager config
+  // TODO consider useCallback memoisation
+  const formManagerConfig: FullFormManagerConfig = {
+    ...props.config,
+    attachmentHandlers: {
+      addAttachment: async ({fieldId, blob, contentType}) => {
+        // TODO: don't assume that working revision is defined/latest
+        let attachmentResult: StoreAttachmentResult | undefined = undefined;
+
+        // Current timestamp to disambiguate filenames
+        const timestamp = new Date().toISOString();
+        const filename = `photo_${timestamp}.${contentType}`;
+        try {
+          // Use the attachment service to store
+          attachmentResult = await props.config
+            .attachmentEngine()
+            .storeAttachmentFromBlob({
+              blob,
+              metadata: {
+                attachmentDetails: {
+                  filename,
+                  contentType: `image/${contentType}`,
+                },
+                recordContext: {
+                  recordId: props.recordId,
+                  revisionId: workingRevisionId!,
+                  created: timestamp,
+                  createdBy: props.activeUser,
+                },
+              },
+            });
+        } catch (e: any) {
+          throw new Error(
+            'Failed to store attachment: ' + (e as Error).message
+          );
+        }
+
+        // Retrieve current state from the form
+        const state = form.state.values[fieldId];
+
+        // We now have an attachment result - add in
+        const newAttachments: FaimsAttachments = [
+          ...(state?.attachments ?? []),
+          {
+            attachmentId: attachmentResult.identifier.id,
+            filename: attachmentResult.metadata.filename,
+            fileType: attachmentResult.metadata.contentType,
+          },
+        ];
+
+        // Then create new overall field
+        const newValue: FormDataEntry = {
+          ...(state || {}),
+          attachments: newAttachments,
+        };
+
+        // Update value
+        form.setFieldValue(fieldId, newValue);
+      },
+      removeAttachment: async ({fieldId, attachmentId}) => {
+        // TODO: with full context build the attachment layer
+      },
+    },
+  };
+
   // Get the record data and populate the form values when it is available
   useEffect(() => {
     const fn = async () => {
@@ -216,7 +300,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           formName={formId}
           uiSpec={uiSpec}
           queryClient={props.queryClient}
-          config={props.config}
+          config={formManagerConfig}
         />
       </>
     );
@@ -269,7 +353,7 @@ export interface FormManagerProps extends ComponentProps<any> {
   formName: string;
   form: FaimsForm;
   uiSpec: ProjectUIModel;
-  config: FormConfig;
+  config: FormManagerConfig;
   queryClient: QueryClient;
 }
 

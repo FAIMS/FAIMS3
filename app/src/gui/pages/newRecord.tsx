@@ -7,7 +7,7 @@ import {
   RecordID,
   RevisionID,
 } from '@faims3/data-model';
-import {EditableFormManager, FullFormContext} from '@faims3/forms';
+import {EditableFormManager, FullFormConfig} from '@faims3/forms';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {getNotebookRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
@@ -68,7 +68,7 @@ export const EditRecordPage = () => {
     return createProjectAttachmentService(projectId);
   };
 
-  const formContext = {
+  const formConfig : FullFormConfig = {
     mode: 'full' as const,
     dataEngine,
     attachmentEngine,
@@ -104,7 +104,7 @@ export const EditRecordPage = () => {
         queryClient={qClient}
         activeUser={userId}
         recordId={recordId}
-        config={{context: formContext}}
+        config={formConfig}
       />
     </div>
   );

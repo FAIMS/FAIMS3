@@ -6,7 +6,7 @@ import {
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {FieldAnnotation} from './Annotation';
-import {FormConfig} from './FormManager';
+import {FormConfig, FormManagerConfig} from './FormManager';
 import {
   BaseFieldProps,
   EncodedFieldSpecification,
@@ -17,7 +17,7 @@ import {
 interface FieldProps {
   fieldSpec: EncodedFieldSpecification;
   form: FaimsForm;
-  config: FormConfig;
+  config: FormManagerConfig;
 }
 
 export const Field = React.memo((props: FieldProps) => {
@@ -72,16 +72,32 @@ export const Field = React.memo((props: FieldProps) => {
           field.handleChange(newValue as any);
         };
 
+        const addAttachmentHandler =
+          props.config.mode === 'full'
+            ? props.config.attachmentHandlers.addAttachment
+            : async () => {
+                console.log('Mock addAttachment');
+              };
+        const removeAttachmentHandler =
+          props.config.mode === 'full'
+            ? props.config.attachmentHandlers.removeAttachment
+            : async () => {
+                console.log('Mock removeAttachment');
+              };
+
         return (
           <>
             <Component
               {...(props.fieldSpec['component-parameters'] as BaseFieldProps)}
-              // TODO fix the typing here - I think there is a minor issue
+              // TODO fix the typing here - I think there is a minor issue but
+              // it appears to functionally work
               state={field.state as unknown as FaimsFormFieldState}
               config={props.config}
               setFieldData={setFieldData}
               setFieldAnnotation={setFieldAnnotation}
               setFieldAttachment={setFieldAttachment}
+              addAttachment={addAttachmentHandler}
+              removeAttachment={removeAttachmentHandler}
               handleBlur={field.handleBlur}
             />
             <FieldAnnotation

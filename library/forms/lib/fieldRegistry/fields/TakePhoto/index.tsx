@@ -500,7 +500,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     advancedHelperText,
     disabled = false,
     state,
-    setFieldAttachment,
+    addAttachment,
+    removeAttachment,
     config: context,
   } = props;
 
