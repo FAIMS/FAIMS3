@@ -2,11 +2,7 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import {
-  FaimsAttachments,
-  logError,
-  StoreAttachmentResult,
-} from '@faims3/data-model';
+import {logError} from '@faims3/data-model';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -585,58 +581,16 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
-      const store = async ({
-        format,
-        blob,
-      }: {
-        format: string;
-        blob: Blob;
-      }): Promise<StoreAttachmentResult> => {
-        // Current timestamp to disambiguate filenames
-        const timestamp = new Date().toISOString();
-        const filename = `photo_${timestamp}.${format}`;
-        try {
-          // Use the attachment service to store
-          return await attachmentService.storeAttachmentFromBlob({
-            blob: photoBlob,
-            metadata: {
-              attachmentDetails: {
-                filename,
-                contentType: `image/${photoResult.format}`,
-              },
-              recordContext: {
-                recordId: context.recordInformation.recordId,
-                revisionId: context.recordInformation.revisionId,
-                created: timestamp,
-                createdBy: context.user,
-              },
-            },
-          });
-        } catch (e: any) {
-          throw new Error(
-            'Failed to store attachment: ' + (e as Error).message
-          );
-        }
-      };
-
-      // Update field attachments
-      const currentAttachments: FaimsAttachments =
-        state.value?.attachments || [];
-      const newAttachments: FaimsAttachments = [
-        ...currentAttachments,
-        {
-          attachmentId: result.identifier.id,
-          filename: result.metadata.filename,
-          fileType: result.metadata.contentType,
-        },
-      ];
-
-      setFieldAttachment(newAttachments);
+      // Call out to props to add attachment
+      await addAttachment({
+        blob: photoBlob,
+        contentType: `image/${photoResult.format}`,
+      });
     } catch (err: any) {
       logError(err);
       console.error('Failed to capture photo:', err);
     }
-  }, [attachmentService, state.value, setFieldAttachment, context]);
+  }, [state.value, props.addAttachment, context]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
@@ -644,12 +598,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const handleDelete = useCallback(
     (index: number) => {
       const currentAttachments = state.value?.attachments || [];
-      const newAttachments = currentAttachments.filter(
-        (_: any, i: number) => i !== index
-      );
-      setFieldAttachment(newAttachments);
+      removeAttachment({attachmentId: currentAttachments[index].attachmentId});
     },
-    [state.value, setFieldAttachment]
+    [state.value, removeAttachment]
   );
 
   return (

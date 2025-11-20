@@ -6,7 +6,10 @@ import {
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {FieldAnnotation} from './Annotation';
-import {FormConfig, FormManagerConfig} from './FormManager';
+import {
+  FormManagerConfig,
+  FullFormManagerConfig,
+} from './FormManager';
 import {
   BaseFieldProps,
   EncodedFieldSpecification,
@@ -72,15 +75,30 @@ export const Field = React.memo((props: FieldProps) => {
           field.handleChange(newValue as any);
         };
 
+        // TODO clean this up - duplicating the mode check here is ugly
         const addAttachmentHandler =
           props.config.mode === 'full'
-            ? props.config.attachmentHandlers.addAttachment
+            ? async (params: {blob: Blob; contentType: string}) => {
+                return await (
+                  props.config as FullFormManagerConfig
+                ).attachmentHandlers.addAttachment({
+                  ...params,
+                  fieldId: fieldInfo.name,
+                });
+              }
             : async () => {
                 console.log('Mock addAttachment');
               };
         const removeAttachmentHandler =
           props.config.mode === 'full'
-            ? props.config.attachmentHandlers.removeAttachment
+            ? async (params: {attachmentId: string}) => {
+                return await (
+                  props.config as FullFormManagerConfig
+                ).attachmentHandlers.removeAttachment({
+                  ...params,
+                  fieldId: fieldInfo.name,
+                });
+              }
             : async () => {
                 console.log('Mock removeAttachment');
               };
