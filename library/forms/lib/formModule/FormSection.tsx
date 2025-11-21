@@ -1,13 +1,13 @@
 import {ProjectUIModel} from '@faims3/data-model';
-import {FaimsForm} from './types';
 import {Field} from './Field';
-import {FormConfig} from './FormManager';
+import {FormManagerConfig} from './formManagers';
+import {FaimsForm} from './types';
 
 interface FormSectionProps {
   uiSpec: ProjectUIModel;
   section: string;
   form: FaimsForm;
-  config: FormConfig;
+  config: FormManagerConfig;
 }
 
 // A form section contains the fields defined for one section of a form
@@ -31,10 +31,11 @@ export const FormSection = ({
         const fieldSpec = uiSpec.fields[fieldName];
         return (
           <Field
+            fieldId={fieldName}
             form={form}
             fieldSpec={fieldSpec}
             key={fieldName}
-            context={config.context}
+            config={config}
           />
         );
       })}

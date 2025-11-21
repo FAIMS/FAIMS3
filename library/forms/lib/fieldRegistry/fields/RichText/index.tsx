@@ -23,13 +23,14 @@
 import React from 'react';
 import {contentToSanitizedHtml} from './DomPurifier';
 import {FieldInfo} from '../../types';
+import {FullFieldProps} from '../../../formModule/types';
 
-interface Props {
+interface Props extends FullFieldProps {
   /** The markdown content to be rendered. May include safe HTML tags. */
   content: string;
 }
 
-export const RichTextField: React.FC<Props> = ({content}) => {
+export const RichTextContent: React.FC<{content: string}> = ({content}) => {
   if (!content?.trim()) {
     // Return nothing if content is empty or whitespace
     return null;
@@ -40,7 +41,11 @@ export const RichTextField: React.FC<Props> = ({content}) => {
   );
 };
 
-export const richTextFieldSpec: FieldInfo = {
+export const RichTextField: React.FC<Props> = ({content}) => {
+  return <RichTextContent content={content} />;
+};
+
+export const richTextFieldSpec: FieldInfo<Props> = {
   namespace: 'faims-custom',
   name: 'RichText',
   returns: null,

@@ -12,7 +12,9 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "engines": {
     "node": "22"
   },
@@ -34,11 +36,18 @@
     "@mui/icons-material": "5.15.8",
     "@mui/material": "5.15.14",
     "@tanstack/react-form": "^1.23.8",
+    "buffer": "^6.0.3",
     "dompurify": "^3.2.4",
     "markdown-it": "^14.1.0",
+    "react-dropzone": "14.2.3",
+    "zod": "^4.1.12",
+    "@capacitor-community/exif": "^7.0.0",
+    "@capacitor/camera": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/geolocation": "^7.1.1",
+    "@tanstack/react-query": "^5.62.16",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "zod": "^4.1.12"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -57,5 +66,14 @@
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7",
     "vitest": "^4.0.6"
+  },
+  "peerDependencies": {
+    "@capacitor-community/exif": "^7.0.0",
+    "@capacitor/camera": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/geolocation": "^7.1.1",
+    "@tanstack/react-query": "^5.62.16",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

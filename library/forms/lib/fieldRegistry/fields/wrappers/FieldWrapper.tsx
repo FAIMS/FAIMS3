@@ -9,7 +9,6 @@
  *
  * It is used across multiple input components to standardize the UI.
  */
-import React, {ReactNode, useState} from 'react';
 import {
   Box,
   Button,
@@ -22,10 +21,11 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import React, {ReactNode, useState} from 'react';
 // import {theme} from '../themes';  TODO how do we apply the theme?
-import {RichTextField} from '../RichText';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {RichTextContent} from '../RichText';
 
 /**
  * @interface FieldWrapperProps
@@ -225,7 +225,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 // color: theme.palette.text.primary,
               }}
             >
-              <RichTextField content={String(advancedHelperText || '')} />
+              <RichTextContent content={String(advancedHelperText || '')} />
             </Box>
           </DialogContent>
 

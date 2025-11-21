@@ -5,14 +5,20 @@ import {
 } from '@faims3/data-model';
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
-import {FormContext} from './FormManager';
-import {EncodedFieldSpecification, FaimsForm} from './types';
 import {FieldAnnotation} from './Annotation';
+import {FormManagerConfig, FullFormManagerConfig} from './formManagers';
+import {
+  BaseFieldProps,
+  EncodedFieldSpecification,
+  FaimsForm,
+  FaimsFormFieldState,
+} from './types';
 
 interface FieldProps {
+  fieldId: string;
   fieldSpec: EncodedFieldSpecification;
   form: FaimsForm;
-  context: FormContext;
+  config: FormManagerConfig;
 }
 
 export const Field = React.memo((props: FieldProps) => {
@@ -67,15 +73,52 @@ export const Field = React.memo((props: FieldProps) => {
           field.handleChange(newValue as any);
         };
 
+        // TODO clean this up - duplicating the mode check here is ugly
+        const addAttachmentHandler =
+          props.config.mode === 'full'
+            ? async (params: {
+                blob: Blob;
+                contentType: string;
+                type: 'photo' | 'file';
+                fileFormat: string;
+              }) => {
+                return await (
+                  props.config as FullFormManagerConfig
+                ).attachmentHandlers.addAttachment({
+                  ...params,
+                  fieldId: props.fieldId,
+                });
+              }
+            : async () => {
+                console.log('Mock addAttachment');
+              };
+        const removeAttachmentHandler =
+          props.config.mode === 'full'
+            ? async (params: {attachmentId: string}) => {
+                return await (
+                  props.config as FullFormManagerConfig
+                ).attachmentHandlers.removeAttachment({
+                  ...params,
+                  fieldId: props.fieldId,
+                });
+              }
+            : async () => {
+                console.log('Mock removeAttachment');
+              };
+
         return (
           <>
             <Component
-              {...props.fieldSpec['component-parameters']}
-              state={field.state}
-              context={props.context}
+              {...(props.fieldSpec['component-parameters'] as BaseFieldProps)}
+              // TODO fix the typing here - I think there is a minor issue but
+              // it appears to functionally work
+              state={field.state as unknown as FaimsFormFieldState}
+              config={props.config}
               setFieldData={setFieldData}
               setFieldAnnotation={setFieldAnnotation}
               setFieldAttachment={setFieldAttachment}
+              addAttachment={addAttachmentHandler}
+              removeAttachment={removeAttachmentHandler}
               handleBlur={field.handleBlur}
             />
             <FieldAnnotation

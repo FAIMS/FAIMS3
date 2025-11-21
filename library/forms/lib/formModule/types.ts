@@ -1,14 +1,10 @@
-import {
-  FaimsAttachments,
-  FormAnnotation,
-  FormUpdateData,
-} from '@faims3/data-model';
+import {FormAnnotation, FormUpdateData} from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import React from 'react';
 import {z} from 'zod';
-import {FormContext} from './FormManager';
+import {FormConfig} from './formManagers';
 
-export type FaimsFormData = FormUpdateData;
+export type FaimsFormData = FormUpdateData | undefined;
 
 // Extract the Field type from the form instance
 type ExtractFieldType<T> = T extends {
@@ -66,7 +62,17 @@ export type FormFieldContextProps = {
   state: FaimsFormFieldState;
   setFieldData: (value: any) => void;
   setFieldAnnotation: (value: FormAnnotation) => void;
-  setFieldAttachment: (value: FaimsAttachments) => void;
+  // Add new attachment (at start of attachment list)
+  addAttachment: (params: {
+    blob: Blob;
+    contentType: string;
+    type: 'photo' | 'file';
+    fileFormat: string;
+  }) => Promise<void>;
+  // Delete an attachment with given ID
+  removeAttachment: (params: {attachmentId: string}) => Promise<void>;
   handleBlur: () => void;
-  context: FormContext;
+  config: FormConfig;
 };
+
+export type FullFieldProps = BaseFieldProps & FormFieldContextProps;
