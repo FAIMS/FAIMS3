@@ -69,6 +69,10 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         revisionId: props.revisionId,
       });
     },
+    // Try offline
+    networkMode: 'always',
+    // Always refetch on mount to get fresh data
+    refetchOnMount: 'always',
   });
 
   // Update our working revision ID when form data loads
@@ -198,10 +202,14 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       fieldId,
       blob,
       contentType,
+      type,
+      fileFormat,
     }: {
       fieldId: string;
       blob: Blob;
       contentType: string;
+      type: 'photo' | 'file';
+      fileFormat: string;
     }) => {
       // Ensure we have a revision to attach to
       const revisionToUse = await ensureWorkingRevision();
@@ -212,7 +220,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
       // Generate unique filename with timestamp
       const timestamp = new Date().toISOString();
-      const filename = `photo_${timestamp}.${contentType}`;
+      const filename = `${type === 'photo' ? 'photo' : 'file'}_${timestamp}.${fileFormat}`;
 
       // Store attachment in the attachment service
       const attachmentResult = await props.config

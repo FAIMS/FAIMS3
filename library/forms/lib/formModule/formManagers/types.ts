@@ -1,4 +1,4 @@
-import { DataEngine, IAttachmentService } from '@faims3/data-model';
+import {DataEngine, IAttachmentService} from '@faims3/data-model';
 
 /**
  * Base interface for form configuration modes.
@@ -18,6 +18,10 @@ export interface FormManagerAdditions {
       fieldId: string;
       blob: Blob;
       contentType: string;
+      // This informs how to name things
+      type: 'photo' | 'file';
+      // This informs the file format in the file system e.g. pdf
+      fileFormat: string;
     }) => Promise<void>;
     /** Remove an attachment from a field by its ID */
     removeAttachment: (params: {

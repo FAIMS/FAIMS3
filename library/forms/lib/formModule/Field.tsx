@@ -76,8 +76,12 @@ export const Field = React.memo((props: FieldProps) => {
         // TODO clean this up - duplicating the mode check here is ugly
         const addAttachmentHandler =
           props.config.mode === 'full'
-            ? async (params: {blob: Blob; contentType: string}) => {
-                console.log('Adding attachment:', params.contentType);
+            ? async (params: {
+                blob: Blob;
+                contentType: string;
+                type: 'photo' | 'file';
+                fileFormat: string;
+              }) => {
                 return await (
                   props.config as FullFormManagerConfig
                 ).attachmentHandlers.addAttachment({
@@ -91,7 +95,6 @@ export const Field = React.memo((props: FieldProps) => {
         const removeAttachmentHandler =
           props.config.mode === 'full'
             ? async (params: {attachmentId: string}) => {
-                console.log('Removing attachment:', params.attachmentId);
                 return await (
                   props.config as FullFormManagerConfig
                 ).attachmentHandlers.removeAttachment({

@@ -15,7 +15,11 @@
           "name": "Full-Name",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -23,8 +27,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -43,7 +53,11 @@
           "name": "Occupation",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -51,8 +65,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -72,8 +92,14 @@
         "showInChooser": true,
         "order": 17,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": false, "label": "uncertainty"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         }
       },
       "Description": {
@@ -90,7 +116,11 @@
           "name": "Description",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -98,8 +128,14 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {"include": false, "label": "annotation"},
-          "uncertainty": {"include": true, "label": "Not Sure?"}
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
@@ -116,15 +152,25 @@
           "required": true,
           "ElementProps": {
             "options": [
-              {"label": "Primary **option**", "value": "Primary **option**"},
-              {"label": "Secondary *option*", "value": "Secondary *option*"}
+              {
+                "label": "Primary **option**",
+                "value": "Primary **option**"
+              },
+              {
+                "label": "Secondary *option*",
+                "value": "Secondary *option*"
+              }
             ],
             "exclusiveOptions": []
           },
           "name": "Selection",
           "protection": "none"
         },
-        "validationSchema": [["yup.string"]],
+        "validationSchema": [
+          [
+            "yup.string"
+          ]
+        ],
         "initialValue": "",
         "humanReadableName": "Select Field",
         "humanReadableDescription": "Dropdown list allowing one selection",
@@ -132,39 +178,137 @@
         "showInChooser": true,
         "order": 19,
         "meta": {
-          "annotation": {"include": true, "label": "Annotation"},
-          "uncertainty": {"include": true, "label": "Uncertain?"}
+          "annotation": {
+            "include": true,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
         },
         "persistent": false,
         "displayParent": false
+      },
+      "Photo": {
+        "component-namespace": "faims-custom",
+        "component-name": "TakePhoto",
+        "type-returned": "faims-attachment::Files",
+        "component-parameters": {
+          "name": "Photo",
+          "helperText": "",
+          "advancedHelperText": "",
+          "label": "Photo"
+        },
+        "validationSchema": [
+          [
+            "yup.array"
+          ],
+          [
+            "yup.of",
+            [
+              [
+                "yup.object"
+              ],
+              [
+                "yup.nullable"
+              ]
+            ]
+          ],
+          [
+            "yup.nullable"
+          ]
+        ],
+        "initialValue": null,
+        "humanReadableName": "Take Photo",
+        "humanReadableDescription": "Capture and attach an image via camera",
+        "category": "media",
+        "showInChooser": true,
+        "order": 21,
+        "meta": {
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
+      },
+      "File-Uploader": {
+        "component-namespace": "faims-custom",
+        "component-name": "FileUploader",
+        "type-returned": "faims-attachment::Files",
+        "component-parameters": {
+          "label": "File Uploader",
+          "name": "File-Uploader",
+          "id": "file-upload-field",
+          "helperText": ""
+        },
+        "validationSchema": [
+          [
+            "yup.mixed"
+          ]
+        ],
+        "initialValue": null,
+        "humanReadableName": "Upload a File",
+        "humanReadableDescription": "Attach one or more files to the record",
+        "category": "media",
+        "showInChooser": true,
+        "order": 12,
+        "meta": {
+          "annotation": {
+            "include": false,
+            "label": "annotation"
+          },
+          "uncertainty": {
+            "include": false,
+            "label": "uncertainty"
+          }
+        }
       }
     },
     "fviews": {
       "Person-Main": {
         "label": "Main",
-        "fields": ["Header", "Full-Name", "Occupation"]
+        "fields": [
+          "Header",
+          "Full-Name",
+          "Occupation",
+          "Photo",
+          "File-Uploader"
+        ]
       },
       "Person-Detail": {
         "label": "Detail",
-        "fields": ["Description", "Selection"]
+        "fields": [
+          "Description",
+          "Selection"
+        ]
       }
     },
     "viewsets": {
       "Person": {
         "label": "Person",
-        "views": ["Person-Main", "Person-Detail"],
+        "views": [
+          "Person-Main",
+          "Person-Detail"
+        ],
         "publishButtonBehaviour": "always"
       }
     },
-    "visible_types": ["Person"]
+    "visible_types": [
+      "Person"
+    ]
   },
   "metadata": {
     "filenames": [],
     "lead_institution": "",
     "meta": {},
-    "name": "Very Simple Notebook",
+    "name": "new forms sample",
     "pre_description": "",
-    "project_id": "1761714716731-very-simple-notebook",
+    "project_id": "1763075074953-new-forms-sample",
     "project_lead": "",
     "project_status": "New",
     "sections": {}

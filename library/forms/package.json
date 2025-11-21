@@ -39,6 +39,7 @@
     "buffer": "^6.0.3",
     "dompurify": "^3.2.4",
     "markdown-it": "^14.1.0",
+    "react-dropzone": "14.2.3",
     "zod": "^4.1.12"
   },
   "devDependencies": {

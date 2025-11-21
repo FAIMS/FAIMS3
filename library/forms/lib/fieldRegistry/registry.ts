@@ -1,4 +1,5 @@
 import {FullFieldProps} from '../formModule/types';
+import {fileUploaderFieldSpec} from './fields/FileUploader';
 import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
 import {takePhotoFieldSpec} from './fields/TakePhoto';
@@ -12,6 +13,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   richTextFieldSpec,
   selectFieldSpec,
   takePhotoFieldSpec,
+  fileUploaderFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info

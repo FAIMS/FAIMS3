@@ -585,6 +585,8 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       await addAttachment({
         blob: photoBlob,
         contentType: `image/${photoResult.format}`,
+        type: 'photo',
+        fileFormat: photoResult.format,
       });
     } catch (err: any) {
       logError(err);
