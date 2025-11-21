@@ -6,15 +6,10 @@ import type {
   FormUpdateData,
   IAttachmentService,
   ProjectUIModel,
-  StoreAttachmentResult,
 } from '@faims3/data-model';
 import {Button} from '@mui/material';
 import {useForm, useStore} from '@tanstack/react-form';
-import {
-  QueryClient,
-  QueryClientProvider,
-  useQuery,
-} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import {
   useCallback,
   useEffect,
@@ -129,8 +124,6 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
   mode: AvpUpdateMode;
   /** Full configuration with data engine access */
   config: FullFormConfig;
-  /** React Query client for caching and data fetching */
-  queryClient: QueryClient;
 }
 
 /**
@@ -459,7 +452,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         form={form}
         formName={formData.formId}
         uiSpec={dataEngine.uiSpec}
-        queryClient={props.queryClient}
         config={formManagerConfig}
       />
     </>
@@ -474,8 +466,6 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   formName: string;
   /** The UI specification containing form structure */
   uiSpec: ProjectUIModel;
-  /** React Query client for caching */
-  queryClient: QueryClient;
 }
 
 /**
@@ -518,7 +508,6 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
       formName={props.formName}
       uiSpec={props.uiSpec}
       config={config}
-      queryClient={props.queryClient}
     />
   );
 };
@@ -535,8 +524,6 @@ export interface FormManagerProps extends ComponentProps<any> {
   uiSpec: ProjectUIModel;
   /** Configuration determining form mode and available features */
   config: FormManagerConfig;
-  /** React Query client for caching and data management */
-  queryClient: QueryClient;
 }
 
 /**
@@ -554,7 +541,7 @@ export const FormManager = (props: FormManagerProps) => {
   const formSpec = props.uiSpec.viewsets[props.formName];
 
   return (
-    <QueryClientProvider client={props.queryClient}>
+    <>
       <h2>Form: {formSpec.label}</h2>
 
       <form
@@ -578,6 +565,6 @@ export const FormManager = (props: FormManagerProps) => {
 
       {/* Debug display of current form state */}
       <FormStateDisplay form={props.form} />
-    </QueryClientProvider>
+    </>
   );
 };

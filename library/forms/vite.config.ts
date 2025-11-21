@@ -31,6 +31,7 @@ export default defineConfig(({command}) => {
             '@mui/material',
             '@mui/icons-material',
             '@tanstack/react-form',
+            '@tanstack/react-query',
             '@faims3/data-model',
             'dompurify',
             'markdown-it',

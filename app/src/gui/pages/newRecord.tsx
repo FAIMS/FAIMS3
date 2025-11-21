@@ -16,7 +16,6 @@ import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {localGetDataDb} from '../../utils/database';
-import {useQueryClient} from '@tanstack/react-query';
 
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
@@ -53,7 +52,6 @@ export const EditRecordPage = () => {
   const {uiSpecificationId: uiSpecId} = project;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
   if (!uiSpec) return <div>UI Specification not found</div>;
-  const qClient = useQueryClient();
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {
@@ -68,7 +66,7 @@ export const EditRecordPage = () => {
     return createProjectAttachmentService(projectId);
   };
 
-  const formConfig : FullFormConfig = {
+  const formConfig: FullFormConfig = {
     mode: 'full' as const,
     dataEngine,
     attachmentEngine,
@@ -101,7 +99,6 @@ export const EditRecordPage = () => {
       <h2>Editing {recordId}</h2>
       <EditableFormManager
         mode={mode}
-        queryClient={qClient}
         activeUser={userId}
         recordId={recordId}
         config={formConfig}
