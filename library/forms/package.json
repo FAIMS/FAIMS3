@@ -36,12 +36,18 @@
     "@mui/icons-material": "5.15.8",
     "@mui/material": "5.15.14",
     "@tanstack/react-form": "^1.23.8",
+    "buffer": "^6.0.3",
     "dompurify": "^3.2.4",
     "markdown-it": "^14.1.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@capacitor-community/exif": "^7.0.0",
+    "@capacitor/camera": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/geolocation": "^7.1.1",
     "@eslint/js": "^9.36.0",
+    "@tanstack/react-query": "^5.62.16",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -53,25 +59,20 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.32.2",
     "globals": "^16.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7",
-    "vitest": "^4.0.6",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@tanstack/react-query": "^5.62.16",
-    "@capacitor-community/exif": "^7.0.0",
-    "@capacitor/camera": "^7.0.1",
-    "@capacitor/geolocation": "^7.1.1",
-    "@capacitor/core": "^7.2.0"
+    "vitest": "^4.0.6"
   },
   "peerDependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@tanstack/react-query": "^5.62.16",
     "@capacitor-community/exif": "^7.0.0",
     "@capacitor/camera": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
     "@capacitor/geolocation": "^7.1.1",
-    "@capacitor/core": "^7.2.0"
+    "@tanstack/react-query": "^5.62.16",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }
