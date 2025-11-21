@@ -608,7 +608,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
             : 'File is too small';
           break;
         case 'too-many-files':
-          errorMessage = `Too many files selected`;
+          errorMessage = 'Too many files selected';
           break;
         default:
           errorMessage = rejection.errors[0]?.message || 'File upload failed';
