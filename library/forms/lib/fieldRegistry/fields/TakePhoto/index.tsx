@@ -20,7 +20,7 @@ import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {Buffer} from 'buffer';
 import React, {useCallback, useMemo, useState} from 'react';
 import {z} from 'zod';
-import {FullFormConfig} from '../../../formModule';
+import {FullFormConfig} from '../../../formModule/formManagers';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,

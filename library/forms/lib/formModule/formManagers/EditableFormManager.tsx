@@ -1,116 +1,22 @@
-import type {
+import {
   AvpUpdateMode,
-  DataEngine,
   FaimsAttachments,
   FormDataEntry,
   FormUpdateData,
-  IAttachmentService,
-  ProjectUIModel,
 } from '@faims3/data-model';
 import {Button} from '@mui/material';
-import {useForm, useStore} from '@tanstack/react-form';
+import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ComponentProps,
-} from 'react';
-import {FormSection} from './FormSection';
-import {FaimsForm, FaimsFormData} from './types';
+import {ComponentProps, useCallback, useEffect, useMemo, useState} from 'react';
+import {FaimsFormData} from '../types';
+import {FormManager} from './FormManager';
+import {FullFormConfig, FullFormManagerConfig} from './types';
 
 /**
  * Debounce time for form syncs to prevent excessive updates to the backend.
  * Changes are batched and saved after this delay (in milliseconds).
  */
 const FORM_SYNC_DEBOUNCE_MS = 1000;
-
-/**
- * Debug component that displays the current form values in JSON format.
- * Useful for development and testing to see form state in real-time.
- */
-const FormStateDisplay = ({form}: {form: FaimsForm}) => {
-  const values = useStore(form.store, state => state.values);
-
-  return (
-    <div>
-      <h3>Current Form Values:</h3>
-      <pre>{JSON.stringify(values, null, 2)}</pre>
-    </div>
-  );
-};
-
-/**
- * Base interface for form configuration modes.
- */
-interface BaseFormConfig {
-  mode: 'full' | 'preview';
-}
-
-/**
- * Additional handlers injected by the form manager and passed down to field components.
- * These allow fields to interact with attachments (photos, files, etc.).
- */
-export interface FormManagerAdditions {
-  attachmentHandlers: {
-    /** Add a new attachment to a field (inserted at start of attachment list) */
-    addAttachment: (params: {
-      fieldId: string;
-      blob: Blob;
-      contentType: string;
-    }) => Promise<void>;
-    /** Remove an attachment from a field by its ID */
-    removeAttachment: (params: {
-      fieldId: string;
-      attachmentId: string;
-    }) => Promise<void>;
-  };
-}
-
-/**
- * Full mode configuration - provides complete data engine access and functionality.
- * Used when forms are embedded in the full application context.
- */
-export interface FullFormConfig extends BaseFormConfig {
-  mode: 'full';
-  /** Function to get current data engine instance (function allows for DB updates) */
-  dataEngine: () => DataEngine;
-  /** Function to get attachment service instance */
-  attachmentEngine: () => IAttachmentService;
-  /** Navigation functions for redirecting to other records */
-  redirect: {
-    /** Navigate to a record (latest revision) */
-    toRecord: (params: {recordId: string}) => void;
-    /** Navigate to a specific record revision */
-    toRevision: (params: {recordId: string; revisionId: string}) => void;
-  };
-  /** Special behavior triggers */
-  trigger: {
-    /** Force a commit/save of the current record */
-    commit: () => void;
-  };
-  /** Current active user identifier (for audit trails) */
-  user: string;
-}
-
-/**
- * Preview mode configuration - limited functionality for form
- * designer/previews. Used when forms are displayed outside the full application
- * context.
- */
-export interface PreviewFormConfig extends BaseFormConfig {
-  mode: 'preview';
-}
-
-// Discriminated union
-export type FormConfig = FullFormConfig | PreviewFormConfig;
-
-export type FullFormManagerConfig = FullFormConfig & FormManagerAdditions;
-export type PreviewFormManagerConfig = PreviewFormConfig;
-export type FormManagerConfig =
-  | FullFormManagerConfig
-  | PreviewFormManagerConfig;
 
 /**
  * Props for the EditableFormManager component.
@@ -348,7 +254,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
       // Update form and trigger save
       form.setFieldValue(fieldId, newValue);
-      await onChange();
     },
     [
       ensureWorkingRevision,
@@ -356,7 +261,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       props.recordId,
       props.activeUser,
       form,
-      onChange,
     ]
   );
 
@@ -410,9 +314,8 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
       // Update form and trigger save
       form.setFieldValue(fieldId, newValue);
-      await onChange();
     },
-    [ensureWorkingRevision, form, onChange]
+    [ensureWorkingRevision, form]
   );
 
   // Combine base config with attachment handlers for field components
@@ -454,117 +357,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         uiSpec={dataEngine.uiSpec}
         config={formManagerConfig}
       />
-    </>
-  );
-};
-
-/**
- * Props for the PreviewFormManager component.
- */
-export interface PreviewFormManagerProps extends ComponentProps<any> {
-  /** The name/ID of the form to preview */
-  formName: string;
-  /** The UI specification containing form structure */
-  uiSpec: ProjectUIModel;
-}
-
-/**
- * PreviewFormManager - A simplified form manager for previewing forms.
- *
- * Used in contexts like the form designer where we want to show how a form
- * will look and behave, but without backend integration or data persistence.
- * Uses mock/test data for demonstration purposes.
- */
-export const PreviewFormManager = (props: PreviewFormManagerProps) => {
-  // Mock form values for preview
-  const formValues = {
-    'Full-Name': 'Steve',
-    Occupation: 'Developer',
-    Description: '',
-    Selection: '',
-  };
-
-  // Initialize form with mock data and simple logging
-  const form = useForm({
-    defaultValues: formValues as FaimsFormData,
-    onSubmit: ({value}) => {
-      console.log('Form submitted:', value);
-    },
-    listeners: {
-      onChange: () => {
-        console.log('Form values changed:', form.state.values);
-      },
-    },
-  });
-
-  // Preview mode config (no backend integration)
-  const config: PreviewFormConfig = {
-    mode: 'preview' as const,
-  };
-
-  return (
-    <FormManager
-      form={form}
-      formName={props.formName}
-      uiSpec={props.uiSpec}
-      config={config}
-    />
-  );
-};
-
-/**
- * Props for the base FormManager component.
- */
-export interface FormManagerProps extends ComponentProps<any> {
-  /** The name/ID of the form to render */
-  formName: string;
-  /** TanStack Form instance managing form state */
-  form: FaimsForm;
-  /** UI specification containing form structure and field definitions */
-  uiSpec: ProjectUIModel;
-  /** Configuration determining form mode and available features */
-  config: FormManagerConfig;
-}
-
-/**
- * FormManager - Base form rendering component.
- *
- * This component handles the actual rendering of form sections and fields
- * based on the UI specification. It's used by both EditableFormManager
- * (full mode) and PreviewFormManager (preview mode).
- *
- * The form structure is defined in the uiSpec, which maps form names to
- * viewsets containing sections (views), which in turn contain fields.
- */
-export const FormManager = (props: FormManagerProps) => {
-  // Get the form specification from the UI spec
-  const formSpec = props.uiSpec.viewsets[props.formName];
-
-  return (
-    <>
-      <h2>Form: {formSpec.label}</h2>
-
-      <form
-        onSubmit={e => {
-          e.preventDefault();
-          e.stopPropagation();
-          props.form.handleSubmit();
-        }}
-      >
-        {/* Render each section defined in the form spec */}
-        {formSpec.views.map((sectionName: string) => (
-          <FormSection
-            key={sectionName}
-            form={props.form}
-            uiSpec={props.uiSpec}
-            section={sectionName}
-            config={props.config}
-          />
-        ))}
-      </form>
-
-      {/* Debug display of current form state */}
-      <FormStateDisplay form={props.form} />
     </>
   );
 };

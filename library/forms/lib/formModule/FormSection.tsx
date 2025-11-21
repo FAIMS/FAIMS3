@@ -1,7 +1,7 @@
 import {ProjectUIModel} from '@faims3/data-model';
-import {FaimsForm} from './types';
 import {Field} from './Field';
-import {FormManagerConfig} from './FormManager';
+import {FormManagerConfig} from './formManagers';
+import {FaimsForm} from './types';
 
 interface FormSectionProps {
   uiSpec: ProjectUIModel;

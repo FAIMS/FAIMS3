@@ -1,4 +1,4 @@
-import { FullFieldProps } from '../formModule/types';
+import {FullFieldProps} from '../formModule/types';
 import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
 import {takePhotoFieldSpec} from './fields/TakePhoto';
