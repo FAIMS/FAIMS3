@@ -40,7 +40,14 @@
     "dompurify": "^3.2.4",
     "markdown-it": "^14.1.0",
     "react-dropzone": "14.2.3",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "@capacitor-community/exif": "^7.0.0",
+    "@capacitor/camera": "^7.0.1",
+    "@capacitor/core": "^7.2.0",
+    "@capacitor/geolocation": "^7.1.1",
+    "@tanstack/react-query": "^5.62.16",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@capacitor-community/exif": "^7.0.0",
