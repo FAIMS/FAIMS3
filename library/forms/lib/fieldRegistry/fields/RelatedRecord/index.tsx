@@ -91,7 +91,7 @@ const RelatedRecordListItem = ({
 }: RelatedRecordListItemProps) => {
   const {data, isLoading, isError, error} = queryResult;
 
-  // 1. Loading State: Use Skeletons to match layout height of loaded state
+  // 1. Loading State - skeletons
   if (isLoading) {
     return (
       <ListItem disablePadding divider>
