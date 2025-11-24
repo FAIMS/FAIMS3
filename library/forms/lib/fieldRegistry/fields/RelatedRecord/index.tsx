@@ -1,5 +1,19 @@
-import {Alert, Button, CircularProgress} from '@mui/material';
-import {useMutation} from '@tanstack/react-query';
+import LinkIcon from '@mui/icons-material/Link';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Link,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Paper,
+  Typography,
+} from '@mui/material';
+import {useMutation, useQueries} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import z from 'zod';
 import {FullFormManagerConfig} from '../../../formModule';
@@ -10,6 +24,7 @@ import {
 } from '../../../formModule/types';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {prependOnceListener} from 'process';
 
 // ============================================================================
 // Types & Schema
@@ -22,10 +37,6 @@ const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
   relation_type: z.enum(['faims-core::Child', 'faims-core::Linked']),
   // Allow selection of multiple related records
   multiple: z.boolean().optional().default(false),
-  // The descriptive vocab pair (e.g. ['has child', 'is child of']) (again
-  // unsure why we track here) - this is coming through as empty array [] for
-  // some reason - ignore
-  // relation_linked_vocabPair: z.tuple([z.string(), z.string()]),
   // Can you link to existing records, or only create new ones
   allowLinkToExisting: z.boolean().optional().default(false),
 });
@@ -37,11 +48,10 @@ interface FullRelatedRecordFieldProps extends RelatedRecordProps {
   config: FullFormManagerConfig;
 }
 
-// NOTE this used to be singleton - but forcing into list now
 const fieldValueEntrySchema = z.object({
   // ID of the linked record
   record_id: z.string(),
-  // ID of the project (unsure why we have this) - NOTE making this optional
+  // ID of the project
   project_id: z.string().optional(),
   relation_type_vocabPair: z.tuple([z.string(), z.string()]),
 });
@@ -67,15 +77,25 @@ function relationTypeToPair(
   }
 }
 
+// ============================================================================
+// UI Components
+// ============================================================================
+
 const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   // You may wish to cast this value
   const rawValue = props.state.value?.data || undefined;
 
-  // validate
+  // Validate and parse the value
   const value = useMemo(
     () => fieldValueSchema.safeParse(rawValue).data,
     [rawValue]
   );
+
+  // Normalize value to an array for consistent rendering
+  const normalizedLinks = useMemo(() => {
+    if (!value) return [];
+    return Array.isArray(value) ? value : [value];
+  }, [value]);
 
   const {mutate, isPending, isError, error} = useMutation({
     mutationFn: async () => {
@@ -95,8 +115,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
       // Update current field value
       props.setFieldData([
-        // If spread possible singular entry into array
-        ...(value ? (Array.isArray(value) ? value : [value]) : []),
+        // Spread existing normalized links
+        ...normalizedLinks,
         // Create new link
         {
           record_id: res.record._id,
@@ -104,29 +124,44 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         },
       ] satisfies FieldValue);
 
-      // And force a commit - this is important as we may immediately navigate away
-      console.log('Triggering commit after related record creation');
+      // Force a commit
       await props.config.trigger.commit();
-      console.log('Commit complete after related record creation');
 
-      // Now we are ready to proceed
       return res;
     },
-    // Make sure mutation is invalidated for changes in field ID / record ID /
-    // form ID
     mutationKey: [
       'create-related-record',
       props.fieldId,
       props.config.recordId,
     ],
     onSuccess: res => {
-      console.log('Navigating to new related record:', res.record._id);
       // Navigate to the new record on success
       props.config.redirect.toRecord({recordId: res.record._id, mode: 'new'});
     },
     networkMode: 'always',
     gcTime: 0,
   });
+
+  // Fetch and hydrate all related records
+  const relatedRecordQueries = useQueries({
+    queries: normalizedLinks.map(({record_id}) => ({
+      queryKey: ['related-hydration', record_id],
+      queryFn: async () => {
+        return (
+          (await props.config.dataEngine().hydrated.getHydratedRecord({
+            recordId: record_id,
+            config: {conflictBehaviour: 'pickLast'},
+          })) ?? undefined
+        );
+      },
+      networkMode: 'always',
+    })),
+  });
+
+  const handleLinkClick = (recordId: string) => {
+    // TODO: we will need to consider whether this should be an edit or view mode
+    props.config.redirect.toRecord({recordId: recordId, mode: 'parent'});
+  };
 
   return (
     <>
@@ -139,6 +174,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         </Alert>
       )}
 
+      {/* Action Buttons */}
       <Button
         variant="outlined"
         size="small"
@@ -152,17 +188,40 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         {isPending ? 'Creating...' : 'Link New Record'}
       </Button>
 
-      {value ? (
-        <>
-          Existing links:
-          {value instanceof Array ? (
-            value.map(v => <div key={v.record_id}>- {v.record_id}</div>)
-          ) : (
-            <div></div>
-          )}
-        </>
+      {/* Linked Records List */}
+      {normalizedLinks.length > 0 ? (
+        <Paper variant="outlined">
+          <List dense disablePadding>
+            {normalizedLinks.map((link, index) => (
+              <ListItem
+                key={link.record_id}
+                disablePadding
+                divider={index < normalizedLinks.length - 1}
+              >
+                <ListItemButton
+                  onClick={() => handleLinkClick(link.record_id)}
+                  title="Click to view record"
+                >
+                  <ListItemIcon sx={{minWidth: 40}}>
+                    <LinkIcon fontSize="small" />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={link.record_id} // TODO: Replace with HRID if available
+                    secondary={link.relation_type_vocabPair[0]}
+                    primaryTypographyProps={{
+                      variant: 'body2',
+                      fontFamily: 'monospace',
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Paper>
       ) : (
-        <p> No existing links </p>
+        <Typography variant="caption" display="block" color="text.secondary">
+          No records linked.
+        </Typography>
       )}
     </>
   );
@@ -170,7 +229,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
 const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
   if (props.config.mode === 'preview') {
-    return <>TODO preview</>;
+    return (
+      <Typography variant="body2">Related Record Selector (Preview)</Typography>
+    );
   } else {
     return (
       <FieldWrapper
@@ -186,8 +247,7 @@ const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
 
 // generate a zod schema for the value.
 const valueSchema = () => {
-  // TODO
-  return z.any();
+  return fieldValueSchema;
 };
 
 // Export a constant with the information required to
