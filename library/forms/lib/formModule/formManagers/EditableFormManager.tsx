@@ -146,7 +146,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
    * immediately redirect, such as related records.
    */
   const onChange = useCallback(async () => {
-    console.log('On change triggered - saving form data');
     const revisionToUpdate = await ensureWorkingRevision();
 
     if (formData?.data && revisionToUpdate) {
@@ -155,16 +154,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         ...formData.data,
         ...form.state.values,
       };
-
-      console.log(
-        `Form data saving: ${JSON.stringify({
-          revisionId: revisionToUpdate,
-          recordId: props.recordId,
-          updatedBy: props.activeUser,
-          update: updatedRecord,
-          mode: props.mode,
-        })}`
-      );
 
       try {
         await dataEngine.form.updateRevision({
@@ -190,9 +179,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   // Initialize TanStack Form with loaded data and change handlers
   const form = useForm({
     defaultValues: (formData?.data ?? {}) as FaimsFormData,
-    onSubmit: ({value}) => {
-      console.log('Form submitted:', value);
-    },
     listeners: {
       // Debounce changes to avoid excessive backend calls
       onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS,

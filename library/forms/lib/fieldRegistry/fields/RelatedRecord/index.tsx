@@ -1,22 +1,24 @@
+import {HydratedRecord} from '@faims3/data-model';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
 import {
   Alert,
-  Box,
   Button,
   CircularProgress,
-  Link,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Paper,
+  Skeleton,
+  Tooltip,
   Typography,
 } from '@mui/material';
-import {useMutation, useQueries} from '@tanstack/react-query';
+import {useMutation, useQueries, UseQueryResult} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import z from 'zod';
-import {FullFormManagerConfig} from '../../../formModule';
+import {FullFormConfig, FullFormManagerConfig} from '../../../formModule';
 import {
   BaseFieldProps,
   BaseFieldPropsSchema,
@@ -24,20 +26,15 @@ import {
 } from '../../../formModule/types';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {prependOnceListener} from 'process';
 
 // ============================================================================
-// Types & Schema
+// Component Specific Types & Schemas
 // ============================================================================
 
 const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
-  // 'FormId' of the child/related record
   related_type: z.string(),
-  // Relation type - either 'Child' or 'Linked'
   relation_type: z.enum(['faims-core::Child', 'faims-core::Linked']),
-  // Allow selection of multiple related records
   multiple: z.boolean().optional().default(false),
-  // Can you link to existing records, or only create new ones
   allowLinkToExisting: z.boolean().optional().default(false),
 });
 
@@ -49,19 +46,17 @@ interface FullRelatedRecordFieldProps extends RelatedRecordProps {
 }
 
 const fieldValueEntrySchema = z.object({
-  // ID of the linked record
   record_id: z.string(),
-  // ID of the project
   project_id: z.string().optional(),
   relation_type_vocabPair: z.tuple([z.string(), z.string()]),
 });
 
-// can be a list, or single entry - new entries will be list only
 const fieldValueSchema = z.union([
   z.array(fieldValueEntrySchema),
   fieldValueEntrySchema,
 ]);
 type FieldValue = z.infer<typeof fieldValueSchema>;
+type FieldValueEntry = z.infer<typeof fieldValueEntrySchema>;
 
 // ============================================================================
 // Utility Functions
@@ -81,17 +76,95 @@ function relationTypeToPair(
 // UI Components
 // ============================================================================
 
+interface RelatedRecordListItemProps {
+  link: FieldValueEntry;
+  queryResult: UseQueryResult<HydratedRecord | undefined, Error>;
+  onNavigate: (recordId: string) => void;
+  config: FullFormConfig;
+}
+
+const RelatedRecordListItem = ({
+  link,
+  queryResult,
+  onNavigate,
+  config,
+}: RelatedRecordListItemProps) => {
+  const {data, isLoading, isError, error} = queryResult;
+
+  // 1. Loading State: Use Skeletons to match layout height of loaded state
+  if (isLoading) {
+    return (
+      <ListItem disablePadding divider>
+        <ListItemButton disabled>
+          <ListItemIcon sx={{minWidth: 40}}>
+            <CircularProgress size={20} />
+          </ListItemIcon>
+          <ListItemText
+            primary={<Skeleton animation="wave" height={20} width="60%" />}
+            secondary={<Skeleton animation="wave" height={16} width="40%" />}
+          />
+        </ListItemButton>
+      </ListItem>
+    );
+  }
+
+  // 2. Error State: Show ID and Error Icon
+  if (isError || !data) {
+    const errorMessage = error instanceof Error ? error.message : 'Load failed';
+    return (
+      <ListItem disablePadding divider>
+        <ListItemButton onClick={() => onNavigate(link.record_id)}>
+          <ListItemIcon sx={{minWidth: 40}}>
+            <Tooltip title={`Error: ${errorMessage}`}>
+              <ErrorOutlineIcon color="error" fontSize="small" />
+            </Tooltip>
+          </ListItemIcon>
+          <ListItemText
+            primary={link.record_id}
+            secondary={link.relation_type_vocabPair[0] + ' (Load Error)'}
+            primaryTypographyProps={{
+              variant: 'body2',
+              fontFamily: 'monospace',
+              color: 'error',
+            }}
+          />
+        </ListItemButton>
+      </ListItem>
+    );
+  }
+
+  // 3. Success State: Hydrated Data
+  return (
+    <ListItem disablePadding divider>
+      <ListItemButton
+        onClick={() => onNavigate(link.record_id)}
+        title="Click to view record"
+      >
+        <ListItemIcon sx={{minWidth: 40}}>
+          <LinkIcon fontSize="small" />
+        </ListItemIcon>
+        <ListItemText
+          primary={data.hrid}
+          secondary={link.relation_type_vocabPair[0]}
+          primaryTypographyProps={{
+            variant: 'body2',
+            fontFamily: 'monospace',
+            fontWeight: data.hrid !== link.record_id ? 'bold' : 'normal',
+          }}
+        />
+      </ListItemButton>
+    </ListItem>
+  );
+};
+
 const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
-  // You may wish to cast this value
   const rawValue = props.state.value?.data || undefined;
 
-  // Validate and parse the value
   const value = useMemo(
     () => fieldValueSchema.safeParse(rawValue).data,
     [rawValue]
   );
 
-  // Normalize value to an array for consistent rendering
   const normalizedLinks = useMemo(() => {
     if (!value) return [];
     return Array.isArray(value) ? value : [value];
@@ -99,11 +172,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   const {mutate, isPending, isError, error} = useMutation({
     mutationFn: async () => {
-      // Create new child
       const res = await props.config.dataEngine().form.createRecord({
         createdBy: props.config.user,
         formId: props.related_type,
-        // Instantiate the new record with the relationship back to the parent
         relationship: {
           parent: {
             fieldId: props.fieldId,
@@ -113,20 +184,15 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         },
       });
 
-      // Update current field value
       props.setFieldData([
-        // Spread existing normalized links
         ...normalizedLinks,
-        // Create new link
         {
           record_id: res.record._id,
           relation_type_vocabPair: relationTypeToPair(props.relation_type),
         },
       ] satisfies FieldValue);
 
-      // Force a commit
       await props.config.trigger.commit();
-
       return res;
     },
     mutationKey: [
@@ -135,7 +201,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       props.config.recordId,
     ],
     onSuccess: res => {
-      // Navigate to the new record on success
       props.config.redirect.toRecord({recordId: res.record._id, mode: 'new'});
     },
     networkMode: 'always',
@@ -147,25 +212,30 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     queries: normalizedLinks.map(({record_id}) => ({
       queryKey: ['related-hydration', record_id],
       queryFn: async () => {
-        return (
-          (await props.config.dataEngine().hydrated.getHydratedRecord({
+        const record = await props.config
+          .dataEngine()
+          .hydrated.getHydratedRecord({
             recordId: record_id,
             config: {conflictBehaviour: 'pickLast'},
-          })) ?? undefined
-        );
+          });
+
+        // Ensure strict type compliance by casting or checking if necessary
+        // Assuming the data engine returns a compatible HydratedRecord
+        return record ?? undefined;
       },
       networkMode: 'always',
+      staleTime: 0,
+      refetchOnMount: 'always',
     })),
   });
 
   const handleLinkClick = (recordId: string) => {
-    // TODO: we will need to consider whether this should be an edit or view mode
     props.config.redirect.toRecord({recordId: recordId, mode: 'parent'});
   };
 
   return (
     <>
-      {/* Error Alert */}
+      {/* Error Alert for Creation */}
       {isError && (
         <Alert severity="error" sx={{mb: 2}}>
           {error instanceof Error
@@ -193,28 +263,13 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         <Paper variant="outlined">
           <List dense disablePadding>
             {normalizedLinks.map((link, index) => (
-              <ListItem
+              <RelatedRecordListItem
                 key={link.record_id}
-                disablePadding
-                divider={index < normalizedLinks.length - 1}
-              >
-                <ListItemButton
-                  onClick={() => handleLinkClick(link.record_id)}
-                  title="Click to view record"
-                >
-                  <ListItemIcon sx={{minWidth: 40}}>
-                    <LinkIcon fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={link.record_id} // TODO: Replace with HRID if available
-                    secondary={link.relation_type_vocabPair[0]}
-                    primaryTypographyProps={{
-                      variant: 'body2',
-                      fontFamily: 'monospace',
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
+                link={link}
+                queryResult={relatedRecordQueries[index]}
+                onNavigate={handleLinkClick}
+                config={props.config}
+              />
             ))}
           </List>
         </Paper>
@@ -250,8 +305,6 @@ const valueSchema = () => {
   return fieldValueSchema;
 };
 
-// Export a constant with the information required to
-// register this field type
 export const relatedRecordFieldSpec: FieldInfo = {
   namespace: 'faims-custom',
   name: 'RelatedRecordSelector',
