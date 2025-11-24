@@ -1,6 +1,7 @@
 import type {ProjectUIModel} from '@faims3/data-model';
 import {type ComponentProps} from 'react';
-import {FormSection} from '../FormSection';
+import {InlineSectionDisplay} from '../sections/InlineSections';
+import {TabbedSectionDisplay} from '../sections/TabbedSections';
 import {FaimsForm} from '../types';
 import {FormStateDisplay} from './FormStateDisplay';
 import {FormManagerConfig} from './types';
@@ -30,13 +31,11 @@ export interface FormManagerProps extends ComponentProps<any> {
  * viewsets containing sections (views), which in turn contain fields.
  */
 export const FormManager = (props: FormManagerProps) => {
-  // Get the form specification from the UI spec
   const formSpec = props.uiSpec.viewsets[props.formName];
 
   return (
     <>
-      <h2>Form: {formSpec.label}</h2>
-
+      <h1>Form: {formSpec.label}</h1>
       <form
         onSubmit={e => {
           e.preventDefault();
@@ -44,16 +43,25 @@ export const FormManager = (props: FormManagerProps) => {
           props.form.handleSubmit();
         }}
       >
-        {/* Render each section defined in the form spec */}
-        {formSpec.views.map((sectionName: string) => (
-          <FormSection
-            key={sectionName}
-            form={props.form}
-            uiSpec={props.uiSpec}
-            section={sectionName}
+        {/* Render Inline (Vertical) Layout */}
+        {props.config.layout === 'inline' && (
+          <InlineSectionDisplay
             config={props.config}
+            form={props.form}
+            formId={props.formName}
+            spec={props.uiSpec}
           />
-        ))}
+        )}
+
+        {/* Render Tabbed (Horizontal) Layout */}
+        {props.config.layout === 'tabs' && (
+          <TabbedSectionDisplay
+            config={props.config}
+            form={props.form}
+            formId={props.formName}
+            spec={props.uiSpec}
+          />
+        )}
       </form>
 
       {/* Debug display of current form state */}

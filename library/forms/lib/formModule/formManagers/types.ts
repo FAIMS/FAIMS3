@@ -9,6 +9,7 @@ import {
  */
 export interface BaseFormConfig {
   mode: 'full' | 'preview';
+  layout: 'inline' | 'tabs';
 }
 
 /**
