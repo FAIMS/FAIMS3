@@ -10,8 +10,6 @@ import {
 import {FieldInfo} from '../../types';
 
 const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
-  console.log('TextField:', props.name);
-
   const value = (props.state.value?.data as string) || '';
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -22,8 +22,6 @@ export const FormSection = ({
     throw new Error(`Section ${section} not found in UISpec`);
   }
 
-  console.log('Section:', sectionSpec.label);
-
   return (
     <div>
       <h2>Section: {sectionSpec.label}</h2>

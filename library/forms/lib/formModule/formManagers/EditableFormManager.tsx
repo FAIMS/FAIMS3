@@ -137,8 +137,12 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   ]);
 
   /**
-   * Handler called when form values change (debounced).
-   * Merges current form state with existing data and saves to the backend.
+   * Handler called when form values change (debounced). Merges current form
+   * state with existing data and saves to the backend.
+   *
+   * NOTE: this is debounced at the form level, but can be manually invoked with
+   * the trigger.commit(). This is important for fields which do something, then
+   * immediately redirect, such as related records.
    */
   const onChange = useCallback(async () => {
     const revisionToUpdate = await ensureWorkingRevision();
@@ -174,9 +178,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   // Initialize TanStack Form with loaded data and change handlers
   const form = useForm({
     defaultValues: (formData?.data ?? {}) as FaimsFormData,
-    onSubmit: ({value}) => {
-      console.log('Form submitted:', value);
-    },
     listeners: {
       // Debounce changes to avoid excessive backend calls
       onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS,
@@ -220,7 +221,9 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
       // Generate unique filename with timestamp
       const timestamp = new Date().toISOString();
-      const filename = `${type === 'photo' ? 'photo' : 'file'}_${timestamp}.${fileFormat}`;
+      const filename = `${
+        type === 'photo' ? 'photo' : 'file'
+      }_${timestamp}.${fileFormat}`;
 
       // Store attachment in the attachment service
       const attachmentResult = await props.config
@@ -333,6 +336,9 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       addAttachment: handleAddAttachment,
       removeAttachment: handleRemoveAttachment,
     },
+    trigger: {
+      commit: onChange,
+    },
   };
 
   // Loading state
@@ -347,19 +353,34 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   return (
     <>
-      {/* Action buttons for form completion */}
-      <Button variant="contained" onClick={() => props.config.trigger.commit()}>
+      {/* Action buttons for form completion
+      TODO: these are currently running commit (save) -
+      they should have actions either passed in (such
+      as return to list) or injected here
+      */}
+      <Button
+        variant="contained"
+        onClick={() => formManagerConfig.trigger.commit()}
+      >
         Finish
       </Button>
-      <Button variant="contained" onClick={() => props.config.trigger.commit()}>
+      <Button
+        variant="contained"
+        onClick={() => formManagerConfig.trigger.commit()}
+      >
         Finish and New
       </Button>
-      <Button variant="contained" onClick={() => props.config.trigger.commit()}>
+      <Button
+        variant="contained"
+        onClick={() => formManagerConfig.trigger.commit()}
+      >
         Cancel
       </Button>
 
       {/* Main form component */}
       <FormManager
+        // Force complete remount if record ID changes
+        key={props.recordId}
         form={form}
         formName={formData.formId}
         uiSpec={dataEngine.uiSpec}

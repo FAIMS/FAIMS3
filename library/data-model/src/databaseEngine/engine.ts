@@ -1,6 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
+import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
 import {differenceSets} from '../utils';
 import * as Exceptions from './exceptions';
 import {
@@ -173,7 +174,7 @@ export class DataEngine {
     this.db = config.dataDb;
     this.uiSpec = config.uiSpec;
     this.core = new CoreOperations(this.db);
-    this.hydrated = new HydratedOperations(this.core);
+    this.hydrated = new HydratedOperations(this.core, this.uiSpec);
     this.form = new FormOperations(this.core, this.hydrated, this.uiSpec);
   }
 }
@@ -668,7 +669,14 @@ export class CoreOperations {
  * This includes the record, its head revision, and all AVPs (field data) in a single call.
  */
 class HydratedOperations {
-  constructor(private readonly core: CoreOperations) {}
+  private readonly hridFieldMap: HridFieldMap;
+
+  constructor(
+    private readonly core: CoreOperations,
+    private readonly uiSpec: UISpecification
+  ) {
+    this.hridFieldMap = getHridFieldMap(this.uiSpec);
+  }
 
   /**
    * Fetch all AVP documents for a revision efficiently in parallel
@@ -785,8 +793,18 @@ class HydratedOperations {
           }
         : undefined;
 
+    const hridFieldName = this.hridFieldMap[revision.type];
+    const rawHridData = hridFieldName ? data[hridFieldName]?.data : undefined;
+    let finalHrid = record._id;
+    if (rawHridData) {
+      if (typeof rawHridData === 'string') {
+        finalHrid = rawHridData;
+      }
+    }
+
     // Step 5: Build the hydrated record (in our external interface)
     return {
+      hrid: finalHrid,
       record: {
         _id: record._id,
         _rev: record._rev,

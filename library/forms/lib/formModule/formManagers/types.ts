@@ -1,4 +1,8 @@
-import {DataEngine, IAttachmentService} from '@faims3/data-model';
+import {
+  AvpUpdateMode,
+  DataEngine,
+  IAttachmentService,
+} from '@faims3/data-model';
 
 /**
  * Base interface for form configuration modes.
@@ -9,7 +13,8 @@ export interface BaseFormConfig {
 
 /**
  * Additional handlers injected by the form manager and passed down to field components.
- * These allow fields to interact with attachments (photos, files, etc.).
+ * These allow fields to interact with attachments (photos, files, etc.), as well as
+ * providing field form 'runtime' triggers such as committing the current record.
  */
 export interface FormManagerAdditions {
   attachmentHandlers: {
@@ -29,6 +34,11 @@ export interface FormManagerAdditions {
       attachmentId: string;
     }) => Promise<void>;
   };
+  /** Special behavior triggers */
+  trigger: {
+    /** Force a commit/save of the current record */
+    commit: () => Promise<void>;
+  };
 }
 
 /**
@@ -37,6 +47,8 @@ export interface FormManagerAdditions {
  */
 export interface FullFormConfig extends BaseFormConfig {
   mode: 'full';
+  // What is the current record ID?
+  recordId: string;
   /** Function to get current data engine instance (function allows for DB updates) */
   dataEngine: () => DataEngine;
   /** Function to get attachment service instance */
@@ -44,14 +56,13 @@ export interface FullFormConfig extends BaseFormConfig {
   /** Navigation functions for redirecting to other records */
   redirect: {
     /** Navigate to a record (latest revision) */
-    toRecord: (params: {recordId: string}) => void;
+    toRecord: (params: {recordId: string; mode: AvpUpdateMode}) => void;
     /** Navigate to a specific record revision */
-    toRevision: (params: {recordId: string; revisionId: string}) => void;
-  };
-  /** Special behavior triggers */
-  trigger: {
-    /** Force a commit/save of the current record */
-    commit: () => void;
+    toRevision: (params: {
+      recordId: string;
+      revisionId: string;
+      mode: AvpUpdateMode;
+    }) => void;
   };
   /** Current active user identifier (for audit trails) */
   user: string;

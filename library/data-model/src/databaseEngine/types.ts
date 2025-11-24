@@ -671,6 +671,8 @@ export const hydratedRecordSchema = z.object({
   data: z.record(z.string(), hydratedDataFieldSchema),
   /** Metadata about the record retrieval and conflict resolution */
   metadata: hydratedRecordMetadataSchema,
+  /** What is the HRID of this record? */
+  hrid: z.string(),
 });
 
 export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;

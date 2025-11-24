@@ -59,6 +59,8 @@ export type BaseFieldProps = z.infer<typeof BaseFieldPropsSchema>;
 
 // These are the additional FaimsForm props passed
 export type FormFieldContextProps = {
+  // Which field is being rendered?
+  fieldId: string;
   state: FaimsFormFieldState;
   setFieldData: (value: any) => void;
   setFieldAnnotation: (value: FormAnnotation) => void;
@@ -73,6 +75,11 @@ export type FormFieldContextProps = {
   removeAttachment: (params: {attachmentId: string}) => Promise<void>;
   handleBlur: () => void;
   config: FormConfig;
+  /** Special behavior triggers */
+  trigger: {
+    /** Force a commit/save of the current record */
+    commit: () => Promise<void>;
+  };
 };
 
 export type FullFieldProps = BaseFieldProps & FormFieldContextProps;

@@ -6,6 +6,7 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
+  EncodedUISpecification,
   generateAttID,
   generateAvpID,
   NewFormRecord,
@@ -24,7 +25,14 @@ describe('Form Operations', () => {
   // Load UI specification from JSON file
   const uiSpecPath = path.join(__dirname, 'engineTestUiSpec.json');
   const uiSpecData = fs.readFileSync(uiSpecPath, 'utf-8');
-  const uiSpec: UISpecification = JSON.parse(uiSpecData)['ui-specification'];
+  const encodedSpec: EncodedUISpecification =
+    JSON.parse(uiSpecData)['ui-specification'];
+  const uiSpec: UISpecification = {
+    fields: encodedSpec.fields,
+    views: encodedSpec.fviews,
+    viewsets: encodedSpec.viewsets,
+    visible_types: encodedSpec.visible_types,
+  };
 
   beforeEach(() => {
     // Create fresh in-memory database
