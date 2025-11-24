@@ -17,18 +17,12 @@ import {FormManagerConfig} from '../formManagers';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
 
-// -------------------------------------------------------------------
-// CONFIGURATION
-// -------------------------------------------------------------------
-
-// TUNABLE: How many pixels of width does a single step need as a minimum?
-// If (Container Width / Num Sections) < 120px, it switches to Mobile View.
+// Minimum width per step before switching to mobile view
 const MIN_STEP_WIDTH_PX = 120;
 
-// -------------------------------------------------------------------
-// HELPERS & STYLES
-// -------------------------------------------------------------------
-
+/**
+ * Returns the appropriate color for a step based on its state.
+ */
 const getStepColor = (
   isActive: boolean,
   isCompleted: boolean,
@@ -41,7 +35,11 @@ const getStepColor = (
   return theme.palette.grey[400];
 };
 
-const checkHasErrors = (sectionId: string) => false; // Placeholder
+/**
+ * Checks if a section has validation errors.
+ * TODO: Implement actual error checking logic.
+ */
+const checkHasErrors = (sectionId: string) => false;
 
 const StepperTab = styled(Tab)(({theme}) => ({
   textTransform: 'none',
@@ -50,13 +48,11 @@ const StepperTab = styled(Tab)(({theme}) => ({
   flex: 1,
   position: 'relative',
   zIndex: 1,
-
-  // --- ALIGNMENT FIXES ---
   display: 'flex',
-  justifyContent: 'flex-start', // Start content at the top
-  alignItems: 'center', // Center content horizontally
-  paddingTop: '14px', // Pad to align circle center with line (at 27px)
-  // -----------------------
+  justifyContent: 'flex-start',
+  alignItems: 'center',
+  // Align circle center with connector line
+  paddingTop: '14px',
 
   '&::after': {
     content: '""',
@@ -74,10 +70,11 @@ const StepperTab = styled(Tab)(({theme}) => ({
   },
 }));
 
-// -------------------------------------------------------------------
-// COMPONENT
-// -------------------------------------------------------------------
-
+/**
+ * Displays form sections in a tabbed interface with responsive desktop/mobile views.
+ * Desktop view shows all sections as horizontal tabs with step indicators.
+ * Mobile view shows a single section with next/back navigation.
+ */
 export const TabbedSectionDisplay: React.FC<{
   form: FaimsForm;
   formId: string;
@@ -91,25 +88,29 @@ export const TabbedSectionDisplay: React.FC<{
   const [activeSection, setActiveSection] = useState<string>(sections[0]);
   const activeIndex = sections.indexOf(activeSection);
 
-  // 1. Ref for measuring the container width
   const containerRef = useRef<HTMLDivElement>(null);
   const containerWidth = useElementWidth(containerRef);
 
-  // 2. Standard Mobile Breakpoint Check (e.g., phones)
+  // Check if screen is below mobile breakpoint
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // 3. Density Check: Are there too many sections for the current pixels?
-  // We default to false if width is 0 (initial render) to prevent flicker
+  // Check if sections are too dense for available width
   const isTooDense =
     containerWidth > 0 && containerWidth / sections.length < MIN_STEP_WIDTH_PX;
 
-  // 4. Master Trigger: Switch view if either condition is met
+  // Use mobile view if either condition is met
   const showMobileView = isSmallScreen || isTooDense;
 
+  /**
+   * Handles tab change in desktop view.
+   */
   const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
     setActiveSection(newValue);
   };
 
+  /**
+   * Handles next/back navigation in mobile view.
+   */
   const handleStep = (direction: 'next' | 'back') => {
     const nextIndex = direction === 'next' ? activeIndex + 1 : activeIndex - 1;
     if (nextIndex >= 0 && nextIndex < sections.length) {
@@ -119,12 +120,8 @@ export const TabbedSectionDisplay: React.FC<{
 
   return (
     <Box ref={containerRef} sx={{width: '100%'}}>
-      {/* --------------------------------------- */}
-      {/* LOGIC: Render Desktop OR Mobile View    */}
-      {/* --------------------------------------- */}
-
       {!showMobileView ? (
-        // --- DESKTOP VIEW ---
+        // Desktop view with horizontal tabs
         <Box py={1}>
           <Box
             sx={{
@@ -142,19 +139,8 @@ export const TabbedSectionDisplay: React.FC<{
               allowScrollButtonsMobile
               sx={{
                 overflowY: 'hidden',
-                // --- ALIGNMENT FIX ---
                 '& .MuiTabs-flexContainer': {
-                  alignItems: 'flex-start', // Ensures items hang from top
-                },
-                // ---------------------
-                '& .MuiTabs-scroller': {
-                  overflowX: 'auto !important',
-                  '&::-webkit-scrollbar': {height: 10},
-                  '&::-webkit-scrollbar-track': {backgroundColor: '#fff'},
-                  '&::-webkit-scrollbar-thumb': {
-                    backgroundColor: '#fff',
-                    borderRadius: 2,
-                  },
+                  alignItems: 'flex-start',
                 },
                 '& .MuiTabs-indicator': {display: 'none'},
               }}
@@ -237,7 +223,7 @@ export const TabbedSectionDisplay: React.FC<{
           </Box>
         </Box>
       ) : (
-        // --- MOBILE VIEW ---
+        // Mobile view with stepper navigation
         <Box>
           <Box
             sx={{
@@ -298,9 +284,7 @@ export const TabbedSectionDisplay: React.FC<{
         </Box>
       )}
 
-      {/* ------------------------------------------------------------ */}
-      {/* ACTIVE SECTION CONTENT                                       */}
-      {/* ------------------------------------------------------------ */}
+      {/* Active section content */}
       <Box role="tabpanel">
         <FormSection
           key={activeSection}
