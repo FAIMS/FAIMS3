@@ -960,6 +960,9 @@ importers:
       '@faims3/data-model':
         specifier: workspace:*
         version: link:../library/data-model
+      '@faims3/forms':
+        specifier: workspace:*
+        version: link:../library/forms
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.63.0(react@18.3.1))
