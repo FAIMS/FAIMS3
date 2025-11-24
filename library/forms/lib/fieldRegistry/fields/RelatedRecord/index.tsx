@@ -298,8 +298,25 @@ const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
 };
 
 // generate a zod schema for the value.
-const valueSchema = () => {
-  return fieldValueSchema;
+const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
+  // 1. If required is true
+  if (props.required) {
+    return fieldValueSchema.refine(
+      val => {
+        // If it is an array, ensure it has at least one item
+        if (Array.isArray(val)) {
+          return val.length > 0;
+        }
+        // If it is a single object (and matches the schema), it is valid
+        return !!val;
+      },
+      {message: 'At least one related record is required.'}
+    );
+  }
+
+  // 2. If required is false
+  // Allow null, undefined, or valid schema (including empty array)
+  return fieldValueSchema.optional().nullable();
 };
 
 export const relatedRecordFieldSpec: FieldInfo = {
@@ -308,5 +325,5 @@ export const relatedRecordFieldSpec: FieldInfo = {
   returns: 'faims-core::Relationship',
   component: RelatedRecordField,
   fieldSchema: relatedRecordPropsSchema,
-  valueSchemaFunction: valueSchema,
+  valueSchemaFunction: valueSchemaFunction,
 };
