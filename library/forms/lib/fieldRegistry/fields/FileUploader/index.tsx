@@ -529,7 +529,6 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     config: context,
   } = props;
 
-  const theme = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [viewingAttachment, setViewingAttachment] = useState<number | null>(
     null
@@ -599,12 +598,16 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
       switch (errorCode) {
         case 'file-too-large':
           errorMessage = maximumFileSize
-            ? `File is too large. Maximum size: ${formatFileSize(maximumFileSize)}`
+            ? `File is too large. Maximum size: ${formatFileSize(
+                maximumFileSize
+              )}`
             : 'File is too large';
           break;
         case 'file-too-small':
           errorMessage = minimumFileSize
-            ? `File is too small. Minimum size: ${formatFileSize(minimumFileSize)}`
+            ? `File is too small. Minimum size: ${formatFileSize(
+                minimumFileSize
+              )}`
             : 'File is too small';
           break;
         case 'too-many-files':

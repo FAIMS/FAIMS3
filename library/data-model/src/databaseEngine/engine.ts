@@ -1,6 +1,7 @@
 import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
+import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
 import {differenceSets} from '../utils';
 import * as Exceptions from './exceptions';
 import {
@@ -33,8 +34,6 @@ import {
   newRevisionDocumentSchema,
   pendingAttachmentDocumentSchema,
 } from './types';
-import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
-import {isString} from 'lodash';
 
 // =======
 // HELPERS

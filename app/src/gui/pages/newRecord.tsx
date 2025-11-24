@@ -9,7 +9,7 @@ import {
 } from '@faims3/data-model';
 import {EditableFormManager, FullFormConfig} from '@faims3/forms';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import {getExistingRecordRoute, getNotebookRoute} from '../../constants/routes';
+import {getExistingRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';

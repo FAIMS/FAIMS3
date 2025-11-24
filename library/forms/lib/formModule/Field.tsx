@@ -35,7 +35,7 @@ export const Field = React.memo((props: FieldProps) => {
   // Rename here to prompt tsx it's a component
   const Component = fieldInfo?.component
     ? fieldInfo.component
-    : (props: any) => {
+    : () => {
         return <div>Unknown Field Component</div>;
       };
 

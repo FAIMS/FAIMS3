@@ -18,7 +18,7 @@ import {
 import {useMutation, useQueries, UseQueryResult} from '@tanstack/react-query';
 import {useMemo} from 'react';
 import z from 'zod';
-import {FullFormConfig, FullFormManagerConfig} from '../../../formModule';
+import {FullFormManagerConfig} from '../../../formModule';
 import {
   BaseFieldProps,
   BaseFieldPropsSchema,
@@ -80,14 +80,12 @@ interface RelatedRecordListItemProps {
   link: FieldValueEntry;
   queryResult: UseQueryResult<HydratedRecord | undefined, Error>;
   onNavigate: (recordId: string) => void;
-  config: FullFormConfig;
 }
 
 const RelatedRecordListItem = ({
   link,
   queryResult,
   onNavigate,
-  config,
 }: RelatedRecordListItemProps) => {
   const {data, isLoading, isError, error} = queryResult;
 
@@ -268,7 +266,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
                 link={link}
                 queryResult={relatedRecordQueries[index]}
                 onNavigate={handleLinkClick}
-                config={props.config}
               />
             ))}
           </List>

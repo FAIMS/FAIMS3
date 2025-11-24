@@ -11,7 +11,6 @@ import {ComponentProps, useCallback, useEffect, useMemo, useState} from 'react';
 import {FaimsFormData} from '../types';
 import {FormManager} from './FormManager';
 import {FullFormConfig, FullFormManagerConfig} from './types';
-import {ConstructionOutlined} from '@mui/icons-material';
 
 /**
  * Debounce time for form syncs to prevent excessive updates to the backend.
@@ -355,8 +354,8 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   return (
     <>
       {/* Action buttons for form completion
-      TODO: these are currently running commit (save) - 
-      they should have actions either passed in (such 
+      TODO: these are currently running commit (save) -
+      they should have actions either passed in (such
       as return to list) or injected here
       */}
       <Button
