@@ -22,12 +22,6 @@ interface FieldProps {
 }
 
 export const Field = React.memo((props: FieldProps) => {
-  console.log(
-    'Rendering Field of type:',
-    props.fieldSpec['component-namespace'],
-    props.fieldSpec['component-name']
-  );
-
   // Only reload the field info when needed
   const fieldInfo = useMemo(
     () =>
@@ -105,7 +99,14 @@ export const Field = React.memo((props: FieldProps) => {
             : async () => {
                 console.log('Mock removeAttachment');
               };
-
+        const triggers =
+          props.config.mode === 'full'
+            ? props.config.trigger
+            : {
+                commit: async () => {
+                  console.log('Mock triggered commit() function.');
+                },
+              };
         return (
           <>
             <Component
@@ -120,6 +121,8 @@ export const Field = React.memo((props: FieldProps) => {
               addAttachment={addAttachmentHandler}
               removeAttachment={removeAttachmentHandler}
               handleBlur={field.handleBlur}
+              fieldId={props.fieldId}
+              trigger={triggers}
             />
             <FieldAnnotation
               config={props.fieldSpec.meta}

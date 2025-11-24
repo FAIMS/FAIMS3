@@ -9,7 +9,7 @@ import {
 } from '@faims3/data-model';
 import {EditableFormManager, FullFormConfig} from '@faims3/forms';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import {getNotebookRoute} from '../../constants/routes';
+import {getExistingRecordRoute, getNotebookRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -68,11 +68,27 @@ export const EditRecordPage = () => {
 
   const formConfig: FullFormConfig = {
     mode: 'full' as const,
+    recordId,
     dataEngine,
     attachmentEngine,
     redirect: {
-      toRecord: ({recordId}: {recordId: RecordID}) => {
-        console.log('redirect to record', recordId);
+      toRecord: ({
+        recordId: targetRecordId,
+        mode,
+      }: {
+        recordId: RecordID;
+        mode: AvpUpdateMode;
+      }) => {
+        // Navigate to the 'new record' page for this record
+        console.log('redirect to record', targetRecordId);
+        navigate(
+          getExistingRecordRoute({
+            serverId,
+            projectId,
+            recordId: targetRecordId,
+            mode,
+          })
+        );
       },
       toRevision: ({
         recordId,
@@ -84,13 +100,6 @@ export const EditRecordPage = () => {
         console.log('redirect to revision', recordId, revisionId);
       },
     },
-    trigger: {
-      commit: async () => {
-        console.log('committing changes');
-        // navigate to the project page
-        navigate(getNotebookRoute({serverId, projectId}));
-      },
-    },
     user: activeUser.username,
   };
 
@@ -98,6 +107,8 @@ export const EditRecordPage = () => {
     <div>
       <h2>Editing {recordId}</h2>
       <EditableFormManager
+        // Force remount if record ID changes
+        key={recordId}
         mode={mode}
         activeUser={userId}
         recordId={recordId}
