@@ -15,8 +15,8 @@ import {FormManagerConfig} from '../formManagers';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
 
-// Placeholder for the color logic utility
-// TODO: Implement actual validation logic based on formErrors and visitedSteps
+// Placeholder for the color logic utility TODO: Implement actual validation
+// logic based on formErrors and visitedSteps
 const getStepColor = (
   isActive: boolean,
   isCompleted: boolean,
@@ -40,11 +40,15 @@ const StepperTab = styled(Tab)(({theme}) => ({
   flex: 1,
   position: 'relative',
   zIndex: 1,
+  display: 'flex', // Ensure flex behavior
+  justifyContent: 'flex-start', // Align content to the top
+  alignItems: 'center', // Center content horizontally
+  paddingTop: '14px', // Explicit top padding to align circle with the line
 
   '&::after': {
     content: '""',
     position: 'absolute',
-    top: '27px',
+    top: '27px', // Aligns with center of circle (14px pad + 13px half-circle)
     left: '50%',
     width: '100%',
     height: '2px',
@@ -52,7 +56,6 @@ const StepperTab = styled(Tab)(({theme}) => ({
     zIndex: -1,
   },
 
-  // Hide connector for the last item
   '&:last-child::after': {
     display: 'none',
   },
@@ -93,9 +96,9 @@ export const TabbedSectionDisplay: React.FC<{
 
   return (
     <Box sx={{width: '100%'}}>
-      {/* ------------------------------------------------------------ */}
-      {/* DESKTOP VIEW (Replicating RecordStepper desktop logic)       */}
-      {/* ------------------------------------------------------------ */}
+      {/* --------------------------------------- */}
+      {/* DESKTOP VIEW                            */}
+      {/* --------------------------------------- */}
       <Box display={{xs: 'none', sm: 'block'}} py={1}>
         <Box
           sx={{
@@ -108,22 +111,27 @@ export const TabbedSectionDisplay: React.FC<{
           <Tabs
             value={activeSection}
             onChange={handleTabChange}
-            variant="scrollable"
+            variant="fullWidth"
             scrollButtons="auto"
             allowScrollButtonsMobile
             sx={{
               overflowY: 'hidden',
+              // --- CHANGED SECTION ---
+              // We must target the internal flex container to align the tabs to the top
+              '& .MuiTabs-flexContainer': {
+                alignItems: 'flex-start',
+              },
+              // -----------------------
               '& .MuiTabs-scroller': {
                 overflowX: 'auto !important',
-                // Scrollbar styling
-                '&::-webkit-scrollbar': {height: 10}, // Horizontal scroll uses height
+                '&::-webkit-scrollbar': {height: 10},
                 '&::-webkit-scrollbar-track': {backgroundColor: '#fff'},
                 '&::-webkit-scrollbar-thumb': {
                   backgroundColor: '#fff',
                   borderRadius: 2,
                 },
               },
-              '& .MuiTabs-indicator': {display: 'none'}, // Hide default tab bar
+              '& .MuiTabs-indicator': {display: 'none'},
             }}
           >
             {sections.map((sectionId: string, index: number) => {
@@ -201,7 +209,8 @@ export const TabbedSectionDisplay: React.FC<{
                           fontWeight: 'bold',
                           transition: 'color 0.3s ease-in-out',
                           fontSize: '1rem',
-                          whiteSpace: 'nowrap',
+                          whiteSpace: 'normal',
+                          textAlign: 'center',
                         }}
                       >
                         {label}

@@ -16,6 +16,9 @@ import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {localGetDataDb} from '../../utils/database';
+import {useUiSpecLayout} from '../../utils/customHooks';
+
+const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
@@ -61,6 +64,9 @@ export const EditRecordPage = () => {
     });
   };
 
+  // Query to fetch the relevant viewset
+  const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec});
+
   // Generate attachment service for this project
   const attachmentEngine = () => {
     return createProjectAttachmentService(projectId);
@@ -101,6 +107,8 @@ export const EditRecordPage = () => {
       },
     },
     user: activeUser.username,
+    // Pass through the layout from the spec
+    layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
   };
 
   return (
