@@ -50,10 +50,12 @@ export const Field = React.memo((props: FieldProps) => {
       name={props.fieldSpec['component-parameters'].name}
       children={field => {
         const setFieldData = (value: any) => {
+          console.log("Given ", value)
           const newValue: FormDataEntry = {
             ...(field.state.value || {}),
             data: value,
           };
+          console.log("Result ", newValue)
           field.handleChange(newValue as any);
         };
         const setFieldAnnotation = (value: FormAnnotation) => {

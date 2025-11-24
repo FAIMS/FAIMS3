@@ -17,6 +17,7 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   formName: string;
   /** The UI specification containing form structure */
   uiSpec: ProjectUIModel;
+  layout: 'tabs' | 'inline';
 }
 
 /**
@@ -28,11 +29,9 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
  */
 export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   // Mock form values for preview
-  const formValues = {
-    'Full-Name': 'Steve',
-    Occupation: 'Developer',
-    Description: '',
-    Selection: '',
+  const formValues: FaimsFormData = {
+    'Full-Name': {data: 'Steve'},
+    Occupation: {data: 'Developer'},
   };
 
   // Initialize form with mock data and simple logging
@@ -51,6 +50,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   // Preview mode config (no backend integration)
   const config: PreviewFormConfig = {
     mode: 'preview' as const,
+    layout: props.layout,
   };
 
   return (

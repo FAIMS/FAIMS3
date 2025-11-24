@@ -1,7 +1,7 @@
 import {ProjectUIModel} from '@faims3/data-model';
-import {Field} from './Field';
-import {FormManagerConfig} from './formManagers';
-import {FaimsForm} from './types';
+import {Field} from '../Field';
+import {FormManagerConfig} from '../formManagers';
+import {FaimsForm} from '../types';
 
 interface FormSectionProps {
   uiSpec: ProjectUIModel;
@@ -24,7 +24,6 @@ export const FormSection = ({
 
   return (
     <div>
-      <h2>Section: {sectionSpec.label}</h2>
       {sectionSpec.fields.map((fieldName: string) => {
         const fieldSpec = uiSpec.fields[fieldName];
         return (
