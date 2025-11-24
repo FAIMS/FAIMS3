@@ -185,7 +185,11 @@ export type PendingAttachment = z.infer<typeof pendingAttachmentSchema>;
 // Base fields shared by all attachment documents
 const v1AttachmentDBFieldsBaseSchema = z.object({
   attach_format_version: z.number(),
-  avp_id: z.string(),
+  // This is optional - old records know this, but new ones don't need to. It's
+  // exposing too much information about the AVP layer storage mechanism and
+  // makes fields which require storing attachments very tricky to cleanly
+  // implement.
+  avp_id: z.string().optional(),
   revision_id: z.string(),
   record_id: z.string(),
   created: z.string().datetime(),
@@ -667,6 +671,8 @@ export const hydratedRecordSchema = z.object({
   data: z.record(z.string(), hydratedDataFieldSchema),
   /** Metadata about the record retrieval and conflict resolution */
   metadata: hydratedRecordMetadataSchema,
+  /** What is the HRID of this record? */
+  hrid: z.string(),
 });
 
 export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;

@@ -1,4 +1,5 @@
 import z from 'zod';
+import {FullFieldProps} from '../formModule/types';
 
 export type FieldReturnType =
   | 'faims-attachment::Files'
@@ -15,11 +16,12 @@ export type FieldReturnType =
 
 // FieldInfo is the information required to register a field type
 // and will be provided by each field implementation
-export interface FieldInfo {
+
+export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
   namespace: string; // Namespace of the field
   name: string; // Field name within the namespace
   returns: FieldReturnType | null; // The type returned by this field
-  component: React.FC<any>; // React component implementing the field
+  component: React.ComponentType<T & Record<string, unknown>>;
   fieldSchema?: z.ZodTypeAny; // schema to validate the field properties
   valueSchemaFunction?: (props: any) => z.ZodTypeAny; // function to generate a schema to validate the field value based on props
 }

@@ -30,8 +30,6 @@ export interface StorageMetadata {
     contentType: string;
   };
   recordContext: {
-    // Which AVP is this related to?
-    avpId: string;
     // Which record?
     recordId: string;
     // Which revision?

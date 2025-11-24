@@ -7,9 +7,9 @@ import {
   RecordID,
   RevisionID,
 } from '@faims3/data-model';
-import {EditableFormManager} from '@faims3/forms';
+import {EditableFormManager, FullFormConfig} from '@faims3/forms';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import {getNotebookRoute} from '../../constants/routes';
+import {getExistingRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -66,39 +66,49 @@ export const EditRecordPage = () => {
     return createProjectAttachmentService(projectId);
   };
 
-  const formConfig = {
-    context: {
-      mode: 'full' as const,
-      dataEngine,
-      attachmentEngine,
-      redirect: {
-        toRecord: ({recordId}: {recordId: RecordID}) => {
-          console.log('redirect to record', recordId);
-        },
-        toRevision: ({
-          recordId,
-          revisionId,
-        }: {
-          recordId: RecordID;
-          revisionId: RevisionID;
-        }) => {
-          console.log('redirect to revision', recordId, revisionId);
-        },
+  const formConfig: FullFormConfig = {
+    mode: 'full' as const,
+    recordId,
+    dataEngine,
+    attachmentEngine,
+    redirect: {
+      toRecord: ({
+        recordId: targetRecordId,
+        mode,
+      }: {
+        recordId: RecordID;
+        mode: AvpUpdateMode;
+      }) => {
+        // Navigate to the 'new record' page for this record
+        console.log('redirect to record', targetRecordId);
+        navigate(
+          getExistingRecordRoute({
+            serverId,
+            projectId,
+            recordId: targetRecordId,
+            mode,
+          })
+        );
       },
-      trigger: {
-        commit: async () => {
-          console.log('committing changes');
-          // navigate to the project page
-          navigate(getNotebookRoute({serverId, projectId}));
-        },
+      toRevision: ({
+        recordId,
+        revisionId,
+      }: {
+        recordId: RecordID;
+        revisionId: RevisionID;
+      }) => {
+        console.log('redirect to revision', recordId, revisionId);
       },
     },
+    user: activeUser.username,
   };
 
   return (
     <div>
       <h2>Editing {recordId}</h2>
       <EditableFormManager
+        // Force remount if record ID changes
+        key={recordId}
         mode={mode}
         activeUser={userId}
         recordId={recordId}

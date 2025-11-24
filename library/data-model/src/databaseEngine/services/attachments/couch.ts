@@ -102,7 +102,6 @@ export class CouchAttachmentService extends BaseAttachmentService {
     const attachmentDocument: NewPendingAttachmentDBDocument = {
       _id: id,
       _attachments,
-      avp_id: metadata.recordContext.avpId,
       record_id: metadata.recordContext.recordId,
       filename: metadata.attachmentDetails.filename,
       revision_id: metadata.recordContext.revisionId,
@@ -163,7 +162,6 @@ export class CouchAttachmentService extends BaseAttachmentService {
     const attachmentDocument: NewPendingAttachmentDBDocument = {
       _id: id,
       _attachments,
-      avp_id: metadata.recordContext.avpId,
       record_id: metadata.recordContext.recordId,
       filename: metadata.attachmentDetails.filename,
       revision_id: metadata.recordContext.revisionId,
@@ -312,7 +310,6 @@ export class CouchAttachmentService extends BaseAttachmentService {
     const attachmentDocument: NewPendingAttachmentDBDocument = {
       _id: id,
       _attachments,
-      avp_id: metadata.recordContext.avpId,
       record_id: metadata.recordContext.recordId,
       filename: metadata.attachmentDetails.filename,
       revision_id: metadata.recordContext.revisionId,

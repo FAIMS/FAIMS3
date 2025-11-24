@@ -778,6 +778,18 @@ importers:
 
   library/forms:
     dependencies:
+      '@capacitor-community/exif':
+        specifier: ^7.0.0
+        version: 7.0.0(@capacitor/core@7.4.3)
+      '@capacitor/camera':
+        specifier: ^7.0.1
+        version: 7.0.2(@capacitor/core@7.4.3)
+      '@capacitor/core':
+        specifier: ^7.2.0
+        version: 7.4.3
+      '@capacitor/geolocation':
+        specifier: ^7.1.1
+        version: 7.1.5(@capacitor/core@7.4.3)
       '@emotion/react':
         specifier: 11.11.4
         version: 11.11.4(@types/react@18.3.12)(react@18.3.1)
@@ -796,6 +808,12 @@ importers:
       '@tanstack/react-form':
         specifier: ^1.23.8
         version: 1.23.8(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tanstack/react-query':
+        specifier: ^5.62.16
+        version: 5.90.2(react@18.3.1)
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       dompurify:
         specifier: ^3.2.4
         version: 3.2.7
@@ -808,6 +826,9 @@ importers:
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
+      react-dropzone:
+        specifier: 14.2.3
+        version: 14.2.3(react@18.3.1)
       zod:
         specifier: ^4.1.12
         version: 4.1.12
@@ -19747,7 +19768,7 @@ snapshots:
   buffer@4.9.2:
     dependencies:
       base64-js: 1.5.1
-      ieee754: 1.1.13
+      ieee754: 1.2.1
       isarray: 1.0.0
 
   buffer@5.7.1:
@@ -21280,7 +21301,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  eslint-plugin-prettier@5.1.3(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.2.5):
+  eslint-plugin-prettier@5.1.3(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.0)(prettier@3.2.5):
     dependencies:
       eslint: 8.57.0
       prettier: 3.2.5
@@ -22328,7 +22349,7 @@ snapshots:
       eslint: 8.57.0
       eslint-config-prettier: 9.1.0(eslint@8.57.0)
       eslint-plugin-n: 15.7.0(eslint@8.57.0)
-      eslint-plugin-prettier: 5.1.3(eslint-config-prettier@9.1.0(eslint@8.57.0))(eslint@8.57.0)(prettier@3.2.5)
+      eslint-plugin-prettier: 5.1.3(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.0)(prettier@3.2.5)
       execa: 5.1.1
       inquirer: 7.3.3
       json5: 2.2.3

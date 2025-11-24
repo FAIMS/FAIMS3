@@ -1,27 +1,31 @@
-import {TextField as MuiTextField} from '@mui/material';
-import React from 'react';
 import z from 'zod';
-import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   BaseFieldProps,
   FormFieldContextProps,
   BaseFieldPropsSchema,
 } from '../../../formModule/types';
+import FieldWrapper from '../wrappers/FieldWrapper';
+import {TextField as MuiTextField} from '@mui/material';
 import {FieldInfo} from '../../types';
 
-const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
-  const value = (props.state.value?.data as string) || '';
+const SampleField = (props: BaseFieldProps & FormFieldContextProps) => {
+  // You may wish to cast this value
+  const value = props.state.value?.data || undefined;
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Here you can set field/annotation/attachment info
     props.setFieldData(event.target.value);
   };
 
+  // The field wrapper is used to provide consistent styling, labels, helper
+  // text, etc.
   return (
     <FieldWrapper
       heading={props.label}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
     >
+      {/* Replace with your field component of choice */}
       <MuiTextField
         value={value}
         fullWidth
@@ -33,18 +37,18 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
   );
 };
 
-// generate a zod schema for the value. In this case, it's always a string
+// generate a zod schema for the value.
 const valueSchema = () => {
-  return z.string();
+  return z.any();
 };
 
 // Export a constant with the information required to
 // register this field type
-export const textFieldSpec: FieldInfo = {
+export const sampleFieldSpec: FieldInfo = {
   namespace: 'faims-custom',
-  name: 'FAIMSTextField',
+  name: 'SampleField',
   returns: 'faims-core::String',
-  component: TextField,
+  component: SampleField,
   fieldSchema: BaseFieldPropsSchema,
   valueSchemaFunction: valueSchema,
 };

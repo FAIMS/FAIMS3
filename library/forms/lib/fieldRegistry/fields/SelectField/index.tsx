@@ -40,13 +40,10 @@ import {
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {z} from 'zod';
+import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
-import {FieldInfo} from '../../types';
 
 const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
@@ -69,10 +66,12 @@ const valueSchema = (props: SelectFieldProps) => {
   return z.union(optionValues.map(val => z.literal(val)));
 };
 
+type FieldProps = SelectFieldProps & FullFieldProps;
+
 /**
  * Select Component - A reusable dropdown select field with Formik integration.
  */
-export const Select = (props: SelectFieldProps & FormFieldContextProps) => {
+export const Select = (props: FieldProps) => {
   const theme = useTheme();
   const value = (props.state.value?.data as string) ?? '';
 
@@ -134,7 +133,7 @@ export const Select = (props: SelectFieldProps & FormFieldContextProps) => {
 
 // Export a constant with the information required to
 // register this field type
-export const selectFieldSpec: FieldInfo = {
+export const selectFieldSpec: FieldInfo<FieldProps> = {
   namespace: 'faims-custom',
   name: 'Select',
   returns: 'faims-core::String',
