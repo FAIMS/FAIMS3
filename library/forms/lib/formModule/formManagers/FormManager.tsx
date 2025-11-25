@@ -6,6 +6,10 @@ import {FaimsForm} from '../types';
 import {FormStateDisplay} from './FormStateDisplay';
 import {FormManagerConfig} from './types';
 
+// Map from section -> list of visible fields - section included IFF it's
+// visible at all
+export type FieldVisibilityMap = Record<string, string[]>;
+
 /**
  * Props for the base FormManager component.
  */
@@ -18,6 +22,9 @@ export interface FormManagerProps extends ComponentProps<any> {
   uiSpec: ProjectUIModel;
   /** Configuration determining form mode and available features */
   config: FormManagerConfig;
+  /** Visibility information - undefined means full visibility (disabling this
+   * feature) */
+  fieldVisibilityMap: FieldVisibilityMap | undefined;
 }
 
 /**
@@ -36,33 +43,28 @@ export const FormManager = (props: FormManagerProps) => {
   return (
     <>
       <h1>Form: {formSpec.label}</h1>
-      <form
-        onSubmit={e => {
-          e.preventDefault();
-          e.stopPropagation();
-          props.form.handleSubmit();
-        }}
-      >
-        {/* Render Inline (Vertical) Layout */}
-        {props.config.layout === 'inline' && (
-          <InlineSectionDisplay
-            config={props.config}
-            form={props.form}
-            formId={props.formName}
-            spec={props.uiSpec}
-          />
-        )}
 
-        {/* Render Tabbed (Horizontal) Layout */}
-        {props.config.layout === 'tabs' && (
-          <TabbedSectionDisplay
-            config={props.config}
-            form={props.form}
-            formId={props.formName}
-            spec={props.uiSpec}
-          />
-        )}
-      </form>
+      {/* Render Inline (Vertical) Layout */}
+      {props.config.layout === 'inline' && (
+        <InlineSectionDisplay
+          config={props.config}
+          form={props.form}
+          formId={props.formName}
+          spec={props.uiSpec}
+          fieldVisibilityMap={props.fieldVisibilityMap}
+        />
+      )}
+
+      {/* Render Tabbed (Horizontal) Layout */}
+      {props.config.layout === 'tabs' && (
+        <TabbedSectionDisplay
+          config={props.config}
+          form={props.form}
+          formId={props.formName}
+          spec={props.uiSpec}
+          fieldVisibilityMap={props.fieldVisibilityMap}
+        />
+      )}
 
       {/* Debug display of current form state */}
       <FormStateDisplay form={props.form} />

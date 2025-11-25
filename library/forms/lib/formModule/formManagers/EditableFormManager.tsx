@@ -1,5 +1,10 @@
 import {
   AvpUpdateMode,
+  currentlyVisibleFields,
+  currentlyVisibleMap,
+  currentlyVisibleViews,
+  DataEngine,
+  dataMap,
   FaimsAttachments,
   FormDataEntry,
   FormUpdateData,
@@ -8,9 +13,10 @@ import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
 import {ComponentProps, useCallback, useEffect, useMemo, useState} from 'react';
-import {FaimsFormData} from '../types';
-import {FormManager} from './FormManager';
+import {FaimsForm, FaimsFormData} from '../types';
+import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FullFormConfig, FullFormManagerConfig} from './types';
+import {formDataExtractor} from '../../utils';
 
 /**
  * Debounce time for form syncs to prevent excessive updates to the backend.
@@ -59,6 +65,11 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     return props.config.dataEngine();
   }, [props.config.dataEngine]);
 
+  // Visible field tracking - passed down to children
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap | undefined>(
+    undefined
+  );
+
   // Fetch initial form data using TanStack Query for caching and loading states
   const {data: formData, isLoading} = useQuery({
     queryKey: ['formData', props.recordId],
@@ -80,7 +91,25 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     if (formData?.revisionId) {
       setWorkingRevisionId(formData.revisionId);
     }
-  }, [formData?.revisionId]);
+
+    // Initialise the visible fields based on loaded form data
+    if (formData?.data) {
+      // Map the data into format needed
+      let currentData: {[k: string]: any} = {};
+      for (const [k, v] of Object.entries(form.state.values)) {
+        currentData[k] = v.data;
+      }
+
+      // Updating visibility
+      setVisibleMap(
+        currentlyVisibleMap({
+          values: formDataExtractor({fullData: formData.data}),
+          uiSpec: dataEngine.uiSpec,
+          viewsetId: formData.formId,
+        })
+      );
+    }
+  }, [formData?.formId, formData?.revisionId, formData?.data]);
 
   /**
    * Ensures we have a working revision ready for edits.
@@ -145,6 +174,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
    * immediately redirect, such as related records.
    */
   const onChange = useCallback(async () => {
+    // Updating data
     const revisionToUpdate = await ensureWorkingRevision();
 
     if (formData?.data && revisionToUpdate) {
@@ -165,6 +195,25 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       } catch (error) {
         console.error('Failed to update revision:', error);
       }
+    }
+
+    // This will almost definitely be loaded, but let's be careful - will be
+    // picked up on later change if not
+    if (formData) {
+      // Map the data into format needed
+      const currentData: {[k: string]: any} = {};
+      for (const [k, v] of Object.entries(form.state.values)) {
+        currentData[k] = v.data;
+      }
+
+      // Updating visibility
+      setVisibleMap(
+        currentlyVisibleMap({
+          values: formDataExtractor({fullData: form.state.values}),
+          uiSpec: dataEngine.uiSpec,
+          viewsetId: formData.formId,
+        })
+      );
     }
   }, [
     formData?.data,
@@ -342,7 +391,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   };
 
   // Loading state
-  if (isLoading || !formData) {
+  if (isLoading || !formData || visibleMap === undefined) {
     return <div>Loading...</div>;
   }
 
@@ -385,6 +434,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         formName={formData.formId}
         uiSpec={dataEngine.uiSpec}
         config={formManagerConfig}
+        fieldVisibilityMap={visibleMap}
       />
     </>
   );
