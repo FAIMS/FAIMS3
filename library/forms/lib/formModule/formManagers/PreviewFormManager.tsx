@@ -1,9 +1,14 @@
-import {ProjectUIModel} from '@faims3/data-model';
+import {
+  compileUiSpecConditionals,
+  currentlyVisibleMap,
+  ProjectUIModel,
+} from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ComponentProps} from 'react';
+import {ComponentProps, useMemo, useState} from 'react';
+import {formDataExtractor} from '../../utils';
 import {FaimsFormData} from '../types';
-import {FormManager} from './FormManager';
+import {FieldVisibilityMap, FormManager} from './FormManager';
 import {PreviewFormConfig} from './types';
 
 // Basic query client for use in the preview form manager
@@ -34,6 +39,20 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     Occupation: {data: 'Developer'},
   };
 
+  const uiSpec = useMemo(() => {
+    const spec = {...props.uiSpec};
+    compileUiSpecConditionals(spec);
+    return spec;
+  }, [props.uiSpec]);
+
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
+    currentlyVisibleMap({
+      values: formDataExtractor({fullData: formValues}),
+      uiSpec: uiSpec,
+      viewsetId: props.formName,
+    })
+  );
+
   // Initialize form with mock data and simple logging
   const form = useForm({
     defaultValues: formValues as FaimsFormData,
@@ -43,6 +62,15 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     listeners: {
       onChange: () => {
         console.log('Form values changed:', form.state.values);
+
+        // Updating visibility
+        setVisibleMap(
+          currentlyVisibleMap({
+            values: formDataExtractor({fullData: form.state.values}),
+            uiSpec: uiSpec,
+            viewsetId: props.formName,
+          })
+        );
       },
     },
   });
@@ -58,8 +86,9 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
       <FormManager
         form={form}
         formName={props.formName}
-        uiSpec={props.uiSpec}
+        uiSpec={uiSpec}
         config={config}
+        fieldVisibilityMap={visibleMap}
       />
     </QueryClientProvider>
   );

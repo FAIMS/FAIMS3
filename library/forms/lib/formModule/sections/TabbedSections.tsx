@@ -11,9 +11,10 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {useRef, useState} from 'react';
+import {useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
 import {FormManagerConfig} from '../formManagers';
+import {FieldVisibilityMap} from '../formManagers/FormManager';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
 
@@ -39,9 +40,12 @@ const getStepColor = (
  * Checks if a section has validation errors.
  * TODO: Implement actual error checking logic.
  */
-const checkHasErrors = (sectionId: string) => false;
+const checkHasErrors = (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  sectionId: string
+) => false;
 
-const StepperTab = styled(Tab)(({theme}) => ({
+const StepperTab = styled(Tab)(() => ({
   textTransform: 'none',
   overflow: 'visible',
   minHeight: '70px',
@@ -80,10 +84,26 @@ export const TabbedSectionDisplay: React.FC<{
   formId: string;
   spec: UISpecification;
   config: FormManagerConfig;
+  /** Visibility information - undefined means full visibility (disabling this
+   * feature) */
+  fieldVisibilityMap: FieldVisibilityMap | undefined;
 }> = props => {
   const theme = useTheme();
   const formSpec = props.spec.viewsets[props.formId];
   const sections = formSpec.views;
+
+  // Filtered visible sections (memoize)
+  const visibleSections = useMemo(() => {
+    const visibleViews = props.fieldVisibilityMap
+      ? Object.keys(props.fieldVisibilityMap)
+      : undefined;
+    return sections.filter(s => {
+      if (visibleViews === undefined) {
+        return true;
+      }
+      return visibleViews.includes(s);
+    });
+  }, [props.fieldVisibilityMap]);
 
   const [activeSection, setActiveSection] = useState<string>(sections[0]);
   const activeIndex = sections.indexOf(activeSection);
@@ -145,7 +165,7 @@ export const TabbedSectionDisplay: React.FC<{
                 '& .MuiTabs-indicator': {display: 'none'},
               }}
             >
-              {sections.map((sectionId: string, index: number) => {
+              {visibleSections.map((sectionId: string, index: number) => {
                 const isActive = activeSection === sectionId;
                 const hasError = checkHasErrors(sectionId);
                 const label = props.spec.views[sectionId]?.label ?? sectionId;
@@ -286,13 +306,20 @@ export const TabbedSectionDisplay: React.FC<{
 
       {/* Active section content */}
       <Box role="tabpanel">
-        <FormSection
-          key={activeSection}
-          form={props.form}
-          uiSpec={props.spec}
-          section={activeSection}
-          config={props.config}
-        />
+        {(visibleSections ? visibleSections.includes(activeSection) : true) ? (
+          <FormSection
+            key={activeSection}
+            form={props.form}
+            uiSpec={props.spec}
+            section={activeSection}
+            config={props.config}
+            fieldVisibilityMap={props.fieldVisibilityMap}
+          />
+        ) : (
+          <Typography variant="subtitle1">
+            This section is not currently visible. Select another section.
+          </Typography>
+        )}
       </Box>
     </Box>
   );

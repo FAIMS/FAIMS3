@@ -1,316 +1,458 @@
 {
-  "ui-specification": {
-    "fields": {
-      "Full-Name": {
-        "component-namespace": "faims-custom",
-        "component-name": "FAIMSTextField",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "Full Name",
-          "fullWidth": true,
-          "helperText": "Please enter your full name",
-          "advancedHelperText": "Your full name is required to *address you properly*.",
-          "variant": "outlined",
-          "required": true,
-          "name": "Full-Name",
-          "protection": "none"
+    "ui-specification": {
+        "fields": {
+            "Full-Name": {
+                "component-namespace": "faims-custom",
+                "component-name": "FAIMSTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Full Name",
+                    "fullWidth": true,
+                    "helperText": "Please enter your full name",
+                    "advancedHelperText": "Your full name is required to *address you properly*.",
+                    "variant": "outlined",
+                    "required": true,
+                    "name": "Full-Name",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "FAIMS Text Field",
+                "humanReadableDescription": "Single-line text input for free-form entries",
+                "category": "text",
+                "showInChooser": true,
+                "order": 1,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Occupation": {
+                "component-namespace": "faims-custom",
+                "component-name": "FAIMSTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Occupation",
+                    "fullWidth": true,
+                    "helperText": "Please enter your occupation.",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "name": "Occupation",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "FAIMS Text Field",
+                "humanReadableDescription": "Single-line text input for free-form entries",
+                "category": "text",
+                "showInChooser": true,
+                "order": 1,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Header": {
+                "component-namespace": "faims-custom",
+                "component-name": "RichText",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Header",
+                    "name": "Header",
+                    "content": "## New Form Rendering\n\nThis is a **rich text** field!"
+                },
+                "humanReadableName": "RichText",
+                "humanReadableDescription": "Add formatted text to your form",
+                "category": "display",
+                "showInChooser": true,
+                "order": 17,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "Description": {
+                "component-namespace": "faims-custom",
+                "component-name": "FAIMSTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Description",
+                    "fullWidth": true,
+                    "helperText": "Add a description of yourself.",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "name": "Description",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "FAIMS Text Field",
+                "humanReadableDescription": "Single-line text input for free-form entries",
+                "category": "text",
+                "showInChooser": true,
+                "order": 1,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Selection": {
+                "component-namespace": "faims-custom",
+                "component-name": "Select",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Selection",
+                    "fullWidth": true,
+                    "helperText": "Select a suitable option",
+                    "advancedHelperText": "",
+                    "required": true,
+                    "ElementProps": {
+                        "options": [
+                            {
+                                "label": "Primary **option**",
+                                "value": "Primary **option**"
+                            },
+                            {
+                                "label": "Secondary *option*",
+                                "value": "Secondary *option*"
+                            }
+                        ],
+                        "exclusiveOptions": []
+                    },
+                    "name": "Selection",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "Select Field",
+                "humanReadableDescription": "Dropdown list allowing one selection",
+                "category": "choice",
+                "showInChooser": true,
+                "order": 19,
+                "meta": {
+                    "annotation": {
+                        "include": true,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Photo": {
+                "component-namespace": "faims-custom",
+                "component-name": "TakePhoto",
+                "type-returned": "faims-attachment::Files",
+                "component-parameters": {
+                    "name": "Photo",
+                    "helperText": "",
+                    "advancedHelperText": "",
+                    "label": "Photo"
+                },
+                "validationSchema": [
+                    [
+                        "yup.array"
+                    ],
+                    [
+                        "yup.of",
+                        [
+                            [
+                                "yup.object"
+                            ],
+                            [
+                                "yup.nullable"
+                            ]
+                        ]
+                    ],
+                    [
+                        "yup.nullable"
+                    ]
+                ],
+                "initialValue": null,
+                "humanReadableName": "Take Photo",
+                "humanReadableDescription": "Capture and attach an image via camera",
+                "category": "media",
+                "showInChooser": true,
+                "order": 21,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "File-Uploader": {
+                "component-namespace": "faims-custom",
+                "component-name": "FileUploader",
+                "type-returned": "faims-attachment::Files",
+                "component-parameters": {
+                    "label": "File Uploader",
+                    "name": "File-Uploader",
+                    "id": "file-upload-field",
+                    "helperText": ""
+                },
+                "validationSchema": [
+                    [
+                        "yup.mixed"
+                    ]
+                ],
+                "initialValue": null,
+                "humanReadableName": "Upload a File",
+                "humanReadableDescription": "Attach one or more files to the record",
+                "category": "media",
+                "showInChooser": true,
+                "order": 12,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            },
+            "Male-or-female": {
+                "component-namespace": "faims-custom",
+                "component-name": "Select",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Male or female",
+                    "fullWidth": true,
+                    "helperText": "Is this person male or female?",
+                    "advancedHelperText": "",
+                    "required": false,
+                    "ElementProps": {
+                        "options": [
+                            {
+                                "label": "male",
+                                "value": "male"
+                            },
+                            {
+                                "label": "female",
+                                "value": "female"
+                            }
+                        ],
+                        "exclusiveOptions": []
+                    },
+                    "name": "Male-or-female",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "Select Field",
+                "humanReadableDescription": "Dropdown list allowing one selection",
+                "category": "choice",
+                "showInChooser": true,
+                "order": 19,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Female-conditional": {
+                "component-namespace": "faims-custom",
+                "component-name": "FAIMSTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Female conditional",
+                    "fullWidth": true,
+                    "helperText": "This only appears if female",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "name": "Female-conditional",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "FAIMS Text Field",
+                "humanReadableDescription": "Single-line text input for free-form entries",
+                "category": "text",
+                "showInChooser": true,
+                "order": 1,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false,
+                "condition": {
+                    "field": "Male-or-female",
+                    "operator": "equal",
+                    "value": "female"
+                }
+            },
+            "Male-name": {
+                "component-namespace": "faims-custom",
+                "component-name": "FAIMSTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Male name",
+                    "fullWidth": true,
+                    "helperText": "",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "name": "Male-name"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "FAIMS Text Field",
+                "humanReadableDescription": "Single-line text input for free-form entries",
+                "category": "text",
+                "showInChooser": true,
+                "order": 1,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
+            }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
-        "initialValue": "",
-        "humanReadableName": "FAIMS Text Field",
-        "humanReadableDescription": "Single-line text input for free-form entries",
-        "category": "text",
-        "showInChooser": true,
-        "order": 1,
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+        "fviews": {
+            "Person-Main": {
+                "label": "Main",
+                "fields": [
+                    "Header",
+                    "Full-Name",
+                    "Occupation",
+                    "Photo",
+                    "File-Uploader",
+                    "Male-or-female",
+                    "Female-conditional"
+                ]
+            },
+            "Person-Detail": {
+                "label": "Detail",
+                "fields": [
+                    "Description",
+                    "Selection"
+                ]
+            },
+            "Person-New-Section": {
+                "label": "Male section",
+                "fields": [
+                    "Male-name"
+                ],
+                "condition": {
+                    "field": "Male-or-female",
+                    "operator": "equal",
+                    "value": "male"
+                }
+            }
         },
-        "persistent": false,
-        "displayParent": false
-      },
-      "Occupation": {
-        "component-namespace": "faims-custom",
-        "component-name": "FAIMSTextField",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "Occupation",
-          "fullWidth": true,
-          "helperText": "Please enter your occupation.",
-          "advancedHelperText": "",
-          "variant": "outlined",
-          "required": false,
-          "name": "Occupation",
-          "protection": "none"
+        "viewsets": {
+            "Person": {
+                "label": "Person",
+                "views": [
+                    "Person-Main",
+                    "Person-Detail",
+                    "Person-New-Section"
+                ],
+                "publishButtonBehaviour": "always"
+            }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
-        "initialValue": "",
-        "humanReadableName": "FAIMS Text Field",
-        "humanReadableDescription": "Single-line text input for free-form entries",
-        "category": "text",
-        "showInChooser": true,
-        "order": 1,
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        },
-        "persistent": false,
-        "displayParent": false
-      },
-      "Header": {
-        "component-namespace": "faims-custom",
-        "component-name": "RichText",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "Header",
-          "name": "Header",
-          "content": "## New Form Rendering\n\nThis is a **rich text** field!"
-        },
-        "humanReadableName": "RichText",
-        "humanReadableDescription": "Add formatted text to your form",
-        "category": "display",
-        "showInChooser": true,
-        "order": 17,
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        }
-      },
-      "Description": {
-        "component-namespace": "faims-custom",
-        "component-name": "FAIMSTextField",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "Description",
-          "fullWidth": true,
-          "helperText": "Add a description of yourself.",
-          "advancedHelperText": "",
-          "variant": "outlined",
-          "required": false,
-          "name": "Description",
-          "protection": "none"
-        },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
-        "initialValue": "",
-        "humanReadableName": "FAIMS Text Field",
-        "humanReadableDescription": "Single-line text input for free-form entries",
-        "category": "text",
-        "showInChooser": true,
-        "order": 1,
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        },
-        "persistent": false,
-        "displayParent": false
-      },
-      "Selection": {
-        "component-namespace": "faims-custom",
-        "component-name": "Select",
-        "type-returned": "faims-core::String",
-        "component-parameters": {
-          "label": "Selection",
-          "fullWidth": true,
-          "helperText": "Select a suitable option",
-          "advancedHelperText": "",
-          "required": true,
-          "ElementProps": {
-            "options": [
-              {
-                "label": "Primary **option**",
-                "value": "Primary **option**"
-              },
-              {
-                "label": "Secondary *option*",
-                "value": "Secondary *option*"
-              }
-            ],
-            "exclusiveOptions": []
-          },
-          "name": "Selection",
-          "protection": "none"
-        },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
-        "initialValue": "",
-        "humanReadableName": "Select Field",
-        "humanReadableDescription": "Dropdown list allowing one selection",
-        "category": "choice",
-        "showInChooser": true,
-        "order": 19,
-        "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        },
-        "persistent": false,
-        "displayParent": false
-      },
-      "Photo": {
-        "component-namespace": "faims-custom",
-        "component-name": "TakePhoto",
-        "type-returned": "faims-attachment::Files",
-        "component-parameters": {
-          "name": "Photo",
-          "helperText": "",
-          "advancedHelperText": "",
-          "label": "Photo"
-        },
-        "validationSchema": [
-          [
-            "yup.array"
-          ],
-          [
-            "yup.of",
-            [
-              [
-                "yup.object"
-              ],
-              [
-                "yup.nullable"
-              ]
-            ]
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
-        "initialValue": null,
-        "humanReadableName": "Take Photo",
-        "humanReadableDescription": "Capture and attach an image via camera",
-        "category": "media",
-        "showInChooser": true,
-        "order": 21,
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        }
-      },
-      "File-Uploader": {
-        "component-namespace": "faims-custom",
-        "component-name": "FileUploader",
-        "type-returned": "faims-attachment::Files",
-        "component-parameters": {
-          "label": "File Uploader",
-          "name": "File-Uploader",
-          "id": "file-upload-field",
-          "helperText": ""
-        },
-        "validationSchema": [
-          [
-            "yup.mixed"
-          ]
-        ],
-        "initialValue": null,
-        "humanReadableName": "Upload a File",
-        "humanReadableDescription": "Attach one or more files to the record",
-        "category": "media",
-        "showInChooser": true,
-        "order": 12,
-        "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
-        }
-      }
-    },
-    "fviews": {
-      "Person-Main": {
-        "label": "Main",
-        "fields": [
-          "Header",
-          "Full-Name",
-          "Occupation",
-          "Photo",
-          "File-Uploader"
+        "visible_types": [
+            "Person"
         ]
-      },
-      "Person-Detail": {
-        "label": "Detail",
-        "fields": [
-          "Description",
-          "Selection"
-        ]
-      }
     },
-    "viewsets": {
-      "Person": {
-        "label": "Person",
-        "views": [
-          "Person-Main",
-          "Person-Detail"
-        ],
-        "publishButtonBehaviour": "always"
-      }
-    },
-    "visible_types": [
-      "Person"
-    ]
-  },
-  "metadata": {
-    "filenames": [],
-    "lead_institution": "",
-    "meta": {},
-    "name": "new forms sample",
-    "pre_description": "",
-    "project_id": "1763075074953-new-forms-sample",
-    "project_lead": "",
-    "project_status": "New",
-    "sections": {}
-  }
+    "metadata": {
+        "filenames": [],
+        "lead_institution": "",
+        "meta": {},
+        "name": "sample-notebook",
+        "pre_description": "",
+        "project_id": "1764027215124-sample-notebook",
+        "project_lead": "",
+        "project_status": "New",
+        "sections": {}
+    }
 }

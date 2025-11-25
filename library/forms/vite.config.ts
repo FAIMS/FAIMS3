@@ -9,6 +9,9 @@ export default defineConfig(({command}) => {
     return {
       plugins: [react({jsxImportSource: '@emotion/react'})],
       root: '.',
+      build: {
+        sourcemap: 'inline',
+      },
     };
   } else {
     // Build configuration - builds lib/index.tsx as library

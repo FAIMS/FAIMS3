@@ -366,6 +366,24 @@ export const isValidForSpatialExport = ({
 
 /**
  * For the given ui spec, viewset and current form values, considers conditional
+ * rendering, visibility etc to provide a set of visible views (sections).
+ * @returns  List of visible views/sections
+ */
+export const currentlyVisibleViews = ({
+  values,
+  uiSpec,
+  viewsetId,
+}: {
+  uiSpec: ProjectUIModel;
+  values: ValuesObject;
+  viewsetId: string;
+}) => {
+  // Build a set of visible fields within visible views
+  return getViewsMatchingCondition(uiSpec, values, [], viewsetId, {});
+};
+
+/**
+ * For the given ui spec, viewset and current form values, considers conditional
  * rendering, visibility etc to provide a set of visible fields.
  * @returns  List of visible fields
  */
@@ -379,7 +397,7 @@ export const currentlyVisibleFields = ({
   viewsetId: string;
 }) => {
   // Build a set of visible fields within visible views
-  const views = getViewsMatchingCondition(uiSpec, values, [], viewsetId, {});
+  const views = currentlyVisibleViews({values, uiSpec, viewsetId});
   const visibleFields: string[] = [];
   for (const v of views) {
     const fieldsMatching = getFieldsMatchingCondition(
@@ -395,6 +413,29 @@ export const currentlyVisibleFields = ({
     }
   }
   return visibleFields;
+};
+
+/**
+ * For the given ui spec, viewset and current form values, considers conditional
+ * rendering, visibility etc to provide a set of visible views and fields
+ * @returns  Record mapping view -> fields (only includes view if visible)
+ */
+export const currentlyVisibleMap = ({
+  values,
+  uiSpec,
+  viewsetId,
+}: {
+  uiSpec: ProjectUIModel;
+  values: ValuesObject;
+  viewsetId: string;
+}) => {
+  // Build a set of visible fields within visible views
+  const views = currentlyVisibleViews({values, uiSpec, viewsetId});
+  const visibleMap: Record<string, string[]> = {};
+  for (const v of views) {
+    visibleMap[v] = getFieldsMatchingCondition(uiSpec, values, [], v, {});
+  }
+  return visibleMap;
 };
 
 /**
