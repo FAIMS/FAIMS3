@@ -1,10 +1,6 @@
 import {
   AvpUpdateMode,
-  currentlyVisibleFields,
   currentlyVisibleMap,
-  currentlyVisibleViews,
-  DataEngine,
-  dataMap,
   FaimsAttachments,
   FormDataEntry,
   FormUpdateData,
@@ -13,10 +9,10 @@ import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
 import {ComponentProps, useCallback, useEffect, useMemo, useState} from 'react';
-import {FaimsForm, FaimsFormData} from '../types';
+import {formDataExtractor} from '../../utils';
+import {FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FullFormConfig, FullFormManagerConfig} from './types';
-import {formDataExtractor} from '../../utils';
 
 /**
  * Debounce time for form syncs to prevent excessive updates to the backend.
@@ -95,7 +91,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     // Initialise the visible fields based on loaded form data
     if (formData?.data) {
       // Map the data into format needed
-      let currentData: {[k: string]: any} = {};
+      const currentData: {[k: string]: any} = {};
       for (const [k, v] of Object.entries(form.state.values)) {
         currentData[k] = v.data;
       }

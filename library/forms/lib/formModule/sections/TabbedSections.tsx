@@ -14,9 +14,9 @@ import {
 import {useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
 import {FormManagerConfig} from '../formManagers';
+import {FieldVisibilityMap} from '../formManagers/FormManager';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
-import {FieldVisibilityMap} from '../formManagers/FormManager';
 
 // Minimum width per step before switching to mobile view
 const MIN_STEP_WIDTH_PX = 120;
@@ -40,9 +40,12 @@ const getStepColor = (
  * Checks if a section has validation errors.
  * TODO: Implement actual error checking logic.
  */
-const checkHasErrors = (sectionId: string) => false;
+const checkHasErrors = (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  sectionId: string
+) => false;
 
-const StepperTab = styled(Tab)(({theme}) => ({
+const StepperTab = styled(Tab)(() => ({
   textTransform: 'none',
   overflow: 'visible',
   minHeight: '70px',

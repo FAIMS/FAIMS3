@@ -40,7 +40,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   };
 
   const uiSpec = useMemo(() => {
-    let spec = {...props.uiSpec};
+    const spec = {...props.uiSpec};
     compileUiSpecConditionals(spec);
     return spec;
   }, [props.uiSpec]);
