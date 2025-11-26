@@ -4,6 +4,7 @@ import {relatedRecordFieldSpec} from './fields/RelatedRecord';
 import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
 import {takePhotoFieldSpec} from './fields/TakePhoto';
+import {templatedStringFieldSpec} from './fields/TemplatedStringField';
 import {textFieldSpec} from './fields/TextField';
 import {FieldInfo} from './types';
 
@@ -16,6 +17,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   takePhotoFieldSpec,
   fileUploaderFieldSpec,
   relatedRecordFieldSpec,
+  templatedStringFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info

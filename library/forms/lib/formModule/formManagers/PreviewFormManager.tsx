@@ -9,9 +9,8 @@ import {ComponentProps, useMemo, useState} from 'react';
 import {formDataExtractor} from '../../utils';
 import {FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
+import {onChangeTemplatedFields} from './templatedFields';
 import {PreviewFormConfig} from './types';
-
-// Basic query client for use in the preview form manager
 const queryClient = new QueryClient();
 
 /**
@@ -35,7 +34,8 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
 export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   // Mock form values for preview
   const formValues: FaimsFormData = {
-    'Full-Name': {data: 'Steve'},
+    'First-name': {data: 'Steve'},
+    'Last-name': {data: 'Sputnik'},
     Occupation: {data: 'Developer'},
   };
 
@@ -62,6 +62,15 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
     listeners: {
       onChange: () => {
         console.log('Form values changed:', form.state.values);
+        // First, lets fire any updates to the templated fields
+        onChangeTemplatedFields({
+          form,
+          uiSpec: props.uiSpec,
+          // Don't fire listeners again redundantly
+          runListeners: false,
+          // Fake context
+          context: {createdBy: 'Preview Author', createdTime: 1764136061},
+        });
 
         // Updating visibility
         setVisibleMap(
