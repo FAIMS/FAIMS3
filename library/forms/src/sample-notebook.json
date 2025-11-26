@@ -1,44 +1,6 @@
 {
     "ui-specification": {
         "fields": {
-            "Full-Name": {
-                "component-namespace": "faims-custom",
-                "component-name": "FAIMSTextField",
-                "type-returned": "faims-core::String",
-                "component-parameters": {
-                    "label": "Full Name",
-                    "fullWidth": true,
-                    "helperText": "Please enter your full name",
-                    "advancedHelperText": "Your full name is required to *address you properly*.",
-                    "variant": "outlined",
-                    "required": true,
-                    "name": "Full-Name",
-                    "protection": "none"
-                },
-                "validationSchema": [
-                    [
-                        "yup.string"
-                    ]
-                ],
-                "initialValue": "",
-                "humanReadableName": "FAIMS Text Field",
-                "humanReadableDescription": "Single-line text input for free-form entries",
-                "category": "text",
-                "showInChooser": true,
-                "order": 1,
-                "meta": {
-                    "annotation": {
-                        "include": false,
-                        "label": "annotation"
-                    },
-                    "uncertainty": {
-                        "include": false,
-                        "label": "uncertainty"
-                    }
-                },
-                "persistent": false,
-                "displayParent": false
-            },
             "Occupation": {
                 "component-namespace": "faims-custom",
                 "component-name": "FAIMSTextField",
@@ -395,6 +357,123 @@
                         "label": "uncertainty"
                     }
                 }
+            },
+            "First-name": {
+                "component-namespace": "faims-custom",
+                "component-name": "FAIMSTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "First name",
+                    "fullWidth": true,
+                    "helperText": "",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": true,
+                    "name": "First-name",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "FAIMS Text Field",
+                "humanReadableDescription": "Single-line text input for free-form entries",
+                "category": "text",
+                "showInChooser": true,
+                "order": 1,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Last-name": {
+                "component-namespace": "faims-custom",
+                "component-name": "FAIMSTextField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Last name",
+                    "fullWidth": true,
+                    "helperText": "",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": true,
+                    "name": "Last-name",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "FAIMS Text Field",
+                "humanReadableDescription": "Single-line text input for free-form entries",
+                "category": "text",
+                "showInChooser": true,
+                "order": 1,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "hridPerson-Main": {
+                "component-namespace": "faims-custom",
+                "component-name": "TemplatedStringField",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Full name (templated)",
+                    "fullWidth": true,
+                    "name": "hridPerson-Main",
+                    "helperText": "",
+                    "required": true,
+                    "template": "{{First-name}} {{Last-name}}",
+                    "hidden": false,
+                    "InputLabelProps": {
+                        "label": "Full name (templated)"
+                    }
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ],
+                    [
+                        "yup.required"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "Templated String Field",
+                "humanReadableDescription": "Auto-generates text from a template",
+                "category": "text",
+                "showInChooser": true,
+                "order": 23,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                }
             }
         },
         "fviews": {
@@ -402,7 +481,9 @@
                 "label": "Main",
                 "fields": [
                     "Header",
-                    "Full-Name",
+                    "First-name",
+                    "Last-name",
+                    "hridPerson-Main",
                     "Occupation",
                     "Photo",
                     "File-Uploader",

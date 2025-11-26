@@ -13,6 +13,10 @@ import {formDataExtractor} from '../../utils';
 import {FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FullFormConfig, FullFormManagerConfig} from './types';
+import {
+  getRecordContextFromRecord,
+  onChangeTemplatedFields,
+} from './templatedFields';
 
 /**
  * Debounce time for form syncs to prevent excessive updates to the backend.
@@ -89,7 +93,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     }
 
     // Initialise the visible fields based on loaded form data
-    if (formData?.data) {
+    if (formData?.data !== undefined) {
       // Map the data into format needed
       const currentData: {[k: string]: any} = {};
       for (const [k, v] of Object.entries(form.state.values)) {
@@ -173,7 +177,16 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     // Updating data
     const revisionToUpdate = await ensureWorkingRevision();
 
-    if (formData?.data && revisionToUpdate) {
+    if (formData?.data !== undefined && revisionToUpdate) {
+      // First, lets fire any updates to the templated fields
+      onChangeTemplatedFields({
+        form,
+        uiSpec: dataEngine.uiSpec,
+        // Don't fire listeners again redundantly
+        runListeners: false,
+        context: getRecordContextFromRecord({record: formData?.context.record}),
+      });
+
       // Merge existing data with current form values
       const updatedRecord: FormUpdateData = {
         ...formData.data,
@@ -196,12 +209,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     // This will almost definitely be loaded, but let's be careful - will be
     // picked up on later change if not
     if (formData) {
-      // Map the data into format needed
-      const currentData: {[k: string]: any} = {};
-      for (const [k, v] of Object.entries(form.state.values)) {
-        currentData[k] = v.data;
-      }
-
       // Updating visibility
       setVisibleMap(
         currentlyVisibleMap({
@@ -392,7 +399,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   }
 
   // Error state - record not found
-  if (!formData.data || !formData.formId) {
+  if (formData.data === undefined || formData.formId === undefined) {
     return <div>Record {props.recordId} not found</div>;
   }
 
