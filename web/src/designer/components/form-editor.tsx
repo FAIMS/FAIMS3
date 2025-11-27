@@ -42,6 +42,7 @@ import {
   Typography,
 } from '@mui/material';
 import Box from '@mui/material/Box';
+import {useQueryClient} from '@tanstack/react-query';
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
@@ -136,6 +137,9 @@ export const FormEditor = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [showRightGradient, setShowRightGradient] = useState(true);
+
+  // needed for the form preview
+  const queryClient = useQueryClient();
 
   // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
   const handleScroll = () => {
@@ -708,7 +712,13 @@ export const FormEditor = ({
       </Grid>
       {previewForm && (
         <Grid container item sx={{minWidth: '300px'}} xs={6}>
-          <PreviewFormManager formName={viewSetId} uiSpec={uiSpecInternal} />
+          <PreviewFormManager
+            initialFormData={{}}
+            layout={'inline'}
+            formName={viewSetId}
+            uiSpec={uiSpecInternal}
+            queryClient={queryClient}
+          />
         </Grid>
       )}
     </Stack>
