@@ -2,12 +2,7 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import {
-  attachmentSchema,
-  faimsAttachmentSchema,
-  faimsAttachmentsSchema,
-  logError,
-} from '@faims3/data-model';
+import {logError} from '@faims3/data-model';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -25,6 +20,7 @@ import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {Buffer} from 'buffer';
 import React, {useCallback, useMemo, useState} from 'react';
 import {z} from 'zod';
+import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
 import {FullFormConfig} from '../../../formModule';
 import {
   BaseFieldPropsSchema,
@@ -37,9 +33,6 @@ import {
 } from '../../../hooks/useAttachment';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
-
-// ============================================================================
 // Types & Schema
 // ============================================================================
 
