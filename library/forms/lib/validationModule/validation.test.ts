@@ -197,9 +197,52 @@ describe('FormValidation', () => {
       }
     });
   });
-  describe('validateFormDataWithCompiledSchema', () => {
-    it('should compile schema', () => {
+  describe('required fields', () => {
+    it('optional fields can be excluded', () => {
       const schema = FormValidation.compileFormSchema({
+        uiSpec,
+        formId: 'Person',
+        data: {},
+      });
+      // This should validate
+      expect(schema.schema.safeParse(SAMPLE_VALID_DATA).success).toBeTruthy();
+      // This should not validate (as it's missing required fields)
+      expect(schema.schema.safeParse({}).success).toBeFalsy();
+    });
+  });
+  describe('selection fields', () => {
+    it('should accept either option', () => {
+      const schema = FormValidation.compileFormSchema({
+        uiSpec,
+        formId: 'Person',
+        data: {},
+      });
+      // This should validate
+      expect(
+        schema.schema.safeParse({
+          ...SAMPLE_VALID_DATA,
+          Selection: 'Primary **option**',
+        }).success
+      ).toBeTruthy();
+      // And this
+      expect(
+        schema.schema.safeParse({
+          ...SAMPLE_VALID_DATA,
+          Selection: 'Secondary *option*',
+        }).success
+      ).toBeTruthy();
+      // But not this!
+      expect(
+        schema.schema.safeParse({
+          ...SAMPLE_VALID_DATA,
+          Selection: 'Invalid option',
+        }).success
+      ).toBeFalsy();
+    });
+  });
+  describe('form schema compilation and recompilation', () => {
+    it('should compile schema', () => {
+      FormValidation.compileFormSchema({
         uiSpec,
         formId: 'Person',
         data: {},
@@ -208,10 +251,19 @@ describe('FormValidation', () => {
     it('should re-compile schema', () => {
       const schema = FormValidation.compileFormSchema({
         uiSpec,
-        formId: 'School',
+        formId: 'Person',
         data: {},
       });
-      const updatedSchema = FormValidation.compileFormSchema()
+      expect(schema.schema.shape['Male-name']).not.toBeDefined();
+      const updatedSchema = FormValidation.recompileFormSchema({
+        existingSchema: schema,
+        formId: 'Person',
+        uiSpec: uiSpec,
+        // This should reveal the 'Male-name' field
+        data: {'Male-or-female': 'male'},
+      });
+      expect(updatedSchema.addedFields).to.include('Male-name');
+      expect(updatedSchema.schema.shape['Male-name']).toBeDefined();
     });
   }),
     describe('validateFormDataWithCompiledSchema', () => {

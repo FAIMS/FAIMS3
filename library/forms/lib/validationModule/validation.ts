@@ -39,6 +39,22 @@ export type CompiledFormSchema<T extends ZodRawShape = ZodRawShape> = {
 };
 
 /**
+ * Result of a schema recompilation operation.
+ *
+ * Extends `CompiledFormSchema` with metadata about what changed during
+ * recompilation, useful for debugging or optimization analysis.
+ */
+export type RecompiledFormSchema<T extends ZodRawShape = ZodRawShape> =
+  CompiledFormSchema<T> & {
+    /** Fields that were added in this recompilation */
+    addedFields: string[];
+    /** Fields that were removed in this recompilation */
+    removedFields: string[];
+    /** Fields that were reused from the previous schema */
+    reusedFields: string[];
+  };
+
+/**
  * Form validation utilities using Zod schemas.
  *
  * Provides two validation strategies:
@@ -102,6 +118,112 @@ export const FormValidation = {
       schema: z.object(shape),
       fieldSchemas,
       fields: relevantFields,
+    };
+  },
+
+  /**
+   * Efficiently recompiles a form schema by reusing existing field schemas where possible.
+   *
+   * This method is optimized for scenarios where form visibility changes frequently
+   * (e.g., conditional fields based on user input) but the underlying field definitions
+   * remain stable. It avoids regenerating schemas for fields that persist between
+   * compilations.
+   *
+   * The recompilation process:
+   * 1. Determines the new set of relevant (visible) fields
+   * 2. Reuses schemas from `existingSchema.fieldSchemas` for fields that still exist
+   * 3. Generates new schemas only for newly visible fields
+   * 4. Excludes schemas for fields that are no longer visible
+   *
+   * @param existingSchema - The previously compiled schema to update
+   * @param uiSpec - The UI specification containing field definitions
+   * @param formId - The form/viewset ID
+   * @param data - Current form data (required when `visibleBehaviour` is `'ignore'`)
+   * @param config - Validation settings controlling which fields to include
+   *
+   * @returns A recompiled schema with metadata about changes:
+   *   - `schema`: The updated Zod object schema
+   *   - `fieldSchemas`: Individual schemas keyed by field ID
+   *   - `fields`: Array of field IDs included in the schema
+   *   - `addedFields`: Fields newly added in this recompilation
+   *   - `removedFields`: Fields removed from the previous schema
+   *   - `reusedFields`: Fields whose schemas were reused
+   *
+   * @throws Error if `visibleBehaviour` is `'ignore'` and `data` is not provided
+   */
+  recompileFormSchema({
+    existingSchema,
+    uiSpec,
+    formId,
+    data,
+    config = DEFAULT_VALIDATION_SETTINGS,
+  }: {
+    existingSchema: CompiledFormSchema;
+    uiSpec: UISpecification;
+    formId: string;
+    data?: ValuesObject;
+    config?: ValidationSettings;
+  }): RecompiledFormSchema {
+    const newRelevantFields = this.getRelevantFields({
+      uiSpec,
+      formId,
+      data,
+      config,
+    });
+
+    const existingFieldSet = new Set(existingSchema.fields);
+    const newFieldSet = new Set(newRelevantFields);
+
+    const addedFields: string[] = [];
+    const removedFields: string[] = [];
+    const reusedFields: string[] = [];
+
+    // Identify removed fields
+    for (const fieldId of existingSchema.fields) {
+      if (!newFieldSet.has(fieldId)) {
+        removedFields.push(fieldId);
+      }
+    }
+
+    const shape: Record<string, ZodTypeAny> = {};
+    const fieldSchemas: Record<string, ZodTypeAny> = {};
+
+    for (const fieldId of newRelevantFields) {
+      if (existingFieldSet.has(fieldId)) {
+        // Reuse existing schema
+        const existingFieldSchema = existingSchema.fieldSchemas[fieldId];
+        if (existingFieldSchema) {
+          shape[fieldId] = existingFieldSchema;
+          fieldSchemas[fieldId] = existingFieldSchema;
+          reusedFields.push(fieldId);
+        } else {
+          // Edge case: field was in fields array but not in fieldSchemas
+          // This shouldn't happen, but handle gracefully by regenerating
+          const newFieldSchema = this.getFieldSchema({uiSpec, fieldId});
+          if (newFieldSchema) {
+            shape[fieldId] = newFieldSchema;
+            fieldSchemas[fieldId] = newFieldSchema;
+            addedFields.push(fieldId);
+          }
+        }
+      } else {
+        // Generate schema for new field
+        const newFieldSchema = this.getFieldSchema({uiSpec, fieldId});
+        if (newFieldSchema) {
+          shape[fieldId] = newFieldSchema;
+          fieldSchemas[fieldId] = newFieldSchema;
+          addedFields.push(fieldId);
+        }
+      }
+    }
+
+    return {
+      schema: z.object(shape),
+      fieldSchemas,
+      fields: newRelevantFields,
+      addedFields,
+      removedFields,
+      reusedFields,
     };
   },
 
