@@ -38,7 +38,7 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
 
 // generate a zod schema for the value. In this case, it's always a string
 const valueSchema = () => {
-  return z.string().min(10);
+  return z.string().min(1);
 };
 
 // Export a constant with the information required to

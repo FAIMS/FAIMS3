@@ -183,7 +183,7 @@ const valueSchema = (props: RadioGroupFieldProps) => {
       optionValues.map(val => z.literal(val)) as [
         z.ZodLiteral<string>,
         z.ZodLiteral<string>,
-        ...z.ZodLiteral<string>[]
+        ...z.ZodLiteral<string>[],
       ]
     ),
     z.null(),
