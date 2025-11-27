@@ -54,7 +54,6 @@ type DisplayBehavior = 'nest' | 'link';
 interface RelatedRecordDisplayProps {
   recordLabel: string;
   recordId: string;
-  revisionId: string;
   serverId: string;
   projectId: string;
 }
@@ -166,7 +165,6 @@ const RecordLoadError = () => (
 const LinkedRecordItem = ({
   recordLabel,
   recordId,
-  revisionId,
   serverId,
   projectId,
 }: RelatedRecordDisplayProps) => {
@@ -174,7 +172,6 @@ const LinkedRecordItem = ({
     serverId,
     projectId,
     recordId,
-    revisionId,
   });
 
   return (
@@ -423,7 +420,6 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
               key={key}
               recordLabel={hydratedRecord.hrid ?? recordInfo.record_id}
               recordId={recordInfo.record_id}
-              revisionId={hydratedRecord.revision_id}
               serverId={projectId}
               projectId={projectId}
             />

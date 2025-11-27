@@ -74,6 +74,7 @@
     "@emotion/react": "11.11.4",
     "@emotion/styled": "11.10.8",
     "@faims3/data-model": "workspace:*",
+    "@faims3/forms": "workspace:*",
     "@fast-check/vitest": "^0.0.7",
     "@ionic/pwa-elements": "^3.2.2",
     "@mui/icons-material": "5.15.8",

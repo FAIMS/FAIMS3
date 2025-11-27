@@ -1,5 +1,9 @@
 import {
   Action,
+  DatabaseInterface,
+  DataDbType,
+  DataDocument,
+  DataEngine,
   fetchAndHydrateRecord,
   getHridFieldMap,
   getMinimalRecordData,
@@ -8,6 +12,7 @@ import {
   isAuthorized,
   ProjectUIModel,
   RecordMetadata,
+  UISpecification,
   UnhydratedRecord,
 } from '@faims3/data-model';
 import {QueryClient, useQueries, useQuery} from '@tanstack/react-query';
@@ -740,4 +745,32 @@ export const useIsAuthorisedTo = ({
       }),
     [action, resourceId, activeUser.token]
   );
+};
+
+/** For a given record, determines the form type, then fetches the layout from
+ * the uiSpec */
+export const useUiSpecLayout = ({
+  recordId,
+  uiSpec,
+  dataDb,
+}: {
+  recordId: string;
+  uiSpec: UISpecification;
+  dataDb: DataDbType;
+}) => {
+  // Query to fetch the relevant viewset
+  return useQuery({
+    queryKey: ['record-ui-spec', recordId, uiSpec],
+    queryFn: async () => {
+      const engine = new DataEngine({
+        dataDb: dataDb as DatabaseInterface<DataDocument>,
+        uiSpec,
+      });
+      const rec = await engine.core.getRecord(recordId);
+      const formId = rec.type;
+      return uiSpec.viewsets[formId];
+    },
+    networkMode: 'always',
+    refetchOnMount: true,
+  });
 };

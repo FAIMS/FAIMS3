@@ -154,7 +154,6 @@ export function DataGridFieldLinksComponent(
           serverId: props.serverId,
           projectId: props.project_id,
           recordId: (params.row.record_id || '').toString(),
-          revisionId: (params.row.revision_id || '').toString(),
         })
       );
     },

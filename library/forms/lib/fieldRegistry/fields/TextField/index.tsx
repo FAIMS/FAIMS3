@@ -10,13 +10,10 @@ import {
 import {FieldInfo} from '../../types';
 
 const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
-  console.log('TextField:', props.name);
+  const value = (props.state.value?.data as string) || '';
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = event.target.value;
-    console.log('TextField onChange:', newValue);
-    console.log('TextField state', props.field.state);
-    props.field.handleChange(newValue);
+    props.setFieldData(event.target.value);
   };
 
   return (
@@ -26,10 +23,10 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
       advancedHelperText={props.advancedHelperText}
     >
       <MuiTextField
-        value={props.field.state.value ?? ''}
+        value={value}
         fullWidth
         onChange={onChange}
-        onBlur={props.field.handleBlur}
+        onBlur={props.handleBlur}
         variant="outlined"
       />
     </FieldWrapper>

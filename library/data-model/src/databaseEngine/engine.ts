@@ -1,28 +1,33 @@
 import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
+import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
+import {differenceSets} from '../utils';
 import * as Exceptions from './exceptions';
 import {
   AvpDBDocument,
+  AvpUpdateMode,
   DataDocument,
   ExistingAttachmentDBDocument,
   existingAttachmentDocumentSchema,
   ExistingAvpDBDocument,
   existingAvpDocumentSchema,
-  ExistingFormRecord,
-  existingFormRecordSchema,
   ExistingPouchDocument,
   ExistingRecordDBDocument,
   existingRecordDocumentSchema,
   ExistingRevisionDBDocument,
   existingRevisionDocumentSchema,
+  FormDataEntry,
+  FormUpdateData,
   HydratedDataField,
   HydratedRecord,
+  InitialFormData,
   NewAvpDBDocument,
   newAvpDocumentSchema,
   NewFormRecord,
   newFormRecordSchema,
   NewPendingAttachmentDBDocument,
+  NewPouchDocument,
   NewRecordDBDocument,
   newRecordDocumentSchema,
   NewRevisionDBDocument,
@@ -103,6 +108,12 @@ export const UNKNOWN_TYPE_FALLBACK = '??:??';
 // Configuration Schemas and Types
 // ============================================================================
 
+type AvpStrategy =
+  | 'reuse_current' // Use existing AVP from current revision
+  | 'reuse_parent' // Use AVP from parent revision (revert case)
+  | 'create_new' // Create a brand new AVP
+  | 'update_inplace'; // Update existing AVP in-place
+
 /**
  * Configuration options for the DataEngine
  */
@@ -163,7 +174,7 @@ export class DataEngine {
     this.db = config.dataDb;
     this.uiSpec = config.uiSpec;
     this.core = new CoreOperations(this.db);
-    this.hydrated = new HydratedOperations(this.core);
+    this.hydrated = new HydratedOperations(this.core, this.uiSpec);
     this.form = new FormOperations(this.core, this.hydrated, this.uiSpec);
   }
 }
@@ -200,14 +211,26 @@ export class CoreOperations {
     id: string,
     validator: (doc: unknown) => T
   ): Promise<T> {
+    // Fetch doc
+    let doc;
     try {
-      const doc = await this.db.get(id);
-      return validator(doc);
+      doc = await this.db.get(id);
     } catch (err: any) {
       if (err.status === 404) {
         throw new Exceptions.DocumentNotFoundError(id);
       }
       throw err;
+    }
+    // Validate doc
+    try {
+      return validator(doc);
+    } catch (e) {
+      throw new Exceptions.DocumentValidationError({
+        recordId: id,
+        doc,
+        validationErr: e,
+        operation: 'get (core.getDocumentOfType)',
+      });
     }
   }
 
@@ -219,11 +242,24 @@ export class CoreOperations {
    * @returns The created document with _rev
    * @throws Error if creation fails
    */
-  private async createDocument<T extends {}>(
+  private async createDocument<T extends NewPouchDocument>(
     doc: T,
     validator: (doc: T) => T
   ): Promise<T & {_rev: string}> {
-    const validated = validator(doc);
+    let validated: T;
+
+    // Validate doc
+    try {
+      validated = validator(doc);
+    } catch (e) {
+      throw new Exceptions.DocumentValidationError({
+        recordId: doc._id,
+        doc,
+        validationErr: e,
+        operation: 'create (core.createDocument)',
+      });
+    }
+
     const response = await this.db.put(validated);
 
     if (!response.ok) {
@@ -256,8 +292,19 @@ export class CoreOperations {
     writeOnClash = true,
     maxRetries = 5
   ): Promise<T | undefined> {
-    // Validate
-    const validated = validator(doc);
+    let validated: T;
+
+    // Validate doc
+    try {
+      validated = validator(doc);
+    } catch (e) {
+      throw new Exceptions.DocumentValidationError({
+        recordId: doc._id,
+        doc,
+        validationErr: e,
+        operation: 'update (core.updateDocument)',
+      });
+    }
 
     // Try to put directly - if no clash, succeeds immediately
     try {
@@ -622,7 +669,14 @@ export class CoreOperations {
  * This includes the record, its head revision, and all AVPs (field data) in a single call.
  */
 class HydratedOperations {
-  constructor(private readonly core: CoreOperations) {}
+  private readonly hridFieldMap: HridFieldMap;
+
+  constructor(
+    private readonly core: CoreOperations,
+    private readonly uiSpec: UISpecification
+  ) {
+    this.hridFieldMap = getHridFieldMap(this.uiSpec);
+  }
 
   /**
    * Fetch all AVP documents for a revision efficiently in parallel
@@ -739,8 +793,18 @@ class HydratedOperations {
           }
         : undefined;
 
+    const hridFieldName = this.hridFieldMap[revision.type];
+    const rawHridData = hridFieldName ? data[hridFieldName]?.data : undefined;
+    let finalHrid = record._id;
+    if (rawHridData) {
+      if (typeof rawHridData === 'string') {
+        finalHrid = rawHridData;
+      }
+    }
+
     // Step 5: Build the hydrated record (in our external interface)
     return {
+      hrid: finalHrid,
       record: {
         _id: record._id,
         _rev: record._rev,
@@ -837,20 +901,37 @@ class FormOperations {
   }
 
   /**
-   * Create a brand new record from form data.
    *
-   * The input here is the form data which the app currently produces.
+   * @param recordId record Id of interest
+   * @returns the current
+   */
+  async getCurrentRevisionId({recordId}: {recordId: string}): Promise<string> {
+    const heads = await this.hydrated.getHeads(recordId);
+    if (heads.length === 0) {
+      throw new Exceptions.NoHeadsError(recordId);
+    } else if (heads.length > 1) {
+      throw new Exceptions.RecordConflictError(recordId, heads);
+    }
+    return heads[0];
+  }
+
+  /**
+   * Create a brand new record. This does not create any AVPs/data.
    *
-   * NOTE we may wish to consider moving the ID generation functions to this
-   * module, and a 'seed' method rather than create which allows for
-   * incomplete/empty data.
+   * This creates
    *
-   * @param formRecord - The form data to create a record from
+   * a) Record b) Revision
+   *
+   * @param formRecord - Basic information about the new record to create - does
+   * not include data
    * @returns The ID of the newly created revision
    * @throws Error if revision_id is not null (should use updateRecord instead)
    * @throws Error if record creation fails
    */
-  async createRecord(formRecord: NewFormRecord): Promise<string> {
+  async createRecord(formRecord: NewFormRecord): Promise<{
+    record: ExistingRecordDBDocument;
+    revision: ExistingRevisionDBDocument;
+  }> {
     // Validate form record
     const validated = newFormRecordSchema.parse(formRecord);
 
@@ -874,28 +955,14 @@ class FormOperations {
       type: validated.formId,
     };
 
-    try {
-      await this.core.createRecord(recordDoc);
-    } catch (err: any) {
-      // NOTE we should validate this assertion... If record already exists,
-      // that's fine - we just want to ensure it exists
-      if (err.status !== 409) {
-        throw err;
-      }
-    }
+    // Create the new record
+    const rec = await this.core.createRecord(recordDoc);
 
-    // Step 2: Create AVPs for all fields
-    const avpMap = await this.createAvpsForAllFields({
-      formRecord: validated,
-      revisionId,
-      recordId,
-    });
-
-    // Step 3: Create Revision document
+    // Step 2: Create Revision document
     const revisionDoc: NewRevisionDBDocument = {
       _id: revisionId,
       revision_format_version: 1,
-      avps: avpMap,
+      avps: {},
       record_id: recordId,
       parents: [],
       created: getCurrentTimestamp(),
@@ -903,7 +970,7 @@ class FormOperations {
       type: validated.formId,
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
-      // Convert back into ugly relationship format for storage
+      // Convert back into relationship format for storage
       relationship: validated.relationship
         ? {
             parent: {
@@ -916,92 +983,196 @@ class FormOperations {
         : undefined,
     };
 
-    await this.core.createRevision(revisionDoc);
+    // Create the new revision
+    const rev = await this.core.createRevision(revisionDoc);
 
-    return revisionId;
+    // Return all the new data
+    return {record: rec, revision: rev};
   }
 
   /**
-   * Update an existing record from form data using equality based change detection
+   * Creates a new revision from a previous record/revision (ensure these are
+   * from the same record).
    *
-   * NOTE: it is expected that
+   * Does NOT create any new AVPs, instead seeds this new revision with a copy
+   * of previous revision AVP data.
    *
-   * a) the recordID refers to existing record
-   * b) the revisionID refers to _current_ revision
-   * c) the data is the _new_ data
-   *
-   * @param formRecord - The form data with changes to apply
-   * @returns The ID of the newly created revision
-   * @throws Error if revision_id is null (should use createRecord instead)
-   * @throws Error if parent revision not found
-   * @throws Error if update fails
+   * @param recordId The parent record ID
+   * @param revisionId The parent revision (from record above)
+   * @param createdBy Who is creating this new revision?
+   * @returns The new revision DB document
    */
-  async updateRecord(
-    formRecord: ExistingFormRecord,
-    options: {
-      // What is the username of the user performing the update
-      updatedBy: string;
+  async createRevision({
+    recordId,
+    revisionId,
+    createdBy,
+  }: {
+    recordId: string;
+    revisionId: string;
+    createdBy: string;
+  }): Promise<ExistingRevisionDBDocument> {
+    // Fetch the revision
+    const parentRevision = await this.core.getRevision(revisionId);
+
+    // Check that the revision record ID matches
+    if (parentRevision.record_id !== recordId) {
+      throw new Exceptions.RevisionMismatchError(recordId, revisionId);
     }
-  ): Promise<string> {
-    // Validate form record
-    const validated = existingFormRecordSchema.parse(formRecord);
 
-    // Generate new revision ID
-    const newRevisionId = generateRevisionID();
+    // Generate a new revision ID
+    const childRevisionId = generateRevisionID();
 
-    // Step 1: Fetch parent revision to compare
-    const parentRevision = await this.core.getRevision(validated.revisionId);
+    // Creates a new revision
+    const newRevision = await this.core.createRevision({
+      _id: childRevisionId,
+      avps: parentRevision.avps,
+      created: getCurrentTimestamp(),
+      created_by: createdBy,
+      // Mark the parent revision ID as the parent
+      parents: [revisionId],
+      record_id: recordId,
+      revision_format_version: 1,
+      type: parentRevision.type,
+      relationship: parentRevision.relationship,
+      ugc_comment: parentRevision.ugc_comment,
+    });
+
+    // Now go and update the record to indicate the new head
+    await this.updateRecordHeads({
+      recordId,
+      oldHeadId: revisionId,
+      newHeadId: childRevisionId,
+    });
+
+    // All done
+    return newRevision;
+  }
+
+  /**
+   * Updates a revision by creating or reusing AVPs for changed fields. Updates
+   * revision document only if AVPs have changed.
+   *
+   * mode = new - update inplace AVPs where possible, otherwise create new ones.
+   * Requires that parents be empty/undefined on the revision, or will throw an
+   * error.
+   *
+   * mode = parent - same as new, except if the parent AVP equals child AVP,
+   * then a new AVP is created, rather than inplace updating. Subsequent updates
+   * may be inplace. Requires that parents have a singular entry, or error is
+   * thrown.
+   *
+   * @param revisionId - The revision to update
+   * @param recordId - The parent record ID
+   * @param update - Form data changes to apply
+   * @param mode - AVP update mode: 'parent' (requires single parent) or 'new'
+   * (no parents)
+   * @param updatedBy - User identifier making the changes
+   * @param config - Optional hydration config with conflict behavior
+   *
+   * @returns The updated or unchanged revision document
+   *
+   * @throws {MalformedParentsError} If parent requirements don't match the mode
+   */
+  async updateRevision({
+    revisionId,
+    recordId,
+    update,
+    mode,
+    updatedBy,
+    config = {conflictBehaviour: DEFAULT_CONFLICT_BEHAVIOUR},
+  }: {
+    revisionId: string;
+    recordId: string;
+    update: FormUpdateData;
+    mode: AvpUpdateMode;
+    updatedBy: string;
+    config?: HydratedRecordConfig;
+  }): Promise<ExistingRevisionDBDocument> {
+    // Step 1: Fetch the current revision
+    const currentRevision = await this.core.getRevision(revisionId);
+
+    // What parents does the revision have?
+    const parents = currentRevision.parents;
+    let parentRevisionId: string | undefined = undefined;
+
+    // Step 2: Check parent integrity
+    if (mode === 'parent') {
+      if (!parents) {
+        throw new Exceptions.MalformedParentsError(
+          recordId,
+          revisionId,
+          'Parents array not present on revision where parent mode requested.'
+        );
+      } else if (parents.length !== 1) {
+        throw new Exceptions.MalformedParentsError(
+          recordId,
+          revisionId,
+          'Parent mode for updating a revision requires exactly one parent to be present.'
+        );
+      }
+      // Get the first entry in the parents array
+      parentRevisionId = parents[0];
+    } else if (mode === 'new') {
+      if (parents && parents.length > 0) {
+        throw new Exceptions.MalformedParentsError(
+          recordId,
+          revisionId,
+          'You have requested new updateRevision mode which is used for new records only - you have a parent. Erroneous AVP behaviour is likely.'
+        );
+      }
+    }
+    const parentRevision = parentRevisionId
+      ? await this.core.getRevision(parentRevisionId)
+      : undefined;
 
     // Step 2: Determine which AVPs need to be created (changed fields)
-    const avpMap = await this.createOrReuseAvps({
-      formRecord: validated,
+    const {avpMap, changeDetected} = await this.createOrReuseAvps({
+      config,
+      currentRevision,
+      newData: update,
+      updatedBy,
       parentRevision,
-      newRevisionId,
-      updatedBy: options.updatedBy,
     });
 
-    // Step 3: Create new Revision document
-    const revisionDoc: NewRevisionDBDocument = {
-      _id: newRevisionId,
-      revision_format_version: 1,
-      avps: avpMap,
-      record_id: validated.recordId,
-      parents: [validated.revisionId],
-      created: getCurrentTimestamp(),
-      created_by: options.updatedBy,
-      type: validated.formId,
-      // This is about annotating documents with issues - but is unused
-      ugc_comment: '',
-      relationship: validated.relationship ?? {},
-    };
-
-    await this.core.createRevision(revisionDoc);
-
-    // Step 4: Update Record document heads
-    await this.updateRecordHeads({
-      // Old
-      recordId: validated.recordId,
-      oldHeadId: validated.revisionId,
-      // New
-      newHeadId: newRevisionId,
-    });
-
-    return newRevisionId;
+    // This may have created new AVPs, or removed them - is there any change?
+    if (changeDetected) {
+      // Change detected, create new revision
+      const revisionDoc: ExistingRevisionDBDocument = {
+        // Change AVP map
+        avps: avpMap,
+        // Everythinge else inherited
+        _id: currentRevision._id,
+        _rev: currentRevision._rev,
+        revision_format_version: currentRevision.revision_format_version,
+        record_id: currentRevision.record_id,
+        parents: currentRevision.parents,
+        created: currentRevision.created,
+        created_by: currentRevision.created_by,
+        type: currentRevision.type,
+        ugc_comment: currentRevision.ugc_comment,
+        relationship: currentRevision.relationship,
+      };
+      return await this.core.updateRevision(revisionDoc);
+    } else {
+      // no change needed (at revision level)
+      return currentRevision;
+    }
   }
 
   /**
    * Given a record ID, and optionally a revision ID, gets the hydrated data,
-   * then maps it into the existing form record format. This is a nice utility
+   * then maps it into the existing form data format. This is a nice utility
    * function for loading data into a form for updated existing records in the
-   * app.
+   * app.  Also included are the revision ID and the form ID which are needed
+   * to set up the form.
    *
    * @param recordId The record
    * @param revisionId The revision if using specific one, otherwise head
    * according to hydration config
    * @param config The settings for hydration
-   * @returns The ready to go existing form record
+   * @returns The ready to go existing form data + revision/form IDs
    */
-  async getExistingFormRecord({
+  async getExistingFormData({
     recordId,
     revisionId,
     config = {},
@@ -1009,88 +1180,30 @@ class FormOperations {
     recordId: string;
     revisionId?: string;
     config?: Partial<HydratedRecordConfig>;
-  }): Promise<ExistingFormRecord> {
+  }): Promise<InitialFormData> {
     // Grab the hydrated version
     const hydrated = await this.hydrated.getHydratedRecord({
       recordId,
       revisionId,
       config,
     });
-    const record = hydrated.record;
-    const revision = hydrated.revision;
 
-    // Package this up into an existing form record
+    const data = dataMap({
+      data: hydrated.data,
+      mapFn: d => ({
+        annotation: d.annotations,
+        attachments: d.faimsAttachments,
+        data: d.data,
+      }),
+    });
+
     return {
-      recordId,
-      createdBy: record.createdBy,
-      revisionId: revision._id,
-      formId: record.formId,
-      relationship: revision.relationship,
-      data: dataMap({
-        data: hydrated.data,
-        mapFn: d => d.data,
-      }),
-      annotations: dataMap({
-        data: hydrated.data,
-        mapFn: d => d.annotations,
-      }),
-    } satisfies ExistingFormRecord;
-  }
-
-  /**
-   * Create AVPs for all fields in a new record
-   *
-   * This iterates through the values from the form data, fetches the existing
-   * AVP, checks if different based on registered equality functions, and
-   * creates a new AVP if needed.
-   *
-   * @param params.formRecord - The validated form record data
-   * @param params.revisionId - The revision ID these AVPs belong to
-   * @returns Map of field names to created AVP IDs
-   * @throws Error if AVP creation fails
-   */
-  private async createAvpsForAllFields({
-    formRecord,
-    revisionId,
-    recordId,
-  }: {
-    formRecord: NewFormRecord;
-    revisionId: string;
-    recordId: string;
-  }): Promise<Record<string, string>> {
-    const avpMap: Record<string, string> = {};
-    const avpsToCreate: Array<NewAvpDBDocument> = [];
-
-    // Create AVP for each field
-    for (const [fieldName, fieldValue] of Object.entries(formRecord.data)) {
-      const avpId = generateAvpID();
-
-      // Get the field type
-      const fieldType = this.uiSpec.fields[fieldName]?.['type-returned'];
-
-      const avp: NewAvpDBDocument = {
-        _id: avpId,
-        avp_format_version: 1,
-        // TODO remove this - it's extraneous
-        type: fieldType ?? UNKNOWN_TYPE_FALLBACK,
-        data: fieldValue,
-        revision_id: revisionId,
-        record_id: recordId,
-        annotations: formRecord.annotations[fieldName],
-        // NOTE we may want to consider what timing to use here
-        created: getCurrentTimestamp(),
-        // NOTE we may want to consider who created this, updater?
-        created_by: formRecord.createdBy,
-      };
-
-      avpsToCreate.push(avp);
-      avpMap[fieldName] = avpId;
-    }
-
-    // Create all AVPs (with attachment handling if configured)
-    await this.bulkCreateAvps(avpsToCreate);
-
-    return avpMap;
+      revisionId: hydrated.revision._id,
+      formId: hydrated.record.formId,
+      data,
+      // Additional context
+      context: {record: hydrated.record, revision: hydrated.revision},
+    };
   }
 
   /**
@@ -1106,99 +1219,398 @@ class FormOperations {
    * @throws Error if AVP operations fail
    */
   private async createOrReuseAvps({
-    formRecord,
+    currentRevision,
+    newData,
     parentRevision,
-    newRevisionId,
     updatedBy,
+    config,
   }: {
-    formRecord: ExistingFormRecord;
-    parentRevision: ExistingRevisionDBDocument;
-    newRevisionId: string;
+    newData: FormUpdateData;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
     updatedBy: string;
-  }): Promise<Record<string, string>> {
-    const avpMap: Record<string, string> = {};
+    config: HydratedRecordConfig;
+  }): Promise<{avpMap: Record<string, string>; changeDetected: boolean}> {
+    // ===== Setup: Fetch hydrated data and prepare comparison structures =====
+
+    const {current, parent} = await this.fetchHydratedData(
+      currentRevision,
+      parentRevision,
+      config
+    );
+
+    // These types of strategies flag a change
+    const changeStrategies: AvpStrategy[] = ['create_new', 'reuse_parent'];
+
+    // ===== Process each field and determine AVP strategy =====
+
     const avpsToCreate: Array<NewAvpDBDocument> = [];
+    const avpsToUpdate: Array<ExistingAvpDBDocument> = [];
+    const outputAvpMap: Record<string, string> = {};
+    let changeDetected = false;
 
-    // Fetch all parent AVPs efficiently in parallel
-    const parentAvpIds = Object.values(parentRevision.avps);
-    const parentAvpPromises = parentAvpIds.map(id => this.core.getAvp(id));
-    const parentAvps = await Promise.all(parentAvpPromises);
+    for (const [fieldname, newFieldData] of Object.entries(newData)) {
+      const strategy = await this.determineAvpStrategy({
+        fieldname,
+        newFieldData,
+        current,
+        parent,
+        currentRevision,
+        parentRevision,
+      });
 
-    // Build map of field name -> parent AVP
-    const parentAvpsByField = new Map<string, ExistingAvpDBDocument>();
-    for (const [fieldName, avpId] of Object.entries(parentRevision.avps)) {
-      const avp = parentAvps.find(a => a._id === avpId);
-      if (avp) {
-        parentAvpsByField.set(fieldName, avp);
+      // change check
+      if (changeStrategies.includes(strategy)) {
+        changeDetected = true;
+      }
+
+      await this.applyAvpStrategy({
+        strategy,
+        fieldname,
+        newFieldData,
+        currentRevision,
+        parentRevision,
+        updatedBy,
+        avpsToCreate,
+        avpsToUpdate,
+        outputAvpMap,
+      });
+    }
+
+    // ===== Persist all AVP changes =====
+
+    await this.bulkPutAvps(avpsToCreate);
+    await this.bulkPutAvps(avpsToUpdate);
+
+    // Updating inplace AVPs doesn't necessarily, however we may have a
+    // situation where we removed data completely - check for missing keys from
+    // the prior data
+    if (!changeDetected) {
+      // Build sets of the old/new keys
+      const oldKeys = new Set(Object.keys(currentRevision.avps));
+      const newKeys = new Set(Object.keys(newData));
+
+      if (differenceSets(oldKeys, newKeys).size > 0) {
+        // There is a field in the old data no longer in the new data
+        changeDetected = true;
       }
     }
 
-    // Check each field for changes
-    for (const [fieldName, fieldValue] of Object.entries(formRecord.data)) {
-      // Get the field type
-      const fieldType = this.uiSpec.fields[fieldName]?.['type-returned'];
-      const fieldAnnotation = formRecord.annotations[fieldName];
-      const parentAvp = parentAvpsByField.get(fieldName);
-
-      const equalityFn = isEqualFAIMS;
-
-      const hasDataChanged =
-        parentAvp === undefined
-          ? true
-          : !(await equalityFn(parentAvp.data, fieldValue));
-
-      // Checking annotation equality is interesting - should we consider just
-      // changing the existing AVP with a new annotation?
-      const hasAnnotationChanged =
-        parentAvp === undefined
-          ? true
-          : !(await equalityFn(parentAvp.annotations, fieldAnnotation));
-
-      if (hasDataChanged || hasAnnotationChanged) {
-        // Create new AVP
-        const avpId = generateAvpID();
-
-        const avp: NewAvpDBDocument = {
-          _id: avpId,
-          avp_format_version: 1,
-          type: fieldType,
-          data: fieldValue,
-          revision_id: newRevisionId,
-          record_id: formRecord.recordId,
-          annotations: fieldAnnotation,
-          // NOTE: do we want to consider timing on a per field basis as tracked
-          // in form - seems a bit overkill
-          created: getCurrentTimestamp(),
-          // NOTE: here we track the creator by update
-          created_by: updatedBy,
-        };
-
-        avpsToCreate.push(avp);
-        avpMap[fieldName] = avpId;
-      } else {
-        // Reuse existing AVP ID
-        avpMap[fieldName] = parentAvp!._id;
-      }
-    }
-
-    // Create all new AVPs (with attachment handling if configured)
-    await this.bulkCreateAvps(avpsToCreate);
-
-    return avpMap;
+    return {avpMap: outputAvpMap, changeDetected};
   }
 
   /**
-   * Bulk create AVPs, handling attachments if dumper is configured. Uses
-   * PouchDB bulkDocs for efficient batch operations.
+   * Fetch and hydrate both current and parent revisions, extracting their data
+   * into a comparable format.
+   */
+  private async fetchHydratedData(
+    currentRevision: ExistingRevisionDBDocument,
+    parentRevision: ExistingRevisionDBDocument | undefined,
+    config: HydratedRecordConfig
+  ) {
+    const currentRevisionHydrated = await this.hydrated.getHydratedRecord({
+      recordId: currentRevision.record_id,
+      revisionId: currentRevision._id,
+      config,
+    });
+
+    const parentRevisionHydrated = parentRevision
+      ? await this.hydrated.getHydratedRecord({
+          recordId: parentRevision.record_id,
+          revisionId: parentRevision._id,
+          config,
+        })
+      : undefined;
+
+    const current = this.extractComparableData(currentRevisionHydrated);
+    const parent = parentRevisionHydrated
+      ? this.extractComparableData(parentRevisionHydrated)
+      : undefined;
+
+    return {current, parent};
+  }
+
+  /**
+   * Extract data, annotations, and attachments into a comparable format.
+   */
+  private extractComparableData(
+    hydratedRecord: any
+  ): Record<string, FormDataEntry> {
+    return dataMap({
+      data: hydratedRecord.data,
+      mapFn: d => ({
+        data: d.data,
+        annotation: d.annotations,
+        attachments: d.faimsAttachments,
+      }),
+    });
+  }
+
+  /**
+   * Determine the appropriate AVP strategy for a field based on comparing
+   * new data against current and parent revisions.
+   */
+  private async determineAvpStrategy({
+    fieldname,
+    newFieldData,
+    current,
+    parent,
+    currentRevision,
+    parentRevision,
+  }: {
+    fieldname: string;
+    newFieldData: FormDataEntry;
+    current: Record<string, FormDataEntry>;
+    parent?: Record<string, FormDataEntry>;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
+  }): Promise<AvpStrategy> {
+    const existsInCurrent = fieldname in current;
+    const existsInParent = parent && fieldname in parent;
+
+    // Case 1: Field is new (not in current revision)
+    if (!existsInCurrent) {
+      return this.handleNewField(
+        newFieldData,
+        existsInParent ? parent[fieldname] : undefined
+      );
+    }
+
+    // Case 2: Field exists in current revision
+    const currentFieldData = current[fieldname];
+    const hasChanged = !(await this.isEqualFormData(
+      currentFieldData,
+      newFieldData
+    ));
+
+    if (!hasChanged) {
+      // Field unchanged - reuse existing AVP
+      return 'reuse_current';
+    }
+
+    // Field has changed - determine how to handle the change
+    return this.handleChangedField({
+      newFieldData,
+      currentRevision,
+      parentRevision,
+      parentFieldData: existsInParent ? parent[fieldname] : undefined,
+      fieldname,
+    });
+  }
+
+  /**
+   * Determine strategy for a field that doesn't exist in the current revision.
+   */
+  private async handleNewField(
+    newFieldData: FormDataEntry,
+    parentFieldData?: FormDataEntry
+  ): Promise<AvpStrategy> {
+    // If no parent or field doesn't exist in parent, create new AVP
+    if (!parentFieldData) {
+      return 'create_new';
+    }
+
+    // If parent has identical data, reuse parent's AVP (user is "reverting")
+    if (await this.isEqualFormData(parentFieldData, newFieldData)) {
+      return 'reuse_parent';
+    }
+
+    // Parent has different data, create new AVP
+    return 'create_new';
+  }
+
+  /**
+   * Determine strategy for a field that exists in current revision but has changed.
+   */
+  private async handleChangedField({
+    newFieldData,
+    currentRevision,
+    parentRevision,
+    parentFieldData,
+    fieldname,
+  }: {
+    newFieldData: FormDataEntry;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
+    parentFieldData?: FormDataEntry;
+    fieldname: string;
+  }): Promise<AvpStrategy> {
+    // If new data matches parent, reuse parent's AVP (user is "reverting")
+    if (
+      parentFieldData &&
+      (await this.isEqualFormData(parentFieldData, newFieldData))
+    ) {
+      return 'reuse_parent';
+    }
+
+    // Determine if we need a new AVP or can update in-place
+    const shouldCreateNew = await this.shouldCreateNewAvp(
+      currentRevision,
+      parentRevision,
+      fieldname
+    );
+
+    if (shouldCreateNew) {
+      return 'create_new';
+    } else {
+      return 'update_inplace';
+    }
+  }
+
+  /**
+   * Determine if we should create a new AVP or update the existing one in-place.
    *
-   * NOTE: this operation does not 'dump' attachments - i.e. it does not manage
-   * attachments in any way. The /app layer should use the configured attachment
-   * service.
+   * We create a new AVP when:
+   * - There's no parent revision (first edit), OR
+   * - The current AVP ID matches the parent's AVP ID (not yet diverged)
+   *
+   * We update in-place when:
+   * - The current AVP ID differs from parent's (already diverged in a previous edit)
+   */
+  private async shouldCreateNewAvp(
+    currentRevision: ExistingRevisionDBDocument,
+    parentRevision: ExistingRevisionDBDocument | undefined,
+    fieldname: string
+  ): Promise<boolean> {
+    if (!parentRevision) {
+      // No parent - we can update in-place
+      return false;
+    }
+
+    const currentAvpId = currentRevision.avps[fieldname];
+    const parentAvpId = parentRevision.avps[fieldname];
+
+    // If AVP IDs match, this is the first divergence - create new AVP
+    // If AVP IDs differ, we've already diverged - update in-place
+    return currentAvpId === parentAvpId;
+  }
+
+  /**
+   * Apply the determined AVP strategy, updating the appropriate collections.
+   */
+  private async applyAvpStrategy({
+    strategy,
+    fieldname,
+    newFieldData,
+    currentRevision,
+    parentRevision,
+    updatedBy,
+    avpsToCreate,
+    avpsToUpdate,
+    outputAvpMap,
+  }: {
+    strategy: AvpStrategy;
+    fieldname: string;
+    newFieldData: FormDataEntry;
+    currentRevision: ExistingRevisionDBDocument;
+    parentRevision?: ExistingRevisionDBDocument;
+    updatedBy: string;
+    avpsToCreate: Array<NewAvpDBDocument>;
+    avpsToUpdate: Array<ExistingAvpDBDocument>;
+    outputAvpMap: Record<string, string>;
+  }) {
+    if (strategy === 'reuse_current') {
+      // No changes needed, just reference the existing AVP
+      outputAvpMap[fieldname] = currentRevision.avps[fieldname];
+    } else if (strategy === 'reuse_parent') {
+      if (!parentRevision) {
+        throw new Error(
+          'Cannot apply the reuse_parent AVP strategy when parentRevision is not provided.'
+        );
+      }
+      // Reference the parent's AVP (user reverted to previous version)
+      outputAvpMap[fieldname] = parentRevision.avps[fieldname];
+    } else if (strategy === 'create_new') {
+      // Create a new AVP document
+      const newAvp = this.buildNewAvp(
+        fieldname,
+        newFieldData,
+        currentRevision,
+        updatedBy
+      );
+      avpsToCreate.push(newAvp);
+      outputAvpMap[fieldname] = newAvp._id;
+    } else if (strategy === 'update_inplace') {
+      // Update existing AVP in-place
+      const currentAvpId = currentRevision.avps[fieldname];
+      const updatedAvp = await this.buildUpdatedAvp(currentAvpId, newFieldData);
+      avpsToUpdate.push(updatedAvp);
+      outputAvpMap[fieldname] = currentAvpId;
+    }
+  }
+
+  /**
+   * Build a new AVP document.
+   */
+  private buildNewAvp(
+    fieldname: string,
+    data: FormDataEntry,
+    currentRevision: ExistingRevisionDBDocument,
+    updatedBy: string
+  ): NewAvpDBDocument {
+    const fieldType =
+      this.uiSpec.fields[fieldname]?.['type-returned'] ?? UNKNOWN_TYPE_FALLBACK;
+
+    return {
+      _id: generateAvpID(),
+      avp_format_version: 1,
+      created: getCurrentTimestamp(),
+      created_by: updatedBy,
+      record_id: currentRevision.record_id,
+      revision_id: currentRevision._id,
+      type: fieldType,
+      annotations: data.annotation,
+      data: data.data,
+      faims_attachments: data.attachments?.map(a => ({
+        filename: a.filename,
+        attachment_id: a.attachmentId,
+        file_type: a.fileType,
+      })),
+    };
+  }
+
+  /**
+   * Build an updated AVP document (fetches existing and applies changes).
+   */
+  private async buildUpdatedAvp(
+    avpId: string,
+    newData: FormDataEntry
+  ): Promise<ExistingAvpDBDocument> {
+    const currentAvp = await this.core.getAvp(avpId);
+
+    return {
+      ...currentAvp,
+      annotations: newData.annotation,
+      data: newData.data,
+      faims_attachments: newData.attachments?.map(a => ({
+        attachment_id: a.attachmentId,
+        file_type: a.fileType,
+        filename: a.filename,
+      })),
+    };
+  }
+
+  /**
+   * Compare two FormDataEntry objects for equality.
+   */
+  private async isEqualFormData(
+    a: FormDataEntry,
+    b: FormDataEntry
+  ): Promise<boolean> {
+    return (
+      (await isEqualFAIMS(a.data, b.data)) &&
+      (await isEqualFAIMS(a.annotation, b.annotation)) &&
+      (await isEqualFAIMS(a.attachments, b.attachments))
+    );
+  }
+
+  /**
+   * Bulk create AVPs
    *
    * @param avps - Array of AVP documents to create
    * @throws Error if bulk operation fails
    */
-  private async bulkCreateAvps(avps: Array<AvpDBDocument>): Promise<void> {
+  private async bulkPutAvps(avps: Array<AvpDBDocument>): Promise<void> {
     if (avps.length === 0) {
       return;
     }

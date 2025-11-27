@@ -294,7 +294,7 @@ export default function RecordCreate() {
     {
       link: backlink,
       title:
-        project !== null ? (project.name ?? project.metadata.name) : projectId!,
+        project !== null ? project.name ?? project.metadata.name : projectId!,
     },
     {title: 'Draft'},
   ];

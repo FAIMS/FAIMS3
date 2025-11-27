@@ -19,6 +19,7 @@ const existingPouchDBDocumentSchema = newPouchDBDocumentSchema.extend({
 export type ExistingPouchDocument = z.infer<
   typeof existingPouchDBDocumentSchema
 >;
+export type NewPouchDocument = z.infer<typeof newPouchDBDocumentSchema>;
 
 // ============================================================================
 // Record Document
@@ -184,7 +185,11 @@ export type PendingAttachment = z.infer<typeof pendingAttachmentSchema>;
 // Base fields shared by all attachment documents
 const v1AttachmentDBFieldsBaseSchema = z.object({
   attach_format_version: z.number(),
-  avp_id: z.string(),
+  // This is optional - old records know this, but new ones don't need to. It's
+  // exposing too much information about the AVP layer storage mechanism and
+  // makes fields which require storing attachments very tricky to cleanly
+  // implement.
+  avp_id: z.string().optional(),
   revision_id: z.string(),
   record_id: z.string(),
   created: z.string().datetime(),
@@ -462,6 +467,24 @@ export function validateExistingDataDocument(
 // ============================================================================
 
 /**
+ * Schema for file attachments associated with a field.
+ */
+export const faimsAttachmentSchema = z.object({
+  /** Unique identifier for the attachment document - corresponds to
+   * an att- prefixed attachment document */
+  attachmentId: z.string(),
+  /** Original filename of the attachment */
+  filename: z.string(),
+  /** MIME type of the file */
+  fileType: z.string(),
+});
+export type FaimsAttachment = z.infer<typeof faimsAttachmentSchema>;
+
+// and we use an array of these for multiple attachments
+export const faimsAttachmentsSchema = z.array(faimsAttachmentSchema).optional();
+export type FaimsAttachments = z.infer<typeof faimsAttachmentsSchema>;
+
+/**
  * Schema for an annotation on a form field.
  * Annotations provide additional context and metadata about field values.
  */
@@ -472,7 +495,24 @@ const formAnnotationSchema = z.object({
   uncertainty: z.boolean(),
 });
 
+const formAnnotations = z.record(z.string(), formAnnotationSchema.optional());
+export type FormAnnotations = z.infer<typeof formAnnotations>;
 export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
+
+// Form data
+const formDataEntry = z.object({
+  data: z.unknown(),
+  // NOTE: do we want to use the internal representation
+  annotation: formAnnotationSchema.optional(),
+  // NOTE: do we want to use the internal representation?
+  attachments: faimsAttachmentsSchema,
+});
+export type FormDataEntry = z.infer<typeof formDataEntry>;
+const formUpdateData = z.record(z.string(), formDataEntry);
+export type FormUpdateData = z.infer<typeof formUpdateData>;
+
+// AVP update modes
+export type AvpUpdateMode = 'new' | 'parent';
 
 /**
  * Schema for a relationship between records.
@@ -498,9 +538,9 @@ const baseFormRecordSchema = z.object({
   /** The ID of the form/viewset this record is an instance of */
   formId: z.string(),
   /** The actual form data as a map of field IDs to their values */
-  data: z.record(z.string(), z.unknown()),
+  // data: z.record(z.string(), z.unknown()).optional(),
   /** Annotations for each field, mapped by field ID */
-  annotations: z.record(z.string(), formAnnotationSchema.optional()),
+  // annotations: z.record(z.string(), formAnnotationSchema.optional()).optional(),
   /** Username of the user who created this record */
   createdBy: z.string(),
   /** Optional relationship information if this is a related/child record */
@@ -514,34 +554,6 @@ const baseFormRecordSchema = z.object({
 export const newFormRecordSchema = baseFormRecordSchema;
 
 export type NewFormRecord = z.infer<typeof newFormRecordSchema>;
-
-/**
- * Schema for an existing form record being updated.
- * Extends the base schema with identifiers and update tracking.
- */
-export const existingFormRecordSchema = baseFormRecordSchema.extend({
-  /** The unique identifier of the existing record */
-  recordId: z.string(),
-  /** The current revision identifier of the record */
-  revisionId: z.string(),
-});
-
-export type ExistingFormRecord = z.infer<typeof existingFormRecordSchema>;
-
-/**
- * Schema for file attachments associated with a field.
- */
-export const faimsAttachmentSchema = z.object({
-  /** Unique identifier for the attachment document - corresponds to
-   * an att- prefixed attachment document */
-  attachmentId: z.string(),
-  /** Original filename of the attachment */
-  filename: z.string(),
-  /** MIME type of the file */
-  fileType: z.string(),
-});
-
-export type FaimsAttachment = z.infer<typeof faimsAttachmentSchema>;
 
 export const hydratedDataFieldSchema = z.object({
   /** Unique identifier for this AVP document */
@@ -650,6 +662,21 @@ export const hydratedRecordSchema = z.object({
   data: z.record(z.string(), hydratedDataFieldSchema),
   /** Metadata about the record retrieval and conflict resolution */
   metadata: hydratedRecordMetadataSchema,
+  /** What is the HRID of this record? */
+  hrid: z.string(),
 });
 
 export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;
+
+// A packet of data needed to create a editable form
+const initialFormData = z.object({
+  revisionId: z.string(),
+  formId: z.string(),
+  data: formUpdateData,
+  context: z.object({
+    record: hydratedRecordDocumentSchema,
+    revision: hydratedRevisionDocumentSchema,
+  }),
+});
+
+export type InitialFormData = z.infer<typeof initialFormData>;
