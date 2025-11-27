@@ -181,6 +181,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       // First, lets fire any updates to the templated fields
       onChangeTemplatedFields({
         form,
+        formId: formData.formId,
         uiSpec: dataEngine.uiSpec,
         // Don't fire listeners again redundantly
         runListeners: false,

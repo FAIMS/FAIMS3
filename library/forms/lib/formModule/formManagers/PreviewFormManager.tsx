@@ -17,6 +17,8 @@ const queryClient = new QueryClient();
  * Props for the PreviewFormManager component.
  */
 export interface PreviewFormManagerProps extends ComponentProps<any> {
+  /** Initial form data */
+  initialFormData?: FaimsFormData;
   /** The name/ID of the form to preview */
   formName: string;
   /** The UI specification containing form structure */
@@ -32,13 +34,8 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
  * Uses mock/test data for demonstration purposes.
  */
 export const PreviewFormManager = (props: PreviewFormManagerProps) => {
-  // Mock form values for preview
-  const formValues: FaimsFormData = {
-    'First-name': {data: 'Steve'},
-    'Last-name': {data: 'Sputnik'},
-    Occupation: {data: 'Developer'},
-  };
-
+  const formValues =
+    props.initialFormData === undefined ? {} : props.initialFormData;
   const uiSpec = useMemo(() => {
     const spec = {...props.uiSpec};
     compileUiSpecConditionals(spec);
@@ -47,7 +44,9 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
     currentlyVisibleMap({
-      values: formDataExtractor({fullData: formValues}),
+      values: formDataExtractor({
+        fullData: formValues,
+      }),
       uiSpec: uiSpec,
       viewsetId: props.formName,
     })
@@ -55,7 +54,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
   // Initialize form with mock data and simple logging
   const form = useForm({
-    defaultValues: formValues as FaimsFormData,
+    defaultValues: formValues,
     onSubmit: ({value}) => {
       console.log('Form submitted:', value);
     },
@@ -66,6 +65,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
         onChangeTemplatedFields({
           form,
           uiSpec: props.uiSpec,
+          formId: props.formName,
           // Don't fire listeners again redundantly
           runListeners: false,
           // Fake context

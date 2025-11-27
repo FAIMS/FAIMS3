@@ -1,0 +1,381 @@
+/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use, this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * MultiSelect Component
+ *
+ * This component renders a multi-selection field using Material-UI.
+ * It supports two display modes:
+ * - Expanded checklist: displays all options as checkboxes
+ * - Dropdown select: displays options in a multi-select dropdown
+ *
+ * Features:
+ * - Exclusive options: certain options can be configured to deselect all others when chosen
+ * - Rich text labels: option labels support sanitized HTML content
+ *
+ * Props:
+ * - label (string, optional): The field label displayed as a heading.
+ * - helperText (string, optional): The field help text displayed below the heading.
+ * - ElementProps (object): Contains the options array, expandedChecklist flag, and exclusiveOptions.
+ * - required: To visually show if the field is required.
+ * - disabled: Whether the field is disabled.
+ */
+
+import {
+  Box,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
+  ListItemText,
+  MenuItem,
+  Select,
+} from '@mui/material';
+import {z} from 'zod';
+import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {FieldInfo} from '../../types';
+import {contentToSanitizedHtml} from '../RichText/DomPurifier';
+import FieldWrapper from '../wrappers/FieldWrapper';
+
+// ============================================================================
+// Types & Schema
+// ============================================================================
+
+const ElementOptionSchema = z.object({
+  value: z.string(),
+  label: z.string(),
+  key: z.string().optional(),
+});
+
+const MultiSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
+  ElementProps: z.object({
+    options: z.array(ElementOptionSchema),
+    expandedChecklist: z.boolean().optional(),
+    exclusiveOptions: z.array(z.string()).optional(),
+  }),
+});
+
+type MultiSelectFieldProps = z.infer<typeof MultiSelectFieldPropsSchema>;
+type ElementOption = z.infer<typeof ElementOptionSchema>;
+type FieldProps = MultiSelectFieldProps & FullFieldProps;
+
+// ============================================================================
+// Sub-Components
+// ============================================================================
+
+interface ExpandedChecklistProps {
+  options: ElementOption[];
+  value: string[];
+  onChange: (values: string[]) => void;
+  exclusiveOptions: string[];
+  disabled?: boolean;
+}
+
+/**
+ * A component that displays options as an expanded list of checkboxes
+ */
+const ExpandedChecklist = ({
+  options,
+  value,
+  onChange,
+  exclusiveOptions,
+  disabled,
+}: ExpandedChecklistProps) => {
+  const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
+
+  const handleChange = (optionValue: string) => {
+    // If the new selection is exclusive, then we either deselect all or select
+    // just that value
+    if (exclusiveOptions.includes(optionValue)) {
+      onChange(value.includes(optionValue) ? [] : [optionValue]);
+    } else {
+      // As long as we don't have an exclusive option selected, add or remove
+      // this option as per usual
+      if (!selectedExclusiveOption) {
+        const newValues = value.includes(optionValue)
+          ? value.filter(v => v !== optionValue)
+          : [...value, optionValue];
+        onChange(newValues);
+      }
+    }
+  };
+
+  return (
+    <FormControl sx={{width: '100%'}} disabled={disabled}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+          borderBottom: '1px solid #eee',
+          pb: 1.5,
+        }}
+      >
+        {options.map(option => (
+          <FormControlLabel
+            key={option.key || option.value}
+            control={
+              <Checkbox
+                checked={value.includes(option.value)}
+                onChange={() => handleChange(option.value)}
+                disabled={
+                  (selectedExclusiveOption !== undefined &&
+                    option.value !== selectedExclusiveOption) ||
+                  disabled
+                }
+                sx={{
+                  padding: '4px 8px 0 0',
+                  alignSelf: 'flex-start',
+                }}
+              />
+            }
+            label={
+              <span
+                style={{
+                  display: 'contents',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word',
+                  lineHeight: '1.8rem',
+                  paddingTop: '4px',
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: contentToSanitizedHtml(option.label),
+                }}
+              />
+            }
+            sx={{
+              alignItems: 'center',
+              mb: 1.5,
+              m: 0,
+              '& .MuiFormControlLabel-label': {
+                marginTop: 0,
+              },
+            }}
+          />
+        ))}
+      </Box>
+    </FormControl>
+  );
+};
+
+interface MuiMultiSelectProps {
+  options: ElementOption[];
+  value: string[];
+  onChange: (values: string[]) => void;
+  exclusiveOptions: string[];
+  disabled?: boolean;
+  onBlur?: () => void;
+}
+
+/**
+ * A component that displays options in a Material-UI dropdown select
+ */
+const MuiMultiSelect = ({
+  options,
+  value,
+  onChange,
+  exclusiveOptions,
+  disabled,
+  onBlur,
+}: MuiMultiSelectProps) => {
+  const handleChange = (event: any) => {
+    const selectedValues = event.target.value;
+
+    // Check if any selection is exclusive, if so just update with that
+    let exclusive = undefined;
+    for (const v of selectedValues) {
+      if (exclusiveOptions.includes(v)) {
+        exclusive = v;
+        break;
+      }
+    }
+
+    // Just update with exclusive - deleting all other selections
+    if (exclusive) {
+      onChange([exclusive]);
+      return;
+    }
+
+    // Otherwise, just update with the raw selection
+    onChange(selectedValues);
+  };
+
+  const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
+
+  return (
+    <FormControl
+      sx={{
+        width: '100%',
+        mt: 2,
+        '& .MuiSelect-select': {
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          padding: '12px',
+        },
+      }}
+      disabled={disabled}
+    >
+      <Select
+        multiple
+        onChange={handleChange}
+        onBlur={onBlur}
+        value={value}
+        renderValue={selected => (
+          <span
+            dangerouslySetInnerHTML={{
+              __html: contentToSanitizedHtml(selected.join(', ')),
+            }}
+          />
+        )}
+        MenuProps={{
+          PaperProps: {
+            style: {
+              maxHeight: 300,
+              marginTop: 8,
+            },
+          },
+        }}
+      >
+        {options.map(option => (
+          <MenuItem
+            key={option.key || option.value}
+            value={option.value}
+            disabled={
+              selectedExclusiveOption !== undefined &&
+              option.value !== selectedExclusiveOption
+            }
+            sx={{
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
+            }}
+          >
+            <Checkbox checked={value.includes(option.value)} />
+            <ListItemText
+              primary={
+                <span
+                  style={{
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: contentToSanitizedHtml(option.label),
+                  }}
+                />
+              }
+            />
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+};
+
+// ============================================================================
+// Main Component
+// ============================================================================
+
+/**
+ * MultiSelect Component - A reusable multi-selection field that supports
+ * both expanded checklist and dropdown modes.
+ */
+export const MultiSelect = (props: FieldProps) => {
+  const {
+    label,
+    helperText,
+    required,
+    advancedHelperText,
+    disabled,
+    state,
+    setFieldData,
+    handleBlur,
+    ElementProps,
+  } = props;
+
+  // Normalize value to always be an array
+  const rawValue = state.value?.data;
+  const value: string[] = Array.isArray(rawValue)
+    ? rawValue
+    : rawValue === '' || rawValue === undefined || rawValue === null
+      ? []
+      : [rawValue as string];
+
+  const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
+  const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
+
+  const handleChange = (newValues: string[]) => {
+    setFieldData(newValues);
+  };
+
+  return (
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}
+      required={required}
+      advancedHelperText={advancedHelperText}
+    >
+      <Box sx={{mt: 2, mb: 2}}>
+        {isExpandedChecklist ? (
+          <ExpandedChecklist
+            options={ElementProps.options}
+            value={value}
+            onChange={handleChange}
+            exclusiveOptions={exclusiveOptions}
+            disabled={disabled}
+          />
+        ) : (
+          <MuiMultiSelect
+            options={ElementProps.options}
+            value={value}
+            onChange={handleChange}
+            exclusiveOptions={exclusiveOptions}
+            disabled={disabled}
+            onBlur={handleBlur}
+          />
+        )}
+      </Box>
+    </FieldWrapper>
+  );
+};
+
+// ============================================================================
+// Value Schema
+// ============================================================================
+
+/**
+ * Generate a zod schema for the value based on the field props.
+ * Returns an array of strings representing the selected option values.
+ */
+const valueSchema = (props: MultiSelectFieldProps) => {
+  const optionValues = props.ElementProps.options.map(option => option.value);
+
+  // Base schema: array of valid option values
+  const baseSchema = z.array(z.enum(optionValues as [string, ...string[]]));
+
+  return baseSchema;
+};
+
+// ============================================================================
+// Field Registration
+// ============================================================================
+
+/**
+ * Export a constant with the information required to register this field type
+ */
+export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
+  namespace: 'faims-custom',
+  name: 'MultiSelect',
+  returns: 'faims-core::Array',
+  component: MultiSelect,
+  fieldSchema: MultiSelectFieldPropsSchema,
+  valueSchemaFunction: valueSchema,
+};
