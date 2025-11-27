@@ -21,6 +21,7 @@ const TemplatedStringField = (
       heading={props.label}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <MuiTextField
         value={value ?? '...'}

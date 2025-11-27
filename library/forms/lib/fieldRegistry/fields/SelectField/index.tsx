@@ -93,6 +93,7 @@ export const Select = (props: FieldProps) => {
       subheading={props.helperText}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <FormControl
         sx={{

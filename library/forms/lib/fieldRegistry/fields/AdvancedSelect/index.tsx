@@ -341,6 +341,7 @@ export const AdvancedSelect = (props: FieldProps) => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{mt: 1}}>
         {/* Display currently selected value(s) */}

@@ -9,6 +9,9 @@
  *
  * It is used across multiple input components to standardize the UI.
  */
+import CloseIcon from '@mui/icons-material/Close';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Box,
   Button,
@@ -22,10 +25,8 @@ import {
   useTheme,
 } from '@mui/material';
 import React, {ReactNode, useState} from 'react';
-// import {theme} from '../themes';  TODO how do we apply the theme?
-import CloseIcon from '@mui/icons-material/Close';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {RichTextContent} from '../RichText';
+// import {theme} from '../themes';  TODO how do we apply the theme?
 
 /**
  * @interface FieldWrapperProps
@@ -42,6 +43,7 @@ interface FieldWrapperProps {
   children: ReactNode;
   required?: boolean;
   advancedHelperText?: ReactNode;
+  errors?: string[];
 }
 
 /**
@@ -61,6 +63,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
   children,
   required,
   advancedHelperText,
+  errors = [],
 }) => {
   const [openDialog, setOpenDialog] = useState(false);
   // TODO understand why we have this but never set it other than null? Should
@@ -250,6 +253,47 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             </Button>
           </DialogActions>
         </Dialog>
+      )}
+      {errors.length > 0 && (
+        <Box
+          sx={{
+            mt: 1.5,
+            p: 1.5,
+            backgroundColor: 'rgba(211, 47, 47, 0.08)',
+            borderLeft: '4px solid',
+            borderColor: 'error.main',
+            borderRadius: 1,
+          }}
+        >
+          {errors.map((error, index) => (
+            <Box
+              key={index}
+              sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1,
+                mb: index < errors.length - 1 ? 1 : 0,
+              }}
+            >
+              <ErrorOutlineIcon
+                sx={{
+                  color: 'error.main',
+                  fontSize: '1.3rem',
+                  mt: '1px',
+                }}
+              />
+              <Typography
+                sx={{
+                  color: 'error.dark',
+                  fontSize: {xs: '0.95rem', md: '1rem'},
+                  fontWeight: 600,
+                }}
+              >
+                {error}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
       )}
     </Box>
   );

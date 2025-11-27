@@ -78,6 +78,7 @@ export const Checkbox = (props: FieldProps) => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <FormControl error={!!error}>
         <FormControlLabel

@@ -8,15 +8,24 @@ import {
 import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
-import {ComponentProps, useCallback, useEffect, useMemo, useState} from 'react';
+import {
+  ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {formDataExtractor} from '../../utils';
-import {FaimsFormData} from '../types';
+import {FaimsForm, FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FullFormConfig, FullFormManagerConfig} from './types';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
 } from './templatedFields';
+import {CompiledFormSchema, FormValidation} from '../../validationModule';
+import z from 'zod';
 
 /**
  * Debounce time for form syncs to prevent excessive updates to the backend.
@@ -111,6 +120,27 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     }
   }, [formData?.formId, formData?.revisionId, formData?.data]);
 
+  // Build memoized complete validation schema
+  const completeSchema = useMemo(() => {
+    if (formData?.formId !== undefined) {
+      return FormValidation.compileFormSchema({
+        uiSpec: dataEngine.uiSpec,
+        formId: formData.formId,
+        config: {visibleBehaviour: 'include'},
+      });
+    }
+
+    // Fall back while loading
+    return {
+      fields: [],
+      fieldSchemas: {},
+      schema: z.object(),
+    } satisfies CompiledFormSchema;
+  }, [formData?.formId, dataEngine.uiSpec]);
+
+  // keep this up to date
+  const validationSchema = useRef<CompiledFormSchema>(completeSchema);
+
   /**
    * Ensures we have a working revision ready for edits.
    *
@@ -180,7 +210,8 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     if (formData?.data !== undefined && revisionToUpdate) {
       // First, lets fire any updates to the templated fields
       onChangeTemplatedFields({
-        form,
+        // TODO: understand why this is upset
+        form: form as FaimsForm,
         formId: formData.formId,
         uiSpec: dataEngine.uiSpec,
         // Don't fire listeners again redundantly
@@ -235,6 +266,47 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       // Debounce changes to avoid excessive backend calls
       onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS,
       onChange,
+    },
+    validators: {
+      onChange: ({value}) => {
+        if (formData) {
+          const data = formDataExtractor({fullData: value});
+          const touchedFields: string[] = [];
+          for (const [k, meta] of Object.entries(form.state.fieldMeta)) {
+            if (meta.isTouched) {
+              touchedFields.push(k);
+            }
+          }
+
+          validationSchema.current = FormValidation.recompileFormSchema({
+            existingSchema: validationSchema.current,
+            formId: formData?.formId,
+            uiSpec: dataEngine.uiSpec,
+            data,
+            config: {visibleBehaviour: 'ignore'},
+          });
+
+          const schema = FormValidation.filterCompiledSchema({
+            compiledSchema: validationSchema.current,
+            fieldIds: touchedFields,
+          }).schema;
+
+          const res = schema.safeParse(data);
+          if (!res.success) {
+            // Transform Zod issues into TanStack Form's expected format
+            const fieldErrors: Record<string, string> = {};
+            for (const issue of res.error.issues) {
+              const fieldPath = issue.path.join('.');
+              // Only keep first error per field
+              if (!fieldErrors[fieldPath]) {
+                fieldErrors[fieldPath] = issue.message;
+              }
+            }
+            return {fields: fieldErrors};
+          }
+        }
+        return null;
+      },
     },
   });
 
@@ -434,7 +506,8 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       <FormManager
         // Force complete remount if record ID changes
         key={props.recordId}
-        form={form}
+        // TODO: understand why this is upset
+        form={form as FaimsForm}
         formName={formData.formId}
         uiSpec={dataEngine.uiSpec}
         config={formManagerConfig}

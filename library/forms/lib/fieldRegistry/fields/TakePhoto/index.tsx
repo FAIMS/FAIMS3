@@ -86,6 +86,7 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Paper
         sx={{
@@ -613,6 +614,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{width: '100%'}}>
         {/* Attachment Download Warning */}

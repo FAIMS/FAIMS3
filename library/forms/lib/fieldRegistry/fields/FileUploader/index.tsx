@@ -205,6 +205,7 @@ const FileUploaderPreview: React.FC<FileUploaderFieldProps> = props => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Paper
         sx={{
@@ -659,6 +660,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{width: '100%'}}>
         {/* Error Messages */}

@@ -122,6 +122,48 @@ export const FormValidation = {
   },
 
   /**
+   * Filters a compiled schema to only include specified fields.
+   *
+   * This is useful for validating only "touched" fields in a form, where you
+   * want to show validation errors only for fields the user has interacted with.
+   *
+   * @param compiledSchema - A previously compiled form schema
+   * @param fieldIds - Array of field IDs to include in the filtered schema
+   *
+   * @returns A new compiled schema containing only the specified fields.
+   *          Fields not present in the original schema are silently ignored.
+   */
+  filterCompiledSchema({
+    compiledSchema,
+    fieldIds,
+  }: {
+    compiledSchema: CompiledFormSchema;
+    fieldIds: string[];
+  }): CompiledFormSchema {
+    const fieldIdSet = new Set(fieldIds);
+    const shape: Record<string, ZodTypeAny> = {};
+    const fieldSchemas: Record<string, ZodTypeAny> = {};
+    const filteredFields: string[] = [];
+
+    for (const fieldId of compiledSchema.fields) {
+      if (fieldIdSet.has(fieldId)) {
+        const existingSchema = compiledSchema.fieldSchemas[fieldId];
+        if (existingSchema) {
+          shape[fieldId] = existingSchema;
+          fieldSchemas[fieldId] = existingSchema;
+          filteredFields.push(fieldId);
+        }
+      }
+    }
+
+    return {
+      schema: z.object(shape),
+      fieldSchemas,
+      fields: filteredFields,
+    };
+  },
+
+  /**
    * Efficiently recompiles a form schema by reusing existing field schemas where possible.
    *
    * This method is optimized for scenarios where form visibility changes frequently

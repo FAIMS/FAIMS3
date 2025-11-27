@@ -290,6 +290,7 @@ const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
         heading={props.label}
         required={props.required}
         advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
       >
         <FullRelatedRecordField {...(props as FullRelatedRecordFieldProps)} />
       </FieldWrapper>

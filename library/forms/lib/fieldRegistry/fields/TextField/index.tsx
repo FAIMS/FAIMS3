@@ -21,6 +21,9 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
       heading={props.label}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      // This typing is not coming through - these are always strings - no
+      // strings = no errors
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <MuiTextField
         value={value}
