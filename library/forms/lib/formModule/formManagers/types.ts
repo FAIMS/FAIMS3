@@ -65,6 +65,8 @@ export interface FullFormConfig extends BaseFormConfig {
       mode: AvpUpdateMode;
     }) => void;
   };
+  /** What is the deployed app name - helpful for error displays etc */
+  appName: string;
   /** Current active user identifier (for audit trails) */
   user: string;
 }

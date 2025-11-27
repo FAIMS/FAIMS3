@@ -1,13 +1,12 @@
 import {
-  dataMap,
+  getFieldToIdsMap,
   HydratedRecordDocument,
-  ProjectUIModel,
   UISpecification,
   ValuesObject,
 } from '@faims3/data-model';
 import Mustache from 'mustache';
-import {FaimsForm} from '../types';
 import {formDataExtractor} from '../../utils';
+import {FaimsForm} from '../types';
 
 /*
 Patch mustache to not escape values.
@@ -59,7 +58,7 @@ export function getRecordContextFromRecord({
     // The author
     createdBy: record.createdBy,
     // The created time (epoch ms timestamp)
-    createdTime: new Date(record.created).getTime(),
+    createdTime: time,
   };
 }
 
@@ -214,23 +213,31 @@ function renderTemplate({
  * Filters out any template fields
  *
  * @param values
+ * @param formId
  * @param uiSpecification
  * @param context
  */
 export function recomputeDerivedFields({
   values,
   uiSpecification,
+  formId,
   context,
 }: {
   values: ValuesObject;
   uiSpecification: UISpecification;
+  formId: string;
   context: RecordContext;
 }): {changes: boolean; updates: Record<string, string>} {
   // compute fields to be updated
   const fieldsToBeUpdated: {template: string; fieldName: string}[] = [];
   const filterFields: string[] = [];
+  const fieldMap = getFieldToIdsMap(uiSpecification);
 
-  for (const fieldName of Object.keys(uiSpecification.fields)) {
+  for (const [fieldName, location] of Object.entries(fieldMap)) {
+    if (location.viewSetId !== formId) {
+      continue;
+    }
+
     // Get info about it
     const fieldDetails = uiSpecification.fields[fieldName];
     // We are looking for these fields "component-name": "TemplatedStringField"
@@ -285,6 +292,7 @@ export function recomputeDerivedFields({
  * Wrapper for the template field logic. This provides convenient form-ready on
  * change entrypoint.
  * @param form The tanstack form
+ * @param formId The target form ID to update
  * @param uiSpec The decoded UI spec
  * @param context A special context object which includes injectable context
  * @param runListeners Should we allow tanstack to fire listeners for the direct
@@ -294,10 +302,12 @@ export function recomputeDerivedFields({
 export function onChangeTemplatedFields({
   form,
   uiSpec,
+  formId,
   context,
   runListeners,
 }: {
   form: FaimsForm;
+  formId: string;
   uiSpec: UISpecification;
   context: RecordContext;
   runListeners: boolean;
@@ -307,6 +317,7 @@ export function onChangeTemplatedFields({
   const data = formDataExtractor({fullData: form.state.values});
   const {changes, updates} = recomputeDerivedFields({
     context,
+    formId,
     uiSpecification: uiSpec,
     values: data,
   });

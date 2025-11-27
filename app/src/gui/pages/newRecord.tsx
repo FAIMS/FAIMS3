@@ -17,6 +17,7 @@ import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {localGetDataDb} from '../../utils/database';
 import {useUiSpecLayout} from '../../utils/customHooks';
+import {APP_NAME} from '../../buildconfig';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
@@ -74,6 +75,7 @@ export const EditRecordPage = () => {
 
   const formConfig: FullFormConfig = {
     mode: 'full' as const,
+    appName: APP_NAME,
     recordId,
     dataEngine,
     attachmentEngine,

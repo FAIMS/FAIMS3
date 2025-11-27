@@ -474,6 +474,282 @@
                         "label": "uncertainty"
                     }
                 }
+            },
+            "School-type": {
+                "component-namespace": "faims-custom",
+                "component-name": "MultiSelect",
+                "type-returned": "faims-core::Array",
+                "component-parameters": {
+                    "label": "School type (dropdown)",
+                    "fullWidth": true,
+                    "helperText": "Select the school type(s)",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "select": true,
+                    "SelectProps": {
+                        "multiple": true
+                    },
+                    "ElementProps": {
+                        "expandedChecklist": false,
+                        "options": [
+                            {
+                                "label": "University/Higher Education",
+                                "value": "University/Higher Education"
+                            },
+                            {
+                                "label": "Primary school",
+                                "value": "Primary school"
+                            },
+                            {
+                                "label": "High school",
+                                "value": "High school"
+                            },
+                            {
+                                "label": "TAFE",
+                                "value": "TAFE"
+                            },
+                            {
+                                "label": "CIT",
+                                "value": "CIT"
+                            },
+                            {
+                                "label": "Other",
+                                "value": "Other"
+                            }
+                        ],
+                        "exclusiveOptions": []
+                    },
+                    "name": "School-type",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.array"
+                    ]
+                ],
+                "initialValue": [],
+                "humanReadableName": "Select Multiple",
+                "humanReadableDescription": "Pick several options from a list",
+                "category": "choice",
+                "showInChooser": true,
+                "order": 14,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "School-type-expanded": {
+                "component-namespace": "faims-custom",
+                "component-name": "MultiSelect",
+                "type-returned": "faims-core::Array",
+                "component-parameters": {
+                    "label": "School type (expanded)",
+                    "fullWidth": true,
+                    "helperText": "Select the school type(s)",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "select": true,
+                    "SelectProps": {
+                        "multiple": true
+                    },
+                    "ElementProps": {
+                        "expandedChecklist": true,
+                        "options": [
+                            {
+                                "label": "University/Higher Education",
+                                "value": "University/Higher Education"
+                            },
+                            {
+                                "label": "Primary school",
+                                "value": "Primary school"
+                            },
+                            {
+                                "label": "High school",
+                                "value": "High school"
+                            },
+                            {
+                                "label": "TAFE",
+                                "value": "TAFE"
+                            },
+                            {
+                                "label": "CIT",
+                                "value": "CIT"
+                            },
+                            {
+                                "label": "Other",
+                                "value": "Other"
+                            }
+                        ],
+                        "exclusiveOptions": []
+                    },
+                    "name": "School-type-expanded",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.array"
+                    ]
+                ],
+                "initialValue": [],
+                "humanReadableName": "Select Multiple",
+                "humanReadableDescription": "Pick several options from a list",
+                "category": "choice",
+                "showInChooser": true,
+                "order": 14,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Certified-school-status": {
+                "component-namespace": "faims-custom",
+                "component-name": "Checkbox",
+                "type-returned": "faims-core::Bool",
+                "component-parameters": {
+                    "label": "Certified school status?",
+                    "name": "Certified-school-status",
+                    "id": "checkbox-field",
+                    "required": true,
+                    "type": "checkbox",
+                    "helperText": "Is this school certified?",
+                    "advancedHelperText": "",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.bool"
+                    ]
+                ],
+                "initialValue": false,
+                "humanReadableName": "Checkbox",
+                "humanReadableDescription": "Boolean yes/no toggle box",
+                "category": "choice",
+                "showInChooser": true,
+                "order": 11,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Best-class": {
+                "component-namespace": "faims-custom",
+                "component-name": "RadioGroup",
+                "type-returned": "faims-core::String",
+                "component-parameters": {
+                    "label": "Best class",
+                    "name": "Best-class",
+                    "id": "radio-group-field",
+                    "advancedHelperText": "",
+                    "variant": "outlined",
+                    "required": false,
+                    "ElementProps": {
+                        "options": [
+                            {
+                                "label": "COMP1001",
+                                "value": "COMP1001"
+                            },
+                            {
+                                "label": "PYS2002",
+                                "value": "PYS2002"
+                            },
+                            {
+                                "label": "Other class",
+                                "value": "Other class"
+                            }
+                        ],
+                        "exclusiveOptions": []
+                    },
+                    "helperText": "Select the best class! (You can only choose one!)",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.string"
+                    ]
+                ],
+                "initialValue": "",
+                "humanReadableName": "Select one option",
+                "humanReadableDescription": "Single-choice radio button set",
+                "category": "choice",
+                "showInChooser": true,
+                "order": 15,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
+            },
+            "Current-location": {
+                "component-namespace": "faims-custom",
+                "component-name": "TakePoint",
+                "type-returned": "faims-pos::Location",
+                "component-parameters": {
+                    "name": "Current-location",
+                    "helperText": "Where are you currently observing the school from?",
+                    "label": "Current location",
+                    "required": false,
+                    "advancedHelperText": "",
+                    "protection": "none"
+                },
+                "validationSchema": [
+                    [
+                        "yup.object"
+                    ],
+                    [
+                        "yup.nullable"
+                    ]
+                ],
+                "initialValue": null,
+                "humanReadableName": "Take point",
+                "humanReadableDescription": "Record GPS location coordinates",
+                "category": "location",
+                "showInChooser": true,
+                "order": 22,
+                "meta": {
+                    "annotation": {
+                        "include": false,
+                        "label": "annotation"
+                    },
+                    "uncertainty": {
+                        "include": false,
+                        "label": "uncertainty"
+                    }
+                },
+                "persistent": false,
+                "displayParent": false
             }
         },
         "fviews": {
@@ -508,6 +784,21 @@
                     "operator": "equal",
                     "value": "male"
                 }
+            },
+            "School-New-Section": {
+                "label": "School details",
+                "fields": [
+                    "School-type",
+                    "School-type-expanded",
+                    "Certified-school-status",
+                    "Best-class"
+                ]
+            },
+            "School-Location": {
+                "label": "Location",
+                "fields": [
+                    "Current-location"
+                ]
             }
         },
         "viewsets": {
@@ -518,11 +809,21 @@
                     "Person-Detail",
                     "Person-New-Section"
                 ],
+                "publishButtonBehaviour": "always",
+                "hridField": "hridPerson-Main"
+            },
+            "School": {
+                "label": "School",
+                "views": [
+                    "School-New-Section",
+                    "School-Location"
+                ],
                 "publishButtonBehaviour": "always"
             }
         },
         "visible_types": [
-            "Person"
+            "Person",
+            "School"
         ]
     },
     "metadata": {

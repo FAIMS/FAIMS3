@@ -1,35 +1,73 @@
 import './App.css';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {PreviewFormManager} from '../lib';
 import {useQueryClient} from '@tanstack/react-query';
-import {ToggleButton, ToggleButtonGroup, Box, Typography} from '@mui/material';
+import {
+  ToggleButton,
+  ToggleButtonGroup,
+  Box,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
+} from '@mui/material';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import TabIcon from '@mui/icons-material/Tab';
+import {
+  compileUiSpecConditionals,
+  decodeUiSpec,
+  EncodedUISpecification,
+} from '@faims3/data-model';
+import {FaimsFormData} from '../lib/formModule/types';
 
-function App(props: {project: any}) {
-  const uiSpec = props.project['ui-specification'];
+function App({uiSpec: rawUiSpec}: {uiSpec: EncodedUISpecification}) {
+  const uiSpec = useMemo(() => {
+    const decoded = decodeUiSpec(rawUiSpec);
+    compileUiSpecConditionals(decoded);
+    return decoded;
+  }, [rawUiSpec]);
+
   const queryClient = useQueryClient();
 
-  // Existing logic from your snippet
-  uiSpec.views = uiSpec.fviews;
+  // Get the list of available viewsets
+  const viewsetNames = useMemo(() => Object.keys(uiSpec.viewsets), [uiSpec]);
+
+  // State for selected form (default to first viewset)
+  const [selectedForm, setSelectedForm] = useState<string>(
+    viewsetNames[0] ?? ''
+  );
 
   // State to manage the layout mode
   const [layout, setLayout] = useState<'inline' | 'tabs'>('inline');
 
   const handleLayoutChange = (
-    event: React.MouseEvent<HTMLElement>,
+    _event: React.MouseEvent<HTMLElement>,
     newLayout: 'inline' | 'tabs' | null
   ) => {
-    // Prevent deselecting the current option (keep one active at all times)
     if (newLayout !== null) {
       setLayout(newLayout);
     }
   };
 
+  const handleFormChange = (event: SelectChangeEvent<string>) => {
+    setSelectedForm(event.target.value);
+  };
+
+  // Mock form values for preview (form -> data map)
+  const formValues: Record<string, FaimsFormData> = {
+    Person: {
+      'First-name': {data: 'Steve'},
+      'Last-name': {data: 'Sputnik'},
+      Occupation: {data: 'Developer'},
+    },
+    School: {},
+  };
+
   return (
     <>
       <h1>FAIMS3 Forms</h1>
-
       <div className="card">
         <div
           style={{
@@ -38,36 +76,69 @@ function App(props: {project: any}) {
             borderRadius: '8px',
           }}
         >
-          {/* Layout Toggle Controls */}
-          <Box sx={{mb: 2, display: 'flex', alignItems: 'center', gap: 2}}>
-            <Typography variant="body2" color="text.secondary">
-              View Mode:
-            </Typography>
-            <ToggleButtonGroup
-              value={layout}
-              exclusive
-              onChange={handleLayoutChange}
-              aria-label="form layout"
-              size="small"
-            >
-              <ToggleButton value="inline" aria-label="inline list">
-                <ViewListIcon sx={{mr: 1, fontSize: 20}} />
-                Inline
-              </ToggleButton>
-              <ToggleButton value="tabs" aria-label="tabs">
-                <TabIcon sx={{mr: 1, fontSize: 20}} />
-                Tabs
-              </ToggleButton>
-            </ToggleButtonGroup>
+          {/* Controls Row */}
+          <Box
+            sx={{
+              mb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 3,
+              flexWrap: 'wrap',
+            }}
+          >
+            {/* Form Selector */}
+            <FormControl size="small" sx={{minWidth: 200}}>
+              <InputLabel id="form-select-label">Form</InputLabel>
+              <Select
+                labelId="form-select-label"
+                id="form-select"
+                value={selectedForm}
+                label="Form"
+                onChange={handleFormChange}
+              >
+                {viewsetNames.map(name => (
+                  <MenuItem key={name} value={name}>
+                    {uiSpec.viewsets[name]?.label ?? name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Layout Toggle Controls */}
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+              <Typography variant="body2" color="text.secondary">
+                View Mode:
+              </Typography>
+              <ToggleButtonGroup
+                value={layout}
+                exclusive
+                onChange={handleLayoutChange}
+                aria-label="form layout"
+                size="small"
+              >
+                <ToggleButton value="inline" aria-label="inline list">
+                  <ViewListIcon sx={{mr: 1, fontSize: 20}} />
+                  Inline
+                </ToggleButton>
+                <ToggleButton value="tabs" aria-label="tabs">
+                  <TabIcon sx={{mr: 1, fontSize: 20}} />
+                  Tabs
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
           </Box>
 
-          {/* Form Manager with dynamic layout prop */}
-          <PreviewFormManager
-            layout={layout}
-            formName="Person"
-            uiSpec={uiSpec}
-            queryClient={queryClient}
-          />
+          {/* Form Manager with dynamic layout and form props */}
+          {selectedForm && (
+            <PreviewFormManager
+              key={selectedForm}
+              initialFormData={formValues[selectedForm] ?? {}}
+              layout={layout}
+              formName={selectedForm}
+              uiSpec={uiSpec}
+              queryClient={queryClient}
+            />
+          )}
         </div>
       </div>
     </>

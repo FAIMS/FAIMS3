@@ -32,6 +32,7 @@ import {
 } from '../../../hooks/useAttachment';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
 
 // ============================================================================
 // Types & Schema
@@ -501,6 +502,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     config: context,
   } = props;
 
+  const appName = props.config.appName;
   const [noPermission, setNoPermission] = useState(false);
 
   // Get attachment service (guaranteed to exist in full mode)
@@ -622,12 +624,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         )}
 
         {/* Camera Permission Warning */}
-        {noPermission && (
-          <Alert severity="error" sx={{mb: 2}}>
-            Camera permission is required to take photos. Please enable camera
-            access in your device settings.
-          </Alert>
-        )}
+        {noPermission && <CameraPermissionIssue appName={appName} />}
 
         {/* Photo Display */}
         {loadedPhotos.length === 0 ? (
