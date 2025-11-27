@@ -567,16 +567,23 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         }
 
         // Upload each file
+        const newAttachments = [];
         for (const file of acceptedFiles) {
-          await addAttachment({
-            blob: file,
-            contentType: file.type || 'application/octet-stream',
-            // Split on the file name
-            fileFormat: file.name.split('.').pop() || 'txt',
-            // File type - this helps inform naming scheme
-            type: 'file',
-          });
+          newAttachments.push(
+            await addAttachment({
+              blob: file,
+              contentType: file.type || 'application/octet-stream',
+              // Split on the file name
+              fileFormat: file.name.split('.').pop() || 'txt',
+              // File type - this helps inform naming scheme
+              type: 'file',
+            })
+          );
         }
+
+        // Update field value
+        const currentData = props.state.value?.data as string[] | undefined;
+        props.setFieldData([...(currentData ?? []), ...newAttachments]);
       } catch (err: any) {
         logError(err);
         setError('Failed to upload file(s). Please try again.');
@@ -629,7 +636,10 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
   const handleDelete = useCallback(
     (index: number) => {
       const currentAttachments = state.value?.attachments || [];
-      removeAttachment({attachmentId: currentAttachments[index].attachmentId});
+      const targetId = currentAttachments[index].attachmentId;
+      removeAttachment({attachmentId: targetId});
+      const currentData = props.state.value?.data as string[] | undefined;
+      props.setFieldData((currentData ?? []).filter(v => v !== targetId));
       setError(null);
     },
     [state.value, removeAttachment]
@@ -754,40 +764,24 @@ export const fileUploaderFieldSpec: FieldInfo<FileUploaderFieldProps> = {
   name: 'FileUploader',
   returns: 'faims-attachment::Files',
   component: FileUploader,
-  fieldSchema: fileUploaderPropsSchema,
-  valueSchemaFunction: (props: FileUploaderProps) => {
-    let schema = z.object({
-      faims_attachments: z.array(
-        z.object({
-          attachment_id: z.string(),
-          filename: z.string(),
-          contentType: z.string(),
-        })
-      ),
-    });
-
+  fieldPropsSchema: fileUploaderPropsSchema,
+  fieldDataSchemaFunction: (props: FileUploaderProps) => {
+    // check there is at least one entry
+    let base = z.array(z.string());
     if (props.required) {
-      schema = schema.refine(
-        val => val.faims_attachments && val.faims_attachments.length > 0,
-        {
-          message: 'At least one file is required',
-        }
-      );
+      base = base.refine(val => (val ?? []).length > 0, {
+        message: 'At least one attachment is required',
+      });
     }
 
     if (props.maximum_number_of_files > 0) {
-      schema = schema.refine(
-        val =>
-          !val.faims_attachments ||
-          val.faims_attachments.length <= props.maximum_number_of_files,
-        {
-          message: `Maximum ${props.maximum_number_of_files} file${
-            props.maximum_number_of_files === 1 ? '' : 's'
-          } allowed`,
-        }
-      );
+      base = base.refine(val => val.length <= props.maximum_number_of_files, {
+        message: `Maximum ${props.maximum_number_of_files} file${
+          props.maximum_number_of_files === 1 ? '' : 's'
+        } allowed`,
+      });
     }
 
-    return schema;
+    return base;
   },
 };

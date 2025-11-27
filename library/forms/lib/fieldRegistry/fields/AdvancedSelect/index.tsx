@@ -397,6 +397,6 @@ export const advancedSelectFieldSpec: FieldInfo<FieldProps> = {
   name: 'AdvancedSelect',
   returns: 'faims-core::String',
   component: AdvancedSelect,
-  fieldSchema: AdvancedSelectFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: AdvancedSelectFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

@@ -147,6 +147,6 @@ export const selectFieldSpec: FieldInfo<FieldProps> = {
   name: 'Select',
   returns: 'faims-core::String',
   component: Select,
-  fieldSchema: SelectFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: SelectFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

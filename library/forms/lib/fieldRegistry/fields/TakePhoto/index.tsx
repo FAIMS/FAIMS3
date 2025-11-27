@@ -2,7 +2,12 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import {logError} from '@faims3/data-model';
+import {
+  attachmentSchema,
+  faimsAttachmentSchema,
+  faimsAttachmentsSchema,
+  logError,
+} from '@faims3/data-model';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -585,12 +590,16 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       }
 
       // Call out to props to add attachment
-      await addAttachment({
+      const newId = await addAttachment({
         blob: photoBlob,
         contentType: `image/${photoResult.format}`,
         type: 'photo',
         fileFormat: photoResult.format,
       });
+
+      // Update field value
+      const currentData = props.state.value?.data as string[] | undefined;
+      props.setFieldData([...(currentData ?? []), newId]);
     } catch (err: any) {
       logError(err);
       console.error('Failed to capture photo:', err);
@@ -603,7 +612,10 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const handleDelete = useCallback(
     (index: number) => {
       const currentAttachments = state.value?.attachments || [];
-      removeAttachment({attachmentId: currentAttachments[index].attachmentId});
+      const targetId = currentAttachments[index].attachmentId;
+      removeAttachment({attachmentId: targetId});
+      const currentData = props.state.value?.data as string[] | undefined;
+      props.setFieldData((currentData ?? []).filter(v => v !== targetId));
     },
     [state.value, removeAttachment]
   );
@@ -676,27 +688,16 @@ export const takePhotoFieldSpec: FieldInfo = {
   name: 'TakePhoto',
   returns: 'faims-attachment::Files',
   component: TakePhoto,
-  fieldSchema: takePhotoPropsSchema,
-  valueSchemaFunction: (props: TakePhotoProps) => {
-    let schema = z.object({
-      faims_attachments: z.array(
-        z.object({
-          attachment_id: z.string(),
-          filename: z.string(),
-          contentType: z.string(),
-        })
-      ),
-    });
-
+  fieldPropsSchema: takePhotoPropsSchema,
+  fieldDataSchemaFunction: (props: TakePhotoProps) => {
+    // check there is at least one entry
+    let base = z.array(z.string());
     if (props.required) {
-      schema = schema.refine(
-        val => val.faims_attachments && val.faims_attachments.length > 0,
-        {
-          message: 'At least one photo is required',
-        }
-      );
+      base = base.refine(val => (val ?? []).length > 0, {
+        message: 'At least one attachment is required',
+      });
     }
 
-    return schema;
+    return base;
   },
 };

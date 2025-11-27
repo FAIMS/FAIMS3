@@ -122,6 +122,6 @@ export const checkboxFieldSpec: FieldInfo<FieldProps> = {
   name: 'Checkbox',
   returns: 'faims-core::Bool',
   component: Checkbox,
-  fieldSchema: CheckboxFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: CheckboxFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

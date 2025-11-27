@@ -268,7 +268,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       onChange,
     },
     validators: {
-      onChange: ({value}) => {
+      onBlur: ({value}) => {
         if (formData) {
           const data = formDataExtractor({fullData: value});
           const touchedFields: string[] = [];
@@ -390,6 +390,9 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
       // Update form and trigger save
       form.setFieldValue(fieldId, newValue);
+
+      // Return attachment ID
+      return attachmentResult.identifier.id;
     },
     [
       ensureWorkingRevision,

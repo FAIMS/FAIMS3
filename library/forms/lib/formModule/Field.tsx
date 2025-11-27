@@ -89,6 +89,7 @@ export const Field = React.memo((props: FieldProps) => {
               }
             : async () => {
                 console.log('Mock addAttachment');
+                return 'fakeId';
               };
         const removeAttachmentHandler =
           props.config.mode === 'full'

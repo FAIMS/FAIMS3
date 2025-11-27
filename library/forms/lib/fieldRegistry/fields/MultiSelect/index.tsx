@@ -306,8 +306,8 @@ export const MultiSelect = (props: FieldProps) => {
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
     : rawValue === '' || rawValue === undefined || rawValue === null
-      ? []
-      : [rawValue as string];
+    ? []
+    : [rawValue as string];
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
@@ -377,6 +377,6 @@ export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
   name: 'MultiSelect',
   returns: 'faims-core::Array',
   component: MultiSelect,
-  fieldSchema: MultiSelectFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: MultiSelectFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

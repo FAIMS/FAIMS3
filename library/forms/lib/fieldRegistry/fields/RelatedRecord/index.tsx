@@ -290,7 +290,7 @@ const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
         heading={props.label}
         required={props.required}
         advancedHelperText={props.advancedHelperText}
-      errors={props.state.meta.errors as unknown as string[]}
+        errors={props.state.meta.errors as unknown as string[]}
       >
         <FullRelatedRecordField {...(props as FullRelatedRecordFieldProps)} />
       </FieldWrapper>
@@ -325,6 +325,6 @@ export const relatedRecordFieldSpec: FieldInfo = {
   name: 'RelatedRecordSelector',
   returns: 'faims-core::Relationship',
   component: RelatedRecordField,
-  fieldSchema: relatedRecordPropsSchema,
-  valueSchemaFunction: valueSchemaFunction,
+  fieldPropsSchema: relatedRecordPropsSchema,
+  fieldDataSchemaFunction: valueSchemaFunction,
 };

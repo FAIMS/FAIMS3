@@ -50,6 +50,6 @@ export const sampleFieldSpec: FieldInfo = {
   name: 'SampleField',
   returns: 'faims-core::String',
   component: SampleField,
-  fieldSchema: BaseFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

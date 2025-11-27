@@ -28,7 +28,7 @@ export interface FormManagerAdditions {
       type: 'photo' | 'file';
       // This informs the file format in the file system e.g. pdf
       fileFormat: string;
-    }) => Promise<void>;
+    }) => Promise<string>;
     /** Remove an attachment from a field by its ID */
     removeAttachment: (params: {
       fieldId: string;

@@ -22,6 +22,8 @@ export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
   name: string; // Field name within the namespace
   returns: FieldReturnType | null; // The type returned by this field
   component: React.ComponentType<T & Record<string, unknown>>;
-  fieldSchema?: z.ZodTypeAny; // schema to validate the field properties
-  valueSchemaFunction?: (props: any) => z.ZodTypeAny; // function to generate a schema to validate the field value based on props
+
+  // validation
+  fieldPropsSchema?: z.ZodTypeAny; // schema to validate the field properties
+  fieldDataSchemaFunction?: (props: any) => z.ZodTypeAny; // function to generate a schema to validate the field value based on props
 }

@@ -347,7 +347,7 @@ export const FormValidation = {
       namespace: details['component-namespace'],
     });
 
-    const modelGenerator = fieldSpec?.valueSchemaFunction;
+    const modelGenerator = fieldSpec?.fieldDataSchemaFunction;
     if (!modelGenerator) {
       console.warn(
         `No validation function defined for field "${fieldId}" ` +
@@ -507,7 +507,7 @@ export const FormValidation = {
       namespace: details['component-namespace'],
     });
 
-    const modelGenerator = fieldSpec?.valueSchemaFunction;
+    const modelGenerator = fieldSpec?.fieldDataSchemaFunction;
     if (!modelGenerator) {
       console.warn(
         `No validation function defined for field "${fieldId}" ` +

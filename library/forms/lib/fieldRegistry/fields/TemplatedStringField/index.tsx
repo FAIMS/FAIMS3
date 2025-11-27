@@ -47,6 +47,6 @@ export const templatedStringFieldSpec: FieldInfo = {
   name: 'TemplatedStringField',
   returns: 'faims-core::String',
   component: TemplatedStringField,
-  fieldSchema: BaseFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

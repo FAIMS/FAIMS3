@@ -183,7 +183,7 @@ const valueSchema = (props: RadioGroupFieldProps) => {
       optionValues.map(val => z.literal(val)) as [
         z.ZodLiteral<string>,
         z.ZodLiteral<string>,
-        ...z.ZodLiteral<string>[],
+        ...z.ZodLiteral<string>[]
       ]
     ),
     z.null(),
@@ -202,6 +202,6 @@ export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   name: 'RadioGroup',
   returns: 'faims-core::String',
   component: RadioGroup,
-  fieldSchema: RadioGroupFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: RadioGroupFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

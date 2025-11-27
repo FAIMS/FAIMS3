@@ -283,6 +283,6 @@ export const takePointFieldSpec: FieldInfo<FieldProps> = {
   name: 'TakePoint',
   returns: 'faims-pos::Location',
   component: TakePoint,
-  fieldSchema: TakePointFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: TakePointFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };
