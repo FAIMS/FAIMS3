@@ -88,7 +88,6 @@ export function addAuthPages(
       });
 
       const messages = req.flash();
-      console.log('Login page messages:', messages);
 
       return res.render('login', {
         providers: providers.length > 0 ? providers : undefined,

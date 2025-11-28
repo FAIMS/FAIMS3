@@ -73,6 +73,7 @@ import {
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {verifyUserCredentials} from './strategies/localStrategy';
 import {AuthProviderConfigMap} from './strategies/strategyTypes';
+import {log, time} from 'console';
 
 patch();
 
@@ -88,14 +89,18 @@ export const providerAuthReturnUrl = (provider: string) => {
   return `/auth-return/${provider}`;
 };
 
-// we will lock users out if they exceed this number of failed login attempts
-const MAX_FAILED_LOGIN_ATTEMPTS = 5;
-// lockout period duration
-const LOGIN_LOCKOUT_PERIOD = 15 * 60 * 1000; // 15 minutes
+// we will implement progressive delays on failed login attempts
+const LOCKOUT_PERIOD_SHORT = 10 * 1000; // 10 seconds
+const LOCKOUT_PERIOD_MEDIUM = 60 * 1000; // 1 minute
+const LOCKOUT_PERIOD_LONG = 5 * 60 * 1000; // 5 minutes
+const LOCKOUT_PERIOD_MAX = 15 * 60 * 1000; // 15 minutes (only after many attempts)
 
-// In-memory store of failed login attempts so we can implement lockout
-const failedLoginAttempts: Record<string, {count: number; lastAttempt: Date}> =
-  {};
+// In-memory store of failed login attempts
+interface FailedAttempt {
+  count: number;
+  lastAttempt: Date;
+}
+const failedLoginAttempts: Record<string, FailedAttempt> = {};
 
 // Log a failed login attempt for a user
 const logFailedLoginAttempt = (username: string) => {
@@ -109,28 +114,59 @@ const logFailedLoginAttempt = (username: string) => {
     failedLoginAttempts[username].lastAttempt = new Date();
   }
 };
+// reset the count once a user logs in successfully
+const resetFailedLoginAttempts = (username: string) => {
+  delete failedLoginAttempts[username];
+};
+
+// Calculate progressive delay based on failed attempt count
+const getAccountLockoutDelay = (username: string): number => {
+  const attempt = failedLoginAttempts[username];
+  if (!attempt) return 0;
+
+  const timeSinceLastAttempt =
+    new Date().getTime() - attempt.lastAttempt.getTime();
+
+  // Progressive delays - legitimate users can still eventually get through
+  if (attempt.count >= 15) {
+    // After 15 attempts: 15 minute delay
+    const remaining = LOCKOUT_PERIOD_MAX - timeSinceLastAttempt;
+    return remaining > 0 ? LOCKOUT_PERIOD_MAX : 0;
+  } else if (attempt.count >= 10) {
+    // After 10 attempts: 5 minute delay
+    const remaining = LOCKOUT_PERIOD_LONG - timeSinceLastAttempt;
+    return remaining > 0 ? LOCKOUT_PERIOD_LONG : 0;
+  } else if (attempt.count >= 7) {
+    // After 7 attempts: 1 minute delay
+    const remaining = LOCKOUT_PERIOD_MEDIUM - timeSinceLastAttempt;
+    return remaining > 0 ? LOCKOUT_PERIOD_MEDIUM : 0;
+  } else if (attempt.count >= 5) {
+    // After 5 attempts: 10 second delay
+    const remaining = LOCKOUT_PERIOD_SHORT - timeSinceLastAttempt;
+    return remaining > 0 ? LOCKOUT_PERIOD_SHORT : 0;
+  }
+  return 0; // No delay for first few attempts
+};
 
 // Check whether a user is locked out due to too many failed login attempts
 const userIsLockedOut = (
   username: string,
   flash: (t: string, s: any) => void
 ): boolean => {
-  const attempt = failedLoginAttempts[username];
-  if (attempt && attempt.count >= MAX_FAILED_LOGIN_ATTEMPTS) {
-    const lockoutTimeRemaining =
-      LOGIN_LOCKOUT_PERIOD -
-      (new Date().getTime() - attempt.lastAttempt.getTime());
-    if (lockoutTimeRemaining > 0) {
-      flash('error',
-        {loginError: {msg: `User ${username} is currently locked out due to too many failed login attempts. Time remaining: ${Math.ceil(
-          lockoutTimeRemaining / 1000
-        )} seconds`}}
-      );
-      return true;
-    } else {
-      // Lockout period has passed - reset counter
-      delete failedLoginAttempts[username];
-    }
+  // Only check account-based delays (not IP)
+  const delayMs = getAccountLockoutDelay(username);
+  if (delayMs > 0) {
+    const delaySec = Math.ceil(delayMs / 1000);
+    const delayMin = Math.ceil(delaySec / 60);
+
+    const message =
+      delaySec > 60
+        ? `Too many failed login attempts. Please try again in ${delayMin} minute${delayMin > 1 ? 's' : ''}`
+        : `Too many failed login attempts. Please try again in ${delaySec} second${delaySec > 1 ? 's' : ''}`;
+    flash('error', {
+      loginError: {msg: message},
+    });
+    return true;
   }
   return false;
 };
@@ -202,6 +238,8 @@ export function addAuthRoutes(
 
       // first check for lockout
       if (userIsLockedOut(loginPayload.email, req.flash)) {
+        // we log this as a failed attempt to keep track of the most recent attempt
+        logFailedLoginAttempt(loginPayload.email);
         return res.redirect(errorRedirect);
       }
 
@@ -228,22 +266,23 @@ export function addAuthRoutes(
         // custom success function which signs JWT and redirects
         async (err: Error | null, user: Express.User, info: any) => {
           if (err) {
-            req.flash('error', {loginError: {msg: err.message || 'Login failed'}});
+            req.flash('error', {
+              loginError: {msg: err.message || 'Login failed'},
+            });
             logFailedLoginAttempt(req.body.email);
             return res.redirect(errorRedirect);
           }
           if (!user) {
             // if user is false, info might have something useful
-            // the type of info is unconstrained (object | string | Array<string | undefined>) but
-            // from OIDC we get {message: '...'} with an error message on failure
-            // I think they don't use err here because this is a post-auth failure
-            // (the case I saw was mis-configuration of the endpoint)
-            console.warn('User is false after social auth:', info);
+            // the type of info is unconstrained (object | string | Array<string | undefined>)
+            console.warn('User is false after local auth:', info);
             req.flash('error', {
               loginError: {msg: info?.message || 'Login failed'},
             });
             return res.redirect(errorRedirect);
           }
+          // reset any failed login attempts
+          resetFailedLoginAttempts(req.body.email);
           // We have logged in - do we also want to consume an invite?
           if (inviteId) {
             // We have an invite to consume - go ahead and use it
