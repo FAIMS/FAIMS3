@@ -88,6 +88,53 @@ export const providerAuthReturnUrl = (provider: string) => {
   return `/auth-return/${provider}`;
 };
 
+// we will lock users out if they exceed this number of failed login attempts
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+// lockout period duration
+const LOGIN_LOCKOUT_PERIOD = 15 * 60 * 1000; // 15 minutes
+
+// In-memory store of failed login attempts so we can implement lockout
+const failedLoginAttempts: Record<string, {count: number; lastAttempt: Date}> =
+  {};
+
+// Log a failed login attempt for a user
+const logFailedLoginAttempt = (username: string) => {
+  if (!failedLoginAttempts[username]) {
+    failedLoginAttempts[username] = {
+      count: 1,
+      lastAttempt: new Date(),
+    };
+  } else {
+    failedLoginAttempts[username].count += 1;
+    failedLoginAttempts[username].lastAttempt = new Date();
+  }
+};
+
+// Check whether a user is locked out due to too many failed login attempts
+const userIsLockedOut = (
+  username: string,
+  flash: (t: string, s: any) => void
+): boolean => {
+  const attempt = failedLoginAttempts[username];
+  if (attempt && attempt.count >= MAX_FAILED_LOGIN_ATTEMPTS) {
+    const lockoutTimeRemaining =
+      LOGIN_LOCKOUT_PERIOD -
+      (new Date().getTime() - attempt.lastAttempt.getTime());
+    if (lockoutTimeRemaining > 0) {
+      flash('error',
+        {loginError: {msg: `User ${username} is currently locked out due to too many failed login attempts. Time remaining: ${Math.ceil(
+          lockoutTimeRemaining / 1000
+        )} seconds`}}
+      );
+      return true;
+    } else {
+      // Lockout period has passed - reset counter
+      delete failedLoginAttempts[username];
+    }
+  }
+  return false;
+};
+
 /**
  * Add authentication routes for local and federated login
  * The list of handlers are the ids of the configured federated handlers (eg. ['google'])
@@ -153,6 +200,11 @@ export function addAuthRoutes(
 
       // Now we have a validated login payload - proceed
 
+      // first check for lockout
+      if (userIsLockedOut(loginPayload.email, req.flash)) {
+        return res.redirect(errorRedirect);
+      }
+
       // Are we redirecting?
       const {valid, redirect} = validateRedirect(
         loginPayload.redirect || DEFAULT_REDIRECT_URL
@@ -176,7 +228,8 @@ export function addAuthRoutes(
         // custom success function which signs JWT and redirects
         async (err: Error | null, user: Express.User, info: any) => {
           if (err) {
-            req.flash('error', {loginError: {msg: err.message}});
+            req.flash('error', {loginError: {msg: err.message || 'Login failed'}});
+            logFailedLoginAttempt(req.body.email);
             return res.redirect(errorRedirect);
           }
           if (!user) {

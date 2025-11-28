@@ -87,6 +87,9 @@ export function addAuthPages(
         action,
       });
 
+      const messages = req.flash();
+      console.log('Login page messages:', messages);
+
       return res.render('login', {
         providers: providers.length > 0 ? providers : undefined,
         // Where should the POST endpoint be for the local login form?
@@ -98,7 +101,7 @@ export function addAuthPages(
         } satisfies AuthContext,
         localAuth: true,
         redirect,
-        messages: req.flash(),
+        messages: messages,
       });
     }
   );
