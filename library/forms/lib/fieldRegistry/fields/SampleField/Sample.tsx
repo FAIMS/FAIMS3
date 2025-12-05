@@ -24,6 +24,7 @@ const SampleField = (props: BaseFieldProps & FormFieldContextProps) => {
       heading={props.label}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       {/* Replace with your field component of choice */}
       <MuiTextField
@@ -49,6 +50,6 @@ export const sampleFieldSpec: FieldInfo = {
   name: 'SampleField',
   returns: 'faims-core::String',
   component: SampleField,
-  fieldSchema: BaseFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

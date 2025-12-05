@@ -20,6 +20,7 @@ import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {Buffer} from 'buffer';
 import React, {useCallback, useMemo, useState} from 'react';
 import {z} from 'zod';
+import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
 import {FullFormConfig} from '../../../formModule';
 import {
   BaseFieldPropsSchema,
@@ -32,9 +33,6 @@ import {
 } from '../../../hooks/useAttachment';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
-
-// ============================================================================
 // Types & Schema
 // ============================================================================
 
@@ -86,6 +84,7 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Paper
         sx={{
@@ -584,12 +583,16 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       }
 
       // Call out to props to add attachment
-      await addAttachment({
+      const newId = await addAttachment({
         blob: photoBlob,
         contentType: `image/${photoResult.format}`,
         type: 'photo',
         fileFormat: photoResult.format,
       });
+
+      // Update field value
+      const currentData = props.state.value?.data as string[] | undefined;
+      props.setFieldData([...(currentData ?? []), newId]);
     } catch (err: any) {
       logError(err);
       console.error('Failed to capture photo:', err);
@@ -602,7 +605,10 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const handleDelete = useCallback(
     (index: number) => {
       const currentAttachments = state.value?.attachments || [];
-      removeAttachment({attachmentId: currentAttachments[index].attachmentId});
+      const targetId = currentAttachments[index].attachmentId;
+      removeAttachment({attachmentId: targetId});
+      const currentData = props.state.value?.data as string[] | undefined;
+      props.setFieldData((currentData ?? []).filter(v => v !== targetId));
     },
     [state.value, removeAttachment]
   );
@@ -613,6 +619,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{width: '100%'}}>
         {/* Attachment Download Warning */}
@@ -674,27 +681,16 @@ export const takePhotoFieldSpec: FieldInfo = {
   name: 'TakePhoto',
   returns: 'faims-attachment::Files',
   component: TakePhoto,
-  fieldSchema: takePhotoPropsSchema,
-  valueSchemaFunction: (props: TakePhotoProps) => {
-    let schema = z.object({
-      faims_attachments: z.array(
-        z.object({
-          attachment_id: z.string(),
-          filename: z.string(),
-          contentType: z.string(),
-        })
-      ),
-    });
-
+  fieldPropsSchema: takePhotoPropsSchema,
+  fieldDataSchemaFunction: (props: TakePhotoProps) => {
+    // check there is at least one entry
+    let base = z.array(z.string());
     if (props.required) {
-      schema = schema.refine(
-        val => val.faims_attachments && val.faims_attachments.length > 0,
-        {
-          message: 'At least one photo is required',
-        }
-      );
+      base = base.refine(val => (val ?? []).length > 0, {
+        message: 'At least one attachment is required',
+      });
     }
 
-    return schema;
+    return base;
   },
 };

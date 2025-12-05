@@ -21,6 +21,9 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
       heading={props.label}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      // This typing is not coming through - these are always strings - no
+      // strings = no errors
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <MuiTextField
         value={value}
@@ -35,7 +38,7 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
 
 // generate a zod schema for the value. In this case, it's always a string
 const valueSchema = () => {
-  return z.string();
+  return z.string().min(1);
 };
 
 // Export a constant with the information required to
@@ -45,6 +48,6 @@ export const textFieldSpec: FieldInfo = {
   name: 'FAIMSTextField',
   returns: 'faims-core::String',
   component: TextField,
-  fieldSchema: BaseFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

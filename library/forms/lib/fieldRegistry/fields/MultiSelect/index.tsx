@@ -322,6 +322,7 @@ export const MultiSelect = (props: FieldProps) => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{mt: 2, mb: 2}}>
         {isExpandedChecklist ? (
@@ -376,6 +377,6 @@ export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
   name: 'MultiSelect',
   returns: 'faims-core::Array',
   component: MultiSelect,
-  fieldSchema: MultiSelectFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: MultiSelectFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

@@ -8,16 +8,18 @@ import {
   RevisionID,
 } from '@faims3/data-model';
 import {EditableFormManager, FullFormConfig} from '@faims3/forms';
+import {CircularProgress} from '@mui/material';
+import {useQuery} from '@tanstack/react-query';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {APP_NAME} from '../../buildconfig';
 import {getExistingRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {localGetDataDb} from '../../utils/database';
 import {useUiSpecLayout} from '../../utils/customHooks';
-import {APP_NAME} from '../../buildconfig';
+import {localGetDataDb} from '../../utils/database';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
@@ -64,6 +66,31 @@ export const EditRecordPage = () => {
       uiSpec,
     });
   };
+
+  // Fetch initial form data using TanStack Query for caching and loading states
+  const {
+    data: formData,
+    isError,
+    isPending,
+    isRefetching,
+    error,
+  } = useQuery({
+    queryKey: ['formData', recordId],
+    queryFn: async () => {
+      console.log('Re-querying the form data');
+      // Get the hydrated record data in the form format
+      return await dataEngine().form.getExistingFormData({
+        recordId: recordId,
+      });
+    },
+    // Try offline
+    networkMode: 'always',
+    // Always refetch on mount to get fresh data
+    refetchOnMount: 'always',
+    // Don't cache this
+    staleTime: 0,
+    gcTime: 0,
+  });
 
   // Query to fetch the relevant viewset
   const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec});
@@ -116,14 +143,31 @@ export const EditRecordPage = () => {
   return (
     <div>
       <h2>Editing {recordId}</h2>
-      <EditableFormManager
-        // Force remount if record ID changes
-        key={recordId}
-        mode={mode}
-        activeUser={userId}
-        recordId={recordId}
-        config={formConfig}
-      />
+      {isPending || isRefetching ? (
+        <div>
+          <CircularProgress />
+        </div>
+      ) : isError ? (
+        <div>
+          <p>
+            An error occurred while fetching record data. Error:{' '}
+            {error?.message ?? 'unknown'}.
+          </p>
+        </div>
+      ) : (
+        <EditableFormManager
+          // Force remount if record ID or FormID changes
+          key={`${recordId}-${formData.formId}`}
+          mode={mode}
+          initialData={formData.data}
+          revisionId={formData.revisionId}
+          existingRecord={formData.context.record}
+          formId={formData.formId}
+          activeUser={userId}
+          recordId={recordId}
+          config={formConfig}
+        />
+      )}
     </div>
   );
 };

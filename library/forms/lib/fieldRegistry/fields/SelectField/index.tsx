@@ -59,11 +59,19 @@ const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
 });
 type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
 
-// generate a zod schema for the value based on the options
-// defined in props
 const valueSchema = (props: SelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
-  return z.union(optionValues.map(val => z.literal(val)));
+
+  if (optionValues.length === 0) {
+    return z.never();
+  }
+
+  if (optionValues.length === 1) {
+    return z.literal(optionValues[0]);
+  }
+
+  // z.union requires a tuple with at least 2 elements
+  return z.enum(optionValues as [string, ...string[]]);
 };
 
 type FieldProps = SelectFieldProps & FullFieldProps;
@@ -85,6 +93,7 @@ export const Select = (props: FieldProps) => {
       subheading={props.helperText}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <FormControl
         sx={{
@@ -138,6 +147,6 @@ export const selectFieldSpec: FieldInfo<FieldProps> = {
   name: 'Select',
   returns: 'faims-core::String',
   component: Select,
-  fieldSchema: SelectFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: SelectFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

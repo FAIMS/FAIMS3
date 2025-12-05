@@ -33,6 +33,9 @@ export default defineConfig({
     environment: 'jsdom',
     css: true,
     reporters: ['verbose'],
+    // Only TS or TSX files
+    include: ['**/*.{test,spec}.ts?(x)'],
+    exclude: ['dist/*', 'node_modules', 'build', '.turbo'],
     coverage: {
       reporter: ['text', 'json', 'html'],
       include: ['lib/**/*'],

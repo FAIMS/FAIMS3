@@ -21,6 +21,7 @@ const TemplatedStringField = (
       heading={props.label}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <MuiTextField
         value={value ?? '...'}
@@ -46,6 +47,6 @@ export const templatedStringFieldSpec: FieldInfo = {
   name: 'TemplatedStringField',
   returns: 'faims-core::String',
   component: TemplatedStringField,
-  fieldSchema: BaseFieldPropsSchema,
-  valueSchemaFunction: valueSchema,
+  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchema,
 };

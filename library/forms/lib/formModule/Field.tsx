@@ -13,6 +13,7 @@ import {
   FaimsForm,
   FaimsFormFieldState,
 } from './types';
+import {getFieldId} from './utils';
 
 interface FieldProps {
   fieldId: string;
@@ -89,6 +90,7 @@ export const Field = React.memo((props: FieldProps) => {
               }
             : async () => {
                 console.log('Mock addAttachment');
+                return 'fakeId';
               };
         const removeAttachmentHandler =
           props.config.mode === 'full'
@@ -112,7 +114,7 @@ export const Field = React.memo((props: FieldProps) => {
                 },
               };
         return (
-          <>
+          <div id={getFieldId({fieldId: props.fieldId})}>
             <Component
               {...(props.fieldSpec['component-parameters'] as BaseFieldProps)}
               // TODO fix the typing here - I think there is a minor issue but
@@ -133,7 +135,7 @@ export const Field = React.memo((props: FieldProps) => {
               state={field.state as any} // avoid Typescript complaint
               setFieldAnnotation={setFieldAnnotation}
             />
-          </>
+          </div>
         );
       }}
     />

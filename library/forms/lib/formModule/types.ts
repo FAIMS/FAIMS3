@@ -70,7 +70,7 @@ export type FormFieldContextProps = {
     contentType: string;
     type: 'photo' | 'file';
     fileFormat: string;
-  }) => Promise<void>;
+  }) => Promise<string>;
   // Delete an attachment with given ID
   removeAttachment: (params: {attachmentId: string}) => Promise<void>;
   handleBlur: () => void;
