@@ -38,6 +38,7 @@ export const NOTEBOOK_LIST_ROUTE = '/';
 
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';
+export const RECORD_VIEW = '/view-record/';
 export const RECORD_CREATE = '/new/';
 export const RECORD_DRAFT = '/draft/';
 export const RECORD_RECORD = '/record/';
@@ -67,7 +68,7 @@ export function getNotebookRoute({
  *
  * @returns /surveys/<server>/<project>/records/<recordId>/revision/<revisionId>
  */
-export function getExistingRecordRoute({
+export function getEditRecordRoute({
   serverId,
   projectId,
   recordId,
@@ -93,6 +94,33 @@ export function getExistingRecordRoute({
   console.error({serverId, projectId, recordId});
   throw Error(
     'project_id, record_id and revision_id are required for this route'
+  );
+}
+
+/**
+ * Generates a route to a record in the format
+ *
+ * @returns /surveys/<server>/<project>/view-record/<recordId>?revisionId=<revisionId>
+ */
+export function getViewRecordRoute({
+  serverId,
+  projectId,
+  recordId,
+  revisionId,
+}: {
+  serverId: string;
+  projectId: ProjectID;
+  recordId: RecordID;
+  revisionId?: RecordID;
+}) {
+  return (
+    INDIVIDUAL_NOTEBOOK_ROUTE +
+    serverId +
+    '/' +
+    projectId +
+    RECORD_VIEW +
+    recordId +
+    (revisionId ? `?revisionId=${revisionId}` : '')
   );
 }
 

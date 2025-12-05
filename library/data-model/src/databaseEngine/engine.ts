@@ -1202,7 +1202,11 @@ class FormOperations {
       formId: hydrated.record.formId,
       data,
       // Additional context
-      context: {record: hydrated.record, revision: hydrated.revision},
+      context: {
+        record: hydrated.record,
+        revision: hydrated.revision,
+        hrid: hydrated.hrid,
+      },
     };
   }
 

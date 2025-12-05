@@ -78,7 +78,7 @@ export async function generateLocationState(
       location_state: {
         field_id: parentLink.field_id,
         parent: latest_record?.relationship?.parent,
-        parent_link: ROUTES.getExistingRecordRoute({
+        parent_link: ROUTES.getEditRecordRoute({
           serverId,
           projectId: project_id,
           recordId: parentLink.record_id,
@@ -539,7 +539,7 @@ async function get_field_RelatedFields(
             latest_record?.updated_by ?? '',
             latest_record?.updated
           ),
-          ROUTES.getExistingRecordRoute({
+          ROUTES.getEditRecordRoute({
             serverId,
             projectId: child_record.project_id,
             recordId: child_record.record_id,
@@ -553,7 +553,7 @@ async function get_field_RelatedFields(
           section_label,
           field,
           field_name,
-          ROUTES.getExistingRecordRoute({
+          ROUTES.getEditRecordRoute({
             serverId,
             projectId: child_record?.project_id,
             recordId: record_id,
@@ -665,7 +665,7 @@ export async function getRelationshipDisplayData(
         ),
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getExistingRecordRoute({
+          : ROUTES.getEditRecordRoute({
               serverId,
               projectId: child_record.project_id,
               recordId: child_record.record_id,
@@ -681,7 +681,7 @@ export async function getRelationshipDisplayData(
         field_name,
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getExistingRecordRoute({
+          : ROUTES.getEditRecordRoute({
               serverId,
               projectId: child_record.project_id,
               recordId: parent_link.record_id,
@@ -808,7 +808,7 @@ export async function getParentPersistenceData({
           section: '',
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
-          route: ROUTES.getExistingRecordRoute({
+          route: ROUTES.getEditRecordRoute({
             serverId,
             projectId,
             recordId: parent.parent.record_id,

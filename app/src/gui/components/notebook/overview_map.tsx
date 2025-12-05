@@ -230,7 +230,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
           {selectedFeature && (
             <Box sx={{padding: '50px'}}>
               <Link
-                to={ROUTES.getExistingRecordRoute({
+                to={ROUTES.getEditRecordRoute({
                   serverId: props.serverId,
                   projectId: props.project_id,
                   recordId: selectedFeature.record_id,

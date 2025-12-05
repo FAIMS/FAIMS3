@@ -674,6 +674,7 @@ const initialFormData = z.object({
   formId: z.string(),
   data: formUpdateData,
   context: z.object({
+    hrid: z.string(),
     record: hydratedRecordDocumentSchema,
     revision: hydratedRevisionDocumentSchema,
   }),

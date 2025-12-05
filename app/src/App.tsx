@@ -52,8 +52,9 @@ import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
 
 import {SafeArea} from '@capacitor-community/safe-area';
-import {getExistingRecordRoute} from './constants/routes';
+import {getEditRecordRoute} from './constants/routes';
 import {EditRecordPage} from './gui/pages/newRecord';
+import {ViewRecordPage} from './gui/pages/viewRecord';
 
 SafeArea.enable({
   config: {
@@ -163,7 +164,7 @@ export default function App() {
                         }
                       />
                       <Route
-                        path={getExistingRecordRoute({
+                        path={getEditRecordRoute({
                           serverId: ':serverId',
                           projectId: ':projectId',
                           recordId: ':recordId',
@@ -171,6 +172,18 @@ export default function App() {
                         element={
                           <TolerantPrivateRoute>
                             <EditRecordPage />
+                          </TolerantPrivateRoute>
+                        }
+                      />
+                      <Route
+                        path={ROUTES.getViewRecordRoute({
+                          serverId: ':serverId',
+                          projectId: ':projectId',
+                          recordId: ':recordId',
+                        })}
+                        element={
+                          <TolerantPrivateRoute>
+                            <ViewRecordPage />
                           </TolerantPrivateRoute>
                         }
                       />

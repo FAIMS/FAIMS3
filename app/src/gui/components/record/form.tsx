@@ -1243,7 +1243,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
           upsertFAIMSData({dataDb, record: parentRecord}).then(() => {
             // now parent link will be out of date as it refers to
             // the old revision so we need a new one
-            const revLink = ROUTES.getExistingRecordRoute({
+            const revLink = ROUTES.getEditRecordRoute({
               serverId: this.props.serverId,
               projectId: this.props.project_id,
               recordId: relationState.parent_record_id,
@@ -1492,7 +1492,7 @@ class RecordForm extends React.Component<RecordFormProps, RecordFormState> {
               })
                 .then(() => {
                   // update location state to point to the parent record
-                  locationState['parent_link'] = ROUTES.getExistingRecordRoute({
+                  locationState['parent_link'] = ROUTES.getEditRecordRoute({
                     serverId: this.props.serverId,
                     projectId: this.props.project_id,
                     recordId: (locationState.parent_record_id || '').toString(),

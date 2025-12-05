@@ -287,7 +287,11 @@ export const getNotebookFieldTypes = ({
   viewID: string;
 }) => {
   if (!(viewID in uiSpecification.viewsets)) {
-    throw new Error(`invalid form ${viewID} not found in notebook`);
+    throw new Error(
+      `invalid form ${viewID} not found in notebook. Available viewsets = ${Array.from(
+        Object.keys(uiSpecification.viewsets)
+      )}.`
+    );
   }
   const views = uiSpecification.viewsets[viewID].views;
   const fields: FieldSummary[] = [];

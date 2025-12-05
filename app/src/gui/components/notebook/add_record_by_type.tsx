@@ -72,7 +72,7 @@ export default function AddRecordButtons({
       })
       .then(newRecord =>
         navigate(
-          ROUTES.getExistingRecordRoute({
+          ROUTES.getEditRecordRoute({
             serverId: serverId,
             projectId: projectId,
             recordId: newRecord.record._id,
@@ -106,7 +106,7 @@ export default function AddRecordButtons({
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
       <Navigate
-        to={ROUTES.getExistingRecordRoute({
+        to={ROUTES.getEditRecordRoute({
           serverId: serverId,
           projectId: projectId || 'dummy',
           recordId: (selectedRecord.record_id || '').toString(),

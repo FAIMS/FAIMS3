@@ -848,10 +848,10 @@ export function RecordsTable(props: RecordsTableProps) {
   const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
     params => {
       history(
-        ROUTES.getExistingRecordRoute({
+        ROUTES.getViewRecordRoute({
           serverId,
           projectId: project_id,
-          recordId: (params.row.record_id || '').toString(),
+          recordId: params.row.record_id,
         })
       );
     },

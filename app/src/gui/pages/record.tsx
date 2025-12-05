@@ -57,7 +57,6 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
-import {useIndividualHydratedRecord} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
 import RecordDelete from '../components/notebook/delete';
 import ProgressBar from '../components/progress-bar';
@@ -84,7 +83,6 @@ import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
-import {DataView} from '../rendering';
 
 export default function Record() {
   /**
@@ -164,15 +162,6 @@ export default function Record() {
   const [backLink, setBackLink] = useState<string>(projectLink);
   const [backIsParent, setBackIsParent] = useState(false);
   const [draftId, setDraftId] = useState<string | undefined>(rawDraftId);
-
-  // Get the hydrated data for the target record
-  // TODO improve this by validating the record and revision ID exists
-  const hydratedRecord = useIndividualHydratedRecord({
-    projectId: projectId,
-    recordId: recordId!,
-    revisionId: updatedRevisionId!,
-    uiSpec: uiSpec,
-  }).data;
 
   // if there are no conflicts and the tab value is 4 then default back to tab 1
   useEffect(() => {
@@ -734,17 +723,6 @@ export default function Record() {
                             mq_above_md={mq_above_md}
                             buttonRef={buttonRef}
                           />
-                          {hydratedRecord && (
-                            <DataView
-                              // Enabling debugging here helps by providing
-                              // expandable detailed panel for each field
-                              config={{debugMode: false}}
-                              hydratedRecord={hydratedRecord}
-                              uiSpecification={uiSpec}
-                              viewsetId={type}
-                              trace={[]}
-                            />
-                          )}
                         </>
                       )}
                     </Box>

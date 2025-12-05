@@ -2,8 +2,6 @@ import {
   currentlyVisibleFields,
   FieldSummary,
   getNotebookFieldTypes,
-  RecordMetadata,
-  UISpecification,
 } from '@faims3/data-model';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
@@ -15,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, {useMemo} from 'react';
+import {formDataExtractor} from '../utils';
 import {
   DefaultRenderer,
   getRendererFromFieldConfig,
@@ -24,35 +23,9 @@ import {FieldDebugger} from './fields/view/specialised/util';
 import {
   DataViewFieldRenderConfiguration,
   DataViewFieldRenderContext,
+  DataViewProps,
 } from './types';
 
-/** Trace entry - helps to understand lineage when recursively rendering a form
- * renderer */
-export type DataViewTrace = {
-  // ID of the record
-  recordId: string;
-  // The viewsetID called from
-  viewsetId: string;
-  // The view ID called from
-  viewId: string;
-  // Which field called this form?
-  fieldId: string;
-  // Call type - at the moment only related records call out
-  callType: 'relatedRecord';
-};
-
-export interface DataViewProps {
-  viewsetId: string;
-  // The UI Spec
-  uiSpecification: UISpecification;
-  // The hydrated data record
-  hydratedRecord: RecordMetadata;
-  config: {
-    debugMode?: boolean;
-  };
-  // track history
-  trace: DataViewTrace[];
-}
 export const DataView: React.FC<DataViewProps> = props => {
   // List of field info for this viewset
   const fieldInfo: FieldSummary[] = useMemo(() => {
@@ -77,7 +50,7 @@ export const DataView: React.FC<DataViewProps> = props => {
   const visibleFields = useMemo(() => {
     return currentlyVisibleFields({
       uiSpec: props.uiSpecification,
-      values: props.hydratedRecord.data ?? {},
+      values: formDataExtractor({fullData: props.formData}),
       viewsetId: props.viewsetId,
     });
   }, [props.uiSpecification, props.hydratedRecord]);
@@ -237,7 +210,13 @@ export interface DataViewFieldProps extends DataViewSectionProps {
 
 const DataViewField: React.FC<DataViewFieldProps> = props => {
   // Get the data for this field
-  const data = props.hydratedRecord.data?.[props.fieldInfo.name];
+  const {data, annotation, attachments} = props.formData[
+    props.fieldInfo.name
+  ] ?? {
+    data: undefined,
+    annotation: undefined,
+    attachments: undefined,
+  };
 
   // Get the renderer for the field
   const fieldRenderInfo = getRendererFromFieldConfig({
@@ -263,18 +242,27 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   // Map state -> render context
   const rendererContext: DataViewFieldRenderContext = {
     fieldId: props.fieldInfo.name,
-    recordMetadata: props.hydratedRecord,
+    record: props.hydratedRecord,
     viewId: props.viewId,
     viewsetId: props.viewsetId,
     uiSpecification: props.uiSpecification,
     trace: props.trace,
+    tools: props.tools,
+    formData: props.formData,
+    hrid: props.hrid,
   };
 
   // Debugging content to inject, if configured (config.debugMode)
   const debugContent = props.config.debugMode ? (
     // This is a component which provides a rich expandable menu of all the
     // field context- helpful for developing or debugging fields
-    <FieldDebugger {...props} value={data} renderContext={rendererContext} />
+    <FieldDebugger
+      {...props}
+      value={data}
+      attachments={attachments}
+      annotation={annotation}
+      renderContext={rendererContext}
+    />
   ) : null;
 
   // Map config -> render context
@@ -309,6 +297,8 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
             // Render the field with the appropriate renderer
             <FieldRenderer
               value={data}
+              attachments={attachments}
+              annotation={annotation}
               config={renderConfig}
               renderContext={rendererContext}
             />
@@ -316,6 +306,8 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
             // Or use default fallback
             <DefaultRenderer
               value={data}
+              attachments={attachments}
+              annotation={annotation}
               config={renderConfig}
               renderContext={rendererContext}
             />
