@@ -76,6 +76,11 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
 
   const hasErrors = errors.length > 0;
 
+  // This is required at the moment as the onMount validation causes duplicated
+  // error strings - but we want onMount validation at least for existing
+  // records
+  const uniqueErrors = Array.from(new Set(errors));
+
   return (
     <Box
       sx={{
@@ -164,14 +169,14 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             borderRadius: 1,
           }}
         >
-          {errors.map((error, index) => (
+          {uniqueErrors.map((error, index) => (
             <Box
               key={index}
               sx={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 1,
-                mb: index < errors.length - 1 ? 1 : 0,
+                mb: index < uniqueErrors.length - 1 ? 1 : 0,
               }}
             >
               <ErrorOutlineIcon
