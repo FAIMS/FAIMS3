@@ -8,29 +8,20 @@ import {
   RevisionID,
 } from '@faims3/data-model';
 import {EditableFormManager, FullFormConfig} from '@faims3/forms';
+import {CircularProgress} from '@mui/material';
+import {useQuery} from '@tanstack/react-query';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
+import {APP_NAME} from '../../buildconfig';
 import {getExistingRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {localGetDataDb} from '../../utils/database';
 import {useUiSpecLayout} from '../../utils/customHooks';
-import {APP_NAME} from '../../buildconfig';
-import {useQuery} from '@tanstack/react-query';
-import {CircularProgress} from '@mui/material';
-import {createUseStyles} from 'react-jss';
+import {localGetDataDb} from '../../utils/database';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
-
-const useStyles = createUseStyles({
-  loading: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyItems: 'center',
-  },
-});
 
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
@@ -86,6 +77,7 @@ export const EditRecordPage = () => {
   } = useQuery({
     queryKey: ['formData', recordId],
     queryFn: async () => {
+      console.log('Re-querying the form data');
       // Get the hydrated record data in the form format
       return await dataEngine().form.getExistingFormData({
         recordId: recordId,
@@ -95,6 +87,9 @@ export const EditRecordPage = () => {
     networkMode: 'always',
     // Always refetch on mount to get fresh data
     refetchOnMount: 'always',
+    // Don't cache this
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Query to fetch the relevant viewset
@@ -149,7 +144,7 @@ export const EditRecordPage = () => {
     <div>
       <h2>Editing {recordId}</h2>
       {isPending || isRefetching ? (
-        <div className="loading">
+        <div>
           <CircularProgress />
         </div>
       ) : isError ? (
@@ -161,8 +156,8 @@ export const EditRecordPage = () => {
         </div>
       ) : (
         <EditableFormManager
-          // Force remount if record ID changes
-          key={recordId}
+          // Force remount if record ID or FormID changes
+          key={`${recordId}-${formData.formId}`}
           mode={mode}
           initialData={formData.data}
           revisionId={formData.revisionId}

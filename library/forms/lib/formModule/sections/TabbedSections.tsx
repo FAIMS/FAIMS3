@@ -1,9 +1,15 @@
-import {getFieldsForView, type UISpecification} from '@faims3/data-model';
+import {
+  getFieldLabel,
+  getFieldsForView,
+  type UISpecification,
+} from '@faims3/data-model';
 import {
   Badge,
   Box,
   Button,
+  Link,
   MobileStepper,
+  Paper,
   Tab,
   Tabs,
   Typography,
@@ -11,16 +17,228 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
 import {FormManagerConfig} from '../formManagers';
 import {FieldVisibilityMap} from '../formManagers/FormManager';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
 import {useStore} from '@tanstack/react-form';
+import {getFieldId} from '../utils';
 
 // Minimum width per step before switching to mobile view
 const MIN_STEP_WIDTH_PX = 120;
+
+/**
+ * Scrolls to a field element by its field name.
+ * Returns true if the element was found and scrolled to.
+ */
+const scrollToField = (fieldId: string): boolean => {
+  const elementId = getFieldId({fieldId: fieldId});
+  const element = document.getElementById(elementId);
+
+  if (element) {
+    element.scrollIntoView({behavior: 'smooth', block: 'center'});
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Gets the human-readable label for a section/view from the UI spec.
+ */
+const getSectionLabel = (
+  uiSpec: UISpecification,
+  sectionId: string
+): string => {
+  return uiSpec.views[sectionId]?.label ?? sectionId;
+};
+
+/**
+ * Groups errors by their containing section.
+ */
+const groupErrorsBySection = (
+  errors: Record<string, string[]>,
+  sections: string[],
+  uiSpec: UISpecification
+): Record<string, string[]> => {
+  const result: Record<string, string[]> = {};
+
+  for (const sectionId of sections) {
+    const sectionFields = getFieldsForView(uiSpec, sectionId);
+    const sectionErrorFields = Object.keys(errors).filter(fieldName =>
+      sectionFields.includes(fieldName)
+    );
+
+    if (sectionErrorFields.length > 0) {
+      result[sectionId] = sectionErrorFields;
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Displays a summary of form validation errors with clickable links
+ * to navigate to and scroll to the problematic fields.
+ */
+const ErrorSummaryPanel: React.FC<{
+  errors: Record<string, string[]>;
+  uiSpec: UISpecification;
+  activeSection: string;
+  sections: string[];
+  onNavigateToField: (sectionId: string, fieldName: string) => void;
+}> = ({errors, uiSpec, activeSection, sections, onNavigateToField}) => {
+  const theme = useTheme();
+
+  const errorsBySection = useMemo(
+    () => groupErrorsBySection(errors, sections, uiSpec),
+    [errors, sections, uiSpec]
+  );
+
+  const currentSectionErrors = errorsBySection[activeSection] ?? [];
+  const otherSectionErrors = Object.entries(errorsBySection).filter(
+    ([sectionId]) => sectionId !== activeSection
+  );
+
+  // Don't render if no errors
+  if (Object.keys(errors).length === 0) {
+    return null;
+  }
+
+  const handleFieldClick = (
+    e: React.MouseEvent,
+    sectionId: string,
+    fieldName: string
+  ) => {
+    e.preventDefault();
+    onNavigateToField(sectionId, fieldName);
+  };
+
+  const renderFieldLink = ({
+    sectionId,
+    fieldId,
+    showErrorMessages = false,
+  }: {
+    sectionId: string;
+    fieldId: string;
+    showErrorMessages?: boolean;
+  }) => {
+    const label = getFieldLabel(uiSpec, fieldId);
+    const fieldErrors = errors[fieldId] ?? [];
+
+    return (
+      <Box key={fieldId} component="li" sx={{py: 0.5}}>
+        <Link
+          href={`#${getFieldId({fieldId: fieldId})}`}
+          onClick={e => handleFieldClick(e, sectionId, fieldId)}
+          sx={{
+            color: theme.palette.error.dark,
+            textDecoration: 'underline',
+            cursor: 'pointer',
+            '&:hover': {
+              color: theme.palette.error.main,
+            },
+          }}
+        >
+          {label}
+        </Link>
+        {showErrorMessages && fieldErrors.length > 0 && (
+          <Typography
+            component="span"
+            variant="body2"
+            sx={{color: theme.palette.text.secondary, ml: 1}}
+          >
+            — {fieldErrors[0]}
+            {fieldErrors.length > 1 && ` (+${fieldErrors.length - 1} more)`}
+          </Typography>
+        )}
+      </Box>
+    );
+  };
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        mt: 3,
+        p: 2,
+        border: '1px solid',
+        borderColor: theme.palette.error.light,
+        borderRadius: 1,
+        bgcolor: 'rgba(211, 47, 47, 0.04)',
+      }}
+    >
+      <Typography
+        variant="subtitle1"
+        sx={{
+          fontWeight: 600,
+          color: theme.palette.error.dark,
+          mb: 1.5,
+        }}
+      >
+        Please fix the following errors
+      </Typography>
+
+      {/* Current section errors */}
+      {currentSectionErrors.length > 0 && (
+        <Box sx={{mb: otherSectionErrors.length > 0 ? 2 : 0}}>
+          <Typography
+            variant="body2"
+            sx={{fontWeight: 500, color: theme.palette.text.primary, mb: 0.5}}
+          >
+            In this section:
+          </Typography>
+          <Box component="ul" sx={{m: 0, pl: 2.5, listStyle: 'disc'}}>
+            {currentSectionErrors.map(fieldName =>
+              renderFieldLink({
+                sectionId: activeSection,
+                fieldId: fieldName,
+                showErrorMessages: true,
+              })
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Other section errors */}
+      {otherSectionErrors.length > 0 && (
+        <Box>
+          <Typography
+            variant="body2"
+            sx={{fontWeight: 500, color: theme.palette.text.primary, mb: 0.5}}
+          >
+            In other sections:
+          </Typography>
+          {otherSectionErrors.map(([sectionId, fieldNames]) => (
+            <Box key={sectionId} sx={{mb: 1}}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  fontStyle: 'italic',
+                  ml: 1,
+                }}
+              >
+                {getSectionLabel(uiSpec, sectionId)}:
+              </Typography>
+              <Box component="ul" sx={{m: 0, pl: 2.5, listStyle: 'disc'}}>
+                {fieldNames.map(fieldName =>
+                  renderFieldLink({
+                    sectionId,
+                    fieldId: fieldName,
+                    showErrorMessages: false,
+                  })
+                )}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Paper>
+  );
+};
 
 /**
  * Returns the appropriate color for a step based on its state.
@@ -39,7 +257,6 @@ const getStepColor = (
 
 /**
  * Checks if a section has validation errors.
- * TODO: Implement actual error checking logic.
  */
 const checkHasErrors = ({
   sectionId,
@@ -127,6 +344,11 @@ export const TabbedSectionDisplay: React.FC<{
   const [activeSection, setActiveSection] = useState<string>(sections[0]);
   const activeIndex = sections.indexOf(activeSection);
 
+  // Track a pending field to scroll to after section navigation
+  const [pendingScrollTarget, setPendingScrollTarget] = useState<string | null>(
+    null
+  );
+
   const containerRef = useRef<HTMLDivElement>(null);
   const containerWidth = useElementWidth(containerRef);
 
@@ -139,6 +361,48 @@ export const TabbedSectionDisplay: React.FC<{
 
   // Use mobile view if either condition is met
   const showMobileView = isSmallScreen || isTooDense;
+
+  // Effect to handle scrolling after section change
+  useEffect(() => {
+    if (pendingScrollTarget) {
+      // Use requestAnimationFrame to wait for DOM to update after section change
+      const rafId = requestAnimationFrame(() => {
+        // Add a small delay to ensure the section's fields have mounted
+        // TODO: This timeout is a bit fragile - consider a more robust solution
+        // like having FormSection signal when it's ready
+        const timeoutId = setTimeout(() => {
+          const success = scrollToField(pendingScrollTarget);
+          if (!success) {
+            console.warn(
+              `Could not find field element for: ${pendingScrollTarget}`
+            );
+          }
+          setPendingScrollTarget(null);
+        }, 100);
+
+        return () => clearTimeout(timeoutId);
+      });
+
+      return () => cancelAnimationFrame(rafId);
+    }
+  }, [activeSection, pendingScrollTarget]);
+
+  /**
+   * Handles navigation to a specific field, potentially in another section.
+   */
+  const handleNavigateToField = useCallback(
+    (sectionId: string, fieldName: string) => {
+      if (sectionId === activeSection) {
+        // Same section - just scroll
+        scrollToField(fieldName);
+      } else {
+        // Different section - navigate first, then scroll after render
+        setActiveSection(sectionId);
+        setPendingScrollTarget(fieldName);
+      }
+    },
+    [activeSection]
+  );
 
   /**
    * Handles tab change in desktop view.
@@ -339,6 +603,15 @@ export const TabbedSectionDisplay: React.FC<{
           </Typography>
         )}
       </Box>
+
+      {/* Error summary panel */}
+      <ErrorSummaryPanel
+        errors={errors}
+        uiSpec={props.spec}
+        activeSection={activeSection}
+        sections={sections}
+        onNavigateToField={handleNavigateToField}
+      />
     </Box>
   );
 };
