@@ -1,9 +1,9 @@
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import { Box, Paper, Typography } from '@mui/material';
-import { useMemo } from 'react';
-import { useAttachments } from '../../../../hooks/useAttachment';
-import { DataViewFieldRender } from '../../../types';
-import { TextWrapper } from '../wrappers';
+import {Box, Paper, Typography} from '@mui/material';
+import {useMemo} from 'react';
+import {useAttachments} from '../../../../hooks/useAttachment';
+import {DataViewFieldRender} from '../../../types';
+import {TextWrapper} from '../wrappers';
 
 const imageTypes = [
   'image/png',

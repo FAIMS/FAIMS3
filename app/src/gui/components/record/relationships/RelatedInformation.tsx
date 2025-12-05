@@ -71,9 +71,8 @@ export async function generateLocationState(
     record_id: parentLink.record_id,
     record_label: parentLink.record_id,
   };
-  const {latest_record, revision_id} = await getRecordInformation(
-    parent_record
-  );
+  const {latest_record, revision_id} =
+    await getRecordInformation(parent_record);
   if (revision_id) {
     return {
       location_state: {
@@ -523,8 +522,8 @@ async function get_field_RelatedFields(
           child_record['relation_type_vocabPair'].length > 0
             ? child_record['relation_type_vocabPair']
             : relation_type === 'Child'
-            ? ['is child of', 'is parent of']
-            : ['is related to', 'is related to'];
+              ? ['is child of', 'is parent of']
+              : ['is related to', 'is related to'];
         const {section, section_label} = get_section(
           ui_specification,
           form_type,

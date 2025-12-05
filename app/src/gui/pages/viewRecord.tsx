@@ -38,7 +38,6 @@ export const ViewRecordPage = () => {
   if (!activeUser) {
     return <div>Please log in to edit records.</div>;
   }
-  const userId = activeUser.username;
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
   if (!serverId || !projectId || !recordId) return <></>;
@@ -72,6 +71,7 @@ export const ViewRecordPage = () => {
       // Get the hydrated record data in the form format
       return await getDataEngine().form.getExistingFormData({
         recordId: recordId,
+        revisionId,
       });
     },
     // Try offline

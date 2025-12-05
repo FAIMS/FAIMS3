@@ -2,9 +2,6 @@ import {
   currentlyVisibleFields,
   FieldSummary,
   getNotebookFieldTypes,
-  HydratedRecord,
-  RecordMetadata,
-  UISpecification,
 } from '@faims3/data-model';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {
@@ -16,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, {useMemo} from 'react';
+import {formDataExtractor} from '../utils';
 import {
   DefaultRenderer,
   getRendererFromFieldConfig,
@@ -27,7 +25,6 @@ import {
   DataViewFieldRenderContext,
   DataViewProps,
 } from './types';
-import {formDataExtractor} from '../utils';
 
 export const DataView: React.FC<DataViewProps> = props => {
   // List of field info for this viewset
