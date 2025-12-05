@@ -664,13 +664,18 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
   const viewingData =
     viewingAttachment !== null ? loadedFiles[viewingAttachment]?.data : null;
 
+  let relevantErrors = props.state.meta.errors as unknown as string[];
+  if (error) {
+    relevantErrors = [...relevantErrors, error];
+  }
+
   return (
     <FieldWrapper
       heading={label}
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
-      errors={props.state.meta.errors as unknown as string[]}
+      errors={relevantErrors}
     >
       <Box sx={{width: '100%'}}>
         {/* Attachment Download Warning */}
