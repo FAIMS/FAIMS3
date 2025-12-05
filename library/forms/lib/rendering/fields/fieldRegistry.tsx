@@ -110,7 +110,7 @@ const FieldRegistryList: FieldRegistryEntry[] = [
   {
     componentNamespace: 'faims-custom',
     componentName: 'TakePoint',
-    view: {component: DefaultRenderer, config: {}},
+    view: {component: MapRenderer, config: {}},
   },
   {
     componentNamespace: 'faims-custom',
@@ -209,9 +209,6 @@ const FieldRegistryList: FieldRegistryEntry[] = [
       attributes: {singleColumn: true},
     },
   },
-
-  // DEPRECATED/UNUSED - okay to use default renderer for now
-  // ========================================================
 ];
 
 // Build the map from the componentNamespace::componentName to the renderer

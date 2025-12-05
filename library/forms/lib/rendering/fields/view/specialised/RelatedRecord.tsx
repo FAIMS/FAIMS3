@@ -1,4 +1,3 @@
-import {fetchAndHydrateRecord, getDataDB} from '@faims3/data-model';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
@@ -14,10 +13,14 @@ import {
 import {useQueries} from '@tanstack/react-query';
 import {useState} from 'react';
 import z from 'zod';
-import {getExistingRecordRoute} from '../../../../../constants/routes';
-import {DataView, DataViewProps, DataViewTrace} from '../../../DataView';
-import {DataViewFieldRender} from '../../../types';
+import {
+  DataViewFieldRender,
+  DataViewProps,
+  DataViewTools,
+  DataViewTraceEntry,
+} from '../../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
+import {DataView} from '../../../DataView';
 
 // ============================================================================
 // Type Definitions & Schemas
@@ -27,9 +30,9 @@ import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
  * Schema for a single record reference containing project and record identifiers
  */
 const RecordReferenceSchema = z.object({
-  project_id: z.string(),
+  project_id: z.string().optional(),
   record_id: z.string(),
-  record_label: z.string(),
+  record_label: z.string().optional(),
   relation_type_vocabPair: z.array(z.string()).optional(),
 });
 
@@ -54,8 +57,7 @@ type DisplayBehavior = 'nest' | 'link';
 interface RelatedRecordDisplayProps {
   recordLabel: string;
   recordId: string;
-  serverId: string;
-  projectId: string;
+  tools: DataViewTools;
 }
 
 /**
@@ -93,7 +95,9 @@ const INVALID_REFERENCES_MESSAGE =
  * @returns 'nest' if within limit, 'link' if at or beyond limit
  *
  */
-function determineBehaviorFromTrace(trace: DataViewTrace[]): DisplayBehavior {
+function determineBehaviorFromTrace(
+  trace: DataViewTraceEntry[]
+): DisplayBehavior {
   return trace.length >= RENDER_NEST_LIMIT ? 'link' : 'nest';
 }
 
@@ -165,12 +169,9 @@ const RecordLoadError = () => (
 const LinkedRecordItem = ({
   recordLabel,
   recordId,
-  serverId,
-  projectId,
+  tools,
 }: RelatedRecordDisplayProps) => {
-  const recordRoute = getExistingRecordRoute({
-    serverId,
-    projectId,
+  const recordRoute = tools.getRecordRoute({
     recordId,
   });
 
@@ -228,8 +229,7 @@ const NestedRecordItem = ({
 }: NestedRecordProps) => {
   const [expanded, setExpanded] = useState(false);
 
-  const displayLabel =
-    formRendererProps?.hydratedRecord.hrid ?? recordInfo.record_id;
+  const displayLabel = formRendererProps?.hrid ?? recordInfo.record_id;
 
   return (
     <Accordion
@@ -330,9 +330,8 @@ const ErrorRecordItem = ({recordId}: {recordId: string}) => (
  * @returns JSX for displaying related records or appropriate fallback
  */
 export const RelatedRecordRenderer: DataViewFieldRender = props => {
-  const {recordMetadata, uiSpecification, trace, fieldId, viewId, viewsetId} =
+  const {record, uiSpecification, trace, fieldId, viewId, viewsetId} =
     props.renderContext;
-  const {project_id: projectId} = recordMetadata;
 
   // Initialize data access
   const behavior = determineBehaviorFromTrace(trace);
@@ -350,15 +349,10 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
     queries: relatedRecords.map(({record_id}) => ({
       queryKey: ['related-hydration', record_id, behavior],
       queryFn: async () => {
-        const dataDb = await getDataDB(projectId);
-        if (!dataDb) {
-          return undefined;
-        }
-        const hydratedRecord = await fetchAndHydrateRecord({
-          projectId,
-          dataDb,
+        const engine = props.renderContext.tools.getDataEngine();
+
+        const hydratedRecord = await engine.form.getExistingFormData({
           recordId: record_id,
-          uiSpecification,
         });
 
         if (!hydratedRecord) {
@@ -367,20 +361,23 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
 
         // Return full renderer props for nested mode
         return {
-          viewsetId: hydratedRecord.type,
-          uiSpecification,
-          hydratedRecord,
-          config: props.config,
+          viewsetId: hydratedRecord.formId,
+          formData: hydratedRecord.data,
+          hydratedRecord: hydratedRecord.context.record,
+          hrid: hydratedRecord.context.hrid,
           trace: [
             ...trace,
             {
               callType: 'relatedRecord' as const,
               fieldId,
-              recordId: recordMetadata.record_id,
+              recordId: record._id,
               viewId,
               viewsetId,
             },
           ],
+          uiSpecification,
+          config: props.config,
+          tools: props.renderContext.tools,
         } satisfies DataViewProps;
       },
       networkMode: 'always' as const,
@@ -411,17 +408,14 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
           return <ErrorRecordItem key={key} recordId={key} />;
         }
 
-        const {hydratedRecord} = query.data;
-
         // Render link mode
         if (behavior === 'link') {
           return (
             <LinkedRecordItem
               key={key}
-              recordLabel={hydratedRecord.hrid ?? recordInfo.record_id}
+              recordLabel={query.data.hrid ?? recordInfo.record_id}
               recordId={recordInfo.record_id}
-              serverId={projectId}
-              projectId={projectId}
+              tools={props.renderContext.tools}
             />
           );
         }

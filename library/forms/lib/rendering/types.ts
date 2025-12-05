@@ -1,13 +1,61 @@
-// This is the types for rendering a field
+import {
+  DataEngine,
+  FaimsAttachments,
+  FormAnnotation,
+  FormUpdateData,
+  HydratedRecordDocument,
+  IAttachmentService,
+  ProjectUIModel,
+  UISpecification,
+} from '@faims3/data-model';
 
-import {ProjectUIModel, RecordMetadata} from '@faims3/data-model';
-import {DataViewTrace as DataViewFieldTrace} from './DataView';
+export type DataViewTraceEntry = {
+  // ID of the record
+  recordId: string;
+  // The viewsetID called from
+  viewsetId: string;
+  // The view ID called from
+  viewId: string;
+  // Which field called this form?
+  fieldId: string;
+  // Call type - at the moment only related records call out
+  callType: 'relatedRecord';
+};
+
+export type DataViewTools = {
+  navigateToRecord: (params: {recordId: string; revisionId?: string}) => void;
+  getRecordRoute: (params: {recordId: string; revisionId?: string}) => string;
+  getDataEngine: () => DataEngine;
+  getAttachmentService: () => IAttachmentService;
+};
+
+export interface DataViewProps {
+  // The form ID
+  viewsetId: string;
+  // The UI Spec
+  uiSpecification: UISpecification;
+  // The hydrated data record (for context)
+  hydratedRecord: HydratedRecordDocument;
+  // The record HRID
+  hrid: string;
+  // The full form data
+  formData: FormUpdateData;
+  config: {
+    debugMode?: boolean;
+  };
+  // track history
+  trace: DataViewTraceEntry[];
+  // Controls/triggers
+  tools: DataViewTools;
+}
 
 // A renderer function component
 export type DataViewFieldRenderProps = {
   // Value - this is a controlled component - will re-render on value change. A
   // component may wish to cast this to their own known data type for usage
   value: any;
+  annotation?: FormAnnotation;
+  attachments: FaimsAttachments;
   // Configuration for this renderer (this is available in the function body)
   config: DataViewFieldRenderConfiguration;
   // Additional contextual information, which helps more specialised types
@@ -24,12 +72,18 @@ export type DataViewFieldRenderContext = {
   viewId: string;
   // The field name/ID
   fieldId: string;
+  // The record HRID
+  hrid: string;
   // The full RecordMetadata object, which may help with more advanced types
-  recordMetadata: RecordMetadata;
+  record: HydratedRecordDocument;
   // UI specification
   uiSpecification: ProjectUIModel;
   // The form render trace (to help build new entries)
-  trace: DataViewFieldTrace[];
+  trace: DataViewTraceEntry[];
+  // Controls/triggers
+  tools: DataViewTools;
+  // The full form data if needed
+  formData: FormUpdateData;
 };
 
 // TODO consider configuration we may need
@@ -63,9 +117,6 @@ export type FieldRegistryEntry = {
 
   // The view entry
   view: DataViewFieldRegistryEntry;
-
-  // TODO - form entry?
-  // form: FormFieldRegistryEntry
 };
 
 // Maps the field type -> to the renderer entry

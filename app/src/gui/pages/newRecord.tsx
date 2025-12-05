@@ -12,7 +12,7 @@ import {CircularProgress} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {APP_NAME} from '../../buildconfig';
-import {getExistingRecordRoute} from '../../constants/routes';
+import {getEditRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -117,7 +117,7 @@ export const EditRecordPage = () => {
         // Navigate to the 'new record' page for this record
         console.log('redirect to record', targetRecordId);
         navigate(
-          getExistingRecordRoute({
+          getEditRecordRoute({
             serverId,
             projectId,
             recordId: targetRecordId,

@@ -84,7 +84,6 @@ import BoxTab from '../components/ui/boxTab';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
-import {DataView} from '../rendering';
 
 export default function Record() {
   /**
@@ -734,17 +733,6 @@ export default function Record() {
                             mq_above_md={mq_above_md}
                             buttonRef={buttonRef}
                           />
-                          {hydratedRecord && (
-                            <DataView
-                              // Enabling debugging here helps by providing
-                              // expandable detailed panel for each field
-                              config={{debugMode: false}}
-                              hydratedRecord={hydratedRecord}
-                              uiSpecification={uiSpec}
-                              viewsetId={type}
-                              trace={[]}
-                            />
-                          )}
                         </>
                       )}
                     </Box>

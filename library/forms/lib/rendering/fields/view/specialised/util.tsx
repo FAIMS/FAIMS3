@@ -104,7 +104,7 @@ export const FieldDebugger: DataViewFieldRender = props => {
                 border: '1px solid #ddd',
               }}
             >
-              {JSON.stringify(props.renderContext.recordMetadata, null, 2)}
+              {JSON.stringify(props.renderContext.record, null, 2)}
             </pre>
           </section>
         </div>

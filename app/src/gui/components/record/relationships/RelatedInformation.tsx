@@ -71,14 +71,15 @@ export async function generateLocationState(
     record_id: parentLink.record_id,
     record_label: parentLink.record_id,
   };
-  const {latest_record, revision_id} =
-    await getRecordInformation(parent_record);
+  const {latest_record, revision_id} = await getRecordInformation(
+    parent_record
+  );
   if (revision_id) {
     return {
       location_state: {
         field_id: parentLink.field_id,
         parent: latest_record?.relationship?.parent,
-        parent_link: ROUTES.getExistingRecordRoute({
+        parent_link: ROUTES.getEditRecordRoute({
           serverId,
           projectId: project_id,
           recordId: parentLink.record_id,
@@ -522,8 +523,8 @@ async function get_field_RelatedFields(
           child_record['relation_type_vocabPair'].length > 0
             ? child_record['relation_type_vocabPair']
             : relation_type === 'Child'
-              ? ['is child of', 'is parent of']
-              : ['is related to', 'is related to'];
+            ? ['is child of', 'is parent of']
+            : ['is related to', 'is related to'];
         const {section, section_label} = get_section(
           ui_specification,
           form_type,
@@ -539,7 +540,7 @@ async function get_field_RelatedFields(
             latest_record?.updated_by ?? '',
             latest_record?.updated
           ),
-          ROUTES.getExistingRecordRoute({
+          ROUTES.getEditRecordRoute({
             serverId,
             projectId: child_record.project_id,
             recordId: child_record.record_id,
@@ -553,7 +554,7 @@ async function get_field_RelatedFields(
           section_label,
           field,
           field_name,
-          ROUTES.getExistingRecordRoute({
+          ROUTES.getEditRecordRoute({
             serverId,
             projectId: child_record?.project_id,
             recordId: record_id,
@@ -665,7 +666,7 @@ export async function getRelationshipDisplayData(
         ),
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getExistingRecordRoute({
+          : ROUTES.getEditRecordRoute({
               serverId,
               projectId: child_record.project_id,
               recordId: child_record.record_id,
@@ -681,7 +682,7 @@ export async function getRelationshipDisplayData(
         field_name,
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getExistingRecordRoute({
+          : ROUTES.getEditRecordRoute({
               serverId,
               projectId: child_record.project_id,
               recordId: parent_link.record_id,
@@ -808,7 +809,7 @@ export async function getParentPersistenceData({
           section: '',
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
-          route: ROUTES.getExistingRecordRoute({
+          route: ROUTES.getEditRecordRoute({
             serverId,
             projectId,
             recordId: parent.parent.record_id,
