@@ -3,29 +3,29 @@ import {
   currentlyVisibleMap,
   FaimsAttachments,
   FormDataEntry,
-  FormUpdateData,
+  HydratedRecordDocument,
 } from '@faims3/data-model';
 import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
-import {useQuery} from '@tanstack/react-query';
-import {
-  ComponentProps,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {ComponentProps, useCallback, useMemo, useRef, useState} from 'react';
 import {formDataExtractor} from '../../utils';
+import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
-import {FullFormConfig, FullFormManagerConfig} from './types';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
 } from './templatedFields';
-import {CompiledFormSchema, FormValidation} from '../../validationModule';
-import z from 'zod';
+import {FullFormConfig, FullFormManagerConfig} from './types';
+
+/**
+ * The validation modes:
+ *
+ * FULL = all fields (which are conditionally visible) are validated
+ * ONLY_TOUCHED = field validation is filtered based on if a field has been
+ * touched
+ */
+export type ValidationMode = 'FULL' | 'ONLY_TOUCHED';
 
 /**
  * Debounce time for form syncs to prevent excessive updates to the backend.
@@ -41,6 +41,15 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
   recordId: string;
   /** The currently active user */
   activeUser: string;
+  /** The initial data to load into the form */
+  initialData?: FaimsFormData;
+  /** The existing record - this helps build contextual infills */
+  existingRecord: HydratedRecordDocument;
+  /** The initial revision ID to work on (can change if we are updating in
+   * parent mode) */
+  revisionId: string;
+  /** The form we are editing */
+  formId: string;
   /** Update mode - determines revision creation behavior */
   mode: AvpUpdateMode;
   /** Full configuration with data engine access */
@@ -65,9 +74,13 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   // The revision ID we're currently working with (may change after first edit
   // in parent mode)
-  const [workingRevisionId, setWorkingRevisionId] = useState<string | null>(
-    null
+  const [workingRevisionId, setWorkingRevisionId] = useState<string>(
+    props.revisionId
   );
+
+  // What kind of validation?
+  const validationMode: ValidationMode =
+    props.mode === 'new' ? 'ONLY_TOUCHED' : 'FULL';
 
   // Get the data engine instance
   const dataEngine = useMemo(() => {
@@ -76,70 +89,21 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   // Visible field tracking - passed down to children
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap | undefined>(
-    undefined
+    currentlyVisibleMap({
+      values: formDataExtractor({fullData: props.initialData ?? {}}),
+      uiSpec: dataEngine.uiSpec,
+      viewsetId: props.formId,
+    })
   );
 
-  // Fetch initial form data using TanStack Query for caching and loading states
-  const {data: formData, isLoading} = useQuery({
-    queryKey: ['formData', props.recordId],
-    queryFn: async () => {
-      // Get the hydrated record data in the form format
-      return await dataEngine.form.getExistingFormData({
-        recordId: props.recordId,
-        revisionId: props.revisionId,
-      });
-    },
-    // Try offline
-    networkMode: 'always',
-    // Always refetch on mount to get fresh data
-    refetchOnMount: 'always',
-  });
-
-  // Update our working revision ID when form data loads
-  useEffect(() => {
-    if (formData?.revisionId) {
-      setWorkingRevisionId(formData.revisionId);
-    }
-
-    // Initialise the visible fields based on loaded form data
-    if (formData?.data !== undefined) {
-      // Map the data into format needed
-      const currentData: {[k: string]: any} = {};
-      for (const [k, v] of Object.entries(form.state.values)) {
-        currentData[k] = v.data;
-      }
-
-      // Updating visibility
-      setVisibleMap(
-        currentlyVisibleMap({
-          values: formDataExtractor({fullData: formData.data}),
-          uiSpec: dataEngine.uiSpec,
-          viewsetId: formData.formId,
-        })
-      );
-    }
-  }, [formData?.formId, formData?.revisionId, formData?.data]);
-
-  // Build memoized complete validation schema
-  const completeSchema = useMemo(() => {
-    if (formData?.formId !== undefined) {
-      return FormValidation.compileFormSchema({
-        uiSpec: dataEngine.uiSpec,
-        formId: formData.formId,
-        config: {visibleBehaviour: 'include'},
-      });
-    }
-
-    // Fall back while loading
-    return {
-      fields: [],
-      fieldSchemas: {},
-      schema: z.object(),
-    } satisfies CompiledFormSchema;
-  }, [formData?.formId, dataEngine.uiSpec]);
-
   // keep this up to date
-  const validationSchema = useRef<CompiledFormSchema>(completeSchema);
+  const validationSchema = useRef<CompiledFormSchema>(
+    FormValidation.compileFormSchema({
+      uiSpec: dataEngine.uiSpec,
+      formId: props.formId,
+      config: {visibleBehaviour: 'include'},
+    })
+  );
 
   /**
    * Ensures we have a working revision ready for edits.
@@ -153,13 +117,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
    *
    * @returns The revision ID to use for updates, or null if unavailable
    */
-  const ensureWorkingRevision = useCallback(async (): Promise<
-    string | null
-  > => {
-    if (!workingRevisionId) {
-      console.warn('No working revision available');
-      return null;
-    }
+  const ensureWorkingRevision = useCallback(async (): Promise<string> => {
     let relevantRevisionId = workingRevisionId;
 
     // Create new revision on first edit in parent mode
@@ -207,51 +165,38 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     // Updating data
     const revisionToUpdate = await ensureWorkingRevision();
 
-    if (formData?.data !== undefined && revisionToUpdate) {
-      // First, lets fire any updates to the templated fields
-      onChangeTemplatedFields({
-        // TODO: understand why this is upset
-        form: form as FaimsForm,
-        formId: formData.formId,
-        uiSpec: dataEngine.uiSpec,
-        // Don't fire listeners again redundantly
-        runListeners: false,
-        context: getRecordContextFromRecord({record: formData?.context.record}),
+    // First, lets fire any updates to the templated fields
+    onChangeTemplatedFields({
+      // TODO: understand why this is upset
+      form: form as FaimsForm,
+      formId: props.formId,
+      uiSpec: dataEngine.uiSpec,
+      // Don't fire listeners again redundantly
+      runListeners: false,
+      context: getRecordContextFromRecord({record: props.existingRecord}),
+    });
+
+    try {
+      await dataEngine.form.updateRevision({
+        revisionId: revisionToUpdate,
+        recordId: props.recordId,
+        updatedBy: props.activeUser,
+        update: form.state.values,
+        mode: props.mode,
       });
-
-      // Merge existing data with current form values
-      const updatedRecord: FormUpdateData = {
-        ...formData.data,
-        ...form.state.values,
-      };
-
-      try {
-        await dataEngine.form.updateRevision({
-          revisionId: revisionToUpdate,
-          recordId: props.recordId,
-          updatedBy: props.activeUser,
-          update: updatedRecord,
-          mode: props.mode,
-        });
-      } catch (error) {
-        console.error('Failed to update revision:', error);
-      }
+    } catch (error) {
+      console.error('Failed to update revision:', error);
     }
 
-    // This will almost definitely be loaded, but let's be careful - will be
-    // picked up on later change if not
-    if (formData) {
-      // Updating visibility
-      setVisibleMap(
-        currentlyVisibleMap({
-          values: formDataExtractor({fullData: form.state.values}),
-          uiSpec: dataEngine.uiSpec,
-          viewsetId: formData.formId,
-        })
-      );
-    }
+    // Updating visibility
+    setVisibleMap(
+      currentlyVisibleMap({
+        values: formDataExtractor({fullData: form.state.values}),
+        uiSpec: dataEngine.uiSpec,
+        viewsetId: props.formId,
+      })
+    );
   }, [
-    formData?.data,
     ensureWorkingRevision,
     props.recordId,
     props.activeUser,
@@ -259,53 +204,75 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     dataEngine,
   ]);
 
+  const validationFunction = useCallback(
+    (value: FaimsFormData) => {
+      // Pull out raw data
+      const data = formDataExtractor({fullData: value});
+
+      // Get the latest version of the validation schema (only recompiles
+      // the necessary parts)
+      validationSchema.current = FormValidation.recompileFormSchema({
+        existingSchema: validationSchema.current,
+        formId: props.formId,
+        uiSpec: dataEngine.uiSpec,
+        data,
+        config: {visibleBehaviour: 'ignore'},
+      });
+
+      // Build the final schema
+      let schema = validationSchema.current.schema;
+
+      // If validation mode is only touched, then we need to filter
+      if (validationMode === 'ONLY_TOUCHED') {
+        const touchedFields: string[] = [];
+        for (const [k, meta] of Object.entries(form.state.fieldMeta)) {
+          if (meta.isTouched) {
+            touchedFields.push(k);
+          }
+        }
+        schema = FormValidation.filterCompiledSchema({
+          compiledSchema: validationSchema.current,
+          fieldIds: touchedFields,
+        }).schema;
+      }
+
+      // Run a safe parse with zod
+      const res = schema.safeParse(data);
+
+      // If the parse did not succeed, format errors into the preferred
+      // TanStack error format.
+      if (!res.success) {
+        const fieldErrors: Record<string, string> = {};
+        for (const issue of res.error.issues) {
+          const fieldPath = issue.path.join('.');
+          // Only keep first error per field
+          if (!fieldErrors[fieldPath]) {
+            fieldErrors[fieldPath] = issue.message;
+          }
+        }
+        return {fields: fieldErrors};
+      }
+    },
+    [validationMode, props.uiSpec, props.formId]
+  );
+
   // Initialize TanStack Form with loaded data and change handlers
   const form = useForm({
-    defaultValues: (formData?.data ?? {}) as FaimsFormData,
+    defaultValues: props.initialData,
     listeners: {
       // Debounce changes to avoid excessive backend calls
       onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS,
       onChange,
     },
     validators: {
-      onBlur: ({value}) => {
-        if (formData) {
-          const data = formDataExtractor({fullData: value});
-          const touchedFields: string[] = [];
-          for (const [k, meta] of Object.entries(form.state.fieldMeta)) {
-            if (meta.isTouched) {
-              touchedFields.push(k);
-            }
-          }
-
-          validationSchema.current = FormValidation.recompileFormSchema({
-            existingSchema: validationSchema.current,
-            formId: formData?.formId,
-            uiSpec: dataEngine.uiSpec,
-            data,
-            config: {visibleBehaviour: 'ignore'},
-          });
-
-          const schema = FormValidation.filterCompiledSchema({
-            compiledSchema: validationSchema.current,
-            fieldIds: touchedFields,
-          }).schema;
-
-          const res = schema.safeParse(data);
-          if (!res.success) {
-            // Transform Zod issues into TanStack Form's expected format
-            const fieldErrors: Record<string, string> = {};
-            for (const issue of res.error.issues) {
-              const fieldPath = issue.path.join('.');
-              // Only keep first error per field
-              if (!fieldErrors[fieldPath]) {
-                fieldErrors[fieldPath] = issue.message;
-              }
-            }
-            return {fields: fieldErrors};
-          }
-        }
-        return null;
+      onMount: ({value}) => {
+        return validationFunction(value);
+      },
+      onChange: ({value}) => {
+        // There is no synchronous debounce available at the moment - we may
+        // need to monitor this for performance. If we put this in the async on
+        // change with debounce we get error flickering.
+        return validationFunction(value);
       },
     },
   });
@@ -469,16 +436,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
   };
 
-  // Loading state
-  if (isLoading || !formData || visibleMap === undefined) {
-    return <div>Loading...</div>;
-  }
-
-  // Error state - record not found
-  if (formData.data === undefined || formData.formId === undefined) {
-    return <div>Record {props.recordId} not found</div>;
-  }
-
   return (
     <>
       {/* Action buttons for form completion
@@ -511,7 +468,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         key={props.recordId}
         // TODO: understand why this is upset
         form={form as FaimsForm}
-        formName={formData.formId}
+        formName={props.formId}
         uiSpec={dataEngine.uiSpec}
         config={formManagerConfig}
         fieldVisibilityMap={visibleMap}

@@ -18,8 +18,19 @@ import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {localGetDataDb} from '../../utils/database';
 import {useUiSpecLayout} from '../../utils/customHooks';
 import {APP_NAME} from '../../buildconfig';
+import {useQuery} from '@tanstack/react-query';
+import {CircularProgress} from '@mui/material';
+import {createUseStyles} from 'react-jss';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
+
+const useStyles = createUseStyles({
+  loading: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyItems: 'center',
+  },
+});
 
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
@@ -64,6 +75,27 @@ export const EditRecordPage = () => {
       uiSpec,
     });
   };
+
+  // Fetch initial form data using TanStack Query for caching and loading states
+  const {
+    data: formData,
+    isError,
+    isPending,
+    isRefetching,
+    error,
+  } = useQuery({
+    queryKey: ['formData', recordId],
+    queryFn: async () => {
+      // Get the hydrated record data in the form format
+      return await dataEngine().form.getExistingFormData({
+        recordId: recordId,
+      });
+    },
+    // Try offline
+    networkMode: 'always',
+    // Always refetch on mount to get fresh data
+    refetchOnMount: 'always',
+  });
 
   // Query to fetch the relevant viewset
   const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec});
@@ -116,14 +148,31 @@ export const EditRecordPage = () => {
   return (
     <div>
       <h2>Editing {recordId}</h2>
-      <EditableFormManager
-        // Force remount if record ID changes
-        key={recordId}
-        mode={mode}
-        activeUser={userId}
-        recordId={recordId}
-        config={formConfig}
-      />
+      {isPending || isRefetching ? (
+        <div className="loading">
+          <CircularProgress />
+        </div>
+      ) : isError ? (
+        <div>
+          <p>
+            An error occurred while fetching record data. Error:{' '}
+            {error?.message ?? 'unknown'}.
+          </p>
+        </div>
+      ) : (
+        <EditableFormManager
+          // Force remount if record ID changes
+          key={recordId}
+          mode={mode}
+          initialData={formData.data}
+          revisionId={formData.revisionId}
+          existingRecord={formData.context.record}
+          formId={formData.formId}
+          activeUser={userId}
+          recordId={recordId}
+          config={formConfig}
+        />
+      )}
     </div>
   );
 };

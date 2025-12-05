@@ -83,7 +83,8 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         position: 'relative',
         padding: 0.5,
         borderRadius: 2,
-        border: hasErrors ? '1px solid' : '1px solid transparent',
+        borderWidth: 1,
+        borderStyle: 'solid',
         borderColor: hasErrors ? 'error.main' : 'transparent',
         backgroundColor: hasErrors ? 'rgba(211, 47, 47, 0.03)' : 'transparent',
         boxShadow: hasErrors
@@ -157,8 +158,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             mt: 1.5,
             p: 1.5,
             backgroundColor: 'rgba(211, 47, 47, 0.08)',
-            borderLeft: '4px solid',
-            borderColor: 'error.main',
+            borderLeftWidth: 4,
+            borderLeftStyle: 'solid',
+            borderLeftColor: 'error.main',
             borderRadius: 1,
           }}
         >

@@ -1,4 +1,4 @@
-import type {UISpecification} from '@faims3/data-model';
+import {getFieldsForView, type UISpecification} from '@faims3/data-model';
 import {
   Badge,
   Box,
@@ -17,6 +17,7 @@ import {FormManagerConfig} from '../formManagers';
 import {FieldVisibilityMap} from '../formManagers/FormManager';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
+import {useStore} from '@tanstack/react-form';
 
 // Minimum width per step before switching to mobile view
 const MIN_STEP_WIDTH_PX = 120;
@@ -40,10 +41,19 @@ const getStepColor = (
  * Checks if a section has validation errors.
  * TODO: Implement actual error checking logic.
  */
-const checkHasErrors = (
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  sectionId: string
-) => false;
+const checkHasErrors = ({
+  sectionId,
+  errors,
+  uiSpec,
+}: {
+  sectionId: string;
+  errors: Record<string, string[]>;
+  uiSpec: UISpecification;
+}) => {
+  // Check if any of the errors are in this current section
+  const fields = getFieldsForView(uiSpec, sectionId);
+  return Object.keys(errors).some(err => fields.includes(err));
+};
 
 const StepperTab = styled(Tab)(() => ({
   textTransform: 'none',
@@ -91,6 +101,15 @@ export const TabbedSectionDisplay: React.FC<{
   const theme = useTheme();
   const formSpec = props.spec.viewsets[props.formId];
   const sections = formSpec.views;
+
+  // Sub to errors
+  const fieldMeta = useStore(props.form.store, state => state.fieldMeta);
+  const errors: Record<string, string[]> = {};
+  for (const [k, meta] of Object.entries(fieldMeta)) {
+    if (meta.errors.length > 0) {
+      errors[k] = meta.errors as string[];
+    }
+  }
 
   // Filtered visible sections (memoize)
   const visibleSections = useMemo(() => {
@@ -167,7 +186,11 @@ export const TabbedSectionDisplay: React.FC<{
             >
               {visibleSections.map((sectionId: string, index: number) => {
                 const isActive = activeSection === sectionId;
-                const hasError = checkHasErrors(sectionId);
+                const hasError = checkHasErrors({
+                  errors,
+                  sectionId,
+                  uiSpec: props.spec,
+                });
                 const label = props.spec.views[sectionId]?.label ?? sectionId;
 
                 return (
@@ -215,7 +238,7 @@ export const TabbedSectionDisplay: React.FC<{
                             ),
                           }}
                         >
-                          {hasError ? '!' : index + 1}
+                          {index + 1}
                         </Box>
 
                         <Typography
@@ -272,12 +295,7 @@ export const TabbedSectionDisplay: React.FC<{
                   disabled={activeIndex === sections.length - 1}
                   sx={{fontWeight: 'bold'}}
                 >
-                  <Badge
-                    badgeContent={
-                      checkHasErrors(sections[activeIndex + 1]) ? '!' : 0
-                    }
-                    color="error"
-                  >
+                  <Badge badgeContent={0} color="error">
                     Next
                   </Badge>
                 </Button>

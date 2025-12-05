@@ -673,13 +673,6 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
       errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{width: '100%'}}>
-        {/* Error Messages */}
-        {error && (
-          <Alert severity="error" sx={{mb: 2}} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
         {/* Attachment Download Warning */}
         {loadedFiles.some(f => f.isError) && (
           <Alert severity="warning" sx={{mb: 2}}>

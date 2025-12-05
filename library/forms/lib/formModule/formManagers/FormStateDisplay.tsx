@@ -22,7 +22,6 @@ export const FormStateDisplay = ({form}: {form: FaimsForm}) => {
       errors[k] = meta.errors as string[];
     }
   }
-  console.log('FORM ERRORS:', errors);
   const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set());
 
   const toggleField = (key: string) => {
@@ -170,7 +169,6 @@ const ErrorCard = ({error}: {error: ParsedError}) => (
 
 // Error display
 const ErrorDisplay = ({errors}: {errors: ParsedError[]}) => {
-  console.log(errors);
   if (errors.length === 0) return null;
 
   return (
