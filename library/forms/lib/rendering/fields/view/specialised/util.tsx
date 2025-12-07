@@ -52,6 +52,13 @@ export const FieldDebugger: DataViewFieldRender = props => {
               <li>
                 <strong>Viewset ID:</strong> {props.renderContext.viewsetId}
               </li>
+              <li>
+                <strong>Component name</strong> {props.renderContext.fieldName}
+              </li>
+              <li>
+                <strong>Component namespace</strong>{' '}
+                {props.renderContext.fieldNamespace}
+              </li>
             </ul>
           </section>
 

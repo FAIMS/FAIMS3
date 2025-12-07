@@ -41,10 +41,11 @@ import Button from '@mui/material/Button';
 import {useTheme} from '@mui/material/styles';
 import {useState} from 'react';
 import {z} from 'zod';
+import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {MapRenderer} from '../../../rendering';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 
 // ============================================================================
 // Types & Schema
@@ -285,4 +286,5 @@ export const takePointFieldSpec: FieldInfo<FieldProps> = {
   component: TakePoint,
   fieldPropsSchema: TakePointFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  view: {component: MapRenderer, config: {}},
 };

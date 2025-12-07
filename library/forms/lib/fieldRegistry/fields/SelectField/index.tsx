@@ -41,6 +41,7 @@ import {
 import {useTheme} from '@mui/material/styles';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -149,4 +150,5 @@ export const selectFieldSpec: FieldInfo<FieldProps> = {
   component: Select,
   fieldPropsSchema: SelectFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  view: {component: DefaultRenderer, config: {}},
 };

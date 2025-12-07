@@ -13,11 +13,9 @@ import {
   Typography,
 } from '@mui/material';
 import React, {useMemo} from 'react';
+import {getFieldInfo} from '../fieldRegistry';
 import {formDataExtractor} from '../utils';
-import {
-  DefaultRenderer,
-  getRendererFromFieldConfig,
-} from './fields/fieldRegistry';
+import {DefaultRenderer} from './fields/fallback';
 import {EmptyResponsePlaceholder} from './fields/view';
 import {FieldDebugger} from './fields/view/specialised/util';
 import {
@@ -158,11 +156,16 @@ const DataViewSection: React.FC<DataViewSectionProps> = props => {
           }}
         >
           {props.sectionFields.map(field => {
+            // Build the lookup key
+            const fieldConfig = props.uiSpecification.fields[field.name];
+            const namespace = fieldConfig['component-namespace'];
+            const name = fieldConfig['component-name'];
             // Get the renderer for this field to check its attributes
-            const renderer = getRendererFromFieldConfig({
-              uiSpecification: props.uiSpecification,
-              fieldName: field.name,
+            const fieldSpec = getFieldInfo({
+              namespace: namespace,
+              name: name,
             });
+            const renderer = fieldSpec?.view;
 
             // Check if this field should span full width based on renderer attributes
             const singleColumn = renderer?.attributes?.singleColumn === true;
@@ -219,12 +222,22 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   };
 
   // Get the renderer for the field
-  const fieldRenderInfo = getRendererFromFieldConfig({
-    uiSpecification: props.uiSpecification,
-    fieldName: props.fieldInfo.name,
-  });
+  // Build the lookup key
+  const fieldConfig = props.uiSpecification.fields[props.fieldInfo.name];
+  const namespace = fieldConfig['component-namespace'];
+  const name = fieldConfig['component-name'];
 
-  const FieldRenderer = fieldRenderInfo?.component;
+  console.log('Looking for ', {namespace, name});
+
+  // Get the renderer for this field to check its attributes
+  const fieldSpec = getFieldInfo({
+    namespace: namespace,
+    name: name,
+  });
+  const renderer = fieldSpec?.view;
+  const FieldRenderer = renderer?.component;
+
+  console.log('Found ', {renderer, FieldRenderer});
 
   // Grab the UI label for this field
   // This is the configured UI label for this field, i.e. the title
@@ -250,6 +263,8 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
     tools: props.tools,
     formData: props.formData,
     hrid: props.hrid,
+    fieldName: name,
+    fieldNamespace: namespace,
   };
 
   // Debugging content to inject, if configured (config.debugMode)
@@ -291,7 +306,7 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
           {
             // Note that we check here whether to bypass null checks
           }
-          {!fieldRenderInfo?.attributes?.bypassNullChecks && isEmpty ? (
+          {!renderer?.attributes?.bypassNullChecks && isEmpty ? (
             <EmptyResponsePlaceholder />
           ) : FieldRenderer ? (
             // Render the field with the appropriate renderer

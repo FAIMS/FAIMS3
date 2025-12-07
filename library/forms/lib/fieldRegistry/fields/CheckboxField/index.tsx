@@ -33,6 +33,7 @@ import MuiCheckbox from '@mui/material/Checkbox';
 import FormControl from '@mui/material/FormControl';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
@@ -124,4 +125,6 @@ export const checkboxFieldSpec: FieldInfo<FieldProps> = {
   component: Checkbox,
   fieldPropsSchema: CheckboxFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  // TODO improve this
+  view: {component: DefaultRenderer, config: {}},
 };

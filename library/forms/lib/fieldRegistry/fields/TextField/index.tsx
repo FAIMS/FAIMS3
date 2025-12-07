@@ -1,13 +1,14 @@
 import {TextField as MuiTextField} from '@mui/material';
 import React from 'react';
 import z from 'zod';
-import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   BaseFieldProps,
-  FormFieldContextProps,
   BaseFieldPropsSchema,
+  FormFieldContextProps,
 } from '../../../formModule/types';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
+import FieldWrapper from '../wrappers/FieldWrapper';
 
 const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
   const value = (props.state.value?.data as string) || '';
@@ -50,4 +51,5 @@ export const textFieldSpec: FieldInfo = {
   component: TextField,
   fieldPropsSchema: BaseFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  view: {component: DefaultRenderer, config: {}},
 };

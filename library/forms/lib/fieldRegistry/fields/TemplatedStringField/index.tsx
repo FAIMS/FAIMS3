@@ -1,12 +1,13 @@
+import {TextField as MuiTextField} from '@mui/material';
 import z from 'zod';
 import {
   BaseFieldProps,
-  FormFieldContextProps,
   BaseFieldPropsSchema,
+  FormFieldContextProps,
 } from '../../../formModule/types';
-import FieldWrapper from '../wrappers/FieldWrapper';
-import {TextField as MuiTextField} from '@mui/material';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
+import FieldWrapper from '../wrappers/FieldWrapper';
 
 const TemplatedStringField = (
   props: BaseFieldProps & FormFieldContextProps
@@ -49,4 +50,5 @@ export const templatedStringFieldSpec: FieldInfo = {
   component: TemplatedStringField,
   fieldPropsSchema: BaseFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  view: {component: DefaultRenderer, config: {}},
 };

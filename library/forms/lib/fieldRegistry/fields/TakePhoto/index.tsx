@@ -31,6 +31,7 @@ import {
   useAttachments,
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
+import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 // Types & Schema
@@ -692,5 +693,13 @@ export const takePhotoFieldSpec: FieldInfo = {
     }
 
     return base;
+  },
+  view: {
+    component: TakePhotoRender,
+    config: {},
+    // For attachments, we need to be more careful about this - this means that
+    // we still give this renderer the chance to render a field even if the
+    // renderer thinks it is null
+    attributes: {bypassNullChecks: true},
   },
 };

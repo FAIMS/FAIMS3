@@ -36,6 +36,7 @@ import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
@@ -204,4 +205,5 @@ export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   component: RadioGroup,
   fieldPropsSchema: RadioGroupFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  view: {component: DefaultRenderer, config: {}},
 };

@@ -1,5 +1,6 @@
 import z from 'zod';
 import {FullFieldProps} from '../formModule/types';
+import {DataViewFieldRegistryEntry} from '../rendering';
 
 export type FieldReturnType =
   | 'faims-attachment::Files'
@@ -22,6 +23,8 @@ export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
   name: string; // Field name within the namespace
   returns: FieldReturnType | null; // The type returned by this field
   component: React.ComponentType<T & Record<string, unknown>>;
+  // The view entry
+  view: DataViewFieldRegistryEntry;
 
   // validation
   fieldPropsSchema?: z.ZodTypeAny; // schema to validate the field properties

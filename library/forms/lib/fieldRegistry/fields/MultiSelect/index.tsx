@@ -46,6 +46,7 @@ import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {ListWrapper} from '../../../rendering';
 
 // ============================================================================
 // Types & Schema
@@ -379,4 +380,14 @@ export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
   component: MultiSelect,
   fieldPropsSchema: MultiSelectFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  view: {
+    component: props => {
+      let content: string[] = [];
+      if (Array.isArray(props.value)) {
+        content = props.value;
+      }
+      return <ListWrapper content={content}></ListWrapper>;
+    },
+    config: {},
+  },
 };
