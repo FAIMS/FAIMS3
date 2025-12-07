@@ -42,6 +42,7 @@ import clsx from 'clsx';
 import React from 'react';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
@@ -399,4 +400,6 @@ export const advancedSelectFieldSpec: FieldInfo<FieldProps> = {
   component: AdvancedSelect,
   fieldPropsSchema: AdvancedSelectFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  // TODO improve this
+  view: {component: DefaultRenderer, config: {}},
 };

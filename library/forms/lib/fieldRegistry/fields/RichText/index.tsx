@@ -21,9 +21,10 @@
  */
 
 import React from 'react';
-import {contentToSanitizedHtml} from './DomPurifier';
-import {FieldInfo} from '../../types';
 import {FullFieldProps} from '../../../formModule/types';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {FieldInfo} from '../../types';
+import {contentToSanitizedHtml} from './DomPurifier';
 
 interface Props extends FullFieldProps {
   /** The markdown content to be rendered. May include safe HTML tags. */
@@ -51,4 +52,6 @@ export const richTextFieldSpec: FieldInfo<Props> = {
   returns: null,
   component: RichTextField,
   //validator: () => true,
+  // TODO improve this
+  view: {component: DefaultRenderer, config: {}},
 };

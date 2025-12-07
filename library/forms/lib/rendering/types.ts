@@ -84,6 +84,9 @@ export type DataViewFieldRenderContext = {
   tools: DataViewTools;
   // The full form data if needed
   formData: FormUpdateData;
+  // Name and namespace
+  fieldName: string;
+  fieldNamespace: string;
 };
 
 // TODO consider configuration we may need
@@ -109,15 +112,3 @@ export type DataViewFieldRegistryEntry = {
   // Attributes/info about this renderer - can inform behaviour
   attributes?: DataViewFieldRenderAttributes;
 };
-
-export type FieldRegistryEntry = {
-  // Namespace and name (combination uniquely identifies the field type)
-  componentNamespace: string;
-  componentName: string;
-
-  // The view entry
-  view: DataViewFieldRegistryEntry;
-};
-
-// Maps the field type -> to the renderer entry
-export type FieldRegistry = Map<string, FieldRegistryEntry>;

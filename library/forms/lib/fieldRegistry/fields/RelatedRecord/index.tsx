@@ -26,6 +26,7 @@ import {
 } from '../../../formModule/types';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import { RelatedRecordRenderer } from '../../../rendering/fields/view/specialised/RelatedRecord';
 
 // ============================================================================
 // Component Specific Types & Schemas
@@ -327,4 +328,9 @@ export const relatedRecordFieldSpec: FieldInfo = {
   component: RelatedRecordField,
   fieldPropsSchema: relatedRecordPropsSchema,
   fieldDataSchemaFunction: valueSchemaFunction,
+  view: {
+    component: RelatedRecordRenderer,
+    config: {},
+    attributes: {singleColumn: true},
+  },
 };

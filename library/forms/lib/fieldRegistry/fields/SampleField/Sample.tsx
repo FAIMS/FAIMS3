@@ -1,12 +1,13 @@
+import {TextField as MuiTextField} from '@mui/material';
 import z from 'zod';
 import {
   BaseFieldProps,
-  FormFieldContextProps,
   BaseFieldPropsSchema,
+  FormFieldContextProps,
 } from '../../../formModule/types';
-import FieldWrapper from '../wrappers/FieldWrapper';
-import {TextField as MuiTextField} from '@mui/material';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
+import FieldWrapper from '../wrappers/FieldWrapper';
 
 const SampleField = (props: BaseFieldProps & FormFieldContextProps) => {
   // You may wish to cast this value
@@ -52,4 +53,6 @@ export const sampleFieldSpec: FieldInfo = {
   component: SampleField,
   fieldPropsSchema: BaseFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  // You can override this to provide a customised view only rendering
+  view: {component: DefaultRenderer, config: {}},
 };
