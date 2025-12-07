@@ -26,7 +26,7 @@ import {
 } from '../../../formModule/types';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import { RelatedRecordRenderer } from '../../../rendering/fields/view/specialised/RelatedRecord';
+import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 
 // ============================================================================
 // Component Specific Types & Schemas
