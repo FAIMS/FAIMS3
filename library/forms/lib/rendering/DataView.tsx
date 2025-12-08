@@ -227,8 +227,6 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   const namespace = fieldConfig['component-namespace'];
   const name = fieldConfig['component-name'];
 
-  console.log('Looking for ', {namespace, name});
-
   // Get the renderer for this field to check its attributes
   const fieldSpec = getFieldInfo({
     namespace: namespace,
@@ -236,8 +234,6 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   });
   const renderer = fieldSpec?.view;
   const FieldRenderer = renderer?.component;
-
-  console.log('Found ', {renderer, FieldRenderer});
 
   // Grab the UI label for this field
   // This is the configured UI label for this field, i.e. the title
