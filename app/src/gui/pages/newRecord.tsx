@@ -23,7 +23,7 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import {APP_NAME, DEBUG_APP} from '../../buildconfig';
-import {getEditRecordRoute} from '../../constants/routes';
+import {getEditRecordRoute, getNotebookRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -42,10 +42,7 @@ type UseFormNavigationContextResult = FormNavigationContext;
 export function useFormNavigationContext(): UseFormNavigationContextResult {
   // Get react router nav state
   const location = useLocation();
-
-  console.log(location.state);
   const result = FormNavigationContextSchema.safeParse(location.state);
-
   if (result.success) {
     return result.data;
   }
@@ -115,7 +112,6 @@ export const EditRecordPage = () => {
   } = useQuery({
     queryKey: ['formData', recordId],
     queryFn: async () => {
-      console.log('Re-querying the form data');
       // Get the hydrated record data in the form format
       return await dataEngine().form.getExistingFormData({
         recordId: recordId,
@@ -146,6 +142,12 @@ export const EditRecordPage = () => {
     dataEngine,
     attachmentEngine,
     navigation: {
+      navigateToRecordList: {
+        label: 'Return to record list',
+        navigate: () => {
+          navigate(getNotebookRoute({serverId, projectId}));
+        },
+      },
       toRecord: ({
         recordId: targetRecordId,
         mode,

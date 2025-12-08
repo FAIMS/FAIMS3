@@ -127,6 +127,12 @@ export interface FullFormConfig extends BaseFormConfig {
     /** A function which routes the browser to a target location */
     navigateToLink: (to: string) => void;
     /** Return to the previous context e.g. the record list */
+    navigateToRecordList: {
+      // e.g. return to record list
+      label: string;
+      // function which does this
+      navigate: () => void;
+    };
   };
   /** What is the deployed app name - helpful for error displays etc */
   appName: string;

@@ -5,20 +5,14 @@ import {
   FormDataEntry,
   HydratedRecordDocument,
 } from '@faims3/data-model';
-import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
-import React, {
-  ComponentProps,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import {ComponentProps, useCallback, useMemo, useRef, useState} from 'react';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
+import {FormNavigationButtons, ParentNavInfo} from './NavigationButtons';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
@@ -160,7 +154,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             recordId: latestLineage.recordId,
             label: `Return to ${hydrated.hrid}`,
             fieldId: latestLineage.fieldId,
-          },
+          } satisfies ParentNavInfo,
           fullContext: props.navigationContext,
         };
       }
@@ -506,42 +500,28 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   const navigationButtons = useMemo(() => {
     const info = parentNavigationInformation.data;
-    if (!info) {
-      return (
-        // Situation where we have no parent
-        <React.Fragment>
-          <Button
-            variant="contained"
-            onClick={() => formManagerConfig.trigger.commit()}
-          >
-            Finish (no parent)
-          </Button>
-        </React.Fragment>
-      );
-    } else {
-      return (
-        // Situation where we do have a parent
-        <React.Fragment>
-          <Button
-            variant="contained"
-            onClick={() => {
-              props.config.navigation.toRecord({
-                mode: info.parentNavButton.mode,
-                recordId: info.parentNavButton.recordId,
-                // During this navigation - we want to prompt the parent to
-                // strip off the latest navigation context - if present
-                stripNavigationEntry: true,
-                // Inform where to scroll to
-                scrollTarget: {fieldId: info.parentNavButton.fieldId},
-              });
-            }}
-          >
-            {info.parentNavButton.label}
-          </Button>
-        </React.Fragment>
-      );
-    }
-  }, [parentNavigationInformation.data]);
+
+    const parentFormLabel = info
+      ? dataEngine.uiSpec.viewsets[props.formId]?.label ??
+        info.parentNavButton.mode
+      : undefined;
+
+    return (
+      <FormNavigationButtons
+        parentNavInfo={info?.parentNavButton}
+        parentFormLabel={parentFormLabel}
+        navigateToRecordList={formManagerConfig.navigation.navigateToRecordList}
+        onNavigateToParent={
+          info ? params => props.config.navigation.toRecord(params) : undefined
+        }
+      />
+    );
+  }, [
+    parentNavigationInformation.data,
+    formManagerConfig.navigation,
+    dataEngine.uiSpec,
+    props.config.navigation,
+  ]);
 
   return (
     <>
