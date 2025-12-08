@@ -18,15 +18,15 @@
  *   TODO
  */
 
-import React, {useEffect} from 'react';
 import {
   CircularProgress,
-  TableCell,
   Table,
   TableBody,
+  TableCell,
   TableRow,
   Typography,
 } from '@mui/material';
+import React, {useEffect} from 'react';
 
 import {
   getRecordMetadata,
@@ -34,10 +34,10 @@ import {
   RecordID,
   RevisionID,
 } from '@faims3/data-model';
-import {useAppSelector} from '../../../context/store';
-import {selectAllProjects} from '../../../context/slices/projectSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
-import {localGetDataDb} from '../../..';
+import {selectAllProjects} from '../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../context/store';
+import {localGetDataDb} from '../../../utils/database';
 
 type RecordMetaProps = {
   project_id: ProjectID;

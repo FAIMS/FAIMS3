@@ -36,15 +36,15 @@ import {
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {selectActiveUser} from '../../../context/slices/authSlice';
 import {addAlert} from '../../../context/slices/alertSlice';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {
-  deleteStagedData,
   deleteDraftsForRecord,
+  deleteStagedData,
 } from '../../../sync/draft-storage';
+import {localGetDataDb} from '../../../utils/database';
 import {theme} from '../../themes';
-import {localGetDataDb} from '../../..';
 
 type RecordDeleteProps = {
   project_id: ProjectID;

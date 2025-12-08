@@ -58,6 +58,7 @@ import {registerField} from './internals';
 const bundle = null;
 export default bundle;
 
+// TODO: Do we need this
 registerField(
   'core-material-ui',
   'Input',
@@ -67,6 +68,7 @@ registerField(
   Input
 );
 
+// TODO: Do we need this
 registerField(
   'core-material-ui',
   'Checkbox',
@@ -76,6 +78,7 @@ registerField(
   Checkbox
 );
 
+// TODO: Do we need this
 registerField(
   'formik-material-ui',
   'TextField',
@@ -85,6 +88,7 @@ registerField(
   FormikTextField
 );
 
+// TODO: Do we need this
 registerField(
   'formik-material-ui',
   'Select',
@@ -94,6 +98,7 @@ registerField(
   FormikSelect
 );
 
+// TODO: Do we need this
 registerField(
   'formik-material-ui',
   'RadioGroup',
@@ -103,6 +108,9 @@ registerField(
   FormikRadioGroup
 );
 
+// CUSTOM FIELDS
+
+// Done
 registerField(
   'faims-custom',
   'Select',
@@ -112,6 +120,7 @@ registerField(
   FAIMSSelect
 );
 
+// Done
 registerField(
   'faims-custom',
   'MultiSelect',
@@ -121,6 +130,7 @@ registerField(
   MultiSelect
 );
 
+// Done
 registerField(
   'faims-custom',
   'AdvancedSelect',
@@ -130,6 +140,7 @@ registerField(
   AdvancedSelect
 );
 
+// Done
 registerField(
   'faims-custom',
   'Checkbox',
@@ -139,6 +150,7 @@ registerField(
   FAIMSCheckbox
 );
 
+// Done
 registerField(
   'faims-custom',
   'RadioGroup',
@@ -148,15 +160,7 @@ registerField(
   FAIMSRadioGroup
 );
 
-registerField(
-  'faims-custom',
-  'ActionButton',
-  'Action Button',
-  'Do an action',
-  'Special',
-  ActionButton
-);
-
+// Done
 registerField(
   'faims-custom',
   'TakePoint',
@@ -166,6 +170,7 @@ registerField(
   TakePoint
 );
 
+// Done
 registerField(
   'faims-custom',
   'TakePhoto',
@@ -175,6 +180,7 @@ registerField(
   TakePhoto
 );
 
+// Done
 registerField(
   'faims-custom',
   'TemplatedStringField',
@@ -184,6 +190,7 @@ registerField(
   TemplatedStringField
 );
 
+// TODO:
 registerField(
   'faims-custom',
   'BasicAutoIncrementer',
@@ -193,6 +200,7 @@ registerField(
   BasicAutoIncrementer
 );
 
+// Done
 registerField(
   'faims-custom',
   'RelatedRecordSelector',
@@ -202,6 +210,7 @@ registerField(
   RelatedRecordSelector
 );
 
+// TODO:
 registerField(
   'faims-custom',
   'AddressField',
@@ -211,6 +220,7 @@ registerField(
   AddressField
 );
 
+// TODO:
 registerField(
   'qrcode',
   'QRCodeFormField',
@@ -222,6 +232,7 @@ registerField(
 
 // Mapping Plugin registration
 
+// TODO:
 registerField(
   'mapping-plugin',
   'MapFormField',
@@ -231,6 +242,7 @@ registerField(
   MapFormField
 );
 
+//TODO: DO we need this?
 registerField(
   'formik-material-ui',
   'MultipleTextField',
@@ -240,6 +252,7 @@ registerField(
   FormikTextField
 );
 
+//TODO: DO we need this?
 registerField(
   'core-material-ui',
   'TextField',
@@ -249,6 +262,7 @@ registerField(
   TextField
 );
 
+// Done
 registerField(
   'faims-custom',
   'FileUploader',
@@ -258,6 +272,7 @@ registerField(
   FileUploader
 );
 
+//TODO: DO we need this?
 registerField(
   'faims-custom',
   'RandomStyle',
@@ -267,6 +282,7 @@ registerField(
   RandomStyle
 );
 
+// Done
 registerField(
   'faims-custom',
   'RichText',
@@ -277,6 +293,8 @@ registerField(
 );
 
 // Date fields
+
+//TODO:
 registerField(
   'faims-custom',
   'DateTimePicker',
@@ -286,6 +304,7 @@ registerField(
   DateTimeField
 );
 
+//TODO:
 registerField(
   'faims-custom',
   'DatePicker',
@@ -295,6 +314,7 @@ registerField(
   DateField
 );
 
+//TODO:
 registerField(
   'faims-custom',
   'MonthPicker',
@@ -304,6 +324,7 @@ registerField(
   MonthField
 );
 
+//TODO:
 registerField(
   'faims-custom',
   'DateTimeNow',
@@ -313,6 +334,7 @@ registerField(
   DateTimeNow
 );
 
+// Done
 registerField(
   'faims-custom',
   'FAIMSTextField',
@@ -322,6 +344,7 @@ registerField(
   FAIMSTextField
 );
 
+//TODO:
 registerField(
   'faims-custom',
   'NumberField',
@@ -329,6 +352,19 @@ registerField(
   'Allows users to input numeric values',
   'Number',
   NumberField
+);
+
+// =================
+// DEPRECATED FIELDS
+// =================
+
+registerField(
+  'faims-custom',
+  'ActionButton',
+  'Action Button',
+  'Do an action',
+  'Special',
+  ActionButton
 );
 
 /*

@@ -50,7 +50,6 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import React, {useEffect, useRef, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {localGetDataDb} from '../..';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {addAlert} from '../../context/slices/alertSlice';
@@ -58,6 +57,7 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
+import {localGetDataDb} from '../../utils/database';
 import RecordDelete from '../components/notebook/delete';
 import ProgressBar from '../components/progress-bar';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
@@ -80,9 +80,9 @@ import {
 } from '../components/record/relationships/types';
 import BackButton from '../components/ui/BackButton';
 import BoxTab from '../components/ui/boxTab';
+import Breadcrumbs from '../components/ui/breadcrumbs';
 import CircularLoading from '../components/ui/circular_loading';
 import getLocalDate from '../fields/LocalDate';
-import Breadcrumbs from '../components/ui/breadcrumbs';
 
 export default function Record() {
   /**
@@ -693,35 +693,37 @@ export default function Record() {
                           </Box>
                         </Box>
                       ) : (
-                        <RecordData
-                          // here we are in an existing record
-                          isExistingRecord={true}
-                          serverId={serverId}
-                          project_id={projectId!}
-                          record_id={recordId!}
-                          hrid={hrid}
-                          record_type={record_type}
-                          revision_id={updatedRevisionId!}
-                          ui_specification={uiSpec}
-                          draft_id={draftId}
-                          setDraftId={setDraftId}
-                          conflictfields={conflictfields}
-                          handleChangeTab={handleChange}
-                          isDraftSaving={isDraftSaving}
-                          isSyncing={isSyncing.toString()}
-                          handleSetIsDraftSaving={setIsDraftSaving}
-                          handleSetDraftLastSaved={setDraftLastSaved}
-                          handleSetDraftError={setDraftError}
-                          draftLastSaved={draftLastSaved}
-                          draftError={draftError}
-                          parentRecords={parentLinks}
-                          record_to_field_links={relatedRecords}
-                          is_link_ready={is_link_ready}
-                          handleUnlink={handleUnlink}
-                          setRevision_id={setUpdatedRevisionId}
-                          mq_above_md={mq_above_md}
-                          buttonRef={buttonRef}
-                        />
+                        <>
+                          <RecordData
+                            // here we are in an existing record
+                            isExistingRecord={true}
+                            serverId={serverId}
+                            project_id={projectId!}
+                            record_id={recordId!}
+                            hrid={hrid}
+                            record_type={record_type}
+                            revision_id={updatedRevisionId!}
+                            ui_specification={uiSpec}
+                            draft_id={draftId}
+                            setDraftId={setDraftId}
+                            conflictfields={conflictfields}
+                            handleChangeTab={handleChange}
+                            isSyncing={isSyncing.toString()}
+                            isDraftSaving={isDraftSaving}
+                            draftLastSaved={draftLastSaved}
+                            draftError={draftError}
+                            handleSetIsDraftSaving={setIsDraftSaving}
+                            handleSetDraftLastSaved={setDraftLastSaved}
+                            handleSetDraftError={setDraftError}
+                            parentRecords={parentLinks}
+                            record_to_field_links={relatedRecords}
+                            is_link_ready={is_link_ready}
+                            handleUnlink={handleUnlink}
+                            setRevision_id={setUpdatedRevisionId}
+                            mq_above_md={mq_above_md}
+                            buttonRef={buttonRef}
+                          />
+                        </>
                       )}
                     </Box>
                   </TabPanel>

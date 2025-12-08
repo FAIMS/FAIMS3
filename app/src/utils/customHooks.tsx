@@ -1,5 +1,10 @@
 import {
   Action,
+  DatabaseInterface,
+  DataDbType,
+  DataDocument,
+  DataEngine,
+  fetchAndHydrateRecord,
   getHridFieldMap,
   getMinimalRecordData,
   getMinimalRecordDataWithRegex,
@@ -7,6 +12,7 @@ import {
   isAuthorized,
   ProjectUIModel,
   RecordMetadata,
+  UISpecification,
   UnhydratedRecord,
 } from '@faims3/data-model';
 import {QueryClient, useQueries, useQuery} from '@tanstack/react-query';
@@ -14,12 +20,12 @@ import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
-import {localGetDataDb} from '..';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
 import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
+import {localGetDataDb} from './database';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -560,6 +566,48 @@ export const useRecordList = ({
   };
 };
 
+/** useQuery to fetch and hydrate individual targeted revision of record */
+export const useIndividualHydratedRecord = ({
+  projectId,
+  recordId,
+  revisionId,
+  uiSpec,
+}: {
+  projectId: string;
+  recordId: string;
+  revisionId: string;
+  uiSpec: ProjectUIModel;
+}) => {
+  // Work out our context e.g. active user, token, data db etc
+  const activeUser = useAppSelector(selectActiveUser);
+  const token = activeUser?.parsedToken;
+  const dataDb = localGetDataDb(projectId);
+
+  return useQuery({
+    queryKey: [
+      activeUser?.username,
+      token?.globalRoles,
+      token?.resourceRoles,
+      ...buildHydrateKeys({
+        projectId,
+        recordId,
+        revisionId,
+      }),
+    ],
+    queryFn: () => {
+      // Grab the minimal metadata
+      return fetchAndHydrateRecord({
+        dataDb,
+        uiSpecification: uiSpec,
+        projectId,
+        recordId,
+        revisionId,
+      });
+    },
+    networkMode: 'always',
+  });
+};
+
 /**
  * Does a potentially auto-refetching fetch of the drafts list for use in
  * the draft list.
@@ -697,4 +745,32 @@ export const useIsAuthorisedTo = ({
       }),
     [action, resourceId, activeUser.token]
   );
+};
+
+/** For a given record, determines the form type, then fetches the layout from
+ * the uiSpec */
+export const useUiSpecLayout = ({
+  recordId,
+  uiSpec,
+  dataDb,
+}: {
+  recordId: string;
+  uiSpec: UISpecification;
+  dataDb: DataDbType;
+}) => {
+  // Query to fetch the relevant viewset
+  return useQuery({
+    queryKey: ['record-ui-spec', recordId, uiSpec],
+    queryFn: async () => {
+      const engine = new DataEngine({
+        dataDb: dataDb as DatabaseInterface<DataDocument>,
+        uiSpec,
+      });
+      const rec = await engine.core.getRecord(recordId);
+      const formId = rec.type;
+      return uiSpec.viewsets[formId];
+    },
+    networkMode: 'always',
+    refetchOnMount: true,
+  });
 };

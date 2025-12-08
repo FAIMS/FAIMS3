@@ -456,7 +456,28 @@ function migrateOldDatabases(): boolean {
   );
 }
 
-// this should disappear once we have listing activation set up
+// Attachment service configuration
+
+/**
+ * Retrieves the configured attachment service type from environment variables.
+ * @returns {string} - The attachment service type (defaults to 'COUCH')
+ */
+function getAttachmentServiceType(): string {
+  const serviceType = import.meta.env.VITE_ATTACHMENT_SERVICE_TYPE;
+  return serviceType || 'COUCH';
+}
+
+/**
+ * Retrieves the attachment document ID prefix from environment variables.
+ * @returns {string | undefined} - Optional prefix for attachment document IDs
+ */
+function getAttachmentDocumentIdPrefix(): string | undefined {
+  const prefix = import.meta.env.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX;
+  return prefix || undefined;
+}
+
+export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
+export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();

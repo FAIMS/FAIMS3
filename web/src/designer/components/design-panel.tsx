@@ -49,6 +49,8 @@ export const DesignPanel = () => {
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
   );
 
+  const [previewForm, setPreviewForm] = useState<boolean>(false);
+
   const [newFormName, setNewFormName] = useState(
     () => `Form ${Object.keys(viewSets).length + 1}`
   );
@@ -416,6 +418,8 @@ export const DesignPanel = () => {
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
+                  previewForm={previewForm}
+                  setPreviewForm={setPreviewForm}
                 />
               }
             />
@@ -436,6 +440,8 @@ export const DesignPanel = () => {
                     handleDeleteCallback={handleDeleteFormTabChange}
                     handleSectionMoveCallback={handleSectionMove}
                     handleFieldMoveCallback={handleFieldMove}
+                    previewForm={previewForm}
+                    setPreviewForm={setPreviewForm}
                   />
                 }
               />

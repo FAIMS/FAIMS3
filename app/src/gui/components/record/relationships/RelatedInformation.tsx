@@ -35,10 +35,10 @@ import {
 import * as ROUTES from '../../../../constants/routes';
 import {compiledSpecService} from '../../../../context/slices/helpers/compiledSpecService';
 import {logError} from '../../../../logging';
+import {localGetDataDb} from '../../../../utils/database';
 import {getHridFromValuesAndSpec} from '../../../../utils/formUtilities';
 import getLocalDate from '../../../fields/LocalDate';
 import {ParentLinkProps, RecordLinkProps} from './types';
-import {localGetDataDb} from '../../../..';
 
 export type LocationState = {
   parent_record_id?: string; // parent or linked record id, set from parent or linked record
@@ -78,11 +78,10 @@ export async function generateLocationState(
       location_state: {
         field_id: parentLink.field_id,
         parent: latest_record?.relationship?.parent,
-        parent_link: ROUTES.getExistingRecordRoute({
+        parent_link: ROUTES.getEditRecordRoute({
           serverId,
           projectId: project_id,
           recordId: parentLink.record_id,
-          revisionId: revision_id,
         }),
         parent_record_id: parentLink.record_id,
         type: 'Child',
@@ -540,11 +539,10 @@ async function get_field_RelatedFields(
             latest_record?.updated_by ?? '',
             latest_record?.updated
           ),
-          ROUTES.getExistingRecordRoute({
+          ROUTES.getEditRecordRoute({
             serverId,
             projectId: child_record.project_id,
             recordId: child_record.record_id,
-            revisionId: revision_id,
           }),
           linked_vocab,
           record_id,
@@ -555,11 +553,10 @@ async function get_field_RelatedFields(
           section_label,
           field,
           field_name,
-          ROUTES.getExistingRecordRoute({
+          ROUTES.getEditRecordRoute({
             serverId,
             projectId: child_record?.project_id,
             recordId: record_id,
-            revisionId: current_revision_id,
           }),
           relation_type,
           latest_record?.deleted ?? false,
@@ -668,11 +665,10 @@ export async function getRelationshipDisplayData(
         ),
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getExistingRecordRoute({
+          : ROUTES.getEditRecordRoute({
               serverId,
               projectId: child_record.project_id,
               recordId: child_record.record_id,
-              revisionId: current_revision_id,
             }),
         linked_vocab,
         parent_link.record_id,
@@ -685,11 +681,10 @@ export async function getRelationshipDisplayData(
         field_name,
         latest_record?.deleted === true
           ? ''
-          : ROUTES.getExistingRecordRoute({
+          : ROUTES.getEditRecordRoute({
               serverId,
               projectId: child_record.project_id,
               recordId: parent_link.record_id,
-              revisionId: revision_id,
             }),
         has_parent === true && index === '0' ? 'Child' : 'Linked',
         false,
@@ -764,7 +759,7 @@ export async function getParentPersistenceData({
 }): Promise<ParentLinkProps[]> {
   let parentRecords: ParentLinkProps[] = [];
   if (parent !== null && parent.parent !== undefined) {
-    const {latest_record, revision_id} = await getRecordInformation({
+    const {latest_record} = await getRecordInformation({
       project_id: projectId,
       record_id: parent.parent.record_id,
       record_label: parent.parent.record_id,
@@ -813,11 +808,10 @@ export async function getParentPersistenceData({
           section: '',
           field_id: parent.parent.field_id,
           field_label: parent.parent.field_id,
-          route: ROUTES.getExistingRecordRoute({
+          route: ROUTES.getEditRecordRoute({
             serverId,
             projectId,
             recordId: parent.parent.record_id,
-            revisionId: revision_id,
           }),
           children: [],
           deleted: latest_record?.deleted,
@@ -991,11 +985,11 @@ export async function addRecordLink({
     // Use the data and spec to get the HRID
     const childRecordHrid =
       latest_record?.data && uiSpec
-        ? (getHridFromValuesAndSpec({
+        ? getHridFromValuesAndSpec({
             values: latest_record?.data,
             uiSpecification: uiSpec,
-          }) ?? latest_record.record_id)
-        : (latest_record?.record_id ?? '');
+          }) ?? latest_record.record_id
+        : latest_record?.record_id ?? '';
 
     // Find the relation object (if any) and then either add or
     // remove the parent/link as appropriate

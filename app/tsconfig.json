@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -16,11 +20,19 @@
     "noEmit": false,
     "jsx": "react-jsx",
     "jsxImportSource": "@emotion/react",
-
     "rootDir": "./",
     "outDir": "./dist/",
-    "types": ["vite/client", "vite-plugin-svgr/client"]
+    "types": [
+      "vite/client",
+      "vite-plugin-svgr/client",
+      "@testing-library/jest-dom"
+    ]
   },
-  "include": ["./src/"],
-  "exclude": ["node_modules/*", "test/*"]
+  "include": [
+    "./src/",
+  ],
+  "exclude": [
+    "node_modules/*",
+    "test/*"
+  ]
 }

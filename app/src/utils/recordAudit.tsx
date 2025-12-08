@@ -5,8 +5,8 @@ import {
   queryCouch,
   RECORDS_INDEX,
 } from '@faims3/data-model';
-import {localGetDataDb} from '..';
 import {getRecordAudit} from './apiOperations/notebooks';
+import {localGetDataDb} from './database';
 
 export interface RecordStatus extends PostRecordStatusResponse {
   recordHashes: Record<string, string>;

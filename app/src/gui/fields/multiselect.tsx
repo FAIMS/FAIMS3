@@ -18,7 +18,6 @@
  *   TODO
  */
 
-import {ElementOption} from '@faims3/data-model';
 import {
   Box,
   Checkbox,
@@ -33,6 +32,12 @@ import {TextFieldProps} from 'formik-mui';
 import {ReactNode} from 'react';
 import FieldWrapper from './fieldWrapper';
 import {contentToSanitizedHtml} from '../../utils/DomPurifier';
+
+interface ElementOption {
+  value: string;
+  label: string;
+  key?: string;
+}
 
 /**
  * Base properties for multi-select components
