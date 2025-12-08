@@ -12,6 +12,7 @@ import {
   FormNavigationContext,
   FormNavigationContextSchema,
   FullFormConfig,
+  RedirectInfo,
 } from '@faims3/forms';
 import {CircularProgress} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
@@ -21,7 +22,6 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import z from 'zod';
 import {APP_NAME, DEBUG_APP} from '../../buildconfig';
 import {getEditRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
@@ -151,6 +151,7 @@ export const EditRecordPage = () => {
         mode,
         stripNavigationEntry,
         addNavigationEntry,
+        scrollTarget,
       }: {
         recordId: RecordID;
         mode: AvpUpdateMode;
@@ -159,6 +160,7 @@ export const EditRecordPage = () => {
         // If you want to strip the head nav entry (such as when returning to
         // parent)
         stripNavigationEntry?: boolean;
+        scrollTarget?: RedirectInfo;
       }) => {
         let newNavState: FormNavigationContext = navigationContext;
         if (newNavState.mode === 'root') {
@@ -176,6 +178,10 @@ export const EditRecordPage = () => {
             newNavState.lineage.push(addNavigationEntry);
           }
         }
+
+        // Update scroll target as requested
+        newNavState.scrollTarget = scrollTarget;
+
         navigate(
           getEditRecordRoute({
             serverId,

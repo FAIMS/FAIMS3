@@ -237,6 +237,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     })),
   });
 
+  // Navigates to an existing link
   const handleLinkClick = (recordId: string) => {
     props.config.navigation.toRecord({
       recordId: recordId,

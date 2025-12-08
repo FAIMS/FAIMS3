@@ -7,6 +7,7 @@ import {
 } from '@faims3/data-model';
 import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
+import {useQuery} from '@tanstack/react-query';
 import React, {
   ComponentProps,
   useCallback,
@@ -22,9 +23,11 @@ import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
 } from './templatedFields';
-import {FullFormConfig, FullFormManagerConfig} from './types';
-import {useQuery} from '@tanstack/react-query';
-import z from 'zod';
+import {
+  FormNavigationContext,
+  FullFormConfig,
+  FullFormManagerConfig,
+} from './types';
 
 /**
  * The validation modes:
@@ -40,39 +43,6 @@ export type ValidationMode = 'FULL' | 'ONLY_TOUCHED';
  * Changes are batched and saved after this delay (in milliseconds).
  */
 const FORM_SYNC_DEBOUNCE_MS = 1000;
-
-export const FormNavigationChildEntrySchema = z.object({
-  recordId: z.string(),
-  revisionId: z.string().optional(),
-  parentMode: z.enum(['parent', 'new']),
-  fieldId: z.string(),
-});
-
-export const FormNavigationContextChildSchema = z.object({
-  mode: z.literal('child'),
-  lineage: z.array(FormNavigationChildEntrySchema),
-});
-
-export const FormNavigationContextRootSchema = z.object({
-  mode: z.literal('root'),
-});
-
-export const FormNavigationContextSchema = z.discriminatedUnion('mode', [
-  FormNavigationContextChildSchema,
-  FormNavigationContextRootSchema,
-]);
-
-// Inferred types
-export type FormNavigationChildEntry = z.infer<
-  typeof FormNavigationChildEntrySchema
->;
-export type FormNavigationContextChild = z.infer<
-  typeof FormNavigationContextChildSchema
->;
-export type FormNavigationContextRoot = z.infer<
-  typeof FormNavigationContextRootSchema
->;
-export type FormNavigationContext = z.infer<typeof FormNavigationContextSchema>;
 
 /**
  * Props for the EditableFormManager component.
@@ -189,6 +159,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             mode: latestLineage.parentMode,
             recordId: latestLineage.recordId,
             label: `Return to ${hydrated.hrid}`,
+            fieldId: latestLineage.fieldId,
           },
           fullContext: props.navigationContext,
         };
@@ -523,6 +494,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   // Combine base config with attachment handlers for field components
   const formManagerConfig: FullFormManagerConfig = {
     ...props.config,
+    navigationContext: props.navigationContext,
     attachmentHandlers: {
       addAttachment: handleAddAttachment,
       removeAttachment: handleRemoveAttachment,
@@ -559,6 +531,8 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
                 // During this navigation - we want to prompt the parent to
                 // strip off the latest navigation context - if present
                 stripNavigationEntry: true,
+                // Inform where to scroll to
+                scrollTarget: {fieldId: info.parentNavButton.fieldId},
               });
             }}
           >
@@ -585,6 +559,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         formName={props.formId}
         uiSpec={dataEngine.uiSpec}
         config={formManagerConfig}
+        navigationContext={props.navigationContext}
         fieldVisibilityMap={visibleMap}
       />
     </>

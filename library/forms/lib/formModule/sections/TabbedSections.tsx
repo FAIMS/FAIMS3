@@ -18,7 +18,7 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
 import {FormManagerConfig} from '../formManagers';
 import {FieldVisibilityMap} from '../formManagers/FormManager';
@@ -563,6 +563,37 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
 
   // Use mobile view if either condition is met
   const showMobileView = isSmallScreen || isTooDense;
+
+  // Handle initial navigation context - scroll to field if specified
+  useEffect(() => {
+    if (config.mode === 'full') {
+      if (config.navigationContext.scrollTarget !== undefined) {
+        const targetFieldId = config.navigationContext.scrollTarget.fieldId;
+
+        // Find which section contains this field
+        const targetSection = sections.find(sectionId => {
+          const sectionFields = getFieldsForView(spec, sectionId);
+          return sectionFields.includes(targetFieldId);
+        });
+
+        if (targetSection) {
+          // Navigate to the section if it's different from current
+          if (targetSection !== activeSection) {
+            setActiveSection(targetSection);
+          }
+
+          // Scroll to the field after a delay to allow rendering
+          const timeout = setTimeout(() => {
+            scrollToField(targetFieldId);
+          }, 500);
+
+          return () => {
+            clearTimeout(timeout);
+          };
+        }
+      }
+    }
+  }, []);
 
   /**
    * Marks all fields in the current section as touched and triggers validation.
