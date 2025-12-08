@@ -40,12 +40,6 @@ export const Field = React.memo((props: FieldProps) => {
         return <div>Unknown Field Component</div>;
       };
 
-  if (!fieldInfo) {
-    console.error(
-      `Field type ${props.fieldSpec['component-namespace']}::${props.fieldSpec['component-name']} not registered`
-    );
-  }
-
   return (
     <props.form.Field
       name={props.fieldSpec['component-parameters'].name}

@@ -1250,29 +1250,29 @@ class FormOperations {
         ...(startKey ? {startkey: startKey, skip: 1} : {}),
       }
     );
+    console.log(viewResult, JSON.stringify(viewResult, null, 2));
+
+    // Determine pagination (if we got more than the requested limit)
+    const hasMore = viewResult.rows.length > limit;
+
+    // Strip off the final if needed
+    let pageRows = hasMore ? viewResult.rows.slice(0, -1) : viewResult.rows;
 
     // Filter by formId if specified
-    let filteredRows = viewResult.rows;
     if (formId) {
-      filteredRows = filteredRows.filter(row => row.doc?.type === formId);
+      pageRows = pageRows.filter(row => row.doc?.type === formId);
     }
 
-    // Determine pagination
-    const hasMore = filteredRows.length > limit;
-    // Strip off the final if needed
-    const pageRows = hasMore ? filteredRows.slice(0, -1) : filteredRows;
     const nextStartKey = hasMore
-      ? pageRows[pageRows.length - 1]?.id
+      ? viewResult.rows[viewResult.rows.length - 1].id
       : undefined;
 
     // Build record summaries
     const records: RecordQueryResult['records'] = [];
 
     for (const row of pageRows) {
-      let hrid = row.id; // Default to record ID
-      let doc: RecordDBDocument;
       try {
-        doc = recordDocumentSchema.parse(row.doc);
+        records.push(recordDocumentSchema.parse(row.doc));
       } catch (e) {
         // Fall back to record ID if hydration fails
         console.error(
@@ -1284,25 +1284,6 @@ class FormOperations {
         // skipping
         continue;
       }
-
-      try {
-        const hydrated = await this.hydrated.getHydratedRecord({
-          recordId: row.id,
-          config: {conflictBehaviour: 'pickFirst'},
-        });
-        hrid = hydrated.hrid;
-      } catch (e) {
-        // Fall back to record ID if hydration fails
-        console.error(
-          'Failed record hydration for record with ID',
-          row.id,
-          'Error',
-          e
-        );
-      }
-
-      // add
-      records.push(doc);
     }
 
     return {
@@ -1337,6 +1318,7 @@ class FormOperations {
       limit,
       startKey,
     });
+    console.log(documents, JSON.stringify(documents, null, 2));
 
     const records: HydratedRecord[] = [];
 

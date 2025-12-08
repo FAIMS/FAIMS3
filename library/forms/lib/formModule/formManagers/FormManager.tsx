@@ -25,6 +25,7 @@ export interface FormManagerProps extends ComponentProps<any> {
   /** Visibility information - undefined means full visibility (disabling this
    * feature) */
   fieldVisibilityMap: FieldVisibilityMap | undefined;
+  debugMode?: boolean;
 }
 
 /**
@@ -67,7 +68,7 @@ export const FormManager = (props: FormManagerProps) => {
       )}
 
       {/* Debug display of current form state */}
-      <FormStateDisplay form={props.form} />
+      {props.debugMode && <FormStateDisplay form={props.form} />}
     </>
   );
 };

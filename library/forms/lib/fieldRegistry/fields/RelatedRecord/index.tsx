@@ -1,4 +1,5 @@
 import {HydratedRecord} from '@faims3/data-model';
+import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
 import SearchIcon from '@mui/icons-material/Search';
@@ -37,9 +38,9 @@ import {
   BaseFieldPropsSchema,
   FormFieldContextProps,
 } from '../../../formModule/types';
+import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 
 // ============================================================================
 // Component Specific Types & Schemas
@@ -219,6 +220,8 @@ const LinkExistingDialog = ({
     networkMode: 'always',
   });
 
+  console.log('Infinite query has more: ', hasNextPage);
+
   // Flatten pages and filter out already-linked records + apply search
   const filteredRecords = useMemo(() => {
     if (!data?.pages) return [];
@@ -327,7 +330,7 @@ const LinkExistingDialog = ({
         )}
 
         {/* Records List */}
-        {!isLoading && !isError && filteredRecords.length > 0 && (
+        {!isLoading && !isError && (
           <Paper variant="outlined">
             <List dense disablePadding sx={{maxHeight: 300, overflow: 'auto'}}>
               {filteredRecords.map(record => (
@@ -407,6 +410,14 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     return Array.isArray(value) ? value : [value];
   }, [value]);
 
+  // Display label for record type
+  const relatedRecordTypeLabel = useMemo(() => {
+    return (
+      props.config.dataEngine().uiSpec.viewsets[props.related_type]?.label ??
+      props.related_type
+    );
+  }, [props.related_type]);
+
   // Mutation for creating a new related record
   const {
     mutate: createNewRecord,
@@ -449,7 +460,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         mode: 'new',
         addNavigationEntry: {
           fieldId: props.fieldId,
-          parentMode: 'new',
+          // persist the current record mode
+          parentMode: props.config.recordMode,
           recordId: props.config.recordId,
         },
       });
@@ -550,10 +562,14 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           onClick={() => createNewRecord()}
           disabled={isCreating}
           startIcon={
-            isCreating ? <CircularProgress size={20} color="inherit" /> : null
+            isCreating ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : (
+              <AddIcon />
+            )
           }
         >
-          {isCreating ? 'Creating...' : 'Create & Link New'}
+          {isCreating ? 'Creating...' : 'Add new ' + relatedRecordTypeLabel}
         </Button>
 
         {props.allowLinkToExisting && (
