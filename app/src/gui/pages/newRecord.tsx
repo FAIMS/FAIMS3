@@ -160,8 +160,8 @@ export const EditRecordPage = () => {
         // If you want to push another navigation entry
         addNavigationEntry?: FormNavigationChildEntry;
         // If you want to strip the head nav entry (such as when returning to
-        // parent)
-        stripNavigationEntry?: boolean;
+        // parent) - how many to take
+        stripNavigationEntry?: number;
         scrollTarget?: RedirectInfo;
       }) => {
         let newNavState: FormNavigationContext = navigationContext;
@@ -171,9 +171,9 @@ export const EditRecordPage = () => {
             newNavState = {mode: 'child', lineage: [addNavigationEntry]};
           }
         } else if (newNavState.mode === 'child') {
-          if (stripNavigationEntry) {
+          if (stripNavigationEntry !== undefined) {
             // Strip off the latest entry
-            newNavState.lineage = newNavState.lineage.slice(0, -1);
+            newNavState.lineage = newNavState.lineage.slice(0, -stripNavigationEntry);
           }
           if (addNavigationEntry !== undefined) {
             // Push new entry

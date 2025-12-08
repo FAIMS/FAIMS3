@@ -12,7 +12,10 @@ import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
-import {FormNavigationButtons, ParentNavInfo} from './NavigationButtons';
+import {
+  FormNavigationButtons,
+  ParentNavInfo,
+} from './components/NavigationButtons';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
@@ -22,6 +25,7 @@ import {
   FullFormConfig,
   FullFormManagerConfig,
 } from './types';
+import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 
 /**
  * The validation modes:
@@ -154,6 +158,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             recordId: latestLineage.recordId,
             label: `Return to ${hydrated.hrid}`,
             fieldId: latestLineage.fieldId,
+            formId: hydrated.record.formId,
           } satisfies ParentNavInfo,
           fullContext: props.navigationContext,
         };
@@ -502,8 +507,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     const info = parentNavigationInformation.data;
 
     const parentFormLabel = info
-      ? dataEngine.uiSpec.viewsets[props.formId]?.label ??
-        info.parentNavButton.mode
+      ? dataEngine.uiSpec.viewsets[info.parentNavButton.formId]?.label
       : undefined;
 
     return (
@@ -525,6 +529,15 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   return (
     <>
+      {
+        // Breadcrumbs
+      }
+      <FormBreadcrumbs
+        config={props.config}
+        currentFormId={props.formId}
+        navigateToRecordList={props.config.navigation.navigateToRecordList}
+        navigationContext={props.navigationContext}
+      />
       {
         // Action buttons
       }
