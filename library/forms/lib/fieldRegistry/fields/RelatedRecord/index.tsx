@@ -200,7 +200,16 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       props.config.recordId,
     ],
     onSuccess: res => {
-      props.config.redirect.toRecord({recordId: res.record._id, mode: 'new'});
+      props.config.navigation.toRecord({
+        recordId: res.record._id,
+        mode: 'new',
+        // Add this navigation entry when redirecting
+        addNavigationEntry: {
+          fieldId: props.fieldId,
+          parentMode: 'new',
+          recordId: props.config.recordId,
+        },
+      });
     },
     networkMode: 'always',
     gcTime: 0,
@@ -228,8 +237,22 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     })),
   });
 
+  // Navigates to an existing link
   const handleLinkClick = (recordId: string) => {
-    props.config.redirect.toRecord({recordId: recordId, mode: 'parent'});
+    props.config.navigation.toRecord({
+      recordId: recordId,
+      // pass through the current record mode (so we can maximally utilise the
+      // new AvpUpdateMode when repeatedly traversing around a new record
+      // including related elements)
+      mode: props.config.recordMode,
+
+      // Add this navigation entry when redirecting
+      addNavigationEntry: {
+        fieldId: props.fieldId,
+        parentMode: props.config.recordMode,
+        recordId: props.config.recordId,
+      },
+    });
   };
 
   return (

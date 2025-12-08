@@ -3,6 +3,7 @@ import {
   DataEngine,
   IAttachmentService,
 } from '@faims3/data-model';
+import z from 'zod';
 
 /**
  * Base interface for form configuration modes.
@@ -12,12 +13,60 @@ export interface BaseFormConfig {
   layout: 'inline' | 'tabs';
 }
 
+// When we redirect to a child, we leave this trail, which helps us to navigate
+// naturally
+export const FormNavigationChildEntrySchema = z.object({
+  recordId: z.string(),
+  revisionId: z.string().optional(),
+  parentMode: z.enum(['parent', 'new']),
+  fieldId: z.string(),
+});
+
+// This helps track a redirect that just occurred
+export const RedirectInfoSchema = z.object({
+  // Where should scroll to
+  fieldId: z.string(),
+});
+export type RedirectInfo = z.infer<typeof RedirectInfoSchema>;
+
+export const FormNavigationContextChildSchema = z.object({
+  mode: z.literal('child'),
+  lineage: z.array(FormNavigationChildEntrySchema),
+  // Have we just been redirected from somewhere?
+  scrollTarget: RedirectInfoSchema.optional(),
+});
+
+export const FormNavigationContextRootSchema = z.object({
+  mode: z.literal('root'),
+  // Have we just been redirected from somewhere?
+  scrollTarget: RedirectInfoSchema.optional(),
+});
+
+export const FormNavigationContextSchema = z.discriminatedUnion('mode', [
+  FormNavigationContextChildSchema,
+  FormNavigationContextRootSchema,
+]);
+
+// Inferred types
+export type FormNavigationChildEntry = z.infer<
+  typeof FormNavigationChildEntrySchema
+>;
+export type FormNavigationContextChild = z.infer<
+  typeof FormNavigationContextChildSchema
+>;
+export type FormNavigationContextRoot = z.infer<
+  typeof FormNavigationContextRootSchema
+>;
+export type FormNavigationContext = z.infer<typeof FormNavigationContextSchema>;
+
 /**
  * Additional handlers injected by the form manager and passed down to field components.
  * These allow fields to interact with attachments (photos, files, etc.), as well as
  * providing field form 'runtime' triggers such as committing the current record.
  */
 export interface FormManagerAdditions {
+  /** The nav context */
+  navigationContext: FormNavigationContext;
   attachmentHandlers: {
     /** Add a new attachment to a field (inserted at start of attachment list) */
     addAttachment: (params: {
@@ -54,16 +103,36 @@ export interface FullFormConfig extends BaseFormConfig {
   dataEngine: () => DataEngine;
   /** Function to get attachment service instance */
   attachmentEngine: () => IAttachmentService;
+  /** What update mode ? */
+  recordMode: AvpUpdateMode;
   /** Navigation functions for redirecting to other records */
-  redirect: {
+  navigation: {
     /** Navigate to a record (latest revision) */
-    toRecord: (params: {recordId: string; mode: AvpUpdateMode}) => void;
-    /** Navigate to a specific record revision */
-    toRevision: (params: {
+    toRecord: (params: {
       recordId: string;
-      revisionId: string;
       mode: AvpUpdateMode;
+      // If you want to push another navigation entry
+      addNavigationEntry?: FormNavigationChildEntry;
+      // If you want to strip the head nav entry (such as when returning to
+      // parent)
+      stripNavigationEntry?: boolean;
+      // Do you want to leave a redirection trail to scroll to target?
+      scrollTarget?: RedirectInfo;
     }) => void;
+    /** Navigate to a record (latest revision) */
+    getToRecordLink: (params: {
+      recordId: string;
+      mode: AvpUpdateMode;
+    }) => string;
+    /** A function which routes the browser to a target location */
+    navigateToLink: (to: string) => void;
+    /** Return to the previous context e.g. the record list */
+    navigateToRecordList: {
+      // e.g. return to record list
+      label: string;
+      // function which does this
+      navigate: () => void;
+    };
   };
   /** What is the deployed app name - helpful for error displays etc */
   appName: string;

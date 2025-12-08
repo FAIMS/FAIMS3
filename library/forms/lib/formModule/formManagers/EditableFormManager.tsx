@@ -5,18 +5,23 @@ import {
   FormDataEntry,
   HydratedRecordDocument,
 } from '@faims3/data-model';
-import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
+import {useQuery} from '@tanstack/react-query';
 import {ComponentProps, useCallback, useMemo, useRef, useState} from 'react';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
+import {FormNavigationButtons, ParentNavInfo} from './NavigationButtons';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
 } from './templatedFields';
-import {FullFormConfig, FullFormManagerConfig} from './types';
+import {
+  FormNavigationContext,
+  FullFormConfig,
+  FullFormManagerConfig,
+} from './types';
 
 /**
  * The validation modes:
@@ -54,6 +59,8 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
   mode: AvpUpdateMode;
   /** Full configuration with data engine access */
   config: FullFormConfig;
+  /** Information about the navigational context */
+  navigationContext: FormNavigationContext;
 }
 
 /**
@@ -104,6 +111,60 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       config: {visibleBehaviour: 'include'},
     })
   );
+
+  // Determine information about parent context, if necessary
+  const parentNavigationInformation = useQuery({
+    queryKey: [],
+    queryFn: async () => {
+      // Root mode doesn't need any navigational information
+      if (props.navigationContext.mode === 'root') {
+        return null;
+      } else if (props.navigationContext.mode === 'child') {
+        const lineage = props.navigationContext.lineage;
+        if (lineage.length === 0) {
+          // This shouldn't happen - but good to be careful
+          return null;
+        }
+        // Latest entry is the head
+        const latestLineage = lineage[lineage.length - 1];
+        if (latestLineage === undefined) {
+          // This shouldn't happen - but good to be careful
+          return null;
+        }
+
+        // Determine various information about the parent record
+        const engine = props.config.dataEngine();
+        // Get hydrated parent record
+        const hydrated = await engine.hydrated.getHydratedRecord({
+          recordId: latestLineage.recordId,
+          revisionId: latestLineage.revisionId,
+        });
+
+        // TODO: consider per revision navigation
+        const link = props.config.navigation.getToRecordLink({
+          recordId: latestLineage.recordId,
+          mode: latestLineage.parentMode,
+        });
+
+        // TODO: Determine the parent record type label
+        return {
+          parentNavButton: {
+            link,
+            mode: latestLineage.parentMode,
+            recordId: latestLineage.recordId,
+            label: `Return to ${hydrated.hrid}`,
+            fieldId: latestLineage.fieldId,
+          } satisfies ParentNavInfo,
+          fullContext: props.navigationContext,
+        };
+      }
+      return null;
+    },
+    networkMode: 'always',
+    refetchOnMount: true,
+    gcTime: 0,
+    staleTime: 0,
+  });
 
   /**
    * Ensures we have a working revision ready for edits.
@@ -427,6 +488,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   // Combine base config with attachment handlers for field components
   const formManagerConfig: FullFormManagerConfig = {
     ...props.config,
+    navigationContext: props.navigationContext,
     attachmentHandlers: {
       addAttachment: handleAddAttachment,
       removeAttachment: handleRemoveAttachment,
@@ -436,31 +498,37 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
   };
 
+  const navigationButtons = useMemo(() => {
+    const info = parentNavigationInformation.data;
+
+    const parentFormLabel = info
+      ? dataEngine.uiSpec.viewsets[props.formId]?.label ??
+        info.parentNavButton.mode
+      : undefined;
+
+    return (
+      <FormNavigationButtons
+        parentNavInfo={info?.parentNavButton}
+        parentFormLabel={parentFormLabel}
+        navigateToRecordList={formManagerConfig.navigation.navigateToRecordList}
+        onNavigateToParent={
+          info ? params => props.config.navigation.toRecord(params) : undefined
+        }
+      />
+    );
+  }, [
+    parentNavigationInformation.data,
+    formManagerConfig.navigation,
+    dataEngine.uiSpec,
+    props.config.navigation,
+  ]);
+
   return (
     <>
-      {/* Action buttons for form completion
-      TODO: these are currently running commit (save) -
-      they should have actions either passed in (such
-      as return to list) or injected here
-      */}
-      <Button
-        variant="contained"
-        onClick={() => formManagerConfig.trigger.commit()}
-      >
-        Finish
-      </Button>
-      <Button
-        variant="contained"
-        onClick={() => formManagerConfig.trigger.commit()}
-      >
-        Finish and New
-      </Button>
-      <Button
-        variant="contained"
-        onClick={() => formManagerConfig.trigger.commit()}
-      >
-        Cancel
-      </Button>
+      {
+        // Action buttons
+      }
+      {navigationButtons}
 
       {/* Main form component */}
       <FormManager
@@ -471,6 +539,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         formName={props.formId}
         uiSpec={dataEngine.uiSpec}
         config={formManagerConfig}
+        navigationContext={props.navigationContext}
         fieldVisibilityMap={visibleMap}
       />
     </>
