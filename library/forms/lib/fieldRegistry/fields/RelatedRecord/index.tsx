@@ -1,10 +1,17 @@
 import {HydratedRecord} from '@faims3/data-model';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
+import SearchIcon from '@mui/icons-material/Search';
 import {
   Alert,
+  Box,
   Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  InputAdornment,
   List,
   ListItem,
   ListItemButton,
@@ -12,11 +19,17 @@ import {
   ListItemText,
   Paper,
   Skeleton,
+  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useMutation, useQueries, UseQueryResult} from '@tanstack/react-query';
-import {useMemo} from 'react';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  UseQueryResult,
+} from '@tanstack/react-query';
+import {useMemo, useState} from 'react';
 import z from 'zod';
 import {FullFormManagerConfig} from '../../../formModule';
 import {
@@ -156,7 +169,232 @@ const RelatedRecordListItem = ({
   );
 };
 
+// ============================================================================
+// Link Existing Record Dialog
+// ============================================================================
+
+interface LinkExistingDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSelect: (record: HydratedRecord) => Promise<void>;
+  config: FullFormManagerConfig;
+  relatedType: string;
+  excludedRecordIds: string[];
+}
+
+const LinkExistingDialog = ({
+  open,
+  onClose,
+  onSelect,
+  config,
+  relatedType,
+  excludedRecordIds,
+}: LinkExistingDialogProps) => {
+  const [searchFilter, setSearchFilter] = useState('');
+
+  // Query for available records with infinite scroll pagination
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['linkable-records', relatedType],
+    queryFn: async ({pageParam}) => {
+      return config.dataEngine().form.getHydratedRecords({
+        formId: relatedType,
+        limit: 25,
+        startKey: pageParam,
+      });
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: lastPage =>
+      lastPage.hasMore ? lastPage.nextStartKey : undefined,
+    enabled: open,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    networkMode: 'always',
+  });
+
+  // Flatten pages and filter out already-linked records + apply search
+  const filteredRecords = useMemo(() => {
+    if (!data?.pages) return [];
+
+    // NOTE: we should validate exclusion logic
+    const excludedSet = new Set(excludedRecordIds);
+    const allRecords = data.pages.flatMap(page => page.records);
+
+    return allRecords.filter(record => {
+      // Exclude already-linked records
+      if (excludedSet.has(record.record._id)) return false;
+
+      // Also filter out any records that have been linked to elsewhere
+      if (record.revision.relationship !== undefined) {
+        return false;
+      }
+
+      // Apply search filter (case-insensitive match on hrid or recordId)
+      if (searchFilter.trim()) {
+        const lowerFilter = searchFilter.toLowerCase();
+        return (
+          record.hrid.toLowerCase().includes(lowerFilter) ||
+          record.record._id.toLowerCase().includes(lowerFilter)
+        );
+      }
+
+      return true;
+    });
+  }, [data, excludedRecordIds, searchFilter]);
+
+  const handleSelect = async (record: HydratedRecord) => {
+    await onSelect(record);
+    onClose();
+    setSearchFilter('');
+  };
+
+  const handleClose = () => {
+    onClose();
+    setSearchFilter('');
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Link Existing Record</DialogTitle>
+      <DialogContent>
+        {/* Search/Filter Input */}
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Filter by ID..."
+          value={searchFilter}
+          onChange={e => setSearchFilter(e.target.value)}
+          sx={{mb: 2, mt: 1}}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" color="action" />
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        {/* Loading State */}
+        {isLoading && (
+          <List dense>
+            {[1, 2, 3].map(i => (
+              <ListItem key={i} disablePadding divider>
+                <ListItemButton disabled>
+                  <ListItemIcon sx={{minWidth: 40}}>
+                    <CircularProgress size={20} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Skeleton animation="wave" height={20} width="60%" />
+                    }
+                    secondary={
+                      <Skeleton animation="wave" height={16} width="40%" />
+                    }
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        )}
+
+        {/* Error State */}
+        {isError && (
+          <Alert severity="error" sx={{mb: 2}}>
+            {error instanceof Error
+              ? error.message
+              : 'Failed to load available records'}
+          </Alert>
+        )}
+
+        {/* Empty State */}
+        {!isLoading && !isError && filteredRecords.length === 0 && (
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{py: 4, textAlign: 'center'}}
+          >
+            {searchFilter.trim()
+              ? 'No matching records found.'
+              : 'No available records to link.'}
+          </Typography>
+        )}
+
+        {/* Records List */}
+        {!isLoading && !isError && filteredRecords.length > 0 && (
+          <Paper variant="outlined">
+            <List dense disablePadding sx={{maxHeight: 300, overflow: 'auto'}}>
+              {filteredRecords.map(record => (
+                <ListItem key={record.record._id} disablePadding divider>
+                  <ListItemButton
+                    onClick={async () => {
+                      await handleSelect(record);
+                    }}
+                  >
+                    <ListItemIcon sx={{minWidth: 40}}>
+                      <LinkIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={record.hrid}
+                      secondary={record.record._id}
+                      primaryTypographyProps={{
+                        variant: 'body2',
+                        fontFamily: 'monospace',
+                        fontWeight:
+                          record.hrid !== record.record._id ? 'bold' : 'normal',
+                      }}
+                      secondaryTypographyProps={{
+                        variant: 'caption',
+                        fontFamily: 'monospace',
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+
+              {/* Load More Button */}
+              {hasNextPage && (
+                <ListItem disablePadding>
+                  <Box sx={{width: '100%', p: 1, textAlign: 'center'}}>
+                    <Button
+                      size="small"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      startIcon={
+                        isFetchingNextPage ? (
+                          <CircularProgress size={16} />
+                        ) : null
+                      }
+                    >
+                      {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                    </Button>
+                  </Box>
+                </ListItem>
+              )}
+            </List>
+          </Paper>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose}>Cancel</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// ============================================================================
+// Main Field Component
+// ============================================================================
+
 const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+
   const rawValue = props.state.value?.data || undefined;
 
   const value = useMemo(
@@ -169,7 +407,13 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     return Array.isArray(value) ? value : [value];
   }, [value]);
 
-  const {mutate, isPending, isError, error} = useMutation({
+  // Mutation for creating a new related record
+  const {
+    mutate: createNewRecord,
+    isPending: isCreating,
+    isError: isCreateError,
+    error: createError,
+  } = useMutation({
     mutationFn: async () => {
       const res = await props.config.dataEngine().form.createRecord({
         createdBy: props.config.user,
@@ -203,7 +447,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       props.config.navigation.toRecord({
         recordId: res.record._id,
         mode: 'new',
-        // Add this navigation entry when redirecting
         addNavigationEntry: {
           fieldId: props.fieldId,
           parentMode: 'new',
@@ -214,6 +457,40 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     networkMode: 'always',
     gcTime: 0,
   });
+
+  // Handler for linking an existing record
+  const handleLinkExisting = async (record: HydratedRecord) => {
+    // Set our field value to include this link
+    props.setFieldData([
+      ...normalizedLinks,
+      {
+        record_id: record.record._id,
+        relation_type_vocabPair: relationTypeToPair(props.relation_type),
+      },
+    ] satisfies FieldValue);
+
+    // And we need to update the linked record to include this relationship
+    const rev = record.revision;
+    await props.config.dataEngine().core.updateRevision({
+      _id: rev._id,
+      _rev: rev._rev,
+      avps: rev.avps,
+      created: rev.created,
+      created_by: rev.createdBy,
+      parents: rev.parents,
+      record_id: rev.recordId,
+      revision_format_version: 1,
+      type: rev.formId,
+      // Update with relationship!
+      relationship: {
+        parent: {
+          field_id: props.fieldId,
+          record_id: props.config.recordId,
+          relation_type_vocabPair: relationTypeToPair(props.relation_type),
+        },
+      },
+    });
+  };
 
   // Fetch and hydrate all related records
   const relatedRecordQueries = useQueries({
@@ -227,8 +504,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
             config: {conflictBehaviour: 'pickLast'},
           });
 
-        // Ensure strict type compliance by casting or checking if necessary
-        // Assuming the data engine returns a compatible HydratedRecord
         return record ?? undefined;
       },
       networkMode: 'always',
@@ -241,12 +516,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   const handleLinkClick = (recordId: string) => {
     props.config.navigation.toRecord({
       recordId: recordId,
-      // pass through the current record mode (so we can maximally utilise the
-      // new AvpUpdateMode when repeatedly traversing around a new record
-      // including related elements)
       mode: props.config.recordMode,
-
-      // Add this navigation entry when redirecting
       addNavigationEntry: {
         fieldId: props.fieldId,
         parentMode: props.config.recordMode,
@@ -255,30 +525,60 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     });
   };
 
+  // Extract already-linked record IDs for filtering
+  const linkedRecordIds = useMemo(
+    () => normalizedLinks.map(link => link.record_id),
+    [normalizedLinks]
+  );
+
   return (
     <>
       {/* Error Alert for Creation */}
-      {isError && (
+      {isCreateError && (
         <Alert severity="error" sx={{mb: 2}}>
-          {error instanceof Error
-            ? error.message
+          {createError instanceof Error
+            ? createError.message
             : 'An error occurred creating the record'}
         </Alert>
       )}
 
       {/* Action Buttons */}
-      <Button
-        variant="outlined"
-        size="small"
-        sx={{mb: 2}}
-        onClick={() => mutate()}
-        disabled={isPending}
-        startIcon={
-          isPending ? <CircularProgress size={20} color="inherit" /> : null
-        }
-      >
-        {isPending ? 'Creating...' : 'Link New Record'}
-      </Button>
+      <div style={{display: 'flex', gap: 8, marginBottom: 16}}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => createNewRecord()}
+          disabled={isCreating}
+          startIcon={
+            isCreating ? <CircularProgress size={20} color="inherit" /> : null
+          }
+        >
+          {isCreating ? 'Creating...' : 'Create & Link New'}
+        </Button>
+
+        {props.allowLinkToExisting && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setLinkDialogOpen(true)}
+            startIcon={<LinkIcon />}
+          >
+            Link Existing
+          </Button>
+        )}
+      </div>
+
+      {/* Link Existing Dialog */}
+      {props.allowLinkToExisting && (
+        <LinkExistingDialog
+          open={linkDialogOpen}
+          onClose={() => setLinkDialogOpen(false)}
+          onSelect={handleLinkExisting}
+          config={props.config}
+          relatedType={props.related_type}
+          excludedRecordIds={linkedRecordIds}
+        />
+      )}
 
       {/* Linked Records List */}
       {normalizedLinks.length > 0 ? (
