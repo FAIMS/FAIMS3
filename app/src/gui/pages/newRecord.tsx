@@ -173,7 +173,10 @@ export const EditRecordPage = () => {
         } else if (newNavState.mode === 'child') {
           if (stripNavigationEntry !== undefined) {
             // Strip off the latest entry
-            newNavState.lineage = newNavState.lineage.slice(0, -stripNavigationEntry);
+            newNavState.lineage = newNavState.lineage.slice(
+              0,
+              -stripNavigationEntry
+            );
           }
           if (addNavigationEntry !== undefined) {
             // Push new entry
