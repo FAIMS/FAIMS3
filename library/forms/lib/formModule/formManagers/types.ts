@@ -114,8 +114,8 @@ export interface FullFormConfig extends BaseFormConfig {
       // If you want to push another navigation entry
       addNavigationEntry?: FormNavigationChildEntry;
       // If you want to strip the head nav entry (such as when returning to
-      // parent)
-      stripNavigationEntry?: boolean;
+      // parent) - how many to strip
+      stripNavigationEntry?: number;
       // Do you want to leave a redirection trail to scroll to target?
       scrollTarget?: RedirectInfo;
     }) => void;

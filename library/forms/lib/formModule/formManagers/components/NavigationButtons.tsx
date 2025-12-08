@@ -8,6 +8,7 @@ export interface ParentNavInfo {
   recordId: string;
   label: string;
   fieldId: string;
+  formId: string;
 }
 
 interface NavigateToRecordList {
@@ -18,7 +19,7 @@ interface NavigateToRecordList {
 interface ToRecordParams {
   mode: AvpUpdateMode;
   recordId: string;
-  stripNavigationEntry: boolean;
+  stripNavigationEntry?: number;
   scrollTarget: {fieldId: string};
 }
 
@@ -45,7 +46,7 @@ export const FormNavigationButtons = ({
       onNavigateToParent({
         mode: parentNavInfo.mode,
         recordId: parentNavInfo.recordId,
-        stripNavigationEntry: true,
+        stripNavigationEntry: 1,
         scrollTarget: {fieldId: parentNavInfo.fieldId},
       });
     }
@@ -82,7 +83,7 @@ export const FormNavigationButtons = ({
             }}
           >
             <Box component="span" sx={{fontSize: '0.875rem'}}>
-              Return to parent ({parentFormLabel ?? parentNavInfo.mode})
+              Return to parent {parentFormLabel ? `(${parentFormLabel})` : ''}
             </Box>
             <Box
               component="span"
