@@ -3,7 +3,7 @@ import {
   DataEngine,
   IAttachmentService,
 } from '@faims3/data-model';
-import z, {string} from 'zod';
+import z from 'zod';
 
 /**
  * Base interface for form configuration modes.
