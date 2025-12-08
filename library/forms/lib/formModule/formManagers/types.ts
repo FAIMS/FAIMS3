@@ -3,6 +3,7 @@ import {
   DataEngine,
   IAttachmentService,
 } from '@faims3/data-model';
+import {FormNavigationChildEntry} from './EditableFormManager';
 
 /**
  * Base interface for form configuration modes.
@@ -54,16 +55,29 @@ export interface FullFormConfig extends BaseFormConfig {
   dataEngine: () => DataEngine;
   /** Function to get attachment service instance */
   attachmentEngine: () => IAttachmentService;
+  /** What update mode ? */
+  recordMode: AvpUpdateMode;
   /** Navigation functions for redirecting to other records */
-  redirect: {
+  navigation: {
     /** Navigate to a record (latest revision) */
-    toRecord: (params: {recordId: string; mode: AvpUpdateMode}) => void;
-    /** Navigate to a specific record revision */
-    toRevision: (params: {
+    toRecord: (params: {
       recordId: string;
-      revisionId: string;
       mode: AvpUpdateMode;
+      // If you want to push another navigation entry
+      addNavigationEntry?: FormNavigationChildEntry;
+      // If you want to strip the head nav entry (such as when returning to
+      // parent)
+      stripNavigationEntry?: boolean;
     }) => void;
+    /** Navigate to a record (latest revision) */
+    getToRecordLink: (params: {
+      recordId: string;
+      mode: AvpUpdateMode;
+    }) => string;
+    /** A function which routes the browser to a target location */
+    navigateToLink: (to: string) => void;
+    /** Return to the previous context e.g. the record list */
+    // TODO
   };
   /** What is the deployed app name - helpful for error displays etc */
   appName: string;

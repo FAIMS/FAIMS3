@@ -7,7 +7,13 @@ import {
 } from '@faims3/data-model';
 import {Button} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
-import {ComponentProps, useCallback, useMemo, useRef, useState} from 'react';
+import React, {
+  ComponentProps,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
@@ -17,6 +23,8 @@ import {
   onChangeTemplatedFields,
 } from './templatedFields';
 import {FullFormConfig, FullFormManagerConfig} from './types';
+import {useQuery} from '@tanstack/react-query';
+import z from 'zod';
 
 /**
  * The validation modes:
@@ -32,6 +40,39 @@ export type ValidationMode = 'FULL' | 'ONLY_TOUCHED';
  * Changes are batched and saved after this delay (in milliseconds).
  */
 const FORM_SYNC_DEBOUNCE_MS = 1000;
+
+export const FormNavigationChildEntrySchema = z.object({
+  recordId: z.string(),
+  revisionId: z.string().optional(),
+  parentMode: z.enum(['parent', 'new']),
+  fieldId: z.string(),
+});
+
+export const FormNavigationContextChildSchema = z.object({
+  mode: z.literal('child'),
+  lineage: z.array(FormNavigationChildEntrySchema),
+});
+
+export const FormNavigationContextRootSchema = z.object({
+  mode: z.literal('root'),
+});
+
+export const FormNavigationContextSchema = z.discriminatedUnion('mode', [
+  FormNavigationContextChildSchema,
+  FormNavigationContextRootSchema,
+]);
+
+// Inferred types
+export type FormNavigationChildEntry = z.infer<
+  typeof FormNavigationChildEntrySchema
+>;
+export type FormNavigationContextChild = z.infer<
+  typeof FormNavigationContextChildSchema
+>;
+export type FormNavigationContextRoot = z.infer<
+  typeof FormNavigationContextRootSchema
+>;
+export type FormNavigationContext = z.infer<typeof FormNavigationContextSchema>;
 
 /**
  * Props for the EditableFormManager component.
@@ -54,6 +95,8 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
   mode: AvpUpdateMode;
   /** Full configuration with data engine access */
   config: FullFormConfig;
+  /** Information about the navigational context */
+  navigationContext: FormNavigationContext;
 }
 
 /**
@@ -104,6 +147,59 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       config: {visibleBehaviour: 'include'},
     })
   );
+
+  // Determine information about parent context, if necessary
+  const parentNavigationInformation = useQuery({
+    queryKey: [],
+    queryFn: async () => {
+      // Root mode doesn't need any navigational information
+      if (props.navigationContext.mode === 'root') {
+        return null;
+      } else if (props.navigationContext.mode === 'child') {
+        const lineage = props.navigationContext.lineage;
+        if (lineage.length === 0) {
+          // This shouldn't happen - but good to be careful
+          return null;
+        }
+        // Latest entry is the head
+        const latestLineage = lineage[lineage.length - 1];
+        if (latestLineage === undefined) {
+          // This shouldn't happen - but good to be careful
+          return null;
+        }
+
+        // Determine various information about the parent record
+        const engine = props.config.dataEngine();
+        // Get hydrated parent record
+        const hydrated = await engine.hydrated.getHydratedRecord({
+          recordId: latestLineage.recordId,
+          revisionId: latestLineage.revisionId,
+        });
+
+        // TODO: consider per revision navigation
+        const link = props.config.navigation.getToRecordLink({
+          recordId: latestLineage.recordId,
+          mode: latestLineage.parentMode,
+        });
+
+        // TODO: Determine the parent record type label
+        return {
+          parentNavButton: {
+            link,
+            mode: latestLineage.parentMode,
+            recordId: latestLineage.recordId,
+            label: `Return to ${hydrated.hrid}`,
+          },
+          fullContext: props.navigationContext,
+        };
+      }
+      return null;
+    },
+    networkMode: 'always',
+    refetchOnMount: true,
+    gcTime: 0,
+    staleTime: 0,
+  });
 
   /**
    * Ensures we have a working revision ready for edits.
@@ -436,31 +532,49 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
   };
 
+  const navigationButtons = useMemo(() => {
+    const info = parentNavigationInformation.data;
+    if (!info) {
+      return (
+        // Situation where we have no parent
+        <React.Fragment>
+          <Button
+            variant="contained"
+            onClick={() => formManagerConfig.trigger.commit()}
+          >
+            Finish (no parent)
+          </Button>
+        </React.Fragment>
+      );
+    } else {
+      return (
+        // Situation where we do have a parent
+        <React.Fragment>
+          <Button
+            variant="contained"
+            onClick={() => {
+              props.config.navigation.toRecord({
+                mode: info.parentNavButton.mode,
+                recordId: info.parentNavButton.recordId,
+                // During this navigation - we want to prompt the parent to
+                // strip off the latest navigation context - if present
+                stripNavigationEntry: true,
+              });
+            }}
+          >
+            {info.parentNavButton.label}
+          </Button>
+        </React.Fragment>
+      );
+    }
+  }, [parentNavigationInformation.data]);
+
   return (
     <>
-      {/* Action buttons for form completion
-      TODO: these are currently running commit (save) -
-      they should have actions either passed in (such
-      as return to list) or injected here
-      */}
-      <Button
-        variant="contained"
-        onClick={() => formManagerConfig.trigger.commit()}
-      >
-        Finish
-      </Button>
-      <Button
-        variant="contained"
-        onClick={() => formManagerConfig.trigger.commit()}
-      >
-        Finish and New
-      </Button>
-      <Button
-        variant="contained"
-        onClick={() => formManagerConfig.trigger.commit()}
-      >
-        Cancel
-      </Button>
+      {
+        // Action buttons
+      }
+      {navigationButtons}
 
       {/* Main form component */}
       <FormManager

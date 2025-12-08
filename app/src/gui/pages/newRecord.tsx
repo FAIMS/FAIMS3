@@ -5,13 +5,24 @@ import {
   DataEngine,
   ProjectID,
   RecordID,
-  RevisionID,
 } from '@faims3/data-model';
-import {EditableFormManager, FullFormConfig} from '@faims3/forms';
+import {
+  EditableFormManager,
+  FormNavigationChildEntry,
+  FormNavigationContext,
+  FormNavigationContextSchema,
+  FullFormConfig,
+} from '@faims3/forms';
 import {CircularProgress} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
-import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import {APP_NAME} from '../../buildconfig';
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
+import z from 'zod';
+import {APP_NAME, DEBUG_APP} from '../../buildconfig';
 import {getEditRecordRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
@@ -22,6 +33,32 @@ import {useUiSpecLayout} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
+
+const DEFAULT_NAVIGATION_STATE: FormNavigationContext = {mode: 'root'};
+
+type UseFormNavigationContextResult = FormNavigationContext;
+
+/** Custom hook to parse out safely navigation context */
+export function useFormNavigationContext(): UseFormNavigationContextResult {
+  // Get react router nav state
+  const location = useLocation();
+
+  console.log(location.state);
+  const result = FormNavigationContextSchema.safeParse(location.state);
+
+  if (result.success) {
+    return result.data;
+  }
+
+  if (DEBUG_APP && location.state !== null) {
+    console.warn(
+      'Invalid navigation state detected, falling back to root:',
+      result.error
+    );
+  }
+
+  return DEFAULT_NAVIGATION_STATE;
+}
 
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
@@ -37,6 +74,7 @@ export const EditRecordPage = () => {
   const navigate = useNavigate();
 
   const activeUser = useAppSelector(selectActiveUser);
+  const navigationContext = useFormNavigationContext();
 
   if (!activeUser) {
     return <div>Please log in to edit records.</div>;
@@ -104,35 +142,61 @@ export const EditRecordPage = () => {
     mode: 'full' as const,
     appName: APP_NAME,
     recordId,
+    recordMode: mode,
     dataEngine,
     attachmentEngine,
-    redirect: {
+    navigation: {
       toRecord: ({
         recordId: targetRecordId,
         mode,
+        stripNavigationEntry,
+        addNavigationEntry,
       }: {
         recordId: RecordID;
         mode: AvpUpdateMode;
+        // If you want to push another navigation entry
+        addNavigationEntry?: FormNavigationChildEntry;
+        // If you want to strip the head nav entry (such as when returning to
+        // parent)
+        stripNavigationEntry?: boolean;
       }) => {
-        // Navigate to the 'new record' page for this record
-        console.log('redirect to record', targetRecordId);
+        let newNavState: FormNavigationContext = navigationContext;
+        if (newNavState.mode === 'root') {
+          // If in root mode, stripping has no effect, but we can add
+          if (addNavigationEntry !== undefined) {
+            newNavState = {mode: 'child', lineage: [addNavigationEntry]};
+          }
+        } else if (newNavState.mode === 'child') {
+          if (stripNavigationEntry) {
+            // Strip off the latest entry
+            newNavState.lineage = newNavState.lineage.slice(0, -1);
+          }
+          if (addNavigationEntry !== undefined) {
+            // Push new entry
+            newNavState.lineage.push(addNavigationEntry);
+          }
+        }
         navigate(
           getEditRecordRoute({
             serverId,
             projectId,
             recordId: targetRecordId,
             mode,
-          })
+          }),
+          // Include navigation state
+          {state: newNavState}
         );
       },
-      toRevision: ({
-        recordId,
-        revisionId,
-      }: {
-        recordId: RecordID;
-        revisionId: RevisionID;
-      }) => {
-        console.log('redirect to revision', recordId, revisionId);
+      getToRecordLink(params) {
+        return getEditRecordRoute({
+          serverId,
+          projectId,
+          recordId: params.recordId,
+          mode,
+        });
+      },
+      navigateToLink(to) {
+        navigate(to);
       },
     },
     user: activeUser.username,
@@ -166,6 +230,7 @@ export const EditRecordPage = () => {
           activeUser={userId}
           recordId={recordId}
           config={formConfig}
+          navigationContext={navigationContext}
         />
       )}
     </div>
