@@ -1250,7 +1250,6 @@ class FormOperations {
         ...(startKey ? {startkey: startKey, skip: 1} : {}),
       }
     );
-    console.log(viewResult, JSON.stringify(viewResult, null, 2));
 
     // Determine pagination (if we got more than the requested limit)
     const hasMore = viewResult.rows.length > limit;
@@ -1318,7 +1317,6 @@ class FormOperations {
       limit,
       startKey,
     });
-    console.log(documents, JSON.stringify(documents, null, 2));
 
     const records: HydratedRecord[] = [];
 

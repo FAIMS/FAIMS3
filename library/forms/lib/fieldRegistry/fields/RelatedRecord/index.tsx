@@ -220,8 +220,6 @@ const LinkExistingDialog = ({
     networkMode: 'always',
   });
 
-  console.log('Infinite query has more: ', hasNextPage);
-
   // Flatten pages and filter out already-linked records + apply search
   const filteredRecords = useMemo(() => {
     if (!data?.pages) return [];
@@ -520,7 +518,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       },
       networkMode: 'always',
       staleTime: 0,
-      refetchOnMount: 'always',
+      refetchOnMount: true,
     })),
   });
 
