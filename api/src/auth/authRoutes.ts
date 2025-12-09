@@ -73,7 +73,6 @@ import {
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {verifyUserCredentials} from './strategies/localStrategy';
 import {AuthProviderConfigMap} from './strategies/strategyTypes';
-import {log, time} from 'console';
 
 patch();
 
@@ -95,6 +94,8 @@ const LOCKOUT_PERIOD_MEDIUM = 60 * 1000; // 1 minute
 const LOCKOUT_PERIOD_LONG = 5 * 60 * 1000; // 5 minutes
 const LOCKOUT_PERIOD_MAX = 15 * 60 * 1000; // 15 minutes (only after many attempts)
 
+const LOCKOUT_THRESHOLD_STORE_SIZE = 100; // purge if we have more than this many entries to mitigate DDOS risk
+
 // In-memory store of failed login attempts
 interface FailedAttempt {
   count: number;
@@ -103,15 +104,23 @@ interface FailedAttempt {
 const failedLoginAttempts: Record<string, FailedAttempt> = {};
 
 // Log a failed login attempt for a user
-const logFailedLoginAttempt = (username: string) => {
-  if (!failedLoginAttempts[username]) {
-    failedLoginAttempts[username] = {
-      count: 1,
-      lastAttempt: new Date(),
-    };
-  } else {
-    failedLoginAttempts[username].count += 1;
-    failedLoginAttempts[username].lastAttempt = new Date();
+const logFailedLoginAttempt = async (username: string) => {
+  // only log for known usernames
+  const user = await getCouchUserFromEmailOrUserId(username);
+  if (user) {
+    if (!failedLoginAttempts[username]) {
+      failedLoginAttempts[username] = {
+        count: 1,
+        lastAttempt: new Date(),
+      };
+    } else {
+      failedLoginAttempts[username].count += 1;
+      failedLoginAttempts[username].lastAttempt = new Date();
+    }
+  }
+  // purge if we have lots of entries
+  if (Object.keys(failedLoginAttempts).length > LOCKOUT_THRESHOLD_STORE_SIZE) {
+    purgeLockoutStore();
   }
 };
 // reset the count once a user logs in successfully
@@ -169,6 +178,18 @@ const userIsLockedOut = (
     return true;
   }
   return false;
+};
+
+// purge old entries from the failed login attempts store
+const purgeLockoutStore = () => {
+  const now = new Date().getTime();
+  for (const username in failedLoginAttempts) {
+    const attempt = failedLoginAttempts[username];
+    // if last attempt was more than max lockout period ago, remove entry
+    if (now - attempt.lastAttempt.getTime() > LOCKOUT_PERIOD_MAX) {
+      delete failedLoginAttempts[username];
+    }
+  }
 };
 
 /**
@@ -239,7 +260,7 @@ export function addAuthRoutes(
       // first check for lockout
       if (userIsLockedOut(loginPayload.email, req.flash)) {
         // we log this as a failed attempt to keep track of the most recent attempt
-        logFailedLoginAttempt(loginPayload.email);
+        await logFailedLoginAttempt(loginPayload.email);
         return res.redirect(errorRedirect);
       }
 
@@ -269,7 +290,7 @@ export function addAuthRoutes(
             req.flash('error', {
               loginError: {msg: err.message || 'Login failed'},
             });
-            logFailedLoginAttempt(req.body.email);
+            await logFailedLoginAttempt(req.body.email);
             return res.redirect(errorRedirect);
           }
           if (!user) {
