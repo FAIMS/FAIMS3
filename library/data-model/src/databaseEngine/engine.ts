@@ -21,6 +21,7 @@ import {
   FormUpdateData,
   HydratedDataField,
   HydratedRecord,
+  HydratedRecordQueryResult,
   InitialFormData,
   NewAvpDBDocument,
   newAvpDocumentSchema,
@@ -33,6 +34,9 @@ import {
   NewRevisionDBDocument,
   newRevisionDocumentSchema,
   pendingAttachmentDocumentSchema,
+  RecordDBDocument,
+  recordDocumentSchema,
+  RecordQueryResult,
 } from './types';
 
 // =======
@@ -907,6 +911,11 @@ class FormOperations {
    */
   async getCurrentRevisionId({recordId}: {recordId: string}): Promise<string> {
     const heads = await this.hydrated.getHeads(recordId);
+    return this.getRevisionHead({heads, recordId});
+  }
+
+  /** Helper to get the latest head (where there is no conflict) */
+  getRevisionHead({heads, recordId}: {heads: string[]; recordId: string}) {
     if (heads.length === 0) {
       throw new Exceptions.NoHeadsError(recordId);
     } else if (heads.length > 1) {
@@ -1207,6 +1216,135 @@ class FormOperations {
         revision: hydrated.revision,
         hrid: hydrated.hrid,
       },
+    };
+  }
+
+  /**
+   * Query records with optional filtering by form type and pagination.
+   * Uses the 'index/record' view to efficiently list records.
+   *
+   * @param params.formId - Optional form type to filter by (e.g., 'SurveyArea')
+   * @param params.limit - Maximum number of records to return (default: 25)
+   * @param params.startKey - Pagination cursor from previous query's `nextStartKey`
+   * @param params.includeHrid - Whether to hydrate records to get HRID (default: true, slower)
+   *
+   * @returns Paginated list of record summaries with metadata
+   */
+  async getRecords({
+    formId,
+    limit = 25,
+    startKey,
+  }: {
+    formId?: string;
+    limit?: number;
+    startKey?: string;
+  }): Promise<RecordQueryResult> {
+    // Query the record index view
+    const viewResult = await this.core.db.query<RecordDBDocument>(
+      'index/record',
+      {
+        include_docs: true,
+        attachments: false,
+        // Fetch more than we need to determine if more records
+        limit: limit + 1,
+        ...(startKey ? {startkey: startKey, skip: 1} : {}),
+      }
+    );
+    console.log(viewResult, JSON.stringify(viewResult, null, 2));
+
+    // Determine pagination (if we got more than the requested limit)
+    const hasMore = viewResult.rows.length > limit;
+
+    // Strip off the final if needed
+    let pageRows = hasMore ? viewResult.rows.slice(0, -1) : viewResult.rows;
+
+    // Filter by formId if specified
+    if (formId) {
+      pageRows = pageRows.filter(row => row.doc?.type === formId);
+    }
+
+    const nextStartKey = hasMore
+      ? viewResult.rows[viewResult.rows.length - 1].id
+      : undefined;
+
+    // Build record summaries
+    const records: RecordQueryResult['records'] = [];
+
+    for (const row of pageRows) {
+      try {
+        records.push(recordDocumentSchema.parse(row.doc));
+      } catch (e) {
+        // Fall back to record ID if hydration fails
+        console.error(
+          'Failed record validation for record with ID',
+          row.id,
+          'Error',
+          e
+        );
+        // skipping
+        continue;
+      }
+    }
+
+    return {
+      records,
+      hasMore,
+      nextStartKey,
+    };
+  }
+
+  /**
+   * Query records with optional filtering by form type and pagination.
+   * Uses the 'index/record' view to efficiently list records.
+   *
+   * @param params.formId - Optional form type to filter by (e.g., 'SurveyArea')
+   * @param params.limit - Maximum number of records to return (default: 25)
+   * @param params.startKey - Pagination cursor from previous query's `nextStartKey`
+   * @param params.includeHrid - Whether to hydrate records to get HRID (default: true, slower)
+   *
+   * @returns Paginated list of record summaries with metadata
+   */
+  async getHydratedRecords({
+    formId,
+    limit = 25,
+    startKey,
+  }: {
+    formId?: string;
+    limit?: number;
+    startKey?: string;
+  }): Promise<HydratedRecordQueryResult> {
+    const documents = await this.getRecords({
+      formId,
+      limit,
+      startKey,
+    });
+    console.log(documents, JSON.stringify(documents, null, 2));
+
+    const records: HydratedRecord[] = [];
+
+    for (const doc of documents.records) {
+      try {
+        records.push(
+          await this.hydrated.getHydratedRecord({
+            recordId: doc._id,
+            config: {conflictBehaviour: 'pickFirst'},
+          })
+        );
+      } catch (e) {
+        // Fall back to record ID if hydration fails
+        console.error(
+          'Failed record hydration for record with ID',
+          doc._id,
+          'Error',
+          e
+        );
+      }
+    }
+
+    return {
+      hasMore: documents.hasMore,
+      records,
+      nextStartKey: documents.nextStartKey,
     };
   }
 

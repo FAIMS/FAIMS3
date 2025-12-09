@@ -539,7 +539,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         navigationContext={props.navigationContext}
       />
       {
-        // Action buttons
+        // Action buttons (top)
       }
       {navigationButtons}
 
@@ -555,6 +555,10 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         navigationContext={props.navigationContext}
         fieldVisibilityMap={visibleMap}
       />
+      {
+        // Action buttons (repeated at bottom for usability)
+      }
+      {navigationButtons}
     </>
   );
 };

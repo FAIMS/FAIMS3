@@ -681,3 +681,27 @@ const initialFormData = z.object({
 });
 
 export type InitialFormData = z.infer<typeof initialFormData>;
+
+/**
+ * Query result for paginated record listing
+ */
+export interface RecordQueryResult {
+  /** Array of record summaries for this page */
+  records: RecordDBDocument[];
+  /** Whether there are more records after this page */
+  hasMore: boolean;
+  /** Bookmark for fetching the next page (pass as `startKey` in next call) */
+  nextStartKey?: string;
+}
+
+/**
+ * Query result for paginated record listing (hydrated)
+ */
+export interface HydratedRecordQueryResult {
+  /** Array of record summaries for this page */
+  records: HydratedRecord[];
+  /** Whether there are more records after this page */
+  hasMore: boolean;
+  /** Bookmark for fetching the next page (pass as `startKey` in next call) */
+  nextStartKey?: string;
+}
