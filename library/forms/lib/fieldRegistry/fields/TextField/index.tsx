@@ -38,8 +38,13 @@ const TextField = (props: BaseFieldProps & FormFieldContextProps) => {
 };
 
 // generate a zod schema for the value. In this case, it's always a string
-const valueSchema = () => {
-  return z.string().min(1);
+const valueSchema = (props: BaseFieldProps) => {
+  // Only add the minimum constraint when required
+  if (props.required) {
+    return z.string().min(1);
+  } else {
+    return z.string();
+  }
 };
 
 // Export a constant with the information required to
