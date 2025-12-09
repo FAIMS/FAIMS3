@@ -148,6 +148,7 @@ const RelatedRecordListItem = ({
   }
 
   // 3. Success State: Hydrated Data
+  console.log(data);
   return (
     <ListItem disablePadding divider>
       <ListItemButton
@@ -519,7 +520,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       },
       networkMode: 'always',
       staleTime: 0,
-      refetchOnMount: 'always',
+      refetchOnMount: true,
     })),
   });
 

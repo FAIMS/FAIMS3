@@ -73,8 +73,19 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
   config: FullFormConfig;
   /** Information about the navigational context */
   navigationContext: FormNavigationContext;
+  /** Called when the form is ready, providing access to form controls */
+  onReady?: (handle: EditableFormManagerHandle) => void;
   /** Enable debug logging for save operations */
   debugMode?: boolean;
+}
+
+export interface EditableFormManagerHandle {
+  // Force a save - this is useful for clients which need to ensure changes are
+  // saved prior to navigation events at the browser/client specific level
+  flushSave: () => Promise<void>;
+  // A check to see if there are any pending changes (debounced onChange which
+  // has not been handled yet)
+  hasPendingChanges: () => boolean;
 }
 
 /**
@@ -89,7 +100,7 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
  * - Form submission and completion
  */
 export const EditableFormManager = (props: EditableFormManagerProps) => {
-  const {debugMode = false} = props;
+  const {debugMode = false, onReady} = props;
 
   // Track whether any edits have been made (triggers revision creation in
   // parent mode)
@@ -129,7 +140,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   );
 
   // Track pending save state for flush functionality
-  const pendingValuesRef = useRef<FaimsFormData | null>(null);
+  const pendingValuesRef = useRef<boolean>(false);
   const isSavingRef = useRef(false);
 
   // Determine information about parent context, if necessary
@@ -166,7 +177,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           mode: latestLineage.parentMode,
         });
 
-        // TODO: Determine the parent record type label
         return {
           parentNavButton: {
             link,
@@ -239,88 +249,86 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
    * The actual save implementation - called by debounced handler.
    * Saves the provided values to the backend.
    */
-  const performSave = useCallback(
-    async (values: FaimsFormData) => {
+  const performSave = useCallback(async () => {
+    if (debugMode) {
+      console.log('[EditableFormManager] performSave called', {
+        timestamp: new Date().toISOString(),
+        recordId: props.recordId,
+        valueKeys: Object.keys(form.state.values ?? {}),
+      });
+    }
+
+    isSavingRef.current = true;
+
+    try {
+      // Updating data
+      const revisionToUpdate = await ensureWorkingRevision();
+
       if (debugMode) {
-        console.log('[EditableFormManager] performSave called', {
-          timestamp: new Date().toISOString(),
-          recordId: props.recordId,
-          valueKeys: Object.keys(values ?? {}),
-        });
-      }
-
-      isSavingRef.current = true;
-
-      try {
-        // Updating data
-        const revisionToUpdate = await ensureWorkingRevision();
-
-        if (debugMode) {
-          console.log('[EditableFormManager] Got working revision', {
-            revisionId: revisionToUpdate,
-          });
-        }
-
-        // First, lets fire any updates to the templated fields
-        onChangeTemplatedFields({
-          // TODO: understand why this is upset
-          form: form as FaimsForm,
-          formId: props.formId,
-          uiSpec: dataEngine.uiSpec,
-          // Don't fire listeners again redundantly
-          runListeners: false,
-          context: getRecordContextFromRecord({record: props.existingRecord}),
-        });
-
-        await dataEngine.form.updateRevision({
+        console.log('[EditableFormManager] Got working revision', {
           revisionId: revisionToUpdate,
-          recordId: props.recordId,
-          updatedBy: props.activeUser,
-          update: values ?? {},
-          mode: props.mode,
         });
-
-        if (debugMode) {
-          console.log('[EditableFormManager] Save completed successfully', {
-            timestamp: new Date().toISOString(),
-            revisionId: revisionToUpdate,
-          });
-        }
-
-        // Clear pending values since we've saved
-        pendingValuesRef.current = null;
-      } catch (error) {
-        console.error('Failed to update revision:', error);
-        if (debugMode) {
-          console.error('[EditableFormManager] Save failed', {
-            timestamp: new Date().toISOString(),
-            error,
-          });
-        }
-      } finally {
-        isSavingRef.current = false;
       }
 
-      // Updating visibility
-      setVisibleMap(
-        currentlyVisibleMap({
-          values: formDataExtractor({fullData: values}),
-          uiSpec: dataEngine.uiSpec,
-          viewsetId: props.formId,
-        })
-      );
-    },
-    [
-      debugMode,
-      ensureWorkingRevision,
-      props.recordId,
-      props.activeUser,
-      props.mode,
-      props.formId,
-      props.existingRecord,
-      dataEngine,
-    ]
-  );
+      // First, lets fire any updates to the templated fields
+      onChangeTemplatedFields({
+        // TODO: understand why this is upset
+        form: form as FaimsForm,
+        formId: props.formId,
+        uiSpec: dataEngine.uiSpec,
+        // Don't fire listeners again redundantly
+        runListeners: false,
+        context: getRecordContextFromRecord({record: props.existingRecord}),
+      });
+
+      await dataEngine.form.updateRevision({
+        revisionId: revisionToUpdate,
+        recordId: props.recordId,
+        updatedBy: props.activeUser,
+        update: form.state.values ?? {},
+        mode: props.mode,
+      });
+
+      if (debugMode) {
+        console.log('[EditableFormManager] Save completed successfully', {
+          timestamp: new Date().toISOString(),
+          revisionId: revisionToUpdate,
+          newData: form.state.values,
+        });
+      }
+
+      // Clear pending values since we've saved
+      pendingValuesRef.current = false;
+    } catch (error) {
+      console.error('Failed to update revision:', error);
+      if (debugMode) {
+        console.error('[EditableFormManager] Save failed', {
+          timestamp: new Date().toISOString(),
+          error,
+        });
+      }
+    } finally {
+      isSavingRef.current = false;
+    }
+
+    // Updating visibility
+    setVisibleMap(
+      currentlyVisibleMap({
+        values: formDataExtractor({fullData: form.state.values}),
+        uiSpec: dataEngine.uiSpec,
+        viewsetId: props.formId,
+      })
+    );
+  }, [
+    debugMode,
+    ensureWorkingRevision,
+    props.recordId,
+    props.activeUser,
+    props.mode,
+    props.formId,
+    props.existingRecord,
+    dataEngine,
+  ]);
 
   // Use a ref to always have access to the latest performSave without
   // recreating debounce
@@ -347,14 +355,14 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       debouncedSaveRef.current.cancel();
     }
 
-    const debouncedFn = debounce(async (values: FaimsFormData) => {
+    const debouncedFn = debounce(async () => {
       if (debugMode) {
         console.log('[EditableFormManager] Debounced save executing', {
           timestamp: new Date().toISOString(),
         });
       }
       // Call via ref so we always get the latest implementation
-      await performSaveRef.current(values);
+      await performSaveRef.current();
     }, FORM_SYNC_DEBOUNCE_MS);
 
     debouncedSaveRef.current = debouncedFn;
@@ -376,21 +384,19 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
    * triggers debounced save.
    */
   const onChange = useCallback(() => {
-    const values = form.state.values;
-
     if (debugMode) {
       console.log('[EditableFormManager] onChange triggered', {
         timestamp: new Date().toISOString(),
-        hasPendingValues: pendingValuesRef.current !== null,
+        hasPendingValues: pendingValuesRef.current,
         isSaving: isSavingRef.current,
       });
+
+      // Track that we have pending unsaved changes
+      pendingValuesRef.current = true;
     }
 
-    // Track that we have pending unsaved changes
-    pendingValuesRef.current = values;
-
     // Trigger debounced save
-    debouncedSave(values);
+    debouncedSave();
   }, [debouncedSave, debugMode]);
 
   /**
@@ -403,7 +409,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     if (debugMode) {
       console.log('[EditableFormManager] flushSave called', {
         timestamp: new Date().toISOString(),
-        hasPendingValues: pendingValuesRef.current !== null,
+        hasPendingValues: pendingValuesRef.current,
         isSaving: isSavingRef.current,
       });
     }
@@ -417,7 +423,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         console.log('[EditableFormManager] Flushing pending values');
       }
       // Use the ref here too for consistency
-      await performSaveRef.current(pendingValuesRef.current);
+      await performSaveRef.current();
     }
 
     // Wait for any in-flight save to complete
@@ -437,7 +443,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
    * Check if there are unsaved changes pending.
    */
   const hasPendingChanges = useCallback((): boolean => {
-    return pendingValuesRef.current !== null || isSavingRef.current;
+    return pendingValuesRef.current || isSavingRef.current;
   }, []);
 
   const validationFunction = useCallback(
@@ -491,6 +497,14 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
     [validationMode, props.formId, dataEngine.uiSpec]
   );
+
+  // Notify parent when ready and when handle changes
+  useEffect(() => {
+    onReady?.({
+      flushSave,
+      hasPendingChanges,
+    });
+  }, [onReady, flushSave, hasPendingChanges]);
 
   // Initialize TanStack Form with loaded data and change handlers
   const form = useForm({

@@ -8,6 +8,7 @@ import {
 } from '@faims3/data-model';
 import {
   EditableFormManager,
+  EditableFormManagerHandle,
   FormNavigationChildEntry,
   FormNavigationContext,
   FormNavigationContextSchema,
@@ -17,6 +18,7 @@ import {
 import {CircularProgress} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {
+  useBlocker,
   useLocation,
   useNavigate,
   useParams,
@@ -31,6 +33,7 @@ import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {useUiSpecLayout} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
+import {useEffect, useState} from 'react';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
@@ -93,6 +96,28 @@ export const EditRecordPage = () => {
   const {uiSpecificationId: uiSpecId} = project;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
   if (!uiSpec) return <div>UI Specification not found</div>;
+
+  // These are handlers passed back from the editable form to assist with
+  // navigation management
+  const [formHandle, setFormHandle] =
+    useState<EditableFormManagerHandle | null>(null);
+
+  // Establish the blocker function (this is how we check if we need to block
+  // nav events and flush)
+  const blocker = useBlocker(
+    ({currentLocation, nextLocation}) =>
+      formHandle?.hasPendingChanges() === true &&
+      currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // When the blocker state changes - we only proceed after forcing a flush
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      formHandle?.flushSave().finally(() => {
+        blocker.proceed();
+      });
+    }
+  }, [blocker, formHandle]);
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {
@@ -243,6 +268,8 @@ export const EditRecordPage = () => {
           config={formConfig}
           navigationContext={navigationContext}
           debugMode={DEBUG_APP}
+          // This is a callback to set parent state from the component
+          onReady={setFormHandle}
         />
       )}
     </div>
