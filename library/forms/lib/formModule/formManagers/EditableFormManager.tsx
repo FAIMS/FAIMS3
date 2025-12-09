@@ -390,10 +390,10 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         hasPendingValues: pendingValuesRef.current,
         isSaving: isSavingRef.current,
       });
-
-      // Track that we have pending unsaved changes
-      pendingValuesRef.current = true;
     }
+
+    // Track that we have pending unsaved changes
+    pendingValuesRef.current = true;
 
     // Trigger debounced save
     debouncedSave();
