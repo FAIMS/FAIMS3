@@ -41,7 +41,6 @@ import {
 import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {propertyKeyTypes} from 'zod/v4/core/util.cjs';
 
 // ============================================================================
 // Component Specific Types & Schemas
@@ -148,7 +147,6 @@ const RelatedRecordListItem = ({
   }
 
   // 3. Success State: Hydrated Data
-  console.log(data);
   return (
     <ListItem disablePadding divider>
       <ListItemButton
