@@ -242,6 +242,7 @@ export const EditRecordPage = () => {
           recordId={recordId}
           config={formConfig}
           navigationContext={navigationContext}
+          debugMode={DEBUG_APP}
         />
       )}
     </div>

@@ -7,11 +7,20 @@ import {
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
-import {ComponentProps, useCallback, useMemo, useRef, useState} from 'react';
+import {debounce, DebouncedFunc} from 'lodash';
+import {
+  ComponentProps,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
+import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
   FormNavigationButtons,
   ParentNavInfo,
@@ -25,7 +34,6 @@ import {
   FullFormConfig,
   FullFormManagerConfig,
 } from './types';
-import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 
 /**
  * The validation modes:
@@ -65,6 +73,8 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
   config: FullFormConfig;
   /** Information about the navigational context */
   navigationContext: FormNavigationContext;
+  /** Enable debug logging for save operations */
+  debugMode?: boolean;
 }
 
 /**
@@ -79,6 +89,8 @@ export interface EditableFormManagerProps extends ComponentProps<any> {
  * - Form submission and completion
  */
 export const EditableFormManager = (props: EditableFormManagerProps) => {
+  const {debugMode = false} = props;
+
   // Track whether any edits have been made (triggers revision creation in
   // parent mode)
   const [edited, setEdited] = useState(false);
@@ -115,6 +127,10 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       config: {visibleBehaviour: 'include'},
     })
   );
+
+  // Track pending save state for flush functionality
+  const pendingValuesRef = useRef<FaimsFormData | null>(null);
+  const isSavingRef = useRef(false);
 
   // Determine information about parent context, if necessary
   const parentNavigationInformation = useQuery({
@@ -220,55 +236,209 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   ]);
 
   /**
-   * Handler called when form values change (debounced). Merges current form
-   * state with existing data and saves to the backend.
-   *
-   * NOTE: this is debounced at the form level, but can be manually invoked with
-   * the trigger.commit(). This is important for fields which do something, then
-   * immediately redirect, such as related records.
+   * The actual save implementation - called by debounced handler.
+   * Saves the provided values to the backend.
    */
-  const onChange = useCallback(async () => {
-    // Updating data
-    const revisionToUpdate = await ensureWorkingRevision();
+  const performSave = useCallback(
+    async (values: FaimsFormData) => {
+      if (debugMode) {
+        console.log('[EditableFormManager] performSave called', {
+          timestamp: new Date().toISOString(),
+          recordId: props.recordId,
+          valueKeys: Object.keys(values ?? {}),
+        });
+      }
 
-    // First, lets fire any updates to the templated fields
-    onChangeTemplatedFields({
-      // TODO: understand why this is upset
-      form: form as FaimsForm,
-      formId: props.formId,
-      uiSpec: dataEngine.uiSpec,
-      // Don't fire listeners again redundantly
-      runListeners: false,
-      context: getRecordContextFromRecord({record: props.existingRecord}),
-    });
+      isSavingRef.current = true;
 
-    try {
-      await dataEngine.form.updateRevision({
-        revisionId: revisionToUpdate,
-        recordId: props.recordId,
-        updatedBy: props.activeUser,
-        update: form.state.values,
-        mode: props.mode,
-      });
-    } catch (error) {
-      console.error('Failed to update revision:', error);
+      try {
+        // Updating data
+        const revisionToUpdate = await ensureWorkingRevision();
+
+        if (debugMode) {
+          console.log('[EditableFormManager] Got working revision', {
+            revisionId: revisionToUpdate,
+          });
+        }
+
+        // First, lets fire any updates to the templated fields
+        onChangeTemplatedFields({
+          // TODO: understand why this is upset
+          form: form as FaimsForm,
+          formId: props.formId,
+          uiSpec: dataEngine.uiSpec,
+          // Don't fire listeners again redundantly
+          runListeners: false,
+          context: getRecordContextFromRecord({record: props.existingRecord}),
+        });
+
+        await dataEngine.form.updateRevision({
+          revisionId: revisionToUpdate,
+          recordId: props.recordId,
+          updatedBy: props.activeUser,
+          update: values ?? {},
+          mode: props.mode,
+        });
+
+        if (debugMode) {
+          console.log('[EditableFormManager] Save completed successfully', {
+            timestamp: new Date().toISOString(),
+            revisionId: revisionToUpdate,
+          });
+        }
+
+        // Clear pending values since we've saved
+        pendingValuesRef.current = null;
+      } catch (error) {
+        console.error('Failed to update revision:', error);
+        if (debugMode) {
+          console.error('[EditableFormManager] Save failed', {
+            timestamp: new Date().toISOString(),
+            error,
+          });
+        }
+      } finally {
+        isSavingRef.current = false;
+      }
+
+      // Updating visibility
+      setVisibleMap(
+        currentlyVisibleMap({
+          values: formDataExtractor({fullData: values}),
+          uiSpec: dataEngine.uiSpec,
+          viewsetId: props.formId,
+        })
+      );
+    },
+    [
+      debugMode,
+      ensureWorkingRevision,
+      props.recordId,
+      props.activeUser,
+      props.mode,
+      props.formId,
+      props.existingRecord,
+      dataEngine,
+    ]
+  );
+
+  // Use a ref to always have access to the latest performSave without
+  // recreating debounce
+  const performSaveRef = useRef(performSave);
+  useEffect(() => {
+    performSaveRef.current = performSave;
+  }, [performSave]);
+
+  /**
+   * Create debounced save function. We use useMemo to ensure it's stable
+   * across renders, and store it in a ref so we can access it for flushing.
+   */
+  const debouncedSaveRef = useRef<DebouncedFunc<
+    (values: FaimsFormData) => Promise<void>
+  > | null>(null);
+
+  // Created only once or when debug mode changes
+  const debouncedSave = useMemo(() => {
+    // Cancel any existing debounced function
+    if (debouncedSaveRef.current) {
+      if (debugMode) {
+        console.log('[EditableFormManager] Recreating debounced function');
+      }
+      debouncedSaveRef.current.cancel();
     }
 
-    // Updating visibility
-    setVisibleMap(
-      currentlyVisibleMap({
-        values: formDataExtractor({fullData: form.state.values}),
-        uiSpec: dataEngine.uiSpec,
-        viewsetId: props.formId,
-      })
-    );
-  }, [
-    ensureWorkingRevision,
-    props.recordId,
-    props.activeUser,
-    props.mode,
-    dataEngine,
-  ]);
+    const debouncedFn = debounce(async (values: FaimsFormData) => {
+      if (debugMode) {
+        console.log('[EditableFormManager] Debounced save executing', {
+          timestamp: new Date().toISOString(),
+        });
+      }
+      // Call via ref so we always get the latest implementation
+      await performSaveRef.current(values);
+    }, FORM_SYNC_DEBOUNCE_MS);
+
+    debouncedSaveRef.current = debouncedFn;
+    return debouncedFn;
+  }, [debugMode]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (debugMode) {
+        console.log('[EditableFormManager] Unmounting, cancelling debounce');
+      }
+      debouncedSave.cancel();
+    };
+  }, [debouncedSave, debugMode]);
+
+  /**
+   * Handler called when form values change. Tracks pending values and
+   * triggers debounced save.
+   */
+  const onChange = useCallback(() => {
+    const values = form.state.values;
+
+    if (debugMode) {
+      console.log('[EditableFormManager] onChange triggered', {
+        timestamp: new Date().toISOString(),
+        hasPendingValues: pendingValuesRef.current !== null,
+        isSaving: isSavingRef.current,
+      });
+    }
+
+    // Track that we have pending unsaved changes
+    pendingValuesRef.current = values;
+
+    // Trigger debounced save
+    debouncedSave(values);
+  }, [debouncedSave, debugMode]);
+
+  /**
+   * Immediately flush any pending saves. This should be called before
+   * navigation to ensure all changes are persisted.
+   *
+   * @returns Promise that resolves when save is complete
+   */
+  const flushSave = useCallback(async (): Promise<void> => {
+    if (debugMode) {
+      console.log('[EditableFormManager] flushSave called', {
+        timestamp: new Date().toISOString(),
+        hasPendingValues: pendingValuesRef.current !== null,
+        isSaving: isSavingRef.current,
+      });
+    }
+
+    // Cancel the debounced call - we'll save directly
+    debouncedSave.cancel();
+
+    // If there are pending values, save them immediately
+    if (pendingValuesRef.current) {
+      if (debugMode) {
+        console.log('[EditableFormManager] Flushing pending values');
+      }
+      // Use the ref here too for consistency
+      await performSaveRef.current(pendingValuesRef.current);
+    }
+
+    // Wait for any in-flight save to complete
+    while (isSavingRef.current) {
+      if (debugMode) {
+        console.log('[EditableFormManager] Waiting for in-flight save...');
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    if (debugMode) {
+      console.log('[EditableFormManager] flushSave complete');
+    }
+  }, [debouncedSave, debugMode]);
+
+  /**
+   * Check if there are unsaved changes pending.
+   */
+  const hasPendingChanges = useCallback((): boolean => {
+    return pendingValuesRef.current !== null || isSavingRef.current;
+  }, []);
 
   const validationFunction = useCallback(
     (value: FaimsFormData) => {
@@ -319,15 +489,15 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         return {fields: fieldErrors};
       }
     },
-    [validationMode, props.uiSpec, props.formId]
+    [validationMode, props.formId, dataEngine.uiSpec]
   );
 
   // Initialize TanStack Form with loaded data and change handlers
   const form = useForm({
     defaultValues: props.initialData,
     listeners: {
-      // Debounce changes to avoid excessive backend calls
-      onChangeDebounceMs: FORM_SYNC_DEBOUNCE_MS,
+      // Use our own onChange handler (no debounce here - we manage it
+      // ourselves)
       onChange,
     },
     validators: {
@@ -499,10 +669,16 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       removeAttachment: handleRemoveAttachment,
     },
     trigger: {
-      commit: onChange,
+      commit: async () => {
+        // Immediately save without debounce - used by fields that redirect
+        await flushSave();
+      },
     },
   };
 
+  // Memoised navigation buttons - used twice (top and bottom) - hooks into
+  // pending flush changes to ensure that no data loss occurs during navigation
+  // due to pending debounce
   const navigationButtons = useMemo(() => {
     const info = parentNavigationInformation.data;
 
@@ -518,6 +694,8 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         onNavigateToParent={
           info ? params => props.config.navigation.toRecord(params) : undefined
         }
+        flushSave={flushSave}
+        hasPendingChanges={hasPendingChanges}
       />
     );
   }, [
@@ -525,6 +703,8 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     formManagerConfig.navigation,
     dataEngine.uiSpec,
     props.config.navigation,
+    flushSave,
+    hasPendingChanges,
   ]);
 
   return (
@@ -554,6 +734,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         config={formManagerConfig}
         navigationContext={props.navigationContext}
         fieldVisibilityMap={visibleMap}
+        debugMode={debugMode}
       />
       {
         // Action buttons (repeated at bottom for usability)

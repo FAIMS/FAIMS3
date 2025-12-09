@@ -41,6 +41,7 @@ import {
 import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {propertyKeyTypes} from 'zod/v4/core/util.cjs';
 
 // ============================================================================
 // Component Specific Types & Schemas
@@ -219,8 +220,6 @@ const LinkExistingDialog = ({
     refetchOnMount: 'always',
     networkMode: 'always',
   });
-
-  console.log('Infinite query has more: ', hasNextPage);
 
   // Flatten pages and filter out already-linked records + apply search
   const filteredRecords = useMemo(() => {
