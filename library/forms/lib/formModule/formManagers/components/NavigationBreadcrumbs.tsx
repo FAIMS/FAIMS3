@@ -248,7 +248,7 @@ export const FormBreadcrumbs = ({
           },
         }}
       >
-        {navigateToRecordList.label}
+        Record list
       </Box>
 
       {/* Loading indicator for lineage */}
