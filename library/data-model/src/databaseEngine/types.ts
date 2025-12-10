@@ -81,6 +81,7 @@ export const v1RevisionDBFieldsSchema = z
     created_by: z.string(),
     type: z.string(),
     ugc_comment: z.string().optional(),
+    deleted: z.boolean().optional(),
     relationship: relationshipSchema
       .optional()
       // This allows empty objects
