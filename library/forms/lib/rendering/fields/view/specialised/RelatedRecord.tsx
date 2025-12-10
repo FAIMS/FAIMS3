@@ -8,7 +8,10 @@ import {
   CircularProgress,
   Link,
   Paper,
+  Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {useQueries} from '@tanstack/react-query';
 import {useState} from 'react';
@@ -227,9 +230,11 @@ const NestedRecordItem = ({
   formRendererProps,
   isLoading,
 }: NestedRecordProps) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [expanded, setExpanded] = useState(false);
-
   const displayLabel = formRendererProps?.hrid ?? recordInfo.record_id;
+  const EditButton = formRendererProps?.tools.editRecordButtonComponent;
 
   return (
     <Accordion
@@ -259,7 +264,26 @@ const NestedRecordItem = ({
           },
         }}
       >
-        <RelatedRecordTitle recordLabel={displayLabel} />
+        <Stack
+          direction={isMobile ? 'column' : 'row'}
+          alignItems={isMobile ? 'flex-start' : 'center'}
+          justifyContent="flex-start"
+          spacing={2}
+          sx={{width: '100%'}}
+        >
+          {EditButton && (
+            <Box
+              onClick={e => e.stopPropagation()}
+              onFocus={e => e.stopPropagation()}
+              sx={{flexShrink: 0}}
+            >
+              <EditButton recordId={recordInfo.record_id} />
+            </Box>
+          )}
+          <Box sx={{flex: 1, minWidth: 0}}>
+            <RelatedRecordTitle recordLabel={displayLabel} />
+          </Box>
+        </Stack>
       </AccordionSummary>
       <AccordionDetails
         sx={{

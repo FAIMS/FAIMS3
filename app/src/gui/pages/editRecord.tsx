@@ -25,7 +25,11 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import {APP_NAME, DEBUG_APP} from '../../buildconfig';
-import {getEditRecordRoute, getNotebookRoute} from '../../constants/routes';
+import {
+  getEditRecordRoute,
+  getNotebookRoute,
+  getViewRecordRoute,
+} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -172,6 +176,13 @@ export const EditRecordPage = () => {
         navigate: () => {
           navigate(getNotebookRoute({serverId, projectId}));
         },
+      },
+      // Takes you back to view record (note this is only shown if there are no
+      // parent navigation history)
+      navigateToViewRecord: params => {
+        navigate(
+          getViewRecordRoute({projectId, recordId: params.recordId, serverId})
+        );
       },
       toRecord: ({
         recordId: targetRecordId,

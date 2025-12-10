@@ -5,12 +5,22 @@ import {
   ProjectID,
   RecordID,
 } from '@faims3/data-model';
-import {DataView, DataViewProps} from '@faims3/forms';
-import {Button, CircularProgress, Stack} from '@mui/material';
+import {
+  DataView,
+  DataViewProps,
+  NavigationButtonsTemplate,
+} from '@faims3/forms';
+import EditIcon from '@mui/icons-material/Edit';
+import {Box, Button, CircularProgress, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
+import React from 'react';
 import {useNavigate, useParams} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
-import {getEditRecordRoute, getViewRecordRoute} from '../../constants/routes';
+import {
+  getEditRecordRoute,
+  getNotebookRoute,
+  getViewRecordRoute,
+} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
 import {selectProjectById} from '../../context/slices/projectSlice';
@@ -106,6 +116,33 @@ export const ViewRecordPage = () => {
     );
   }
 
+  // Get the display label for the form
+  const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
+
+  const nestedEditButton: React.FC<{recordId: string}> = props => {
+    return (
+      <Button
+        variant="outlined"
+        startIcon={<EditIcon />}
+        onClick={() => {
+          nav(
+            getEditRecordRoute({
+              projectId,
+              recordId: props.recordId,
+              serverId,
+              mode: 'parent',
+            })
+          );
+        }}
+        sx={{
+          flexShrink: 0,
+        }}
+      >
+        Edit record
+      </Button>
+    );
+  };
+
   const props = {
     viewsetId: formData.formId,
     // TODO disable debug mode
@@ -126,6 +163,7 @@ export const ViewRecordPage = () => {
           revisionId: params.revisionId,
         });
       },
+      editRecordButtonComponent: nestedEditButton,
       navigateToRecord(params) {
         nav(
           getViewRecordRoute({
@@ -140,23 +178,51 @@ export const ViewRecordPage = () => {
   } satisfies DataViewProps;
 
   return (
-    <Stack spacing={1}>
-      <Button
-        fullWidth={false}
-        variant="outlined"
-        onClick={() => {
-          nav(
-            getEditRecordRoute({
-              projectId,
-              recordId,
-              serverId,
-              mode: 'parent',
-            })
-          );
+    <Stack spacing={2}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: {xs: 'column', sm: 'row'},
+          justifyContent: {xs: 'space-between', sm: 'flex-start'},
+          alignItems: {xs: 'flex-start', sm: 'center'},
+          paddingLeft: 2,
+          gap: 2,
         }}
       >
-        Edit record
-      </Button>
+        <Typography variant="h5" component="h1">
+          Viewing {formLabel}: {formData.context.hrid}
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<EditIcon />}
+          onClick={() => {
+            nav(
+              getEditRecordRoute({
+                projectId,
+                recordId,
+                serverId,
+                mode: 'parent',
+              })
+            );
+          }}
+          sx={{
+            flexShrink: 0,
+          }}
+        >
+          Edit record
+        </Button>
+      </Box>
+      <Box sx={{pl: 2}}>
+        <NavigationButtonsTemplate
+          buttons={[
+            {
+              label: 'Return to record list',
+              onClick: () => nav(getNotebookRoute({serverId, projectId})),
+            },
+          ]}
+          marginBottom={0}
+        />
+      </Box>
       <DataView {...props}></DataView>
     </Stack>
   );
