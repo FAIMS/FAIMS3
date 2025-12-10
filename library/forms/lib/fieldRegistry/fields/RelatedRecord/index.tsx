@@ -180,6 +180,8 @@ interface LinkExistingDialogProps {
   onSelect: (record: HydratedRecord) => Promise<void>;
   config: FullFormManagerConfig;
   relatedType: string;
+  relationType: string;
+  currentRecordId: string;
   excludedRecordIds: string[];
 }
 
@@ -189,7 +191,9 @@ const LinkExistingDialog = ({
   onSelect,
   config,
   relatedType,
+  relationType,
   excludedRecordIds,
+  currentRecordId,
 }: LinkExistingDialogProps) => {
   const [searchFilter, setSearchFilter] = useState('');
 
@@ -224,17 +228,33 @@ const LinkExistingDialog = ({
   const filteredRecords = useMemo(() => {
     if (!data?.pages) return [];
 
-    // NOTE: we should validate exclusion logic
+    // Set of record IDs we've already linked to from this field
     const excludedSet = new Set(excludedRecordIds);
     const allRecords = data.pages.flatMap(page => page.records);
 
+    // Determine which relationship array to check based on relation type
+    // If we're creating a Child relationship, the target record will have us as a "parent"
+    // If we're creating a Linked relationship, the target record will have us as "linked"
+    const relationshipKey: 'parent' | 'linked' =
+      relationType === 'faims-core::Child' ? 'parent' : 'linked';
+
     return allRecords.filter(record => {
-      // Exclude already-linked records
+      // Exclude records we've already linked to from this field
       if (excludedSet.has(record.record._id)) return false;
 
-      // Also filter out any records that have been linked to elsewhere
-      if (record.revision.relationship !== undefined) {
-        return false;
+      // Check if this record already has a relationship of the relevant type
+      // pointing back to the current record
+      const existingRelationships =
+        record.revision.relationship?.[relationshipKey];
+
+      if (existingRelationships && existingRelationships.length > 0) {
+        // Filter out if any existing relationship points to the current record
+        const alreadyLinkedToCurrentRecord = existingRelationships.some(
+          rel => rel.recordId === currentRecordId
+        );
+        if (alreadyLinkedToCurrentRecord) {
+          return false;
+        }
       }
 
       // Apply search filter (case-insensitive match on hrid or recordId)
@@ -248,7 +268,7 @@ const LinkExistingDialog = ({
 
       return true;
     });
-  }, [data, excludedRecordIds, searchFilter]);
+  }, [data, excludedRecordIds, searchFilter, relationType, currentRecordId]);
 
   const handleSelect = async (record: HydratedRecord) => {
     await onSelect(record);
@@ -619,10 +639,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       {props.allowLinkToExisting && (
         <LinkExistingDialog
           open={linkDialogOpen}
+          currentRecordId={props.config.recordId}
           onClose={() => setLinkDialogOpen(false)}
           onSelect={handleLinkExisting}
           config={props.config}
           relatedType={props.related_type}
+          relationType={props.relation_type}
           excludedRecordIds={linkedRecordIds}
         />
       )}
