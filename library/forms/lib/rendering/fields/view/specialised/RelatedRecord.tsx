@@ -60,7 +60,7 @@ type RecordReference = z.infer<typeof RecordReferenceSchema>;
 /**
  * Display behavior for related records based on nesting depth
  */
-type DisplayBehavior = 'nest' | 'link';
+type DisplayBehaviour = 'nest' | 'link';
 
 /**
  * Props for components that display related record information
@@ -76,8 +76,7 @@ interface RelatedRecordDisplayProps {
  */
 interface NestedRecordProps {
   recordInfo: RecordReference;
-  formRendererProps?: DataViewProps;
-  isLoading: boolean;
+  formRendererProps: DataViewProps;
 }
 
 // ============================================================================
@@ -108,7 +107,7 @@ const INVALID_REFERENCES_MESSAGE =
  */
 function determineBehaviorFromTrace(
   trace: DataViewTraceEntry[]
-): DisplayBehavior {
+): DisplayBehaviour {
   //return 'link';
   return trace.length >= RENDER_NEST_LIMIT ? 'link' : 'nest';
 }
@@ -117,7 +116,7 @@ function determineBehaviorFromTrace(
  * Normalizes the input value to always be an array of record references
  *
  * @param value - Either a single record reference or an array of them
- * @returns An array of record references, or null if validation fails
+ * @return An array of record references, or null if validation fails
  */
 function normalizeRecordReferences(value: unknown): RecordReference[] | null {
   const parseResult = RecordReferenceInputSchema.safeParse(value);
@@ -179,11 +178,16 @@ const RelatedRecordsHeader = ({count}: {count: number}) => (
 /**
  * Error message for records that failed to load
  */
-const RecordLoadError = () => (
-  <Typography color="error" variant="body2">
-    Unable to load related record
-  </Typography>
-);
+const RecordLoadError = ({error}: {error: Error}) => {
+  const err = `Unable to load related record. Error ${
+    error.message || 'unknown.'
+  }`;
+  return (
+    <Typography color="error" variant="body2">
+      {err}
+    </Typography>
+  );
+};
 
 // ============================================================================
 // Related Record Display Components
@@ -254,7 +258,6 @@ const LinkedRecordItem = ({
 const NestedRecordItem = ({
   recordInfo,
   formRendererProps,
-  isLoading,
 }: NestedRecordProps) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -327,13 +330,7 @@ const NestedRecordItem = ({
             borderRadius: 1,
           }}
         >
-          {isLoading ? (
-            <LoadingPlaceholder />
-          ) : formRendererProps ? (
-            <DataView {...formRendererProps} />
-          ) : (
-            <RecordLoadError />
-          )}
+          <DataView {...formRendererProps} />
         </Paper>
       </AccordionDetails>
     </Accordion>
@@ -352,9 +349,15 @@ const LoadingRecordItem = ({recordId}: {recordId: string}) => (
 /**
  * Wrapper for error state of a single related record
  */
-const ErrorRecordItem = ({recordId}: {recordId: string}) => (
+const ErrorRecordItem = ({
+  recordId,
+  error,
+}: {
+  recordId: string;
+  error: Error;
+}) => (
   <Paper key={recordId} sx={{mb: 2, p: 2}}>
-    <RecordLoadError />
+    <RecordLoadError error={error} />
   </Paper>
 );
 
@@ -406,10 +409,6 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
                 recordId: record_id,
               });
 
-              if (!hydratedRecord) {
-                return undefined;
-              }
-
               // Return full renderer props for nested mode
               return {
                 viewsetId: hydratedRecord.formId,
@@ -451,13 +450,15 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
         const key = recordInfo.record_id;
 
         // Handle loading state
-        if (query.isLoading) {
+        if (query.isPending) {
           return <LoadingRecordItem key={key} recordId={key} />;
         }
 
         // Handle error state
-        if (!query.data) {
-          return <ErrorRecordItem key={key} recordId={key} />;
+        if (query.isError) {
+          return (
+            <ErrorRecordItem key={key} recordId={key} error={query.error} />
+          );
         }
 
         // Render link mode
@@ -478,7 +479,6 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
             key={key}
             recordInfo={recordInfo}
             formRendererProps={query.data}
-            isLoading={query.isPending}
           />
         );
       })}
