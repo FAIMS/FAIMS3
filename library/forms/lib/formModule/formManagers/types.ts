@@ -134,7 +134,7 @@ export interface FullFormConfig extends BaseFormConfig {
       navigate: () => void;
     };
     /** Navigate to the view records (if there is no parent context) */
-    navigateToViewRecord:  (params: {recordId: string}) => void;
+    navigateToViewRecord: (params: {recordId: string}) => void;
   };
   /** What is the deployed app name - helpful for error displays etc */
   appName: string;
