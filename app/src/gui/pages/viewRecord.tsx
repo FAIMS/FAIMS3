@@ -104,26 +104,38 @@ export const ViewRecordPage = () => {
       if (!formData) return null;
 
       const revision = formData.context.revision;
-
       // If we have a relationship in the revision, hydrate the parent
-      if (revision.relationship !== undefined) {
+      if (revision.relationship?.parent) {
         const engine = getDataEngine();
         const parentHydrated = await engine.hydrated.getHydratedRecord({
           recordId: revision.relationship.parent.recordId,
         });
-
         const parentFormLabel =
           uiSpec.viewsets[parentHydrated.record.formId]?.label ??
           parentHydrated.record.formId;
-
         return {
+          type: 'parent' as 'parent' | 'linked',
           recordId: parentHydrated.record._id,
           hrid: parentHydrated.hrid,
           formId: parentHydrated.record.formId,
           formLabel: parentFormLabel,
         };
+      } else if (revision.relationship?.linked) {
+        const engine = getDataEngine();
+        const linkedHydrated = await engine.hydrated.getHydratedRecord({
+          recordId: revision.relationship.linked.recordId,
+        });
+        const linkedFormLabel =
+          uiSpec.viewsets[linkedHydrated.record.formId]?.label ??
+          linkedHydrated.record.formId;
+        return {
+          type: 'parent' as 'parent' | 'linked',
+          recordId: linkedHydrated.record._id,
+          hrid: linkedHydrated.hrid,
+          formId: linkedHydrated.record.formId,
+          formLabel: linkedFormLabel,
+        };
       }
-
       return null;
     },
     enabled: !!formData,
@@ -226,7 +238,9 @@ export const ViewRecordPage = () => {
   // Add implied parent button if it exists
   if (impliedParent) {
     navButtons.push({
-      label: `View parent record (${impliedParent.formLabel})`,
+      label: `View ${
+        impliedParent.type === 'linked' ? 'related' : 'parent'
+      } record (${impliedParent.formLabel})`,
       subtitle: impliedParent.hrid,
       onClick: () =>
         nav(

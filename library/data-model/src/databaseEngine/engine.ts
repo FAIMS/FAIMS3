@@ -1,4 +1,4 @@
-import {v4 as uuidv4} from 'uuid';
+import {v4 as uuidv4, validate} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
 import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
@@ -18,6 +18,7 @@ import {
   ExistingRevisionDBDocument,
   existingRevisionDocumentSchema,
   FormDataEntry,
+  FormRelationship,
   FormUpdateData,
   HydratedDataField,
   HydratedRecord,
@@ -785,17 +786,30 @@ class HydratedOperations {
     const relationship = revision.relationship;
 
     // Map to formRelationshipSchema type
-    const formRelationship =
-      relationship && 'parent' in relationship
-        ? {
-            parent: {
-              recordId: relationship.parent.record_id,
-              fieldId: relationship.parent.field_id,
-              relationTypeVocabPair:
-                relationship.parent.relation_type_vocabPair,
-            },
-          }
-        : undefined;
+    const formRelationship: FormRelationship | undefined = relationship
+      ? {
+          ...('linked' in relationship && relationship.linked
+            ? {
+                linked: {
+                  fieldId: relationship.linked.field_id,
+                  recordId: relationship.linked.record_id,
+                  relationTypeVocabPair:
+                    relationship.linked.relation_type_vocabPair,
+                },
+              }
+            : {}),
+          ...('parent' in relationship && relationship.parent
+            ? {
+                parent: {
+                  fieldId: relationship.parent.field_id,
+                  recordId: relationship.parent.record_id,
+                  relationTypeVocabPair:
+                    relationship.parent.relation_type_vocabPair,
+                },
+              }
+            : {}),
+        }
+      : undefined;
 
     const hridFieldName = this.hridFieldMap[revision.type];
     const rawHridData = hridFieldName ? data[hridFieldName]?.data : undefined;
@@ -982,12 +996,26 @@ class FormOperations {
       // Convert back into relationship format for storage
       relationship: validated.relationship
         ? {
-            parent: {
-              field_id: validated.relationship.parent.fieldId,
-              record_id: validated.relationship.parent.recordId,
-              relation_type_vocabPair:
-                validated.relationship.parent.relationTypeVocabPair,
-            },
+            ...(validated.relationship.linked
+              ? {
+                  linked: {
+                    field_id: validated.relationship.linked.fieldId,
+                    record_id: validated.relationship.linked.recordId,
+                    relation_type_vocabPair:
+                      validated.relationship.linked.relationTypeVocabPair,
+                  },
+                }
+              : {}),
+            ...(validated.relationship.parent
+              ? {
+                  parent: {
+                    field_id: validated.relationship.parent.fieldId,
+                    record_id: validated.relationship.parent.recordId,
+                    relation_type_vocabPair:
+                      validated.relationship.parent.relationTypeVocabPair,
+                  },
+                }
+              : {}),
           }
         : undefined,
     };

@@ -1,4 +1,8 @@
-import {HydratedRecord} from '@faims3/data-model';
+import {
+  FormRelationship,
+  HydratedRecord,
+  RelationshipInstance,
+} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
@@ -424,16 +428,27 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
+      // Create the correct type of relationship
+      let relationship: FormRelationship;
+      const relation = {
+        fieldId: props.fieldId,
+        recordId: props.config.recordId,
+        relationTypeVocabPair: relationTypeToPair(props.relation_type),
+      };
+      if (props.relation_type === 'faims-core::Child') {
+        relationship = {
+          parent: relation,
+        };
+      } else {
+        relationship = {
+          linked: relation,
+        };
+      }
+
       const res = await props.config.dataEngine().form.createRecord({
         createdBy: props.config.user,
         formId: props.related_type,
-        relationship: {
-          parent: {
-            fieldId: props.fieldId,
-            recordId: props.config.recordId,
-            relationTypeVocabPair: relationTypeToPair(props.relation_type),
-          },
-        },
+        relationship,
       });
 
       props.setFieldData([
@@ -461,6 +476,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           // persist the current record mode
           parentMode: props.config.recordMode,
           recordId: props.config.recordId,
+          relationType:
+            props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
         },
       });
     },
@@ -481,6 +498,23 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
     // And we need to update the linked record to include this relationship
     const rev = record.revision;
+
+    // Create the correct type of relationship
+    let relationship: FormRelationship;
+    const relation = {
+      fieldId: props.fieldId,
+      recordId: props.config.recordId,
+      relationTypeVocabPair: relationTypeToPair(props.relation_type),
+    };
+    if (props.relation_type === 'faims-core::Child') {
+      relationship = {
+        parent: relation,
+      };
+    } else {
+      relationship = {
+        linked: relation,
+      };
+    }
     await props.config.dataEngine().core.updateRevision({
       _id: rev._id,
       _rev: rev._rev,
@@ -492,13 +526,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       revision_format_version: 1,
       type: rev.formId,
       // Update with relationship!
-      relationship: {
-        parent: {
-          field_id: props.fieldId,
-          record_id: props.config.recordId,
-          relation_type_vocabPair: relationTypeToPair(props.relation_type),
-        },
-      },
+      relationship,
     });
   };
 
@@ -531,6 +559,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         fieldId: props.fieldId,
         parentMode: props.config.recordMode,
         recordId: props.config.recordId,
+        relationType:
+          props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
       },
     });
   };

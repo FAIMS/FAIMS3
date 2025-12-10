@@ -19,6 +19,7 @@ export const FormNavigationChildEntrySchema = z.object({
   recordId: z.string(),
   revisionId: z.string().optional(),
   parentMode: z.enum(['parent', 'new']),
+  relationType: z.enum(['parent', 'linked']),
   fieldId: z.string(),
 });
 

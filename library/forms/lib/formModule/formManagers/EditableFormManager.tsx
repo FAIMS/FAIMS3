@@ -3,6 +3,7 @@ import {
   currentlyVisibleMap,
   FaimsAttachments,
   FormDataEntry,
+  FormRelationshipInstance,
   HydratedRecordDocument,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
@@ -187,6 +188,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
               label: `Return to ${hydrated.hrid}`,
               fieldId: latestLineage.fieldId,
               formId: hydrated.record.formId,
+              relationType: latestLineage.relationType,
             } satisfies ParentNavInfo,
             hydratedRecord: hydrated,
             fullContext: props.navigationContext,
@@ -208,10 +210,20 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         });
         const revision = hydrated.revision;
         // If we have a relationship in the revision - go and hydrate it now
-        if (revision.relationship !== undefined) {
-          return await engine.hydrated.getHydratedRecord({
-            recordId: revision.relationship.parent.recordId,
-          });
+        if (revision.relationship?.parent) {
+          return {
+            type: 'linked' as 'linked' | 'parent',
+            data: await engine.hydrated.getHydratedRecord({
+              recordId: revision.relationship.parent.recordId,
+            }),
+          };
+        } else if (revision.relationship?.linked) {
+          return {
+            type: 'linked' as 'linked' | 'parent',
+            data: await engine.hydrated.getHydratedRecord({
+              recordId: revision.relationship.linked.recordId,
+            }),
+          };
         }
 
         return undefined;
@@ -737,14 +749,15 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     // Look for implied parent
     if (implied) {
       return {
-        label: `View ${implied.hrid}`,
-        recordId: implied.record._id,
+        label: `View ${implied.data.hrid}`,
+        recordId: implied.data.record._id,
         onNavigate() {
           props.config.navigation.navigateToViewRecord({
-            recordId: implied.record._id,
+            recordId: implied.data.record._id,
           });
         },
-        formId: implied.record.formId,
+        formId: implied.data.record.formId,
+        type: implied.type,
       } satisfies ImpliedParentNavInfo;
     }
 

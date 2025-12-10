@@ -101,6 +101,7 @@ const INVALID_REFERENCES_MESSAGE =
 function determineBehaviorFromTrace(
   trace: DataViewTraceEntry[]
 ): DisplayBehavior {
+  return 'link';
   return trace.length >= RENDER_NEST_LIMIT ? 'link' : 'nest';
 }
 

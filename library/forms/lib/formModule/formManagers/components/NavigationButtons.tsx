@@ -12,6 +12,7 @@ export interface ParentNavInfo {
   label: string;
   fieldId: string;
   formId: string;
+  relationType: 'parent' | 'linked';
 }
 
 /**
@@ -21,6 +22,8 @@ export interface ParentNavInfo {
  * (e.g., via URL or search) rather than through parent-child navigation.
  */
 export interface ImpliedParentNavInfo {
+  /** What relationship type? */
+  type: 'parent' | 'linked';
   /** The record ID of the implied parent */
   recordId: string;
   /** The form/viewset ID of the parent record */
@@ -165,9 +168,9 @@ export const FormNavigationButtons = ({
     if (hasExplicitParentContext) {
       // Explicit parent from navigation history - use "Return to parent"
       result.push({
-        label: `Return to parent${
-          parentFormLabel ? ` (${parentFormLabel})` : ''
-        }`,
+        label: `Return to ${
+          parentNavInfo.relationType === 'linked' ? 'related' : 'parent'
+        }${parentFormLabel ? ` (${parentFormLabel})` : ''}`,
         subtitle: hrid,
         onClick: handleParentNavigation,
         disabled: isSaving,
@@ -180,7 +183,9 @@ export const FormNavigationButtons = ({
       // Show "Go to parent" if we have an implied parent (from relationship field)
       if (impliedParentNavInfo) {
         result.push({
-          label: `Return to parent (${impliedParentNavInfo.formId})`,
+          label: `Return to ${
+            impliedParentNavInfo.type === 'linked' ? 'related record' : 'parent'
+          } (${impliedParentNavInfo.formId})`,
           subtitle: impliedParentNavInfo.label,
           onClick: handleImpliedParentNavigation,
           disabled: isSaving,
