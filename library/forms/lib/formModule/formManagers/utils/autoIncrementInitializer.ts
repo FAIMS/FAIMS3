@@ -1,0 +1,93 @@
+import {AutoIncrementService} from '../../incrementer';
+import {FaimsForm, FaimsFormData} from '../../types';
+
+export interface InitializeAutoIncrementFieldsParams {
+  /** The form instance to update */
+  form: FaimsForm;
+  /** The form ID to filter auto-increment fields */
+  formId: string;
+  /** The auto-increment service */
+  incrementerService: AutoIncrementService;
+  /** Initial data - fields with existing values won't be overwritten */
+  initialData?: FaimsFormData;
+  /** Number of digits to pad values to */
+  numDigits?: number;
+  /** Called if any field couldn't get a value (ranges exhausted/not configured) */
+  onMissingRanges?: (fieldIds: string[]) => void;
+}
+
+export interface InitializeAutoIncrementFieldsResult {
+  /** Fields that were successfully initialized */
+  initialized: string[];
+  /** Fields that couldn't get values (no ranges or exhausted) */
+  missingRanges: string[];
+  /** Fields that were skipped because they already had values */
+  skipped: string[];
+}
+
+/**
+ * Initializes auto-increment fields on a form by fetching next values
+ * from the incrementer service and setting them on the form.
+ *
+ * Only sets values for fields that don't already have a value in initialData.
+ */
+export async function initializeAutoIncrementFields({
+  form,
+  formId,
+  incrementerService,
+  initialData,
+  numDigits = 4,
+  onMissingRanges,
+}: InitializeAutoIncrementFieldsParams): Promise<InitializeAutoIncrementFieldsResult> {
+  const result: InitializeAutoIncrementFieldsResult = {
+    initialized: [],
+    missingRanges: [],
+    skipped: [],
+  };
+
+  // Get all auto-increment field refs for this form
+  const allRefs = await incrementerService.getFieldRefs();
+  const formRefs = allRefs.filter(ref => ref.formId === formId);
+
+  for (const ref of formRefs) {
+    const fieldId = ref.fieldId;
+
+    // Check if field already has a value
+    const existingFieldValue = initialData?.[fieldId];
+    const existingValue = existingFieldValue?.data;
+    const hasValue =
+      existingValue !== null &&
+      existingValue !== undefined &&
+      existingValue !== '';
+
+    if (hasValue) {
+      result.skipped.push(fieldId);
+      continue;
+    }
+
+    // Get next value from incrementer
+    const incrementer = incrementerService.getIncrementer(ref);
+    const value = await incrementer.getNextValueFormatted(numDigits);
+
+    if (value === undefined) {
+      result.missingRanges.push(fieldId);
+      continue;
+    }
+
+    // Set the value on the form (override only the data property)
+    form.setFieldValue(
+      fieldId,
+      {...(existingFieldValue ?? {}), data: value},
+      // Run validators
+      {dontRunListeners: false}
+    );
+    result.initialized.push(fieldId);
+  }
+
+  // Notify caller if any fields couldn't get values
+  if (result.missingRanges.length > 0 && onMissingRanges) {
+    onMissingRanges(result.missingRanges);
+  }
+
+  return result;
+}

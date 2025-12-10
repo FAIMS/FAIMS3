@@ -38,6 +38,7 @@ import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {useUiSpecLayout} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
 import {useEffect, useState} from 'react';
+import {useAutoIncrementService} from '../../utils/useIncrementerService';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
@@ -163,6 +164,8 @@ export const EditRecordPage = () => {
     return createProjectAttachmentService(projectId);
   };
 
+  const incrementerService = useAutoIncrementService(projectId);
+
   const formConfig: FullFormConfig = {
     mode: 'full' as const,
     appName: APP_NAME,
@@ -249,6 +252,8 @@ export const EditRecordPage = () => {
     user: activeUser.username,
     // Pass through the layout from the spec
     layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
+    // Pass in the incrementer service
+    incrementerService,
   };
 
   return (

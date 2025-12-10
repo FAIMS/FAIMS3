@@ -68,7 +68,7 @@ export class AutoIncrementer {
   async getState() {
     try {
       const doc = await this.db.get(this.pouch_id);
-      return doc;
+      return doc as LocalAutoIncrementState;
     } catch (err: any) {
       if (err.status === 404) {
         // We haven't initialised this yet

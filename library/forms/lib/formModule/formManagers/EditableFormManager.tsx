@@ -3,7 +3,6 @@ import {
   currentlyVisibleMap,
   FaimsAttachments,
   FormDataEntry,
-  FormRelationshipInstance,
   HydratedRecordDocument,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
@@ -36,6 +35,7 @@ import {
   FullFormConfig,
   FullFormManagerConfig,
 } from './types';
+import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
 
 /**
  * The validation modes:
@@ -113,6 +113,9 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   const [workingRevisionId, setWorkingRevisionId] = useState<string>(
     props.revisionId
   );
+
+  // State to track fields needing range configuration
+  const [fieldsNeedingRanges, setFieldsNeedingRanges] = useState<string[]>([]);
 
   // What kind of validation?
   const validationMode: ValidationMode =
@@ -764,6 +767,56 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     // Otherwise
     return undefined;
   }, [parentNavigationInformation.data]);
+
+  // Initialize auto-increment fields on mount (only for new records)
+  useEffect(() => {
+    // Only initialize for new records - existing records already have values
+    if (props.mode !== 'new') {
+      return;
+    }
+
+    // Only run if we have the incrementer service
+    if (!props.config.incrementerService) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const initialize = async () => {
+      const result = await initializeAutoIncrementFields({
+        form: form as FaimsForm,
+        formId: props.formId,
+        incrementerService: props.config.incrementerService,
+        initialData: props.initialData,
+        numDigits: 4, // Could be made configurable via props/config
+        onMissingRanges: fieldIds => {
+          if (!cancelled) {
+            setFieldsNeedingRanges(fieldIds);
+          }
+        },
+      });
+
+      if (props.debugMode && !cancelled) {
+        console.log(
+          '[EditableFormManager] Auto-increment initialization:',
+          result
+        );
+      }
+    };
+
+    initialize();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    props.mode,
+    props.formId,
+    props.config.incrementerService,
+    props.initialData,
+    props.debugMode,
+    // Note: intentionally not including `form` to prevent re-runs
+  ]);
 
   // Memoised navigation buttons - used twice (top and bottom) - hooks into
   // pending flush changes to ensure that no data loss occurs during navigation
