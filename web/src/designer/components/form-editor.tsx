@@ -44,7 +44,7 @@ import {
 import Box from '@mui/material/Box';
 import {useQueryClient} from '@tanstack/react-query';
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import FormSettingsPanel from './form-settings';
@@ -54,7 +54,8 @@ import {findFormExternalUsage} from './condition/utils';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import DebouncedTextField from './debounced-text-field';
 import {PreviewFormManager} from '@faims3/forms';
-import {ProjectUIModel} from '@faims3/data-model';
+import {compileUiSpecConditionals, UISpecification} from '@faims3/data-model';
+import {clone, cloneDeep} from 'lodash';
 
 type Props = {
   viewSetId: string;
@@ -87,12 +88,21 @@ export const FormEditor = ({
     state => state.notebook['ui-specification'].present
   );
   // we need this to be a ProjectUIModel type for the PreviewFormManager
-  const uiSpecInternal: ProjectUIModel = {
-    fields: uiSpec.fields,
-    viewsets: uiSpec.viewsets,
-    views: uiSpec.fviews,
-    visible_types: uiSpec.visible_types,
-  };
+  // we should also compile this
+  const uiSpecInternal = useMemo(
+    () => {
+      // Clone the uiSpec - we need to do this to make it mutable
+      const uiSpecEncoded = cloneDeep(uiSpec);
+      return {
+        fields: uiSpecEncoded.fields,
+        views: uiSpecEncoded.fviews,
+        viewsets: uiSpecEncoded.viewsets,
+        visible_types: uiSpecEncoded.visible_types,
+      } satisfies UISpecification;
+    },
+    // Bit of a hack to force diff on uiSpec even tho ref may no
+    [uiSpec]
+  );
 
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].present.visible_types
