@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {UISpecification} from '@faims3/data-model';
+import {PreviewFormManager} from '@faims3/forms';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
@@ -19,8 +21,6 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import CssBaseline from '@mui/material/CssBaseline';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {
   Alert,
   Button,
@@ -44,21 +44,19 @@ import {
   Typography,
 } from '@mui/material';
 import Box from '@mui/material/Box';
+import CssBaseline from '@mui/material/CssBaseline';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {useQueryClient} from '@tanstack/react-query';
-
+import {cloneDeep} from 'lodash';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
+import {useLocation} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {findFormExternalUsage} from './condition/utils';
+import DebouncedTextField from './debounced-text-field';
+import {DeletionWarningDialog} from './deletion-warning-dialog';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
-import {useLocation} from 'react-router-dom';
-import {findFormExternalUsage} from './condition/utils';
-import {DeletionWarningDialog} from './deletion-warning-dialog';
-import DebouncedTextField from './debounced-text-field';
-import {PreviewFormManager} from '@faims3/forms';
-import {compileUiSpecConditionals, UISpecification} from '@faims3/data-model';
-import {clone, cloneDeep} from 'lodash';
-import {PropaneSharp} from '@mui/icons-material';
 
 type Props = {
   viewSetId: string;
