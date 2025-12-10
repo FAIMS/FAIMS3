@@ -599,6 +599,8 @@ export const hydratedRecordDocumentSchema = z.object({
   heads: z.array(z.string()),
   /** Form identifier for this document */
   formId: z.string(),
+  /** Optional deleted property, true if the latest revision of this record is 'deleted' */
+  deleted: z.boolean().optional(),
 });
 
 export type HydratedRecordDocument = z.infer<
@@ -627,6 +629,8 @@ export const hydratedRevisionDocumentSchema = z.object({
   formId: z.string(),
   /** Optional relationship information if this is a related record */
   relationship: formRelationshipSchema.optional(),
+  /** Optional deleted property, true if this revision is 'deleted' */
+  deleted: z.boolean().optional(),
 });
 
 export type HydratedRevisionDocument = z.infer<
