@@ -117,22 +117,22 @@ describe('Form Operations', () => {
         formId: 'B',
         createdBy: 'test-user',
         relationship: {
-          parent: {
+          parent: [{
             recordId: parentResult.record._id,
             fieldId: 'test-field',
             relationTypeVocabPair: ['parent', 'child'],
-          },
+          }],
         },
       };
 
       const childResult = await engine.form.createRecord(childRecord);
 
       expect(childResult.revision.relationship).toEqual({
-        parent: {
+        parent: [{
           record_id: parentResult.record._id,
           field_id: 'test-field',
           relation_type_vocabPair: ['parent', 'child'],
-        },
+        }],
       });
     });
 
@@ -358,11 +358,11 @@ describe('Form Operations', () => {
         formId: 'B',
         createdBy: 'user-1',
         relationship: {
-          parent: {
+          parent: [{
             recordId: parentRecord.record._id,
             fieldId: 'test-field',
             relationTypeVocabPair: ['parent', 'child'],
-          },
+          }],
         },
       });
 

@@ -1,8 +1,4 @@
-import {
-  FormRelationship,
-  HydratedRecord,
-  RelationshipInstance,
-} from '@faims3/data-model';
+import {FormRelationship, HydratedRecord} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
@@ -437,11 +433,11 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       };
       if (props.relation_type === 'faims-core::Child') {
         relationship = {
-          parent: relation,
+          parent: [relation],
         };
       } else {
         relationship = {
-          linked: relation,
+          linked: [relation],
         };
       }
 
@@ -499,22 +495,30 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     // And we need to update the linked record to include this relationship
     const rev = record.revision;
 
-    // Create the correct type of relationship
-    let relationship: FormRelationship;
+    // Create the relation entry
     const relation = {
       fieldId: props.fieldId,
       recordId: props.config.recordId,
       relationTypeVocabPair: relationTypeToPair(props.relation_type),
     };
+
+    // Merge with existing relationships on the target record
+    const existingRelationship = rev.relationship;
+    let relationship: FormRelationship;
+
     if (props.relation_type === 'faims-core::Child') {
       relationship = {
-        parent: relation,
+        ...existingRelationship,
+        parent: [...(existingRelationship?.parent ?? []), relation],
       };
     } else {
       relationship = {
-        linked: relation,
+        ...existingRelationship,
+        linked: [...(existingRelationship?.linked ?? []), relation],
       };
     }
+
+    // Update the revision with these changes
     await props.config.dataEngine().core.updateRevision({
       _id: rev._id,
       _rev: rev._rev,
@@ -525,7 +529,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       record_id: rev.recordId,
       revision_format_version: 1,
       type: rev.formId,
-      // Update with relationship!
       relationship,
     });
   };

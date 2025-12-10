@@ -68,9 +68,14 @@ export const relationshipInstanceSchema = z.object({
 });
 export type RelationshipInstance = z.infer<typeof relationshipInstanceSchema>;
 
+// Revision relationship field can be either a list or singleton entry
 export const relationshipSchema = z.object({
-  parent: relationshipInstanceSchema.optional(),
-  linked: relationshipInstanceSchema.optional(),
+  parent: z
+    .union([relationshipInstanceSchema, z.array(relationshipInstanceSchema)])
+    .optional(),
+  linked: z
+    .union([relationshipInstanceSchema, z.array(relationshipInstanceSchema)])
+    .optional(),
 });
 export type RecordRelationship = z.infer<typeof relationshipSchema>;
 
@@ -533,8 +538,8 @@ export type FormRelationshipInstance = z.infer<
   typeof formRelationshipInstanceSchema
 >;
 const formRelationshipSchema = z.object({
-  parent: formRelationshipInstanceSchema.optional(),
-  linked: formRelationshipInstanceSchema.optional(),
+  parent: z.array(formRelationshipInstanceSchema).optional(),
+  linked: z.array(formRelationshipInstanceSchema).optional(),
 });
 
 export type FormRelationship = z.infer<typeof formRelationshipSchema>;

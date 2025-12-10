@@ -45,6 +45,14 @@ const RecordReferenceSchema = z.object({
 const RecordReferenceArraySchema = z.array(RecordReferenceSchema);
 
 /**
+ * Schema that accepts either a single record reference or an array of them
+ */
+const RecordReferenceInputSchema = z.union([
+  RecordReferenceSchema,
+  RecordReferenceArraySchema,
+]);
+
+/**
  * Inferred TypeScript type for a single record reference
  */
 type RecordReference = z.infer<typeof RecordReferenceSchema>;
@@ -101,8 +109,25 @@ const INVALID_REFERENCES_MESSAGE =
 function determineBehaviorFromTrace(
   trace: DataViewTraceEntry[]
 ): DisplayBehavior {
-  return 'link';
+  //return 'link';
   return trace.length >= RENDER_NEST_LIMIT ? 'link' : 'nest';
+}
+
+/**
+ * Normalizes the input value to always be an array of record references
+ *
+ * @param value - Either a single record reference or an array of them
+ * @returns An array of record references, or null if validation fails
+ */
+function normalizeRecordReferences(value: unknown): RecordReference[] | null {
+  const parseResult = RecordReferenceInputSchema.safeParse(value);
+  if (!parseResult.success) {
+    return null;
+  }
+
+  // Normalize to array format
+  const parsed = parseResult.data;
+  return Array.isArray(parsed) ? parsed : [parsed];
 }
 
 // ============================================================================
@@ -346,7 +371,8 @@ const ErrorRecordItem = ({recordId}: {recordId: string}) => (
  * - **Linked**: Shows related records as links when nesting limit is reached
  *
  * The component:
- * 1. Validates the input value against the expected schema
+ * 1. Validates the input value against the expected schema (supports both
+ *    singleton and array inputs, normalizing to array format)
  * 2. Fetches and hydrates each related record
  * 3. Determines display behavior based on nesting depth
  * 4. Renders either nested accordions or link cards accordingly
@@ -361,52 +387,53 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   // Initialize data access
   const behavior = determineBehaviorFromTrace(trace);
 
-  // Validate and parse input value
-  const parseResult = RecordReferenceArraySchema.safeParse(props.value);
-  if (!parseResult.success) {
+  // Validate and normalize input value (handles both singleton and array)
+  const relatedRecords = normalizeRecordReferences(props.value);
+  if (relatedRecords === null) {
     return <TextWrapper content={INVALID_REFERENCES_MESSAGE} />;
   }
 
-  const relatedRecords = parseResult.data;
-
   // Fetch and hydrate all related records
   const relatedRecordQueries = useQueries({
-    queries: relatedRecords.map(({record_id}) => ({
-      queryKey: ['related-hydration', record_id, behavior],
-      queryFn: async () => {
-        const engine = props.renderContext.tools.getDataEngine();
+    queries:
+      behavior === 'nest'
+        ? relatedRecords.map(({record_id}) => ({
+            queryKey: ['related-hydration', record_id, behavior],
+            queryFn: async () => {
+              const engine = props.renderContext.tools.getDataEngine();
 
-        const hydratedRecord = await engine.form.getExistingFormData({
-          recordId: record_id,
-        });
+              const hydratedRecord = await engine.form.getExistingFormData({
+                recordId: record_id,
+              });
 
-        if (!hydratedRecord) {
-          return undefined;
-        }
+              if (!hydratedRecord) {
+                return undefined;
+              }
 
-        // Return full renderer props for nested mode
-        return {
-          viewsetId: hydratedRecord.formId,
-          formData: hydratedRecord.data,
-          hydratedRecord: hydratedRecord.context.record,
-          hrid: hydratedRecord.context.hrid,
-          trace: [
-            ...trace,
-            {
-              callType: 'relatedRecord' as const,
-              fieldId,
-              recordId: record._id,
-              viewId,
-              viewsetId,
+              // Return full renderer props for nested mode
+              return {
+                viewsetId: hydratedRecord.formId,
+                formData: hydratedRecord.data,
+                hydratedRecord: hydratedRecord.context.record,
+                hrid: hydratedRecord.context.hrid,
+                trace: [
+                  ...trace,
+                  {
+                    callType: 'relatedRecord' as const,
+                    fieldId,
+                    recordId: record._id,
+                    viewId,
+                    viewsetId,
+                  },
+                ],
+                uiSpecification,
+                config: props.config,
+                tools: props.renderContext.tools,
+              } satisfies DataViewProps;
             },
-          ],
-          uiSpecification,
-          config: props.config,
-          tools: props.renderContext.tools,
-        } satisfies DataViewProps;
-      },
-      networkMode: 'always' as const,
-    })),
+            networkMode: 'always' as const,
+          }))
+        : [],
   });
 
   // Handle empty state

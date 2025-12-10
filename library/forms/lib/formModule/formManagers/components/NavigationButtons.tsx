@@ -16,16 +16,19 @@ export interface ParentNavInfo {
 }
 
 /**
- * Represents an inferred parent record when no explicit navigation history exists.
- * This is typically derived from the record's relationship field, allowing users
- * to navigate to a likely parent even when they arrived at the record directly
- * (e.g., via URL or search) rather than through parent-child navigation.
+ * Represents an inferred parent record when no explicit navigation history
+ * exists. This is typically derived from the record's relationship field,
+ * allowing users to navigate to a likely parent even when they arrived at the
+ * record directly (e.g., via viewing directly) rather than through parent-child
+ * navigation.
  */
 export interface ImpliedParentNavInfo {
   /** What relationship type? */
   type: 'parent' | 'linked';
   /** The record ID of the implied parent */
   recordId: string;
+  /** Which field did this come from? */
+  fieldId: string;
   /** The form/viewset ID of the parent record */
   formId: string;
   /** Display label for the parent (e.g., HRID or descriptive name) */
@@ -55,20 +58,23 @@ export interface FormNavigationButtonsProps {
   flushSave?: () => Promise<void>;
   /** Optional: check if there are pending changes (for UI feedback) */
   hasPendingChanges?: () => boolean;
-  /** Optional: handler to navigate to the view record page (shown when no parent context) */
+  /** Optional: handler to navigate to the view record page (shown when no
+   * parent context) */
   onNavigateToViewRecord?: () => void;
   /**
-   * Optional: inferred parent navigation info when no explicit navigation history exists.
+   * Optional: inferred parent navigation info when no explicit navigation
+   * history exists.
    *
-   * This can be supplied to indicate a likely parent record, typically derived from
-   * the record's `relationship` field. Useful when the user navigates directly to a
-   * child record (e.g., via URL, search, or deep link) without going through the
-   * parent first.
+   * This can be supplied to indicate likely parent/linked records, typically
+   * derived from the record's `relationship` field. Useful when the user
+   * navigates directly to a child record (e.g., via URL, search, or deep link)
+   * without going through the parent first.
    *
-   * When provided and there is no explicit navigation context (parentNavInfo),
-   * a "Go to parent" button will be shown allowing navigation to this inferred parent.
+   * When provided (and non-empty) and there is no explicit navigation context
+   * (parentNavInfo), navigation buttons will be shown for each inferred
+   * parent/linked record.
    */
-  impliedParentNavInfo?: ImpliedParentNavInfo | null;
+  impliedParentNavInfo?: ImpliedParentNavInfo[] | null;
 }
 
 /**
@@ -78,7 +84,7 @@ export interface FormNavigationButtonsProps {
  *
  * Navigation priority:
  * 1. If explicit parentNavInfo exists (from navigation history), show "Return to parent"
- * 2. If no history but impliedParentNavInfo exists, show "Go to parent" (inferred from relationships)
+ * 2. If no history but impliedParentNavInfo exists, show buttons for each inferred parent/linked record
  * 3. If onNavigateToViewRecord is provided and no parent context, show "Return to view record"
  * 4. Always show "Return to record list"
  *
@@ -146,11 +152,16 @@ export const FormNavigationButtons = ({
     }
   }, [onNavigateToViewRecord, withFlush]);
 
-  const handleImpliedParentNavigation = useCallback(async () => {
-    if (impliedParentNavInfo) {
-      await withFlush(impliedParentNavInfo.onNavigate)();
-    }
-  }, [impliedParentNavInfo, withFlush]);
+  /**
+   * Creates a navigation handler for a specific implied parent.
+   * Each implied parent gets its own handler that wraps its onNavigate with flush logic.
+   */
+  const createImpliedParentNavigationHandler = useCallback(
+    (impliedParent: ImpliedParentNavInfo) => async () => {
+      await withFlush(impliedParent.onNavigate)();
+    },
+    [withFlush]
+  );
 
   // Extract HRID from label (removes "Return to " prefix if present)
   const hrid = parentNavInfo?.label.replace('Return to ', '') ?? '';
@@ -161,6 +172,12 @@ export const FormNavigationButtons = ({
 
   // Determine if we have an explicit parent navigation context (from nav history)
   const hasExplicitParentContext = parentNavInfo && onNavigateToParent;
+
+  // Normalize implied parent info to an array (empty if null/undefined)
+  const normalizedImpliedParents = useMemo(
+    () => impliedParentNavInfo ?? [],
+    [impliedParentNavInfo]
+  );
 
   const buttons = useMemo(() => {
     const result: NavigationButtonsConfig[] = [];
@@ -180,14 +197,14 @@ export const FormNavigationButtons = ({
     } else {
       // No explicit navigation history
 
-      // Show "Go to parent" if we have an implied parent (from relationship field)
-      if (impliedParentNavInfo) {
+      // Show navigation buttons for each implied parent/linked record (from relationship field)
+      for (const impliedParent of normalizedImpliedParents) {
         result.push({
-          label: `Return to ${
-            impliedParentNavInfo.type === 'linked' ? 'related record' : 'parent'
-          } (${impliedParentNavInfo.formId})`,
-          subtitle: impliedParentNavInfo.label,
-          onClick: handleImpliedParentNavigation,
+          label: `Go to ${
+            impliedParent.type === 'linked' ? 'linked record' : 'parent'
+          } (${impliedParent.formId})`,
+          subtitle: impliedParent.label,
+          onClick: createImpliedParentNavigationHandler(impliedParent),
           disabled: isSaving,
           loading: isSaving,
           statusText,
@@ -217,15 +234,16 @@ export const FormNavigationButtons = ({
     return result;
   }, [
     hasExplicitParentContext,
+    parentNavInfo,
     parentFormLabel,
     hrid,
     handleParentNavigation,
     isSaving,
     statusText,
+    normalizedImpliedParents,
+    createImpliedParentNavigationHandler,
     onNavigateToViewRecord,
     handleViewRecordNavigation,
-    impliedParentNavInfo,
-    handleImpliedParentNavigation,
     navigateToRecordList.label,
     handleRecordListNavigation,
   ]);
