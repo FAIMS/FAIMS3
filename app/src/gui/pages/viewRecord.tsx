@@ -93,6 +93,45 @@ export const ViewRecordPage = () => {
     gcTime: 0,
   });
 
+  // Fetch implied parent relationship if it exists
+  const {data: impliedParent} = useQuery({
+    queryKey: [
+      'impliedParent',
+      recordId,
+      formData?.context.revision.relationship?.parent?.recordId,
+    ],
+    queryFn: async () => {
+      if (!formData) return null;
+
+      const revision = formData.context.revision;
+
+      // If we have a relationship in the revision, hydrate the parent
+      if (revision.relationship !== undefined) {
+        const engine = getDataEngine();
+        const parentHydrated = await engine.hydrated.getHydratedRecord({
+          recordId: revision.relationship.parent.recordId,
+        });
+
+        const parentFormLabel =
+          uiSpec.viewsets[parentHydrated.record.formId]?.label ??
+          parentHydrated.record.formId;
+
+        return {
+          recordId: parentHydrated.record._id,
+          hrid: parentHydrated.hrid,
+          formId: parentHydrated.record.formId,
+          formLabel: parentFormLabel,
+        };
+      }
+
+      return null;
+    },
+    enabled: !!formData,
+    networkMode: 'always',
+    staleTime: 0,
+    gcTime: 0,
+  });
+
   // Generate attachment service for this project
   const getAttachmentService = () => {
     return createProjectAttachmentService(projectId);
@@ -177,6 +216,34 @@ export const ViewRecordPage = () => {
     },
   } satisfies DataViewProps;
 
+  // Build navigation buttons array
+  const navButtons: Array<{
+    label: string;
+    subtitle?: string;
+    onClick: () => void;
+  }> = [];
+
+  // Add implied parent button if it exists
+  if (impliedParent) {
+    navButtons.push({
+      label: `View parent record (${impliedParent.formLabel})`,
+      subtitle: impliedParent.hrid,
+      onClick: () =>
+        nav(
+          getViewRecordRoute({
+            projectId,
+            recordId: impliedParent.recordId,
+            serverId,
+          })
+        ),
+    });
+  }
+
+  navButtons.push({
+    label: 'Return to record list',
+    onClick: () => nav(getNotebookRoute({serverId, projectId})),
+  });
+
   return (
     <Stack spacing={2}>
       <Box
@@ -213,15 +280,7 @@ export const ViewRecordPage = () => {
         </Button>
       </Box>
       <Box sx={{pl: 2}}>
-        <NavigationButtonsTemplate
-          buttons={[
-            {
-              label: 'Return to record list',
-              onClick: () => nav(getNotebookRoute({serverId, projectId})),
-            },
-          ]}
-          marginBottom={0}
-        />
+        <NavigationButtonsTemplate buttons={navButtons} marginBottom={0} />
       </Box>
       <DataView {...props}></DataView>
     </Stack>

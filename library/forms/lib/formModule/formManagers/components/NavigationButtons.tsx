@@ -177,23 +177,23 @@ export const FormNavigationButtons = ({
     } else {
       // No explicit navigation history
 
-      // Show "Return to view record" if handler provided
-      if (onNavigateToViewRecord) {
+      // Show "Go to parent" if we have an implied parent (from relationship field)
+      if (impliedParentNavInfo) {
         result.push({
-          label: 'Return to view record',
-          onClick: handleViewRecordNavigation,
+          label: `Return to parent (${impliedParentNavInfo.formId})`,
+          subtitle: impliedParentNavInfo.label,
+          onClick: handleImpliedParentNavigation,
           disabled: isSaving,
           loading: isSaving,
           statusText,
         });
       }
 
-      // Show "Go to parent" if we have an implied parent (from relationship field)
-      if (impliedParentNavInfo) {
+      // Show "Return to view record" if handler provided
+      if (onNavigateToViewRecord) {
         result.push({
-          label: `Go to parent (${impliedParentNavInfo.formId})`,
-          subtitle: impliedParentNavInfo.label,
-          onClick: handleImpliedParentNavigation,
+          label: 'Return to view record',
+          onClick: handleViewRecordNavigation,
           disabled: isSaving,
           loading: isSaving,
           statusText,

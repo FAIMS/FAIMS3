@@ -93,6 +93,7 @@ const NavigationButton = ({
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
+            textAlign: 'left',
             width: '100%',
             fontSize: subtitle ? '0.875rem' : undefined,
           }}
@@ -119,6 +120,7 @@ const NavigationButton = ({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               width: '100%',
+              textAlign: 'left',
               fontSize: '0.75rem',
               color: 'text.secondary',
             }}
