@@ -5,8 +5,8 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
+  Button,
   CircularProgress,
-  Link,
   Paper,
   Stack,
   Typography,
@@ -14,16 +14,15 @@ import {
   useTheme,
 } from '@mui/material';
 import {useQueries} from '@tanstack/react-query';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import z from 'zod';
+import {DataView} from '../../../DataView';
 import {
   DataViewFieldRender,
   DataViewProps,
   DataViewTools,
-  DataViewTraceEntry,
 } from '../../../types';
 import {EmptyResponsePlaceholder, TextWrapper} from '../wrappers';
-import {DataView} from '../../../DataView';
 
 // ============================================================================
 // Type Definitions & Schemas
@@ -56,11 +55,6 @@ const RecordReferenceInputSchema = z.union([
  * Inferred TypeScript type for a single record reference
  */
 type RecordReference = z.infer<typeof RecordReferenceSchema>;
-
-/**
- * Display behavior for related records based on nesting depth
- */
-type DisplayBehaviour = 'nest' | 'link';
 
 /**
  * Props for components that display related record information
@@ -97,20 +91,6 @@ const INVALID_REFERENCES_MESSAGE =
 // ============================================================================
 // Utility Functions
 // ============================================================================
-
-/**
- * Determines whether to nest or link related records based on current depth
- *
- * @param trace - The renderer trace history showing parent chain
- * @returns 'nest' if within limit, 'link' if at or beyond limit
- *
- */
-function determineBehaviorFromTrace(
-  trace: DataViewTraceEntry[]
-): DisplayBehaviour {
-  //return 'link';
-  return trace.length >= RENDER_NEST_LIMIT ? 'link' : 'nest';
-}
 
 /**
  * Normalizes the input value to always be an array of record references
@@ -204,9 +184,9 @@ const LinkedRecordItem = ({
   recordId,
   tools,
 }: RelatedRecordDisplayProps) => {
-  const recordRoute = tools.getRecordRoute({
-    recordId,
-  });
+  const handleClick = () => {
+    tools.navigateToRecord({recordId});
+  };
 
   return (
     <Paper
@@ -229,22 +209,16 @@ const LinkedRecordItem = ({
       <Box sx={{flex: 1}}>
         <RelatedRecordTitle recordLabel={recordLabel} />
       </Box>
-      <Link
-        href={recordRoute}
+      <Button
+        onClick={handleClick}
+        endIcon={<OpenInNewIcon sx={{fontSize: 16}} />}
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 0.5,
-          textDecoration: 'none',
+          textTransform: 'none',
           color: 'primary.main',
-          '&:hover': {
-            textDecoration: 'underline',
-          },
         }}
       >
         View Record
-        <OpenInNewIcon sx={{fontSize: 16}} />
-      </Link>
+      </Button>
     </Paper>
   );
 };
@@ -387,93 +361,115 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   const {record, uiSpecification, trace, fieldId, viewId, viewsetId} =
     props.renderContext;
 
-  // Initialize data access
-  const behavior = determineBehaviorFromTrace(trace);
-
-  // Validate and normalize input value (handles both singleton and array)
+  // Validate and normalize input value
   const relatedRecords = normalizeRecordReferences(props.value);
+
   if (relatedRecords === null) {
     return <TextWrapper content={INVALID_REFERENCES_MESSAGE} />;
   }
 
-  // Fetch and hydrate all related records
+  // 1. CYCLE DETECTION SETUP
+  // Create a Set of all ancestor IDs to detect cycles
+  // We also add the current record ID to prevent immediate self-referencing
+  const ancestorIds = useMemo(() => {
+    const ids = new Set(trace.map(t => t.recordId));
+    if (record._id) ids.add(record._id);
+    return ids;
+  }, [trace, record._id]);
+
+  // Check if we are physically too deep in the DOM
+  const isDepthLimitReached = trace.length >= RENDER_NEST_LIMIT;
+
+  // Fetch and hydrate related records
   const relatedRecordQueries = useQueries({
-    queries:
-      behavior === 'nest'
-        ? relatedRecords.map(({record_id}) => ({
-            queryKey: ['related-hydration', record_id, behavior],
-            queryFn: async () => {
-              const engine = props.renderContext.tools.getDataEngine();
+    queries: relatedRecords.map(({record_id}) => {
+      // 2. DECISION LOGIC
+      // If the target record exists in our ancestry, it's a cycle.
+      const isCycle = ancestorIds.has(record_id);
 
-              const hydratedRecord = await engine.form.getExistingFormData({
-                recordId: record_id,
-              });
+      // We only fetch if it is NOT a cycle AND we haven't hit the depth limit.
+      const shouldFetch = !isCycle && !isDepthLimitReached;
 
-              // Return full renderer props for nested mode
-              return {
-                viewsetId: hydratedRecord.formId,
-                formData: hydratedRecord.data,
-                hydratedRecord: hydratedRecord.context.record,
-                hrid: hydratedRecord.context.hrid,
-                trace: [
-                  ...trace,
-                  {
-                    callType: 'relatedRecord' as const,
-                    fieldId,
-                    recordId: record._id,
-                    viewId,
-                    viewsetId,
-                  },
-                ],
-                uiSpecification,
-                config: props.config,
-                tools: props.renderContext.tools,
-              } satisfies DataViewProps;
-            },
-            networkMode: 'always' as const,
-          }))
-        : [],
+      return {
+        queryKey: ['related-hydration', record_id, 'nest'],
+        queryFn: async () => {
+          const engine = props.renderContext.tools.getDataEngine();
+          const hydratedRecord = await engine.form.getExistingFormData({
+            recordId: record_id,
+          });
+
+          return {
+            viewsetId: hydratedRecord.formId,
+            formData: hydratedRecord.data,
+            hydratedRecord: hydratedRecord.context.record,
+            hrid: hydratedRecord.context.hrid,
+            trace: [
+              ...trace,
+              {
+                callType: 'relatedRecord' as const,
+                fieldId,
+                // Pass the CURRENT record ID as the parent for the next trace
+                recordId: record._id,
+                viewId,
+                viewsetId,
+              },
+            ],
+            uiSpecification,
+            config: props.config,
+            tools: props.renderContext.tools,
+          } satisfies DataViewProps;
+        },
+        networkMode: 'always' as const,
+        // 3. STOP THE LOOP
+        // Setting enabled: false prevents the fetch and the subsequent infinite
+        //loop
+        enabled: shouldFetch,
+      };
+    }),
   });
 
-  // Handle empty state
-  if (relatedRecordQueries.length === 0) {
+  if (relatedRecords.length === 0) {
     return <EmptyState />;
   }
 
-  // Render related records list
   return (
     <Box sx={{mt: 2, mb: 2}}>
-      <RelatedRecordsHeader count={relatedRecordQueries.length} />
+      <RelatedRecordsHeader count={relatedRecords.length} />
 
       {relatedRecordQueries.map((query, index) => {
         const recordInfo = relatedRecords[index];
         const key = recordInfo.record_id;
 
-        // Handle loading state
-        if (query.isPending) {
-          return <LoadingRecordItem key={key} recordId={key} />;
-        }
+        // Recalculate logic for rendering decision
+        const isCycle = ancestorIds.has(key);
+        // Force link mode if we are too deep OR if a cycle is detected
+        const forceLinkMode = isDepthLimitReached || isCycle;
 
-        // Handle error state
-        if (query.isError) {
-          return (
-            <ErrorRecordItem key={key} recordId={key} error={query.error} />
-          );
-        }
-
-        // Render link mode
-        if (behavior === 'link') {
+        // 4. RENDER LOGIC
+        // If we forced link mode, we skip loading/error checks because
+        // the query was disabled and won't have data.
+        if (forceLinkMode) {
           return (
             <LinkedRecordItem
               key={key}
-              recordLabel={query.data.hrid ?? recordInfo.record_id}
+              // If it's a cycle, we usually don't have the hydrated label yet, fall back to ID or existing label
+              recordLabel={recordInfo.record_label || recordInfo.record_id}
               recordId={recordInfo.record_id}
               tools={props.renderContext.tools}
             />
           );
         }
 
-        // Render nested mode
+        if (query.isPending) {
+          return <LoadingRecordItem key={key} recordId={key} />;
+        }
+
+        if (query.isError) {
+          return (
+            <ErrorRecordItem key={key} recordId={key} error={query.error} />
+          );
+        }
+
         return (
           <NestedRecordItem
             key={key}
