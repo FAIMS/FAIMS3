@@ -478,7 +478,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
             key={key}
             recordInfo={recordInfo}
             formRendererProps={query.data}
-            isLoading={false}
+            isLoading={query.isPending}
           />
         );
       })}
