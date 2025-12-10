@@ -19,6 +19,8 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import CssBaseline from '@mui/material/CssBaseline';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {
   Alert,
   Button,
@@ -56,6 +58,7 @@ import DebouncedTextField from './debounced-text-field';
 import {PreviewFormManager} from '@faims3/forms';
 import {compileUiSpecConditionals, UISpecification} from '@faims3/data-model';
 import {clone, cloneDeep} from 'lodash';
+import {PropaneSharp} from '@mui/icons-material';
 
 type Props = {
   viewSetId: string;
@@ -83,6 +86,9 @@ export const FormEditor = ({
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
+
+  // Create a default theme with no customizations
+  const defaultTheme = createTheme();
 
   const uiSpec = useAppSelector(
     state => state.notebook['ui-specification'].present
@@ -722,13 +728,19 @@ export const FormEditor = ({
       </Grid>
       {previewForm && (
         <Grid container item sx={{minWidth: '300px'}} xs={6}>
-          <PreviewFormManager
-            initialFormData={{}}
-            layout={'inline'}
-            formName={viewSetId}
-            uiSpec={uiSpecInternal}
-            queryClient={queryClient}
-          />
+          <Box sx={{width: '100%'}}>
+            <ThemeProvider theme={defaultTheme}>
+              {/* resets CSS baseline within this scope */}
+              <CssBaseline />
+              <PreviewFormManager
+                initialFormData={{}}
+                layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
+                formName={viewSetId}
+                uiSpec={uiSpecInternal}
+                queryClient={queryClient}
+              />
+            </ThemeProvider>
+          </Box>
         </Grid>
       )}
     </Stack>

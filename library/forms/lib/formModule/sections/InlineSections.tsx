@@ -5,6 +5,7 @@ import {FormSection} from './FormSection';
 import {FieldVisibilityMap} from '../formManagers/FormManager';
 import {useEffect} from 'react';
 import {getFieldId} from '../utils';
+import {Typography} from '@mui/material';
 
 /**
  * InlineSectionDisplay
@@ -51,7 +52,7 @@ export const InlineSectionDisplay: React.FC<{
         if (visibleViews ? visibleViews.includes(sectionName) : true) {
           return (
             <>
-              <h2>Section: {label}</h2>
+              <Typography variant={'h4'}>Section: {label}</Typography>
               <FormSection
                 key={sectionName}
                 form={props.form}
