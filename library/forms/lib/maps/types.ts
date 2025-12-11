@@ -1,6 +1,5 @@
 import {Feature} from 'ol';
-import TileLayer from 'ol/layer/Tile';
-import {OSM} from 'ol/source';
+import BaseLayer from 'ol/layer/Base';
 
 /**
  * Coordinates in WGS84 (EPSG:4326) format.
@@ -41,9 +40,11 @@ export interface TileSourceProvider {
    * This is called once during map initialisation. The returned layer
    * should be fully configured with its source and any styling.
    *
-   * @returns A configured OpenLayers TileLayer
+   * Can return any OpenLayers layer type (TileLayer, VectorTileLayer, etc.)
+   *
+   * @returns A configured OpenLayers layer
    */
-  getTileLayer(): TileLayer<OSM>;
+  getTileLayer(): BaseLayer;
 
   /**
    * Returns the attribution HTML string for the tile source.

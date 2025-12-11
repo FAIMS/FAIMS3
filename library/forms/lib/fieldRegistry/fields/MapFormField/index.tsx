@@ -452,7 +452,7 @@ const valueSchemaFunction = (props: MapFieldProps) => {
  * Field specification for registration with the field registry.
  */
 export const mapFormFieldSpec: FieldInfo<MapFieldComponentProps> = {
-  namespace: 'faims-custom',
+  namespace: 'mapping-plugin',
   name: 'MapFormField',
   returns: 'faims-core::JSON',
   component: MapFormField,

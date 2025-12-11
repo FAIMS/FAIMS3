@@ -16,9 +16,9 @@ import {
   RedirectInfo,
   TileSourceProvider,
 } from '@faims3/forms';
-import { CircularProgress } from '@mui/material';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useState } from 'react';
+import {CircularProgress} from '@mui/material';
+import {useQuery} from '@tanstack/react-query';
+import {useEffect, useMemo, useState} from 'react';
 import {
   useBlocker,
   useLocation,
@@ -26,20 +26,20 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { APP_NAME, DEBUG_APP } from '../../buildconfig';
+import {APP_NAME, DEBUG_APP} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getNotebookRoute,
   getViewRecordRoute,
 } from '../../constants/routes';
-import { selectActiveUser } from '../../context/slices/authSlice';
-import { compiledSpecService } from '../../context/slices/helpers/compiledSpecService';
-import { selectProjectById } from '../../context/slices/projectSlice';
-import { useAppSelector } from '../../context/store';
-import { createProjectAttachmentService } from '../../utils/attachmentService';
-import { useIsOnline, useUiSpecLayout } from '../../utils/customHooks';
-import { localGetDataDb } from '../../utils/database';
-import { VectorTileStore } from '../components/map/tile-source';
+import {selectActiveUser} from '../../context/slices/authSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../../context/slices/projectSlice';
+import {useAppSelector} from '../../context/store';
+import {createProjectAttachmentService} from '../../utils/attachmentService';
+import {useIsOnline, useUiSpecLayout} from '../../utils/customHooks';
+import {localGetDataDb} from '../../utils/database';
+import {VectorTileStore} from '../components/map/tile-source';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 

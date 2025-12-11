@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * MapComponent.tsx
  *
@@ -28,16 +44,39 @@
  * 1. Implement `TileSourceProvider` with their caching strategy
  * 2. Optionally implement `mapCacheIncludes` to check cache coverage
  * 3. Use `canShowMapNear` to determine if the map can be displayed
+ *
+ * @example
+ * ```tsx
+ * // Basic usage with default tiles
+ * <MapComponent
+ *   parentSetMap={setMap}
+ *   center={[151.2093, -33.8688]}
+ *   zoom={14}
+ * />
+ *
+ * // With custom tile provider for offline support
+ * const offlineProvider: TileSourceProvider = {
+ *   getTileLayer: () => myOfflineTileLayer,
+ *   getAttribution: () => '© My Tiles',
+ *   mapCacheIncludes: async (features) => checkMyCache(features),
+ * };
+ *
+ * <MapComponent
+ *   parentSetMap={setMap}
+ *   tileSourceProvider={offlineProvider}
+ *   center={[151.2093, -33.8688]}
+ * />
+ * ```
  */
 
+import {Box, Typography} from '@mui/material';
 import {Geolocation, Position} from '@capacitor/geolocation';
-import {Box, Grid} from '@mui/material';
-import {View} from 'ol';
-import {Zoom} from 'ol/control';
 import Feature from 'ol/Feature';
 import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {Point} from 'ol/geom';
 import TileLayer from 'ol/layer/Tile';
+import VectorTileLayer from 'ol/layer/VectorTile';
+import BaseLayer from 'ol/layer/Base';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform, transformExtent} from 'ol/proj';
@@ -45,9 +84,12 @@ import {OSM} from 'ol/source';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
+import {View} from 'ol';
+import {Zoom} from 'ol/control';
+import {Extent} from 'ol/extent';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from './CenterControl';
-import {getCoordinates, useCurrentLocation} from './helpers/useLocation';
+import {useCurrentLocation, getCoordinates} from './helpers/useLocation';
 import {Coordinates, TileSourceProvider, WGS84Extent} from './types';
 
 // ============================================================================
@@ -166,7 +208,7 @@ export const DefaultTileSourceProvider: TileSourceProvider = {
   getTileLayer: () =>
     new TileLayer({
       source: new OSM(),
-    }),
+    }) as BaseLayer,
 
   getAttribution: () =>
     '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -643,20 +685,33 @@ export const MapComponent = ({
   // -------------------------------------------------------------------------
 
   return (
-    <Grid container spacing={2}>
-      <Box sx={{height: '100%', width: '100%', minHeight: '600px'}}>
-        <Box
-          ref={refCallback}
-          sx={{
-            height: '95%',
-            width: '100%',
-          }}
-        />
-        <Box sx={{height: '5%', paddingLeft: '20px'}}>
-          {attribution && <p dangerouslySetInnerHTML={{__html: attribution}} />}
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        minHeight: '400px',
+      }}
+    >
+      <Box
+        ref={refCallback}
+        sx={{
+          flexGrow: 1,
+          width: '100%',
+          minHeight: 0, // Important for flex child to shrink properly
+        }}
+      />
+      {attribution && (
+        <Box sx={{py: 0.5, px: 2, flexShrink: 0}}>
+          <Typography
+            variant="caption"
+            component="div"
+            dangerouslySetInnerHTML={{__html: attribution}}
+          />
         </Box>
-      </Box>
-    </Grid>
+      )}
+    </Box>
   );
 };
 

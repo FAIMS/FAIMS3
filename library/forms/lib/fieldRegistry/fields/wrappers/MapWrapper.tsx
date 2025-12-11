@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing software
+ * distributed under the License is distributed on an "AS IS" BASIS
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
+ * See, the License, for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 /**
  * MapWrapper.tsx
  *
@@ -26,8 +42,9 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
+import {Extent} from 'ol/extent';
 import GeoJSON from 'ol/format/GeoJSON';
+import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
@@ -37,9 +54,9 @@ import {Fill, Icon, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   Coordinates,
-  MapComponent,
   TileSourceProvider,
   WGS84Extent,
+  MapComponent,
 } from '../../../maps';
 
 // ============================================================================
@@ -276,8 +293,20 @@ const MapDialog = ({
           top: 'var(--safe-area-inset-top)',
           left: 'var(--safe-area-inset-left)',
         }}
+        PaperProps={{
+          sx: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+          },
+        }}
       >
-        <AppBar position="relative" color="default" elevation={1}>
+        <AppBar
+          position="relative"
+          color="default"
+          elevation={1}
+          sx={{flexShrink: 0}}
+        >
           <Toolbar sx={{justifyContent: 'space-between'}}>
             {/* Close button */}
             <IconButton
@@ -306,8 +335,14 @@ const MapDialog = ({
           </Toolbar>
         </AppBar>
 
-        {/* Map container */}
-        <Box sx={{flexGrow: 1, height: '100%'}}>
+        {/* Map container - takes remaining space */}
+        <Box
+          sx={{
+            flexGrow: 1,
+            minHeight: 0, // Critical for flex child to work properly
+            position: 'relative',
+          }}
+        >
           <MapComponent
             key={open ? 'map-open' : 'map-closed'}
             parentSetMap={setMap}
