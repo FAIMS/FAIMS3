@@ -3,6 +3,7 @@ import {Field} from '../Field';
 import {FormManagerConfig} from '../formManagers';
 import {FieldVisibilityMap} from '../formManagers/FormManager';
 import {FaimsForm} from '../types';
+import {FORCE_IGNORED_FIELDS} from '../../fieldRegistry';
 
 interface FormSectionProps {
   uiSpec: ProjectUIModel;
@@ -29,8 +30,30 @@ export const FormSection = ({
 
   // Filter for only visible fields
   const visibleFields = sectionSpec.fields.filter(f => {
-    // none provided - disabled feature
+    // Find the name/namespace
+    const spec = uiSpec.fields[f];
+    const {name, namespace, hidden} = {
+      name: spec['component-name'],
+      namespace: spec['component-namespace'],
+      hidden: spec['component-parameters']?.hidden === true,
+    };
+
+    // Hide if necessary
+    if (
+      FORCE_IGNORED_FIELDS.find(
+        ignored => ignored.name === name && ignored.namespace === namespace
+      )
+    ) {
+      return false;
+    }
+
+    // Don't show hidden fields
+    if (hidden) {
+      return false;
+    }
+
     if (!fieldVisibilityMap) {
+      // none provided - disabled feature
       return true;
     }
     // provided - but section missing - not visible - but this should not happen

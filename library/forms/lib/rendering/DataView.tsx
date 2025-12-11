@@ -13,7 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, {useMemo} from 'react';
-import {getFieldInfo} from '../fieldRegistry';
+import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry';
 import {formDataExtractor} from '../utils';
 import {DefaultRenderer} from './fields/fallback';
 import {EmptyResponsePlaceholder} from './fields/view';
@@ -57,9 +57,26 @@ export const DataView: React.FC<DataViewProps> = props => {
     <Stack spacing={2} sx={{padding: 2}}>
       {Array.from(fieldsByView.entries()).map(([viewId, sectionFields]) => {
         // Filter for only visible fields
-        const visibleSectionFields = sectionFields.filter(f =>
-          visibleFields.includes(f.name)
-        );
+        const visibleSectionFields = sectionFields.filter(f => {
+          // Find the name/namespace
+          const spec = props.uiSpecification.fields[f.name];
+          const {name, namespace} = {
+            name: spec['component-name'],
+            namespace: spec['component-namespace'],
+          };
+
+          // Hide if necessary
+          if (
+            FORCE_IGNORED_FIELDS.find(
+              ignored =>
+                ignored.name === name && ignored.namespace === namespace
+            )
+          ) {
+            return false;
+          }
+
+          return visibleFields.includes(f.name);
+        });
 
         // Check if any fields in this section are actually visible (not hidden)
         const hasVisibleContent = visibleSectionFields.some(field => {

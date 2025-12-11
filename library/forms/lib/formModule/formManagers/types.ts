@@ -4,6 +4,7 @@ import {
   IAttachmentService,
 } from '@faims3/data-model';
 import z from 'zod';
+import {AutoIncrementService} from '../incrementer';
 
 /**
  * Base interface for form configuration modes.
@@ -137,6 +138,8 @@ export interface FullFormConfig extends BaseFormConfig {
     /** Navigate to the view records (if there is no parent context) */
     navigateToViewRecord: (params: {recordId: string}) => void;
   };
+  /** Provides access to auto-incrementer functions */
+  incrementerService: AutoIncrementService;
   /** What is the deployed app name - helpful for error displays etc */
   appName: string;
   /** Current active user identifier (for audit trails) */
