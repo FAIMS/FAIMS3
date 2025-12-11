@@ -146,6 +146,7 @@ export function useAutoIncrementService({
       formId: ref.form_id,
       fieldId: ref.field_id,
       label: ref.label,
+      numDigits: ref.numDigits,
     }));
   }, [projectId]);
 

@@ -803,9 +803,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         formId: props.formId,
         incrementerService: props.config.incrementerService,
         initialData: props.initialData,
-        // TODO make this configured from the component props num digits on a
-        // per range/field basis
-        numDigits: 4,
         onMissingRanges: fieldRefs => {
           // Call to client to initiate dialog to resolve
           props.config.incrementerService.onIssue(fieldRefs, () => {

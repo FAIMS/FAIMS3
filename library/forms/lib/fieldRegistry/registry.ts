@@ -94,3 +94,11 @@ const validateFieldRegistry = (registry: Map<string, FieldInfo>) => {
 
 // Always validate the registry on load
 validateFieldRegistry(FIELD_REGISTRY);
+
+// Ignored fields - currently narrow exception cases which should never be rendered - e.g. incrementer
+export const FORCE_IGNORED_FIELDS: Array<{name: string; namespace: string}> = [
+  {
+    namespace: 'faims-custom',
+    name: 'BasicAutoIncrementer',
+  },
+];

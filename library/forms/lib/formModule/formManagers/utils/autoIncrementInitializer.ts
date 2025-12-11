@@ -10,12 +10,8 @@ export interface InitializeAutoIncrementFieldsParams {
   incrementerService: AutoIncrementService;
   /** Initial data - fields with existing values won't be overwritten */
   initialData?: FaimsFormData;
-  /** Number of digits to pad values to */
-  numDigits?: number;
   /** Called if any field couldn't get a value (ranges exhausted/not configured) */
-  onMissingRanges?: (
-    fieldRefs: AutoIncrementFieldRef[],
-  ) => void;
+  onMissingRanges?: (fieldRefs: AutoIncrementFieldRef[]) => void;
 }
 
 export interface InitializeAutoIncrementFieldsResult {
@@ -38,7 +34,6 @@ export async function initializeAutoIncrementFields({
   formId,
   incrementerService,
   initialData,
-  numDigits = 4,
   onMissingRanges,
 }: InitializeAutoIncrementFieldsParams): Promise<InitializeAutoIncrementFieldsResult> {
   const result: InitializeAutoIncrementFieldsResult = {
@@ -69,7 +64,7 @@ export async function initializeAutoIncrementFields({
 
     // Get next value from incrementer
     const incrementer = incrementerService.getIncrementer(ref);
-    const value = await incrementer.getNextValueFormatted(numDigits);
+    const value = await incrementer.getNextValueFormatted(ref.numDigits);
 
     if (value === undefined) {
       result.missingRanges.push(ref);

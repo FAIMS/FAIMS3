@@ -4,6 +4,7 @@
 export type AutoIncrementFieldRef = {
   formId: string;
   fieldId: string;
+  numDigits: number;
 };
 
 /**

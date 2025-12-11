@@ -41,6 +41,7 @@ import {
 import {PouchDBWrapper} from '../context/slices/helpers/pouchDBWrapper';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
+export const DEFAULT_NUM_DIGITS = 4;
 
 // An auto-incrementer allocates numbers from a set of ranges
 // defined by the user.
@@ -287,10 +288,19 @@ export async function getAutoincrementReferencesForProject(
   const fields = (uiSpec?.fields ?? []) as ProjectUIFields;
   for (const [fieldId, fieldDetails] of Object.entries(fields)) {
     if (fieldDetails['component-name'] === 'BasicAutoIncrementer') {
+      // Default
+      let numDigits: number = DEFAULT_NUM_DIGITS;
+      if (fieldDetails['component-parameters'].num_digits) {
+        try {
+          numDigits = Number(fieldDetails['component-parameters'].num_digits);
+        } catch {}
+      }
+
       references.push({
         form_id: viewsetMap[fieldId].viewSetId,
-        field_id: fields[fieldId]['component-parameters'].name,
-        label: fields[fieldId]['component-parameters'].label,
+        field_id: fieldDetails['component-parameters'].name,
+        label: fieldDetails['component-parameters'].label,
+        numDigits: numDigits,
       });
     }
   }
