@@ -43,7 +43,7 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {Project, selectProjectById} from '../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
-import ProgressBar from '../components/progress-bar';
+import ProgressBar from '@faims3/forms';
 import RecordForm from '../components/record/form';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';

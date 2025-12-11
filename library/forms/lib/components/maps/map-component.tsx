@@ -34,9 +34,8 @@ import {transform, transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useIsOnline} from '../../../utils/customHooks';
-import {getCoordinates, useCurrentLocation} from '../../../utils/useLocation';
-import {createCenterControl} from '../map/center-control';
+import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
+import {createCenterControl} from './center-control';
 import {VectorTileStore} from './tile-source';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
@@ -98,8 +97,23 @@ export const MapComponent = (props: MapComponentProps) => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
-  const {isOnline} = useIsOnline();
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const tileStore = useMemo(() => new VectorTileStore(), []);
+
+  // Listen for online/offline events to update isOnline state
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+    };
+
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener('online', updateOnlineStatus);
+      window.removeEventListener('offline', updateOnlineStatus);
+    };
+  }, []);
 
   // Use the custom hook for location which we only need if we don't have a center or extent
   // passed in props
