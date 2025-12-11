@@ -64,7 +64,7 @@ export type ExistingRecordDBDocument = z.infer<
 export const relationshipInstanceSchema = z.object({
   record_id: z.string(),
   field_id: z.string(),
-  relation_type_vocabPair: z.tuple([z.string(), z.string()]),
+  relation_type_vocabPair: z.tuple([z.string(), z.string()]).or(z.tuple([])),
 });
 export type RelationshipInstance = z.infer<typeof relationshipInstanceSchema>;
 

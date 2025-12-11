@@ -1,4 +1,8 @@
-import {FormRelationship, HydratedRecord} from '@faims3/data-model';
+import {
+  FormRelationship,
+  FormRelationshipInstance,
+  HydratedRecord,
+} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
@@ -501,9 +505,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     gcTime: 0,
   });
 
-  // Handler for linking an existing record
   const handleLinkExisting = async (record: HydratedRecord) => {
-    // Set our field value to include this link
+    // Update our field to include the new link
     props.setFieldData([
       ...normalizedLinks,
       {
@@ -512,43 +515,25 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       },
     ] satisfies FieldValue);
 
-    // And we need to update the linked record to include this relationship
-    const rev = record.revision;
-
-    // Create the relation entry
-    const relation = {
+    // Build the reciprocal relationship entry for the target record
+    const relation: FormRelationshipInstance = {
       fieldId: props.fieldId,
       recordId: props.config.recordId,
       relationTypeVocabPair: relationTypeToPair(props.relation_type),
     };
 
     // Merge with existing relationships on the target record
-    const existingRelationship = rev.relationship;
-    let relationship: FormRelationship;
+    // Child relations go in 'parent' (the child points to its parent)
+    // Other relations go in 'linked'
+    const existing = record.revision.relationship;
+    const relationship: FormRelationship =
+      props.relation_type === 'faims-core::Child'
+        ? {...existing, parent: [...(existing?.parent ?? []), relation]}
+        : {...existing, linked: [...(existing?.linked ?? []), relation]};
 
-    if (props.relation_type === 'faims-core::Child') {
-      relationship = {
-        ...existingRelationship,
-        parent: [...(existingRelationship?.parent ?? []), relation],
-      };
-    } else {
-      relationship = {
-        ...existingRelationship,
-        linked: [...(existingRelationship?.linked ?? []), relation],
-      };
-    }
-
-    // Update the revision with these changes
-    await props.config.dataEngine().core.updateRevision({
-      _id: rev._id,
-      _rev: rev._rev,
-      avps: rev.avps,
-      created: rev.created,
-      created_by: rev.createdBy,
-      parents: rev.parents,
-      record_id: rev.recordId,
-      revision_format_version: 1,
-      type: rev.formId,
+    // Persist the updated relationship on the target record's revision
+    await props.config.dataEngine().hydrated.updateRevision({
+      ...record.revision,
       relationship,
     });
   };

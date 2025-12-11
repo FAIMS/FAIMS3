@@ -1,4 +1,4 @@
-import {v4 as uuidv4, validate} from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 import {isEqualFAIMS} from '../datamodel';
 import {DatabaseInterface, UISpecification} from '../types';
 import {getHridFieldMap, HridFieldMap} from '../uiSpecification';
@@ -19,11 +19,11 @@ import {
   existingRevisionDocumentSchema,
   FormDataEntry,
   FormRelationship,
-  FormRelationshipInstance,
   FormUpdateData,
   HydratedDataField,
   HydratedRecord,
   HydratedRecordQueryResult,
+  HydratedRevisionDocument,
   InitialFormData,
   NewAvpDBDocument,
   newAvpDocumentSchema,
@@ -39,8 +39,11 @@ import {
   RecordDBDocument,
   recordDocumentSchema,
   RecordQueryResult,
-  RelationshipInstance,
 } from './types';
+import {
+  normalizeRelationshipInstances,
+  toDbRelationshipInstances,
+} from './utils';
 
 // =======
 // HELPERS
@@ -108,6 +111,11 @@ export function dataMap<T>({
 // CONSTANTS
 // =========
 
+// If there is no vocab pair - we use this as a placeholder
+export const DEFAULT_VOCAB_PAIR: [string, string] = [
+  'is related to',
+  'is related to',
+] as const;
 const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
 export const UNKNOWN_TYPE_FALLBACK = '??:??';
 
@@ -784,20 +792,6 @@ class HydratedOperations {
       };
     });
 
-    // Helper function to normalize relationship instances to array
-    const normalizeRelationshipInstances = (
-      instances: RelationshipInstance | RelationshipInstance[] | undefined
-    ): FormRelationshipInstance[] | undefined => {
-      if (!instances) return undefined;
-
-      const arr = Array.isArray(instances) ? instances : [instances];
-      return arr.map(inst => ({
-        fieldId: inst.field_id,
-        recordId: inst.record_id,
-        relationTypeVocabPair: inst.relation_type_vocabPair,
-      }));
-    };
-
     // Get the correct relationship data
     const relationship = revision.relationship;
 
@@ -875,6 +869,74 @@ class HydratedOperations {
       })
     );
     return Promise.all(promises);
+  }
+
+  /**
+   * Update a revision using the hydrated (external) interface types.
+   * Handles mapping from camelCase hydrated types to snake_case DB types.
+   */
+  async updateRevision(
+    revision: HydratedRevisionDocument
+  ): Promise<HydratedRevisionDocument> {
+    // Map from hydrated -> DB format
+    const dbRelationship = revision.relationship
+      ? {
+          ...(revision.relationship.linked
+            ? {linked: toDbRelationshipInstances(revision.relationship.linked)}
+            : {}),
+          ...(revision.relationship.parent
+            ? {parent: toDbRelationshipInstances(revision.relationship.parent)}
+            : {}),
+        }
+      : undefined;
+
+    const dbRevision: ExistingRevisionDBDocument = {
+      _id: revision._id,
+      _rev: revision._rev,
+      avps: revision.avps,
+      created: revision.created,
+      created_by: revision.createdBy,
+      parents: revision.parents,
+      record_id: revision.recordId,
+      revision_format_version: 1,
+      type: revision.formId,
+      relationship: dbRelationship,
+    };
+
+    const updated = await this.core.updateRevision(dbRevision);
+
+    // Map back to hydrated format
+    return this.mapRevisionToHydrated(updated);
+  }
+
+  // Helper to map DB revision -> hydrated revision
+  private mapRevisionToHydrated(
+    rev: ExistingRevisionDBDocument
+  ): HydratedRevisionDocument {
+    const relationship = rev.relationship;
+    const formRelationship: FormRelationship | undefined =
+      relationship && ('linked' in relationship || 'parent' in relationship)
+        ? {
+            ...(relationship.linked
+              ? {linked: normalizeRelationshipInstances(relationship.linked)}
+              : {}),
+            ...(relationship.parent
+              ? {parent: normalizeRelationshipInstances(relationship.parent)}
+              : {}),
+          }
+        : undefined;
+
+    return {
+      _id: rev._id,
+      _rev: rev._rev,
+      avps: rev.avps,
+      created: rev.created,
+      createdBy: rev.created_by,
+      formId: rev.type,
+      parents: rev.parents,
+      recordId: rev.record_id,
+      relationship: formRelationship,
+    };
   }
 
   /**
@@ -964,18 +1026,6 @@ class FormOperations {
     const recordId = generateRecordID();
     // Generate new revision ID
     const revisionId = generateRevisionID();
-
-    // Helper to convert FormRelationshipInstance[] back to DB format
-    const toDbRelationshipInstances = (
-      instances: FormRelationshipInstance[] | undefined
-    ): RelationshipInstance[] | undefined => {
-      if (!instances || instances.length === 0) return undefined;
-      return instances.map(inst => ({
-        field_id: inst.fieldId,
-        record_id: inst.recordId,
-        relation_type_vocabPair: inst.relationTypeVocabPair,
-      }));
-    };
 
     // Step 1: Create Record document
     const recordDoc: NewRecordDBDocument = {
