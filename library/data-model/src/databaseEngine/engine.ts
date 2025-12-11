@@ -823,6 +823,7 @@ class HydratedOperations {
         formId: record.type,
         heads: record.heads,
         revisions: record.revisions,
+        deleted: revision.deleted ?? false,
       },
       revision: {
         _id: revision._id,
@@ -834,6 +835,7 @@ class HydratedOperations {
         parents: revision.parents,
         recordId: revision.record_id,
         relationship: formRelationship,
+        deleted: revision.deleted ?? false,
       },
       data: mappedData,
       metadata: {

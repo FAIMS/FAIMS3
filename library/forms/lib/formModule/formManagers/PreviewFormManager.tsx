@@ -5,7 +5,7 @@ import {
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ComponentProps, useMemo, useState} from 'react';
+import {ComponentProps, useEffect, useMemo, useState} from 'react';
 import {formDataExtractor} from '../../utils';
 import {FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
@@ -83,6 +83,18 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
       },
     },
   });
+
+  // Whenever the uiSpec changes, recompute the visible fields
+  useEffect(() => {
+    // Updating visibility
+    setVisibleMap(
+      currentlyVisibleMap({
+        values: formDataExtractor({fullData: form.state.values}),
+        uiSpec: uiSpec,
+        viewsetId: props.formName,
+      })
+    );
+  }, [props.uiSpec]);
 
   // Preview mode config (no backend integration)
   const config: PreviewFormConfig = {
