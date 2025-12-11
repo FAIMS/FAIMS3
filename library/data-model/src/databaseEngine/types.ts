@@ -64,13 +64,18 @@ export type ExistingRecordDBDocument = z.infer<
 export const relationshipInstanceSchema = z.object({
   record_id: z.string(),
   field_id: z.string(),
-  relation_type_vocabPair: z.tuple([z.string(), z.string()]),
+  relation_type_vocabPair: z.tuple([z.string(), z.string()]).or(z.tuple([])),
 });
 export type RelationshipInstance = z.infer<typeof relationshipInstanceSchema>;
 
+// Revision relationship field can be either a list or singleton entry
 export const relationshipSchema = z.object({
-  parent: relationshipInstanceSchema.optional(),
-  linked: relationshipInstanceSchema.optional(),
+  parent: z
+    .union([relationshipInstanceSchema, z.array(relationshipInstanceSchema)])
+    .optional(),
+  linked: z
+    .union([relationshipInstanceSchema, z.array(relationshipInstanceSchema)])
+    .optional(),
 });
 export type RecordRelationship = z.infer<typeof relationshipSchema>;
 
@@ -84,10 +89,8 @@ export const v1RevisionDBFieldsSchema = z
     created_by: z.string(),
     type: z.string(),
     ugc_comment: z.string().optional(),
-    relationship: relationshipSchema
-      .optional()
-      // This allows empty objects
-      .or(z.object({}).strict()),
+    relationship: relationshipSchema.optional(),
+    deleted: z.boolean().optional(),
   })
   .strict();
 
@@ -533,8 +536,8 @@ export type FormRelationshipInstance = z.infer<
   typeof formRelationshipInstanceSchema
 >;
 const formRelationshipSchema = z.object({
-  parent: formRelationshipInstanceSchema.optional(),
-  linked: formRelationshipInstanceSchema.optional(),
+  parent: z.array(formRelationshipInstanceSchema).optional(),
+  linked: z.array(formRelationshipInstanceSchema).optional(),
 });
 
 export type FormRelationship = z.infer<typeof formRelationshipSchema>;
@@ -606,6 +609,8 @@ export const hydratedRecordDocumentSchema = z.object({
   heads: z.array(z.string()),
   /** Form identifier for this document */
   formId: z.string(),
+  /** Optional deleted property, true if the latest revision of this record is 'deleted' */
+  deleted: z.boolean().optional(),
 });
 
 export type HydratedRecordDocument = z.infer<
@@ -634,6 +639,8 @@ export const hydratedRevisionDocumentSchema = z.object({
   formId: z.string(),
   /** Optional relationship information if this is a related record */
   relationship: formRelationshipSchema.optional(),
+  /** Optional deleted property, true if this revision is 'deleted' */
+  deleted: z.boolean().optional(),
 });
 
 export type HydratedRevisionDocument = z.infer<

@@ -135,19 +135,16 @@ const ExpandedChecklist = ({
                   disabled
                 }
                 sx={{
-                  padding: '4px 8px 0 0',
-                  alignSelf: 'flex-start',
+                  padding: '4px 8px 4px 0',
                 }}
               />
             }
             label={
               <span
                 style={{
-                  display: 'contents',
                   whiteSpace: 'normal',
                   wordBreak: 'break-word',
-                  lineHeight: '1.8rem',
-                  paddingTop: '4px',
+                  lineHeight: '1.5',
                 }}
                 dangerouslySetInnerHTML={{
                   __html: contentToSanitizedHtml(option.label),
@@ -156,11 +153,8 @@ const ExpandedChecklist = ({
             }
             sx={{
               alignItems: 'center',
-              mb: 1.5,
+              mb: 1,
               m: 0,
-              '& .MuiFormControlLabel-label': {
-                marginTop: 0,
-              },
             }}
           />
         ))}
@@ -307,8 +301,8 @@ export const MultiSelect = (props: FieldProps) => {
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
     : rawValue === '' || rawValue === undefined || rawValue === null
-      ? []
-      : [rawValue as string];
+    ? []
+    : [rawValue as string];
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];

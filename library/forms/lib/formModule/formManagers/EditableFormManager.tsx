@@ -19,6 +19,7 @@ import {
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
+import {getImpliedNavigationRelationships} from '../utils';
 import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
@@ -150,7 +151,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   // Determine information about parent context, if necessary
   const parentNavigationInformation = useQuery({
-    queryKey: [],
+    queryKey: [props.navigationContext, props.recordId, props.revisionId],
     queryFn: async () => {
       // Root mode doesn't need any navigational information
       const getExplicitNav = async () => {
@@ -168,7 +169,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             // This shouldn't happen - but good to be careful
             return null;
           }
-
           // Determine various information about the parent record
           const engine = props.config.dataEngine();
           // Get hydrated parent record
@@ -176,13 +176,11 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             recordId: latestLineage.recordId,
             revisionId: latestLineage.revisionId,
           });
-
           // TODO: consider per revision navigation
           const link = props.config.navigation.getToRecordLink({
             recordId: latestLineage.recordId,
             mode: latestLineage.parentMode,
           });
-
           return {
             parentNavButton: {
               link,
@@ -200,40 +198,25 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         return null;
       };
 
-      // This function looks at the relationship? to see if we have implied
-      // navigation  - this is only used where explicit navigation is not
+      // This function looks at the relationship to see if we have implied
+      // navigation - this is only used where explicit navigation is not
       // available
       const getImpliedNav = async () => {
-        // Determine various information about the parent record
         const engine = props.config.dataEngine();
-        // Get hydrated base record
         const hydrated = await engine.hydrated.getHydratedRecord({
           recordId: props.recordId,
           revisionId: props.revisionId,
         });
-        const revision = hydrated.revision;
-        // If we have a relationship in the revision - go and hydrate it now
-        if (revision.relationship?.parent) {
-          return {
-            type: 'linked' as 'linked' | 'parent',
-            data: await engine.hydrated.getHydratedRecord({
-              recordId: revision.relationship.parent.recordId,
-            }),
-          };
-        } else if (revision.relationship?.linked) {
-          return {
-            type: 'linked' as 'linked' | 'parent',
-            data: await engine.hydrated.getHydratedRecord({
-              recordId: revision.relationship.linked.recordId,
-            }),
-          };
-        }
 
-        return undefined;
+        return await getImpliedNavigationRelationships(
+          hydrated.revision,
+          engine,
+          dataEngine.uiSpec
+        );
       };
+
       const explicit = await getExplicitNav();
       const implied = await getImpliedNav();
-
       return {explicit, implied};
     },
     networkMode: 'always',
@@ -735,35 +718,35 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
   };
 
-  const impliedParent = useMemo(() => {
+  const impliedParents = useMemo(() => {
     // Wait until data loaded
     if (!parentNavigationInformation.data) {
       return undefined;
     }
-
     const explicit = parentNavigationInformation.data.explicit;
     const implied = parentNavigationInformation.data.implied;
-
-    // If we have real lineage, then don't include an implied parent
+    // If we have real lineage, then don't include implied parents
     if ((explicit?.fullContext.lineage.length ?? 0) > 0) {
       return undefined;
     }
-
-    // Look for implied parent
-    if (implied) {
-      return {
-        label: `View ${implied.data.hrid}`,
-        recordId: implied.data.record._id,
-        onNavigate() {
-          props.config.navigation.navigateToViewRecord({
-            recordId: implied.data.record._id,
-          });
-        },
-        formId: implied.data.record.formId,
-        type: implied.type,
-      } satisfies ImpliedParentNavInfo;
+    // Look for implied parents
+    if (implied && implied.length > 0) {
+      return implied.map(
+        entry =>
+          ({
+            label: `View ${entry.hrid}`,
+            recordId: entry.recordId,
+            onNavigate() {
+              props.config.navigation.navigateToViewRecord({
+                recordId: entry.recordId,
+              });
+            },
+            formId: entry.formId,
+            fieldId: entry.fieldId,
+            type: entry.type,
+          }) satisfies ImpliedParentNavInfo
+      );
     }
-
     // Otherwise
     return undefined;
   }, [parentNavigationInformation.data]);
@@ -843,7 +826,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             recordId: props.recordId,
           });
         }}
-        impliedParentNavInfo={impliedParent}
+        impliedParentNavInfo={impliedParents}
       />
     );
   }, [

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {UISpecification} from '@faims3/data-model';
+import {PreviewFormManager} from '@faims3/forms';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
@@ -42,19 +44,19 @@ import {
   Typography,
 } from '@mui/material';
 import Box from '@mui/material/Box';
+import CssBaseline from '@mui/material/CssBaseline';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {useQueryClient} from '@tanstack/react-query';
-
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {cloneDeep} from 'lodash';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
+import {useLocation} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {findFormExternalUsage} from './condition/utils';
+import DebouncedTextField from './debounced-text-field';
+import {DeletionWarningDialog} from './deletion-warning-dialog';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
-import {useLocation} from 'react-router-dom';
-import {findFormExternalUsage} from './condition/utils';
-import {DeletionWarningDialog} from './deletion-warning-dialog';
-import DebouncedTextField from './debounced-text-field';
-import {PreviewFormManager} from '@faims3/forms';
-import {ProjectUIModel} from '@faims3/data-model';
 
 type Props = {
   viewSetId: string;
@@ -83,16 +85,28 @@ export const FormEditor = ({
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
 
+  // Create a default theme with no customizations
+  const defaultTheme = createTheme();
+
   const uiSpec = useAppSelector(
     state => state.notebook['ui-specification'].present
   );
   // we need this to be a ProjectUIModel type for the PreviewFormManager
-  const uiSpecInternal: ProjectUIModel = {
-    fields: uiSpec.fields,
-    viewsets: uiSpec.viewsets,
-    views: uiSpec.fviews,
-    visible_types: uiSpec.visible_types,
-  };
+  // we should also compile this
+  const uiSpecInternal = useMemo(
+    () => {
+      // Clone the uiSpec - we need to do this to make it mutable
+      const uiSpecEncoded = cloneDeep(uiSpec);
+      return {
+        fields: uiSpecEncoded.fields,
+        views: uiSpecEncoded.fviews,
+        viewsets: uiSpecEncoded.viewsets,
+        visible_types: uiSpecEncoded.visible_types,
+      } satisfies UISpecification;
+    },
+    // Bit of a hack to force diff on uiSpec even tho ref may no
+    [uiSpec]
+  );
 
   const visibleTypes = useAppSelector(
     state => state.notebook['ui-specification'].present.visible_types
@@ -712,13 +726,19 @@ export const FormEditor = ({
       </Grid>
       {previewForm && (
         <Grid container item sx={{minWidth: '300px'}} xs={6}>
-          <PreviewFormManager
-            initialFormData={{}}
-            layout={'inline'}
-            formName={viewSetId}
-            uiSpec={uiSpecInternal}
-            queryClient={queryClient}
-          />
+          <Box sx={{width: '100%'}}>
+            <ThemeProvider theme={defaultTheme}>
+              {/* resets CSS baseline within this scope */}
+              <CssBaseline />
+              <PreviewFormManager
+                initialFormData={{}}
+                layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
+                formName={viewSetId}
+                uiSpec={uiSpecInternal}
+                queryClient={queryClient}
+              />
+            </ThemeProvider>
+          </Box>
         </Grid>
       )}
     </Stack>

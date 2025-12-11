@@ -5,6 +5,7 @@ import {TabbedSectionDisplay} from '../sections/TabbedSections';
 import {FaimsForm} from '../types';
 import {FormStateDisplay} from './FormStateDisplay';
 import {FormManagerConfig} from './types';
+import {Typography} from '@mui/material';
 
 // Map from section -> list of visible fields - section included IFF it's
 // visible at all
@@ -43,7 +44,7 @@ export const FormManager = (props: FormManagerProps) => {
 
   return (
     <>
-      <h1>Form: {formSpec.label}</h1>
+      <Typography variant={'h3'}>Form: {formSpec.label}</Typography>
 
       {/* Render Inline (Vertical) Layout */}
       {props.config.layout === 'inline' && (

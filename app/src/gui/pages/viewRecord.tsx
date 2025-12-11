@@ -8,6 +8,8 @@ import {
 import {
   DataView,
   DataViewProps,
+  getImpliedNavigationRelationships,
+  ImpliedRelationship,
   NavigationButtonsTemplate,
 } from '@faims3/forms';
 import EditIcon from '@mui/icons-material/Edit';
@@ -93,50 +95,21 @@ export const ViewRecordPage = () => {
     gcTime: 0,
   });
 
-  // Fetch implied parent relationship if it exists
-  const {data: impliedParent} = useQuery({
+  // Fetch all implied parent/linked relationships if they exist
+  const {data: impliedRelationships} = useQuery({
     queryKey: [
-      'impliedParent',
+      'impliedRelationships',
       recordId,
-      formData?.context.revision.relationship?.parent?.recordId,
+      formData?.context.revision.relationship,
     ],
-    queryFn: async () => {
-      if (!formData) return null;
+    queryFn: async (): Promise<ImpliedRelationship[]> => {
+      if (!formData) return [];
 
-      const revision = formData.context.revision;
-      // If we have a relationship in the revision, hydrate the parent
-      if (revision.relationship?.parent) {
-        const engine = getDataEngine();
-        const parentHydrated = await engine.hydrated.getHydratedRecord({
-          recordId: revision.relationship.parent.recordId,
-        });
-        const parentFormLabel =
-          uiSpec.viewsets[parentHydrated.record.formId]?.label ??
-          parentHydrated.record.formId;
-        return {
-          type: 'parent' as 'parent' | 'linked',
-          recordId: parentHydrated.record._id,
-          hrid: parentHydrated.hrid,
-          formId: parentHydrated.record.formId,
-          formLabel: parentFormLabel,
-        };
-      } else if (revision.relationship?.linked) {
-        const engine = getDataEngine();
-        const linkedHydrated = await engine.hydrated.getHydratedRecord({
-          recordId: revision.relationship.linked.recordId,
-        });
-        const linkedFormLabel =
-          uiSpec.viewsets[linkedHydrated.record.formId]?.label ??
-          linkedHydrated.record.formId;
-        return {
-          type: 'parent' as 'parent' | 'linked',
-          recordId: linkedHydrated.record._id,
-          hrid: linkedHydrated.hrid,
-          formId: linkedHydrated.record.formId,
-          formLabel: linkedFormLabel,
-        };
-      }
-      return null;
+      return getImpliedNavigationRelationships(
+        formData.context.revision,
+        getDataEngine(),
+        uiSpec
+      );
     },
     enabled: !!formData,
     networkMode: 'always',
@@ -235,22 +208,24 @@ export const ViewRecordPage = () => {
     onClick: () => void;
   }> = [];
 
-  // Add implied parent button if it exists
-  if (impliedParent) {
-    navButtons.push({
-      label: `View ${
-        impliedParent.type === 'linked' ? 'related' : 'parent'
-      } record (${impliedParent.formLabel})`,
-      subtitle: impliedParent.hrid,
-      onClick: () =>
-        nav(
-          getViewRecordRoute({
-            projectId,
-            recordId: impliedParent.recordId,
-            serverId,
-          })
-        ),
-    });
+  // Add navigation buttons for all implied parent/linked relationships
+  if (impliedRelationships && impliedRelationships.length > 0) {
+    for (const relationship of impliedRelationships) {
+      navButtons.push({
+        label: `View ${
+          relationship.type === 'linked' ? 'linked' : 'parent'
+        } record (${relationship.formLabel})`,
+        subtitle: relationship.hrid,
+        onClick: () =>
+          nav(
+            getViewRecordRoute({
+              projectId,
+              recordId: relationship.recordId,
+              serverId,
+            })
+          ),
+      });
+    }
   }
 
   navButtons.push({
