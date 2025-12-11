@@ -94,5 +94,5 @@ export type AutoIncrementService = {
 
   /** A callback to fire to the parent if there is an issue with the configured
    * ranges */
-  onIssue: () => void;
+  onIssue: (refs: AutoIncrementFieldRef[], onResolved: () => void) => void;
 };

@@ -1,4 +1,4 @@
-import {AutoIncrementService} from '../../incrementer';
+import {AutoIncrementFieldRef, AutoIncrementService} from '../../incrementer';
 import {FaimsForm, FaimsFormData} from '../../types';
 
 export interface InitializeAutoIncrementFieldsParams {
@@ -13,16 +13,18 @@ export interface InitializeAutoIncrementFieldsParams {
   /** Number of digits to pad values to */
   numDigits?: number;
   /** Called if any field couldn't get a value (ranges exhausted/not configured) */
-  onMissingRanges?: (fieldIds: string[]) => void;
+  onMissingRanges?: (
+    fieldRefs: AutoIncrementFieldRef[],
+  ) => void;
 }
 
 export interface InitializeAutoIncrementFieldsResult {
   /** Fields that were successfully initialized */
-  initialized: string[];
+  initialized: AutoIncrementFieldRef[];
   /** Fields that couldn't get values (no ranges or exhausted) */
-  missingRanges: string[];
+  missingRanges: AutoIncrementFieldRef[];
   /** Fields that were skipped because they already had values */
-  skipped: string[];
+  skipped: AutoIncrementFieldRef[];
 }
 
 /**
@@ -61,7 +63,7 @@ export async function initializeAutoIncrementFields({
       existingValue !== '';
 
     if (hasValue) {
-      result.skipped.push(fieldId);
+      result.skipped.push(ref);
       continue;
     }
 
@@ -70,7 +72,7 @@ export async function initializeAutoIncrementFields({
     const value = await incrementer.getNextValueFormatted(numDigits);
 
     if (value === undefined) {
-      result.missingRanges.push(fieldId);
+      result.missingRanges.push(ref);
       continue;
     }
 
@@ -81,7 +83,7 @@ export async function initializeAutoIncrementFields({
       // Run listeners which triggers templated string updates etc
       {dontRunListeners: false}
     );
-    result.initialized.push(fieldId);
+    result.initialized.push(ref);
   }
 
   // Notify caller if any fields couldn't get values

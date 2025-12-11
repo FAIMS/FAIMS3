@@ -7,6 +7,7 @@ import {
   RecordID,
 } from '@faims3/data-model';
 import {
+  AutoIncrementFieldRef,
   EditableFormManager,
   EditableFormManagerHandle,
   FormNavigationChildEntry,
@@ -17,6 +18,7 @@ import {
 } from '@faims3/forms';
 import {CircularProgress} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
+import {useCallback, useEffect, useState} from 'react';
 import {
   useBlocker,
   useLocation,
@@ -37,8 +39,8 @@ import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {useUiSpecLayout} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
-import {useEffect, useState} from 'react';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
+import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
@@ -107,6 +109,12 @@ export const EditRecordPage = () => {
   const [formHandle, setFormHandle] =
     useState<EditableFormManagerHandle | null>(null);
 
+  // Are we resolving auto incrementer issues?
+  const [resolvingAutoIncrementer, setResolvingAutoIncrementer] = useState<{
+    ref: AutoIncrementFieldRef;
+    onResolved: () => void;
+  } | null>(null);
+
   // Establish the blocker function (this is how we check if we need to block
   // nav events and flush)
   const blocker = useBlocker(
@@ -164,7 +172,22 @@ export const EditRecordPage = () => {
     return createProjectAttachmentService(projectId);
   };
 
-  const incrementerService = useAutoIncrementService(projectId);
+  // Build the auto incrementer service
+  const handleAutoIncrementIssue = useCallback(
+    (fieldRefs: AutoIncrementFieldRef[], onResolved: () => void) => {
+      console.log(
+        'Callback fired - should set the auto incrementer to display'
+      );
+      if (fieldRefs.length > 0) {
+        setResolvingAutoIncrementer({ref: fieldRefs[0], onResolved});
+      }
+    },
+    []
+  );
+  const incrementerService = useAutoIncrementService({
+    projectId,
+    onIssue: handleAutoIncrementIssue,
+  });
 
   const formConfig: FullFormConfig = {
     mode: 'full' as const,
@@ -271,22 +294,40 @@ export const EditRecordPage = () => {
           </p>
         </div>
       ) : (
-        <EditableFormManager
-          // Force remount if record ID or FormID changes
-          key={`${recordId}-${formData.formId}`}
-          mode={mode}
-          initialData={formData.data}
-          revisionId={formData.revisionId}
-          existingRecord={formData.context.record}
-          formId={formData.formId}
-          activeUser={userId}
-          recordId={recordId}
-          config={formConfig}
-          navigationContext={navigationContext}
-          debugMode={DEBUG_APP}
-          // This is a callback to set parent state from the component
-          onReady={setFormHandle}
-        />
+        <>
+          {resolvingAutoIncrementer !== null && (
+            <AutoIncrementEditForm
+              project_id={projectId}
+              form_id={resolvingAutoIncrementer.ref.formId}
+              // TODO how do we know this?
+              field_id={resolvingAutoIncrementer.ref.fieldId}
+              // TODO get this as well from the ref
+              label={'Incrementer'}
+              open={!!resolvingAutoIncrementer}
+              handleClose={async () => {
+                setResolvingAutoIncrementer(null);
+                // Notify child we are done - prompting a refresh
+                resolvingAutoIncrementer.onResolved();
+              }}
+            />
+          )}
+          <EditableFormManager
+            // Force remount if record ID or FormID changes
+            key={`${recordId}-${formData.formId}`}
+            mode={mode}
+            initialData={formData.data}
+            revisionId={formData.revisionId}
+            existingRecord={formData.context.record}
+            formId={formData.formId}
+            activeUser={userId}
+            recordId={recordId}
+            config={formConfig}
+            navigationContext={navigationContext}
+            debugMode={DEBUG_APP}
+            // This is a callback to set parent state from the component
+            onReady={setFormHandle}
+          />
+        </>
       )}
     </div>
   );

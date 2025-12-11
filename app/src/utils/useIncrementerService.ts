@@ -126,9 +126,13 @@ function createIncrementerWrapper(
  * @param projectId - The project identifier
  * @returns AutoIncrementService interface for managing auto-incrementers
  */
-export function useAutoIncrementService(
-  projectId: ProjectID
-): AutoIncrementService {
+export function useAutoIncrementService({
+  projectId,
+  onIssue,
+}: {
+  projectId: ProjectID;
+  onIssue: (fieldRefs: AutoIncrementFieldRef[], onResolved: () => void) => void;
+}): AutoIncrementService {
   const getIncrementer = useCallback(
     (ref: AutoIncrementFieldRef): AutoIncrementerInterface => {
       return createIncrementerWrapper(projectId, ref);
@@ -188,7 +192,14 @@ export function useAutoIncrementService(
       getFieldRefs,
       getAllStatuses,
       generateInitialValues,
+      onIssue,
     }),
-    [getIncrementer, getFieldRefs, getAllStatuses, generateInitialValues]
+    [
+      getIncrementer,
+      getFieldRefs,
+      getAllStatuses,
+      generateInitialValues,
+      onIssue,
+    ]
   );
 }
