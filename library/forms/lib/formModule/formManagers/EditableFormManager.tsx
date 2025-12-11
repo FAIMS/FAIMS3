@@ -3,8 +3,6 @@ import {
   currentlyVisibleMap,
   FaimsAttachments,
   FormDataEntry,
-  FormRelationshipInstance,
-  HydratedRecord,
   HydratedRecordDocument,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
@@ -21,6 +19,7 @@ import {
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
+import {getImpliedNavigationRelationships} from '../utils';
 import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
@@ -37,7 +36,6 @@ import {
   FullFormConfig,
   FullFormManagerConfig,
 } from './types';
-import {getImpliedNavigationRelationships} from '../utils';
 
 /**
  * The validation modes:
@@ -742,7 +740,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             formId: entry.formId,
             fieldId: entry.fieldId,
             type: entry.type,
-          } satisfies ImpliedParentNavInfo)
+          }) satisfies ImpliedParentNavInfo
       );
     }
     // Otherwise

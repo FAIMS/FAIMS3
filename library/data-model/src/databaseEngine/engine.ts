@@ -111,11 +111,6 @@ export function dataMap<T>({
 // CONSTANTS
 // =========
 
-// If there is no vocab pair - we use this as a placeholder
-export const DEFAULT_VOCAB_PAIR: [string, string] = [
-  'is related to',
-  'is related to',
-] as const;
 const DEFAULT_CONFLICT_BEHAVIOUR = 'pickFirst';
 export const UNKNOWN_TYPE_FALLBACK = '??:??';
 

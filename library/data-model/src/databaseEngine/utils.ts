@@ -1,5 +1,10 @@
-import {DEFAULT_VOCAB_PAIR} from './engine';
 import {FormRelationshipInstance, RelationshipInstance} from './types';
+
+// If there is no vocab pair - we use this as a placeholder
+export const DEFAULT_VOCAB_PAIR: [string, string] = [
+  'is related to',
+  'is related to',
+] as const;
 
 // Helper function to normalize relationship instances to array
 export const normalizeRelationshipInstances = (
