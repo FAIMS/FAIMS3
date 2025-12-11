@@ -301,8 +301,7 @@ export const EditRecordPage = () => {
               form_id={resolvingAutoIncrementer.ref.formId}
               // TODO how do we know this?
               field_id={resolvingAutoIncrementer.ref.fieldId}
-              // TODO get this as well from the ref
-              label={'Incrementer'}
+              label={resolvingAutoIncrementer.ref.fieldLabel}
               open={!!resolvingAutoIncrementer}
               handleClose={async () => {
                 setResolvingAutoIncrementer(null);

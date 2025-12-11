@@ -145,7 +145,7 @@ export function useAutoIncrementService({
     return refs.map(ref => ({
       formId: ref.form_id,
       fieldId: ref.field_id,
-      label: ref.label,
+      fieldLabel: ref.label ?? ref.field_id,
       numDigits: ref.numDigits,
     }));
   }, [projectId]);
@@ -158,7 +158,7 @@ export function useAutoIncrementService({
 
     for (const ref of refs) {
       const incrementer = getIncrementer(ref);
-      const status = await incrementer.getStatus(ref.label ?? ref.fieldId);
+      const status = await incrementer.getStatus(ref.fieldLabel ?? ref.fieldId);
       statuses.push(status);
     }
 
