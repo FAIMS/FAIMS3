@@ -14,9 +14,11 @@ import {
   FormNavigationContextSchema,
   FullFormConfig,
   RedirectInfo,
+  TileSourceProvider,
 } from '@faims3/forms';
-import {CircularProgress} from '@mui/material';
-import {useQuery} from '@tanstack/react-query';
+import { CircularProgress } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
 import {
   useBlocker,
   useLocation,
@@ -24,20 +26,20 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import {APP_NAME, DEBUG_APP} from '../../buildconfig';
+import { APP_NAME, DEBUG_APP } from '../../buildconfig';
 import {
   getEditRecordRoute,
   getNotebookRoute,
   getViewRecordRoute,
 } from '../../constants/routes';
-import {selectActiveUser} from '../../context/slices/authSlice';
-import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
-import {selectProjectById} from '../../context/slices/projectSlice';
-import {useAppSelector} from '../../context/store';
-import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {useUiSpecLayout} from '../../utils/customHooks';
-import {localGetDataDb} from '../../utils/database';
-import {useEffect, useState} from 'react';
+import { selectActiveUser } from '../../context/slices/authSlice';
+import { compiledSpecService } from '../../context/slices/helpers/compiledSpecService';
+import { selectProjectById } from '../../context/slices/projectSlice';
+import { useAppSelector } from '../../context/store';
+import { createProjectAttachmentService } from '../../utils/attachmentService';
+import { useIsOnline, useUiSpecLayout } from '../../utils/customHooks';
+import { localGetDataDb } from '../../utils/database';
+import { VectorTileStore } from '../components/map/tile-source';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
@@ -64,6 +66,21 @@ export function useFormNavigationContext(): UseFormNavigationContextResult {
   return DEFAULT_NAVIGATION_STATE;
 }
 
+/**
+ * Creates a TileSourceProvider that wraps the client's VectorTileStore.
+ * This bridges the client's offline tile caching implementation with
+ * the form library's map components.
+ */
+function createTileSourceProvider(): TileSourceProvider {
+  const tileStore = new VectorTileStore();
+
+  return {
+    getTileLayer: () => tileStore.getTileLayer(),
+    getAttribution: () => (tileStore.getAttribution() ?? '') as string,
+    mapCacheIncludes: features => tileStore.mapCacheIncludes(features),
+  };
+}
+
 export const EditRecordPage = () => {
   const {serverId, projectId, recordId} = useParams<{
     serverId: string;
@@ -79,6 +96,10 @@ export const EditRecordPage = () => {
 
   const activeUser = useAppSelector(selectActiveUser);
   const navigationContext = useFormNavigationContext();
+  const {isOnline} = useIsOnline();
+
+  // Create tile source provider once (memoized)
+  const tileSourceProvider = useMemo(() => createTileSourceProvider(), []);
 
   if (!activeUser) {
     return <div>Please log in to edit records.</div>;
@@ -249,6 +270,23 @@ export const EditRecordPage = () => {
     user: activeUser.username,
     // Pass through the layout from the spec
     layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
+
+    // -------------------------------------------------------------------------
+    // Service Providers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Tile source provider for map fields.
+     * Wraps the client's VectorTileStore to provide offline tile caching
+     * support to the form library's map components.
+     */
+    tileSourceProvider,
+
+    /**
+     * Current online status - used by map fields to determine whether
+     * to allow full zoom range or restrict to cached tile coverage.
+     */
+    isOnline,
   };
 
   return (
