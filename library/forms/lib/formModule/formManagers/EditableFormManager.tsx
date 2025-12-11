@@ -744,7 +744,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             formId: entry.formId,
             fieldId: entry.fieldId,
             type: entry.type,
-          }) satisfies ImpliedParentNavInfo
+          } satisfies ImpliedParentNavInfo)
       );
     }
     // Otherwise
@@ -771,7 +771,9 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         formId: props.formId,
         incrementerService: props.config.incrementerService,
         initialData: props.initialData,
-        numDigits: 4, // Could be made configurable via props/config
+        // TODO make this configured from the component props num digits on a
+        // per range/field basis 
+        numDigits: 4,
         onMissingRanges: fieldIds => {
           if (!cancelled) {
             setFieldsNeedingRanges(fieldIds);

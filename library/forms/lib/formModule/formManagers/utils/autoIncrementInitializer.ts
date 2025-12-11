@@ -78,7 +78,7 @@ export async function initializeAutoIncrementFields({
     form.setFieldValue(
       fieldId,
       {...(existingFieldValue ?? {}), data: value},
-      // Run validators
+      // Run listeners which triggers templated string updates etc
       {dontRunListeners: false}
     );
     result.initialized.push(fieldId);

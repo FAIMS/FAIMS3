@@ -91,4 +91,8 @@ export type AutoIncrementService = {
     formId: string,
     numDigits?: number
   ) => Promise<Record<string, string>>;
+
+  /** A callback to fire to the parent if there is an issue with the configured
+   * ranges */
+  onIssue: () => void;
 };

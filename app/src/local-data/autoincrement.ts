@@ -19,6 +19,7 @@
  */
 
 import {
+  getFieldToIdsMap,
   ProjectID,
   ProjectUIFields,
   safeWriteDocument,
@@ -272,17 +273,24 @@ export async function getAutoincrementReferencesForProject(
     project_id
   )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  if (!uiSpec) {
+    console.error(
+      'Failed to find uiSpec during auto incrementer initialisation.'
+    );
+    return [];
+  }
 
+  // build a lookup of field -> viewset
+  const viewsetMap = getFieldToIdsMap(uiSpec);
   const references: AutoIncrementReference[] = [];
 
   const fields = (uiSpec?.fields ?? []) as ProjectUIFields;
-  for (const field in fields) {
-    // TODO are there other names?
-    if (fields[field]['component-name'] === 'BasicAutoIncrementer') {
+  for (const [fieldId, fieldDetails] of Object.entries(fields)) {
+    if (fieldDetails['component-name'] === 'BasicAutoIncrementer') {
       references.push({
-        form_id: fields[field]['component-parameters'].form_id,
-        field_id: fields[field]['component-parameters'].name,
-        label: fields[field]['component-parameters'].label,
+        form_id: viewsetMap[fieldId].viewSetId,
+        field_id: fields[fieldId]['component-parameters'].name,
+        label: fields[fieldId]['component-parameters'].label,
       });
     }
   }
