@@ -24,11 +24,11 @@ import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {Geolocation} from '@capacitor/geolocation';
 import {canShowMapNear} from '../../../components/maps/map-component';
-import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
 import {z} from 'zod';
 import {FullFieldProps} from '../../../formModule/types';
+import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 
 const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
@@ -64,6 +64,9 @@ export function MapFormField(props: FieldProps): JSX.Element {
   const [canShowMap, setCanShowMap] = useState(false);
 
   const theme = useTheme();
+
+  const appName =
+    props.config.mode === 'full' ? props.config.appName : 'FAIMS3';
 
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
@@ -284,7 +287,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
       </Box>
 
       {/*  Show error if no permission */}
-      {noPermission && <LocationPermissionIssue />}
+      {noPermission && <LocationPermissionIssue appName={appName} />}
     </FieldWrapper>
   );
 }
