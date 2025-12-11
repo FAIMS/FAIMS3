@@ -18,10 +18,12 @@ import {
   ExistingRevisionDBDocument,
   existingRevisionDocumentSchema,
   FormDataEntry,
+  FormRelationship,
   FormUpdateData,
   HydratedDataField,
   HydratedRecord,
   HydratedRecordQueryResult,
+  HydratedRevisionDocument,
   InitialFormData,
   NewAvpDBDocument,
   newAvpDocumentSchema,
@@ -38,6 +40,10 @@ import {
   recordDocumentSchema,
   RecordQueryResult,
 } from './types';
+import {
+  normalizeRelationshipInstances,
+  toDbRelationshipInstances,
+} from './utils';
 
 // =======
 // HELPERS
@@ -785,15 +791,15 @@ class HydratedOperations {
     const relationship = revision.relationship;
 
     // Map to formRelationshipSchema type
-    const formRelationship =
-      relationship && 'parent' in relationship
+    const formRelationship: FormRelationship | undefined =
+      relationship && ('linked' in relationship || 'parent' in relationship)
         ? {
-            parent: {
-              recordId: relationship.parent.record_id,
-              fieldId: relationship.parent.field_id,
-              relationTypeVocabPair:
-                relationship.parent.relation_type_vocabPair,
-            },
+            ...(relationship.linked
+              ? {linked: normalizeRelationshipInstances(relationship.linked)}
+              : {}),
+            ...(relationship.parent
+              ? {parent: normalizeRelationshipInstances(relationship.parent)}
+              : {}),
           }
         : undefined;
 
@@ -860,6 +866,76 @@ class HydratedOperations {
       })
     );
     return Promise.all(promises);
+  }
+
+  /**
+   * Update a revision using the hydrated (external) interface types.
+   * Handles mapping from camelCase hydrated types to snake_case DB types.
+   */
+  async updateRevision(
+    revision: HydratedRevisionDocument
+  ): Promise<HydratedRevisionDocument> {
+    // Map from hydrated -> DB format
+    const dbRelationship = revision.relationship
+      ? {
+          ...(revision.relationship.linked
+            ? {linked: toDbRelationshipInstances(revision.relationship.linked)}
+            : {}),
+          ...(revision.relationship.parent
+            ? {parent: toDbRelationshipInstances(revision.relationship.parent)}
+            : {}),
+        }
+      : undefined;
+
+    const dbRevision: ExistingRevisionDBDocument = {
+      _id: revision._id,
+      _rev: revision._rev,
+      avps: revision.avps,
+      created: revision.created,
+      deleted: revision.deleted,
+      created_by: revision.createdBy,
+      parents: revision.parents,
+      record_id: revision.recordId,
+      revision_format_version: 1,
+      type: revision.formId,
+      relationship: dbRelationship,
+    };
+
+    const updated = await this.core.updateRevision(dbRevision);
+
+    // Map back to hydrated format
+    return this.mapRevisionToHydrated(updated);
+  }
+
+  // Helper to map DB revision -> hydrated revision
+  private mapRevisionToHydrated(
+    rev: ExistingRevisionDBDocument
+  ): HydratedRevisionDocument {
+    const relationship = rev.relationship;
+    const formRelationship: FormRelationship | undefined =
+      relationship && ('linked' in relationship || 'parent' in relationship)
+        ? {
+            ...(relationship.linked
+              ? {linked: normalizeRelationshipInstances(relationship.linked)}
+              : {}),
+            ...(relationship.parent
+              ? {parent: normalizeRelationshipInstances(relationship.parent)}
+              : {}),
+          }
+        : undefined;
+
+    return {
+      _id: rev._id,
+      _rev: rev._rev,
+      avps: rev.avps,
+      created: rev.created,
+      deleted: rev.deleted,
+      createdBy: rev.created_by,
+      formId: rev.type,
+      parents: rev.parents,
+      recordId: rev.record_id,
+      relationship: formRelationship,
+    };
   }
 
   /**
@@ -945,10 +1021,8 @@ class FormOperations {
   }> {
     // Validate form record
     const validated = newFormRecordSchema.parse(formRecord);
-
     // Generate new record Id
     const recordId = generateRecordID();
-
     // Generate new revision ID
     const revisionId = generateRevisionID();
 
@@ -969,6 +1043,18 @@ class FormOperations {
     // Create the new record
     const rec = await this.core.createRecord(recordDoc);
 
+    // Build relationship object for storage
+    const dbRelationship = validated.relationship
+      ? {
+          ...(validated.relationship.linked
+            ? {linked: toDbRelationshipInstances(validated.relationship.linked)}
+            : {}),
+          ...(validated.relationship.parent
+            ? {parent: toDbRelationshipInstances(validated.relationship.parent)}
+            : {}),
+        }
+      : undefined;
+
     // Step 2: Create Revision document
     const revisionDoc: NewRevisionDBDocument = {
       _id: revisionId,
@@ -982,16 +1068,7 @@ class FormOperations {
       // This is about annotating documents with issues - but is unused
       ugc_comment: '',
       // Convert back into relationship format for storage
-      relationship: validated.relationship
-        ? {
-            parent: {
-              field_id: validated.relationship.parent.fieldId,
-              record_id: validated.relationship.parent.recordId,
-              relation_type_vocabPair:
-                validated.relationship.parent.relationTypeVocabPair,
-            },
-          }
-        : undefined,
+      relationship: dbRelationship,
     };
 
     // Create the new revision

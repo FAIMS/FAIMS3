@@ -27,6 +27,9 @@ export type DataViewTools = {
   getRecordRoute: (params: {recordId: string; revisionId?: string}) => string;
   getDataEngine: () => DataEngine;
   getAttachmentService: () => IAttachmentService;
+  // A react component which can be used to render an edit button in a
+  // collapsible nested related record
+  editRecordButtonComponent: React.FC<{recordId: string}>;
 };
 
 export interface DataViewProps {
