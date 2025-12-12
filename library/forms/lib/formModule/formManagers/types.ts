@@ -4,6 +4,7 @@ import {
   IAttachmentService,
 } from '@faims3/data-model';
 import z from 'zod';
+import {TileSourceProvider} from '../../maps';
 
 /**
  * Base interface for form configuration modes.
@@ -97,7 +98,12 @@ export interface FormManagerAdditions {
  * Used when forms are embedded in the full application context.
  */
 export interface FullFormConfig extends BaseFormConfig {
+  // type discriminator
   mode: 'full';
+  /** What is the deployed app name - helpful for error displays etc */
+  appName: string;
+  /** Current active user identifier (for audit trails) */
+  user: string;
   // What is the current record ID?
   recordId: string;
   /** Function to get current data engine instance (function allows for DB updates) */
@@ -137,10 +143,42 @@ export interface FullFormConfig extends BaseFormConfig {
     /** Navigate to the view records (if there is no parent context) */
     navigateToViewRecord: (params: {recordId: string}) => void;
   };
-  /** What is the deployed app name - helpful for error displays etc */
-  appName: string;
-  /** Current active user identifier (for audit trails) */
-  user: string;
+
+  // ---------------------------------------------------------------------------
+  // Optional Service Providers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Optional tile source provider for map fields.
+   *
+   * When provided, map fields will use this provider for tile layers,
+   * enabling features like offline tile caching. When omitted, map fields
+   * fall back to online-only OpenStreetMap tiles.
+   *
+   * @example
+   * ```typescript
+   * const config: FullFormConfig = {
+   *   // ...other config
+   *   tileSourceProvider: {
+   *     getTileLayer: () => myOfflineTileStore.getTileLayer(),
+   *     getAttribution: () => myOfflineTileStore.getAttribution(),
+   *     mapCacheIncludes: (features) => myOfflineTileStore.mapCacheIncludes(features),
+   *   },
+   * };
+   * ```
+   */
+  tileSourceProvider?: TileSourceProvider;
+
+  /**
+   * Current online status.
+   *
+   * Used by map fields to determine zoom constraints and offline behavior.
+   * When false, map fields may restrict zoom levels to stay within
+   * cached tile coverage.
+   *
+   * @default true (assumed online if not provided)
+   */
+  isOnline?: boolean;
 }
 
 /**
