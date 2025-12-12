@@ -13,37 +13,61 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: MapFormField.tsx
  * Description:
- *   Implement MapFormField for entry of data via maps in FAIMS
+ *   Implement MapFormField for entry of data via maps
  */
 
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import {Alert, Box, Button, Typography} from '@mui/material';
-import {FieldProps} from 'formik';
+import {Alert, Box, Button, Typography, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {Geolocation} from '@capacitor/geolocation';
-import {canShowMapNear} from '../../components/map/map-component';
-import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
-import {theme} from '../../themes';
-import FieldWrapper from '../fieldWrapper';
+import {canShowMapNear} from '../../../components/maps/map-component';
+import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
+import {z} from 'zod';
+import {FullFieldProps} from '../../../formModule/types';
+import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
+import {FieldInfo} from '../../types';
 
-export interface MapFieldProps extends FieldProps {
-  label?: string;
-  featureType: 'Point' | 'Polygon' | 'LineString';
-  geoTiff?: string;
-  projection?: string;
-  center?: [number, number];
-  zoom?: number;
-  FormLabelProps?: any;
-  helperText: string;
-  required: boolean;
-  advancedHelperText?: string;
-  disabled?: boolean;
-}
+/**
+ * Schema for the GeoJSON geometry object.
+ * Validates the structure without being overly strict on coordinate formats.
+ */
+const GeoJSONGeometrySchema = z.object({
+  type: z.enum(['Point', 'Polygon', 'LineString']),
+  coordinates: z.any(), // Coordinate validation is complex; keep flexible
+});
+
+/**
+ * Schema for a single GeoJSON feature.
+ */
+const GeoJSONFeatureSchema = z.object({
+  type: z.literal('Feature'),
+  geometry: GeoJSONGeometrySchema,
+  properties: z.any().nullable(),
+});
+
+/**
+ * Schema for the field value - a GeoJSON FeatureCollection.
+ */
+const GeoJSONFeatureCollectionSchema = z.object({
+  type: z.literal('FeatureCollection'),
+  features: z.array(GeoJSONFeatureSchema),
+});
+
+const MapFieldPropsSchema = z.object({
+  label: z.string().optional(),
+  featureType: z.enum(['Point', 'Polygon', 'LineString']).optional(),
+  geoTiff: z.string().optional(),
+  projection: z.string().optional(),
+  center: z.tuple([z.number(), z.number()]),
+  zoom: z.number().optional(),
+});
+
+type MapFieldProps = z.infer<typeof MapFieldPropsSchema>;
+type FieldProps = MapFieldProps & FullFieldProps;
 
 const createPointFeature = (
   center: [number, number]
@@ -63,18 +87,20 @@ const createPointFeature = (
   };
 };
 
-export function MapFormField({
-  field,
-  form,
-  ...props
-}: MapFieldProps): JSX.Element {
-  const [canShowMap, setCanShowMap] = useState(false);
+export function MapFormField(props: FieldProps): JSX.Element {
+  const [canShowMap, setCanShowMap] = useState(true);
+
+  const theme = useTheme();
+
+  const appName =
+    props.config.mode === 'full' ? props.config.appName : 'FAIMS3';
 
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
 
-  // Derive the features from the field value (this forces re-render anyway)
-  const drawnFeatures = form.values[field.name] ?? {};
+  // Derive the features from the field value
+  const drawnFeatures = (props.state.value?.data ||
+    {}) as GeoJSONFeatureCollection;
 
   // Default zoom level
   const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
@@ -111,7 +137,7 @@ export function MapFormField({
     action: MapAction
   ) => {
     if (action === 'save') {
-      form.setFieldValue(field.name, theFeatures, true);
+      props.setFieldData(theFeatures);
       setAnimateCheck(true);
       setTimeout(() => setAnimateCheck(false), 1000);
     } else if (action === 'close') {
@@ -137,7 +163,7 @@ export function MapFormField({
           point.coords.latitude,
         ];
         const pointFeature = createPointFeature(center);
-        form.setFieldValue(field.name, pointFeature, true);
+        props.setFieldData(pointFeature);
       })
       .catch(error => {
         console.error('Failed to get current location:', error);
@@ -289,7 +315,51 @@ export function MapFormField({
       </Box>
 
       {/*  Show error if no permission */}
-      {noPermission && <LocationPermissionIssue />}
+      {noPermission && <LocationPermissionIssue appName={appName} />}
     </FieldWrapper>
   );
 }
+
+/**
+ * Generates a Zod schema for field value validation.
+ *
+ * The value is a GeoJSON FeatureCollection. When required, it must
+ * contain at least one feature.
+ */
+const valueSchemaFunction = (props: FieldProps) => {
+  const baseSchema = GeoJSONFeatureCollectionSchema;
+
+  if (props.required) {
+    return baseSchema.refine(val => val.features && val.features.length > 0, {
+      message: 'A location selection is required.',
+    });
+  }
+
+  // Optional - allow undefined/null or valid schema
+  return baseSchema.optional().nullable();
+};
+
+// ============================================================================
+// Field Registration
+// ============================================================================
+
+/**
+ * Export a constant with the information required to register this field type
+ */
+export const mapFieldSpec: FieldInfo<FieldProps> = {
+  namespace: 'mapping-plugin',
+  name: 'MapFormField',
+  returns: 'faims-core::JSON',
+  component: MapFormField,
+  fieldPropsSchema: MapFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchemaFunction,
+  view: {
+    component: ({value}) => {
+      // const features = value as GeoJSONFeatureCollection | undefined;
+      const description = 'map field';
+      return <Typography variant="body2">{description}</Typography>;
+    },
+    config: {},
+    attributes: {singleColumn: true},
+  },
+};

@@ -29,7 +29,7 @@ import CircleStyle from 'ol/style/Circle';
 import {useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {MapComponent} from '../map/map-component';
+import {MapComponent} from '@faims3/forms';
 import {Extent} from 'ol/extent';
 import {transformExtent} from 'ol/proj';
 

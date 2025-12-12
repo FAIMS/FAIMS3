@@ -43,7 +43,6 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {Project, selectProjectById} from '../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../context/store';
 import {newStagedData} from '../../sync/draft-storage';
-import ProgressBar from '../components/progress-bar';
 import RecordForm from '../components/record/form';
 import InheritedDataComponent from '../components/record/inherited_data';
 import {getParentPersistenceData} from '../components/record/relationships/RelatedInformation';
@@ -52,6 +51,7 @@ import DraftSyncStatus from '../components/record/sync_status';
 import BackButton from '../components/ui/BackButton';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {checkIfParentHasInheritedData} from '../../utils/formUtilities';
+import {ProgressBar} from '@faims3/forms';
 
 interface DraftCreateActionProps {
   project_id: ProjectID;

@@ -5,8 +5,8 @@
 
 /* add safe area padding default 20px to allow for camera notch on some phones */
 body {
-    padding: var(--safe-area-inset-top) var(--safe-area-inset-right)
-      var(--safe-area-inset-bottom) var(--safe-area-inset-left);
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+      env(safe-area-inset-bottom) env(safe-area-inset-left);
   }
  
 .recordstepper::-webkit-scrollbar {

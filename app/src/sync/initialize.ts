@@ -27,7 +27,7 @@ import {
   markInitialised,
   rebuildDbs,
 } from '../context/slices/projectSlice';
-import {MapTileDatabase} from '../gui/components/map/tile-source';
+import {MapTileDatabase} from '@faims3/forms';
 import pouchdbDebug from 'pouchdb-debug';
 import {logError} from '../logging';
 PouchDB.plugin(pouchdbDebug);

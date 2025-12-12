@@ -32,10 +32,9 @@ import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {MAP_SOURCE, MAP_SOURCE_KEY, MAP_STYLE} from '../../../buildconfig';
+import {MapConfig, getMapConfig} from '../../config';
 import {IDBObjectStore} from './IDBObjectStore';
 import {getMapStylesheet} from './styles';
-import {logError} from '../../../logging';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -162,9 +161,12 @@ export class MapTileDatabase {
  */
 class TileStoreBase {
   tileStore: MapTileDatabase;
+  config: MapConfig;
 
   constructor() {
     this.tileStore = MapTileDatabase.getInstance();
+    this.config = getMapConfig();
+    console.log('map config', this.config);
   }
 
   /**
@@ -173,7 +175,7 @@ class TileStoreBase {
    */
   async storeTileRecord(url: string, data: Blob, set: string) {
     // don't want the map key in the stored URL
-    const cleanURL = url.replace(MAP_SOURCE_KEY, '');
+    const cleanURL = url.replace(this.config.mapSourceKey, '');
     const tile = {url: cleanURL, data, sets: [set]};
     const existingTile = await this.tileStore.tileDB.get(url);
     if (existingTile) {
@@ -215,7 +217,7 @@ class TileStoreBase {
         .replace('{z}', z.toString())
         .replace('{x}', x.toString())
         .replace('{y}', y.toString())
-        .replace('{key}', MAP_SOURCE_KEY);
+        .replace('{key}', this.config.mapSourceKey);
     }
   }
 
@@ -230,7 +232,7 @@ class TileStoreBase {
     if (url) {
       if (this.tileStore.tileDB) {
         // we don't want the map key in the tileDB
-        const cleanURL = url.replace(MAP_SOURCE_KEY, '');
+        const cleanURL = url.replace(this.config.mapSourceKey, '');
         const image = await this.tileStore.tileDB.get([cleanURL]);
         if (image) return image.data;
       }
@@ -512,7 +514,7 @@ export class ImageTileStore extends TileStoreBase {
   }
 
   getTileURLTemplate(): string | undefined {
-    return TILE_URL_MAP[MAP_SOURCE]['image'];
+    return TILE_URL_MAP[this.config.mapSource]['image'];
   }
 
   getTileGrid() {
@@ -592,7 +594,7 @@ export class VectorTileStore extends TileStoreBase {
       background: 'hsl(40, 26%, 93%)',
     });
     this.preCacheSprites();
-    applyStyle(this.tileLayer, getMapStylesheet(MAP_STYLE), {
+    applyStyle(this.tileLayer, getMapStylesheet(this.config.mapStyle), {
       transformRequest: this.transformRequest.bind(this),
     });
   }
@@ -612,7 +614,7 @@ export class VectorTileStore extends TileStoreBase {
   }
 
   async transformRequest(url: string) {
-    const fullURL = url.replace('{key}', MAP_SOURCE_KEY);
+    const fullURL = url.replace('{key}', this.config.mapSourceKey);
     const blob = await this.getTileBlob(fullURL);
     if (blob) {
       this.storeTileRecord(fullURL, blob, '_cache');
@@ -621,7 +623,6 @@ export class VectorTileStore extends TileStoreBase {
       Object.defineProperty(response, 'url', {value: fullURL});
       return response;
     } else {
-      logError(`transformRequest fail: ${fullURL}`);
       failedURLs.add(fullURL);
       return fullURL;
     }
@@ -632,7 +633,7 @@ export class VectorTileStore extends TileStoreBase {
    * @returns the configured tile URL template
    */
   getTileURLTemplate(): string | undefined {
-    return TILE_URL_MAP[MAP_SOURCE]['vector'];
+    return TILE_URL_MAP[this.config.mapSource]['vector'];
   }
 
   getTileGrid() {
