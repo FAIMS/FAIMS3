@@ -34,7 +34,7 @@ import {
 } from '@mui/material';
 import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
-import ProgressBar from '../ProgressBar';
+import {ProgressBar} from '../ProgressBar';
 import {MapComponent} from './map-component';
 import {StoredTileSet, VectorTileStore} from './tile-source';
 

@@ -40,7 +40,6 @@ import {DateField, DateTimeField, MonthField} from '../fields/DateFields';
 import {DateTimeNow} from '../fields/DateTimeNow';
 import {FAIMSTextField} from '../fields/FAIMSTextField';
 import {FileUploader} from '../fields/FileUploader';
-import {MapFormField} from '../fields/maps/MapFormField';
 import {MultiSelect} from '../fields/multiselect';
 import NumberField from '../fields/NumberField';
 import {QRCodeFormField} from '../fields/qrcode';
@@ -228,18 +227,6 @@ registerField(
   'Scan a QR/Bar code',
   'QRCode',
   QRCodeFormField
-);
-
-// Mapping Plugin registration
-
-// TODO:
-registerField(
-  'mapping-plugin',
-  'MapFormField',
-  'Map Input Field',
-  'Input Geo Data via a map',
-  'Maps',
-  MapFormField
 );
 
 //TODO: DO we need this?

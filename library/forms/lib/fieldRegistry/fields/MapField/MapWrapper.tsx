@@ -303,8 +303,8 @@ function MapWrapper(props: MapProps) {
 
         <Dialog
           sx={{
-            top: 'var(--safe-area-inset-top)',
-            left: 'var(--safe-area-inset-left)',
+            top: 'env(safe-area-inset-top)',
+            left: 'env(safe-area-inset-left)',
           }}
           fullScreen
           open={mapOpen}
@@ -370,8 +370,8 @@ function MapWrapper(props: MapProps) {
                   color="inherit"
                   onClick={() => handleClose('clear')}
                   sx={{
-                    backgroundColor: theme.palette.highlightColor.main,
-                    color: theme.palette.dialogButton.dialogText,
+                    // backgroundColor: theme.palette.highlightColor.main,
+                    // color: theme.palette.dialogButton.dialogText,
                     borderRadius: '6px',
                     fontWeight: 'bold',
                     transition:
@@ -389,8 +389,8 @@ function MapWrapper(props: MapProps) {
                   color="inherit"
                   onClick={() => handleClose('save')}
                   sx={{
-                    backgroundColor: theme.palette.alert.successBackground,
-                    color: theme.palette.dialogButton.dialogText,
+                    // backgroundColor: theme.palette.alert.successBackground,
+                    // color: theme.palette.dialogButton.dialogText,
                     borderRadius: '6px',
                     fontWeight: 'bold',
                     transition:
@@ -430,7 +430,7 @@ function MapWrapper(props: MapProps) {
             <Button
               onClick={() => setShowConfirmSave(false)}
               sx={{
-                backgroundColor: theme.palette.dialogButton.cancel,
+                // backgroundColor: theme.palette.dialogButton.cancel,
                 color: theme.palette.background.default,
                 '&:hover': {
                   backgroundColor: theme.palette.text.primary,
@@ -442,8 +442,8 @@ function MapWrapper(props: MapProps) {
             </Button>
             <Button
               sx={{
-                backgroundColor: theme.palette.alert.successBackground,
-                color: theme.palette.dialogButton.dialogText,
+                // backgroundColor: theme.palette.alert.successBackground,
+                // color: theme.palette.dialogButton.dialogText,
                 '&:hover': {
                   backgroundColor: theme.palette.text.primary,
                   transform: 'scale(1.05)',

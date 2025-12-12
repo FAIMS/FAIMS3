@@ -29,6 +29,33 @@ import MapWrapper, {MapAction} from './MapWrapper';
 import {z} from 'zod';
 import {FullFieldProps} from '../../../formModule/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
+import {FieldInfo} from '../../types';
+
+/**
+ * Schema for the GeoJSON geometry object.
+ * Validates the structure without being overly strict on coordinate formats.
+ */
+const GeoJSONGeometrySchema = z.object({
+  type: z.enum(['Point', 'Polygon', 'LineString']),
+  coordinates: z.any(), // Coordinate validation is complex; keep flexible
+});
+
+/**
+ * Schema for a single GeoJSON feature.
+ */
+const GeoJSONFeatureSchema = z.object({
+  type: z.literal('Feature'),
+  geometry: GeoJSONGeometrySchema,
+  properties: z.any().nullable(),
+});
+
+/**
+ * Schema for the field value - a GeoJSON FeatureCollection.
+ */
+const GeoJSONFeatureCollectionSchema = z.object({
+  type: z.literal('FeatureCollection'),
+  features: z.array(GeoJSONFeatureSchema),
+});
 
 const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
@@ -61,7 +88,7 @@ const createPointFeature = (
 };
 
 export function MapFormField(props: FieldProps): JSX.Element {
-  const [canShowMap, setCanShowMap] = useState(false);
+  const [canShowMap, setCanShowMap] = useState(true);
 
   const theme = useTheme();
 
@@ -72,7 +99,8 @@ export function MapFormField(props: FieldProps): JSX.Element {
   const [noPermission, setNoPermission] = useState(false);
 
   // Derive the features from the field value
-  const drawnFeatures = props.state.value?.data as GeoJSONFeatureCollection;
+  const drawnFeatures = (props.state.value?.data ||
+    {}) as GeoJSONFeatureCollection;
 
   // Default zoom level
   const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
@@ -291,3 +319,47 @@ export function MapFormField(props: FieldProps): JSX.Element {
     </FieldWrapper>
   );
 }
+
+/**
+ * Generates a Zod schema for field value validation.
+ *
+ * The value is a GeoJSON FeatureCollection. When required, it must
+ * contain at least one feature.
+ */
+const valueSchemaFunction = (props: FieldProps) => {
+  const baseSchema = GeoJSONFeatureCollectionSchema;
+
+  if (props.required) {
+    return baseSchema.refine(val => val.features && val.features.length > 0, {
+      message: 'A location selection is required.',
+    });
+  }
+
+  // Optional - allow undefined/null or valid schema
+  return baseSchema.optional().nullable();
+};
+
+// ============================================================================
+// Field Registration
+// ============================================================================
+
+/**
+ * Export a constant with the information required to register this field type
+ */
+export const mapFieldSpec: FieldInfo<FieldProps> = {
+  namespace: 'mapping-plugin',
+  name: 'MapFormField',
+  returns: 'faims-core::JSON',
+  component: MapFormField,
+  fieldPropsSchema: MapFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchemaFunction,
+  view: {
+    component: ({value}) => {
+      // const features = value as GeoJSONFeatureCollection | undefined;
+      const description = 'map field';
+      return <Typography variant="body2">{description}</Typography>;
+    },
+    config: {},
+    attributes: {singleColumn: true},
+  },
+};
