@@ -42,9 +42,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {Extent} from 'ol/extent';
-import GeoJSON from 'ol/format/GeoJSON';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
+import GeoJSON from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
@@ -54,9 +53,9 @@ import {Fill, Icon, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   Coordinates,
+  MapComponent,
   TileSourceProvider,
   WGS84Extent,
-  MapComponent,
 } from '../../../maps';
 
 // ============================================================================

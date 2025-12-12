@@ -69,14 +69,15 @@
  * ```
  */
 
-import {Box, Typography} from '@mui/material';
 import {Geolocation, Position} from '@capacitor/geolocation';
+import {Box, Typography} from '@mui/material';
+import {View} from 'ol';
+import {Zoom} from 'ol/control';
 import Feature from 'ol/Feature';
 import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {Point} from 'ol/geom';
-import TileLayer from 'ol/layer/Tile';
-import VectorTileLayer from 'ol/layer/VectorTile';
 import BaseLayer from 'ol/layer/Base';
+import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform, transformExtent} from 'ol/proj';
@@ -84,12 +85,9 @@ import {OSM} from 'ol/source';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {View} from 'ol';
-import {Zoom} from 'ol/control';
-import {Extent} from 'ol/extent';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createCenterControl} from './CenterControl';
-import {useCurrentLocation, getCoordinates} from './helpers/useLocation';
+import {getCoordinates, useCurrentLocation} from './helpers/useLocation';
 import {Coordinates, TileSourceProvider, WGS84Extent} from './types';
 
 // ============================================================================
@@ -232,21 +230,6 @@ export const DefaultTileSourceProvider: TileSourceProvider = {
  * @param tileSourceProvider - The tile source provider to check cache against
  * @param isOnline - Current online status
  * @returns Promise resolving to true if map can be displayed
- *
- * @example
- * ```typescript
- * const canShow = await canShowMapNear(
- *   geoJsonFeatures,
- *   myTileProvider,
- *   navigator.onLine
- * );
- *
- * if (canShow) {
- *   return <MapComponent {...props} />;
- * } else {
- *   return <OfflineMessage />;
- * }
- * ```
  */
 export const canShowMapNear = async (
   features: GeoJSONFeatureCollection | undefined,
@@ -266,7 +249,9 @@ export const canShowMapNear = async (
       featureProjection: DEFAULT_MAP_PROJECTION,
     });
 
-    return await tileSourceProvider.mapCacheIncludes(parsedFeatures);
+    const canBe = await tileSourceProvider.mapCacheIncludes(parsedFeatures);
+    console.log('Thinks can be seen,', canBe);
+    return canBe
   }
 
   // No features or no cache checking capability - can't show offline

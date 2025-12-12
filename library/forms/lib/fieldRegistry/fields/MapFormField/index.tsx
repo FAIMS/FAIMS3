@@ -24,10 +24,8 @@ import {Alert, Box, Button, Paper, Typography} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useMemo, useState} from 'react';
 import {z} from 'zod';
-
 import {FullFormManagerConfig} from '../../../formModule';
 import {
-  BaseFieldProps,
   BaseFieldPropsSchema,
   FormFieldContextProps,
 } from '../../../formModule/types';
@@ -137,8 +135,8 @@ const getValueDescription = (
     featureType === 'Polygon'
       ? 'polygon'
       : featureType === 'LineString'
-      ? 'line'
-      : 'point';
+        ? 'line'
+        : 'point';
 
   if (!features?.features?.length) {
     return canShowMap
@@ -316,8 +314,8 @@ const FullMapField = (props: FullMapFieldProps) => {
     featureType === 'Polygon'
       ? 'polygon'
       : featureType === 'LineString'
-      ? 'line'
-      : 'point';
+        ? 'line'
+        : 'point';
 
   return (
     <FieldWrapper
