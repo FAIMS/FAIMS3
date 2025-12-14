@@ -126,7 +126,4 @@ export async function initialise() {
 
   // TODO bring this back?
   // register_basic_automerge_resolver(events);
-
-  // initialise the tile store used for offline maps
-  await MapTileDatabase.getInstance().initDB();
 }

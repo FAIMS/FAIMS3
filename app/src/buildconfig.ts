@@ -19,7 +19,7 @@
  *   which server to use and whether to include test data
  */
 
-import {MapStylesheetNameType} from './gui/components/map/styles';
+import {MapStylesheetNameType} from '@faims3/forms';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);

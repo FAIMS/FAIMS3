@@ -27,7 +27,7 @@ import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
 import {localGetDataDb} from './utils/database';
 import {MAP_SOURCE, MAP_SOURCE_KEY, MAP_STYLE} from './buildconfig';
-import {setMapConfig} from '@faims3/forms';
+import {initialiseMaps} from '@faims3/forms';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({
@@ -40,7 +40,7 @@ registerClient({
   shouldDisplayRecord: shouldDisplayRecord,
 });
 
-setMapConfig({
+initialiseMaps({
   mapSource: MAP_SOURCE,
   mapSourceKey: MAP_SOURCE_KEY,
   mapStyle: MAP_STYLE,

@@ -10,7 +10,7 @@ import {BreadcrumbProvider} from './context/breadcrumb-provider';
 import './index.css';
 import {routeTree} from './routeTree.gen';
 import {getThemeClass} from './lib/theme';
-import {MapTileDatabase, setMapConfig} from '@faims3/forms';
+import {MapTileDatabase, initialiseMaps} from '@faims3/forms';
 
 /**
  * App component renders the main application layout.
@@ -32,14 +32,12 @@ declare module '@tanstack/react-router' {
   }
 }
 
-setMapConfig({
+initialiseMaps({
   mapSource: 'maptiler',
   mapSourceKey: '',
   mapStyle: 'basic',
 });
 
-// initialise the tile store used for offline maps
-MapTileDatabase.getInstance().initDB();
 
 
 /**
