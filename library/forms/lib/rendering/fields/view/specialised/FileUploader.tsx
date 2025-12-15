@@ -145,7 +145,7 @@ const FileAttachment: React.FC<{
 /**
  * Placeholder for attachments that haven't been synced/downloaded
  */
-const UnsyncedPlaceholder: React.FC<{index: number}> = ({}) => (
+const UnsyncedPlaceholder: React.FC<{index: number}> = () => (
   <Paper
     elevation={0}
     sx={{
