@@ -37,6 +37,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {ProgressBar} from '@faims3/forms';
 import {MapComponent} from '@faims3/forms';
 import {StoredTileSet, VectorTileStore} from '@faims3/forms';
+import {getMapConfig} from '../../../buildconfig';
 
 /**
  * Map download component presents the UI for downloading offline maps.
@@ -50,7 +51,9 @@ export const MapDownload = () => {
   const [tileSets, setTileSets] = useState<StoredTileSet[]>([]);
   const [downloadListOpen, setDownloadListOpen] = useState(false);
 
-  const tileStore = useMemo(() => new VectorTileStore(), []);
+  const mapConfig = getMapConfig();
+
+  const tileStore = useMemo(() => new VectorTileStore(mapConfig), []);
 
   // ensure we have a baseline tile set for this map
   tileStore.createBaselineTileSet();
@@ -233,7 +236,7 @@ export const MapDownload = () => {
       </Grid>
 
       <Grid item xs={12} md={9} sm={8} height={600}>
-        <MapComponent parentSetMap={setMap} />
+        <MapComponent parentSetMap={setMap} config={mapConfig} />
       </Grid>
     </Grid>
   );

@@ -32,6 +32,7 @@ import * as ROUTES from '../../../constants/routes';
 import {MapComponent} from '@faims3/forms';
 import {Extent} from 'ol/extent';
 import {transformExtent} from 'ol/proj';
+import {getMapConfig} from '../../../buildconfig';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -58,6 +59,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
     null
   );
   const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
+
+  const mapConfig = getMapConfig();
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -222,7 +225,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
           marginLeft: '20px',
         }}
       >
-        <MapComponent parentSetMap={setMap} extent={featuresExtent} />
+        <MapComponent parentSetMap={setMap} extent={featuresExtent} config={mapConfig} />
         <Popover
           open={!!selectedFeature}
           onClose={handlePopoverClose}
