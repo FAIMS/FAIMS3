@@ -46,7 +46,6 @@ export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
-
 /**
  * A Map component for all our mapping needs.
  * Props:

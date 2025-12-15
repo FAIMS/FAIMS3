@@ -11,7 +11,7 @@ import {MapConfig} from '../../components/maps/config';
  */
 export interface BaseFormConfig {
   mode: 'full' | 'preview';
-  layout: 'inline' | 'tabs';  
+  layout: 'inline' | 'tabs';
   /** Function to return the map configuration settings */
   mapConfig: () => MapConfig;
 }

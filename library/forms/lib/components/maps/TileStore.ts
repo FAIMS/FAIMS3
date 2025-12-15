@@ -405,6 +405,7 @@ class TileStoreBase {
               await this.tileStore.tileSetDB.put(tileSet);
 
               dispatchEvent(
+                // eslint-disable-next-line n/no-unsupported-features/node-builtins
                 new CustomEvent('offline-map-download', {
                   detail: tileSet,
                 })

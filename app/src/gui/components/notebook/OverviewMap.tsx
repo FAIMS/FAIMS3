@@ -225,7 +225,11 @@ export const OverviewMap = (props: OverviewMapProps) => {
           marginLeft: '20px',
         }}
       >
-        <MapComponent parentSetMap={setMap} extent={featuresExtent} config={mapConfig} />
+        <MapComponent
+          parentSetMap={setMap}
+          extent={featuresExtent}
+          config={mapConfig}
+        />
         <Popover
           open={!!selectedFeature}
           onClose={handlePopoverClose}
