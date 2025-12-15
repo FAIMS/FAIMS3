@@ -95,7 +95,7 @@ flowchart TD
 
 ## UISpec Structure
 
-The UISpec defines the form structure hierarchically:
+The UISpec defines the form structure hierarchically - this is reflected in how the form managers resolve a form -> sections and fields.
 
 ```mermaid
 graph TD

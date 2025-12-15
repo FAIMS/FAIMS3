@@ -12,21 +12,21 @@ flowchart LR
         FS3[relatedRecordSpec]
         FSN[...more specs]
     end
-    
+
     subgraph "Registry"
         R[FIELD_REGISTRY Map]
     end
-    
+
     subgraph "Resolution"
         F[Field.tsx]
         GFI[getFieldInfo]
     end
-    
+
     FS1 --> R
     FS2 --> R
     FS3 --> R
     FSN --> R
-    
+
     F --> GFI
     GFI --> R
     R -->|FieldInfo| F
@@ -89,16 +89,16 @@ interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
   // Identity
   namespace: string;
   name: string;
-  
+
   // Return type (for data model)
   returns: FieldReturnType | null;
-  
+
   // Edit mode component
   component: React.ComponentType<T & Record<string, unknown>>;
-  
+
   // View mode registration
   view: DataViewFieldRegistryEntry;
-  
+
   // Validation schemas
   fieldPropsSchema?: z.ZodTypeAny;
   fieldDataSchemaFunction?: (props: any) => z.ZodTypeAny;
@@ -135,9 +135,12 @@ lib/fieldRegistry/fields/
 
 ### Step 2: Define Props Schema
 
+These are the _additional_ values that the UI Spec can provide for a field of
+this type. Should correspond to the props that designer allows.
+
 ```typescript
-import { z } from 'zod';
-import { BaseFieldPropsSchema } from '../../../formModule/types';
+import {z} from 'zod';
+import {BaseFieldPropsSchema} from '../../../formModule/types';
 
 const myFieldPropsSchema = BaseFieldPropsSchema.extend({
   // Add field-specific props
@@ -152,10 +155,12 @@ type MyFieldFullProps = MyFieldProps & FormFieldContextProps;
 
 ### Step 3: Implement Edit Component
 
+Using the passed in props (e.g. setFieldData) and the current value (which is always 'live' due to Tanstack forms), manage the field state and display the current value.
+
 ```typescript
 import FieldWrapper from '../wrappers/FieldWrapper';
 
-const MyField: React.FC<MyFieldFullProps> = (props) => {
+const MyField: React.FC<MyFieldFullProps> = props => {
   const {
     label,
     helperText,
@@ -193,10 +198,10 @@ const MyField: React.FC<MyFieldFullProps> = (props) => {
     >
       <TextField
         value={value}
-        onChange={(e) => setFieldData(e.target.value)}
+        onChange={e => setFieldData(e.target.value)}
         onBlur={handleBlur}
         placeholder={placeholder}
-        inputProps={{ maxLength }}
+        inputProps={{maxLength}}
         fullWidth
       />
     </FieldWrapper>
@@ -207,15 +212,15 @@ const MyField: React.FC<MyFieldFullProps> = (props) => {
 ### Step 4: Implement View Component
 
 ```typescript
-import { DataViewFieldRender } from '../../../rendering/types';
+import {DataViewFieldRender} from '../../../rendering/types';
 
-const MyFieldRenderer: DataViewFieldRender = (props) => {
-  const { value } = props;
-  
+const MyFieldRenderer: DataViewFieldRender = props => {
+  const {value} = props;
+
   if (!value) {
     return <EmptyResponsePlaceholder />;
   }
-  
+
   return <Typography>{value}</Typography>;
 };
 ```
@@ -225,17 +230,17 @@ const MyFieldRenderer: DataViewFieldRender = (props) => {
 ```typescript
 const myFieldDataSchemaFunction = (props: MyFieldProps) => {
   let schema = z.string();
-  
+
   if (props.required) {
-    schema = schema.min(1, { message: 'This field is required' });
+    schema = schema.min(1, {message: 'This field is required'});
   }
-  
+
   if (props.maxLength) {
     schema = schema.max(props.maxLength, {
       message: `Maximum ${props.maxLength} characters`,
     });
   }
-  
+
   return schema;
 };
 ```
@@ -251,7 +256,7 @@ export const myFieldSpec: FieldInfo<MyFieldFullProps> = {
   view: {
     component: MyFieldRenderer,
     config: {},
-    attributes: { singleColumn: false },
+    attributes: {singleColumn: false},
   },
   fieldPropsSchema: myFieldPropsSchema,
   fieldDataSchemaFunction: myFieldDataSchemaFunction,
@@ -262,7 +267,7 @@ export const myFieldSpec: FieldInfo<MyFieldFullProps> = {
 
 ```typescript
 // registry.ts
-import { myFieldSpec } from './fields/MyField';
+import {myFieldSpec} from './fields/MyField';
 
 const FieldSpecList: FieldInfo[] = [
   // ... existing fields
@@ -287,7 +292,8 @@ const BaseFieldPropsSchema = z.object({
 
 ## FormFieldContextProps
 
-Injected by the form system:
+Injected by the form system. State/handlers are used by the field component to
+write data, and perform other operations.
 
 ```typescript
 interface FormFieldContextProps {
@@ -299,7 +305,7 @@ interface FormFieldContextProps {
   removeAttachment: (params) => Promise<void>;
   handleBlur: () => void;
   config: FormConfig;
-  trigger: { commit: () => Promise<void> };
+  trigger: {commit: () => Promise<void>};
 }
 ```
 
@@ -309,16 +315,17 @@ Standard wrapper providing consistent field UI:
 
 ```typescript
 interface FieldWrapperProps {
-  heading?: ReactNode;           // Field label
-  subheading?: ReactNode;        // Helper text
-  children: ReactNode;           // Field input
-  required?: boolean;            // Show required indicator
+  heading?: ReactNode; // Field label
+  subheading?: ReactNode; // Helper text
+  children: ReactNode; // Field input
+  required?: boolean; // Show required indicator
   advancedHelperText?: ReactNode; // Extended help (dialog)
-  errors?: string[];             // Validation errors
+  errors?: string[]; // Validation errors
 }
 ```
 
 Features:
+
 - Bold heading with optional required indicator (`*`)
 - Helper text below heading
 - Error display with red border and icon
@@ -328,8 +335,8 @@ Features:
 
 ```typescript
 interface FormDataEntry {
-  data?: any;                    // Primary field value
-  annotation?: FormAnnotation;   // User annotation
+  data?: any; // Primary field value
+  annotation?: FormAnnotation; // User annotations
   attachments?: FaimsAttachments; // File attachments
 }
 

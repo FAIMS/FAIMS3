@@ -2,6 +2,11 @@
 
 Technical documentation for the FAIMS3 Forms Module.
 
+The FAIMS3 forms module has been completely re-written, and strongly utilises
+the data engine, and attachment services, which are part of the `data-model`
+package. Efforts have been made to keep an interface layer between the data
+engine, attachment engine, and the actual form/field implementations.
+
 ## Contents
 
 ### Architecture

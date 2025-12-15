@@ -71,8 +71,8 @@ The `initialValue` property sets the field's default state when creating new rec
 
 ```json
 {
-  "component-namespace": "formio-core",
-  "component-name": "textfield",
+  "component-namespace": "faims-custom",
+  "component-name": "FAIMSTextField",
   "component-parameters": {"name": "description", "label": "Description"},
   "initialValue": ""
 }

@@ -28,7 +28,7 @@ flowchart TD
 
 ## UISpec Section Definition
 
-Sections are defined in `views` and referenced by `viewsets`:
+Sections are defined in `views` and referenced by `viewsets` (interchangeably referred to as 'forms'):
 
 ```json
 {
