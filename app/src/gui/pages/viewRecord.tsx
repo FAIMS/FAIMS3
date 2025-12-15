@@ -17,6 +17,7 @@ import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {localGetDataDb} from '../../utils/database';
+import {getMapConfig} from '../../buildconfig';
 
 export const ViewRecordPage = () => {
   // Unpack route params
@@ -136,6 +137,7 @@ export const ViewRecordPage = () => {
           })
         );
       },
+      getMapConfig: getMapConfig,
     },
   } satisfies DataViewProps;
 

@@ -19,11 +19,11 @@
 import {MapTileDatabase} from './components/maps/tile-source';
 import {MapStylesheetNameType} from './components/maps/styles';
 
-export interface MapConfig {
+export type MapConfig = {
   mapSource: string;
   mapSourceKey: string;
   mapStyle: MapStylesheetNameType;
-}
+};
 
 export const getDefaultMapConfig = (): MapConfig => ({
   mapSource: 'osm',

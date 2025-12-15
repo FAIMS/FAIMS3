@@ -4,13 +4,16 @@ import {
   IAttachmentService,
 } from '@faims3/data-model';
 import z from 'zod';
+import {MapConfig} from '../../config';
 
 /**
  * Base interface for form configuration modes.
  */
 export interface BaseFormConfig {
   mode: 'full' | 'preview';
-  layout: 'inline' | 'tabs';
+  layout: 'inline' | 'tabs';  
+  /** Function to return the map configuration settings */
+  mapConfig: () => MapConfig;
 }
 
 // When we redirect to a child, we leave this trail, which helps us to navigate

@@ -27,7 +27,6 @@ import {Box, Grid} from '@mui/material';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
 import {Extent} from 'ol/extent';
-import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform, transformExtent} from 'ol/proj';
@@ -41,37 +40,12 @@ import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
 import CircleStyle from 'ol/style/Circle';
 import {Geolocation, Position} from '@capacitor/geolocation';
+import {MapConfig} from '../../config';
 
-const defaultMapProjection = 'EPSG:3857';
+export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
-/**
- * canShowMapNear - can we show a map near this location?
- *
- * Return true if we are online or if we have a cached map that includes
- * the center location.
- */
-export const canShowMapNear = async (
-  features: GeoJSONFeatureCollection | undefined
-) => {
-  console.log('canShowMapNear', navigator.onLine, features);
-  if (navigator.onLine) return true;
-
-  if (features) {
-    const geoJson = new GeoJSON();
-    const parsedFeatures = geoJson.readFeatures(features, {
-      dataProjection: 'EPSG:4326',
-      featureProjection: defaultMapProjection,
-    });
-
-    // now work out if we have a stored map
-    const tileStore = new VectorTileStore();
-    return await tileStore.mapCacheIncludes(parsedFeatures);
-  } else {
-    return false;
-  }
-};
 
 /**
  * A Map component for all our mapping needs.
@@ -80,6 +54,7 @@ export const canShowMapNear = async (
  *   center: optional, the map center. If not supplied we try to get the current location or back off to Sydney.
  */
 export interface MapComponentProps {
+  config: MapConfig;
   parentSetMap: (map: Map) => void;
   center?: [number, number]; // in EPSG:4326
   extent?: Extent; // note that the extent should be in EPSG:4326, not in the map projection
@@ -99,7 +74,7 @@ export const MapComponent = (props: MapComponentProps) => {
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const tileStore = useMemo(() => new VectorTileStore(), []);
+  const tileStore = useMemo(() => new VectorTileStore(props.config), []);
 
   // Listen for online/offline events to update isOnline state
   useEffect(() => {

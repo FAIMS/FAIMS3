@@ -163,9 +163,9 @@ class TileStoreBase {
   tileStore: MapTileDatabase;
   config: MapConfig;
 
-  constructor() {
+  constructor(config: MapConfig) {
     this.tileStore = MapTileDatabase.getInstance();
-    this.config = getMapConfig();
+    this.config = config;
     console.log('map config', this.config);
   }
 
@@ -504,8 +504,8 @@ export class ImageTileStore extends TileStoreBase {
   declare source: ImageTileSource;
   declare tileLayer: TileLayer;
 
-  constructor() {
-    super();
+  constructor(config: MapConfig) {
+    super(config);
     this.source = new ImageTileSource({
       attributions: ATTRIBUTION,
       loader: this.tileLoader.bind(this),
@@ -579,8 +579,8 @@ export class VectorTileStore extends TileStoreBase {
   declare source: VectorTileSource;
   declare tileLayer: VectorTileLayer;
 
-  constructor() {
-    super();
+  constructor(config: MapConfig) {
+    super(config);
     this.source = new VectorTileSource({
       attributions: ATTRIBUTION,
       url: this.getTileURLTemplate(),

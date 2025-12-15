@@ -24,7 +24,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import {APP_NAME, DEBUG_APP} from '../../buildconfig';
+import {APP_NAME, DEBUG_APP, getMapConfig} from '../../buildconfig';
 import {getEditRecordRoute, getNotebookRoute} from '../../constants/routes';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
@@ -166,6 +166,7 @@ export const EditRecordPage = () => {
     recordMode: mode,
     dataEngine,
     attachmentEngine,
+    mapConfig: getMapConfig,
     navigation: {
       navigateToRecordList: {
         label: 'Return to record list',

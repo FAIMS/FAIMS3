@@ -48,10 +48,12 @@ import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
 import {MapComponent} from '../../../components/maps/MapComponent';
+import {MapConfig} from '../../..';
 
 export type MapAction = 'save' | 'close';
 
 interface MapProps extends ButtonProps {
+  config: MapConfig;
   label: string;
   features: any;
   geoTiff?: string;
@@ -409,6 +411,7 @@ function MapWrapper(props: MapProps) {
 
           <Grid container spacing={2} sx={{height: '100%'}}>
             <MapComponent
+              config={props.config}
               key={mapOpen ? 'map-open' : 'map-closed'}
               parentSetMap={setMap}
               center={props.center}

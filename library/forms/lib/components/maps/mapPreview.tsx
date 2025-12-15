@@ -2,14 +2,13 @@
 import Map from 'ol/Map';
 import View from 'ol/View';
 import GeoJSON from 'ol/format/GeoJSON';
-import TileLayer from 'ol/layer/Tile';
 import VectorLayer from 'ol/layer/Vector';
 import 'ol/ol.css';
-import OSM from 'ol/source/OSM';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {VectorTileStore} from './tile-source';
+import {MapConfig} from '../../config';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value
@@ -62,6 +61,7 @@ const createFeatureStyle = () => {
 };
 
 interface MapPreviewProps {
+  config: MapConfig;
   value: any;
 }
 
@@ -71,7 +71,7 @@ interface MapPreviewProps {
 export const MapPreview: React.FC<MapPreviewProps> = props => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
-  const tileStore = useMemo(() => new VectorTileStore(), []);
+  const tileStore = useMemo(() => new VectorTileStore(props.config), []);
 
   useEffect(() => {
     // Don't initialize if no map container

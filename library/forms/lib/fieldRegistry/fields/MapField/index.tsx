@@ -19,11 +19,11 @@
 
 import CancelIcon from '@mui/icons-material/Cancel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import {Alert, Box, Button, Typography, useTheme} from '@mui/material';
+import {Alert, Box, Button, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {Geolocation} from '@capacitor/geolocation';
-import {canShowMapNear} from '../../../components/maps/MapComponent';
+import GeoJSON from 'ol/format/GeoJSON';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
 import {z} from 'zod';
@@ -31,7 +31,9 @@ import {FullFieldProps} from '../../../formModule/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {FieldInfo} from '../../types';
 import {MapRenderer} from '../../../rendering';
-import {MapPreview} from '../../../components/maps/mapPreview';
+import {MapPreview} from '../../../components/maps/MapPreview';
+import {defaultMapProjection} from '../../../components/maps/MapComponent';
+import {VectorTileStore} from '../../../components';
 
 /**
  * Schema for the GeoJSON geometry object.
@@ -94,6 +96,8 @@ export function MapFormField(props: FieldProps): JSX.Element {
 
   const theme = useTheme();
 
+  const mapConfig = props.config.mapConfig();
+
   const appName =
     props.config.mode === 'full' ? props.config.appName : 'FAIMS3';
 
@@ -119,6 +123,32 @@ export function MapFormField(props: FieldProps): JSX.Element {
 
   // state for visual indicators
   const [animateCheck, setAnimateCheck] = useState(false);
+
+  /**
+   * canShowMapNear - can we show a map near this location?
+   *
+   * Return true if we are online or if we have a cached map that includes
+   * the center location.
+   */
+  const canShowMapNear = async (
+    features: GeoJSONFeatureCollection | undefined
+  ) => {
+    if (navigator.onLine) return true;
+
+    if (features) {
+      const geoJson = new GeoJSON();
+      const parsedFeatures = geoJson.readFeatures(features, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: defaultMapProjection,
+      });
+
+      // now work out if we have a stored map
+      const tileStore = new VectorTileStore(mapConfig);
+      return await tileStore.mapCacheIncludes(parsedFeatures);
+    } else {
+      return false;
+    }
+  };
 
   // when the center changes, check if we can show this map
   useEffect(() => {
@@ -173,39 +203,6 @@ export function MapFormField(props: FieldProps): JSX.Element {
       });
   };
 
-  // dynamically determine feature label based on featureType
-  const featureLabel =
-    props.featureType === 'Polygon'
-      ? 'polygon'
-      : props.featureType === 'LineString'
-        ? 'line'
-        : 'point';
-
-  let valueText = 'No location selected';
-  if (drawnFeatures.features && drawnFeatures.features.length > 0) {
-    const geom = drawnFeatures.features[0].geometry;
-    switch (geom.type) {
-      case 'Point':
-        valueText =
-          'Point: ' +
-          geom.coordinates[0].toFixed(2).toString() +
-          ', ' +
-          geom.coordinates[1].toFixed(2).toString();
-        break;
-      case 'Polygon':
-        valueText = 'Polygon: ' + (geom.coordinates[0].length - 1) + ' points';
-        break;
-      case 'LineString':
-        valueText = 'Line String: ' + geom.coordinates.length + ' points';
-        break;
-    }
-  } else if (canShowMap) {
-    valueText = `No ${featureLabel} selected, click above to choose one!`;
-  } else {
-    // if no location selected update msg dynamically.
-    valueText = `No ${featureLabel} selected.`;
-  }
-
   return (
     <FieldWrapper
       heading={props.label}
@@ -252,6 +249,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
           </>
         ) : (
           <MapWrapper
+            config={mapConfig}
             label={label}
             featureType={featureType}
             features={drawnFeatures}
@@ -301,7 +299,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
             />
           )}
 
-          <MapPreview value={props.state.value?.data} />
+          <MapPreview value={props.state.value?.data} config={mapConfig} />
         </Box>
       </Box>
 
@@ -344,9 +342,5 @@ export const mapFieldSpec: FieldInfo<FieldProps> = {
   component: MapFormField,
   fieldPropsSchema: MapFieldPropsSchema,
   fieldDataSchemaFunction: valueSchemaFunction,
-  view: {
-    component: MapRenderer,
-    config: {},
-    attributes: {singleColumn: true},
-  },
+  view: {component: MapRenderer, config: {}},
 };
