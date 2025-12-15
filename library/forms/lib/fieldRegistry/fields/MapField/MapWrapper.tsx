@@ -47,7 +47,7 @@ import VectorSource from 'ol/source/Vector';
 import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
-import {MapComponent} from '../../../components/maps/map-component';
+import {MapComponent} from '../../../components/maps/MapComponent';
 
 export type MapAction = 'save' | 'close';
 

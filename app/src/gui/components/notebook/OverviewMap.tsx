@@ -215,7 +215,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
       <Grid
         container
         spacing={2}
-        sx={{width: '90vw', marginTop: '20px', marginLeft: '20px'}}
+        sx={{
+          height: '600px',
+          width: '90vw',
+          marginTop: '20px',
+          marginLeft: '20px',
+        }}
       >
         <MapComponent parentSetMap={setMap} extent={featuresExtent} />
         <Popover

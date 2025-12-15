@@ -34,15 +34,15 @@ import {
 } from '@mui/material';
 import Map from 'ol/Map';
 import {useEffect, useMemo, useState} from 'react';
-import {ProgressBar} from '../ProgressBar';
-import {MapComponent} from './map-component';
-import {StoredTileSet, VectorTileStore} from './tile-source';
+import {ProgressBar} from '@faims3/forms';
+import {MapComponent} from '@faims3/forms';
+import {StoredTileSet, VectorTileStore} from '@faims3/forms';
 
 /**
  * Map download component presents the UI for downloading offline maps.
  *
  */
-export const MapDownloadComponent = () => {
+export const MapDownload = () => {
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [cacheSize, setCacheSize] = useState('');
   const [downloadSetName, setDownloadSetName] = useState('Default');
@@ -232,18 +232,7 @@ export const MapDownloadComponent = () => {
         </Accordion>
       </Grid>
 
-      <Grid
-        item
-        xs={12}
-        md={9}
-        sm={8}
-        sx={{
-          '& > div': {
-            // Target MapComponent's container
-            height: '100%',
-          },
-        }}
-      >
+      <Grid item xs={12} md={9} sm={8} height={600}>
         <MapComponent parentSetMap={setMap} />
       </Grid>
     </Grid>

@@ -23,7 +23,7 @@ import {Alert, Box, Button, Typography, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {Geolocation} from '@capacitor/geolocation';
-import {canShowMapNear} from '../../../components/maps/map-component';
+import {canShowMapNear} from '../../../components/maps/MapComponent';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
 import {z} from 'zod';
