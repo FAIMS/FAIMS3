@@ -61,14 +61,22 @@ export type ExistingRecordDBDocument = z.infer<
 // Revision Document
 // ============================================================================
 
-export const relationshipSchema = z.object({
-  parent: z.object({
-    record_id: z.string(),
-    field_id: z.string(),
-    relation_type_vocabPair: z.tuple([z.string(), z.string()]),
-  }),
+export const relationshipInstanceSchema = z.object({
+  record_id: z.string(),
+  field_id: z.string(),
+  relation_type_vocabPair: z.tuple([z.string(), z.string()]).or(z.tuple([])),
 });
+export type RelationshipInstance = z.infer<typeof relationshipInstanceSchema>;
 
+// Revision relationship field can be either a list or singleton entry
+export const relationshipSchema = z.object({
+  parent: z
+    .union([relationshipInstanceSchema, z.array(relationshipInstanceSchema)])
+    .optional(),
+  linked: z
+    .union([relationshipInstanceSchema, z.array(relationshipInstanceSchema)])
+    .optional(),
+});
 export type RecordRelationship = z.infer<typeof relationshipSchema>;
 
 export const v1RevisionDBFieldsSchema = z
@@ -81,11 +89,8 @@ export const v1RevisionDBFieldsSchema = z
     created_by: z.string(),
     type: z.string(),
     ugc_comment: z.string().optional(),
+    relationship: relationshipSchema.optional(),
     deleted: z.boolean().optional(),
-    relationship: relationshipSchema
-      .optional()
-      // This allows empty objects
-      .or(z.object({}).strict()),
   })
   .strict();
 
@@ -519,15 +524,20 @@ export type AvpUpdateMode = 'new' | 'parent';
  * Schema for a relationship between records.
  * Used when a record is related to another record through a specific field.
  */
+const formRelationshipInstanceSchema = z.object({
+  /** The ID of the parent record this record is related to */
+  recordId: z.string(),
+  /** The field ID in the parent record that defines this relationship */
+  fieldId: z.string(),
+  /** The relationship type as a vocabulary pair */
+  relationTypeVocabPair: z.tuple([z.string(), z.string()]),
+});
+export type FormRelationshipInstance = z.infer<
+  typeof formRelationshipInstanceSchema
+>;
 const formRelationshipSchema = z.object({
-  parent: z.object({
-    /** The ID of the parent record this record is related to */
-    recordId: z.string(),
-    /** The field ID in the parent record that defines this relationship */
-    fieldId: z.string(),
-    /** The relationship type as a vocabulary pair */
-    relationTypeVocabPair: z.tuple([z.string(), z.string()]),
-  }),
+  parent: z.array(formRelationshipInstanceSchema).optional(),
+  linked: z.array(formRelationshipInstanceSchema).optional(),
 });
 
 export type FormRelationship = z.infer<typeof formRelationshipSchema>;

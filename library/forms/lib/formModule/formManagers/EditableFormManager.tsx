@@ -19,10 +19,12 @@ import {
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
+import {getImpliedNavigationRelationships} from '../utils';
 import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
   FormNavigationButtons,
+  ImpliedParentNavInfo,
   ParentNavInfo,
 } from './components/NavigationButtons';
 import {
@@ -145,51 +147,73 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   // Determine information about parent context, if necessary
   const parentNavigationInformation = useQuery({
-    queryKey: [],
+    queryKey: [props.navigationContext, props.recordId, props.revisionId],
     queryFn: async () => {
       // Root mode doesn't need any navigational information
-      if (props.navigationContext.mode === 'root') {
-        return null;
-      } else if (props.navigationContext.mode === 'child') {
-        const lineage = props.navigationContext.lineage;
-        if (lineage.length === 0) {
-          // This shouldn't happen - but good to be careful
+      const getExplicitNav = async () => {
+        if (props.navigationContext.mode === 'root') {
           return null;
-        }
-        // Latest entry is the head
-        const latestLineage = lineage[lineage.length - 1];
-        if (latestLineage === undefined) {
-          // This shouldn't happen - but good to be careful
-          return null;
-        }
-
-        // Determine various information about the parent record
-        const engine = props.config.dataEngine();
-        // Get hydrated parent record
-        const hydrated = await engine.hydrated.getHydratedRecord({
-          recordId: latestLineage.recordId,
-          revisionId: latestLineage.revisionId,
-        });
-
-        // TODO: consider per revision navigation
-        const link = props.config.navigation.getToRecordLink({
-          recordId: latestLineage.recordId,
-          mode: latestLineage.parentMode,
-        });
-
-        return {
-          parentNavButton: {
-            link,
-            mode: latestLineage.parentMode,
+        } else if (props.navigationContext.mode === 'child') {
+          const lineage = props.navigationContext.lineage;
+          if (lineage.length === 0) {
+            // This shouldn't happen - but good to be careful
+            return null;
+          }
+          // Latest entry is the head
+          const latestLineage = lineage[lineage.length - 1];
+          if (latestLineage === undefined) {
+            // This shouldn't happen - but good to be careful
+            return null;
+          }
+          // Determine various information about the parent record
+          const engine = props.config.dataEngine();
+          // Get hydrated parent record
+          const hydrated = await engine.hydrated.getHydratedRecord({
             recordId: latestLineage.recordId,
-            label: `Return to ${hydrated.hrid}`,
-            fieldId: latestLineage.fieldId,
-            formId: hydrated.record.formId,
-          } satisfies ParentNavInfo,
-          fullContext: props.navigationContext,
-        };
-      }
-      return null;
+            revisionId: latestLineage.revisionId,
+          });
+          // TODO: consider per revision navigation
+          const link = props.config.navigation.getToRecordLink({
+            recordId: latestLineage.recordId,
+            mode: latestLineage.parentMode,
+          });
+          return {
+            parentNavButton: {
+              link,
+              mode: latestLineage.parentMode,
+              recordId: latestLineage.recordId,
+              label: `Return to ${hydrated.hrid}`,
+              fieldId: latestLineage.fieldId,
+              formId: hydrated.record.formId,
+              relationType: latestLineage.relationType,
+            } satisfies ParentNavInfo,
+            hydratedRecord: hydrated,
+            fullContext: props.navigationContext,
+          };
+        }
+        return null;
+      };
+
+      // This function looks at the relationship to see if we have implied
+      // navigation - this is only used where explicit navigation is not
+      // available
+      const getImpliedNav = async () => {
+        const engine = props.config.dataEngine();
+        const hydrated = await engine.hydrated.getHydratedRecord({
+          recordId: props.recordId,
+          revisionId: props.revisionId,
+        });
+
+        return await getImpliedNavigationRelationships(
+          hydrated.revision,
+          engine,
+          dataEngine.uiSpec
+        );
+      };
+
+      const explicit = await getExplicitNav();
+      const implied = await getImpliedNav();
+      return {explicit, implied};
     },
     networkMode: 'always',
     refetchOnMount: true,
@@ -690,11 +714,44 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
   };
 
+  const impliedParents = useMemo(() => {
+    // Wait until data loaded
+    if (!parentNavigationInformation.data) {
+      return undefined;
+    }
+    const explicit = parentNavigationInformation.data.explicit;
+    const implied = parentNavigationInformation.data.implied;
+    // If we have real lineage, then don't include implied parents
+    if ((explicit?.fullContext.lineage.length ?? 0) > 0) {
+      return undefined;
+    }
+    // Look for implied parents
+    if (implied && implied.length > 0) {
+      return implied.map(
+        entry =>
+          ({
+            label: `View ${entry.hrid}`,
+            recordId: entry.recordId,
+            onNavigate() {
+              props.config.navigation.navigateToViewRecord({
+                recordId: entry.recordId,
+              });
+            },
+            formId: entry.formId,
+            fieldId: entry.fieldId,
+            type: entry.type,
+          }) satisfies ImpliedParentNavInfo
+      );
+    }
+    // Otherwise
+    return undefined;
+  }, [parentNavigationInformation.data]);
+
   // Memoised navigation buttons - used twice (top and bottom) - hooks into
   // pending flush changes to ensure that no data loss occurs during navigation
   // due to pending debounce
   const navigationButtons = useMemo(() => {
-    const info = parentNavigationInformation.data;
+    const info = parentNavigationInformation.data?.explicit;
 
     const parentFormLabel = info
       ? dataEngine.uiSpec.viewsets[info.parentNavButton.formId]?.label
@@ -710,6 +767,12 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         }
         flushSave={flushSave}
         hasPendingChanges={hasPendingChanges}
+        onNavigateToViewRecord={() => {
+          props.config.navigation.navigateToViewRecord({
+            recordId: props.recordId,
+          });
+        }}
+        impliedParentNavInfo={impliedParents}
       />
     );
   }, [

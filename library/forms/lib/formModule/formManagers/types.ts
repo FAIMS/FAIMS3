@@ -22,6 +22,7 @@ export const FormNavigationChildEntrySchema = z.object({
   recordId: z.string(),
   revisionId: z.string().optional(),
   parentMode: z.enum(['parent', 'new']),
+  relationType: z.enum(['parent', 'linked']),
   fieldId: z.string(),
 });
 
@@ -136,6 +137,8 @@ export interface FullFormConfig extends BaseFormConfig {
       // function which does this
       navigate: () => void;
     };
+    /** Navigate to the view records (if there is no parent context) */
+    navigateToViewRecord: (params: {recordId: string}) => void;
   };
   /** What is the deployed app name - helpful for error displays etc */
   appName: string;

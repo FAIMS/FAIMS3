@@ -6,6 +6,7 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
+  DEFAULT_VOCAB_PAIR,
   EncodedUISpecification,
   generateAttID,
   generateAvpID,
@@ -490,6 +491,62 @@ describe('DataEngine', () => {
         await expect(engine.core.getAttachment(attachmentId)).rejects.toThrow();
       });
     });
+
+    test('should fallback to default vocab pair when revision has empty relation_type_vocabPair', async () => {
+      const recordId = generateRecordID();
+      const revisionId = generateRevisionID();
+      const parentRecordId = generateRecordID();
+
+      // Create record
+      const record: NewRecordDBDocument = {
+        _id: recordId,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId],
+        heads: [revisionId],
+        type: 'A',
+      };
+      await engine.core.createRecord(record);
+
+      // Create revision with empty vocab pair in relationship
+      const revision: NewRevisionDBDocument = {
+        _id: revisionId,
+        revision_format_version: 1,
+        avps: {},
+        record_id: recordId,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {
+          parent: {
+            record_id: parentRecordId,
+            field_id: 'some-field',
+            relation_type_vocabPair: [], // Empty tuple - should trigger fallback
+          },
+        },
+      };
+      await engine.core.createRevision(revision);
+
+      // Hydrate the record
+      const hydrated = await engine.hydrated.getHydratedRecord({
+        recordId,
+      });
+
+      // Verify the relationship exists and has the default vocab pair
+      expect(hydrated.revision.relationship).toBeDefined();
+      expect(hydrated.revision.relationship?.parent).toHaveLength(1);
+      expect(
+        hydrated.revision.relationship?.parent?.[0].relationTypeVocabPair
+      ).toEqual(DEFAULT_VOCAB_PAIR);
+      expect(hydrated.revision.relationship?.parent?.[0].recordId).toBe(
+        parentRecordId
+      );
+      expect(hydrated.revision.relationship?.parent?.[0].fieldId).toBe(
+        'some-field'
+      );
+    });
   });
 
   describe('Hydrated Operations', () => {
@@ -870,6 +927,250 @@ describe('DataEngine', () => {
       );
       expect(hydrated.data['First-1'].faimsAttachments?.[0].filename).toBe(
         'test.txt'
+      );
+    });
+
+    test('should update a revision using hydrated types', async () => {
+      // Create a complete record with revision
+      const recordId = generateRecordID();
+      const revisionId = generateRevisionID();
+      const avpId = generateAvpID();
+
+      // Create record
+      await engine.core.createRecord({
+        _id: recordId,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId],
+        heads: [revisionId],
+        type: 'A',
+      });
+
+      // Create AVP
+      await engine.core.createAvp({
+        _id: avpId,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'Test value',
+        revision_id: revisionId,
+        record_id: recordId,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+      });
+
+      // Create revision without relationship
+      await engine.core.createRevision({
+        _id: revisionId,
+        revision_format_version: 1,
+        avps: {'First-1': avpId},
+        record_id: recordId,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {},
+      });
+
+      // Hydrate the record
+      const hydrated = await engine.hydrated.getHydratedRecord({recordId});
+
+      // Update the revision with a new relationship using hydrated types
+      const parentRecordId = generateRecordID();
+      const updatedRevision = await engine.hydrated.updateRevision({
+        ...hydrated.revision,
+        relationship: {
+          parent: [
+            {
+              recordId: parentRecordId,
+              fieldId: 'some-field',
+              relationTypeVocabPair: ['is child of', 'is parent of'],
+            },
+          ],
+        },
+      });
+
+      // Verify the update
+      expect(updatedRevision._id).toBe(revisionId);
+      expect(updatedRevision._rev).not.toBe(hydrated.revision._rev);
+      expect(updatedRevision.relationship?.parent).toHaveLength(1);
+      expect(updatedRevision.relationship?.parent?.[0].recordId).toBe(
+        parentRecordId
+      );
+      expect(updatedRevision.relationship?.parent?.[0].fieldId).toBe(
+        'some-field'
+      );
+      expect(
+        updatedRevision.relationship?.parent?.[0].relationTypeVocabPair
+      ).toEqual(['is child of', 'is parent of']);
+
+      // Re-hydrate and verify persistence
+      const rehydrated = await engine.hydrated.getHydratedRecord({recordId});
+      expect(rehydrated.revision.relationship?.parent).toHaveLength(1);
+      expect(rehydrated.revision.relationship?.parent?.[0].recordId).toBe(
+        parentRecordId
+      );
+    });
+
+    test('should update a revision to add linked relationships', async () => {
+      // Create a complete record with revision
+      const recordId = generateRecordID();
+      const revisionId = generateRevisionID();
+      const avpId = generateAvpID();
+
+      // Create record
+      await engine.core.createRecord({
+        _id: recordId,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId],
+        heads: [revisionId],
+        type: 'A',
+      });
+
+      // Create AVP
+      await engine.core.createAvp({
+        _id: avpId,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'Test value',
+        revision_id: revisionId,
+        record_id: recordId,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+      });
+
+      // Create revision without relationship
+      await engine.core.createRevision({
+        _id: revisionId,
+        revision_format_version: 1,
+        avps: {'First-1': avpId},
+        record_id: recordId,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {},
+      });
+
+      // Hydrate the record
+      const hydrated = await engine.hydrated.getHydratedRecord({recordId});
+
+      // Update with multiple linked relationships
+      const linkedRecord1 = generateRecordID();
+      const linkedRecord2 = generateRecordID();
+      const updatedRevision = await engine.hydrated.updateRevision({
+        ...hydrated.revision,
+        relationship: {
+          linked: [
+            {
+              recordId: linkedRecord1,
+              fieldId: 'link-field-1',
+              relationTypeVocabPair: ['is related to', 'is related to'],
+            },
+            {
+              recordId: linkedRecord2,
+              fieldId: 'link-field-2',
+              relationTypeVocabPair: ['references', 'is referenced by'],
+            },
+          ],
+        },
+      });
+
+      // Verify the update
+      expect(updatedRevision.relationship?.linked).toHaveLength(2);
+      expect(updatedRevision.relationship?.linked?.[0].recordId).toBe(
+        linkedRecord1
+      );
+      expect(updatedRevision.relationship?.linked?.[1].recordId).toBe(
+        linkedRecord2
+      );
+
+      // Re-hydrate and verify persistence
+      const rehydrated = await engine.hydrated.getHydratedRecord({recordId});
+      expect(rehydrated.revision.relationship?.linked).toHaveLength(2);
+    });
+
+    test('should preserve existing relationships when updating revision', async () => {
+      // Create a complete record with existing relationship
+      const recordId = generateRecordID();
+      const revisionId = generateRevisionID();
+      const avpId = generateAvpID();
+      const existingParentId = generateRecordID();
+
+      // Create record
+      await engine.core.createRecord({
+        _id: recordId,
+        record_format_version: 1,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        revisions: [revisionId],
+        heads: [revisionId],
+        type: 'A',
+      });
+
+      // Create AVP
+      await engine.core.createAvp({
+        _id: avpId,
+        avp_format_version: 1,
+        type: 'faims-core::String',
+        data: 'Test value',
+        revision_id: revisionId,
+        record_id: recordId,
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+      });
+
+      // Create revision with existing parent relationship
+      await engine.core.createRevision({
+        _id: revisionId,
+        revision_format_version: 1,
+        avps: {'First-1': avpId},
+        record_id: recordId,
+        parents: [],
+        created: new Date().toISOString(),
+        created_by: 'test-user',
+        type: 'A',
+        relationship: {
+          parent: {
+            record_id: existingParentId,
+            field_id: 'existing-field',
+            relation_type_vocabPair: ['existing', 'existing'],
+          },
+        },
+      });
+
+      // Hydrate the record
+      const hydrated = await engine.hydrated.getHydratedRecord({recordId});
+
+      // Verify existing relationship was loaded
+      expect(hydrated.revision.relationship?.parent).toHaveLength(1);
+
+      // Add a linked relationship while preserving parent
+      const newLinkedId = generateRecordID();
+      const updatedRevision = await engine.hydrated.updateRevision({
+        ...hydrated.revision,
+        relationship: {
+          ...hydrated.revision.relationship,
+          linked: [
+            {
+              recordId: newLinkedId,
+              fieldId: 'new-link-field',
+              relationTypeVocabPair: ['links to', 'linked from'],
+            },
+          ],
+        },
+      });
+
+      // Verify both relationships exist
+      expect(updatedRevision.relationship?.parent).toHaveLength(1);
+      expect(updatedRevision.relationship?.parent?.[0].recordId).toBe(
+        existingParentId
+      );
+      expect(updatedRevision.relationship?.linked).toHaveLength(1);
+      expect(updatedRevision.relationship?.linked?.[0].recordId).toBe(
+        newLinkedId
       );
     });
   });

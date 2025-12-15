@@ -1,4 +1,8 @@
-import {HydratedRecord} from '@faims3/data-model';
+import {
+  FormRelationship,
+  FormRelationshipInstance,
+  HydratedRecord,
+} from '@faims3/data-model';
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
@@ -180,6 +184,8 @@ interface LinkExistingDialogProps {
   onSelect: (record: HydratedRecord) => Promise<void>;
   config: FullFormManagerConfig;
   relatedType: string;
+  relationType: string;
+  currentRecordId: string;
   excludedRecordIds: string[];
 }
 
@@ -189,7 +195,9 @@ const LinkExistingDialog = ({
   onSelect,
   config,
   relatedType,
+  relationType,
   excludedRecordIds,
+  currentRecordId,
 }: LinkExistingDialogProps) => {
   const [searchFilter, setSearchFilter] = useState('');
 
@@ -224,17 +232,33 @@ const LinkExistingDialog = ({
   const filteredRecords = useMemo(() => {
     if (!data?.pages) return [];
 
-    // NOTE: we should validate exclusion logic
+    // Set of record IDs we've already linked to from this field
     const excludedSet = new Set(excludedRecordIds);
     const allRecords = data.pages.flatMap(page => page.records);
 
+    // Determine which relationship array to check based on relation type
+    // If we're creating a Child relationship, the target record will have us as a "parent"
+    // If we're creating a Linked relationship, the target record will have us as "linked"
+    const relationshipKey: 'parent' | 'linked' =
+      relationType === 'faims-core::Child' ? 'parent' : 'linked';
+
     return allRecords.filter(record => {
-      // Exclude already-linked records
+      // Exclude records we've already linked to from this field
       if (excludedSet.has(record.record._id)) return false;
 
-      // Also filter out any records that have been linked to elsewhere
-      if (record.revision.relationship !== undefined) {
-        return false;
+      // Check if this record already has a relationship of the relevant type
+      // pointing back to the current record
+      const existingRelationships =
+        record.revision.relationship?.[relationshipKey];
+
+      if (existingRelationships && existingRelationships.length > 0) {
+        // Filter out if any existing relationship points to the current record
+        const alreadyLinkedToCurrentRecord = existingRelationships.some(
+          rel => rel.recordId === currentRecordId
+        );
+        if (alreadyLinkedToCurrentRecord) {
+          return false;
+        }
       }
 
       // Apply search filter (case-insensitive match on hrid or recordId)
@@ -248,7 +272,7 @@ const LinkExistingDialog = ({
 
       return true;
     });
-  }, [data, excludedRecordIds, searchFilter]);
+  }, [data, excludedRecordIds, searchFilter, relationType, currentRecordId]);
 
   const handleSelect = async (record: HydratedRecord) => {
     await onSelect(record);
@@ -424,16 +448,27 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
+      // Create the correct type of relationship
+      let relationship: FormRelationship;
+      const relation = {
+        fieldId: props.fieldId,
+        recordId: props.config.recordId,
+        relationTypeVocabPair: relationTypeToPair(props.relation_type),
+      };
+      if (props.relation_type === 'faims-core::Child') {
+        relationship = {
+          parent: [relation],
+        };
+      } else {
+        relationship = {
+          linked: [relation],
+        };
+      }
+
       const res = await props.config.dataEngine().form.createRecord({
         createdBy: props.config.user,
         formId: props.related_type,
-        relationship: {
-          parent: {
-            fieldId: props.fieldId,
-            recordId: props.config.recordId,
-            relationTypeVocabPair: relationTypeToPair(props.relation_type),
-          },
-        },
+        relationship,
       });
 
       props.setFieldData([
@@ -461,6 +496,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           // persist the current record mode
           parentMode: props.config.recordMode,
           recordId: props.config.recordId,
+          relationType:
+            props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
         },
       });
     },
@@ -468,9 +505,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     gcTime: 0,
   });
 
-  // Handler for linking an existing record
   const handleLinkExisting = async (record: HydratedRecord) => {
-    // Set our field value to include this link
+    // Update our field to include the new link
     props.setFieldData([
       ...normalizedLinks,
       {
@@ -479,26 +515,26 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       },
     ] satisfies FieldValue);
 
-    // And we need to update the linked record to include this relationship
-    const rev = record.revision;
-    await props.config.dataEngine().core.updateRevision({
-      _id: rev._id,
-      _rev: rev._rev,
-      avps: rev.avps,
-      created: rev.created,
-      created_by: rev.createdBy,
-      parents: rev.parents,
-      record_id: rev.recordId,
-      revision_format_version: 1,
-      type: rev.formId,
-      // Update with relationship!
-      relationship: {
-        parent: {
-          field_id: props.fieldId,
-          record_id: props.config.recordId,
-          relation_type_vocabPair: relationTypeToPair(props.relation_type),
-        },
-      },
+    // Build the reciprocal relationship entry for the target record
+    const relation: FormRelationshipInstance = {
+      fieldId: props.fieldId,
+      recordId: props.config.recordId,
+      relationTypeVocabPair: relationTypeToPair(props.relation_type),
+    };
+
+    // Merge with existing relationships on the target record
+    // Child relations go in 'parent' (the child points to its parent)
+    // Other relations go in 'linked'
+    const existing = record.revision.relationship;
+    const relationship: FormRelationship =
+      props.relation_type === 'faims-core::Child'
+        ? {...existing, parent: [...(existing?.parent ?? []), relation]}
+        : {...existing, linked: [...(existing?.linked ?? []), relation]};
+
+    // Persist the updated relationship on the target record's revision
+    await props.config.dataEngine().hydrated.updateRevision({
+      ...record.revision,
+      relationship,
     });
   };
 
@@ -531,6 +567,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         fieldId: props.fieldId,
         parentMode: props.config.recordMode,
         recordId: props.config.recordId,
+        relationType:
+          props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
       },
     });
   };
@@ -586,10 +624,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       {props.allowLinkToExisting && (
         <LinkExistingDialog
           open={linkDialogOpen}
+          currentRecordId={props.config.recordId}
           onClose={() => setLinkDialogOpen(false)}
           onSelect={handleLinkExisting}
           config={props.config}
           relatedType={props.related_type}
+          relationType={props.relation_type}
           excludedRecordIds={linkedRecordIds}
         />
       )}

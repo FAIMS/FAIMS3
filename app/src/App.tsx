@@ -53,7 +53,7 @@ import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
 import AboutBuild from './gui/pages/about-build';
-import {EditRecordPage} from './gui/pages/newRecord';
+import {EditRecordPage} from './gui/pages/editRecord';
 import Notebook from './gui/pages/notebook';
 import {PouchExplorer} from './gui/pages/pouchExplorer';
 import RecordCreate from './gui/pages/record-create';
