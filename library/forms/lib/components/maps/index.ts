@@ -1,3 +1,3 @@
 export * from './MapComponent';
-export * from './tile-source';
+export * from './TileStore';
 export * from './styles';

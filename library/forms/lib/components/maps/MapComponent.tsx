@@ -35,7 +35,7 @@ import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {createCenterControl} from './center-control';
-import {VectorTileStore} from './tile-source';
+import {VectorTileStore} from './TileStore';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
 import CircleStyle from 'ol/style/Circle';
