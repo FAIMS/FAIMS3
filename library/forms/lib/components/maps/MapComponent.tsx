@@ -40,7 +40,7 @@ import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
 import CircleStyle from 'ol/style/Circle';
 import {Geolocation, Position} from '@capacitor/geolocation';
-import {MapConfig} from '../../config';
+import {MapConfig} from './config';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;

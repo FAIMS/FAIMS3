@@ -32,7 +32,7 @@ import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {MapConfig, getMapConfig} from '../../config';
+import {MapConfig} from './config';
 import {IDBObjectStore} from './IDBObjectStore';
 import {getMapStylesheet} from './styles';
 
@@ -87,7 +87,7 @@ export interface StoredTileSet {
 // to access the stored tiles and tile-sets.
 // We initialise this at the start of the app lifecycle to be sure that it will
 // be available by the time the user arrives on a map page.
-export class MapTileDatabase {
+class MapTileDatabase {
   static #instance: MapTileDatabase;
   // The database is a static member of this class, there is only
   // one connection to the DB in the app
@@ -149,6 +149,11 @@ export class MapTileDatabase {
       ]);
   }
 }
+
+export const initialiseMaps = () => {
+  // initialise the tile store used for offline maps
+  MapTileDatabase.getInstance().initDB();
+};
 
 /**
  * class TileStoreBase

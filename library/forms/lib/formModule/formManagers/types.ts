@@ -4,7 +4,7 @@ import {
   IAttachmentService,
 } from '@faims3/data-model';
 import z from 'zod';
-import {MapConfig} from '../../config';
+import {MapConfig} from '../../components/maps/config';
 
 /**
  * Base interface for form configuration modes.

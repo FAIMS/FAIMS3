@@ -16,8 +16,7 @@
  * Description:
  *   This module exports the configuration of the build
  */
-import {MapTileDatabase} from './components/maps/tile-source';
-import {MapStylesheetNameType} from './components/maps/styles';
+import {MapStylesheetNameType} from './styles';
 
 export type MapConfig = {
   mapSource: string;
@@ -30,14 +29,3 @@ export const getDefaultMapConfig = (): MapConfig => ({
   mapSourceKey: '',
   mapStyle: 'basic',
 });
-
-let mapConfig: MapConfig = getDefaultMapConfig();
-
-export const initialiseMaps = (config: MapConfig) => {
-  mapConfig = config;
-
-  // initialise the tile store used for offline maps
-  MapTileDatabase.getInstance().initDB();
-};
-
-export const getMapConfig = () => mapConfig;
