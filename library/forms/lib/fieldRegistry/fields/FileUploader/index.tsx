@@ -36,7 +36,7 @@ import {
   useAttachments,
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
-import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {FileUploaderRender} from '../../../rendering/fields/view/specialised/FileUploader';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
@@ -783,6 +783,9 @@ export const fileUploaderFieldSpec: FieldInfo<FileUploaderFieldProps> = {
 
     return base;
   },
-  // TODO fix this
-  view: {component: DefaultRenderer, config: {}},
+  view: {
+    component: FileUploaderRender,
+    config: {},
+    attributes: {singleColumn: false},
+  },
 };
