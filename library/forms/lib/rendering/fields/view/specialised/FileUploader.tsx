@@ -1,4 +1,3 @@
-import AttachFileIcon from '@mui/icons-material/AttachFile';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import ImageIcon from '@mui/icons-material/Image';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -7,22 +6,9 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import {Box, Paper, Typography} from '@mui/material';
 import {useMemo} from 'react';
 import {useAttachments} from '../../../../hooks/useAttachment';
+import {IMAGE_TYPES} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const IMAGE_TYPES = [
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/webp',
-  'image/gif',
-  'image/svg+xml',
-  'image/bmp',
-];
 
 // ============================================================================
 // Utility Functions
@@ -63,7 +49,7 @@ function getFileIcon(contentType: string) {
 /**
  * Truncates filename if too long, preserving extension
  */
-function truncateFilename(filename: string, maxLength: number = 25): string {
+function truncateFilename(filename: string, maxLength = 25): string {
   if (filename.length <= maxLength) return filename;
 
   const ext = filename.includes('.') ? filename.split('.').pop() : '';
@@ -159,7 +145,7 @@ const FileAttachment: React.FC<{
 /**
  * Placeholder for attachments that haven't been synced/downloaded
  */
-const UnsyncedPlaceholder: React.FC<{index: number}> = ({index}) => (
+const UnsyncedPlaceholder: React.FC<{index: number}> = ({}) => (
   <Paper
     elevation={0}
     sx={{
@@ -216,13 +202,12 @@ export const FileUploaderRender: DataViewFieldRender = props => {
   );
 
   // Separate loaded and not-loaded attachments
-  const loadedAttachments = attachments
-    .filter(d => !!d.data)
-    .map(d => d.data!);
+  const loadedAttachments = attachments.filter(d => !!d.data).map(d => d.data!);
   const notDownloadedCount = attachments.filter(d => !d.data).length;
 
   // Check if there's nothing to display
-  const hasNoContent = loadedAttachments.length === 0 && notDownloadedCount === 0;
+  const hasNoContent =
+    loadedAttachments.length === 0 && notDownloadedCount === 0;
 
   if (hasNoContent) {
     return <TextWrapper content="No files uploaded" />;
