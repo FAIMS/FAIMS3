@@ -13,9 +13,8 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.tsx
  * Description:
- *   TODO
+ *  Entry point for the Fieldmark application
  */
 import {registerClient} from '@faims3/data-model';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';

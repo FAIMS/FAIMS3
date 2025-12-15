@@ -30,6 +30,8 @@ import {z} from 'zod';
 import {FullFieldProps} from '../../../formModule/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {FieldInfo} from '../../types';
+import {MapRenderer} from '../../../rendering';
+import {MapPreview} from '../../../components/maps/mapPreview';
 
 /**
  * Schema for the GeoJSON geometry object.
@@ -299,18 +301,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
             />
           )}
 
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 'bold',
-              color: isLocationSelected
-                ? theme.palette.success.main
-                : theme.palette.error.light,
-              transition: 'color 0.4s ease-in-out',
-            }}
-          >
-            {valueText}
-          </Typography>
+          <MapPreview value={props.state.value?.data} />
         </Box>
       </Box>
 
@@ -354,11 +345,7 @@ export const mapFieldSpec: FieldInfo<FieldProps> = {
   fieldPropsSchema: MapFieldPropsSchema,
   fieldDataSchemaFunction: valueSchemaFunction,
   view: {
-    component: ({value}) => {
-      // const features = value as GeoJSONFeatureCollection | undefined;
-      const description = 'map field';
-      return <Typography variant="body2">{description}</Typography>;
-    },
+    component: MapRenderer,
     config: {},
     attributes: {singleColumn: true},
   },

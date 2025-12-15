@@ -394,8 +394,8 @@ export const MapComponent = (props: MapComponentProps) => {
 
   return (
     <>
-      <Grid container spacing={2}>
-        <Box sx={{height: '100%', width: '100%', minHeight: '600px'}}>
+      <Grid container spacing={2} sx={{height: '100%'}}>
+        <Box sx={{height: '100%', width: '100%'}}>
           <Box
             ref={refCallback} // will create the map
             sx={{

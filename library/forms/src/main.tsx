@@ -6,7 +6,6 @@ import uiSpec from './sample-notebook.json';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EncodedUISpecification} from '@faims3/data-model/build/src/types';
 import {initialiseMaps} from '../lib/config';
-import {MapTileDatabase} from '../lib/components/maps/tile-source';
 
 const queryClient = new QueryClient({});
 
@@ -16,7 +15,6 @@ initialiseMaps({
   mapStyle: 'basic',
 });
 
-/
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
