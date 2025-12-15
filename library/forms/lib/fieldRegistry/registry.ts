@@ -3,6 +3,7 @@ import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {checkboxFieldSpec} from './fields/CheckboxField';
 import {fileUploaderFieldSpec} from './fields/FileUploader';
 import {multiSelectFieldSpec} from './fields/MultiSelect';
+import {qrCodeFieldSpec} from './fields/QRCodeFormField';
 import {radioGroupFieldSpec} from './fields/RadioGroup';
 import {relatedRecordFieldSpec} from './fields/RelatedRecord';
 import {richTextFieldSpec} from './fields/RichText';
@@ -28,6 +29,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   checkboxFieldSpec,
   radioGroupFieldSpec,
   takePointFieldSpec,
+  qrCodeFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info
