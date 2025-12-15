@@ -10,7 +10,7 @@ The structure of this module is based in part on [this article](https://dev.to/r
 The module provides a number of components that are implemented in the `lib` directory.
 
 The `src` directory provides a sample application that can be used to test
-components during development.   This is not part of the exported module.
+components during development. This is not part of the exported module.
 
 ## Scripts
 
