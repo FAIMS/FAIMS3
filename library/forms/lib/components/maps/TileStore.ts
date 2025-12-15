@@ -171,7 +171,6 @@ class TileStoreBase {
   constructor(config: MapConfig) {
     this.tileStore = MapTileDatabase.getInstance();
     this.config = config;
-    console.log('map config', this.config);
   }
 
   /**
