@@ -97,9 +97,6 @@ export function MapFormField(props: FieldProps): JSX.Element {
     drawnFeatures.features &&
     drawnFeatures.features.length > 0;
 
-  // state for visual indicators
-  const [animateCheck, setAnimateCheck] = useState(false);
-
   /**
    * canShowMapNear - can we show a map near this location?
    *
@@ -146,11 +143,6 @@ export function MapFormField(props: FieldProps): JSX.Element {
   ) => {
     if (action === 'save') {
       props.setFieldData(theFeatures);
-      setAnimateCheck(true);
-      setTimeout(() => setAnimateCheck(false), 1000);
-    } else if (action === 'close') {
-      setAnimateCheck(true);
-      setTimeout(() => setAnimateCheck(false), 1000);
     }
   };
 

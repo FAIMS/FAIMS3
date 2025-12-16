@@ -218,7 +218,6 @@ registerField(
   AddressField
 );
 
-
 //TODO: DO we need this?
 registerField(
   'formik-material-ui',
