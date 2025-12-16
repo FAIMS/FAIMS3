@@ -37,7 +37,7 @@ import {
 } from '@mui/material';
 import Button, {ButtonProps} from '@mui/material/Button';
 import {Extent} from 'ol/extent';
-import GeoJSON from 'ol/format/GeoJSON';
+import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
@@ -55,13 +55,13 @@ export type MapAction = 'save' | 'close';
 interface MapProps extends ButtonProps {
   config: MapConfig;
   label: string;
-  features: any;
+  features: GeoJSONFeatureCollection | undefined;
   geoTiff?: string;
   projection?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   zoom: number;
   center?: [number, number];
-  setFeatures: (features: object, action: MapAction) => void;
+  setFeatures: (features: object | undefined, action: MapAction) => void;
   setNoPermission: (flag: boolean) => void;
   isLocationSelected: boolean;
   openMap?: () => void;
@@ -454,7 +454,7 @@ function MapWrapper(props: MapProps) {
               }}
               onClick={() => {
                 setShowConfirmSave(false);
-                props.setFeatures({}, 'save');
+                props.setFeatures(undefined, 'save');
                 setMapOpen(false);
               }}
             >

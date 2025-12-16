@@ -17,49 +17,22 @@
  *   Implement MapFormField for entry of data via maps
  */
 
-import CancelIcon from '@mui/icons-material/Cancel';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {Geolocation} from '@capacitor/geolocation';
 import {Alert, Box, Button, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-import {useEffect, useState} from 'react';
-import {Geolocation} from '@capacitor/geolocation';
 import GeoJSON from 'ol/format/GeoJSON';
+import {useEffect, useState} from 'react';
+import {z} from 'zod';
+import {VectorTileStore} from '../../../components';
+import {defaultMapProjection} from '../../../components/maps/MapComponent';
+import {MapPreview} from '../../../components/maps/MapPreview';
+import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
+import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
+import {FullFieldProps} from '../../../formModule/types';
+import {MapRenderer} from '../../../rendering';
+import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
-import {z} from 'zod';
-import {FullFieldProps} from '../../../formModule/types';
-import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
-import {FieldInfo} from '../../types';
-import {MapRenderer} from '../../../rendering';
-import {MapPreview} from '../../../components/maps/MapPreview';
-import {defaultMapProjection} from '../../../components/maps/MapComponent';
-import {VectorTileStore} from '../../../components';
-
-/**
- * Schema for the GeoJSON geometry object.
- * Validates the structure without being overly strict on coordinate formats.
- */
-const GeoJSONGeometrySchema = z.object({
-  type: z.enum(['Point', 'Polygon', 'LineString']),
-  coordinates: z.any(), // Coordinate validation is complex; keep flexible
-});
-
-/**
- * Schema for a single GeoJSON feature.
- */
-const GeoJSONFeatureSchema = z.object({
-  type: z.literal('Feature'),
-  geometry: GeoJSONGeometrySchema,
-  properties: z.any().nullable(),
-});
-
-/**
- * Schema for the field value - a GeoJSON FeatureCollection.
- */
-const GeoJSONFeatureCollectionSchema = z.object({
-  type: z.literal('FeatureCollection'),
-  features: z.array(GeoJSONFeatureSchema),
-});
 
 const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
@@ -105,8 +78,9 @@ export function MapFormField(props: FieldProps): JSX.Element {
   const [noPermission, setNoPermission] = useState(false);
 
   // Derive the features from the field value
-  const drawnFeatures = (props.state.value?.data ||
-    {}) as GeoJSONFeatureCollection;
+  const drawnFeatures = (props.state.value?.data || undefined) as
+    | GeoJSONFeatureCollection
+    | undefined;
 
   // Default zoom level
   const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
@@ -119,7 +93,9 @@ export function MapFormField(props: FieldProps): JSX.Element {
 
   // A location is selected if there are features provided
   const isLocationSelected =
-    drawnFeatures.features && drawnFeatures.features.length > 0;
+    drawnFeatures !== undefined &&
+    drawnFeatures.features &&
+    drawnFeatures.features.length > 0;
 
   // state for visual indicators
   const [animateCheck, setAnimateCheck] = useState(false);
@@ -165,7 +141,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
 
   // Callback function when a location is selected
   const setFeaturesCallback = (
-    theFeatures: GeoJSONFeatureCollection,
+    theFeatures: GeoJSONFeatureCollection | null,
     action: MapAction
   ) => {
     if (action === 'save') {
@@ -209,6 +185,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
       subheading={props.helperText}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       {/* if offline and no downloaded map, offer to use current location for point features only */}
 
@@ -271,34 +248,6 @@ export function MapFormField(props: FieldProps): JSX.Element {
             gap: theme.spacing(1),
           }}
         >
-          {isLocationSelected ? (
-            <CheckCircleIcon
-              sx={{
-                color: 'green',
-                fontSize: 20,
-                transition: 'transform 0.5s ease-in-out',
-                transform: isLocationSelected
-                  ? animateCheck
-                    ? 'scale(1.3)'
-                    : 'scale(1)'
-                  : 'scale(0.5)',
-              }}
-            />
-          ) : (
-            <CancelIcon
-              sx={{
-                color: 'red',
-                fontSize: 20,
-                transition: 'transform 0.5s ease-in-out',
-                transform: !isLocationSelected
-                  ? animateCheck
-                    ? 'scale(1.3)'
-                    : 'scale(1)'
-                  : 'scale(0.5)',
-              }}
-            />
-          )}
-
           <MapPreview value={props.state.value?.data} config={mapConfig} />
         </Box>
       </Box>

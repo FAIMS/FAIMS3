@@ -8,6 +8,7 @@ import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {VectorTileStore} from './TileStore';
 import {MapConfig} from './config';
+import {GeoJSONFeatureCollectionSchema} from './types';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value
@@ -18,11 +19,11 @@ const extractGeoJSON = (value: any): object | undefined => {
   try {
     // If it's already an object, use it directly
     if (typeof value === 'object' && value !== undefined && value !== null) {
-      return value;
+      return GeoJSONFeatureCollectionSchema.parse(value);
     }
     // If it's a string, try to parse it
     if (typeof value === 'string') {
-      return JSON.parse(value);
+      return GeoJSONFeatureCollectionSchema.parse(JSON.parse(value));
     }
     return undefined;
   } catch (e) {
@@ -75,6 +76,11 @@ export const MapPreview: React.FC<MapPreviewProps> = props => {
   useEffect(() => {
     // Don't initialize if no map container
     if (!mapRef.current) return;
+
+    // don't attempt extraction if there is no response
+    if (props.value === undefined || props.value === null) {
+      return;
+    }
 
     // Extract GeoJSON from the value
     const geoJSON = extractGeoJSON(props.value);
@@ -132,6 +138,12 @@ export const MapPreview: React.FC<MapPreviewProps> = props => {
       }
     };
   }, [props.value]);
+
+  // don't attempt extraction if there is no response - and don't show error for
+  // preview
+  if (props.value === undefined || props.value === null) {
+    return null;
+  }
 
   // Extract GeoJSON for validation display
   const geoJSON = extractGeoJSON(props.value);
