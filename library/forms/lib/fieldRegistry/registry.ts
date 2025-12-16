@@ -1,8 +1,14 @@
 import {FullFieldProps} from '../formModule/types';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {checkboxFieldSpec} from './fields/CheckboxField';
+import {
+  datePickerFieldSpec,
+  dateTimePickerFieldSpec,
+  monthPickerFieldSpec,
+} from './fields/DateFields';
 import {fileUploaderFieldSpec} from './fields/FileUploader';
 import {multiSelectFieldSpec} from './fields/MultiSelect';
+import {qrCodeFieldSpec} from './fields/QRCodeFormField';
 import {radioGroupFieldSpec} from './fields/RadioGroup';
 import {relatedRecordFieldSpec} from './fields/RelatedRecord';
 import {richTextFieldSpec} from './fields/RichText';
@@ -28,6 +34,10 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   checkboxFieldSpec,
   radioGroupFieldSpec,
   takePointFieldSpec,
+  qrCodeFieldSpec,
+  datePickerFieldSpec,
+  dateTimePickerFieldSpec,
+  monthPickerFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info
@@ -94,3 +104,11 @@ const validateFieldRegistry = (registry: Map<string, FieldInfo>) => {
 
 // Always validate the registry on load
 validateFieldRegistry(FIELD_REGISTRY);
+
+// Ignored fields - currently narrow exception cases which should never be rendered - e.g. incrementer
+export const FORCE_IGNORED_FIELDS: Array<{name: string; namespace: string}> = [
+  {
+    namespace: 'faims-custom',
+    name: 'BasicAutoIncrementer',
+  },
+];

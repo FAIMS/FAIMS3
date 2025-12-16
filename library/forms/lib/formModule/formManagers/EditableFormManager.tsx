@@ -36,6 +36,7 @@ import {
   FullFormConfig,
   FullFormManagerConfig,
 } from './types';
+import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
 
 /**
  * The validation modes:
@@ -113,6 +114,9 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
   const [workingRevisionId, setWorkingRevisionId] = useState<string>(
     props.revisionId
   );
+
+  // State to track fields needing range configuration
+  const autoIncrementInitializedRef = useRef(false);
 
   // What kind of validation?
   const validationMode: ValidationMode =
@@ -468,7 +472,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
    */
   const hasPendingChanges = useCallback((): boolean => {
     return pendingValuesRef.current || isSavingRef.current;
-  }, []);
+  }, [pendingValuesRef.current, isSavingRef.current]);
 
   const validationFunction = useCallback(
     (value: FaimsFormData) => {
@@ -740,12 +744,83 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             formId: entry.formId,
             fieldId: entry.fieldId,
             type: entry.type,
-          }) satisfies ImpliedParentNavInfo
+          } satisfies ImpliedParentNavInfo)
       );
     }
     // Otherwise
     return undefined;
   }, [parentNavigationInformation.data]);
+
+  // Initialize auto-increment fields on mount (only for new records)
+  useEffect(() => {
+    if (props.debugMode) {
+      console.log(
+        '[EditableFormManager] Auto-increment initialization started'
+      );
+    }
+
+    // Only run if we have the incrementer service
+    if (!props.config.incrementerService) {
+      if (props.debugMode) {
+        console.log(
+          '[EditableFormManager] Auto-increment initialization not firing as initialisation service not provided'
+        );
+      }
+      return;
+    }
+
+    // Prevent re-initialization
+    if (autoIncrementInitializedRef.current) {
+      if (props.debugMode) {
+        console.log(
+          '[EditableFormManager] Auto-increment initialization not firing as ref marked as already fired'
+        );
+      }
+      return;
+    }
+
+    const initialize = async () => {
+      // Mark as initialized immediately
+      autoIncrementInitializedRef.current = true;
+
+      if (props.debugMode) {
+        console.log(
+          '[EditableFormManager] Auto-increment initialization running...'
+        );
+      }
+
+      const result = await initializeAutoIncrementFields({
+        form: form as FaimsForm,
+        formId: props.formId,
+        incrementerService: props.config.incrementerService,
+        initialData: props.initialData,
+        onIssue: fieldRefs => {
+          // Call to client to initiate dialog to resolve
+          props.config.incrementerService.onIssue(fieldRefs, () => {
+            // Mark initialisation incomplete to prompt another attempt
+            autoIncrementInitializedRef.current = false;
+          });
+        },
+      });
+
+      if (props.debugMode) {
+        console.log(
+          '[EditableFormManager] Auto-increment initialization:',
+          result
+        );
+      }
+    };
+
+    initialize();
+  }, [
+    props.mode,
+    props.formId,
+    props.config.incrementerService,
+    props.initialData,
+    // prompt a re-initialisation attempt when this is finished
+    autoIncrementInitializedRef.current,
+    props.debugMode,
+  ]);
 
   // Memoised navigation buttons - used twice (top and bottom) - hooks into
   // pending flush changes to ensure that no data loss occurs during navigation

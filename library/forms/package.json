@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@capacitor-community/exif": "^7.0.0",
+    "@capacitor-mlkit/barcode-scanning": "^7.2.1",
     "@capacitor/camera": "^7.0.2",
     "@capacitor/core": "^7.4.3",
     "@capacitor/geolocation": "^7.1.5",
