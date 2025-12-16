@@ -161,11 +161,11 @@ const DataViewSection: React.FC<DataViewSectionProps> = props => {
             const namespace = fieldConfig['component-namespace'];
             const name = fieldConfig['component-name'];
             // Get the renderer for this field to check its attributes
-            const fieldSpec = getFieldInfo({
+            const {fieldInfo} = getFieldInfo({
               namespace: namespace,
               name: name,
             });
-            const renderer = fieldSpec?.view;
+            const renderer = fieldInfo?.view;
 
             // Check if this field should span full width based on renderer attributes
             const singleColumn = renderer?.attributes?.singleColumn === true;
@@ -228,11 +228,11 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   const name = fieldConfig['component-name'];
 
   // Get the renderer for this field to check its attributes
-  const fieldSpec = getFieldInfo({
+  const {fieldInfo} = getFieldInfo({
     namespace: namespace,
     name: name,
   });
-  const renderer = fieldSpec?.view;
+  const renderer = fieldInfo?.view;
   const FieldRenderer = renderer?.component;
 
   // Grab the UI label for this field
