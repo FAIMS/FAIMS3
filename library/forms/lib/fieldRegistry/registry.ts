@@ -1,6 +1,11 @@
 import {FullFieldProps} from '../formModule/types';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {checkboxFieldSpec} from './fields/CheckboxField';
+import {
+  datePickerFieldSpec,
+  dateTimePickerFieldSpec,
+  monthPickerFieldSpec,
+} from './fields/DateFields';
 import {fileUploaderFieldSpec} from './fields/FileUploader';
 import {multiSelectFieldSpec} from './fields/MultiSelect';
 import {qrCodeFieldSpec} from './fields/QRCodeFormField';
@@ -30,6 +35,9 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   radioGroupFieldSpec,
   takePointFieldSpec,
   qrCodeFieldSpec,
+  datePickerFieldSpec,
+  dateTimePickerFieldSpec,
+  monthPickerFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info
