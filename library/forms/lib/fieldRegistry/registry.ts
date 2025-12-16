@@ -77,7 +77,7 @@ export const getFieldInfo = ({
 }: {
   namespace: string;
   name: string;
-}): {fieldInfo: FieldInfo, fallback: boolean} => {
+}): {fieldInfo: FieldInfo; fallback: boolean} => {
   const key = buildKey({namespace, name});
   const fieldInfo = FIELD_REGISTRY.get(key);
   if (fieldInfo) return {fieldInfo, fallback: false};
