@@ -44,7 +44,7 @@ import {Server} from '../../context/slices/projectSlice';
 import {useAppDispatch} from '../../context/store';
 import {isWeb, replaceOrAppendRedirect} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
-import {QRCodeButton} from '../fields/qrcode/QRCodeFormField';
+import {QRCodeButton} from '@faims3/forms';
 
 type ShortCodeProps = {
   servers: Server[];

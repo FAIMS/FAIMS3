@@ -18,7 +18,7 @@ import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecS
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
 import {localGetDataDb} from '../../../utils/database';
-import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {QRCodeButton} from '@faims3/forms';
 
 type AddRecordButtonsProps = {
   project: Project;
