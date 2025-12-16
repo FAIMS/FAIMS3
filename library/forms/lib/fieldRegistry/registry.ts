@@ -68,6 +68,8 @@ function splitKey(key: string): {
 
 /**
  * Get field info by namespace and name
+ *  if we can't find the field, fall back to a text field
+ *  returns {info, fallback}
  */
 export const getFieldInfo = ({
   namespace,
@@ -75,9 +77,11 @@ export const getFieldInfo = ({
 }: {
   namespace: string;
   name: string;
-}): FieldInfo | undefined => {
+}): {fieldInfo: FieldInfo, fallback: boolean} => {
   const key = buildKey({namespace, name});
-  return FIELD_REGISTRY.get(key);
+  const fieldInfo = FIELD_REGISTRY.get(key);
+  if (fieldInfo) return {fieldInfo, fallback: false};
+  else return {fieldInfo: textFieldSpec, fallback: true};
 };
 
 // Validate the registry on load
