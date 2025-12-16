@@ -11,7 +11,7 @@ export interface InitializeAutoIncrementFieldsParams {
   /** Initial data - fields with existing values won't be overwritten */
   initialData?: FaimsFormData;
   /** Called if any field couldn't get a value (ranges exhausted/not configured) */
-  onMissingRanges?: (fieldRefs: AutoIncrementFieldRef[]) => void;
+  onIssue?: (fieldRefs: AutoIncrementFieldRef[]) => void;
 }
 
 export interface InitializeAutoIncrementFieldsResult {
@@ -34,7 +34,7 @@ export async function initializeAutoIncrementFields({
   formId,
   incrementerService,
   initialData,
-  onMissingRanges,
+  onIssue,
 }: InitializeAutoIncrementFieldsParams): Promise<InitializeAutoIncrementFieldsResult> {
   const result: InitializeAutoIncrementFieldsResult = {
     initialized: [],
@@ -82,8 +82,8 @@ export async function initializeAutoIncrementFields({
   }
 
   // Notify caller if any fields couldn't get values
-  if (result.missingRanges.length > 0 && onMissingRanges) {
-    onMissingRanges(result.missingRanges);
+  if (result.missingRanges.length > 0 && onIssue) {
+    onIssue(result.missingRanges);
   }
 
   return result;

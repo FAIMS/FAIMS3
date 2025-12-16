@@ -293,7 +293,14 @@ export async function getAutoincrementReferencesForProject(
       if (fieldDetails['component-parameters'].num_digits) {
         try {
           numDigits = Number(fieldDetails['component-parameters'].num_digits);
-        } catch {}
+        } catch (e) {
+          console.error(
+            'num_digits property could not be parsed as a number. Value',
+            fieldDetails['component-parameters'].num_digits,
+            'error',
+            e
+          );
+        }
       }
 
       references.push({

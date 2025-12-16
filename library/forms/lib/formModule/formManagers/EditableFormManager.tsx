@@ -758,15 +758,6 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         '[EditableFormManager] Auto-increment initialization started'
       );
     }
-    // Only initialize for new records - existing records already have values
-    if (props.mode !== 'new') {
-      if (props.debugMode) {
-        console.log(
-          '[EditableFormManager] Auto-increment initialization not firing as not new record'
-        );
-      }
-      return;
-    }
 
     // Only run if we have the incrementer service
     if (!props.config.incrementerService) {
@@ -803,7 +794,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
         formId: props.formId,
         incrementerService: props.config.incrementerService,
         initialData: props.initialData,
-        onMissingRanges: fieldRefs => {
+        onIssue: fieldRefs => {
           // Call to client to initiate dialog to resolve
           props.config.incrementerService.onIssue(fieldRefs, () => {
             // Mark initialisation incomplete to prompt another attempt

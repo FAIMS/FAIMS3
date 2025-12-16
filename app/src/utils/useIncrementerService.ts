@@ -166,10 +166,7 @@ export function useAutoIncrementService({
   }, [getFieldRefs, getIncrementer]);
 
   const generateInitialValues = useCallback(
-    async (
-      formId: string,
-      numDigits: number = 4
-    ): Promise<Record<string, string>> => {
+    async (formId: string, numDigits = 4): Promise<Record<string, string>> => {
       const refs = await getFieldRefs();
       const formRefs = refs.filter(ref => ref.formId === formId);
       const values: Record<string, string> = {};
