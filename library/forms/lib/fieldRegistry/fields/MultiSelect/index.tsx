@@ -301,8 +301,8 @@ export const MultiSelect = (props: FieldProps) => {
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
     : rawValue === '' || rawValue === undefined || rawValue === null
-    ? []
-    : [rawValue as string];
+      ? []
+      : [rawValue as string];
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
