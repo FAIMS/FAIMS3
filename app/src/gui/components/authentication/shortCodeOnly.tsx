@@ -19,8 +19,8 @@ import {useNotification} from '../../../context/popup';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
 import {isWeb, replaceOrAppendRedirect} from '../../../utils/helpers';
-import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
 import {Server} from '../../../context/slices/projectSlice';
+import {QRCodeButton} from '@faims3/forms';
 
 /**
  * Component to register a button for scanning a QR code to register

@@ -42,7 +42,6 @@ import {FAIMSTextField} from '../fields/FAIMSTextField';
 import {FileUploader} from '../fields/FileUploader';
 import {MultiSelect} from '../fields/multiselect';
 import NumberField from '../fields/NumberField';
-import {QRCodeFormField} from '../fields/qrcode';
 import {RadioGroup as FAIMSRadioGroup} from '../fields/radio';
 import {RandomStyle} from '../fields/RandomStyle';
 import {RelatedRecordSelector} from '../fields/RelatedRecordSelector';
@@ -219,15 +218,6 @@ registerField(
   AddressField
 );
 
-// TODO:
-registerField(
-  'qrcode',
-  'QRCodeFormField',
-  'QR Code Scanning',
-  'Scan a QR/Bar code',
-  'QRCode',
-  QRCodeFormField
-);
 
 //TODO: DO we need this?
 registerField(

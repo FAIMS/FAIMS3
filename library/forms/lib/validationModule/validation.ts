@@ -342,12 +342,12 @@ export const FormValidation = {
       (details['component-parameters']?.['required'] as Boolean | undefined) ??
       false;
 
-    const fieldSpec = getFieldInfo({
+    const {fieldInfo} = getFieldInfo({
       name: details['component-name'],
       namespace: details['component-namespace'],
     });
 
-    const modelGenerator = fieldSpec?.fieldDataSchemaFunction;
+    const modelGenerator = fieldInfo?.fieldDataSchemaFunction;
     if (!modelGenerator) {
       return z.unknown();
     }
@@ -498,12 +498,12 @@ export const FormValidation = {
       (details['component-parameters']?.['required'] as Boolean | undefined) ??
       false;
 
-    const fieldSpec = getFieldInfo({
+    const {fieldInfo} = getFieldInfo({
       name: details['component-name'],
       namespace: details['component-namespace'],
     });
 
-    const modelGenerator = fieldSpec?.fieldDataSchemaFunction;
+    const modelGenerator = fieldInfo?.fieldDataSchemaFunction;
     if (!modelGenerator) {
       return {valid: true};
     }

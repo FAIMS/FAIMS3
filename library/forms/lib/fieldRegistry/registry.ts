@@ -1,8 +1,14 @@
 import {FullFieldProps} from '../formModule/types';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {checkboxFieldSpec} from './fields/CheckboxField';
+import {
+  datePickerFieldSpec,
+  dateTimePickerFieldSpec,
+  monthPickerFieldSpec,
+} from './fields/DateFields';
 import {fileUploaderFieldSpec} from './fields/FileUploader';
 import {multiSelectFieldSpec} from './fields/MultiSelect';
+import {qrCodeFieldSpec} from './fields/QRCodeFormField';
 import {radioGroupFieldSpec} from './fields/RadioGroup';
 import {relatedRecordFieldSpec} from './fields/RelatedRecord';
 import {richTextFieldSpec} from './fields/RichText';
@@ -30,6 +36,10 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   radioGroupFieldSpec,
   takePointFieldSpec,
   mapFieldSpec,
+  qrCodeFieldSpec,
+  datePickerFieldSpec,
+  dateTimePickerFieldSpec,
+  monthPickerFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info
@@ -70,6 +80,8 @@ function splitKey(key: string): {
 
 /**
  * Get field info by namespace and name
+ *  if we can't find the field, fall back to a text field
+ *  returns {info, fallback}
  */
 export const getFieldInfo = ({
   namespace,
@@ -77,9 +89,11 @@ export const getFieldInfo = ({
 }: {
   namespace: string;
   name: string;
-}): FieldInfo | undefined => {
+}): {fieldInfo: FieldInfo; fallback: boolean} => {
   const key = buildKey({namespace, name});
-  return FIELD_REGISTRY.get(key);
+  const fieldInfo = FIELD_REGISTRY.get(key);
+  if (fieldInfo) return {fieldInfo, fallback: false};
+  else return {fieldInfo: textFieldSpec, fallback: true};
 };
 
 // Validate the registry on load
@@ -96,3 +110,11 @@ const validateFieldRegistry = (registry: Map<string, FieldInfo>) => {
 
 // Always validate the registry on load
 validateFieldRegistry(FIELD_REGISTRY);
+
+// Ignored fields - currently narrow exception cases which should never be rendered - e.g. incrementer
+export const FORCE_IGNORED_FIELDS: Array<{name: string; namespace: string}> = [
+  {
+    namespace: 'faims-custom',
+    name: 'BasicAutoIncrementer',
+  },
+];

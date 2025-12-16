@@ -14,6 +14,7 @@ import {
   FaimsFormFieldState,
 } from './types';
 import {getFieldId} from './utils';
+import {Alert} from '@mui/material';
 
 interface FieldProps {
   fieldId: string;
@@ -24,7 +25,7 @@ interface FieldProps {
 
 export const Field = React.memo((props: FieldProps) => {
   // Only reload the field info when needed
-  const fieldInfo = useMemo(
+  const {fieldInfo, fallback} = useMemo(
     () =>
       getFieldInfo({
         namespace: props.fieldSpec['component-namespace'],
@@ -34,11 +35,7 @@ export const Field = React.memo((props: FieldProps) => {
   );
 
   // Rename here to prompt tsx it's a component
-  const Component = fieldInfo?.component
-    ? fieldInfo.component
-    : () => {
-        return <div>Unknown Field Component</div>;
-      };
+  const Component = fieldInfo?.component;
 
   return (
     <props.form.Field
@@ -109,6 +106,12 @@ export const Field = React.memo((props: FieldProps) => {
               };
         return (
           <div id={getFieldId({fieldId: props.fieldId})}>
+            {fallback && (
+              <Alert severity="warning">
+                The field type "{props.fieldSpec['component-name']}" is
+                deprecated. Please update your form definition.
+              </Alert>
+            )}
             <Component
               {...(props.fieldSpec['component-parameters'] as BaseFieldProps)}
               // TODO fix the typing here - I think there is a minor issue but

@@ -4,16 +4,18 @@ import {
   getNotebookFieldTypes,
 } from '@faims3/data-model';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  Alert,
   Box,
   Stack,
   Typography,
 } from '@mui/material';
 import React, {useMemo} from 'react';
-import {getFieldInfo} from '../fieldRegistry';
+import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry';
 import {formDataExtractor} from '../utils';
 import {DefaultRenderer} from './fields/fallback';
 import {EmptyResponsePlaceholder} from './fields/view';
@@ -57,9 +59,26 @@ export const DataView: React.FC<DataViewProps> = props => {
     <Stack spacing={2} sx={{padding: 2}}>
       {Array.from(fieldsByView.entries()).map(([viewId, sectionFields]) => {
         // Filter for only visible fields
-        const visibleSectionFields = sectionFields.filter(f =>
-          visibleFields.includes(f.name)
-        );
+        const visibleSectionFields = sectionFields.filter(f => {
+          // Find the name/namespace
+          const spec = props.uiSpecification.fields[f.name];
+          const {name, namespace} = {
+            name: spec['component-name'],
+            namespace: spec['component-namespace'],
+          };
+
+          // Hide if necessary
+          if (
+            FORCE_IGNORED_FIELDS.find(
+              ignored =>
+                ignored.name === name && ignored.namespace === namespace
+            )
+          ) {
+            return false;
+          }
+
+          return visibleFields.includes(f.name);
+        });
 
         // Check if any fields in this section are actually visible (not hidden)
         const hasVisibleContent = visibleSectionFields.some(field => {
@@ -95,6 +114,7 @@ export interface DataViewSectionProps extends DataViewProps {
 const DataViewSection: React.FC<DataViewSectionProps> = props => {
   // Get the section label
   const sectionLabel = props.uiSpecification.views[props.viewId]?.label;
+  let someFallback = false;
 
   return (
     <Accordion
@@ -161,11 +181,13 @@ const DataViewSection: React.FC<DataViewSectionProps> = props => {
             const namespace = fieldConfig['component-namespace'];
             const name = fieldConfig['component-name'];
             // Get the renderer for this field to check its attributes
-            const fieldSpec = getFieldInfo({
+            const {fieldInfo, fallback} = getFieldInfo({
               namespace: namespace,
               name: name,
             });
-            const renderer = fieldSpec?.view;
+            const renderer = fieldInfo?.view;
+            // remember if we had to fall back for any field
+            if (fallback) someFallback = true;
 
             // Check if this field should span full width based on renderer attributes
             const singleColumn = renderer?.attributes?.singleColumn === true;
@@ -182,6 +204,13 @@ const DataViewSection: React.FC<DataViewSectionProps> = props => {
             );
           })}
         </Box>
+        {someFallback && (
+          <Alert severity="warning">
+            Fields marked with a warning icon may not display correctly because
+            their field type is deprecated or unrecognized. Please update your
+            form definition to use supported field types.
+          </Alert>
+        )}
       </AccordionDetails>
     </Accordion>
   );
@@ -228,11 +257,11 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   const name = fieldConfig['component-name'];
 
   // Get the renderer for this field to check its attributes
-  const fieldSpec = getFieldInfo({
+  const {fieldInfo, fallback} = getFieldInfo({
     namespace: namespace,
     name: name,
   });
-  const renderer = fieldSpec?.view;
+  const renderer = fieldInfo?.view;
   const FieldRenderer = renderer?.component;
 
   // Grab the UI label for this field
@@ -296,7 +325,8 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
               fontSize: '0.875rem',
             }}
           >
-            {uiLabel}
+            {uiLabel}{' '}
+            {fallback && <WarningAmberIcon fontSize="small" color="warning" />}
           </Typography>
           {debugContent}
           {
@@ -323,6 +353,7 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
               renderContext={rendererContext}
             />
           )}
+          {}
         </Stack>
       </Box>
     );

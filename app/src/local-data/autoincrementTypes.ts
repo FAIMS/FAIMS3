@@ -19,6 +19,7 @@ export interface AutoIncrementReference {
   form_id: string;
   field_id: string;
   label?: string;
+  numDigits: number;
 }
 
 export interface UserFriendlyAutoincrementStatus {
