@@ -7,6 +7,10 @@ the data engine, and attachment services, which are part of the `data-model`
 package. Efforts have been made to keep an interface layer between the data
 engine, attachment engine, and the actual form/field implementations.
 
+## Quick start - adding a new field
+
+For a quick guide on how to create a new field, see [Quickstart: add a new field](./quickstart.md).
+
 ## Contents
 
 ### Architecture

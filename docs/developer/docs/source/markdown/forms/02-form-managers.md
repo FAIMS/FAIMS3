@@ -14,7 +14,7 @@ classDiagram
         +fieldVisibilityMap: FieldVisibilityMap
         +render()
     }
-    
+
     class EditableFormManager {
         +recordId: string
         +activeUser: string
@@ -25,13 +25,13 @@ classDiagram
         +navigationContext: FormNavigationContext
         +onReady(handle)
     }
-    
+
     class PreviewFormManager {
         +formName: string
         +uiSpec: ProjectUIModel
         +layout: 'inline' | 'tabs'
     }
-    
+
     EditableFormManager --> FormManager : uses
     PreviewFormManager --> FormManager : uses
 ```
@@ -42,14 +42,14 @@ The base rendering component. Receives a configured TanStack Form instance and r
 
 ### Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `formName` | `string` | Form/viewset ID from UISpec |
-| `form` | `FaimsForm` | TanStack Form instance |
-| `uiSpec` | `ProjectUIModel` | UI specification |
-| `config` | `FormManagerConfig` | Mode and feature configuration |
-| `fieldVisibilityMap` | `FieldVisibilityMap \| undefined` | Visible fields per section |
-| `debugMode` | `boolean` | Show form state debugger |
+| Prop                 | Type                              | Description                    |
+| -------------------- | --------------------------------- | ------------------------------ |
+| `formName`           | `string`                          | Form/viewset ID from UISpec    |
+| `form`               | `FaimsForm`                       | TanStack Form instance         |
+| `uiSpec`             | `ProjectUIModel`                  | UI specification               |
+| `config`             | `FormManagerConfig`               | Mode and feature configuration |
+| `fieldVisibilityMap` | `FieldVisibilityMap \| undefined` | Visible fields per section     |
+| `debugMode`          | `boolean`                         | Show form state debugger       |
 
 ### Behaviour
 
@@ -70,67 +70,51 @@ Full-featured form manager with backend synchronisation.
 
 ### Props
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `recordId` | `string` | Record being edited |
-| `activeUser` | `string` | Current user identifier |
-| `initialData` | `FaimsFormData` | Pre-populated form values |
-| `existingRecord` | `HydratedRecordDocument` | Full record context |
-| `revisionId` | `string` | Starting revision ID |
-| `mode` | `AvpUpdateMode` | `'new'` \| `'parent'` |
-| `config` | `FullFormConfig` | Injected dependencies |
-| `navigationContext` | `FormNavigationContext` | Parent/child navigation state |
-| `onReady` | `(handle) => void` | Callback with form control handle |
+| Prop                | Type                     | Description                       |
+| ------------------- | ------------------------ | --------------------------------- |
+| `recordId`          | `string`                 | Record being edited               |
+| `activeUser`        | `string`                 | Current user identifier           |
+| `initialData`       | `FaimsFormData`          | Pre-populated form values         |
+| `existingRecord`    | `HydratedRecordDocument` | Full record context               |
+| `revisionId`        | `string`                 | Starting revision ID              |
+| `mode`              | `AvpUpdateMode`          | `'new'` \| `'parent'`             |
+| `config`            | `FullFormConfig`         | Injected dependencies             |
+| `navigationContext` | `FormNavigationContext`  | Parent/child navigation state     |
+| `onReady`           | `(handle) => void`       | Callback with form control handle |
 
 ### Responsibilities
 
-```mermaid
-flowchart LR
-    subgraph EditableFormManager
-        A[Create TanStack Form] --> B[Track Visibility]
-        B --> C[Compile Validation Schema]
-        C --> D[Setup onChange Handler]
-        D --> E[Debounced Backend Sync]
-    end
-    
-    subgraph Handlers
-        F[handleAddAttachment]
-        G[handleRemoveAttachment]
-        H[ensureWorkingRevision]
-    end
-    
-    E --> H
-    F --> H
-    G --> H
-```
+The `EditableFormManager` is the heavy lifter of the Forms module. It manages
+
+- tracking field visibility
+- building attachment handlers using the attachment service
+- debounced on change logic for validation and persistence
+- creating and updating revisions (using the data engine)
+
+This is configured and passed down to the FormManager in `full` mode.
 
 ### Revision Management (AVP Strategy)
 
-The manager implements Attribute-Value-Pair versioning:
+The manager changes behaviour based on the AvpUpdateMode `parent` or `new`.
 
-| Mode | First Edit Behaviour |
-|------|---------------------|
-| `new` | Edits apply directly to current revision |
+`new` records have an existing revision and therefore call `updateRevision` from
+the data engine on this record on first change. `parent` records first create a
+new revision on the first edit, then update it, preventing unnecessary version
+propagation if no edits were made.
+
+AVP behaviour is documented in the `dataEngine` module.
+
+| Mode     | First Edit Behaviour                       |
+| -------- | ------------------------------------------ |
+| `new`    | Edits apply directly to current revision   |
 | `parent` | Creates child revision, then applies edits |
-
-```typescript
-// In 'parent' mode, first edit triggers revision creation
-if (!edited && props.mode === 'parent') {
-  const newRevision = await dataEngine.form.createRevision({
-    recordId: props.recordId,
-    revisionId: workingRevisionId,
-    createdBy: props.activeUser,
-  });
-  setWorkingRevisionId(newRevision._id);
-}
-```
 
 ### Validation Modes
 
-| Mode | Applies To | Use Case |
-|------|-----------|----------|
-| `FULL` | All visible fields | Existing records (`mode: 'parent'`) |
-| `ONLY_TOUCHED` | Fields user has interacted with | New records (`mode: 'new'`) |
+| Mode           | Applies To                      | Use Case                            |
+| -------------- | ------------------------------- | ----------------------------------- |
+| `FULL`         | All visible fields              | Existing records (`mode: 'parent'`) |
+| `ONLY_TOUCHED` | Fields user has interacted with | New records (`mode: 'new'`)         |
 
 ### Auto-Save
 
@@ -140,7 +124,7 @@ Changes are debounced and synced automatically:
 const FORM_SYNC_DEBOUNCE_MS = 1000;
 
 // Debounced save triggered on form changes
-const debouncedSave = debounce(async (values) => {
+const debouncedSave = debounce(async values => {
   await dataEngine.form.updateFormData({
     recordId,
     revisionId: workingRevisionId,
@@ -155,24 +139,17 @@ The `onReady` callback receives a handle for external control:
 
 ```typescript
 interface EditableFormManagerHandle {
-  flushSave: () => Promise<void>;    // Force immediate save
-  hasPendingChanges: () => boolean;  // Check for unsaved changes
+  flushSave: () => Promise<void>; // Force immediate save
+  hasPendingChanges: () => boolean; // Check for unsaved changes
 }
 ```
 
-Use `flushSave()` before navigation to prevent data loss.
+The client should receive and store these handles. The client can use
+`flushSave()` before navigation to prevent data loss.
 
 ## PreviewFormManager
 
 Lightweight manager for form designer previews.
-
-### Props
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `formName` | `string` | Form/viewset ID |
-| `uiSpec` | `ProjectUIModel` | UI specification |
-| `layout` | `'inline' \| 'tabs'` | Layout mode |
 
 ### Behaviour
 
@@ -220,9 +197,13 @@ interface PreviewFormManagerConfig {
 Tracks parent-child record relationships for navigation:
 
 ```typescript
-type FormNavigationContext = 
-  | { mode: 'root'; scrollTarget?: RedirectInfo }
-  | { mode: 'child'; lineage: FormNavigationChildEntry[]; scrollTarget?: RedirectInfo };
+type FormNavigationContext =
+  | {mode: 'root'; scrollTarget?: RedirectInfo}
+  | {
+      mode: 'child';
+      lineage: FormNavigationChildEntry[];
+      scrollTarget?: RedirectInfo;
+    };
 ```
 
 ### Lineage Entry
@@ -238,6 +219,9 @@ interface FormNavigationChildEntry {
 ```
 
 Used by:
+
 - `NavigationBreadcrumbs` - shows path back to parent
 - `NavigationButtons` - provides return navigation
 - `RelatedRecordField` - adds entries when navigating to children
+
+For more about navigation, see [Form Navigation](./10-navigation.md).

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Forms Module renders dynamic forms from a UI specification (`UISpec`) and handles data capture. It supports two operational modes: **editable** (data entry) and **view** (read-only display).
+The Forms Module renders dynamic forms from a UI specification (`UISpec`) and handles data capture. It supports two operational modes: **editable** (data entry), **preview** (for testing out fields - non persisted form), **view** (read-only data display for existing records).
 
 ## Architecture
 
@@ -68,31 +68,6 @@ lib/
 
 ## Data Flow
 
-### Edit Mode
-
-```mermaid
-flowchart TD
-    A[UISpec + InitialData] --> B[EditableFormManager]
-    B -->|creates TanStack Form| C[FormManager]
-    C -->|selects layout| D[Section Display]
-    D -->|renders visible sections| E[Field]
-    E -->|resolves from registry| F[Field Component]
-    F -->|onChange| G[Debounced Sync]
-    G -->|1000ms debounce| H[DataEngine]
-    H -->|persists| I[(Backend)]
-```
-
-### View Mode
-
-```mermaid
-flowchart TD
-    A[HydratedRecord + FormData] --> B[DataView]
-    B -->|groups by section| C[DataViewSection]
-    C -->|accordion per section| D[DataViewField]
-    D -->|resolves view renderer| E[View Component]
-    E --> F[Read-only Display]
-```
-
 ## UISpec Structure
 
 The UISpec defines the form structure hierarchically - this is reflected in how the form managers resolve a form -> sections and fields.
@@ -107,7 +82,7 @@ graph TD
     VSE --> VSL[label]
     VSE --> VSV["views[]"]
 
-    V -->|section definitions| VE["views[sectionId]"]
+    V -->|section definitions| VE["fviews[sectionId]"]
     VE --> VL[label]
     VE --> VF["fields[]"]
 
@@ -119,13 +94,17 @@ graph TD
     FDE --> M[meta]
 ```
 
-| Level      | Key        | Description                                   |
-| ---------- | ---------- | --------------------------------------------- |
-| `viewsets` | Form ID    | Defines a complete form with ordered sections |
-| `views`    | Section ID | Groups related fields into a section          |
-| `fields`   | Field ID   | Individual field configuration                |
+| Level      | Key        | Description                                                                    |
+| ---------- | ---------- | ------------------------------------------------------------------------------ |
+| `viewsets` | Form ID    | Defines a complete form with ordered sections                                  |
+| `fviews`   | Section ID | Groups related fields into a section (fviews when encoded, views when decoded) |
+| `fields`   | Field ID   | Individual field configuration                                                 |
 
 ## Configuration Modes
+
+Form configuration modes - full mode is used in the `EditableFormManager` for a
+complete edit mode. `preview` is used in the `PreviewFormManager` for testing
+out fields without data persistence.
 
 | Mode      | Manager               | Use Case                              |
 | --------- | --------------------- | ------------------------------------- |
@@ -133,6 +112,9 @@ graph TD
 | `preview` | `PreviewFormManager`  | Form designer preview, no persistence |
 
 ## Layout Options
+
+The form has two layout modes, which can be configured in the designer/ui-spec.
+The Form will adapt to this layout and show sections differently.
 
 | Layout   | Component              | Behaviour                                      |
 | -------- | ---------------------- | ---------------------------------------------- |
