@@ -12,3 +12,13 @@ export function formDataExtractor({
   }
   return out;
 }
+
+export const IMAGE_TYPES = [
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'image/bmp',
+];

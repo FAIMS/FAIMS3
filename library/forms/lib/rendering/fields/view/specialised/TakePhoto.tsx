@@ -2,16 +2,9 @@ import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';
 import {useMemo} from 'react';
 import {useAttachments} from '../../../../hooks/useAttachment';
+import {IMAGE_TYPES} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
-
-const imageTypes = [
-  'image/png',
-  'image/jpeg',
-  'image/jpg',
-  'image/webp',
-  'image/gif',
-];
 
 export const TakePhotoRender: DataViewFieldRender = props => {
   // Generate attachment service
@@ -35,7 +28,7 @@ export const TakePhotoRender: DataViewFieldRender = props => {
     url: att.url,
   }));
   const displayableImages = toDisplay.filter(item =>
-    imageTypes.includes(item.contentType.toLowerCase())
+    IMAGE_TYPES.includes(item.contentType.toLowerCase())
   );
 
   return (
