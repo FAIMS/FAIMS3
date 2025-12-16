@@ -231,7 +231,6 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
       setFieldData(now.toISOString());
     }
     // Only run on mount - we don't want to override user changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
