@@ -3,6 +3,7 @@ import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {checkboxFieldSpec} from './fields/CheckboxField';
 import {
   datePickerFieldSpec,
+  dateTimeNowFieldSpec,
   dateTimePickerFieldSpec,
   monthPickerFieldSpec,
 } from './fields/DateFields';
@@ -38,6 +39,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   datePickerFieldSpec,
   dateTimePickerFieldSpec,
   monthPickerFieldSpec,
+  dateTimeNowFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info

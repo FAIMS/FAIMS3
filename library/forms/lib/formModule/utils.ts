@@ -100,3 +100,61 @@ export async function getImpliedNavigationRelationships(
 
   return results;
 }
+
+// =============================================================================
+// Date/time functions
+// =============================================================================
+
+/**
+ * Converts a Date to the format required by datetime-local inputs: yyyy-MM-ddTHH:mm:ss
+ *
+ * HTML datetime-local inputs require this specific format for their value attribute,
+ * but we store the value as an ISO string for consistency and timezone handling.
+ *
+ * @param date - The Date object to convert
+ * @returns String in format yyyy-MM-ddTHH:mm:ss suitable for datetime-local input
+ */
+export const getLocalDateTimeString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
+/**
+ * Converts a stored ISO string to display format for datetime-local input.
+ *
+ * @param isoString - ISO format datetime string (e.g., "2024-01-15T10:30:00.000Z")
+ * @returns String in format yyyy-MM-ddTHH:mm:ss for input display, or empty string if invalid
+ */
+export const isoToLocalDisplay = (isoString: string): string => {
+  if (!isoString) return '';
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
+    return getLocalDateTimeString(date);
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Converts a datetime-local input value to ISO string for storage.
+ *
+ * @param localValue - Value from datetime-local input (yyyy-MM-ddTHH:mm:ss)
+ * @returns ISO format datetime string
+ */
+export const localDisplayToIso = (localValue: string): string => {
+  if (!localValue) return '';
+  try {
+    const date = new Date(localValue);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString();
+  } catch {
+    return '';
+  }
+};
