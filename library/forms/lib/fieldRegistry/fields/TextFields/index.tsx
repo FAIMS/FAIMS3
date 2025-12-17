@@ -47,8 +47,13 @@ export const textFieldSpec: FieldInfo = {
  * Includes configuration for the number of rows.
  */
 const MultilineTextFieldPropsSchema = BaseFieldPropsSchema.extend({
-  /** Number of rows to display (default: 4) */
-  rows: z.number().optional().default(4),
+  InputProps: z
+    .object({
+      /** Number of rows to display (default: 4) */
+      rows: z.number().optional().default(4),
+    })
+    .optional()
+    .default({}),
 });
 
 type MultilineTextFieldProps = z.infer<typeof MultilineTextFieldPropsSchema>;
@@ -60,7 +65,10 @@ type MultilineTextFieldFullProps = MultilineTextFieldProps &
  * Uses the base MUI text field with multiline configuration.
  */
 const MultilineTextField: React.FC<MultilineTextFieldFullProps> = props => {
-  const {rows = 4, ...baseProps} = props;
+  const {
+    InputProps: {rows},
+    ...baseProps
+  } = props;
 
   return <BaseMuiTextField {...baseProps} multiline={true} rows={rows} />;
 };
@@ -72,8 +80,8 @@ const MultilineTextField: React.FC<MultilineTextFieldFullProps> = props => {
  * This replaces the legacy formik-material-ui::MultipleTextField
  */
 export const multilineTextFieldSpec: FieldInfo<MultilineTextFieldFullProps> = {
-  namespace: 'faims-custom',
-  name: 'MultilineTextField',
+  namespace: 'formik-material-ui',
+  name: 'MultipleTextField',
   returns: 'faims-core::String',
   component: MultilineTextField,
   fieldPropsSchema: MultilineTextFieldPropsSchema,

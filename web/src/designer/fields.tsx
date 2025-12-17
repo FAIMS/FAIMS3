@@ -454,28 +454,6 @@ const fields: {[key: string]: FieldType} = {
     order: 26,
   },
 
-  MultilineTextField: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'MultilineTextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Multiline Text Field',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      // default 4 rows
-      rows: 4,
-    },
-    initialValue: '',
-    humanReadableName: 'Multiline Text Field',
-    humanReadableDescription: 'Multi-line text area for longer notes',
-    category: CategoryKey.TEXT,
-    showInChooser: true,
-    order: 10,
-  },
-
   EmailField: {
     'component-namespace': 'faims-custom',
     'component-name': 'Email',
@@ -518,6 +496,29 @@ const fields: {[key: string]: FieldType} = {
     order: 8,
   },
 
+  MultipleTextField: {
+    'component-namespace': 'formik-material-ui',
+    'component-name': 'MultipleTextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Text Field',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+      InputProps: {
+        rows: 4,
+      },
+    },
+    initialValue: '',
+    humanReadableName: 'Text Field',
+    humanReadableDescription: 'Multi-line text area for longer notes',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 10,
+  },
+
   // ==========
   // Deprecated
   // ==========
@@ -542,30 +543,6 @@ const fields: {[key: string]: FieldType} = {
     order: 1000,
   },
 
-  MultipleTextField: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'MultipleTextField',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Text Field',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      multiline: true,
-      InputProps: {
-        type: 'text',
-        rows: 4,
-      },
-    },
-    initialValue: '',
-    humanReadableName: 'Text Field',
-    humanReadableDescription: 'Multi-line text area for longer notes',
-    category: CategoryKey.TEXT,
-    showInChooser: false,
-    order: 10,
-  },
   ControlledNumber: {
     'component-namespace': 'formik-material-ui',
     'component-name': 'TextField',
