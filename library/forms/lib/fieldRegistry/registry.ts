@@ -15,14 +15,23 @@ import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
 import {takePhotoFieldSpec} from './fields/TakePhoto';
 import {takePointFieldSpec} from './fields/TakePoint';
+import {
+  emailFieldSpec,
+  multilineTextFieldSpec,
+  textFieldSpec,
+} from './fields/TextFields';
 import {templatedStringFieldSpec} from './fields/TemplatedStringField';
-import {textFieldSpec} from './fields/TextField';
 import {FieldInfo} from './types';
+import {controlledNumberFieldSpec} from './fields/ControlledNumber';
+import {numberFieldSpec} from './fields/NumberField';
+import {addressFieldSpec} from './fields/AddressField';
 
 // NOTE: This is the list of all field specifications. To add a new
 // field type, add it here.
 const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   textFieldSpec,
+  multilineTextFieldSpec,
+  emailFieldSpec,
   richTextFieldSpec,
   selectFieldSpec,
   takePhotoFieldSpec,
@@ -38,6 +47,9 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   datePickerFieldSpec,
   dateTimePickerFieldSpec,
   monthPickerFieldSpec,
+  controlledNumberFieldSpec,
+  numberFieldSpec,
+  addressFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info

@@ -46,7 +46,8 @@ export const migrateNotebook = (notebook: Notebook) => {
   updateFormSectionMeta(notebookCopy);
 
   // fix validation for photo fields which had a bad default
-  fixPhotoValidation(notebookCopy);
+  // NOTE: no longer required, validation arrays are not necessary
+  // fixPhotoValidation(notebookCopy);
 
   // fix bad autoincrementer initial value
   fixAutoIncrementerInitialValue(notebookCopy);
@@ -56,6 +57,9 @@ export const migrateNotebook = (notebook: Notebook) => {
 
   // ensure visible_types exists in the ui-specification
   updateVisibleTypes(notebookCopy);
+
+  // remove validation yup schema from notebooks
+  removeValidationSchema(notebookCopy);
 
   return notebookCopy;
 };
@@ -271,29 +275,6 @@ const updateFormSectionMeta = (notebook: Notebook) => {
   }
 };
 
-const fixPhotoValidation = (notebook: Notebook) => {
-  const goodValidation = [
-    ['yup.array'],
-    ['yup.of', [['yup.object'], ['yup.nullable']]],
-    ['yup.nullable'],
-  ];
-
-  const fields: {[key: string]: FieldType} = {};
-
-  for (const fieldName in notebook['ui-specification'].fields) {
-    const field = notebook['ui-specification'].fields[fieldName];
-
-    if (field['component-name'] === 'TakePhoto') {
-      if (field.validationSchema?.length === 2)
-        field.validationSchema = goodValidation;
-    }
-
-    fields[fieldName] = field;
-  }
-
-  notebook['ui-specification'].fields = fields;
-};
-
 /**
  * In some old notebooks, the initialValue of an auto incrementer was null
  * which conflicts with the validate schema and triggers an error
@@ -366,5 +347,21 @@ const updateVisibleTypes = (notebook: Notebook) => {
   if (!notebook['ui-specification'].visible_types) {
     notebook['ui-specification'].visible_types =
       Object.keys(notebook['ui-specification'].viewsets) || [];
+  }
+};
+
+/**
+ * Removes all validationSchema properties from notebook
+ * @param notebook A notebook that might be out of date, modified
+ */
+const removeValidationSchema = (notebook: Notebook) => {
+  const fields = notebook['ui-specification']?.fields;
+  if (!fields) return;
+
+  for (const fieldName in fields) {
+    const field = fields[fieldName];
+    if ('validationSchema' in field) {
+      delete field.validationSchema;
+    }
   }
 };

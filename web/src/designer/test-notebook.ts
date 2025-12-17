@@ -47,7 +47,6 @@ export const sampleNotebook: Notebook = {
           FormHelperTextProps: {},
           name: 'New-Text-Field',
         },
-        validationSchema: [['yup.string']],
         initialValue: '',
         meta: {
           annotation: {include: true, label: 'annotation'},
@@ -70,7 +69,6 @@ export const sampleNotebook: Notebook = {
           form_id: 'Primary-Next-Section',
           label: 'ID',
         },
-        validationSchema: [['yup.string'], ['yup.required']],
         initialValue: null,
         meta: {
           annotation: {include: true, label: 'annotation'},
@@ -99,7 +97,6 @@ export const sampleNotebook: Notebook = {
             label: 'Identifier',
           },
         },
-        validationSchema: [['yup.string'], ['yup.required']],
         initialValue: '',
         meta: {
           annotation: {include: true, label: 'annotation'},
@@ -125,7 +122,6 @@ export const sampleNotebook: Notebook = {
             children: 'Scan the pre-printed QR Code for this sample.',
           },
         },
-        validationSchema: [['yup.string']],
         initialValue: '1',
         meta: {
           annotation: {include: false, label: 'annotation'},
@@ -147,7 +143,6 @@ export const sampleNotebook: Notebook = {
           variant: 'outlined',
           label: 'Sample Location',
         },
-        validationSchema: [['yup.object'], ['yup.nullable']],
         initialValue: null,
         meta: {
           annotation: {include: false, label: 'annotation'},
@@ -169,7 +164,6 @@ export const sampleNotebook: Notebook = {
           variant: 'outlined',
           label: 'Sample Photograph',
         },
-        validationSchema: [['yup.object'], ['yup.nullable']],
         initialValue: null,
         meta: {
           annotation: {include: false, label: 'annotation'},
@@ -198,7 +192,6 @@ export const sampleNotebook: Notebook = {
           FormHelperTextProps: {},
           name: 'Length-mm',
         },
-        validationSchema: [['yup.number']],
         initialValue: '',
         meta: {
           annotation: {include: false, label: 'annotation'},
@@ -231,7 +224,6 @@ export const sampleNotebook: Notebook = {
           id: 'survey-note',
           name: 'survey-note',
         },
-        validationSchema: [['yup.string']],
         initialValue: '',
         access: ['admin'],
         meta: {
@@ -275,7 +267,6 @@ export const sampleNotebook: Notebook = {
           },
           name: 'Type',
         },
-        validationSchema: [['yup.string']],
         initialValue: '',
         meta: {
           annotation: {include: false, label: 'annotation'},
@@ -301,7 +292,6 @@ export const sampleNotebook: Notebook = {
             children: 'Selecting this box will alert maintenance (eventually)',
           },
         },
-        validationSchema: [['yup.bool']],
         initialValue: false,
         access: ['admin'],
         meta: {
