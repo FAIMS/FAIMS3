@@ -26,7 +26,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import {APP_NAME, DEBUG_APP} from '../../buildconfig';
+import {APP_NAME, DEBUG_APP, getMapConfig} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getNotebookRoute,
@@ -196,6 +196,7 @@ export const EditRecordPage = () => {
     recordMode: mode,
     dataEngine,
     attachmentEngine,
+    mapConfig: getMapConfig,
     navigation: {
       navigateToRecordList: {
         label: 'Return to record list',

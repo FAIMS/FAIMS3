@@ -33,10 +33,11 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 import Button, {ButtonProps} from '@mui/material/Button';
 import {Extent} from 'ol/extent';
-import GeoJSON from 'ol/format/GeoJSON';
+import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
@@ -46,20 +47,21 @@ import VectorSource from 'ol/source/Vector';
 import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
-import {MapComponent} from '../../components/map/map-component';
-import {theme} from '../../themes';
+import {MapComponent} from '../../../components/maps/MapComponent';
+import {MapConfig} from '../../..';
 
 export type MapAction = 'save' | 'close';
 
 interface MapProps extends ButtonProps {
+  config: MapConfig;
   label: string;
-  features: any;
+  features: GeoJSONFeatureCollection | undefined;
   geoTiff?: string;
   projection?: string;
   featureType: 'Point' | 'Polygon' | 'LineString';
   zoom: number;
   center?: [number, number];
-  setFeatures: (features: object, action: MapAction) => void;
+  setFeatures: (features: object | undefined, action: MapAction) => void;
   setNoPermission: (flag: boolean) => void;
   isLocationSelected: boolean;
   openMap?: () => void;
@@ -86,6 +88,8 @@ function MapWrapper(props: MapProps) {
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
+
+  const theme = useTheme();
 
   // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
@@ -301,8 +305,8 @@ function MapWrapper(props: MapProps) {
 
         <Dialog
           sx={{
-            top: 'var(--safe-area-inset-top)',
-            left: 'var(--safe-area-inset-left)',
+            top: 'env(safe-area-inset-top)',
+            left: 'env(safe-area-inset-left)',
           }}
           fullScreen
           open={mapOpen}
@@ -368,8 +372,8 @@ function MapWrapper(props: MapProps) {
                   color="inherit"
                   onClick={() => handleClose('clear')}
                   sx={{
-                    backgroundColor: theme.palette.highlightColor.main,
-                    color: theme.palette.dialogButton.dialogText,
+                    // backgroundColor: theme.palette.highlightColor.main,
+                    // color: theme.palette.dialogButton.dialogText,
                     borderRadius: '6px',
                     fontWeight: 'bold',
                     transition:
@@ -387,8 +391,8 @@ function MapWrapper(props: MapProps) {
                   color="inherit"
                   onClick={() => handleClose('save')}
                   sx={{
-                    backgroundColor: theme.palette.alert.successBackground,
-                    color: theme.palette.dialogButton.dialogText,
+                    // backgroundColor: theme.palette.alert.successBackground,
+                    // color: theme.palette.dialogButton.dialogText,
                     borderRadius: '6px',
                     fontWeight: 'bold',
                     transition:
@@ -407,6 +411,7 @@ function MapWrapper(props: MapProps) {
 
           <Grid container spacing={2} sx={{height: '100%'}}>
             <MapComponent
+              config={props.config}
               key={mapOpen ? 'map-open' : 'map-closed'}
               parentSetMap={setMap}
               center={props.center}
@@ -428,7 +433,7 @@ function MapWrapper(props: MapProps) {
             <Button
               onClick={() => setShowConfirmSave(false)}
               sx={{
-                backgroundColor: theme.palette.dialogButton.cancel,
+                // backgroundColor: theme.palette.dialogButton.cancel,
                 color: theme.palette.background.default,
                 '&:hover': {
                   backgroundColor: theme.palette.text.primary,
@@ -440,8 +445,8 @@ function MapWrapper(props: MapProps) {
             </Button>
             <Button
               sx={{
-                backgroundColor: theme.palette.alert.successBackground,
-                color: theme.palette.dialogButton.dialogText,
+                // backgroundColor: theme.palette.alert.successBackground,
+                // color: theme.palette.dialogButton.dialogText,
                 '&:hover': {
                   backgroundColor: theme.palette.text.primary,
                   transform: 'scale(1.05)',
@@ -449,7 +454,7 @@ function MapWrapper(props: MapProps) {
               }}
               onClick={() => {
                 setShowConfirmSave(false);
-                props.setFeatures({}, 'save');
+                props.setFeatures(undefined, 'save');
                 setMapOpen(false);
               }}
             >

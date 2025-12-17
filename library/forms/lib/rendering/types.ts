@@ -8,6 +8,7 @@ import {
   ProjectUIModel,
   UISpecification,
 } from '@faims3/data-model';
+import {MapConfig} from '..';
 
 export type DataViewTraceEntry = {
   // ID of the record
@@ -27,6 +28,7 @@ export type DataViewTools = {
   getRecordRoute: (params: {recordId: string; revisionId?: string}) => string;
   getDataEngine: () => DataEngine;
   getAttachmentService: () => IAttachmentService;
+  getMapConfig: () => MapConfig;
   // A react component which can be used to render an edit button in a
   // collapsible nested related record
   editRecordButtonComponent: React.FC<{recordId: string}>;

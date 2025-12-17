@@ -1,4 +1,4 @@
-require_relative '../../../node_modules/@capacitor/ios/scripts/pods_helpers'
+require_relative '../../../node_modules/.pnpm/@capacitor+ios@7.4.3_@capacitor+core@7.4.3/node_modules/@capacitor/ios/scripts/pods_helpers'
 
 platform :ios, '15.5'
 use_frameworks!
@@ -9,20 +9,20 @@ use_frameworks!
 install! 'cocoapods', :disable_input_output_paths => true
 
 def capacitor_pods
-  pod 'Capacitor', :path => '../../../node_modules/@capacitor/ios'
-  pod 'CapacitorCordova', :path => '../../../node_modules/@capacitor/ios'
-  pod 'CapacitorCommunityExif', :path => '../../../node_modules/@capacitor-community/exif'
-  pod 'CapacitorCommunitySafeArea', :path => '../../../node_modules/@capacitor-community/safe-area'
-  pod 'CapacitorMlkitBarcodeScanning', :path => '../../../node_modules/@capacitor-mlkit/barcode-scanning'
-  pod 'CapacitorApp', :path => '../../../node_modules/@capacitor/app'
-  pod 'CapacitorAppLauncher', :path => '../../../node_modules/@capacitor/app-launcher'
-  pod 'CapacitorBrowser', :path => '../../../node_modules/@capacitor/browser'
-  pod 'CapacitorCamera', :path => '../../../node_modules/@capacitor/camera'
-  pod 'CapacitorDevice', :path => '../../../node_modules/@capacitor/device'
-  pod 'CapacitorFilesystem', :path => '../../../node_modules/@capacitor/filesystem'
-  pod 'CapacitorGeolocation', :path => '../../../node_modules/@capacitor/geolocation'
-  pod 'CapacitorShare', :path => '../../../node_modules/@capacitor/share'
-  pod 'CapacitorStatusBar', :path => '../../../node_modules/@capacitor/status-bar'
+  pod 'Capacitor', :path => '../../../node_modules/.pnpm/@capacitor+ios@7.4.3_@capacitor+core@7.4.3/node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../../node_modules/.pnpm/@capacitor+ios@7.4.3_@capacitor+core@7.4.3/node_modules/@capacitor/ios'
+  pod 'CapacitorCommunityExif', :path => '../../../node_modules/.pnpm/@capacitor-community+exif@7.0.0_@capacitor+core@7.4.3/node_modules/@capacitor-community/exif'
+  pod 'CapacitorCommunitySafeArea', :path => '../../../node_modules/.pnpm/@capacitor-community+safe-area@7.0.0-alpha.1_@capacitor+core@7.4.3/node_modules/@capacitor-community/safe-area'
+  pod 'CapacitorMlkitBarcodeScanning', :path => '../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@7.4.3/node_modules/@capacitor-mlkit/barcode-scanning'
+  pod 'CapacitorApp', :path => '../../../node_modules/.pnpm/@capacitor+app@7.1.0_@capacitor+core@7.4.3/node_modules/@capacitor/app'
+  pod 'CapacitorAppLauncher', :path => '../../../node_modules/.pnpm/@capacitor+app-launcher@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/app-launcher'
+  pod 'CapacitorBrowser', :path => '../../../node_modules/.pnpm/@capacitor+browser@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/browser'
+  pod 'CapacitorCamera', :path => '../../../node_modules/.pnpm/@capacitor+camera@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/camera'
+  pod 'CapacitorDevice', :path => '../../../node_modules/.pnpm/@capacitor+device@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/device'
+  pod 'CapacitorFilesystem', :path => '../../../node_modules/.pnpm/@capacitor+filesystem@7.1.4_@capacitor+core@7.4.3/node_modules/@capacitor/filesystem'
+  pod 'CapacitorGeolocation', :path => '../../../node_modules/.pnpm/@capacitor+geolocation@7.1.5_@capacitor+core@7.4.3/node_modules/@capacitor/geolocation'
+  pod 'CapacitorShare', :path => '../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/share'
+  pod 'CapacitorStatusBar', :path => '../../../node_modules/.pnpm/@capacitor+status-bar@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar'
 end
 
 target 'App' do

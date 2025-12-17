@@ -13,37 +13,38 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: MapFormField.tsx
  * Description:
- *   Implement MapFormField for entry of data via maps in FAIMS
+ *   Implement MapFormField for entry of data via maps
  */
 
-import CancelIcon from '@mui/icons-material/Cancel';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import {Alert, Box, Button, Typography} from '@mui/material';
-import {FieldProps} from 'formik';
-import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
-import {useEffect, useState} from 'react';
 import {Geolocation} from '@capacitor/geolocation';
-import {canShowMapNear} from '../../components/map/map-component';
-import {LocationPermissionIssue} from '../../components/ui/PermissionAlerts';
-import {theme} from '../../themes';
-import FieldWrapper from '../fieldWrapper';
+import {Alert, Box, Button, useTheme} from '@mui/material';
+import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
+import GeoJSON from 'ol/format/GeoJSON';
+import {useEffect, useState} from 'react';
+import {z} from 'zod';
+import {VectorTileStore} from '../../../components';
+import {defaultMapProjection} from '../../../components/maps/MapComponent';
+import {MapPreview} from '../../../components/maps/MapPreview';
+import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
+import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
+import {FullFieldProps} from '../../../formModule/types';
+import {MapRenderer} from '../../../rendering';
+import {FieldInfo} from '../../types';
+import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
 
-export interface MapFieldProps extends FieldProps {
-  label?: string;
-  featureType: 'Point' | 'Polygon' | 'LineString';
-  geoTiff?: string;
-  projection?: string;
-  center?: [number, number];
-  zoom?: number;
-  FormLabelProps?: any;
-  helperText: string;
-  required: boolean;
-  advancedHelperText?: string;
-  disabled?: boolean;
-}
+const MapFieldPropsSchema = z.object({
+  label: z.string().optional(),
+  featureType: z.enum(['Point', 'Polygon', 'LineString']).optional(),
+  geoTiff: z.string().optional(),
+  projection: z.string().optional(),
+  center: z.tuple([z.number(), z.number()]),
+  zoom: z.number().optional(),
+});
+
+type MapFieldProps = z.infer<typeof MapFieldPropsSchema>;
+type FieldProps = MapFieldProps & FullFieldProps;
 
 const createPointFeature = (
   center: [number, number]
@@ -63,18 +64,23 @@ const createPointFeature = (
   };
 };
 
-export function MapFormField({
-  field,
-  form,
-  ...props
-}: MapFieldProps): JSX.Element {
-  const [canShowMap, setCanShowMap] = useState(false);
+export function MapFormField(props: FieldProps): JSX.Element {
+  const [canShowMap, setCanShowMap] = useState(true);
+
+  const theme = useTheme();
+
+  const mapConfig = props.config.mapConfig();
+
+  const appName =
+    props.config.mode === 'full' ? props.config.appName : 'FAIMS3';
 
   // flag set if we find we don't have location permission
   const [noPermission, setNoPermission] = useState(false);
 
-  // Derive the features from the field value (this forces re-render anyway)
-  const drawnFeatures = form.values[field.name] ?? {};
+  // Derive the features from the field value
+  const drawnFeatures = (props.state.value?.data || undefined) as
+    | GeoJSONFeatureCollection
+    | undefined;
 
   // Default zoom level
   const zoom = typeof props.zoom === 'number' ? props.zoom : 14;
@@ -87,10 +93,35 @@ export function MapFormField({
 
   // A location is selected if there are features provided
   const isLocationSelected =
-    drawnFeatures.features && drawnFeatures.features.length > 0;
+    drawnFeatures !== undefined &&
+    drawnFeatures.features &&
+    drawnFeatures.features.length > 0;
 
-  // state for visual indicators
-  const [animateCheck, setAnimateCheck] = useState(false);
+  /**
+   * canShowMapNear - can we show a map near this location?
+   *
+   * Return true if we are online or if we have a cached map that includes
+   * the center location.
+   */
+  const canShowMapNear = async (
+    features: GeoJSONFeatureCollection | undefined
+  ) => {
+    if (navigator.onLine) return true;
+
+    if (features) {
+      const geoJson = new GeoJSON();
+      const parsedFeatures = geoJson.readFeatures(features, {
+        dataProjection: 'EPSG:4326',
+        featureProjection: defaultMapProjection,
+      });
+
+      // now work out if we have a stored map
+      const tileStore = new VectorTileStore(mapConfig);
+      return await tileStore.mapCacheIncludes(parsedFeatures);
+    } else {
+      return false;
+    }
+  };
 
   // when the center changes, check if we can show this map
   useEffect(() => {
@@ -107,16 +138,11 @@ export function MapFormField({
 
   // Callback function when a location is selected
   const setFeaturesCallback = (
-    theFeatures: GeoJSONFeatureCollection,
+    theFeatures: GeoJSONFeatureCollection | null,
     action: MapAction
   ) => {
     if (action === 'save') {
-      form.setFieldValue(field.name, theFeatures, true);
-      setAnimateCheck(true);
-      setTimeout(() => setAnimateCheck(false), 1000);
-    } else if (action === 'close') {
-      setAnimateCheck(true);
-      setTimeout(() => setAnimateCheck(false), 1000);
+      props.setFieldData(theFeatures);
     }
   };
 
@@ -137,7 +163,7 @@ export function MapFormField({
           point.coords.latitude,
         ];
         const pointFeature = createPointFeature(center);
-        form.setFieldValue(field.name, pointFeature, true);
+        props.setFieldData(pointFeature);
       })
       .catch(error => {
         console.error('Failed to get current location:', error);
@@ -145,45 +171,13 @@ export function MapFormField({
       });
   };
 
-  // dynamically determine feature label based on featureType
-  const featureLabel =
-    props.featureType === 'Polygon'
-      ? 'polygon'
-      : props.featureType === 'LineString'
-        ? 'line'
-        : 'point';
-
-  let valueText = 'No location selected';
-  if (drawnFeatures.features && drawnFeatures.features.length > 0) {
-    const geom = drawnFeatures.features[0].geometry;
-    switch (geom.type) {
-      case 'Point':
-        valueText =
-          'Point: ' +
-          geom.coordinates[0].toFixed(2).toString() +
-          ', ' +
-          geom.coordinates[1].toFixed(2).toString();
-        break;
-      case 'Polygon':
-        valueText = 'Polygon: ' + (geom.coordinates[0].length - 1) + ' points';
-        break;
-      case 'LineString':
-        valueText = 'Line String: ' + geom.coordinates.length + ' points';
-        break;
-    }
-  } else if (canShowMap) {
-    valueText = `No ${featureLabel} selected, click above to choose one!`;
-  } else {
-    // if no location selected update msg dynamically.
-    valueText = `No ${featureLabel} selected.`;
-  }
-
   return (
     <FieldWrapper
       heading={props.label}
       subheading={props.helperText}
       required={props.required}
       advancedHelperText={props.advancedHelperText}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       {/* if offline and no downloaded map, offer to use current location for point features only */}
 
@@ -224,6 +218,7 @@ export function MapFormField({
           </>
         ) : (
           <MapWrapper
+            config={mapConfig}
             label={label}
             featureType={featureType}
             features={drawnFeatures}
@@ -245,51 +240,48 @@ export function MapFormField({
             gap: theme.spacing(1),
           }}
         >
-          {isLocationSelected ? (
-            <CheckCircleIcon
-              sx={{
-                color: 'green',
-                fontSize: 20,
-                transition: 'transform 0.5s ease-in-out',
-                transform: isLocationSelected
-                  ? animateCheck
-                    ? 'scale(1.3)'
-                    : 'scale(1)'
-                  : 'scale(0.5)',
-              }}
-            />
-          ) : (
-            <CancelIcon
-              sx={{
-                color: 'red',
-                fontSize: 20,
-                transition: 'transform 0.5s ease-in-out',
-                transform: !isLocationSelected
-                  ? animateCheck
-                    ? 'scale(1.3)'
-                    : 'scale(1)'
-                  : 'scale(0.5)',
-              }}
-            />
-          )}
-
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 'bold',
-              color: isLocationSelected
-                ? theme.palette.success.main
-                : theme.palette.error.light,
-              transition: 'color 0.4s ease-in-out',
-            }}
-          >
-            {valueText}
-          </Typography>
+          <MapPreview value={props.state.value?.data} config={mapConfig} />
         </Box>
       </Box>
 
       {/*  Show error if no permission */}
-      {noPermission && <LocationPermissionIssue />}
+      {noPermission && <LocationPermissionIssue appName={appName} />}
     </FieldWrapper>
   );
 }
+
+/**
+ * Generates a Zod schema for field value validation.
+ *
+ * The value is a GeoJSON FeatureCollection. When required, it must
+ * contain at least one feature.
+ */
+const valueSchemaFunction = (props: FieldProps) => {
+  const baseSchema = GeoJSONFeatureCollectionSchema;
+
+  if (props.required) {
+    return baseSchema.refine(val => val.features && val.features.length > 0, {
+      message: 'A location selection is required.',
+    });
+  }
+
+  // Optional - allow undefined/null or valid schema
+  return baseSchema.optional().nullable();
+};
+
+// ============================================================================
+// Field Registration
+// ============================================================================
+
+/**
+ * Export a constant with the information required to register this field type
+ */
+export const mapFieldSpec: FieldInfo<FieldProps> = {
+  namespace: 'mapping-plugin',
+  name: 'MapFormField',
+  returns: 'faims-core::JSON',
+  component: MapFormField,
+  fieldPropsSchema: MapFieldPropsSchema,
+  fieldDataSchemaFunction: valueSchemaFunction,
+  view: {component: MapRenderer, config: {}},
+};

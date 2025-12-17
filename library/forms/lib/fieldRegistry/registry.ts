@@ -1,13 +1,17 @@
 import {FullFieldProps} from '../formModule/types';
+import {addressFieldSpec} from './fields/AddressField';
 import {advancedSelectFieldSpec} from './fields/AdvancedSelect';
 import {checkboxFieldSpec} from './fields/CheckboxField';
+import {controlledNumberFieldSpec} from './fields/ControlledNumber';
 import {
   datePickerFieldSpec,
   dateTimePickerFieldSpec,
   monthPickerFieldSpec,
 } from './fields/DateFields';
 import {fileUploaderFieldSpec} from './fields/FileUploader';
+import {mapFieldSpec} from './fields/MapField';
 import {multiSelectFieldSpec} from './fields/MultiSelect';
+import {numberFieldSpec} from './fields/NumberField';
 import {qrCodeFieldSpec} from './fields/QRCodeFormField';
 import {radioGroupFieldSpec} from './fields/RadioGroup';
 import {relatedRecordFieldSpec} from './fields/RelatedRecord';
@@ -15,16 +19,13 @@ import {richTextFieldSpec} from './fields/RichText';
 import {selectFieldSpec} from './fields/SelectField';
 import {takePhotoFieldSpec} from './fields/TakePhoto';
 import {takePointFieldSpec} from './fields/TakePoint';
+import {templatedStringFieldSpec} from './fields/TemplatedStringField';
 import {
   emailFieldSpec,
   multilineTextFieldSpec,
   textFieldSpec,
 } from './fields/TextFields';
-import {templatedStringFieldSpec} from './fields/TemplatedStringField';
 import {FieldInfo} from './types';
-import {controlledNumberFieldSpec} from './fields/ControlledNumber';
-import {numberFieldSpec} from './fields/NumberField';
-import {addressFieldSpec} from './fields/AddressField';
 
 // NOTE: This is the list of all field specifications. To add a new
 // field type, add it here.
@@ -43,6 +44,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   checkboxFieldSpec,
   radioGroupFieldSpec,
   takePointFieldSpec,
+  mapFieldSpec,
   qrCodeFieldSpec,
   datePickerFieldSpec,
   dateTimePickerFieldSpec,
