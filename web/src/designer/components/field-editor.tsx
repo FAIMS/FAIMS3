@@ -60,7 +60,6 @@ import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
 import {NumberFieldEditor} from './Fields/NumberFieldEditor';
 import {OptionsEditor} from './Fields/OptionsEditor';
-import {RandomStyleEditor} from './Fields/RandomStyleEditor';
 import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
 import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
@@ -744,9 +743,6 @@ export const FieldEditor = ({
             )) ||
             (fieldComponent === 'MapFormField' && (
               <MapFormFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RandomStyle' && (
-              <RandomStyleEditor fieldName={fieldName} />
             )) ||
             (fieldComponent === 'NumberField' && (
               <NumberFieldEditor fieldName={fieldName} />

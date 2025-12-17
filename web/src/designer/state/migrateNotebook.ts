@@ -58,8 +58,18 @@ export const migrateNotebook = (notebook: Notebook) => {
   // ensure visible_types exists in the ui-specification
   updateVisibleTypes(notebookCopy);
 
+  // formik-material-ui::TextField (email) -> faims-custom::Email
+  migrateEmailFields(notebookCopy);
+
+  // migrate deprecated Number/ControlledNumber fields to new format
+  // (must be before removeValidationSchema to extract min/max)
+  migrateNumberFields(notebookCopy);
+
   // remove validation yup schema from notebooks
   removeValidationSchema(notebookCopy);
+
+  // migrate deprecated RandomStyle fields to RichText
+  migrateRandomStyleFields(notebookCopy);
 
   return notebookCopy;
 };
@@ -362,6 +372,186 @@ const removeValidationSchema = (notebook: Notebook) => {
     const field = fields[fieldName];
     if ('validationSchema' in field) {
       delete field.validationSchema;
+    }
+  }
+};
+
+/**
+ * Migrate deprecated Email fields (formik-material-ui::TextField with type email)
+ * to the new faims-custom::Email component.
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+const migrateEmailFields = (notebook: Notebook) => {
+  const fields = notebook['ui-specification']?.fields;
+  if (!fields) return;
+
+  for (const fieldName in fields) {
+    const field = fields[fieldName];
+
+    // Detect old Email field pattern
+    if (
+      field['component-namespace'] === 'formik-material-ui' &&
+      field['component-name'] === 'TextField' &&
+      field['type-returned'] === 'faims-core::Email'
+    ) {
+      // Update to new component
+      field['component-namespace'] = 'faims-custom';
+      field['component-name'] = 'Email';
+      field['type-returned'] = 'faims-core::String';
+
+      // Remove InputProps (not needed for new Email component)
+      if (field['component-parameters']?.InputProps) {
+        delete field['component-parameters'].InputProps;
+      }
+    }
+  }
+};
+
+/**
+ * Migrate deprecated Number and ControlledNumber fields (formik-material-ui::TextField
+ * with Integer type) to the new faims-custom components.
+ *
+ * - If min/max validation exists -> faims-custom::ControlledNumber
+ * - Otherwise -> faims-custom::NumberField with numberType: 'integer'
+ *
+ * Must be called BEFORE removeValidationSchema since we need to extract min/max from there.
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+const migrateNumberFields = (notebook: Notebook) => {
+  const fields = notebook['ui-specification']?.fields;
+  if (!fields) return;
+
+  for (const fieldName in fields) {
+    const field = fields[fieldName];
+
+    // Detect old Number/ControlledNumber field pattern
+    if (
+      field['component-namespace'] === 'formik-material-ui' &&
+      field['component-name'] === 'TextField' &&
+      field['type-returned'] === 'faims-core::Integer'
+    ) {
+      // Extract min/max from validationSchema if present
+      let min: number | undefined;
+      let max: number | undefined;
+
+      if ((field as any).validationSchema) {
+        const validationSchema = (field as any).validationSchema as unknown[][];
+        for (const rule of validationSchema) {
+          if (Array.isArray(rule) && rule[0] === 'yup.min') {
+            min = rule[1] as number;
+          }
+          if (Array.isArray(rule) && rule[0] === 'yup.max') {
+            max = rule[1] as number;
+          }
+        }
+      }
+
+      // Remove InputProps (not needed for new components)
+      if (field['component-parameters']?.InputProps) {
+        delete field['component-parameters'].InputProps;
+      }
+
+      if (min !== undefined || max !== undefined) {
+        // Has min/max -> ControlledNumber
+        field['component-namespace'] = 'faims-custom';
+        field['component-name'] = 'ControlledNumber';
+        // type-returned stays as faims-core::Integer
+
+        if (min !== undefined) {
+          field['component-parameters'].min = min;
+        }
+        if (max !== undefined) {
+          field['component-parameters'].max = max;
+        }
+      } else {
+        // No min/max -> NumberField
+        field['component-namespace'] = 'faims-custom';
+        field['component-name'] = 'NumberField';
+        field['type-returned'] = 'faims-core::Number';
+        field['component-parameters'].numberType = 'integer';
+      }
+    }
+  }
+};
+
+/**
+ * Migrate deprecated RandomStyle fields to the new RichText component.
+ *
+ * Attempts to convert:
+ * - label with variant_style (h1-h5) -> markdown headings
+ * - label with body styles -> plain text
+ * - html_tag content -> preserved as-is (markdown can contain HTML)
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+const migrateRandomStyleFields = (notebook: Notebook) => {
+  const fields = notebook['ui-specification']?.fields;
+  if (!fields) return;
+
+  for (const fieldName in fields) {
+    const field = fields[fieldName];
+
+    if (
+      field['component-namespace'] === 'faims-custom' &&
+      field['component-name'] === 'RandomStyle'
+    ) {
+      const params = field['component-parameters'];
+      const label = params.label || '';
+      const variantStyle = params.variant_style || '';
+      const htmlTag = params.html_tag || '';
+
+      // Build markdown content
+      let content = '';
+
+      // Convert label with variant_style to markdown
+      if (label) {
+        switch (variantStyle) {
+          case 'h1':
+            content = `# ${label}`;
+            break;
+          case 'h2':
+            content = `## ${label}`;
+            break;
+          case 'h3':
+            content = `### ${label}`;
+            break;
+          case 'h4':
+            content = `#### ${label}`;
+            break;
+          case 'h5':
+            content = `##### ${label}`;
+            break;
+          case 'subtitle1':
+          case 'subtitle2':
+            content = `**${label}**`;
+            break;
+          default:
+            // body1, body2, caption, or empty
+            content = label;
+        }
+      }
+
+      // Append html_tag content (markdown supports inline HTML)
+      if (htmlTag) {
+        if (content) {
+          content += '\n\n';
+        }
+        content += htmlTag;
+      }
+
+      // Update to new component
+      field['component-name'] = 'RichText';
+      // component-namespace stays as faims-custom
+      // type-returned stays as faims-core::String
+
+      // Replace component-parameters with new structure
+      field['component-parameters'] = {
+        label: field['component-parameters']?.label ?? fieldName,
+        name: fieldName,
+        content: content || '',
+      };
     }
   }
 };

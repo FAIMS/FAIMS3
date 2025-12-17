@@ -16,10 +16,6 @@ import {FieldType} from './state/initial';
 import {CategoryKey} from './field-categories';
 
 const fields: {[key: string]: FieldType} = {
-  // ======
-  // Active
-  // ======
-
   FAIMSTextField: {
     'component-namespace': 'faims-custom',
     'component-name': 'FAIMSTextField',
@@ -517,98 +513,6 @@ const fields: {[key: string]: FieldType} = {
     category: CategoryKey.TEXT,
     showInChooser: true,
     order: 10,
-  },
-
-  // ==========
-  // Deprecated
-  // ==========
-
-  RandomStyle: {
-    'component-namespace': 'faims-custom',
-    'component-name': 'RandomStyle',
-    'type-returned': 'faims-core::String',
-    'component-parameters': {
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      label: 'Title',
-      variant_style: 'h5',
-      html_tag: '',
-    },
-    initialValue: '',
-    humanReadableName: 'Title',
-    humanReadableDescription: 'Stylised heading or HTML content',
-    category: CategoryKey.DISPLAY,
-    showInChooser: false,
-    order: 1000,
-  },
-
-  ControlledNumber: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Integer',
-    'component-parameters': {
-      label: 'Controlled number',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        type: 'number',
-      },
-    },
-    initialValue: '',
-    humanReadableName: 'Controlled number',
-    humanReadableDescription: 'Numeric input with min/max validation',
-    category: CategoryKey.NUMBERS,
-    showInChooser: false,
-    order: 8,
-  },
-
-  Number: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Integer',
-    'component-parameters': {
-      label: 'Number field',
-      fullWidth: true,
-      helperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        type: 'number',
-      },
-    },
-    initialValue: '',
-    humanReadableName: 'Number field',
-    humanReadableDescription: 'Plain numeric input without limits',
-    category: CategoryKey.NUMBERS,
-    showInChooser: false,
-    order: 7,
-  },
-
-  Email: {
-    'component-namespace': 'formik-material-ui',
-    'component-name': 'TextField',
-    'type-returned': 'faims-core::Email',
-    'component-parameters': {
-      label: 'Email',
-      fullWidth: true,
-      helperText: '',
-      advancedHelperText: '',
-      variant: 'outlined',
-      required: false,
-      InputProps: {
-        type: 'email',
-      },
-    },
-    initialValue: '',
-    humanReadableName: 'Email',
-    humanReadableDescription: 'Validates and captures an e-mail address',
-    category: CategoryKey.TEXT,
-    showInChooser: false,
-    order: 6,
   },
 };
 
