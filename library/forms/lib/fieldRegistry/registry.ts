@@ -17,6 +17,7 @@ import {takePhotoFieldSpec} from './fields/TakePhoto';
 import {takePointFieldSpec} from './fields/TakePoint';
 import {templatedStringFieldSpec} from './fields/TemplatedStringField';
 import {textFieldSpec} from './fields/TextField';
+import {mapFieldSpec} from './fields/MapField';
 import {FieldInfo} from './types';
 
 // NOTE: This is the list of all field specifications. To add a new
@@ -34,6 +35,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   checkboxFieldSpec,
   radioGroupFieldSpec,
   takePointFieldSpec,
+  mapFieldSpec,
   qrCodeFieldSpec,
   datePickerFieldSpec,
   dateTimePickerFieldSpec,

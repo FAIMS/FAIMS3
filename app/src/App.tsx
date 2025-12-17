@@ -48,7 +48,7 @@ import {getEditRecordRoute} from './constants/routes';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
-import {MapDownloadComponent} from './gui/components/map/map-download';
+import {MapDownload} from './gui/components/maps/MapDownload';
 import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
@@ -268,7 +268,7 @@ const routes: RouteObject[] = [
         ? [
             {
               path: ROUTES.OFFLINE_MAPS,
-              element: <MapDownloadComponent />,
+              element: <MapDownload />,
             },
           ]
         : []),

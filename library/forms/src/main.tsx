@@ -5,8 +5,11 @@ import App from './App';
 import uiSpec from './sample-notebook.json';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EncodedUISpecification} from '@faims3/data-model/build/src/types';
+import {initialiseMaps} from '../lib/components/maps';
 
 const queryClient = new QueryClient({});
+
+initialiseMaps();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

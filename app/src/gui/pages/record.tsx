@@ -59,7 +59,7 @@ import {useAppDispatch, useAppSelector} from '../../context/store';
 import {logError} from '../../logging';
 import {localGetDataDb} from '../../utils/database';
 import RecordDelete from '../components/notebook/delete';
-import ProgressBar from '../components/progress-bar';
+import {ProgressBar} from '@faims3/forms';
 import {ResolveButton} from '../components/record/conflict/conflictbutton';
 import {
   BasicDialog,

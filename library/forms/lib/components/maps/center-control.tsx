@@ -1,6 +1,6 @@
 import {View} from 'ol';
 import {Control} from 'ol/control';
-import src from '../../../target.svg';
+import src from './target.svg';
 import {CreateDomIcon} from './dom-icon';
 
 /**
