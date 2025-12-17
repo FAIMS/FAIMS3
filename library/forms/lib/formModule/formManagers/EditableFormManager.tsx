@@ -744,7 +744,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
             formId: entry.formId,
             fieldId: entry.fieldId,
             type: entry.type,
-          } satisfies ImpliedParentNavInfo)
+          }) satisfies ImpliedParentNavInfo
       );
     }
     // Otherwise

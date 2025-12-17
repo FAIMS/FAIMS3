@@ -226,10 +226,10 @@ export const FieldEditor = ({
   const protectionMessage = !isDerivedFromSet
     ? 'Protected Field. Users that derive this template will not be able to modify or delete it.'
     : protection === 'protected'
-    ? 'This field is protected. You may not modify or delete it.'
-    : `This field is protected. You may not modify or delete it. ${
-        !isHidden ? 'However, you can hide it.' : ''
-      }`;
+      ? 'This field is protected. You may not modify or delete it.'
+      : `This field is protected. You may not modify or delete it. ${
+          !isHidden ? 'However, you can hide it.' : ''
+        }`;
 
   const handleCloseMoveDialog = () => {
     setConflictError(null);
@@ -454,8 +454,8 @@ export const FieldEditor = ({
                     protection === 'protected'
                       ? 'Fully protected fields cannot be hidden'
                       : requiredBlocksHiding
-                      ? 'Required fields cannot be hidden'
-                      : 'Unhide Field'
+                        ? 'Required fields cannot be hidden'
+                        : 'Unhide Field'
                   }
                 >
                   <span>
@@ -478,8 +478,8 @@ export const FieldEditor = ({
                       protection === 'protected'
                         ? 'Fully protected fields cannot be hidden'
                         : requiredBlocksHiding
-                        ? 'Required fields cannot be hidden'
-                        : 'Hide Field'
+                          ? 'Required fields cannot be hidden'
+                          : 'Hide Field'
                     }
                   >
                     <span>

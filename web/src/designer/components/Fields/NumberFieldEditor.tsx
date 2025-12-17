@@ -1,13 +1,12 @@
 import {
-  Grid,
   FormControl,
-  FormLabel,
-  RadioGroup,
   FormControlLabel,
-  Radio,
   FormHelperText,
+  FormLabel,
+  Radio,
+  RadioGroup,
 } from '@mui/material';
-import {useAppSelector, useAppDispatch} from '../../state/hooks';
+import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
