@@ -36,7 +36,7 @@ import {
 } from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
 import z from 'zod';
-import {FullFormManagerConfig} from '../../../formModule';
+import {FullFormConfig, FullFormManagerConfig} from '../../../formModule';
 import {
   BaseFieldProps,
   BaseFieldPropsSchema,
@@ -49,10 +49,11 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // ============================================================================
 // Component Specific Types & Schemas
 // ============================================================================
-
+export const relatedTypeSchema = z.enum(['faims-core::Child', 'faims-core::Linked']);
+export type RelatedType = z.infer<typeof relatedTypeSchema>;
 const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
   related_type: z.string(),
-  relation_type: z.enum(['faims-core::Child', 'faims-core::Linked']),
+  relation_type: relatedTypeSchema,
   multiple: z.boolean().optional().default(false),
   allowLinkToExisting: z.boolean().optional().default(false),
 });
@@ -82,7 +83,7 @@ type FieldValueEntry = z.infer<typeof fieldValueEntrySchema>;
 // ============================================================================
 
 function relationTypeToPair(
-  type: 'faims-core::Child' | 'faims-core::Linked'
+  type: RelatedType
 ): [string, string] {
   if (type === 'faims-core::Child') {
     return ['has child', 'is child of'];
@@ -498,6 +499,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           recordId: props.config.recordId,
           relationType:
             props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
+          explorationType: 'created-new-child',
         },
       });
     },
@@ -569,6 +571,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         recordId: props.config.recordId,
         relationType:
           props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
+        explorationType: 'visited',
       },
     });
   };

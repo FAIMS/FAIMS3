@@ -3,6 +3,9 @@ import {
   currentlyVisibleMap,
   FaimsAttachments,
   FormDataEntry,
+  getFieldLabel,
+  getFormLabel,
+  getViewsetForField,
   HydratedRecordDocument,
 } from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
@@ -24,6 +27,7 @@ import {FieldVisibilityMap, FormManager} from './FormManager';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
   FormNavigationButtons,
+  FormNavigationButtonsProps,
   ImpliedParentNavInfo,
   ParentNavInfo,
 } from './components/NavigationButtons';
@@ -831,6 +835,46 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     const parentFormLabel = info
       ? dataEngine.uiSpec.viewsets[info.parentNavButton.formId]?.label
       : undefined;
+
+    let createAnotherChildConfig:
+      | FormNavigationButtonsProps['createAnotherChild']
+      | undefined = undefined;
+
+    /**
+     * requires that a) we reached this point explicitly b) we used the 'create'
+     * not the 'link existing' function of the related record selector
+     */
+
+    // We have lineage info
+    if (info && info.fullContext.lineage.length > 0) {
+      // Get the head element
+      const head =
+        info.fullContext.lineage[info.fullContext.lineage.length - 1];
+      // If the head was navigated to via the creation of a related record, show
+      if (head.explorationType === 'created-new-child') {
+        // Determine props needed
+        // Field label
+        const uiSpec = dataEngine.uiSpec;
+        const fieldLabel = getFieldLabel(uiSpec, head.fieldId);
+        const formLabel = getFormLabel({uiSpec, formId: props.formId});
+        const formId = getViewsetForField(uiSpec, head.fieldId);
+        const parentFormLabel = formId
+          ? getFormLabel({uiSpec, formId})
+          : 'Unknown';
+
+        const onCreate = async () => {
+
+        };
+
+        createAnotherChildConfig = {
+          fieldLabel,
+          formLabel,
+          parentFormLabel,
+          relationType: head.relationType,
+          onCreate: () => {},
+        };
+      }
+    }
 
     return (
       <FormNavigationButtons

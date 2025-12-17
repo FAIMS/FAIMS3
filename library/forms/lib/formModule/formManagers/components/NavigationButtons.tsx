@@ -5,6 +5,8 @@ import {
   NavigationButtonsTemplate,
 } from './NavigationButtonsTemplate';
 
+type RelationshipType = 'parent' | 'linked';
+
 export interface ParentNavInfo {
   link: string;
   mode: AvpUpdateMode;
@@ -12,7 +14,7 @@ export interface ParentNavInfo {
   label: string;
   fieldId: string;
   formId: string;
-  relationType: 'parent' | 'linked';
+  relationType: RelationshipType;
 }
 
 /**
@@ -24,7 +26,7 @@ export interface ParentNavInfo {
  */
 export interface ImpliedParentNavInfo {
   /** What relationship type? */
-  type: 'parent' | 'linked';
+  type: RelationshipType;
   /** The record ID of the implied parent */
   recordId: string;
   /** Which field did this come from? */
@@ -75,6 +77,25 @@ export interface FormNavigationButtonsProps {
    * parent/linked record.
    */
   impliedParentNavInfo?: ImpliedParentNavInfo[] | null;
+
+  /**
+   * Do we want to enable the creation of 'another child' requires that a) we
+   * reached this point explicitly b) we used the 'create' not the 'link
+   * existing' function of the related record selector
+   */
+  createAnotherChild?: {
+    // The label of type of child to create E.g. 'Building'
+    formLabel: string;
+    // A label for the parent form - where did it come from? E.g. 'Site'
+    parentFormLabel: string;
+    // The label of the field that this child was created from E.g. 'Site
+    // buildings'
+    fieldLabel: string;
+    // The function to create and navigate to this new child
+    onCreate: () => void;
+    // What type of relationship
+    relationType: RelationshipType;
+  };
 }
 
 /**
@@ -100,6 +121,7 @@ export const FormNavigationButtons = ({
   hasPendingChanges,
   onNavigateToViewRecord,
   impliedParentNavInfo,
+  createAnotherChild,
 }: FormNavigationButtonsProps) => {
   const [isSaving, setIsSaving] = useState(false);
 
@@ -221,6 +243,21 @@ export const FormNavigationButtons = ({
           statusText,
         });
       }
+    }
+
+    // Create another child button, if needed
+    if (createAnotherChild) {
+      const {fieldLabel, formLabel, onCreate, parentFormLabel, relationType} =
+        createAnotherChild;
+      const relLabel = relationType === 'parent' ? 'parent' : 'related';
+      result.push({
+        label: `Create another ${formLabel} in ${relLabel} ${parentFormLabel}.`,
+        subtitle: `Create and link a new ${formLabel} from ${relLabel} ${parentFormLabel} in field ${fieldLabel}.`,
+        onClick: onCreate,
+        disabled: isSaving,
+        loading: isSaving,
+        statusText,
+      });
     }
 
     result.push({
