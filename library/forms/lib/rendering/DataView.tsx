@@ -268,7 +268,7 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   // This is the configured UI label for this field, i.e. the title
   const uiLabel =
     props.uiSpecification.fields[props.fieldInfo.name]?.['component-parameters']
-      ?.label;
+      ?.label ?? name;
 
   // hidden when component-parameters.hidden: true
   const isHidden =

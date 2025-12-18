@@ -9,7 +9,7 @@ export type ValidationSettings = {
 };
 
 // Zod's issue type for full type information
-export type ValidationError = z.core.$ZodIssue;
+export type ValidationError = z.ZodIssue;
 
 export type ValidationResult =
   | {valid: true}
