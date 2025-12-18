@@ -5,6 +5,7 @@ import {checkboxFieldSpec} from './fields/CheckboxField';
 import {controlledNumberFieldSpec} from './fields/ControlledNumber';
 import {
   datePickerFieldSpec,
+  dateTimeNowFieldSpec,
   dateTimePickerFieldSpec,
   monthPickerFieldSpec,
 } from './fields/DateFields';
@@ -52,6 +53,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   controlledNumberFieldSpec,
   numberFieldSpec,
   addressFieldSpec,
+  dateTimeNowFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info
