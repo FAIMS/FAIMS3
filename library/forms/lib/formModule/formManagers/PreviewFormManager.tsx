@@ -11,6 +11,7 @@ import {FaimsFormData} from '../types';
 import {FieldVisibilityMap, FormManager} from './FormManager';
 import {onChangeTemplatedFields} from './templatedFields';
 import {PreviewFormConfig} from './types';
+import {MapConfig} from '../..';
 const queryClient = new QueryClient();
 
 /**
@@ -24,6 +25,7 @@ export interface PreviewFormManagerProps extends ComponentProps<any> {
   /** The UI specification containing form structure */
   uiSpec: ProjectUIModel;
   layout: 'tabs' | 'inline';
+  mapConfig: () => MapConfig;
 }
 
 /**
@@ -100,6 +102,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   const config: PreviewFormConfig = {
     mode: 'preview' as const,
     layout: props.layout,
+    mapConfig: props.mapConfig,
   };
 
   return (
