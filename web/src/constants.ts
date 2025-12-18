@@ -1,3 +1,4 @@
+import {MapConfig, MapStylesheetNameType} from '@faims3/forms';
 import {capitalize} from './lib/utils';
 
 const getConfigValue = (key: string) => {
@@ -151,3 +152,33 @@ export const INVITE_TOKEN_HINTS = DEFAULT_HINTS;
 // Help link to use for the long lived token docs
 export const LONG_LIVED_TOKEN_HELP_LINK =
   'https://github.com/FAIMS/FAIMS3/blob/main/docs/developer/docs/source/markdown/Long-lived-tokens.md';
+
+/**
+ * Map source configuration.  Define the map source
+ * (see src/gui/components/map/tile_source.ts for options)
+ * and the map key if required.
+ */
+
+function get_map_source(): string {
+  const map_source = import.meta.env.VITE_MAP_SOURCE;
+  return map_source || 'osm';
+}
+
+function get_map_key(): string {
+  const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
+  return map_key || '';
+}
+
+function get_map_style(): MapStylesheetNameType {
+  const map_style = import.meta.env.VITE_MAP_STYLE;
+  return map_style || 'basic';
+}
+
+// get the map configuration
+export function getMapConfig(): MapConfig {
+  return {
+    mapSource: get_map_source(),
+    mapSourceKey: get_map_key(),
+    mapStyle: get_map_style(),
+  };
+}

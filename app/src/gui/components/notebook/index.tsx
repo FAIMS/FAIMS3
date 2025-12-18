@@ -33,7 +33,7 @@ import CircularLoading from '../ui/circular_loading';
 import AddRecordButtons from './add_record_by_type';
 import {DraftsTable} from './draft_table';
 import {MetadataDisplayComponent} from './MetadataDisplay';
-import {OverviewMap} from './overview_map';
+import {OverviewMap} from './OverviewMap';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
 

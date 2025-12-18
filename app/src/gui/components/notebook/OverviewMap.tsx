@@ -29,9 +29,10 @@ import CircleStyle from 'ol/style/Circle';
 import {useEffect, useMemo, useState} from 'react';
 import {Link} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
-import {MapComponent} from '../map/map-component';
+import {MapComponent} from '@faims3/forms';
 import {Extent} from 'ol/extent';
 import {transformExtent} from 'ol/proj';
+import {getMapConfig} from '../../../buildconfig';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -58,6 +59,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
     null
   );
   const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
+
+  const mapConfig = getMapConfig();
 
   /**
    * Get the names of all GIS fields in this UI Specification
@@ -215,9 +218,18 @@ export const OverviewMap = (props: OverviewMapProps) => {
       <Grid
         container
         spacing={2}
-        sx={{width: '90vw', marginTop: '20px', marginLeft: '20px'}}
+        sx={{
+          height: '600px',
+          width: '90vw',
+          marginTop: '20px',
+          marginLeft: '20px',
+        }}
       >
-        <MapComponent parentSetMap={setMap} extent={featuresExtent} />
+        <MapComponent
+          parentSetMap={setMap}
+          extent={featuresExtent}
+          config={mapConfig}
+        />
         <Popover
           open={!!selectedFeature}
           onClose={handlePopoverClose}

@@ -13,7 +13,7 @@ interface ProgressBarProps {
  * @param {React.CSSProperties} props.style - Additional styles for the progress bar.
  * @returns {JSX.Element} A visual representation of the progress in the form of a bar and percentage text.
  */
-export default function ProgressBar({percentage, style}: ProgressBarProps) {
+export function ProgressBar({percentage, style}: ProgressBarProps) {
   const rounded = Math.round(percentage * 100);
   const theme = useTheme(); // Use the current active theme
 
@@ -28,7 +28,7 @@ export default function ProgressBar({percentage, style}: ProgressBarProps) {
     >
       <div
         style={{
-          backgroundColor: theme.palette.progressBar.background,
+          backgroundColor: theme.palette.background && '#e0e0e0',
           borderRadius: '6px',
         }}
       >
@@ -36,7 +36,7 @@ export default function ProgressBar({percentage, style}: ProgressBarProps) {
           style={{
             width: `${rounded}%`,
             height: '32px',
-            backgroundColor: theme.palette.progressBar.complete,
+            backgroundColor: theme.palette.primary && 'red',
             borderRadius: '6px',
           }}
         ></div>

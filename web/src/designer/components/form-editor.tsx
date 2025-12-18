@@ -57,6 +57,7 @@ import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
+import {getMapConfig} from '@/constants';
 
 type Props = {
   viewSetId: string;
@@ -736,6 +737,7 @@ export const FormEditor = ({
                 formName={viewSetId}
                 uiSpec={uiSpecInternal}
                 queryClient={queryClient}
+                mapConfig={getMapConfig}
               />
             </ThemeProvider>
           </Box>
