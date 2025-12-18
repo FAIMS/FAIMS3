@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import React, {HTMLInputTypeAttribute, useEffect} from 'react';
 import {z} from 'zod';
-import {isoToLocalDisplay, localDisplayToIso} from '../../../formModule';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
 import {
   DataViewFieldRender,
@@ -193,7 +192,7 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
 
   // Get current stored value (ISO string) and convert to display format
   const storedValue = (state.value?.data as string) ?? '';
-  const displayValue = isoToLocalDisplay(storedValue);
+  const displayValue = formatDateTime(storedValue);
   const errors = state.meta.errors as unknown as string[] | undefined;
 
   /**
@@ -284,6 +283,23 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
 // =============================================================================
 // View Components
 // =============================================================================
+
+/**
+ * Converts a datetime-local input value to ISO string for storage.
+ *
+ * @param localValue - Value from datetime-local input (yyyy-MM-ddTHH:mm:ss)
+ * @returns ISO format datetime string
+ */
+export const localDisplayToIso = (localValue: string): string => {
+  if (!localValue) return '';
+  try {
+    const date = new Date(localValue);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString();
+  } catch {
+    return '';
+  }
+};
 
 /**
  * Formats a datetime-local value for display
