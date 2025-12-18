@@ -18,14 +18,13 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import {useStore} from '@tanstack/react-form';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
-import {FormManagerConfig} from '../formManagers';
-import {FieldVisibilityMap} from '../formManagers/FormManager';
+import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';
-import {FormSection} from './FormSection';
-import {useStore} from '@tanstack/react-form';
 import {getFieldId} from '../utils';
+import {FormSection} from './FormSection';
 
 // ============================================================================
 // Constants

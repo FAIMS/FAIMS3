@@ -12,18 +12,19 @@ import {
 import {Alert, Snackbar} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
-import {debounce, DebouncedFunc, set} from 'lodash';
+import {debounce, DebouncedFunc} from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   RelatedFieldValue,
   relatedFieldValueSchema,
-  relationTypeToPair,
-} from '../../fieldRegistry/fields/RelatedRecord';
+} from '../../fieldRegistry/fields/RelatedRecord/types';
+import {relationTypeToPair} from '../../fieldRegistry/fields/RelatedRecord/utils';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {getImpliedNavigationRelationships} from '../utils';
-import {FieldVisibilityMap, FormManager} from './FormManager';
+import {FormManager} from './FormManager';
+import {FieldVisibilityMap} from './types';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
   FormNavigationButtons,
@@ -927,8 +928,8 @@ export const EditableFormManager: React.FC<
           const normalisedRelationships = !relevantFieldValue
             ? []
             : Array.isArray(relevantFieldValue)
-            ? relevantFieldValue
-            : [relevantFieldValue];
+              ? relevantFieldValue
+              : [relevantFieldValue];
 
           // Update the data of the parent record
           parentFormData.data[head.fieldId].data = [

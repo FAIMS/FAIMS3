@@ -1,4 +1,12 @@
 import z from 'zod';
+import {MapStylesheetNameType} from './styles';
+
+export type MapConfig = {
+  mapSource: string;
+  mapSourceKey: string;
+  mapStyle: MapStylesheetNameType;
+};
+
 /**
  * Schema for the GeoJSON geometry object.
  * Validates the structure without being overly strict on coordinate formats.

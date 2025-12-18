@@ -16,13 +16,8 @@
  * Description:
  *   This module exports the configuration of the build
  */
-import {MapStylesheetNameType} from './styles';
 
-export type MapConfig = {
-  mapSource: string;
-  mapSourceKey: string;
-  mapStyle: MapStylesheetNameType;
-};
+import {MapConfig} from './types';
 
 export const getDefaultMapConfig = (): MapConfig => ({
   mapSource: 'osm',

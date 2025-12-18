@@ -17,7 +17,7 @@ import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
 import {
   DataViewFieldRender,
   EmptyResponsePlaceholder,
-} from '../../../rendering';
+} from '../../../rendering/fields';
 import {FieldReturnType, FieldInfo} from '../../types';
 
 // =============================================================================

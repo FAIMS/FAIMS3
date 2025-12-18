@@ -4,8 +4,12 @@ import {
   IAttachmentService,
 } from '@faims3/data-model';
 import z from 'zod';
-import {MapConfig} from '../../components/maps/config';
 import {AutoIncrementService} from '../incrementer';
+import {MapConfig} from '../../components/maps/types';
+
+// Map from section -> list of visible fields - section included IFF it's
+// visible at all
+export type FieldVisibilityMap = Record<string, string[]>;
 
 /**
  * Base interface for form configuration modes.

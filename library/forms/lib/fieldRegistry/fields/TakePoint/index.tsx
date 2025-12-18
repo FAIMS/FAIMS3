@@ -43,7 +43,7 @@ import {useState} from 'react';
 import {z} from 'zod';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
-import {MapRenderer} from '../../../rendering';
+import {MapRenderer} from '../../../rendering/fields/view/specialised/Mapping';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 

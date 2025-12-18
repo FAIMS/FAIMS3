@@ -26,7 +26,7 @@ import {
   useTheme,
 } from '@mui/material';
 import React, {ReactNode, useState} from 'react';
-import {RichTextContent} from '../RichText';
+import {RichTextContent} from '../../../components/RichText';
 
 /**
  * @interface FieldWrapperProps

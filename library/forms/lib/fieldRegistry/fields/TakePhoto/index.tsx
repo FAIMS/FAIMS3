@@ -21,7 +21,7 @@ import {Buffer} from 'buffer';
 import React, {useCallback, useMemo, useState} from 'react';
 import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
-import {FullFormConfig} from '../../../formModule';
+import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,

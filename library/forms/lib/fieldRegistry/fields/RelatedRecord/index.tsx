@@ -35,63 +35,20 @@ import {
   UseQueryResult,
 } from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
-import z from 'zod';
-import {FullFormConfig, FullFormManagerConfig} from '../../../formModule';
-import {
-  BaseFieldProps,
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
+import {BaseFieldProps, FormFieldContextProps} from '../../../formModule/types';
 import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-
-// ============================================================================
-// Component Specific Types & Schemas
-// ============================================================================
-export const relatedTypeSchema = z.enum([
-  'faims-core::Child',
-  'faims-core::Linked',
-]);
-export type RelatedType = z.infer<typeof relatedTypeSchema>;
-const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
-  related_type: z.string(),
-  relation_type: relatedTypeSchema,
-  multiple: z.boolean().optional().default(false),
-  allowLinkToExisting: z.boolean().optional().default(false),
-});
-
-type RelatedRecordFieldProps = z.infer<typeof relatedRecordPropsSchema>;
-type RelatedRecordProps = RelatedRecordFieldProps & FormFieldContextProps;
-
-interface FullRelatedRecordFieldProps extends RelatedRecordProps {
-  config: FullFormManagerConfig;
-}
-
-const fieldValueEntrySchema = z.object({
-  record_id: z.string(),
-  project_id: z.string().optional(),
-  relation_type_vocabPair: z.tuple([z.string(), z.string()]),
-});
-
-export const relatedFieldValueSchema = z.union([
-  z.array(fieldValueEntrySchema),
-  fieldValueEntrySchema,
-]);
-export type RelatedFieldValue = z.infer<typeof relatedFieldValueSchema>;
-type FieldValueEntry = z.infer<typeof fieldValueEntrySchema>;
-
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-export function relationTypeToPair(type: RelatedType): [string, string] {
-  if (type === 'faims-core::Child') {
-    return ['has child', 'is child of'];
-  } else {
-    return ['is linked to', 'is linked from'];
-  }
-}
+import {
+  FieldValueEntry,
+  FullRelatedRecordFieldProps,
+  RelatedFieldValue,
+  relatedFieldValueSchema,
+  RelatedRecordFieldProps,
+  relatedRecordPropsSchema,
+} from './types';
+import {relationTypeToPair} from './utils';
 
 // ============================================================================
 // UI Components

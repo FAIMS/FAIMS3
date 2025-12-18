@@ -26,7 +26,7 @@ import {
 import React, {useCallback, useMemo, useState} from 'react';
 import Dropzone, {FileRejection} from 'react-dropzone';
 import {z} from 'zod';
-import {FullFormConfig} from '../../../formModule';
+import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,

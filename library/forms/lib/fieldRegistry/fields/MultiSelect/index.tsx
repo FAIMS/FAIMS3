@@ -43,10 +43,10 @@ import {
 } from '@mui/material';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
+import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {ListWrapper} from '../../../rendering';
 
 // ============================================================================
 // Types & Schema

@@ -21,7 +21,7 @@ import {
   EncodedUISpecification,
 } from '@faims3/data-model';
 import {FaimsFormData} from '../lib/formModule/types';
-import { getDefaultMapConfig } from '../lib/components/maps/config';
+import {getDefaultMapConfig} from '../lib/components/maps/config';
 
 function App({uiSpec: rawUiSpec}: {uiSpec: EncodedUISpecification}) {
   const uiSpec = useMemo(() => {
