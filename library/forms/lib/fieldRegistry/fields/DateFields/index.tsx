@@ -192,7 +192,6 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
 
   // Get current stored value (ISO string) and convert to display format
   const storedValue = (state.value?.data as string) ?? '';
-  const displayValue = formatDateTime(storedValue);
   const errors = state.meta.errors as unknown as string[] | undefined;
 
   /**
@@ -243,7 +242,7 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
       <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
         <MuiTextField
           type="datetime-local"
-          value={displayValue}
+          value={toDatetimeLocalFormat(storedValue)}
           onChange={handleChange}
           onBlur={handleBlur}
           variant="outlined"
@@ -283,6 +282,14 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
 // =============================================================================
 // View Components
 // =============================================================================
+
+function toDatetimeLocalFormat(isoString: string): string {
+  // Returns format: yyyy-MM-ddThh:mm:ss (local time)
+  const date = new Date(isoString);
+  const offset = date.getTimezoneOffset() * 60000;
+  const localDate = new Date(date.getTime() - offset);
+  return localDate.toISOString().slice(0, 19);
+}
 
 /**
  * Converts a datetime-local input value to ISO string for storage.
