@@ -32,7 +32,7 @@ import VectorTileSource from 'ol/source/VectorTile';
 import Tile from 'ol/Tile';
 import {TileCoord} from 'ol/tilecoord';
 import VectorTile from 'ol/VectorTile';
-import {MapConfig} from './config';
+import {MapConfig} from './types';
 import {IDBObjectStore} from './IDBObjectStore';
 import {getMapStylesheet} from './styles';
 

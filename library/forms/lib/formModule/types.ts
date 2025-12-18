@@ -2,7 +2,7 @@ import {FormAnnotation, FormUpdateData} from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import React from 'react';
 import {z} from 'zod';
-import {FormConfig} from './formManagers';
+import {FormConfig} from './formManagers/types';
 
 export type FaimsFormData = FormUpdateData | undefined;
 

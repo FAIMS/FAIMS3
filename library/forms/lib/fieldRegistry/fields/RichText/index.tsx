@@ -21,26 +21,15 @@
  */
 
 import React from 'react';
+import {RichTextContent} from '../../../components/RichText';
 import {FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
-import {contentToSanitizedHtml} from './DomPurifier';
 
 interface Props extends FullFieldProps {
   /** The markdown content to be rendered. May include safe HTML tags. */
   content: string;
 }
-
-export const RichTextContent: React.FC<{content: string}> = ({content}) => {
-  if (!content?.trim()) {
-    // Return nothing if content is empty or whitespace
-    return null;
-  }
-
-  return (
-    <div dangerouslySetInnerHTML={{__html: contentToSanitizedHtml(content)}} />
-  );
-};
 
 export const RichTextField: React.FC<Props> = ({content}) => {
   return <RichTextContent content={content} />;
