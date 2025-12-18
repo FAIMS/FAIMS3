@@ -4,6 +4,7 @@ import {
   NavigationButtonsConfig,
   NavigationButtonsTemplate,
 } from './NavigationButtonsTemplate';
+import AddIcon from '@mui/icons-material/Add';
 
 type RelationshipType = 'parent' | 'linked';
 
@@ -245,21 +246,6 @@ export const FormNavigationButtons = ({
       }
     }
 
-    // Create another child button, if needed
-    if (createAnotherChild) {
-      const {fieldLabel, formLabel, onCreate, parentFormLabel, relationType} =
-        createAnotherChild;
-      const relLabel = relationType === 'parent' ? 'parent' : 'related';
-      result.push({
-        label: `Create another ${formLabel} in ${relLabel} ${parentFormLabel}.`,
-        subtitle: `Create and link a new ${formLabel} from ${relLabel} ${parentFormLabel} in field ${fieldLabel}.`,
-        onClick: onCreate,
-        disabled: isSaving,
-        loading: isSaving,
-        statusText,
-      });
-    }
-
     result.push({
       label: navigateToRecordList.label,
       onClick: handleRecordListNavigation,
@@ -267,6 +253,22 @@ export const FormNavigationButtons = ({
       loading: isSaving,
       statusText,
     });
+
+    // Create another child button, if needed
+    if (createAnotherChild) {
+      const {fieldLabel, formLabel, onCreate, parentFormLabel, relationType} =
+        createAnotherChild;
+      const relLabel = relationType === 'parent' ? 'parent' : 'related';
+      result.push({
+        label: `Create another ${formLabel} in ${relLabel} ${parentFormLabel}`,
+        subtitle: `Create and link a new ${formLabel} from ${relLabel} ${parentFormLabel} in field '${fieldLabel}'`,
+        onClick: onCreate,
+        disabled: isSaving,
+        loading: isSaving,
+        statusText,
+        icon: <AddIcon fontSize="small" />,
+      });
+    }
 
     return result;
   }, [

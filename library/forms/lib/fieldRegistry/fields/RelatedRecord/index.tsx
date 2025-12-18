@@ -49,7 +49,10 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // ============================================================================
 // Component Specific Types & Schemas
 // ============================================================================
-export const relatedTypeSchema = z.enum(['faims-core::Child', 'faims-core::Linked']);
+export const relatedTypeSchema = z.enum([
+  'faims-core::Child',
+  'faims-core::Linked',
+]);
 export type RelatedType = z.infer<typeof relatedTypeSchema>;
 const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
   related_type: z.string(),
@@ -71,20 +74,18 @@ const fieldValueEntrySchema = z.object({
   relation_type_vocabPair: z.tuple([z.string(), z.string()]),
 });
 
-const fieldValueSchema = z.union([
+export const relatedFieldValueSchema = z.union([
   z.array(fieldValueEntrySchema),
   fieldValueEntrySchema,
 ]);
-type FieldValue = z.infer<typeof fieldValueSchema>;
+export type RelatedFieldValue = z.infer<typeof relatedFieldValueSchema>;
 type FieldValueEntry = z.infer<typeof fieldValueEntrySchema>;
 
 // ============================================================================
 // Utility Functions
 // ============================================================================
 
-function relationTypeToPair(
-  type: RelatedType
-): [string, string] {
+export function relationTypeToPair(type: RelatedType): [string, string] {
   if (type === 'faims-core::Child') {
     return ['has child', 'is child of'];
   } else {
@@ -424,7 +425,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   const rawValue = props.state.value?.data || undefined;
 
   const value = useMemo(
-    () => fieldValueSchema.safeParse(rawValue).data,
+    () => relatedFieldValueSchema.safeParse(rawValue).data,
     [rawValue]
   );
 
@@ -478,7 +479,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           record_id: res.record._id,
           relation_type_vocabPair: relationTypeToPair(props.relation_type),
         },
-      ] satisfies FieldValue);
+      ] satisfies RelatedFieldValue);
 
       await props.config.trigger.commit();
       return res;
@@ -515,7 +516,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         record_id: record.record._id,
         relation_type_vocabPair: relationTypeToPair(props.relation_type),
       },
-    ] satisfies FieldValue);
+    ] satisfies RelatedFieldValue);
 
     // Build the reciprocal relationship entry for the target record
     const relation: FormRelationshipInstance = {
@@ -683,7 +684,7 @@ const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
 const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
   // 1. If required is true
   if (props.required) {
-    return fieldValueSchema.refine(
+    return relatedFieldValueSchema.refine(
       val => {
         // If it is an array, ensure it has at least one item
         if (Array.isArray(val)) {
@@ -698,7 +699,7 @@ const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
 
   // 2. If required is false
   // Allow null, undefined, or valid schema (including empty array)
-  return fieldValueSchema.optional().nullable();
+  return relatedFieldValueSchema.optional().nullable();
 };
 
 export const relatedRecordFieldSpec: FieldInfo = {

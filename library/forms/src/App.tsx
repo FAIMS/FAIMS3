@@ -21,6 +21,7 @@ import {
   EncodedUISpecification,
 } from '@faims3/data-model';
 import {FaimsFormData} from '../lib/formModule/types';
+import { getDefaultMapConfig } from '../lib/components/maps/config';
 
 function App({uiSpec: rawUiSpec}: {uiSpec: EncodedUISpecification}) {
   const uiSpec = useMemo(() => {
@@ -132,6 +133,7 @@ function App({uiSpec: rawUiSpec}: {uiSpec: EncodedUISpecification}) {
           {selectedForm && (
             <PreviewFormManager
               key={selectedForm}
+              mapConfig={getDefaultMapConfig}
               initialFormData={formValues[selectedForm] ?? {}}
               layout={layout}
               formName={selectedForm}

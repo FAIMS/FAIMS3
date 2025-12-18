@@ -90,9 +90,7 @@ const NavigationButton = ({
         <Box
           component="span"
           sx={{
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
+            whiteSpace: 'wrap',
             textAlign: 'left',
             width: '100%',
             fontSize: subtitle ? '0.875rem' : undefined,
@@ -116,9 +114,7 @@ const NavigationButton = ({
           <Box
             component="span"
             sx={{
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
+              whiteSpace: 'wrap',
               width: '100%',
               textAlign: 'left',
               fontSize: '0.75rem',
