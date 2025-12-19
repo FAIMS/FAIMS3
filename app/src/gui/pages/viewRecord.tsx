@@ -168,7 +168,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
         />
       </Box>
       <Stack spacing={1}>
-        <Typography variant="h4">Report content</Typography>
+        <Typography variant="h5">Report content</Typography>
         <Typography variant="subtitle1">
           If you believe this record contains inappropriate or objectionable
           content, you can flag it here.
@@ -185,15 +185,13 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
             });
             console.log(rev);
             // get the rev
-            let updated = rev.revision;
+            const updated = rev.revision;
             // set or append
             updated.ugcComment = updated.ugcComment
               ? `${updated.ugcComment};${val}`
               : val;
             // save the update
-            await dataEngine.hydrated.updateRevision({
-              ...updated,
-            });
+            await dataEngine.hydrated.updateRevision(updated);
           }}
         />
       </Stack>
