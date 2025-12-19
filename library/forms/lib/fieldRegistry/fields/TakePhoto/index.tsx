@@ -21,7 +21,7 @@ import {Buffer} from 'buffer';
 import React, {useCallback, useMemo, useState} from 'react';
 import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
-import {FullFormConfig} from '../../../formModule';
+import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,
@@ -685,7 +685,7 @@ export const takePhotoFieldSpec: FieldInfo = {
   fieldPropsSchema: takePhotoPropsSchema,
   fieldDataSchemaFunction: (props: TakePhotoProps) => {
     // check there is at least one entry
-    let base = z.array(z.string());
+    let base: z.ZodType<any> = z.array(z.string());
     if (props.required) {
       base = base.refine(val => (val ?? []).length > 0, {
         message: 'At least one attachment is required',

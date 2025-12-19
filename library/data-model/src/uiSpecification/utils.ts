@@ -624,6 +624,20 @@ export function getFieldLabel(
   }
 }
 
+export function getFormLabel({
+  uiSpec,
+  formId,
+}: {
+  uiSpec: ProjectUIModel;
+  formId: string;
+}) {
+  if (formId in uiSpec.viewsets) {
+    return uiSpec.viewsets[formId].label ?? formId;
+  } else {
+    return formId;
+  }
+}
+
 export function getVisibleTypes(ui_specification: ProjectUIModel) {
   if (ui_specification)
     return (

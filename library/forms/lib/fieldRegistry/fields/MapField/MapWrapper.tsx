@@ -48,7 +48,7 @@ import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
 import {MapComponent} from '../../../components/maps/MapComponent';
-import {MapConfig} from '../../..';
+import {MapConfig} from '../../../components/maps/types';
 
 export type MapAction = 'save' | 'close';
 

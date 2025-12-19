@@ -63,16 +63,24 @@ type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
 const valueSchema = (props: SelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
 
+  // Handle edge case of no options defined
   if (optionValues.length === 0) {
-    return z.never();
+    if (props.required) {
+      return z.string().min(1, {message: 'Please select an option'});
+    }
+    return z.string();
   }
 
-  if (optionValues.length === 1) {
-    return z.literal(optionValues[0]);
+  // Valid option values schema
+  const optionsSchema = z.enum(optionValues as [string, ...string[]]);
+
+  if (props.required) {
+    // Required: must be one of the valid options (not empty string)
+    return optionsSchema;
   }
 
-  // z.union requires a tuple with at least 2 elements
-  return z.enum(optionValues as [string, ...string[]]);
+  // Optional: allow empty string for no selection, or a valid option
+  return z.union([optionsSchema, z.literal('')]);
 };
 
 type FieldProps = SelectFieldProps & FullFieldProps;

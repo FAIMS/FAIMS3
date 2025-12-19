@@ -29,7 +29,7 @@ import {MapPreview} from '../../../components/maps/MapPreview';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {FullFieldProps} from '../../../formModule/types';
-import {MapRenderer} from '../../../rendering';
+import {MapRenderer} from '../../../rendering/fields/view/specialised/Mapping';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';

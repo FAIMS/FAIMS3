@@ -8,7 +8,7 @@ import {
   ProjectUIModel,
   UISpecification,
 } from '@faims3/data-model';
-import {MapConfig} from '..';
+import {MapConfig} from '../components/maps/types';
 
 export type DataViewTraceEntry = {
   // ID of the record

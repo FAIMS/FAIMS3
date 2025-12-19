@@ -6,7 +6,7 @@ import {
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
 import {FieldAnnotation} from './Annotation';
-import {FormManagerConfig, FullFormManagerConfig} from './formManagers';
+import {FormManagerConfig, FullFormManagerConfig} from './formManagers/types';
 import {
   BaseFieldProps,
   EncodedFieldSpecification,

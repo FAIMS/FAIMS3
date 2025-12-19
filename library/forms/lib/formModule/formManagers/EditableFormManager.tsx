@@ -3,27 +3,32 @@ import {
   currentlyVisibleMap,
   FaimsAttachments,
   FormDataEntry,
+  FormRelationship,
+  getFieldLabel,
+  getFormLabel,
+  getViewsetForField,
   HydratedRecordDocument,
 } from '@faims3/data-model';
+import {Alert, Snackbar} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
 import {debounce, DebouncedFunc} from 'lodash';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
-  ComponentProps,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+  RelatedFieldValue,
+  relatedFieldValueSchema,
+} from '../../fieldRegistry/fields/RelatedRecord/types';
+import {relationTypeToPair} from '../../fieldRegistry/fields/RelatedRecord/utils';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {getImpliedNavigationRelationships} from '../utils';
-import {FieldVisibilityMap, FormManager} from './FormManager';
+import {FormManager} from './FormManager';
+import {FieldVisibilityMap} from './types';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
   FormNavigationButtons,
+  FormNavigationButtonsProps,
   ImpliedParentNavInfo,
   ParentNavInfo,
 } from './components/NavigationButtons';
@@ -56,7 +61,7 @@ const FORM_SYNC_DEBOUNCE_MS = 1000;
 /**
  * Props for the EditableFormManager component.
  */
-export interface EditableFormManagerProps extends ComponentProps<any> {
+export interface EditableFormManagerProps {
   /** The record ID being edited */
   recordId: string;
   /** The currently active user */
@@ -102,8 +107,13 @@ export interface EditableFormManagerHandle {
  * - Attachment management (add/remove)
  * - Form submission and completion
  */
-export const EditableFormManager = (props: EditableFormManagerProps) => {
+export const EditableFormManager: React.FC<
+  EditableFormManagerProps
+> = props => {
   const {debugMode = false, onReady} = props;
+
+  const [errorOpen, setErrorOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   // Track whether any edits have been made (triggers revision creation in
   // parent mode)
@@ -718,7 +728,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     },
   };
 
-  const impliedParents = useMemo(() => {
+  const impliedParents: ImpliedParentNavInfo[] | undefined = useMemo(() => {
     // Wait until data loaded
     if (!parentNavigationInformation.data) {
       return undefined;
@@ -731,21 +741,18 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
     }
     // Look for implied parents
     if (implied && implied.length > 0) {
-      return implied.map(
-        entry =>
-          ({
-            label: `View ${entry.hrid}`,
+      return implied.map(entry => ({
+        label: `View ${entry.hrid}`,
+        recordId: entry.recordId,
+        onNavigate() {
+          props.config.navigation.navigateToViewRecord({
             recordId: entry.recordId,
-            onNavigate() {
-              props.config.navigation.navigateToViewRecord({
-                recordId: entry.recordId,
-              });
-            },
-            formId: entry.formId,
-            fieldId: entry.fieldId,
-            type: entry.type,
-          }) satisfies ImpliedParentNavInfo
-      );
+          });
+        },
+        formId: entry.formId,
+        fieldId: entry.fieldId,
+        type: entry.type,
+      }));
     }
     // Otherwise
     return undefined;
@@ -832,6 +839,145 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
       ? dataEngine.uiSpec.viewsets[info.parentNavButton.formId]?.label
       : undefined;
 
+    // here we determine if we want the 'create another child' button to be shown
+    // requires that a) we reached this point explicitly b) we used the 'create'
+    // not the 'link existing' function of the related record selector
+    let createAnotherChildConfig:
+      | FormNavigationButtonsProps['createAnotherChild']
+      | undefined = undefined;
+
+    // We have lineage info
+    if (info && info.fullContext.lineage.length > 0) {
+      // Get the head element
+      const head =
+        info.fullContext.lineage[info.fullContext.lineage.length - 1];
+      // If the head was navigated to via the creation of a related record, show
+      if (head.explorationType === 'created-new-child') {
+        // Determine props needed
+        // Field label
+        const uiSpec = dataEngine.uiSpec;
+        const fieldLabel = getFieldLabel(uiSpec, head.fieldId);
+        const formLabel = getFormLabel({uiSpec, formId: props.formId});
+        const formId = getViewsetForField(uiSpec, head.fieldId);
+        const parentFormLabel = formId
+          ? getFormLabel({uiSpec, formId})
+          : 'Unknown';
+
+        // This function needs to use the knowledge about the parent to determine how to create another record
+        const onCreate = async () => {
+          // First, grab the hydrated parent record
+          const parentFormData = await dataEngine.form.getExistingFormData({
+            recordId: head.recordId,
+            revisionId: head.revisionId,
+          });
+
+          // Now grab the relevant field value
+          const relevantFieldValue = parentFormData.data[head.fieldId]?.data;
+
+          // Use the related field schema to parse this - let's be safe
+          const {success, error} =
+            relatedFieldValueSchema.safeParse(relevantFieldValue);
+
+          // Don't proceed if parent seems weird
+          if (!success) {
+            setErrorMessage(
+              'Failed to parse related field data. Try refreshing the app or contact a system administrator.'
+            );
+            setErrorOpen(true);
+            console.error(
+              'Failed to parse related field value for creating another child:',
+              error
+            );
+            return;
+          }
+
+          // Create the correct type of relationship (this will be placed on the
+          // new child) - we refer to the PARENT properties here since we are
+          // creating a new child related to our current parent
+          let relationship: FormRelationship;
+          const relationType =
+            head.relationType === 'parent'
+              ? 'faims-core::Child'
+              : 'faims-core::Linked';
+          const relation = {
+            fieldId: head.fieldId,
+            recordId: head.recordId,
+            relationTypeVocabPair: relationTypeToPair(relationType),
+          };
+          if (head.relationType === 'parent') {
+            relationship = {
+              parent: [relation],
+            };
+          } else {
+            relationship = {
+              linked: [relation],
+            };
+          }
+
+          // Create the sibling record using the form module
+          const res = await dataEngine.form.createRecord({
+            createdBy: props.config.user,
+            // sibling - same formId
+            formId: props.formId,
+            // this is placed onto the sibling, hence referring to parent
+            relationship,
+          });
+
+          // Convert the parent field value into an array, handling singleton
+          // case
+          const normalisedRelationships = !relevantFieldValue
+            ? []
+            : Array.isArray(relevantFieldValue)
+              ? relevantFieldValue
+              : [relevantFieldValue];
+
+          // Update the data of the parent record
+          parentFormData.data[head.fieldId].data = [
+            ...normalisedRelationships,
+            {
+              record_id: res.record._id,
+              relation_type_vocabPair: relationTypeToPair(relationType),
+            },
+          ] satisfies RelatedFieldValue;
+
+          // We are always in the midst of some edit, but the edit mode could be
+          // new or parent - this means we should respect this based on the
+          // navigation constraints
+          const updateMode = head.parentMode;
+          // Update the parent revision (awaiting)
+          await dataEngine.form.updateRevision({
+            revisionId: parentFormData.revisionId,
+            mode: updateMode,
+            recordId: parentFormData.context.record._id,
+            update: parentFormData.data,
+            updatedBy: props.activeUser,
+          });
+
+          // While nothing has necessarily changed here in the current record
+          // due to this, we should still flush before we navigate
+          await flushSave();
+
+          // Then navigate! Note - we want to strip the current head off to - we
+          // are really going to the parent, then navigating to the child. NOTE
+          // the stripping occurs first, this is defined in editRecord.tsx in
+          // /app as this navigational context needs to manage this.
+          props.config.navigation.toRecord({
+            recordId: res.record._id,
+            mode: 'new',
+            // We don't need to change the navigation at all
+          });
+        };
+
+        createAnotherChildConfig = {
+          fieldLabel,
+          formLabel,
+          parentFormLabel,
+          relationType: head.relationType,
+          onCreate,
+        };
+      }
+    }
+
     return (
       <FormNavigationButtons
         parentNavInfo={info?.parentNavButton}
@@ -848,6 +994,7 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
           });
         }}
         impliedParentNavInfo={impliedParents}
+        createAnotherChild={createAnotherChildConfig}
       />
     );
   }, [
@@ -861,6 +1008,27 @@ export const EditableFormManager = (props: EditableFormManagerProps) => {
 
   return (
     <>
+      {
+        // Error snackbar
+      }
+      <Snackbar
+        open={errorOpen}
+        autoHideDuration={4000}
+        onClose={() => setErrorOpen(false)}
+        anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
+      >
+        <Alert
+          onClose={() => {
+            setErrorOpen(false);
+            setErrorMessage('');
+          }}
+          severity="error"
+          variant="filled"
+        >
+          {errorMessage}
+        </Alert>
+      </Snackbar>
+
       {
         // Breadcrumbs
       }

@@ -24,7 +24,8 @@
     "watch": "pnpm run watch:types & pnpm run watch:build",
     "watch:types": "tsc --p ./tsconfig-build.json --watch",
     "watch:build": "vite build --watch",
-    "lint": "eslint .",
+    "circular-dep-check": "madge -c --extensions ts lib/",
+    "lint": "(pnpm run circular-dep-check || exit 0) && eslint .",
     "fix": "gts fix",
     "preview": "vite preview",
     "test": "vitest"
@@ -54,9 +55,10 @@
     "react-dom": "^18.3.1",
     "react-dropzone": "14.2.3",
     "react-router-dom": "^6.26.0",
-    "zod": "^4.1.12"
+    "zod": "^3.24.1"
   },
   "devDependencies": {
+    "madge": "^8.0.0",
     "@eslint/js": "^9.36.0",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/react": "^16.3.0",

@@ -7,8 +7,8 @@ import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {VectorTileStore} from './TileStore';
-import {MapConfig} from './config';
 import {GeoJSONFeatureOrCollectionSchema} from './types';
+import {MapConfig} from './types';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value

@@ -836,6 +836,7 @@ class HydratedOperations {
         recordId: revision.record_id,
         relationship: formRelationship,
         deleted: revision.deleted ?? false,
+        ugcComment: revision.ugc_comment,
       },
       data: mappedData,
       metadata: {
@@ -899,6 +900,7 @@ class HydratedOperations {
       revision_format_version: 1,
       type: revision.formId,
       relationship: dbRelationship,
+      ugc_comment: revision.ugcComment,
     };
 
     const updated = await this.core.updateRevision(dbRevision);
@@ -935,6 +937,7 @@ class HydratedOperations {
       parents: rev.parents,
       recordId: rev.record_id,
       relationship: formRelationship,
+      ugcComment: rev.ugc_comment,
     };
   }
 

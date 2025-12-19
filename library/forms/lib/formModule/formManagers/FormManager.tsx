@@ -4,12 +4,8 @@ import {InlineSectionDisplay} from '../sections/InlineSections';
 import {TabbedSectionDisplay} from '../sections/TabbedSections';
 import {FaimsForm} from '../types';
 import {FormStateDisplay} from './FormStateDisplay';
-import {FormManagerConfig} from './types';
+import {FieldVisibilityMap, FormManagerConfig} from './types';
 import {Typography} from '@mui/material';
-
-// Map from section -> list of visible fields - section included IFF it's
-// visible at all
-export type FieldVisibilityMap = Record<string, string[]>;
 
 /**
  * Props for the base FormManager component.

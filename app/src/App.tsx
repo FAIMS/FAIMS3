@@ -38,25 +38,19 @@ import {
 } from 'react-router-dom';
 import './App.css';
 import {OFFLINE_MAPS} from './buildconfig';
-import {
-  ActivePrivateRoute,
-  OnlineOnlyRoute,
-  TolerantPrivateRoute,
-} from './constants/privateRouter';
+import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
 import {getEditRecordRoute} from './constants/routes';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
 import {MapDownload} from './gui/components/maps/MapDownload';
-import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
 import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
 import AboutBuild from './gui/pages/about-build';
 import {EditRecordPage} from './gui/pages/editRecord';
 import Notebook from './gui/pages/notebook';
 import {PouchExplorer} from './gui/pages/pouchExplorer';
-import RecordCreate from './gui/pages/record-create';
 import {SignIn} from './gui/pages/signin';
 import {ViewRecordPage} from './gui/pages/viewRecord';
 import Workspace from './gui/pages/workspace';
@@ -205,30 +199,10 @@ const routes: RouteObject[] = [
           </TolerantPrivateRoute>
         ),
       },
-      {
-        // Creating a new survey requires both authentication and connectivity
-        path: ROUTES.CREATE_NEW_SURVEY,
-        element: (
-          <OnlineOnlyRoute>
-            <ActivePrivateRoute>
-              <CreateNewSurvey />
-            </ActivePrivateRoute>
-          </OnlineOnlyRoute>
-        ),
-      },
 
       // =========================================================================
       // PROTECTED ROUTES - RECORD MANAGEMENT
       // =========================================================================
-      {
-        // Create a new record of a specific type
-        path: `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId${ROUTES.RECORD_CREATE}:typeName`,
-        element: (
-          <TolerantPrivateRoute>
-            <RecordCreate />
-          </TolerantPrivateRoute>
-        ),
-      },
       {
         // Edit an existing record
         path: getEditRecordRoute({

@@ -148,16 +148,6 @@ export async function progressiveSaveFiles(
     console.log('error dumping local state database');
   }
 
-  try {
-    if (keepDumping)
-      keepDumping = await progressiveDump(
-        databaseService.getDraftDatabase().db,
-        writer(15, 20)
-      );
-  } catch {
-    console.log('error dumping draft database');
-  }
-
   // TODO dump the redux store projects here
   /*
   let start = 20;

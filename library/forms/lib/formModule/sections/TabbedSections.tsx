@@ -18,14 +18,13 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
+import {useStore} from '@tanstack/react-form';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
-import {FormManagerConfig} from '../formManagers';
-import {FieldVisibilityMap} from '../formManagers/FormManager';
+import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';
-import {FormSection} from './FormSection';
-import {useStore} from '@tanstack/react-form';
 import {getFieldId} from '../utils';
+import {FormSection} from './FormSection';
 
 // ============================================================================
 // Constants
@@ -132,10 +131,23 @@ const getStepColor = (
   hasError: boolean,
   theme: Theme
 ): string => {
-  if (hasError) return theme.palette.error.main;
-  if (isActive) return theme.palette.primary.main;
-  if (isCompleted) return theme.palette.primary.main;
-  return theme.palette.grey[400];
+  // The theme should have these - but typing unclear
+  const themeAny = theme as {
+    stepperColors?: {
+      current?: string;
+      visited?: string;
+      error?: string;
+      notVisited?: string;
+    };
+  };
+
+  if (hasError)
+    return themeAny.stepperColors?.error ?? theme.palette.error.main;
+  if (isActive)
+    return themeAny.stepperColors?.current ?? theme.palette.primary.main;
+  if (isCompleted)
+    return themeAny.stepperColors?.visited ?? theme.palette.success.main;
+  return themeAny.stepperColors?.notVisited ?? theme.palette.grey[400];
 };
 
 /**
@@ -201,6 +213,11 @@ const StepperTab = styled(Tab)(() => ({
   alignItems: 'center',
   // Offset to align the circle center with connector line
   paddingTop: '14px',
+
+  backgroundColor: 'transparent',
+  '&.Mui-selected': {
+    backgroundColor: 'transparent',
+  },
 
   // Connector line between steps
   '&::after': {
