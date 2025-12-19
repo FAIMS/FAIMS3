@@ -254,27 +254,3 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
     </GridToolbarContainer>
   );
 }
-
-/**
- * Alternate toolbar for managing draft DataGrid, with basic functionality like filters.
- *
- * @returns A simple toolbar for drafts with filter options.
- */
-export function NotebookDraftDataGridToolbar() {
-  return (
-    <GridToolbarContainer>
-      <Grid
-        container
-        spacing={2}
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        {enableFilters && (
-          <Grid item>
-            <GridToolbarFilterButton />
-          </Grid>
-        )}
-      </Grid>
-    </GridToolbarContainer>
-  );
-}

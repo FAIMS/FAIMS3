@@ -60,6 +60,7 @@ import {localGetDataDb} from '../../utils/database';
 import RecordDelete from '../components/notebook/delete';
 import RecordMeta from '../components/record/meta';
 import {theme} from '../themes';
+import UGCReport from '../components/record/UGCReport';
 
 /**
  * Available tabs for the record view page
@@ -125,6 +126,7 @@ interface InfoTabContentProps {
   serverId: string;
   hrid: string;
   revisionId: string;
+  dataEngine: DataEngine;
 }
 
 /**
@@ -134,8 +136,9 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
   projectId,
   recordId,
   serverId,
+  dataEngine,
   revisionId,
-  hrid
+  hrid,
 }) => {
   const nav = useNavigate();
 
@@ -164,6 +167,34 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
           handleRefresh={handleRefresh}
         />
       </Box>
+      <Stack spacing={1}>
+        <Typography variant="h5">Report content</Typography>
+        <Typography variant="subtitle1">
+          If you believe this record contains inappropriate or objectionable
+          content, you can flag it here.
+        </Typography>
+        <UGCReport
+          handleUGCReport={async (val: string | null) => {
+            if (val === null) {
+              return;
+            }
+            // Fetch hydrated revision
+            const rev = await dataEngine.hydrated.getHydratedRecord({
+              recordId,
+              revisionId,
+            });
+            console.log(rev);
+            // get the rev
+            const updated = rev.revision;
+            // set or append
+            updated.ugcComment = updated.ugcComment
+              ? `${updated.ugcComment};${val}`
+              : val;
+            // save the update
+            await dataEngine.hydrated.updateRevision(updated);
+          }}
+        />
+      </Stack>
     </Stack>
   );
 };
@@ -489,6 +520,7 @@ export const ViewRecordPage: React.FC = () => {
         <TabPanel value={RECORD_TABS.INFO} sx={{p: 0, pt: 2}}>
           {revisionId ? (
             <InfoTabContent
+              dataEngine={getDataEngine()}
               projectId={projectId}
               hrid={formData.context.hrid}
               recordId={recordId}

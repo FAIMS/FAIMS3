@@ -57,9 +57,6 @@ const mockState = {
       },
     },
   },
-  records: {
-    edited: false,
-  },
   auth: {
     activeUser: testUser,
     servers: {
@@ -73,7 +70,7 @@ const mockState = {
 };
 
 // Mock just the store with getState method
-vi.mock('../../context/store', () => ({
+vi.mock('../context/store', () => ({
   store: {
     getState: vi.fn(() => mockState),
     dispatch: vi.fn(),
@@ -94,7 +91,7 @@ vi.mock('react-dom/client', () => ({
 }));
 
 // Mock the authSlice
-vi.mock('../../../context/slices/authSlice', () => ({
+vi.mock('../../context/slices/authSlice', () => ({
   // Mock the selector
   selectActiveUser: vi.fn(() => ({
     serverId: 'test-server',
@@ -135,15 +132,12 @@ vi.mock('../../../context/slices/authSlice', () => ({
 }));
 
 import React from 'react';
-import {getComponentFromFieldConfig} from '../components/record/fields';
-import {render} from '@testing-library/react';
-import {Formik, FormikConfig, FormikProps} from 'formik';
 import {configureStore} from '@reduxjs/toolkit';
 import {Provider} from 'react-redux';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider} from '@mui/material/styles';
-import testTheme from '../../gui/themes/default';
-import {ActiveUser} from '../../context/slices/authSlice';
+import testTheme from './themes/default';
+import {ActiveUser} from '../context/slices/authSlice';
 import {Router} from 'react-router-dom';
 import {FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER} from 'redux-persist';
 
@@ -167,7 +161,6 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
       auth: () => null,
       projects: () => null,
       alerts: () => null,
-      records: () => null,
     },
     middleware: getDefaultMiddleware =>
       getDefaultMiddleware({
@@ -200,64 +193,4 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
       </NotificationContext.Provider>
     </Router>
   );
-};
-
-/**
- * Render a form element via Formik for testing
- * @param ui - the form element to render
- * @param props - properties to inject into the element
- **/
-export const renderForm = (
-  ui: React.ReactNode,
-  initialValues: any,
-  props?: Partial<FormikConfig<any>>
-) => {
-  let injected: FormikProps<any>;
-  const {rerender, ...rest} = render(
-    <TestWrapper>
-      <Formik onSubmit={() => {}} initialValues={initialValues} {...props}>
-        {(formikProps: FormikProps<any>) =>
-          (injected = formikProps) && ui ? ui : null
-        }
-      </Formik>
-    </TestWrapper>
-  );
-  return {
-    getFormProps(): FormikProps<any> {
-      return injected;
-    },
-    ...rest,
-    rerender: () =>
-      rerender(
-        <TestWrapper>
-          <Formik onSubmit={() => {}} initialValues={initialValues} {...props}>
-            {(formikProps: FormikProps<any>) =>
-              (injected = formikProps) && ui ? ui : null
-            }
-          </Formik>
-        </TestWrapper>
-      ),
-  };
-};
-/**
- * instantiateField - instantiate a field from a uiSpec for testing
- * @param uiSpec - uiSpec for the field we want to render
- * @returns - the rendered field element
- */
-export const instantiateField = (uiSpec: any, initialValues: any) => {
-  const formProps = {
-    values: {},
-    errors: {},
-    touched: {},
-    handleChange: () => {},
-    setFieldValue: () => {},
-    isSubmitting: false,
-    isValidating: false,
-    submitCount: 0,
-  };
-  // can't get all of the members of FormikProps, so just ignore the error
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const element = getComponentFromFieldConfig(uiSpec, 'test', formProps);
-  return renderForm(element, initialValues);
 };

@@ -51,9 +51,7 @@
     "pouchdb": "^9.0.0"
   },
   "dependencies": {
-    "@demvsystems/yup-ast": "^1.2.2",
     "@types/pouchdb": "^6.4.2",
-    "fast-json-stable-stringify": "^2.1.0",
     "lodash": "^4.17.21",
     "pouchdb-security-helper": "^2.1.2",
     "uuid": "^9.0.0",

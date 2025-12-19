@@ -27,8 +27,8 @@ import React, {useMemo} from 'react';
 import {
   Project,
   selectActiveServerProjects,
-} from '../../../context/slices/projectSlice';
-import {useAppSelector} from '../../../context/store';
+} from '../context/slices/projectSlice';
+import {useAppSelector} from '../context/store';
 
 // Aggregate status type
 interface AggregatedSyncStatus {
@@ -194,7 +194,11 @@ export default function SyncStatus() {
         'Cannot sync to server, your device may be offline.'
       );
     } else if (isSyncingUp || isSyncingDown) {
-      return `Sync is underway${aggregatedStatus.pendingRecords > 0 ? ` (${aggregatedStatus.pendingRecords} pending)` : ''}`;
+      return `Sync is underway${
+        aggregatedStatus.pendingRecords > 0
+          ? ` (${aggregatedStatus.pendingRecords} pending)`
+          : ''
+      }`;
     } else if (status === 'paused') {
       return 'Sync is paused';
     } else {

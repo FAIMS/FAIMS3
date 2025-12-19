@@ -63,7 +63,7 @@ import {useAppSelector} from '../../context/store';
 import SystemAlert from '../components/alert';
 import {AppBarHeading} from '../components/app-bar/app-bar-heading';
 import AppBarAuth from '../components/authentication/appbarAuth';
-import SyncStatus from '../components/sync';
+import SyncStatus from '../../sync/sync-state';
 
 const drawerWidth = 240;
 

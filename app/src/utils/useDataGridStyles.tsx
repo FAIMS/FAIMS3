@@ -4,7 +4,7 @@
  *   This file defines a shared styling hook for customizing the appearance of
  *   MUI's DataGrid component across the application. It encapsulates styling rules
  *   for headers, rows, cells, pagination, and responsive behavior to ensure consistent
- *   theming and layout in tables like RecordsTable and DraftsTable.
+ *   theming and layout in tables like RecordsTable.
  *
  *   The styles defined here follow the FAIMS design system using the current MUI theme,
  *   and include responsive padding, hover interactions, visual enhancements,

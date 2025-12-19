@@ -30,7 +30,7 @@ import {
 } from '@mui/material';
 import OutlinedFlagIcon from '@mui/icons-material/OutlinedFlag';
 interface UGCReportProps {
-  handleUGCReport: Function;
+  handleUGCReport: (val: string | null) => Promise<void>;
 }
 
 export default function UGCReport(props: UGCReportProps) {
@@ -48,8 +48,8 @@ export default function UGCReport(props: UGCReportProps) {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
   };
-  const handleSubmit = () => {
-    props.handleUGCReport(value);
+  const handleSubmit = async () => {
+    await props.handleUGCReport(value);
     setValue(null);
     setOpen(false);
   };
