@@ -1,9 +1,8 @@
 import {ProjectUIModel} from '@faims3/data-model';
-import {Field} from '../Field';
-import {FormManagerConfig} from '../formManagers';
-import {FieldVisibilityMap} from '../formManagers/FormManager';
-import {FaimsForm} from '../types';
 import {FORCE_IGNORED_FIELDS} from '../../fieldRegistry';
+import {Field} from '../Field';
+import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
+import {FaimsForm} from '../types';
 
 interface FormSectionProps {
   uiSpec: ProjectUIModel;

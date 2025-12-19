@@ -1,8 +1,7 @@
 import {UISpecification} from '@faims3/data-model';
-import {FormManagerConfig} from '../formManagers';
+import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';
 import {FormSection} from './FormSection';
-import {FieldVisibilityMap} from '../formManagers/FormManager';
 import {useEffect} from 'react';
 import {getFieldId} from '../utils';
 import {Typography} from '@mui/material';

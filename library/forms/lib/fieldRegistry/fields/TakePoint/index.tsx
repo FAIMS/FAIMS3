@@ -43,7 +43,7 @@ import {useState} from 'react';
 import {z} from 'zod';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
-import {MapRenderer} from '../../../rendering';
+import {MapRenderer} from '../../../rendering/fields/view/specialised/Mapping';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
@@ -268,7 +268,13 @@ export const TakePoint = (props: FieldProps) => {
  * Generate a zod schema for the value.
  * The value is a GeoJSON Feature with Point geometry, or null if not captured.
  */
-const valueSchema = () => {
+const valueSchema = (props: TakePointFieldProps) => {
+  if (props.required) {
+    // Required: must have a valid position (FAIMSPositionSchema doesn't allow
+    // null)
+    return FAIMSPositionSchema;
+  }
+  // Optional: allow null for no position captured
   return z.union([FAIMSPositionSchema, z.null()]);
 };
 

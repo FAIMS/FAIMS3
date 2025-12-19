@@ -56,6 +56,7 @@ export type ComponentParameters = {
   relation_type?: string;
   related_type_label?: string;
   relation_linked_vocabPair?: [string, string][];
+  numberType?: 'integer' | 'floating';
   required?: boolean;
   template?: string;
   num_digits?: number;
@@ -70,20 +71,20 @@ export type ComponentParameters = {
   select?: boolean;
   geoTiff?: string;
   type?: string;
+  min?: number;
+  max?: number;
+  rows?: number;
   valuetype?: string;
   protection?: 'protected' | 'allow-hiding' | 'none';
   hidden?: boolean;
   allowLinkToExisting?: boolean;
 };
 
-export type ValidationSchemaElement = (string | number | unknown[])[];
-
 export type FieldType = {
   'component-namespace': string;
   'component-name': string;
   'type-returned': string;
   'component-parameters': ComponentParameters;
-  validationSchema?: ValidationSchemaElement[];
   initialValue?: unknown;
   access?: string[];
   condition?: ConditionType | null;

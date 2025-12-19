@@ -35,61 +35,20 @@ import {
   UseQueryResult,
 } from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
-import z from 'zod';
-import {FullFormManagerConfig} from '../../../formModule';
-import {
-  BaseFieldProps,
-  BaseFieldPropsSchema,
-  FormFieldContextProps,
-} from '../../../formModule/types';
+import {FullFormManagerConfig} from '../../../formModule/formManagers/types';
+import {BaseFieldProps, FormFieldContextProps} from '../../../formModule/types';
 import {RelatedRecordRenderer} from '../../../rendering/fields/view/specialised/RelatedRecord';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-
-// ============================================================================
-// Component Specific Types & Schemas
-// ============================================================================
-
-const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
-  related_type: z.string(),
-  relation_type: z.enum(['faims-core::Child', 'faims-core::Linked']),
-  multiple: z.boolean().optional().default(false),
-  allowLinkToExisting: z.boolean().optional().default(false),
-});
-
-type RelatedRecordFieldProps = z.infer<typeof relatedRecordPropsSchema>;
-type RelatedRecordProps = RelatedRecordFieldProps & FormFieldContextProps;
-
-interface FullRelatedRecordFieldProps extends RelatedRecordProps {
-  config: FullFormManagerConfig;
-}
-
-const fieldValueEntrySchema = z.object({
-  record_id: z.string(),
-  project_id: z.string().optional(),
-  relation_type_vocabPair: z.tuple([z.string(), z.string()]),
-});
-
-const fieldValueSchema = z.union([
-  z.array(fieldValueEntrySchema),
-  fieldValueEntrySchema,
-]);
-type FieldValue = z.infer<typeof fieldValueSchema>;
-type FieldValueEntry = z.infer<typeof fieldValueEntrySchema>;
-
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-function relationTypeToPair(
-  type: 'faims-core::Child' | 'faims-core::Linked'
-): [string, string] {
-  if (type === 'faims-core::Child') {
-    return ['has child', 'is child of'];
-  } else {
-    return ['is linked to', 'is linked from'];
-  }
-}
+import {
+  FieldValueEntry,
+  FullRelatedRecordFieldProps,
+  RelatedFieldValue,
+  relatedFieldValueSchema,
+  RelatedRecordFieldProps,
+  relatedRecordPropsSchema,
+} from './types';
+import {relationTypeToPair} from './utils';
 
 // ============================================================================
 // UI Components
@@ -423,7 +382,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   const rawValue = props.state.value?.data || undefined;
 
   const value = useMemo(
-    () => fieldValueSchema.safeParse(rawValue).data,
+    () => relatedFieldValueSchema.safeParse(rawValue).data,
     [rawValue]
   );
 
@@ -477,7 +436,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           record_id: res.record._id,
           relation_type_vocabPair: relationTypeToPair(props.relation_type),
         },
-      ] satisfies FieldValue);
+      ] satisfies RelatedFieldValue);
 
       await props.config.trigger.commit();
       return res;
@@ -498,6 +457,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           recordId: props.config.recordId,
           relationType:
             props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
+          explorationType: 'created-new-child',
         },
       });
     },
@@ -513,7 +473,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         record_id: record.record._id,
         relation_type_vocabPair: relationTypeToPair(props.relation_type),
       },
-    ] satisfies FieldValue);
+    ] satisfies RelatedFieldValue);
 
     // Build the reciprocal relationship entry for the target record
     const relation: FormRelationshipInstance = {
@@ -569,6 +529,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         recordId: props.config.recordId,
         relationType:
           props.relation_type === 'faims-core::Child' ? 'parent' : 'linked',
+        explorationType: 'visited',
       },
     });
   };
@@ -680,7 +641,7 @@ const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
 const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
   // 1. If required is true
   if (props.required) {
-    return fieldValueSchema.refine(
+    return relatedFieldValueSchema.refine(
       val => {
         // If it is an array, ensure it has at least one item
         if (Array.isArray(val)) {
@@ -695,7 +656,7 @@ const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
 
   // 2. If required is false
   // Allow null, undefined, or valid schema (including empty array)
-  return fieldValueSchema.optional().nullable();
+  return relatedFieldValueSchema.optional().nullable();
 };
 
 export const relatedRecordFieldSpec: FieldInfo = {

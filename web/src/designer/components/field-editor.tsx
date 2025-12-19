@@ -21,6 +21,7 @@ import LockRounded from '@mui/icons-material/LockRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
 
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
@@ -54,11 +55,11 @@ import DebouncedTextField from './debounced-text-field';
 import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from './Fields/BaseFieldEditor';
 import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
+import {ControlledNumberFieldEditor} from './Fields/ControlledNumberFieldEditor';
 import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
-import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
+import {NumberFieldEditor} from './Fields/NumberFieldEditor';
 import {OptionsEditor} from './Fields/OptionsEditor';
-import {RandomStyleEditor} from './Fields/RandomStyleEditor';
 import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
 import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
@@ -743,8 +744,11 @@ export const FieldEditor = ({
             (fieldComponent === 'MapFormField' && (
               <MapFormFieldEditor fieldName={fieldName} />
             )) ||
-            (fieldComponent === 'RandomStyle' && (
-              <RandomStyleEditor fieldName={fieldName} />
+            (fieldComponent === 'NumberField' && (
+              <NumberFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'ControlledNumber' && (
+              <ControlledNumberFieldEditor fieldName={fieldName} />
             )) ||
             (fieldComponent === 'RichText' && (
               <RichTextEditor fieldName={fieldName} />

@@ -7,7 +7,7 @@ import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {VectorTileStore} from './TileStore';
-import {MapConfig} from './config';
+import {MapConfig} from './types';
 import {GeoJSONFeatureCollectionSchema} from './types';
 
 /**

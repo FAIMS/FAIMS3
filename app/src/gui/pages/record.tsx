@@ -755,12 +755,11 @@ export default function Record() {
                 {draftId ? 'Discard Draft' : 'Delete Record'}
               </Typography>
               <RecordDelete
-                project_id={projectId!}
+                projectId={projectId!}
                 serverId={serverId}
-                record_id={recordId!}
-                revision_id={revisionId!}
-                draft_id={draftId ? draftId : null}
-                show_label={true}
+                recordId={recordId!}
+                revisionId={revisionId!}
+                showLabel={true}
                 handleRefresh={handleRefresh}
               />
             </Box>

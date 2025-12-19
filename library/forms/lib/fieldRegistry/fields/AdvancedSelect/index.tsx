@@ -70,7 +70,7 @@ const AdvancedSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
     optiontree: z.array(RenderTreeSchema),
   }),
-  valuetype: z.string().optional(),
+  valuetype: z.enum(['full', 'child']).optional().default('full'),
 });
 
 type AdvancedSelectFieldProps = z.infer<typeof AdvancedSelectFieldPropsSchema>;
@@ -382,7 +382,10 @@ export const AdvancedSelect = (props: FieldProps) => {
  * Generate a zod schema for the value.
  * The value is a string representing the selected path or child name.
  */
-const valueSchema = () => {
+const valueSchema = (props: AdvancedSelectFieldProps) => {
+  if (props.required) {
+    return z.string().min(1, {message: 'Please select an option'});
+  }
   return z.string();
 };
 
@@ -400,6 +403,5 @@ export const advancedSelectFieldSpec: FieldInfo<FieldProps> = {
   component: AdvancedSelect,
   fieldPropsSchema: AdvancedSelectFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
-  // TODO improve this
   view: {component: DefaultRenderer, config: {}},
 };

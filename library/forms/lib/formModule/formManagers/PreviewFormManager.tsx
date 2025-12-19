@@ -8,10 +8,11 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ComponentProps, useEffect, useMemo, useState} from 'react';
 import {formDataExtractor} from '../../utils';
 import {FaimsFormData} from '../types';
-import {FieldVisibilityMap, FormManager} from './FormManager';
+import {FieldVisibilityMap} from './types';
 import {onChangeTemplatedFields} from './templatedFields';
 import {PreviewFormConfig} from './types';
-import {MapConfig} from '../..';
+import {MapConfig} from '../../components/maps/types';
+import {FormManager} from './FormManager';
 const queryClient = new QueryClient();
 
 /**

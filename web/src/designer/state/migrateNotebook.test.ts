@@ -86,18 +86,6 @@ describe('Migrate Notebook Tests', () => {
     );
   });
 
-  test('fix photo validation', () => {
-    const migrated = migrateNotebook(sampleNotebook);
-    const fields = migrated['ui-specification'].fields;
-    const validationSchema = fields['Sample-Photograph'].validationSchema;
-
-    if (validationSchema) {
-      expect(validationSchema).toHaveLength(3);
-      expect(validationSchema[0]).toContain('yup.array');
-      expect(validationSchema[2]).toContain('yup.nullable');
-    }
-  });
-
   test('fix auto incrementer initial value', () => {
     const migrated = migrateNotebook(sampleNotebook);
     const fields = migrated['ui-specification'].fields;

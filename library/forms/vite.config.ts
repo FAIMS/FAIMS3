@@ -14,13 +14,13 @@ export default defineConfig(({command}) => {
       },
     };
   } else {
-    // Build configuration - builds lib/index.tsx as library
+    // Build configuration - builds lib/index.ts as library
     return {
       plugins: [react({jsxImportSource: '@emotion/react'})],
       build: {
         emptyOutDir: false, // don't remove tsc artifacts
         lib: {
-          entry: resolve(__dirname, 'lib/index.tsx'),
+          entry: resolve(__dirname, 'lib/index.ts'),
           formats: ['es'],
           fileName: 'index',
         },

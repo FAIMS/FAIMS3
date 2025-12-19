@@ -15,7 +15,7 @@ import {
   Typography,
 } from '@mui/material';
 import React, {useMemo} from 'react';
-import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry';
+import {FORCE_IGNORED_FIELDS, getFieldInfo} from '../fieldRegistry/registry';
 import {formDataExtractor} from '../utils';
 import {DefaultRenderer} from './fields/fallback';
 import {EmptyResponsePlaceholder} from './fields/view';
@@ -268,7 +268,7 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   // This is the configured UI label for this field, i.e. the title
   const uiLabel =
     props.uiSpecification.fields[props.fieldInfo.name]?.['component-parameters']
-      ?.label;
+      ?.label ?? name;
 
   // hidden when component-parameters.hidden: true
   const isHidden =
