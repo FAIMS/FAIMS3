@@ -326,8 +326,8 @@ export function DraftsTable(props: DraftsRecordProps) {
                       ? maxRows
                       : defaultMaxRowsMobile
                     : not_xs
-                    ? 25
-                    : defaultMaxRowsMobile,
+                      ? 25
+                      : defaultMaxRowsMobile,
               },
             },
           }}

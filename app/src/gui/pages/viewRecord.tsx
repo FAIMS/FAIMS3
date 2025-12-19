@@ -174,7 +174,6 @@ interface ViewTabContentProps {
   >;
   uiSpec: NonNullable<ReturnType<typeof compiledSpecService.getSpec>>;
   projectId: ProjectID;
-  recordId: RecordID;
   serverId: string;
   impliedRelationships?: ImpliedRelationship[];
   getDataEngine: () => DataEngine;
@@ -188,7 +187,6 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   formData,
   uiSpec,
   projectId,
-  recordId,
   serverId,
   impliedRelationships,
   getDataEngine,
@@ -478,7 +476,6 @@ export const ViewRecordPage: React.FC = () => {
             formData={formData}
             uiSpec={uiSpec}
             projectId={projectId}
-            recordId={recordId}
             serverId={serverId}
             impliedRelationships={impliedRelationships}
             getDataEngine={getDataEngine}
