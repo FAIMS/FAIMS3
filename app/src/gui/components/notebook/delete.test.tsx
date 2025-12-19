@@ -25,11 +25,10 @@ import {deleteStagedData} from '../../../sync/draft-storage';
 import {expect, vi, test} from 'vitest';
 
 const testDeleteData = {
-  project_id: 'test-id',
-  record_id: 'test-record-id',
-  revision_id: 'test-revision-id',
-  draft_id: 'test-draft-id',
-  show_label: true,
+  projectId: 'test-id',
+  recordId: 'test-record-id',
+  revisionId: 'test-revision-id',
+  showLabel: true,
   handleRefresh: vi.fn(() => {
     return new Promise<any>(() => {});
   }),

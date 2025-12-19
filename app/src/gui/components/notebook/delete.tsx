@@ -39,52 +39,46 @@ import * as ROUTES from '../../../constants/routes';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {
-  deleteDraftsForRecord,
-  deleteStagedData,
-} from '../../../sync/draft-storage';
 import {localGetDataDb} from '../../../utils/database';
 import {theme} from '../../themes';
 
 type RecordDeleteProps = {
-  project_id: ProjectID;
+  projectId: ProjectID;
   serverId: string;
-  record_id: RecordID;
-  revision_id: RevisionID | null;
-  draft_id: string | null;
-  show_label: boolean;
+  recordId: RecordID;
+  revisionId: RevisionID | null;
+  showLabel: boolean;
   handleRefresh: () => void;
 };
 
-async function deleteFromDB(
-  project_id: ProjectID,
-  record_id: RecordID,
-  revision_id: RevisionID | null,
-  draft_id: string | null,
-  userid: string,
-  callback: () => void
-) {
-  if (draft_id !== null) {
-    await deleteStagedData(draft_id, null);
-  } else {
-    await setRecordAsDeleted({
-      dataDb: localGetDataDb(project_id),
-      recordId: record_id,
-      baseRevisionId: revision_id as RevisionID,
-      userId: userid,
-    });
-    await deleteDraftsForRecord(project_id, record_id);
-  }
+async function deleteFromDB({
+  projectId,
+  recordId,
+  revisionId,
+  userId,
+  callback,
+}: {
+  projectId: ProjectID;
+  recordId: RecordID;
+  revisionId: RevisionID | null;
+  userId: string;
+  callback: () => void;
+}) {
+  await setRecordAsDeleted({
+    dataDb: localGetDataDb(projectId),
+    recordId: recordId,
+    baseRevisionId: revisionId as RevisionID,
+    userId: userId,
+  });
   callback();
 }
 
 export default function RecordDelete(props: RecordDeleteProps) {
   //console.debug('Delete props', props);
-  const {project_id, serverId, record_id, revision_id, draft_id} = props;
+  const {projectId, serverId, recordId, revisionId} = props;
   const [open, setOpen] = React.useState(false);
   const history = useNavigate();
   const dispatch = useAppDispatch();
-  const is_draft = draft_id !== null;
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -95,18 +89,15 @@ export default function RecordDelete(props: RecordDeleteProps) {
   };
 
   const handleDelete = () => {
-    deleteFromDB(
-      project_id,
-      record_id,
-      revision_id,
-      draft_id,
-      activeUser.username,
-      props.handleRefresh
-    )
+    deleteFromDB({
+      projectId,
+      recordId,
+      revisionId,
+      userId: activeUser.username,
+      callback: props.handleRefresh,
+    })
       .then(() => {
-        const message = is_draft
-          ? `Draft ${draft_id} for record ${record_id} discarded`
-          : `Record ${record_id} deleted`;
+        const message = `Record ${recordId} deleted`;
         dispatch(
           addAlert({
             message: message,
@@ -114,13 +105,11 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + project_id);
+        history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId);
       })
       .catch(err => {
-        console.error('Failed to delete', record_id, draft_id, err);
-        const message = is_draft
-          ? `Draft ${draft_id} for record ${record_id} could not be discarded`
-          : `Record ${record_id} could not be deleted`;
+        console.error('Failed to delete', recordId, err);
+        const message = `Record ${recordId} could not be deleted`;
         dispatch(
           addAlert({
             message: message,
@@ -133,7 +122,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
 
   return (
     <div>
-      {props.show_label ? (
+      {props.showLabel ? (
         <Button
           data-testid="delete-btn"
           variant="outlined"
@@ -148,7 +137,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             />
           }
         >
-          {!is_draft ? 'Delete Record' : 'Discard Draft'}
+          Delete Record
         </Button>
       ) : (
         <IconButton
@@ -172,13 +161,9 @@ export default function RecordDelete(props: RecordDeleteProps) {
       >
         <Alert severity="error">
           <AlertTitle>
-            Are you sure you want to {is_draft ? 'discard draft' : 'record'}{' '}
-            {is_draft ? draft_id : record_id}?
+            Are you sure you want to delete record {recordId}?
           </AlertTitle>
-          You cannot reverse this action! Be sure you wish to proceed
-          {!is_draft
-            ? ' (all associated drafts of this record will also be removed).'
-            : '.'}
+          You cannot reverse this action! Be sure you wish to proceed.
         </Alert>
         <DialogActions style={{justifyContent: 'space-between'}}>
           <Button onClick={handleClose} color="primary">
@@ -191,7 +176,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
             variant={'contained'}
             data-testid="confirm-delete"
           >
-            {is_draft ? 'Discard' : 'Delete'}
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

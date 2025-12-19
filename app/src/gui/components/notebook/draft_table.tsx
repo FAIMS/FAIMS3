@@ -276,12 +276,11 @@ export function DraftsTable(props: DraftsRecordProps) {
         flex: 0.3,
         renderCell: (params: GridCellParams) => (
           <RecordDelete
-            project_id={project_id}
+            projectId={project_id}
             serverId={serverId}
-            record_id={params.row.record_id}
-            revision_id={params.row.revision_id}
-            draft_id={params.row._id}
-            show_label={false}
+            recordId={params.row.record_id}
+            revisionId={params.row.revision_id}
+            showLabel={false}
             handleRefresh={handleRefresh}
           />
         ),
@@ -327,8 +326,8 @@ export function DraftsTable(props: DraftsRecordProps) {
                       ? maxRows
                       : defaultMaxRowsMobile
                     : not_xs
-                      ? 25
-                      : defaultMaxRowsMobile,
+                    ? 25
+                    : defaultMaxRowsMobile,
               },
             },
           }}
