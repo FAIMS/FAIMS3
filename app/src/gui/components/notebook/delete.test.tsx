@@ -21,7 +21,6 @@
 import {TestWrapper} from '../../fields/utils';
 import RecordDelete from './delete';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {deleteStagedData} from '../../../sync/draft-storage';
 import {expect, vi, test} from 'vitest';
 
 const testDeleteData = {
@@ -55,6 +54,7 @@ test('Check delete component', async () => {
   fireEvent.click(screen.getByTestId('confirm-delete'));
 
   await waitFor(() => {
-    expect(deleteStagedData).toBeCalledTimes(1);
+    // This is no longer valid as there is no staged data - see #1825
+    // expect(deleteStagedData).toBeCalledTimes(1);
   });
 });
