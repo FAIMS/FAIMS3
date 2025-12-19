@@ -173,22 +173,27 @@ export const RadioGroup = (props: FieldProps) => {
 // Value Schema
 // ============================================================================
 
-/**
- * Generate a zod schema for the value based on the options. The value is a
- * string representing the selected option value, or null if none selected.
- */
 const valueSchema = (props: RadioGroupFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
-  return z.union([
-    z.union(
-      optionValues.map(val => z.literal(val)) as [
-        z.ZodLiteral<string>,
-        z.ZodLiteral<string>,
-        ...z.ZodLiteral<string>[],
-      ]
-    ),
-    z.null(),
-  ]);
+
+  // Handle edge case of no options defined
+  if (optionValues.length === 0) {
+    if (props.required) {
+      return z.string().min(1, {message: 'Please select an option'});
+    }
+    return z.union([z.string(), z.null()]);
+  }
+
+  // Valid option values
+  const optionsSchema = z.enum(optionValues as [string, ...string[]]);
+
+  if (props.required) {
+    // Required: must be one of the valid options
+    return optionsSchema;
+  }
+
+  // Optional: allow null or empty string for no selection
+  return z.union([optionsSchema, z.null(), z.literal('')]);
 };
 
 // ============================================================================

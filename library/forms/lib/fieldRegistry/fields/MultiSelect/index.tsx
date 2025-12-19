@@ -301,8 +301,8 @@ export const MultiSelect = (props: FieldProps) => {
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
     : rawValue === '' || rawValue === undefined || rawValue === null
-      ? []
-      : [rawValue as string];
+    ? []
+    : [rawValue as string];
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
@@ -354,8 +354,21 @@ export const MultiSelect = (props: FieldProps) => {
 const valueSchema = (props: MultiSelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
 
+  // Handle edge case of no options defined
+  if (optionValues.length === 0) {
+    const baseSchema = z.array(z.string());
+    if (props.required) {
+      return baseSchema.min(1, {message: 'Please select at least one option'});
+    }
+    return baseSchema;
+  }
+
   // Base schema: array of valid option values
   const baseSchema = z.array(z.enum(optionValues as [string, ...string[]]));
+
+  if (props.required) {
+    return baseSchema.min(1, {message: 'Please select at least one option'});
+  }
 
   return baseSchema;
 };
