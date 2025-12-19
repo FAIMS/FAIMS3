@@ -266,9 +266,7 @@ export const wipeAllDatabases = async () => {
     }
   }
 
-  const dbsToWipe = [
-    databaseService.getLocalStateDatabase(),
-  ];
+  const dbsToWipe = [databaseService.getLocalStateDatabase()];
   for (const db of dbsToWipe) {
     try {
       console.debug(await db.destroy());

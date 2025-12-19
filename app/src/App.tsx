@@ -38,11 +38,7 @@ import {
 } from 'react-router-dom';
 import './App.css';
 import {OFFLINE_MAPS} from './buildconfig';
-import {
-  ActivePrivateRoute,
-  OnlineOnlyRoute,
-  TolerantPrivateRoute,
-} from './constants/privateRouter';
+import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
 import {getEditRecordRoute} from './constants/routes';
 import {NotificationProvider} from './context/popup';

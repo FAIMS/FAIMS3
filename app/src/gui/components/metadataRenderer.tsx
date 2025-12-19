@@ -22,7 +22,7 @@ import {ProjectID} from '@faims3/data-model';
 import {Chip} from '@mui/material';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
-import { RichTextContent } from '@faims3/forms';
+import {RichTextContent} from '@faims3/forms';
 
 type MetadataProps = {
   project_id: ProjectID;

@@ -1,14 +1,11 @@
-import {IconButton, Typography, Box} from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import {useState} from 'react';
+import {Box, IconButton, Typography} from '@mui/material';
+import {useNavigate} from 'react-router';
 
-const BackButton = ({}: {
-  link: string;
-  backIsParent?: boolean;
-  confirm?: boolean;
-}) => {
+const BackButton = ({link}: {link: string}) => {
+  const nav = useNavigate();
   const goBack = () => {
-    history.back();
+    nav(link);
   };
 
   return (

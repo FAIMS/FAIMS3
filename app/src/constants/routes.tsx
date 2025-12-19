@@ -18,11 +18,7 @@
  *   TODO
  */
 
-import {
-  AvpUpdateMode,
-  ProjectID,
-  RecordID,
-} from '@faims3/data-model';
+import {AvpUpdateMode, ProjectID, RecordID} from '@faims3/data-model';
 import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';

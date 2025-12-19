@@ -1,10 +1,4 @@
-import {
-  getFieldToIdsMap,
-  getHridFieldMap,
-  ProjectUIModel,
-  Record,
-  ValuesObject,
-} from '@faims3/data-model';
+import {Record} from '@faims3/data-model';
 import Mustache from 'mustache';
 import {RecordContext} from '../gui/components/record/types';
 
@@ -93,10 +87,13 @@ export function formatTimestamp(
       const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(
         date
       );
-      const dateParts = parts.reduce((acc, part) => {
-        acc[part.type] = part.value;
-        return acc;
-      }, {} as {[key: string]: string});
+      const dateParts = parts.reduce(
+        (acc, part) => {
+          acc[part.type] = part.value;
+          return acc;
+        },
+        {} as {[key: string]: string}
+      );
 
       const day = dateParts.day.padStart(2, '0');
       const month = dateParts.month.padStart(2, '0');

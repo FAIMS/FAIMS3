@@ -153,13 +153,13 @@ export default function MainAppBar() {
           disabled: true,
         }
       : isAuthenticated
-      ? getNestedProjects(projectList)
-      : {
-          title: `Active ${NOTEBOOK_NAME_CAPITALIZED}s`,
-          icon: <AccountTree />,
-          to: '/',
-          disabled: true,
-        },
+        ? getNestedProjects(projectList)
+        : {
+            title: `Active ${NOTEBOOK_NAME_CAPITALIZED}s`,
+            icon: <AccountTree />,
+            to: '/',
+            disabled: true,
+          },
   ];
 
   const bottomMenuItems: Array<MenuItemProps> = [

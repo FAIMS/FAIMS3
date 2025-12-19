@@ -57,9 +57,6 @@ const mockState = {
       },
     },
   },
-  records: {
-    edited: false,
-  },
   auth: {
     activeUser: testUser,
     servers: {
@@ -73,7 +70,7 @@ const mockState = {
 };
 
 // Mock just the store with getState method
-vi.mock('../../context/store', () => ({
+vi.mock('../context/store', () => ({
   store: {
     getState: vi.fn(() => mockState),
     dispatch: vi.fn(),
@@ -94,7 +91,7 @@ vi.mock('react-dom/client', () => ({
 }));
 
 // Mock the authSlice
-vi.mock('../../../context/slices/authSlice', () => ({
+vi.mock('../../context/slices/authSlice', () => ({
   // Mock the selector
   selectActiveUser: vi.fn(() => ({
     serverId: 'test-server',
@@ -166,7 +163,6 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
       auth: () => null,
       projects: () => null,
       alerts: () => null,
-      records: () => null,
     },
     middleware: getDefaultMiddleware =>
       getDefaultMiddleware({

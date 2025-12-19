@@ -42,7 +42,7 @@ type TabIndexLabel =
   | 'details'
   | 'settings'
   | 'map';
-type TabIndex = 0 | 1 | 2 | 3 | 4 ;
+type TabIndex = 0 | 1 | 2 | 3 | 4;
 const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
   ['my_records', 0],
   ['other_records', 1],
