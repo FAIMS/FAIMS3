@@ -22,7 +22,7 @@ import {ProjectID} from '@faims3/data-model';
 import {Chip} from '@mui/material';
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
-import {RichTextField} from '../fields/RichText';
+import { RichTextContent } from '@faims3/forms';
 
 type MetadataProps = {
   project_id: ProjectID;
@@ -54,7 +54,7 @@ export default function MetadataRenderer(props: MetadataProps) {
 
   // Use RichTextField for 'pre_description' field
   if (metadata_key === 'pre_description' && value !== '') {
-    return <RichTextField content={value} />;
+    return <RichTextContent content={value} />;
   }
 
   // For other fields, use original rendering logic

@@ -19,7 +19,8 @@
     },
     "library/forms": {
       "entry" : [
-        "lib/index.ts"
+        "lib/index.ts",
+        "src/App.tsx"
       ],
       "project":[
         "lib/**/*.{js,ts,tsx}"

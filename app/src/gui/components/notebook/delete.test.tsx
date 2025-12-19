@@ -18,7 +18,7 @@
  *   TODO
  */
 
-import {TestWrapper} from '../../fields/utils';
+import {TestWrapper} from '../../testUtils';
 import RecordDelete from './delete';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {expect, vi, test} from 'vitest';

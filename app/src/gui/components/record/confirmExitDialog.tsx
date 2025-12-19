@@ -23,7 +23,8 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
-import {CloseOptionType} from './formButton';
+
+export type CloseOptionType = 'close' | 'new' | 'cancel';
 
 /**
  * Confirm Exit dialog - checks that we really want to exit the current form
