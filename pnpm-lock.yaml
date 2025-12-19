@@ -463,9 +463,6 @@ importers:
       clsx:
         specifier: 1.2.1
         version: 1.2.1
-      dompurify:
-        specifier: ^3.2.4
-        version: 3.2.7
       fast-json-stable-stringify:
         specifier: 2.1.0
         version: 2.1.0
