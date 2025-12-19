@@ -641,6 +641,8 @@ export const hydratedRevisionDocumentSchema = z.object({
   relationship: formRelationshipSchema.optional(),
   /** Optional deleted property, true if this revision is 'deleted' */
   deleted: z.boolean().optional(),
+  /** Optional user-generated comment for this revision - reporting */
+  ugcComment: z.string().optional(),
 });
 
 export type HydratedRevisionDocument = z.infer<
