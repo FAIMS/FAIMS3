@@ -36,18 +36,25 @@ const theme = createTheme({
       lightBackground: '#edeeeb',
       tabsBackground: '#edeeeb',
     },
+
     primary: {
-      main: '#669911',
+      main: '#76b70eff',
       light: '#a7e938',
       dark: '#141E03',
     },
 
-    stepper: {
-      current: '#E18200',
-      visited: '#669911',
-      error: '#D50C0CFF',
-      notVisited: '#B7C1A6F1',
+    success: {
+      main: '#b6df71',
     },
+
+    error: {
+      main: '#D50C0CFF',
+    },
+
+    grey: {
+      400: '#BDBDBD',
+    },
+
     highlightColor: {
       main: '#E18200',
       contrastText: '#141E03',

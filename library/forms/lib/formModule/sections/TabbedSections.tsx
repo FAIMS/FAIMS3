@@ -134,7 +134,7 @@ const getStepColor = (
 ): string => {
   if (hasError) return theme.palette.error.main;
   if (isActive) return theme.palette.primary.main;
-  if (isCompleted) return theme.palette.primary.main;
+  if (isCompleted) return theme.palette.success.main;
   return theme.palette.grey[400];
 };
 

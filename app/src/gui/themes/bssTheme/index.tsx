@@ -1,8 +1,6 @@
 import {createTheme} from '@mui/material';
 import typography from '../default/typography';
 
-const primaryMainColor = '#000000';
-
 const theme = createTheme({
   stepperColors: {
     current: '#000000',
@@ -19,16 +17,23 @@ const theme = createTheme({
       tabsBackground: '#F0F0F0FF',
     },
     primary: {
-      main: primaryMainColor,
-      light: '#FFFFFF',
+      main: '#000000',
+      light: '#55b1e3ff',
       dark: '#000000',
     },
-    stepper: {
-      current: '#000000',
-      visited: '#07a907',
-      error: '#EE1616FF',
-      notVisited: '#BDBDBD',
+
+    success: {
+      main: '#90CBDC',
     },
+
+    error: {
+      main: '#C62828',
+    },
+
+    grey: {
+      400: '#9E9E9E',
+    },
+
     highlightColor: {
       main: '#B10000',
       contrastText: '#F4F4F4',
@@ -117,7 +122,6 @@ const theme = createTheme({
           color: '#000000',
           '&.Mui-selected': {
             color: '#FFFFFF',
-            backgroundColor: primaryMainColor,
             fontWeight: '700',
           },
           '&:not(.Mui-selected)': {
