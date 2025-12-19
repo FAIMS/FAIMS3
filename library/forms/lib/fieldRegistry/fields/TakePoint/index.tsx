@@ -268,7 +268,13 @@ export const TakePoint = (props: FieldProps) => {
  * Generate a zod schema for the value.
  * The value is a GeoJSON Feature with Point geometry, or null if not captured.
  */
-const valueSchema = () => {
+const valueSchema = (props: TakePointFieldProps) => {
+  if (props.required) {
+    // Required: must have a valid position (FAIMSPositionSchema doesn't allow
+    // null)
+    return FAIMSPositionSchema;
+  }
+  // Optional: allow null for no position captured
   return z.union([FAIMSPositionSchema, z.null()]);
 };
 
