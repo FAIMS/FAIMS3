@@ -8,7 +8,7 @@ import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {VectorTileStore} from './TileStore';
 import {MapConfig} from './config';
-import {GeoJSONFeatureCollectionSchema} from './types';
+import {GeoJSONFeatureOrCollectionSchema} from './types';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value
@@ -19,11 +19,11 @@ const extractGeoJSON = (value: any): object | undefined => {
   try {
     // If it's already an object, use it directly
     if (typeof value === 'object' && value !== undefined && value !== null) {
-      return GeoJSONFeatureCollectionSchema.parse(value);
+      return GeoJSONFeatureOrCollectionSchema.parse(value);
     }
     // If it's a string, try to parse it
     if (typeof value === 'string') {
-      return GeoJSONFeatureCollectionSchema.parse(JSON.parse(value));
+      return GeoJSONFeatureOrCollectionSchema.parse(JSON.parse(value));
     }
     return undefined;
   } catch (e) {

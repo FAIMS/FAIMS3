@@ -24,3 +24,11 @@ export const GeoJSONFeatureCollectionSchema = z.object({
   type: z.literal('FeatureCollection'),
   features: z.array(GeoJSONFeatureSchema),
 });
+
+/**
+ * Schema for GeoJSON that can be either a Feature or a FeatureCollection
+ */
+export const GeoJSONFeatureOrCollectionSchema = z.discriminatedUnion('type', [
+  GeoJSONFeatureCollectionSchema,
+  GeoJSONFeatureSchema,
+]);
