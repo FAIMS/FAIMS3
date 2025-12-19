@@ -123,6 +123,7 @@ interface InfoTabContentProps {
   projectId: ProjectID;
   recordId: RecordID;
   serverId: string;
+  hrid: string;
   revisionId: string;
 }
 
@@ -134,6 +135,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
   recordId,
   serverId,
   revisionId,
+  hrid
 }) => {
   const nav = useNavigate();
 
@@ -154,6 +156,7 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
       <Box>
         <RecordDelete
           projectId={projectId}
+          hrid={hrid}
           recordId={recordId}
           revisionId={revisionId}
           serverId={serverId}
@@ -487,6 +490,7 @@ export const ViewRecordPage: React.FC = () => {
           {revisionId ? (
             <InfoTabContent
               projectId={projectId}
+              hrid={formData.context.hrid}
               recordId={recordId}
               serverId={serverId}
               revisionId={revisionId}

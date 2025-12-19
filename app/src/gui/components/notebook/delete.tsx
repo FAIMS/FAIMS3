@@ -46,6 +46,7 @@ type RecordDeleteProps = {
   projectId: ProjectID;
   serverId: string;
   recordId: RecordID;
+  hrid?: string;
   revisionId: RevisionID | null;
   showLabel: boolean;
   handleRefresh: () => void;
@@ -161,7 +162,8 @@ export default function RecordDelete(props: RecordDeleteProps) {
       >
         <Alert severity="error">
           <AlertTitle>
-            Are you sure you want to delete record {recordId}?
+            Are you sure you want to delete this record?{' '}
+            {props.hrid && `HRID: ${props.hrid} `}ID: ${recordId}
           </AlertTitle>
           You cannot reverse this action! Be sure you wish to proceed.
         </Alert>
