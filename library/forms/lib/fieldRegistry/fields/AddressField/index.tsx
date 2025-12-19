@@ -18,7 +18,7 @@ import {
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {DataViewFieldRender} from '../../../rendering/types';
-import {EmptyResponsePlaceholder} from '../../../rendering';
+import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 
 /**
  * AddressType is based on GeocodeJSON, an extension to GeoJSON for storing
