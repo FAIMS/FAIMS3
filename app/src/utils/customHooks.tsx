@@ -24,7 +24,6 @@ import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
-import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
 import {localGetDataDb} from './database';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
@@ -201,19 +200,16 @@ export function useQueryParams<T extends Record<string, any>>(config: {
   }, [config, searchParams, setSearchParams]);
 
   // Convert URL string values to typed parameters
-  const params = Object.entries(config).reduce(
-    (acc, [key, paramConfig]) => {
-      const value = searchParams.get(paramConfig.key);
-      const parser = paramConfig.parser || defaultParser;
+  const params = Object.entries(config).reduce((acc, [key, paramConfig]) => {
+    const value = searchParams.get(paramConfig.key);
+    const parser = paramConfig.parser || defaultParser;
 
-      // Use parsed URL value if present, otherwise use default
-      acc[key as keyof T] =
-        value !== null ? parser(value) : paramConfig.defaultValue;
+    // Use parsed URL value if present, otherwise use default
+    acc[key as keyof T] =
+      value !== null ? parser(value) : paramConfig.defaultValue;
 
-      return acc;
-    },
-    {} as {[K in keyof T]: QueryParamValue<T[K]>}
-  );
+    return acc;
+  }, {} as {[K in keyof T]: QueryParamValue<T[K]>});
 
   // Update a single parameter in the URL
   const setParam = useCallback(
@@ -286,6 +282,9 @@ export function useQueryParams<T extends Record<string, any>>(config: {
 }
 
 /**
+ * NOTE: as of major-form-refactor - this is irrelevant, however there could
+ * still be some drafts sitting around?
+ *
  * Filters out draft records from the dataset.
  *
  * Draft records are identified by the prefix `drf-` in their `record_id`.
@@ -606,32 +605,6 @@ export const useIndividualHydratedRecord = ({
     },
     networkMode: 'always',
   });
-};
-
-/**
- * Does a potentially auto-refetching fetch of the drafts list for use in
- * the draft list.
- */
-export const useDraftsList = ({
-  projectId,
-  refreshIntervalMs,
-  filter,
-}: {
-  projectId: string;
-  refreshIntervalMs?: number | undefined | false;
-  filter: DraftFilters;
-}) => {
-  const records = useQuery({
-    queryKey: ['drafts', projectId, filter],
-    networkMode: 'always',
-    gcTime: 0,
-    refetchInterval: refreshIntervalMs,
-    queryFn: async () => {
-      return Object.values(await listDraftMetadata(projectId, filter));
-    },
-  });
-
-  return records;
 };
 
 /**

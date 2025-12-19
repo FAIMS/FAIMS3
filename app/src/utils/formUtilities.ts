@@ -29,7 +29,7 @@ Mustache.escape = function (text: string) {
 };
 
 /**
- * Converts a record (real or draft) into record context used in the form
+ * Converts a record into record context used in the form
  * @param record
  * @returns The form context which can be injected
  */

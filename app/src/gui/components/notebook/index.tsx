@@ -24,7 +24,6 @@ import {useRecordAudit} from '../../../utils/apiHooks/notebooks';
 import {
   invalidateProjectHydration,
   invalidateProjectRecordList,
-  useDraftsList,
   useIsAuthorisedTo,
   useQueryParams,
   useRecordList,
@@ -39,19 +38,17 @@ import NotebookSettings from './settings';
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
   | 'my_records'
-  | 'drafts'
   | 'other_records'
   | 'details'
   | 'settings'
   | 'map';
-type TabIndex = 0 | 1 | 2 | 3 | 4 | 5;
+type TabIndex = 0 | 1 | 2 | 3 | 4 ;
 const TAB_TO_INDEX = new Map<TabIndexLabel, TabIndex>([
   ['my_records', 0],
-  ['drafts', 1],
-  ['other_records', 2],
-  ['details', 3],
-  ['settings', 4],
-  ['map', 5],
+  ['other_records', 1],
+  ['details', 2],
+  ['settings', 3],
+  ['map', 4],
 ]);
 const INDEX_TO_TAB = new Map<TabIndex, TabIndexLabel>(
   Array.from(TAB_TO_INDEX.entries()).map(([k, v]) => [v, k])
@@ -190,13 +187,6 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
     uiSpecification: uiSpecification,
   });
   const forceRecordRefresh = records.initialQuery.refetch;
-
-  // Fetch drafts
-  const drafts = useDraftsList({
-    projectId: project.projectId,
-    filter: 'all',
-  });
-  const forceDraftRefresh = drafts.refetch;
 
   const viewsets = uiSpecification.viewsets;
 

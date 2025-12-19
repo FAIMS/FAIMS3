@@ -4,13 +4,11 @@
  * store safely, so are re-instantiated on boot and maintained while the app is
  * active.
  *
- * This class also contains a static reference to the draft DB.
  */
 
-import {EncodedDraft, logError, ProjectDataObject} from '@faims3/data-model';
+import {logError, ProjectDataObject} from '@faims3/data-model';
 import PouchDB from 'pouchdb-browser';
 import PouchDBFind from 'pouchdb-find';
-import {DraftDB} from '../../../sync/draft-storage';
 import {createLocalPouchDatabase} from './databaseHelpers';
 import {PouchDBWrapper} from './pouchDBWrapper';
 PouchDB.plugin(PouchDBFind);
@@ -39,18 +37,12 @@ class DatabaseService {
   // remote databases are not wrapped
   private remoteDatabases: Map<string, PouchDB.Database<ProjectDataObject>> =
     new Map();
-  private draftDb: DraftDB;
   private localStateDb: PouchDBWrapper<LocalStateDbType>;
 
   private constructor() {
-    this.draftDb = this.createDraftDb();
     this.localStateDb = this.createLocalStateDb();
   }
 
-  // these are in methods so we can re-create them if needed later
-  createDraftDb() {
-    return new PouchDBWrapper<EncodedDraft>('draft-storage');
-  }
   createLocalStateDb() {
     return new PouchDBWrapper<LocalStateDbType>('local_state');
   }
@@ -190,10 +182,6 @@ class DatabaseService {
     this.databaseSyncs.set(id, sync);
   }
 
-  getDraftDatabase() {
-    return this.draftDb;
-  }
-
   getLocalStateDatabase() {
     return this.localStateDb;
   }
@@ -221,20 +209,6 @@ class DatabaseService {
         repairCount += 1;
       }
     }
-    // also check draft and local state dbs
-    try {
-      if (this.draftDb) {
-        await this.draftDb.info();
-      } else {
-        logError('Draft database missing, re-opening');
-        this.draftDb = this.createDraftDb();
-        repairCount += 1;
-      }
-    } catch (e) {
-      logError(`Draft database appears invalid, re-opening: ${e}`);
-      this.draftDb = this.createDraftDb();
-      repairCount += 1;
-    }
 
     try {
       if (this.localStateDb) {
@@ -252,19 +226,12 @@ class DatabaseService {
     return repairCount;
   }
 
-  // for debugging - damage all local dbs and the draft db
-  // by closing them but leaving the handle in the databases list
+  // for debugging - damage all local dbs by closing them but leaving the handle
+  // in the databases list
   async damage() {
     console.log('Damaging all local databases for testing');
     for (const id of this.localDatabases.keys()) {
       await this.localDatabases.get(id)?.close();
-    }
-    if (this.draftDb) {
-      try {
-        await this.draftDb.destroy();
-      } catch (e) {
-        logError(`Error destroying draft database: ${e}`);
-      }
     }
   }
 }

@@ -20,7 +20,7 @@
 
 import {TestWrapper} from '../../testUtils';
 import RecordDelete from './delete';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import {expect, vi, test} from 'vitest';
 
 const testDeleteData = {
@@ -32,10 +32,6 @@ const testDeleteData = {
     return new Promise<any>(() => {});
   }),
 };
-
-vi.mock('../../../sync/draft-storage', () => ({
-  deleteStagedData: vi.fn(() => {}),
-}));
 
 test('Check delete component', async () => {
   render(
@@ -52,9 +48,4 @@ test('Check delete component', async () => {
   expect(screen.getByTestId('confirm-delete')).toBeTruthy();
 
   fireEvent.click(screen.getByTestId('confirm-delete'));
-
-  await waitFor(() => {
-    // This is no longer valid as there is no staged data - see #1825
-    // expect(deleteStagedData).toBeCalledTimes(1);
-  });
 });

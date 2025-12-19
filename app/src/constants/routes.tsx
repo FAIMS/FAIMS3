@@ -22,25 +22,20 @@ import {
   AvpUpdateMode,
   ProjectID,
   RecordID,
-  RevisionID,
 } from '@faims3/data-model';
 import {NOTEBOOK_NAME} from '../buildconfig';
 
 export const INDEX = '/';
 export const SIGN_IN = '/signin/';
 export const AUTH_RETURN = '/auth-return/';
-
 export const NOT_FOUND = '/not-found';
-
 export const INDIVIDUAL_NOTEBOOK_ROUTE = `/${NOTEBOOK_NAME}s/`;
 export const INDIVIDUAL_NOTEBOOK_ROUTE_TAB_Q = 'tab';
 export const NOTEBOOK_LIST_ROUTE = '/';
-
 export const RECORD_LIST = '/records';
 export const RECORD_EXISTING = '/records/';
 export const RECORD_VIEW = '/view-record/';
 export const RECORD_CREATE = '/new/';
-export const RECORD_DRAFT = '/draft/';
 export const RECORD_RECORD = '/record/';
 export const REVISION = '/revision/';
 export const ABOUT_BUILD = '/about-build';
@@ -122,55 +117,4 @@ export function getViewRecordRoute({
     recordId +
     (revisionId ? `?revisionId=${revisionId}` : '')
   );
-}
-
-/**
- * Generates a route for a new draft
- * @param serverId the server
- * @param projectId the project
- * @param draftId the ID of the draft - this is pre-seeded
- * @param existingRecordInformation existing record? If provided instead returns the existing record route
- * @param formId the ID of the form
- * @param recordId the ID of the record
- * @returns The route to navigate to
- */
-export function getNewDraftRoute(
-  serverId: string,
-  projectId: ProjectID,
-  draftId: string,
-  existingRecordInformation: null | {
-    record_id: RecordID;
-    revision_id: RevisionID;
-  },
-  formId: string,
-  recordId: string
-) {
-  if (existingRecordInformation !== null)
-    return (
-      INDIVIDUAL_NOTEBOOK_ROUTE +
-      serverId +
-      '/' +
-      projectId +
-      RECORD_EXISTING +
-      // existing+
-      existingRecordInformation.record_id +
-      REVISION +
-      existingRecordInformation.revision_id +
-      RECORD_DRAFT +
-      draftId
-    );
-  else {
-    return (
-      INDIVIDUAL_NOTEBOOK_ROUTE +
-      serverId +
-      '/' +
-      projectId +
-      RECORD_CREATE +
-      formId +
-      RECORD_DRAFT +
-      draftId +
-      RECORD_RECORD +
-      recordId
-    );
-  }
 }
