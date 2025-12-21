@@ -40,3 +40,6 @@ export const GeoJSONFeatureOrCollectionSchema = z.discriminatedUnion('type', [
   GeoJSONFeatureCollectionSchema,
   GeoJSONFeatureSchema,
 ]);
+export type GeoJSONFeatureOrCollection = z.infer<
+  typeof GeoJSONFeatureOrCollectionSchema
+>;

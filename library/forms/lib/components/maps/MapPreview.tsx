@@ -7,15 +7,18 @@ import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useMemo, useRef} from 'react';
 import {VectorTileStore} from './TileStore';
-import {GeoJSONFeatureOrCollectionSchema} from './types';
-import {MapConfig} from './types';
+import {
+  GeoJSONFeatureOrCollection,
+  GeoJSONFeatureOrCollectionSchema,
+  MapConfig,
+} from './types';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value
  * @param value - The raw field value that should contain GeoJSON
  * @returns A valid GeoJSON object or null if invalid
  */
-const extractGeoJSON = (value: any): object | undefined => {
+const extractGeoJSON = (value: any): GeoJSONFeatureOrCollection | undefined => {
   try {
     // If it's already an object, use it directly
     if (typeof value === 'object' && value !== undefined && value !== null) {
