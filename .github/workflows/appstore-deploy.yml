@@ -81,10 +81,7 @@ jobs:
           export VITE_OFFLINE_MAPS=true
           export VITE_MAP_STYLE=basic
 
-          pnpm install --frozen-lockfile --python=python3.10
-          # we install these here because of a bug in npm with platform specific
-          # dependencies
-          pnpm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          pnpm install --frozen-lockfile
           pnpm --filter=@faims3/app run configIOSbuild 
           pnpm run build          
           # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY and uses VITE_APPLE_BUNDLE_IDENTIFIER on IOS)
