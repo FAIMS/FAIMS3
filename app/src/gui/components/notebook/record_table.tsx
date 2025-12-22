@@ -19,11 +19,15 @@
  */
 
 import {
+  getSummaryFieldInformation,
+  getVisibleTypes,
   PostRecordStatusResponse,
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
 } from '@faims3/data-model';
+import CloudDoneIcon from '@mui/icons-material/CloudDone';
+import PendingIcon from '@mui/icons-material/Pending';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
   Box,
@@ -35,8 +39,6 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import CloudDoneIcon from '@mui/icons-material/CloudDone';
-import PendingIcon from '@mui/icons-material/Pending';
 import {useTheme} from '@mui/material/styles';
 import {
   DataGrid,
@@ -49,16 +51,11 @@ import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
-import {
-  getSummaryFieldInformation,
-  getVisibleTypes,
-} from '../../../uiSpecification';
-import {prettifyFieldName} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
-import getLocalDate from '../../fields/LocalDate';
 import CircularLoading from '../ui/circular_loading';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
+import {prettifyFieldName} from '../../../utils/formUtilities';
 
 // ============================================================================
 // Types & Interfaces
@@ -163,7 +160,7 @@ function getDataForColumn({
     switch (column) {
       case 'LAST_UPDATED':
         return record.updated
-          ? getLocalDate(record.updated).replace('T', ' ')
+          ? record.updated.toLocaleString().replace('T', ' ')
           : fallback;
 
       case 'LAST_UPDATED_BY':
@@ -174,7 +171,7 @@ function getDataForColumn({
 
       case 'CREATED':
         return record.created
-          ? getLocalDate(record.created).replace('T', ' ')
+          ? record.updated.toLocaleString().replace('T', ' ')
           : fallback;
 
       case 'CREATED_BY':
@@ -850,11 +847,10 @@ export function RecordsTable(props: RecordsTableProps) {
   const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
     params => {
       history(
-        ROUTES.getExistingRecordRoute({
+        ROUTES.getViewRecordRoute({
           serverId,
           projectId: project_id,
-          recordId: (params.row.record_id || '').toString(),
-          revisionId: (params.row.revision_id || '').toString(),
+          recordId: params.row.record_id,
         })
       );
     },

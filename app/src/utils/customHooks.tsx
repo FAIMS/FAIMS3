@@ -1,5 +1,10 @@
 import {
   Action,
+  DatabaseInterface,
+  DataDbType,
+  DataDocument,
+  DataEngine,
+  fetchAndHydrateRecord,
   getHridFieldMap,
   getMinimalRecordData,
   getMinimalRecordDataWithRegex,
@@ -7,6 +12,7 @@ import {
   isAuthorized,
   ProjectUIModel,
   RecordMetadata,
+  UISpecification,
   UnhydratedRecord,
 } from '@faims3/data-model';
 import {QueryClient, useQueries, useQuery} from '@tanstack/react-query';
@@ -14,12 +20,11 @@ import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useSearchParams} from 'react-router-dom';
-import {localGetDataDb} from '..';
 import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
-import {DraftFilters, listDraftMetadata} from '../sync/draft-storage';
+import {localGetDataDb} from './database';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -280,6 +285,9 @@ export function useQueryParams<T extends Record<string, any>>(config: {
 }
 
 /**
+ * NOTE: as of major-form-refactor - this is irrelevant, however there could
+ * still be some drafts sitting around?
+ *
  * Filters out draft records from the dataset.
  *
  * Draft records are identified by the prefix `drf-` in their `record_id`.
@@ -560,30 +568,46 @@ export const useRecordList = ({
   };
 };
 
-/**
- * Does a potentially auto-refetching fetch of the drafts list for use in
- * the draft list.
- */
-export const useDraftsList = ({
+/** useQuery to fetch and hydrate individual targeted revision of record */
+export const useIndividualHydratedRecord = ({
   projectId,
-  refreshIntervalMs,
-  filter,
+  recordId,
+  revisionId,
+  uiSpec,
 }: {
   projectId: string;
-  refreshIntervalMs?: number | undefined | false;
-  filter: DraftFilters;
+  recordId: string;
+  revisionId: string;
+  uiSpec: ProjectUIModel;
 }) => {
-  const records = useQuery({
-    queryKey: ['drafts', projectId, filter],
-    networkMode: 'always',
-    gcTime: 0,
-    refetchInterval: refreshIntervalMs,
-    queryFn: async () => {
-      return Object.values(await listDraftMetadata(projectId, filter));
-    },
-  });
+  // Work out our context e.g. active user, token, data db etc
+  const activeUser = useAppSelector(selectActiveUser);
+  const token = activeUser?.parsedToken;
+  const dataDb = localGetDataDb(projectId);
 
-  return records;
+  return useQuery({
+    queryKey: [
+      activeUser?.username,
+      token?.globalRoles,
+      token?.resourceRoles,
+      ...buildHydrateKeys({
+        projectId,
+        recordId,
+        revisionId,
+      }),
+    ],
+    queryFn: () => {
+      // Grab the minimal metadata
+      return fetchAndHydrateRecord({
+        dataDb,
+        uiSpecification: uiSpec,
+        projectId,
+        recordId,
+        revisionId,
+      });
+    },
+    networkMode: 'always',
+  });
 };
 
 /**
@@ -697,4 +721,32 @@ export const useIsAuthorisedTo = ({
       }),
     [action, resourceId, activeUser.token]
   );
+};
+
+/** For a given record, determines the form type, then fetches the layout from
+ * the uiSpec */
+export const useUiSpecLayout = ({
+  recordId,
+  uiSpec,
+  dataDb,
+}: {
+  recordId: string;
+  uiSpec: UISpecification;
+  dataDb: DataDbType;
+}) => {
+  // Query to fetch the relevant viewset
+  return useQuery({
+    queryKey: ['record-ui-spec', recordId, uiSpec],
+    queryFn: async () => {
+      const engine = new DataEngine({
+        dataDb: dataDb as DatabaseInterface<DataDocument>,
+        uiSpec,
+      });
+      const rec = await engine.core.getRecord(recordId);
+      const formId = rec.type;
+      return uiSpec.viewsets[formId];
+    },
+    networkMode: 'always',
+    refetchOnMount: true,
+  });
 };

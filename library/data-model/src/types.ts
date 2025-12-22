@@ -475,12 +475,6 @@ export interface ProjectUIViews {
   };
 }
 
-export interface ElementOption {
-  value: string;
-  label: string;
-  key?: string;
-}
-
 // end of types from datamodel/typeSystems.ts --------------------------------
 
 // types from datamodel/ui.ts --------------------------------

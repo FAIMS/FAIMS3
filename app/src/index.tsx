@@ -13,44 +13,18 @@
  * See, the License, for the specific language governing permissions and
  * limitations under the License.
  *
- * Filename: index.tsx
  * Description:
- *   TODO
+ *  Entry point for the Fieldmark application
  */
-import {ProjectDataObject, registerClient} from '@faims3/data-model';
+import {registerClient} from '@faims3/data-model';
 import {defineCustomElements} from '@ionic/pwa-elements/loader';
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import {APP_NAME} from './buildconfig';
-import {databaseService} from './context/slices/helpers/databaseService';
-import {selectAllProjects} from './context/slices/projectSlice';
-import {store} from './context/store';
 import './index.css';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import {shouldDisplayRecord} from './users';
-import {PouchDBWrapper} from './context/slices/helpers/pouchDBWrapper';
-
-export const localGetDataDb = (
-  projectId: string
-): PouchDBWrapper<ProjectDataObject> => {
-  const projectState = store.getState();
-  const dbId = selectAllProjects(projectState).find(
-    p => p.projectId === projectId
-  )?.database?.localDbId;
-  if (!dbId) {
-    throw Error(
-      `Could not get Data DB for project with ID. The project store does not contain a reference to this project database ${projectId}.`
-    );
-  }
-  const db = databaseService.getLocalDatabase(dbId);
-  if (!db) {
-    throw Error(
-      `Could not get Data DB for project with ID: ${projectId}. Database service missing entry.`
-    );
-  }
-  return db;
-};
+import {localGetDataDb} from './utils/database';
 
 // set up the database module @faims3/data-model with our callbacks to get databases
 registerClient({

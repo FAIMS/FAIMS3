@@ -15,93 +15,292 @@
  *
  * Filename: App.tsx
  * Description:
- *   TODO
+ *   Main application entry point. Configures routing, theming, state management,
+ *   and core providers for the FAIMS3 application.
+ *
+ *   This file uses React Router v6's Data Router API (createBrowserRouter) which
+ *   enables advanced features like:
+ *   - useBlocker for navigation blocking (used to flush pending form saves)
+ *   - Loader/action patterns for data fetching
+ *   - Built-in error boundaries per route
+ *   - Pending navigation states via useNavigation
  */
 
+import '@capacitor-community/safe-area';
+import {SafeArea} from '@capacitor-community/safe-area';
 import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {Route, BrowserRouter as Router, Routes} from 'react-router-dom';
-import './App.css';
 import {
-  ActivePrivateRoute,
-  OnlineOnlyRoute,
-  TolerantPrivateRoute,
-} from './constants/privateRouter';
+  createBrowserRouter,
+  Outlet,
+  RouteObject,
+  RouterProvider,
+} from 'react-router-dom';
+import './App.css';
+import {OFFLINE_MAPS} from './buildconfig';
+import {TolerantPrivateRoute} from './constants/privateRouter';
 import * as ROUTES from './constants/routes';
-import MainLayout from './gui/layout';
-import AboutBuild from './gui/pages/about-build';
-import Notebook from './gui/pages/notebook';
-import Record from './gui/pages/record';
-import RecordCreate from './gui/pages/record-create';
-import {SignIn} from './gui/pages/signin';
-import Workspace from './gui/pages/workspace';
-import '@capacitor-community/safe-area';
-
-// import {unstable_createMuiStrictModeTheme as createMuiTheme} from '@mui/material';
-// https://stackoverflow.com/a/64135466/3562777 temporary solution to remove findDOMNode is depreciated in StrictMode warning
-// will be resolved in material-ui v5
-
+import {getEditRecordRoute} from './constants/routes';
 import {NotificationProvider} from './context/popup';
 import {InitialiseGate, StateProvider} from './context/store';
 import {AuthReturn} from './gui/components/authentication/auth_return';
-import CreateNewSurvey from './gui/components/workspace/CreateNewSurvey';
+import {MapDownload} from './gui/components/maps/MapDownload';
+import MainLayout from './gui/layout';
 import NotFound404 from './gui/pages/404';
+import AboutBuild from './gui/pages/about-build';
+import {EditRecordPage} from './gui/pages/editRecord';
+import Notebook from './gui/pages/notebook';
+import {PouchExplorer} from './gui/pages/pouchExplorer';
+import {SignIn} from './gui/pages/signin';
+import {ViewRecordPage} from './gui/pages/viewRecord';
+import Workspace from './gui/pages/workspace';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-import {MapDownloadComponent} from './gui/components/map/map-download';
-import {OFFLINE_MAPS} from './buildconfig';
-import {PouchExplorer} from './gui/pages/pouchExplorer';
 
-import {SafeArea} from '@capacitor-community/safe-area';
+// =============================================================================
+// SAFE AREA CONFIGURATION
+// =============================================================================
 
+/**
+ * Configure safe area insets for mobile devices.
+ * This ensures content doesn't overlap with notches, status bars, or
+ * navigation gestures on iOS and Android devices.
+ */
 SafeArea.enable({
   config: {
     customColorsForSystemBars: true,
-    statusBarColor: '#FAFAFB', // transparent
+    statusBarColor: '#FAFAFB',
     statusBarContent: 'dark',
-    navigationBarColor: '#FAFAFB', // transparent
+    navigationBarColor: '#FAFAFB',
     navigationBarContent: 'dark',
     offset: 0,
   },
 });
 
-// type AppProps = {};
+// =============================================================================
+// REACT QUERY CONFIGURATION
+// =============================================================================
 
-// type AppState = {
-//   projects: ProjectsList;
-//   global_error: null | {};
-//   token: boolean;
-// };
-
-// Setup react query (prefer to use context provider but can import for legacy class components)
+/**
+ * Global React Query client configuration.
+ *
+ * Provides sensible defaults for caching, retries, and refetching behaviour
+ * across the application.
+ */
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Queries should be enabled by default
+      // Queries are enabled by default
       enabled: true,
 
-      // Retry count - try 3 times
+      // Retry failed queries up to 3 times with exponential backoff
       retry: 3,
 
-      // Stale time - this means the cache will be used by default
-      staleTime: 30000, // 30s
+      // Consider data fresh for 30 seconds before background refetch
+      staleTime: 30000,
 
-      // Fetches will occur on remount
+      // Refetch when component mounts if data is stale
       refetchOnMount: true,
 
-      // Fetches will not occur on change of window focus
+      // Don't refetch on window focus (can be noisy on mobile)
       refetchOnWindowFocus: false,
 
-      // If we reconnect then fetch again
+      // Refetch when network reconnects (important for offline-first)
       refetchOnReconnect: true,
     },
     mutations: {
-      // Never retry mutations unless explicit
+      // Don't retry mutations - let the user explicitly retry on failure
       retry: 0,
     },
   },
 });
 
+// =============================================================================
+// ROUTE LAYOUT COMPONENTS
+// =============================================================================
+
+/**
+ * Root layout component that wraps all routes.
+ *
+ * Provides:
+ * - Deep link handling via AppUrlListener
+ * - Main application layout (header, navigation, etc.)
+ * - Outlet for nested route content
+ *
+ * This component must be inside the router context to allow AppUrlListener
+ * to use navigation hooks.
+ */
+const RootLayout = () => {
+  return (
+    <>
+      {/* Handle deep links and app URL schemes */}
+      <AppUrlListener />
+
+      {/* Main application chrome (header, sidebar, etc.) */}
+      <MainLayout>
+        {/* Nested route content renders here */}
+        <Outlet />
+      </MainLayout>
+    </>
+  );
+};
+
+// =============================================================================
+// ROUTE DEFINITIONS
+// =============================================================================
+
+/**
+ * Application route configuration.
+ *
+ * Routes are organized into logical groups:
+ * 1. Public routes (sign in, auth callback)
+ * 2. Protected routes (workspace, notebooks, records)
+ * 3. Utility routes (about, debug tools)
+ * 4. Catch-all 404
+ *
+ * Protection is handled by wrapper components:
+ * - TolerantPrivateRoute: Allows offline access with cached credentials
+ * - ActivePrivateRoute: Requires active authentication
+ * - OnlineOnlyRoute: Requires network connectivity
+ */
+const routes: RouteObject[] = [
+  {
+    // Root layout wraps all routes
+    element: <RootLayout />,
+    children: [
+      // =========================================================================
+      // PUBLIC ROUTES
+      // =========================================================================
+      {
+        path: ROUTES.SIGN_IN,
+        element: <SignIn />,
+      },
+      {
+        path: ROUTES.AUTH_RETURN,
+        element: <AuthReturn />,
+      },
+
+      // =========================================================================
+      // PROTECTED ROUTES - WORKSPACE & NOTEBOOKS
+      // =========================================================================
+      {
+        path: ROUTES.INDEX,
+        element: (
+          <TolerantPrivateRoute>
+            <Workspace />
+          </TolerantPrivateRoute>
+        ),
+      },
+      {
+        path: `${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId`,
+        element: (
+          <TolerantPrivateRoute>
+            <Notebook />
+          </TolerantPrivateRoute>
+        ),
+      },
+
+      // =========================================================================
+      // PROTECTED ROUTES - RECORD MANAGEMENT
+      // =========================================================================
+      {
+        // Edit an existing record
+        path: getEditRecordRoute({
+          serverId: ':serverId',
+          projectId: ':projectId',
+          recordId: ':recordId',
+        }),
+        element: (
+          <TolerantPrivateRoute>
+            <EditRecordPage />
+          </TolerantPrivateRoute>
+        ),
+      },
+      {
+        // View a record (read-only)
+        path: ROUTES.getViewRecordRoute({
+          serverId: ':serverId',
+          projectId: ':projectId',
+          recordId: ':recordId',
+        }),
+        element: (
+          <TolerantPrivateRoute>
+            <ViewRecordPage />
+          </TolerantPrivateRoute>
+        ),
+      },
+
+      // =========================================================================
+      // UTILITY ROUTES
+      // =========================================================================
+      {
+        path: ROUTES.ABOUT_BUILD,
+        element: <AboutBuild />,
+      },
+      // Offline maps route (conditionally included based on build config)
+      ...(OFFLINE_MAPS
+        ? [
+            {
+              path: ROUTES.OFFLINE_MAPS,
+              element: <MapDownload />,
+            },
+          ]
+        : []),
+      {
+        // Debug tool for inspecting PouchDB state
+        path: ROUTES.POUCH_EXPLORER,
+        element: <PouchExplorer />,
+      },
+
+      // =========================================================================
+      // CATCH-ALL 404
+      // =========================================================================
+      {
+        path: '*',
+        element: <NotFound404 />,
+      },
+    ],
+  },
+];
+
+/**
+ * Create the data router instance.
+ *
+ * Using createBrowserRouter (Data Router API) instead of <BrowserRouter>
+ * enables advanced features:
+ *
+ * - useBlocker: Block navigation and show confirmation or flush pending saves
+ * - useNavigation: Access pending navigation state for loading indicators
+ * - loader/action: Colocate data fetching with routes (future enhancement)
+ * - errorElement: Per-route error boundaries (future enhancement)
+ *
+ * @see https://reactrouter.com/en/main/routers/create-browser-router
+ */
+const router = createBrowserRouter(routes);
+
+// =============================================================================
+// APPLICATION ROOT
+// =============================================================================
+
+/**
+ * Main application component.
+ *
+ * Sets up the provider hierarchy:
+ * 1. StateProvider - Global application state (auth, projects, etc.)
+ * 2. InitialiseGate - Ensures app Redux store is initialised before rendering
+ * 3. NotificationProvider - Toast/snackbar notifications
+ * 4. QueryClientProvider - React Query for server state
+ * 5. StyledEngineProvider - MUI style injection order
+ * 6. ThemeProvider - MUI theme configuration
+ * 7. RouterProvider - React Router with data router
+ *
+ * Note: Providers are ordered so that:
+ * - State and initialisation happen first
+ * - Notifications are available everywhere
+ * - React Query is available in all routes
+ * - Theming wraps all UI
+ * - Router is innermost so routes can use all providers
+ */
 export default function App() {
   return (
     <StateProvider>
@@ -110,135 +309,7 @@ export default function App() {
           <QueryClientProvider client={queryClient}>
             <StyledEngineProvider injectFirst>
               <ThemeProvider theme={theme}>
-                <Router>
-                  <AppUrlListener></AppUrlListener>
-                  <MainLayout>
-                    <Routes>
-                      <Route path={ROUTES.SIGN_IN} element={<SignIn />} />
-                      <Route
-                        path={ROUTES.AUTH_RETURN}
-                        element={<AuthReturn />}
-                      />
-                      <Route
-                        path={ROUTES.INDEX}
-                        element={
-                          <TolerantPrivateRoute>
-                            <Workspace />
-                          </TolerantPrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={`${ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE}:serverId/:projectId`}
-                        element={
-                          <TolerantPrivateRoute>
-                            <Notebook />
-                          </TolerantPrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={ROUTES.CREATE_NEW_SURVEY}
-                        element={
-                          // Online only and authenticated
-                          <OnlineOnlyRoute>
-                            <ActivePrivateRoute>
-                              <CreateNewSurvey />
-                            </ActivePrivateRoute>
-                          </OnlineOnlyRoute>
-                        }
-                      />
-                      {/* Draft creation happens by redirecting to a fresh minted UUID
-                  This is to keep it stable until the user navigates away. So the
-                  draft_id is optional, and when RecordCreate is instantiated
-                  without one, it immediately mints a UUID and redirects to it */}
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':serverId/' +
-                          ':projectId' +
-                          ROUTES.RECORD_CREATE +
-                          ':typeName' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draftId' + //added for keep the record id same for draft
-                          ROUTES.RECORD_RECORD +
-                          ':recordId'
-                        }
-                        element={
-                          <TolerantPrivateRoute>
-                            <RecordCreate />
-                          </TolerantPrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':serverId/' +
-                          ':projectId' +
-                          ROUTES.RECORD_CREATE +
-                          ':typeName'
-                        }
-                        element={
-                          <TolerantPrivateRoute>
-                            <RecordCreate />
-                          </TolerantPrivateRoute>
-                        }
-                      />
-                      {/*Record editing and viewing is a separate affair, separated by
-                  the presence/absence of draft_id prop OR draft_id being in the
-                  state of the Record component. So if the user clicks a draft to
-                  make continued changes, the draft_id is in the URL here.
-                  Otherwise, they can make changes to a record they view (Which
-                  should at some point, TODO, redirect to the same Record form but
-                  with the newly minted draft_id attached. BUt this TODO is in the
-                  record/form.tsx*/}
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':serverId/' +
-                          ':projectId' +
-                          ROUTES.RECORD_EXISTING +
-                          ':recordId' +
-                          ROUTES.REVISION +
-                          ':revisionId'
-                        }
-                        element={
-                          <TolerantPrivateRoute>
-                            <Record />
-                          </TolerantPrivateRoute>
-                        }
-                      />
-                      <Route
-                        path={
-                          ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                          ':serverId/' +
-                          ':projectId' +
-                          ROUTES.RECORD_EXISTING +
-                          ':recordId' +
-                          ROUTES.REVISION +
-                          ':revisionId' +
-                          ROUTES.RECORD_DRAFT +
-                          ':draftId'
-                        }
-                        element={
-                          <TolerantPrivateRoute>
-                            <Record />
-                          </TolerantPrivateRoute>
-                        }
-                      />
-                      <Route path={ROUTES.ABOUT_BUILD} Component={AboutBuild} />
-                      {OFFLINE_MAPS && (
-                        <Route
-                          path={ROUTES.OFFLINE_MAPS}
-                          Component={MapDownloadComponent}
-                        />
-                      )}
-                      <Route
-                        path={ROUTES.POUCH_EXPLORER}
-                        Component={PouchExplorer}
-                      />
-                      <Route path={'*'} Component={NotFound404} />
-                    </Routes>
-                  </MainLayout>
-                </Router>
+                <RouterProvider router={router} />
               </ThemeProvider>
             </StyledEngineProvider>
           </QueryClientProvider>

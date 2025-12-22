@@ -1,18 +1,24 @@
-import {getRecordsWithRegex, RecordMetadata} from '@faims3/data-model';
+import {
+  DatabaseInterface,
+  DataDocument,
+  DataEngine,
+  getRecordsWithRegex,
+  RecordMetadata,
+} from '@faims3/data-model';
 import {Refresh} from '@mui/icons-material';
 import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
 import {Button, ButtonGroup, CircularProgress, Stack} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useState} from 'react';
-import {Navigate, Link as RouterLink} from 'react-router-dom';
-import {localGetDataDb} from '../../..';
+import {Navigate, useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
 import {useAppSelector} from '../../../context/store';
-import {QRCodeButton} from '../../fields/qrcode/QRCodeFormField';
+import {localGetDataDb} from '../../../utils/database';
+import {QRCodeButton} from '@faims3/forms';
 
 type AddRecordButtonsProps = {
   project: Project;
@@ -34,14 +40,47 @@ export default function AddRecordButtons({
     RecordMetadata | undefined
   >(undefined);
   const showQRButton = !!metadata['showQRCodeButton'];
-  const buttonLabel = `Add new ${recordLabel}`;
-  const uiSpecification = compiledSpecService.getSpec(uiSpecificationId);
+  const uiSpec = compiledSpecService.getSpec(uiSpecificationId);
 
-  if (uiSpecification === undefined) {
+  if (uiSpec === undefined) {
     return <CircularProgress thickness={2} size={12} />;
   }
-  const viewsets = uiSpecification.viewsets;
-  const visible_types = uiSpecification.visible_types;
+  const viewsets = uiSpec.viewsets;
+  const visibleTypes = uiSpec.visible_types;
+
+  const dataDb = localGetDataDb(projectId);
+  const dataEngine = () => {
+    return new DataEngine({
+      dataDb: dataDb as DatabaseInterface<DataDocument>,
+      uiSpec,
+    });
+  };
+
+  const navigate = useNavigate();
+
+  const handleNewRecord = (viewsetName: string) => () => {
+    console.log('Creating new record of type', viewsetName);
+
+    // create the new record
+    // navigate to the record edit page with mode=new
+
+    const engine = dataEngine();
+    engine.form
+      .createRecord({
+        createdBy: activeUser.username,
+        formId: viewsetName,
+      })
+      .then(newRecord =>
+        navigate(
+          ROUTES.getEditRecordRoute({
+            serverId: serverId,
+            projectId: projectId,
+            recordId: newRecord.record._id,
+            mode: 'new',
+          })
+        )
+      );
+  };
 
   const handleScanResult = (value: string) => {
     // find a record with this field value
@@ -54,7 +93,7 @@ export default function AddRecordButtons({
       projectId,
       regex: value,
       tokenContents: activeUser.parsedToken,
-      uiSpecification,
+      uiSpecification: uiSpec,
     }).then(records => {
       // navigate to it
       // what should happen if there are more than one?
@@ -67,11 +106,10 @@ export default function AddRecordButtons({
     /*  if we have selected a record (via QR scanning) then redirect to it here */
     return (
       <Navigate
-        to={ROUTES.getExistingRecordRoute({
+        to={ROUTES.getEditRecordRoute({
           serverId: serverId,
           projectId: projectId || 'dummy',
           recordId: (selectedRecord.record_id || '').toString(),
-          revisionId: (selectedRecord.revision_id || '').toString(),
         })}
       />
     );
@@ -90,7 +128,7 @@ export default function AddRecordButtons({
           {/*If the list of views hasn't loaded yet*/}
           {/*we can still show this button, except it will*/}
           {/*redirect to the Record creation without known type*/}
-          {uiSpecification?.visible_types.length === 1 ? (
+          {uiSpec?.visible_types.length === 1 ? (
             <Button
               variant="contained"
               color="primary"
@@ -103,33 +141,16 @@ export default function AddRecordButtons({
                 },
               }}
               startIcon={<AddCircleSharpIcon />}
-              component={RouterLink}
               key="newRecord"
-              to={
-                ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                serverId +
-                '/' +
-                projectId +
-                ROUTES.RECORD_CREATE +
-                visible_types
-              }
+              onClick={handleNewRecord(visibleTypes[0])}
             >
-              {buttonLabel}
+              Add new {recordLabel}
             </Button>
           ) : (
-            visible_types.map(
+            visibleTypes.map(
               (viewset_name: string) =>
                 viewsets[viewset_name].is_visible !== false && (
                   <Button
-                    component={RouterLink}
-                    to={
-                      ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE +
-                      serverId +
-                      '/' +
-                      projectId +
-                      ROUTES.RECORD_CREATE +
-                      viewset_name
-                    }
                     key={viewset_name}
                     startIcon={<AddCircleSharpIcon />}
                     variant="contained"
@@ -141,6 +162,7 @@ export default function AddRecordButtons({
                         backgroundColor: theme.palette.secondary.dark,
                       },
                     }}
+                    onClick={handleNewRecord(viewset_name)}
                   >
                     {viewsets[viewset_name].label || `New ${viewset_name}`}
                   </Button>

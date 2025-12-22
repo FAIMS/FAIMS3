@@ -1,0 +1,349 @@
+import {
+  AvpUpdateMode,
+  DatabaseInterface,
+  DataDocument,
+  DataEngine,
+  ProjectID,
+  RecordID,
+} from '@faims3/data-model';
+import {
+  AutoIncrementFieldRef,
+  EditableFormManager,
+  EditableFormManagerHandle,
+  FormNavigationChildEntry,
+  FormNavigationContext,
+  FormNavigationContextSchema,
+  FullFormConfig,
+  RedirectInfo,
+} from '@faims3/forms';
+import {CircularProgress, Stack, Typography} from '@mui/material';
+import {useQuery} from '@tanstack/react-query';
+import {useCallback, useEffect, useState} from 'react';
+import {
+  useBlocker,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
+import {APP_NAME, DEBUG_APP, getMapConfig} from '../../buildconfig';
+import {
+  getEditRecordRoute,
+  getNotebookRoute,
+  getViewRecordRoute,
+} from '../../constants/routes';
+import {selectActiveUser} from '../../context/slices/authSlice';
+import {compiledSpecService} from '../../context/slices/helpers/compiledSpecService';
+import {selectProjectById} from '../../context/slices/projectSlice';
+import {useAppSelector} from '../../context/store';
+import {createProjectAttachmentService} from '../../utils/attachmentService';
+import {useUiSpecLayout} from '../../utils/customHooks';
+import {localGetDataDb} from '../../utils/database';
+import {useAutoIncrementService} from '../../utils/useIncrementerService';
+import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
+import {theme} from '../themes';
+
+const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
+
+const DEFAULT_NAVIGATION_STATE: FormNavigationContext = {mode: 'root'};
+
+type UseFormNavigationContextResult = FormNavigationContext;
+
+/** Custom hook to parse out safely navigation context */
+export function useFormNavigationContext(): UseFormNavigationContextResult {
+  // Get react router nav state
+  const location = useLocation();
+  const result = FormNavigationContextSchema.safeParse(location.state);
+  if (result.success) {
+    return result.data;
+  }
+
+  if (DEBUG_APP && location.state !== null) {
+    console.warn(
+      'Invalid navigation state detected, falling back to root:',
+      result.error
+    );
+  }
+
+  return DEFAULT_NAVIGATION_STATE;
+}
+
+export const EditRecordPage = () => {
+  const {serverId, projectId, recordId} = useParams<{
+    serverId: string;
+    projectId: ProjectID;
+    recordId: RecordID;
+  }>();
+
+  // Get mode=XXX from the query params
+  const [searchParams] = useSearchParams();
+  const mode = searchParams.get('mode') as AvpUpdateMode;
+
+  const navigate = useNavigate();
+
+  const activeUser = useAppSelector(selectActiveUser);
+  const navigationContext = useFormNavigationContext();
+
+  if (!activeUser) {
+    return <div>Please log in to edit records.</div>;
+  }
+  const userId = activeUser.username;
+
+  // Main page elements
+  // - Header with 'back' button and record HRID
+  // - breadcrumbs
+  // - Tabbed view of the record (View, Edit, Info, Conflicts)
+
+  // TODO: these missing info checks should probably just redirect back to the home page
+  //  maybe with a flash message.
+  if (!serverId || !projectId) return <></>;
+  const project = useAppSelector(state => selectProjectById(state, projectId));
+  if (!project) return <></>;
+  if (!recordId) return <div>Record ID not specified</div>;
+
+  const {uiSpecificationId: uiSpecId} = project;
+  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  if (!uiSpec) return <div>UI Specification not found</div>;
+
+  // These are handlers passed back from the editable form to assist with
+  // navigation management
+  const [formHandle, setFormHandle] =
+    useState<EditableFormManagerHandle | null>(null);
+
+  // Are we resolving auto incrementer issues?
+  const [resolvingAutoIncrementer, setResolvingAutoIncrementer] = useState<{
+    ref: AutoIncrementFieldRef;
+    onResolved: () => void;
+  } | null>(null);
+
+  // Establish the blocker function (this is how we check if we need to block
+  // nav events and flush)
+  const blocker = useBlocker(
+    ({currentLocation, nextLocation}) =>
+      formHandle?.hasPendingChanges() === true &&
+      currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // When the blocker state changes - we only proceed after forcing a flush
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      formHandle?.flushSave().finally(() => {
+        blocker.proceed();
+      });
+    }
+  }, [blocker, formHandle]);
+
+  const dataDb = localGetDataDb(projectId);
+  const dataEngine = () => {
+    return new DataEngine({
+      dataDb: dataDb as DatabaseInterface<DataDocument>,
+      uiSpec,
+    });
+  };
+
+  // Fetch initial form data using TanStack Query for caching and loading states
+  const {
+    data: formData,
+    isError,
+    isPending,
+    isRefetching,
+    error,
+  } = useQuery({
+    queryKey: ['formData', recordId],
+    queryFn: async () => {
+      // Get the hydrated record data in the form format
+      return await dataEngine().form.getExistingFormData({
+        recordId: recordId,
+      });
+    },
+    // Try offline
+    networkMode: 'always',
+    // Always refetch on mount to get fresh data
+    refetchOnMount: 'always',
+    // Don't cache this
+    staleTime: 0,
+    gcTime: 0,
+  });
+
+  // Query to fetch the relevant viewset
+  const relevantUiSpec = useUiSpecLayout({dataDb, recordId, uiSpec});
+
+  // Generate attachment service for this project
+  const attachmentEngine = () => {
+    return createProjectAttachmentService(projectId);
+  };
+
+  // Build the auto incrementer service
+  const handleAutoIncrementIssue = useCallback(
+    (fieldRefs: AutoIncrementFieldRef[], onResolved: () => void) => {
+      console.log(
+        'Callback fired - should set the auto incrementer to display'
+      );
+      if (fieldRefs.length > 0) {
+        setResolvingAutoIncrementer({ref: fieldRefs[0], onResolved});
+      }
+    },
+    []
+  );
+  const incrementerService = useAutoIncrementService({
+    projectId,
+    onIssue: handleAutoIncrementIssue,
+  });
+
+  const formConfig: FullFormConfig = {
+    mode: 'full' as const,
+    appName: APP_NAME,
+    recordId,
+    recordMode: mode,
+    dataEngine,
+    attachmentEngine,
+    mapConfig: getMapConfig,
+    navigation: {
+      navigateToRecordList: {
+        label: 'Return to record list',
+        navigate: () => {
+          navigate(getNotebookRoute({serverId, projectId}));
+        },
+      },
+      // Takes you back to view record (note this is only shown if there are no
+      // parent navigation history)
+      navigateToViewRecord: params => {
+        navigate(
+          getViewRecordRoute({projectId, recordId: params.recordId, serverId})
+        );
+      },
+      toRecord: ({
+        recordId: targetRecordId,
+        mode,
+        stripNavigationEntry,
+        addNavigationEntry,
+        scrollTarget,
+      }: {
+        recordId: RecordID;
+        mode: AvpUpdateMode;
+        // If you want to push another navigation entry
+        addNavigationEntry?: FormNavigationChildEntry;
+        // If you want to strip the head nav entry (such as when returning to
+        // parent) - how many to take
+        stripNavigationEntry?: number;
+        scrollTarget?: RedirectInfo;
+      }) => {
+        let newNavState: FormNavigationContext = navigationContext;
+        if (newNavState.mode === 'root') {
+          // If in root mode, stripping has no effect, but we can add
+          if (addNavigationEntry !== undefined) {
+            newNavState = {mode: 'child', lineage: [addNavigationEntry]};
+          }
+        } else if (newNavState.mode === 'child') {
+          if (stripNavigationEntry !== undefined) {
+            // Strip off the latest entry
+            newNavState.lineage = newNavState.lineage.slice(
+              0,
+              -stripNavigationEntry
+            );
+          }
+          if (addNavigationEntry !== undefined) {
+            // Push new entry
+            newNavState.lineage.push(addNavigationEntry);
+          }
+        }
+
+        // Update scroll target as requested
+        newNavState.scrollTarget = scrollTarget;
+
+        navigate(
+          getEditRecordRoute({
+            serverId,
+            projectId,
+            recordId: targetRecordId,
+            mode,
+          }),
+          // Include navigation state
+          {state: newNavState}
+        );
+      },
+      getToRecordLink(params) {
+        return getEditRecordRoute({
+          serverId,
+          projectId,
+          recordId: params.recordId,
+          mode,
+        });
+      },
+      navigateToLink(to) {
+        navigate(to);
+      },
+    },
+    user: activeUser.username,
+    // Pass through the layout from the spec
+    layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
+    // Pass in the incrementer service
+    incrementerService,
+  };
+
+  const formLabel = formData
+    ? uiSpec.viewsets[formData.formId]?.label
+    : undefined;
+
+  return (
+    <div>
+      {isPending || isRefetching ? (
+        <div>
+          <CircularProgress />
+        </div>
+      ) : isError ? (
+        <div>
+          <p>
+            An error occurred while fetching record data. Error:{' '}
+            {error?.message ?? 'unknown'}.
+          </p>
+        </div>
+      ) : (
+        <>
+          <Stack spacing={1} mb={2}>
+            <Typography variant="h3">
+              {mode === 'new' ? 'Creating' : 'Editing'}{' '}
+              {formLabel ?? formData.formId}
+            </Typography>
+            <Typography variant="h4" color={theme.palette.text.secondary}>
+              {mode === 'parent'
+                ? formData.context.hrid
+                : formData.context.record._id}
+            </Typography>
+          </Stack>
+          {resolvingAutoIncrementer !== null && (
+            <AutoIncrementEditForm
+              project_id={projectId}
+              form_id={resolvingAutoIncrementer.ref.formId}
+              // TODO how do we know this?
+              field_id={resolvingAutoIncrementer.ref.fieldId}
+              label={resolvingAutoIncrementer.ref.fieldLabel}
+              open={!!resolvingAutoIncrementer}
+              handleClose={async () => {
+                setResolvingAutoIncrementer(null);
+                // Notify child we are done - prompting a refresh
+                resolvingAutoIncrementer.onResolved();
+              }}
+            />
+          )}
+          <EditableFormManager
+            // Force remount if record ID or FormID changes
+            key={`${recordId}-${formData.formId}`}
+            mode={mode}
+            initialData={formData.data}
+            revisionId={formData.revisionId}
+            existingRecord={formData.context.record}
+            formId={formData.formId}
+            activeUser={userId}
+            recordId={recordId}
+            config={formConfig}
+            navigationContext={navigationContext}
+            debugMode={DEBUG_APP}
+            // This is a callback to set parent state from the component
+            onReady={setFormHandle}
+          />
+        </>
+      )}
+    </div>
+  );
+};

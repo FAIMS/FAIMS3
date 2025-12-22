@@ -19,6 +19,7 @@
  */
 
 import {
+  getFieldToIdsMap,
   ProjectID,
   ProjectUIFields,
   safeWriteDocument,
@@ -40,6 +41,7 @@ import {
 import {PouchDBWrapper} from '../context/slices/helpers/pouchDBWrapper';
 
 const LOCAL_AUTOINCREMENT_PREFIX = 'local-autoincrement-state';
+export const DEFAULT_NUM_DIGITS = 4;
 
 // An auto-incrementer allocates numbers from a set of ranges
 // defined by the user.
@@ -68,7 +70,7 @@ export class AutoIncrementer {
   async getState() {
     try {
       const doc = await this.db.get(this.pouch_id);
-      return doc;
+      return doc as LocalAutoIncrementState;
     } catch (err: any) {
       if (err.status === 404) {
         // We haven't initialised this yet
@@ -272,17 +274,40 @@ export async function getAutoincrementReferencesForProject(
     project_id
   )?.uiSpecificationId;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  if (!uiSpec) {
+    console.error(
+      'Failed to find uiSpec during auto incrementer initialisation.'
+    );
+    return [];
+  }
 
+  // build a lookup of field -> viewset
+  const viewsetMap = getFieldToIdsMap(uiSpec);
   const references: AutoIncrementReference[] = [];
 
   const fields = (uiSpec?.fields ?? []) as ProjectUIFields;
-  for (const field in fields) {
-    // TODO are there other names?
-    if (fields[field]['component-name'] === 'BasicAutoIncrementer') {
+  for (const [fieldId, fieldDetails] of Object.entries(fields)) {
+    if (fieldDetails['component-name'] === 'BasicAutoIncrementer') {
+      // Default
+      let numDigits: number = DEFAULT_NUM_DIGITS;
+      if (fieldDetails['component-parameters'].num_digits) {
+        try {
+          numDigits = Number(fieldDetails['component-parameters'].num_digits);
+        } catch (e) {
+          console.error(
+            'num_digits property could not be parsed as a number. Value',
+            fieldDetails['component-parameters'].num_digits,
+            'error',
+            e
+          );
+        }
+      }
+
       references.push({
-        form_id: fields[field]['component-parameters'].form_id,
-        field_id: fields[field]['component-parameters'].name,
-        label: fields[field]['component-parameters'].label,
+        form_id: viewsetMap[fieldId].viewSetId,
+        field_id: fieldDetails['component-parameters'].name,
+        label: fieldDetails['component-parameters'].label,
+        numDigits: numDigits,
       });
     }
   }
