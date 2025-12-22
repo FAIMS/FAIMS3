@@ -476,12 +476,11 @@ export const ViewRecordPage: React.FC = () => {
           flexDirection: {xs: 'column', sm: 'row'},
           justifyContent: {xs: 'space-between', sm: 'flex-start'},
           alignItems: {xs: 'flex-start', sm: 'center'},
-          paddingLeft: 2,
           gap: 2,
         }}
       >
         <Stack spacing={2}>
-          <Typography variant="h3">Viewing {formLabel}</Typography>
+          <Typography variant="h3" color={theme.palette.text.primary}>Viewing: {formLabel}</Typography>
           <Typography variant="h4" color={theme.palette.text.secondary}>
             {formData.context.hrid}
           </Typography>

@@ -18,22 +18,33 @@
  *   TODO
  */
 
+import {ProjectStatus} from '@faims3/data-model';
 import {RefreshOutlined} from '@mui/icons-material';
-import AddCircleSharpIcon from '@mui/icons-material/AddCircleSharp';
-import {Alert, AlertTitle, Box, Button, Paper, Typography} from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Link,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 import {grey} from '@mui/material/colors';
 import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {GridColDef} from '@mui/x-data-grid';
 import {useMutation} from '@tanstack/react-query';
 import {useState} from 'react';
-import {useNavigate} from 'react-router-dom';
 import {
   NOTEBOOK_LIST_TYPE,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../../buildconfig';
-import * as ROUTES from '../../../constants/routes';
 import {useNotification} from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {
@@ -46,7 +57,6 @@ import {useIsOnline} from '../../../utils/customHooks';
 import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
-import {ProjectStatus} from '@faims3/data-model';
 
 // Survey status naming conventions
 
@@ -108,8 +118,7 @@ export default function NoteBooks() {
   const activatedProjects = projects.filter(nb => nb.isActivated);
 
   const [tabID, setTabID] = useState('1');
-
-  const history = useNavigate();
+  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
 
   const theme = useTheme();
   const is_xs = !useMediaQuery(theme.breakpoints.up('sm'));
@@ -209,73 +218,106 @@ export default function NoteBooks() {
   // use notification service
   const notify = useNotification();
 
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
-    <Box>
-      <Box component={Paper} elevation={0} p={2}>
+    <Box component={Paper} elevation={0} p={2}>
+      {activatedProjects.length === 0 && (
         <Typography variant={'body1'} gutterBottom>
           {notActivatedAdvice}
         </Typography>
-        <div
-          style={{display: 'flex', justifyContent: 'space-between', gap: '8px'}}
+      )}
+      {
+        <Stack
+          direction={isMobile ? 'column' : 'row'}
+          alignItems={isMobile ? 'flex-start' : 'center'}
+          justifyContent={isMobile ? 'space-evenly' : 'space-between'}
+          spacing={2}
+          sx={{mt: 1, mb: 2}}
         >
-          {showCreateNewNotebookButton ? (
+          <Stack direction="row" spacing={1} alignItems="center">
             <Button
-              disabled={!isOnline.isOnline}
               variant="contained"
-              onClick={() => history(ROUTES.CREATE_NEW_SURVEY)}
-              sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
-              startIcon={<AddCircleSharpIcon />}
+              disabled={!showRefreshButton || doRefresh.isPending}
+              sx={{backgroundColor: theme.palette.primary.main}}
+              startIcon={<RefreshOutlined />}
+              onClick={() => {
+                doRefresh.mutate();
+              }}
             >
-              Create New {NOTEBOOK_NAME}
+              Refresh {NOTEBOOK_NAME}s
             </Button>
-          ) : (
-            <div />
-          )}
-          <Button
-            variant="contained"
-            disabled={!showRefreshButton || doRefresh.isPending}
-            sx={{mb: 3, mt: 3, backgroundColor: theme.palette.primary.main}}
-            startIcon={<RefreshOutlined />}
-            onClick={() => {
-              doRefresh.mutate();
+            {doRefresh.isPending && <CircularProgress size={24} />}
+          </Stack>
+          <Link
+            component="button"
+            variant="body2"
+            onClick={() => setInfoDialogOpen(true)}
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.5,
+              cursor: 'pointer',
             }}
           >
-            Refresh {NOTEBOOK_NAME}s
-          </Button>
-        </div>
-        {NOTEBOOK_LIST_TYPE === 'tabs' ? (
-          <Tabs
-            projects={projects}
-            tabID={tabID}
-            handleChange={setTabID}
-            activatedColumns={activatedColumns}
-            notActivatedColumns={notActivatedColumns}
-          />
-        ) : (
-          <HeadingProjectGrid
-            projects={projects}
-            serverId={activeServerId}
-            activatedColumns={activatedColumns}
-            notActivatedColumns={notActivatedColumns}
-          />
-        )}
-        <Alert severity="info">
-          <AlertTitle>
-            What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
-          </AlertTitle>
-          When a {NOTEBOOK_NAME} is “{ACTIVATED_LABEL}” you are safe to work
-          offline at any point because all the data you collect will be saved to
-          your device. {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start
-          the downloading of existing {NOTEBOOK_NAME} records onto your device.
-          We recommend you complete this procedure while you have a stable
-          internet connection. Currently, you cannot{' '}
-          {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}, this is something
-          we will be adding soon. If you need to make space on your device you
-          can clear the application storage or delete the application. If a{' '}
-          {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to start
-          using it.
-        </Alert>
-      </Box>
+            <InfoOutlinedIcon fontSize="small" />
+            Learn more about activating {NOTEBOOK_NAME}s
+          </Link>
+        </Stack>
+      }
+      {NOTEBOOK_LIST_TYPE === 'tabs' ? (
+        <Tabs
+          projects={projects}
+          tabID={tabID}
+          handleChange={setTabID}
+          activatedColumns={activatedColumns}
+          notActivatedColumns={notActivatedColumns}
+        />
+      ) : (
+        <HeadingProjectGrid
+          projects={projects}
+          serverId={activeServerId}
+          activatedColumns={activatedColumns}
+          notActivatedColumns={notActivatedColumns}
+        />
+      )}
+
+      <Dialog
+        open={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
+        </DialogTitle>
+        <DialogContent>
+          <Typography paragraph>
+            When a {NOTEBOOK_NAME} is "{ACTIVATED_LABEL}" you are safe to work
+            offline at any point because all the data you collect will be saved
+            to your device.
+          </Typography>
+          <Typography paragraph>
+            {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start the
+            downloading of existing {NOTEBOOK_NAME} records onto your device. We
+            recommend you complete this procedure while you have a stable
+            internet connection.
+          </Typography>
+          <Typography paragraph>
+            Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
+            {NOTEBOOK_NAME}, this is something we will be adding soon. If you
+            need to make space on your device you can clear the application
+            storage or delete the application.
+          </Typography>
+          <Typography>
+            If a {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to
+            start using it.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInfoDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

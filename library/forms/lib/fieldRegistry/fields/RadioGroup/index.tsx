@@ -104,7 +104,7 @@ export const RadioGroup = (props: FieldProps) => {
       advancedHelperText={advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
     >
-      <FormControl sx={{mb: 4}} error={!!error}>
+      <FormControl>
         <MuiRadioGroup
           value={value}
           onChange={handleChange}

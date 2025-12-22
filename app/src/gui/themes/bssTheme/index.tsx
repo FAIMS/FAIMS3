@@ -1,4 +1,4 @@
-import {createTheme} from '@mui/material';
+import {colors, createTheme} from '@mui/material';
 import typography from '../default/typography';
 
 const primaryMainColor = '#000000';
@@ -23,6 +23,11 @@ const theme = createTheme({
       light: '#FFFFFF',
       dark: '#000000',
     },
+    text: {
+      primary: colors.blueGrey[900],
+      secondary: colors.blueGrey[600],
+      helpText: colors.blueGrey[600],
+    },
     stepper: {
       current: '#000000',
       visited: '#07a907',
@@ -36,11 +41,6 @@ const theme = createTheme({
     secondary: {
       main: '#12B0FB',
       contrastText: '#F4F4F4',
-    },
-    text: {
-      primary: '#000000FF',
-      secondary: '#000000',
-      helpText: '#737373',
     },
     alert: {
       warningBackground: '#FFFFFF',

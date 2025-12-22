@@ -84,6 +84,9 @@ export interface EditableFormManagerProps {
   navigationContext: FormNavigationContext;
   /** Called when the form is ready, providing access to form controls */
   onReady?: (handle: EditableFormManagerHandle) => void;
+  /** Insertable heading slot if you want a heading in the correct location. It
+   * is inserted between the top breadcrumbs and the navigation buttons */
+  headingSlot?: React.ReactNode;
   /** Enable debug logging for save operations */
   debugMode?: boolean;
 }
@@ -929,8 +932,8 @@ export const EditableFormManager: React.FC<
           const normalisedRelationships = !relevantFieldValue
             ? []
             : Array.isArray(relevantFieldValue)
-              ? relevantFieldValue
-              : [relevantFieldValue];
+            ? relevantFieldValue
+            : [relevantFieldValue];
 
           // Update the data of the parent record
           parentFormData.data[head.fieldId].data = [
@@ -1008,7 +1011,7 @@ export const EditableFormManager: React.FC<
   ]);
 
   return (
-    <Stack spacing={1}>
+    <Stack spacing={2}>
       {
         // Error snackbar
       }
@@ -1039,6 +1042,11 @@ export const EditableFormManager: React.FC<
         navigateToRecordList={props.config.navigation.navigateToRecordList}
         navigationContext={props.navigationContext}
       />
+      {
+        // Heading if supplied
+      }
+      {props.headingSlot}
+
       {
         // Action buttons (top)
       }

@@ -18,7 +18,7 @@ import {
 } from '@faims3/forms';
 import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
-import {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
   useBlocker,
   useLocation,
@@ -285,6 +285,23 @@ export const EditRecordPage = () => {
     ? uiSpec.viewsets[formData.formId]?.label
     : undefined;
 
+  const headingSlot: React.ReactNode | undefined = formData ? (
+    <Stack spacing={1}>
+      <Typography variant="h3">
+        {mode === 'new' ? 'Creating' : 'Editing'}
+        {': '}
+        {formLabel ?? formData.formId}
+      </Typography>
+      {mode === 'parent' && (
+        <Typography variant="h4" color={theme.palette.text.secondary}>
+          {mode === 'parent'
+            ? formData.context.hrid
+            : formData.context.record._id}
+        </Typography>
+      )}
+    </Stack>
+  ) : undefined;
+
   return (
     <div>
       {isPending || isRefetching ? (
@@ -300,17 +317,6 @@ export const EditRecordPage = () => {
         </div>
       ) : (
         <>
-          <Stack spacing={1} mb={2}>
-            <Typography variant="h3">
-              {mode === 'new' ? 'Creating' : 'Editing'}{' '}
-              {formLabel ?? formData.formId}
-            </Typography>
-            <Typography variant="h4" color={theme.palette.text.secondary}>
-              {mode === 'parent'
-                ? formData.context.hrid
-                : formData.context.record._id}
-            </Typography>
-          </Stack>
           {resolvingAutoIncrementer !== null && (
             <AutoIncrementEditForm
               project_id={projectId}
@@ -329,6 +335,7 @@ export const EditRecordPage = () => {
           <EditableFormManager
             // Force remount if record ID or FormID changes
             key={`${recordId}-${formData.formId}`}
+            headingSlot={headingSlot}
             mode={mode}
             initialData={formData.data}
             revisionId={formData.revisionId}

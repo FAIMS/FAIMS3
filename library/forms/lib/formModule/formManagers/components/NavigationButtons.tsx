@@ -5,6 +5,7 @@ import {
   NavigationButtonsTemplate,
 } from './NavigationButtonsTemplate';
 import AddIcon from '@mui/icons-material/Add';
+import DoneIcon from '@mui/icons-material/Done';
 
 type RelationshipType = 'parent' | 'linked';
 
@@ -205,13 +206,22 @@ export const FormNavigationButtons = ({
   const buttons = useMemo(() => {
     const result: NavigationButtonsConfig[] = [];
 
+    result.push({
+      label: navigateToRecordList.label,
+      onClick: handleRecordListNavigation,
+      disabled: isSaving,
+      loading: isSaving,
+      statusText,
+    });
+
     if (hasExplicitParentContext) {
+      const relLabel =
+        parentNavInfo.relationType === 'linked' ? 'related' : 'parent';
       // Explicit parent from navigation history - use "Return to parent"
       result.push({
-        label: `Return to ${
-          parentNavInfo.relationType === 'linked' ? 'related' : 'parent'
-        }${parentFormLabel ? ` (${parentFormLabel})` : ''}`,
-        subtitle: hrid,
+        label: parentFormLabel
+          ? `Go to ${parentFormLabel} (${relLabel})`
+          : `Go to ${relLabel}`,
         onClick: handleParentNavigation,
         disabled: isSaving,
         loading: isSaving,
@@ -219,14 +229,11 @@ export const FormNavigationButtons = ({
       });
     } else {
       // No explicit navigation history
-
       // Show navigation buttons for each implied parent/linked record (from relationship field)
       for (const impliedParent of normalizedImpliedParents) {
+        const relLabel = impliedParent.type === 'linked' ? 'related' : 'parent';
         result.push({
-          label: `Go to ${
-            impliedParent.type === 'linked' ? 'linked record' : 'parent'
-          } (${impliedParent.formId})`,
-          subtitle: impliedParent.label,
+          label: `Go to ${impliedParent.formId} (${relLabel})`,
           onClick: createImpliedParentNavigationHandler(impliedParent),
           disabled: isSaving,
           loading: isSaving,
@@ -237,22 +244,15 @@ export const FormNavigationButtons = ({
       // Show "Return to view record" if handler provided
       if (onNavigateToViewRecord) {
         result.push({
-          label: 'Return to view record',
+          label: 'Review record',
           onClick: handleViewRecordNavigation,
           disabled: isSaving,
           loading: isSaving,
           statusText,
+          icon: <DoneIcon fontSize="small" />,
         });
       }
     }
-
-    result.push({
-      label: navigateToRecordList.label,
-      onClick: handleRecordListNavigation,
-      disabled: isSaving,
-      loading: isSaving,
-      statusText,
-    });
 
     // Create another child button, if needed
     if (createAnotherChild) {
