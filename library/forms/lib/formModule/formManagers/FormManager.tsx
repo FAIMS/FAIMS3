@@ -5,7 +5,6 @@ import {TabbedSectionDisplay} from '../sections/TabbedSections';
 import {FaimsForm} from '../types';
 import {FormStateDisplay} from './FormStateDisplay';
 import {FieldVisibilityMap, FormManagerConfig} from './types';
-import {Typography} from '@mui/material';
 
 /**
  * Props for the base FormManager component.
@@ -36,8 +35,6 @@ export interface FormManagerProps extends ComponentProps<any> {
  * viewsets containing sections (views), which in turn contain fields.
  */
 export const FormManager = (props: FormManagerProps) => {
-  const formSpec = props.uiSpec.viewsets[props.formName];
-
   return (
     <>
       {/* Render Inline (Vertical) Layout */}
