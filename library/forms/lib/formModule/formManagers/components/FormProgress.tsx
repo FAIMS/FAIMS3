@@ -1,7 +1,7 @@
 import {currentlyVisibleMap, UISpecification} from '@faims3/data-model';
 import {useStore} from '@tanstack/react-form';
 import React, {useMemo} from 'react';
-import {ProgressBar} from '../../../components';
+import {FormProgressBar} from '../../../components';
 import {formDataExtractor} from '../../../utils';
 import {FaimsForm, FaimsFormData} from '../../types';
 import {completion} from '../../utils';
@@ -30,7 +30,7 @@ export const LiveFormProgress: React.FC<LiveFormProgressProps> = props => {
       visibilityMap: props.visibilityMap,
     });
   }, [data, props.formId, props.form]);
-  return <ProgressBar completion={progress} />;
+  return <FormProgressBar completion={progress} />;
 };
 
 interface StaticFormProgressProps {
@@ -56,5 +56,5 @@ export const StaticFormProgress: React.FC<StaticFormProgressProps> = props => {
       visibilityMap: visMap,
     });
   }, [props.data, props.formId]);
-  return <ProgressBar completion={progress} />;
+  return <FormProgressBar completion={progress} />;
 };
