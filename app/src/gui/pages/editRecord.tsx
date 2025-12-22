@@ -306,7 +306,9 @@ export const EditRecordPage = () => {
               {formLabel ?? formData.formId}
             </Typography>
             <Typography variant="h4" color={theme.palette.text.secondary}>
-              {formData.context.hrid}
+              {mode === 'parent'
+                ? formData.context.hrid
+                : formData.context.record._id}
             </Typography>
           </Stack>
           {resolvingAutoIncrementer !== null && (
