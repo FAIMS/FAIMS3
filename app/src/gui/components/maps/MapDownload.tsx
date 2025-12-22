@@ -206,7 +206,7 @@ export const MapDownload = () => {
 
                   {mapSet.tileKeys.length !== mapSet.expectedTileCount && (
                     <ProgressBar
-                      percentage={
+                      completion={
                         mapSet.tileKeys.length / mapSet.expectedTileCount
                       }
                     />

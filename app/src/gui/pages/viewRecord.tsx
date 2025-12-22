@@ -29,6 +29,7 @@ import {
   getImpliedNavigationRelationships,
   ImpliedRelationship,
   NavigationButtonsTemplate,
+  StaticFormProgress,
 } from '@faims3/forms';
 import EditIcon from '@mui/icons-material/Edit';
 import TabContext from '@mui/lab/TabContext';
@@ -315,6 +316,14 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   return (
     <Stack spacing={2}>
       <NavigationButtonsTemplate buttons={navButtons} marginBottom={0} />
+      {
+        // Show form progress at top of record view (static)
+      }
+      <StaticFormProgress
+        data={formData.data}
+        formId={formData.formId}
+        uiSpec={uiSpec}
+      />
       <DataView {...dataViewProps} />
     </Stack>
   );

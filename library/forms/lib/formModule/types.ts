@@ -83,3 +83,9 @@ export type FormFieldContextProps = {
 };
 
 export type FullFieldProps = BaseFieldProps & FormFieldContextProps;
+
+export type CompletionResult = {
+  progress: number;
+  requiredCount: number;
+  completedCount: number;
+};

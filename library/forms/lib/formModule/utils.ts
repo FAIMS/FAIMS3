@@ -1,14 +1,19 @@
+import {
+  DataEngine,
+  FormDataEntry,
+  FormRelationshipInstance,
+  getViewsForViewSet,
+  HydratedRevisionDocument,
+  UISpecification,
+} from '@faims3/data-model';
+import {getFieldInfo} from '../fieldRegistry';
+import {FieldVisibilityMap} from './formManagers/types';
+import {CompletionResult, FaimsFormData} from './types';
+
 /** Deterministic field name generator for usage for navigations */
 export function getFieldId({fieldId}: {fieldId: string}): string {
   return `field-${fieldId}`;
 }
-
-import {
-  DataEngine,
-  FormRelationshipInstance,
-  HydratedRevisionDocument,
-  UISpecification,
-} from '@faims3/data-model';
 
 /**
  * Represents a hydrated implied parent/linked record for navigation
@@ -99,4 +104,106 @@ export async function getImpliedNavigationRelationships(
   }
 
   return results;
+}
+
+function defaultCompletionFunction(formData: FormDataEntry): boolean {
+  const {data} = formData;
+
+  // string case
+  if (typeof data === 'string') {
+    if (data !== null && data !== undefined && data.length > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  // other cases, check for non-null/undefined
+  if (data !== null && data !== undefined) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * calculate completion progress for a form
+ *
+ * @param uiSpec - The UI specification of the form
+ * @param formId - The ID of the form/viewset
+ * @param data - The form data entries
+ * @param visibilityMap - Map of visible fields per section
+ * @returns Float 0->1 representing completion percentage
+ */
+export function completion({
+  uiSpec,
+  formId,
+  data,
+  visibilityMap,
+}: {
+  uiSpec: UISpecification;
+  formId: string;
+  data: FaimsFormData;
+  visibilityMap: FieldVisibilityMap;
+}): CompletionResult {
+  let fieldCount = 0;
+  let completedCount = 0;
+
+  const allViews = getViewsForViewSet(uiSpec, formId);
+  for (const sectionId of allViews) {
+    for (const fieldId of visibilityMap[sectionId] ?? []) {
+      // Find the field spec
+      const fieldSpec = uiSpec.fields[fieldId];
+      if (!fieldSpec) {
+        continue; // skip unknown fields
+      }
+      const fieldInfo = getFieldInfo({
+        namespace: fieldSpec['component-namespace'],
+        name: fieldSpec['component-name'],
+      });
+
+      if (!fieldInfo) {
+        continue; // skip unknown field info
+      }
+
+      // If the field is required, add to count
+      if (!fieldSpec['component-parameters']?.required) {
+        continue; // skip non-required fields
+      }
+
+      // Count
+      fieldCount += 1;
+
+      // grab the completion function if defined otherwise use the default
+      const completionFunc =
+        fieldInfo.fieldInfo.isCompleteFunction ?? defaultCompletionFunction;
+
+      // Get the form data for this field
+      const fieldData = data?.[fieldId];
+      if (!fieldData) {
+        // no data for this field so it's not complete
+        continue;
+      }
+
+      // Check if the field is complete
+      const isComplete = completionFunc(fieldData);
+      if (isComplete) {
+        completedCount += 1;
+      }
+    }
+  }
+
+  if (fieldCount === 0) {
+    // avoid division by zero, consider empty form as complete
+    return {
+      progress: 1.0,
+      requiredCount: 0,
+      completedCount: 0,
+    };
+  }
+
+  return {
+    progress: completedCount / fieldCount,
+    requiredCount: fieldCount,
+    completedCount: completedCount,
+  };
 }

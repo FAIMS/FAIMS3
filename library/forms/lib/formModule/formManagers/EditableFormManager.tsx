@@ -9,7 +9,7 @@ import {
   getViewsetForField,
   HydratedRecordDocument,
 } from '@faims3/data-model';
-import {Alert, Snackbar} from '@mui/material';
+import {Alert, Snackbar, Stack} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
 import {debounce, DebouncedFunc} from 'lodash';
@@ -42,6 +42,7 @@ import {
   FullFormManagerConfig,
 } from './types';
 import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
+import {LiveFormProgress} from './components/FormProgress';
 
 /**
  * The validation modes:
@@ -138,7 +139,7 @@ export const EditableFormManager: React.FC<
   }, [props.config.dataEngine]);
 
   // Visible field tracking - passed down to children
-  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap | undefined>(
+  const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
     currentlyVisibleMap({
       values: formDataExtractor({fullData: props.initialData ?? {}}),
       uiSpec: dataEngine.uiSpec,
@@ -1007,7 +1008,7 @@ export const EditableFormManager: React.FC<
   ]);
 
   return (
-    <>
+    <Stack spacing={1}>
       {
         // Error snackbar
       }
@@ -1043,6 +1044,12 @@ export const EditableFormManager: React.FC<
       }
       {navigationButtons}
 
+      <LiveFormProgress
+        form={form as FaimsForm}
+        formId={props.formId}
+        uiSpec={dataEngine.uiSpec}
+        visibilityMap={visibleMap}
+      />
       {/* Main form component */}
       <FormManager
         // Force complete remount if record ID changes
@@ -1060,6 +1067,6 @@ export const EditableFormManager: React.FC<
         // Action buttons (repeated at bottom for usability)
       }
       {navigationButtons}
-    </>
+    </Stack>
   );
 };
