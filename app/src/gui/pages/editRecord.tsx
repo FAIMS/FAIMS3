@@ -16,7 +16,7 @@ import {
   FullFormConfig,
   RedirectInfo,
 } from '@faims3/forms';
-import {CircularProgress} from '@mui/material';
+import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {useCallback, useEffect, useState} from 'react';
 import {
@@ -41,6 +41,7 @@ import {useUiSpecLayout} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
 import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
+import {theme} from '../themes';
 
 const DEFAULT_LAYOUT: 'tabs' | 'inline' = 'tabs';
 
@@ -280,9 +281,12 @@ export const EditRecordPage = () => {
     incrementerService,
   };
 
+  const formLabel = formData
+    ? uiSpec.viewsets[formData.formId]?.label
+    : undefined;
+
   return (
     <div>
-      <h2>Editing {recordId}</h2>
       {isPending || isRefetching ? (
         <div>
           <CircularProgress />
@@ -296,6 +300,15 @@ export const EditRecordPage = () => {
         </div>
       ) : (
         <>
+          <Stack spacing={1} mb={2}>
+            <Typography variant="h3">
+              {mode === 'new' ? 'Creating' : 'Editing'}{' '}
+              {formLabel ?? formData.formId}
+            </Typography>
+            <Typography variant="h4" color={theme.palette.text.secondary}>
+              {formData.context.hrid}
+            </Typography>
+          </Stack>
           {resolvingAutoIncrementer !== null && (
             <AutoIncrementEditForm
               project_id={projectId}

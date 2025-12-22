@@ -40,8 +40,6 @@ export const FormManager = (props: FormManagerProps) => {
 
   return (
     <>
-      <Typography variant={'h3'}>Form: {formSpec.label}</Typography>
-
       {/* Render Inline (Vertical) Layout */}
       {props.config.layout === 'inline' && (
         <InlineSectionDisplay

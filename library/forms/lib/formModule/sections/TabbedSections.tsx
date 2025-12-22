@@ -62,6 +62,20 @@ const scrollToField = (fieldId: string): boolean => {
 };
 
 /**
+ * Scrolls the viewport to bring a specific element into view.
+ *
+ * Uses smooth scrolling animation and positions the element at the top
+ * of the viewport for optimal visibility during navigation.
+ *
+ * @param element - The DOM element to scroll to
+ */
+const scrollToElement = (element: HTMLElement | null): void => {
+  if (element) {
+    element.scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+};
+
+/**
  * Retrieves the human-readable label for a form section from the UI specification.
  *
  * Falls back to the section ID if no label is defined in the spec.
@@ -469,6 +483,72 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
   );
 };
 
+/**
+ * Props for the MobileNavigationStepper component.
+ */
+interface MobileNavigationStepperProps {
+  /** Total number of steps/sections in the form */
+  totalSteps: number;
+  /** Zero-based index of the currently active step */
+  activeStep: number;
+  /** Callback invoked when the user clicks Next or Back */
+  onStep: (direction: 'next' | 'back') => void;
+}
+
+/**
+ * Renders the mobile navigation stepper with Next/Back buttons.
+ *
+ * This component is used in both the top (sticky) and bottom positions
+ * of the mobile view to provide convenient navigation controls.
+ *
+ * @param totalSteps - The total number of sections in the form
+ * @param activeStep - The current zero-based step index
+ * @param onStep - Callback to handle navigation direction
+ * @param theme - MUI theme for styling
+ */
+const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
+  totalSteps,
+  activeStep,
+  onStep,
+}) => {
+  return (
+    <MobileStepper
+      variant="text"
+      steps={totalSteps}
+      position="static"
+      activeStep={activeStep}
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        bgcolor: 'transparent',
+      }}
+      nextButton={
+        <Button
+          size="small"
+          onClick={() => onStep('next')}
+          disabled={activeStep === totalSteps - 1}
+          sx={{fontWeight: 'bold'}}
+        >
+          <Badge badgeContent={0} color="error">
+            Next
+          </Badge>
+        </Button>
+      }
+      backButton={
+        <Button
+          size="small"
+          onClick={() => onStep('back')}
+          disabled={activeStep === 0}
+          sx={{fontWeight: 'bold'}}
+        >
+          Back
+        </Button>
+      }
+    />
+  );
+};
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -504,9 +584,11 @@ interface TabbedSectionDisplayProps {
  * - Hover effects on step circles
  *
  * **Mobile View** (activated when screen is small or tabs would be too cramped):
- * - Simplified stepper with Next/Back buttons
- * - Sticky header for navigation
+ * - Simplified stepper with Next/Back buttons at both top and bottom
+ * - Sticky header for navigation at top
+ * - Bottom navigation bar for convenient access after scrolling
  * - Step count indicator (e.g., "2 of 5")
+ * - Automatic scroll to top navigation when changing sections
  *
  * The component automatically switches between modes based on:
  * 1. Screen width (below 'sm' breakpoint)
@@ -570,6 +652,9 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
   // Measure container width for responsive behaviour
   const containerRef = useRef<HTMLDivElement>(null);
   const containerWidth = useElementWidth(containerRef);
+
+  // Reference to the mobile navigation header for scroll-to-top functionality
+  const mobileNavHeaderRef = useRef<HTMLDivElement>(null);
 
   // Determine if we should use mobile view based on screen size
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -667,6 +752,12 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
       if (sectionId !== activeSection) {
         handleSectionExit();
         setActiveSection(sectionId);
+        // If in mobile view - then scroll to top
+        if (mobileNavHeaderRef.current) {
+          requestAnimationFrame(() => {
+            scrollToElement(mobileNavHeaderRef.current);
+          });
+        }
       }
     },
     [activeSection, handleSectionExit]
@@ -682,16 +773,29 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
 
   /**
    * Handles next/back navigation in mobile view.
+   *
+   * After changing sections, scrolls the viewport to bring the top
+   * navigation header into view for better user orientation.
    */
-  const handleStep = (direction: 'next' | 'back') => {
-    handleSectionExit();
+  const handleStep = useCallback(
+    (direction: 'next' | 'back') => {
+      handleSectionExit();
 
-    const nextIndex = direction === 'next' ? activeIndex + 1 : activeIndex - 1;
+      const nextIndex =
+        direction === 'next' ? activeIndex + 1 : activeIndex - 1;
 
-    if (nextIndex >= 0 && nextIndex < sections.length) {
-      setActiveSection(sections[nextIndex]);
-    }
-  };
+      if (nextIndex >= 0 && nextIndex < sections.length) {
+        setActiveSection(sections[nextIndex]);
+
+        // Scroll to the top navigation header after section change
+        // Use requestAnimationFrame to ensure the DOM has updated
+        requestAnimationFrame(() => {
+          scrollToElement(mobileNavHeaderRef.current);
+        });
+      }
+    },
+    [activeIndex, handleSectionExit, sections]
+  );
 
   // Check if the active section should be displayed
   const shouldShowActiveSection = visibleSections.includes(activeSection);
@@ -818,53 +922,22 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         </Box>
       ) : (
         // ================================================================
-        // Mobile View - Stepper with Next/Back buttons
+        // Mobile View - Stepper with Next/Back buttons (top)
         // ================================================================
         <Box>
-          {/* Sticky navigation header */}
+          {/* Navigation header */}
           <Box
+            ref={mobileNavHeaderRef}
             sx={{
-              position: 'sticky',
-              top: 0,
               background: theme.palette.background.paper,
-              zIndex: 10,
               p: 1,
               borderBottom: `1px solid ${theme.palette.divider}`,
             }}
           >
-            <MobileStepper
-              variant="text"
-              steps={sections.length}
-              position="static"
+            <MobileNavigationStepper
+              totalSteps={sections.length}
               activeStep={activeIndex}
-              sx={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                bgcolor: 'transparent',
-              }}
-              nextButton={
-                <Button
-                  size="small"
-                  onClick={() => handleStep('next')}
-                  disabled={activeIndex === sections.length - 1}
-                  sx={{fontWeight: 'bold'}}
-                >
-                  <Badge badgeContent={0} color="error">
-                    Next
-                  </Badge>
-                </Button>
-              }
-              backButton={
-                <Button
-                  size="small"
-                  onClick={() => handleStep('back')}
-                  disabled={activeIndex === 0}
-                  sx={{fontWeight: 'bold'}}
-                >
-                  Back
-                </Button>
-              }
+              onStep={handleStep}
             />
           </Box>
 
@@ -912,6 +985,24 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         onNavigateToField={handleNavigateToField}
         onNavigateToSection={handleNavigateToSection}
       />
+
+      {/* Mobile View - Bottom navigation bar */}
+      {showMobileView && (
+        <Box
+          sx={{
+            mt: ERROR_PANEL_VERTICAL_SPACING,
+            p: 1,
+            background: theme.palette.background.paper,
+            borderTop: `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <MobileNavigationStepper
+            totalSteps={sections.length}
+            activeStep={activeIndex}
+            onStep={handleStep}
+          />
+        </Box>
+      )}
     </Box>
   );
 };
