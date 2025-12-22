@@ -384,3 +384,21 @@ options that are needed.
 
 Now that the designer is configured to produce your new field you can create
 a new notebook containing it and test it out in the app.
+
+## Optional extras
+
+### Form progress check override
+
+You can provide a custom completion function to individual fields by registering
+
+```typescript
+  // progress checking - defaults to using basic non-empty/null check
+  isCompleteFunction?: (formData: FormDataEntry) => boolean;
+```
+
+In the field spec.
+
+This takes a form data entry i.e. `{data?, annotations?, attachments?}` and
+returns a boolean indicating whether it is complete.
+
+**NOTE** : only required fields are counted in completion.

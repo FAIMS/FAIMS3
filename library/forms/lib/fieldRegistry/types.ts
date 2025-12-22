@@ -1,3 +1,4 @@
+import {FormDataEntry} from '@faims3/data-model';
 import z from 'zod';
 import {FullFieldProps} from '../formModule/types';
 import {DataViewFieldRegistryEntry} from '../rendering/types';
@@ -29,4 +30,7 @@ export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
   // validation
   fieldPropsSchema?: z.ZodTypeAny; // schema to validate the field properties
   fieldDataSchemaFunction?: (props: any) => z.ZodTypeAny; // function to generate a schema to validate the field value based on props
+
+  // progress checking - defaults to using basic non-empty/null check
+  isCompleteFunction?: (formData: FormDataEntry) => boolean;
 }

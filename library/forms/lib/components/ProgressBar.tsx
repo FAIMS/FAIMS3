@@ -1,8 +1,10 @@
 import {useTheme} from '@mui/material/styles';
+import {CompletionResult} from '../formModule';
 
 interface ProgressBarProps {
-  percentage: number;
+  completion: CompletionResult;
   style?: React.CSSProperties;
+  barStyle?: React.CSSProperties;
 }
 
 /**
@@ -13,8 +15,8 @@ interface ProgressBarProps {
  * @param {React.CSSProperties} props.style - Additional styles for the progress bar.
  * @returns {JSX.Element} A visual representation of the progress in the form of a bar and percentage text.
  */
-export function ProgressBar({percentage, style}: ProgressBarProps) {
-  const rounded = Math.round(percentage * 100);
+export function ProgressBar({completion, style, barStyle}: ProgressBarProps) {
+  const rounded = Math.round(completion.progress * 100);
   const theme = useTheme(); // Use the current active theme
 
   return (
@@ -28,20 +30,24 @@ export function ProgressBar({percentage, style}: ProgressBarProps) {
     >
       <div
         style={{
-          backgroundColor: theme.palette.background && '#e0e0e0',
-          borderRadius: '6px',
+          backgroundColor: '#e0e0e0',
+          borderRadius: '10px',
         }}
       >
         <div
           style={{
             width: `${rounded}%`,
             height: '32px',
-            backgroundColor: theme.palette.primary && 'red',
-            borderRadius: '6px',
+            backgroundColor: theme.palette.primary.main || 'red',
+            borderRadius: '10px',
+            ...barStyle,
           }}
         ></div>
       </div>
-      <div style={{fontSize: '12px'}}>{rounded}% Completed</div>
+      <div style={{fontSize: '12px'}}>
+        Completed {rounded}% ({completion.completedCount}/
+        {completion.requiredCount} required fields)
+      </div>
     </div>
   );
 }

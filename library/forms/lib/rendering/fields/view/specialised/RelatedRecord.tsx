@@ -131,7 +131,7 @@ const EmptyState = () => <EmptyResponsePlaceholder />;
  * Title display for related record items
  */
 const RelatedRecordTitle = ({recordLabel}: {recordLabel: string}) => (
-  <Box sx={{width: '100%', pr: 2}}>
+  <Box sx={{width: '100%'}}>
     <Typography variant="subtitle1" sx={{fontWeight: 500}}>
       {recordLabel}
     </Typography>
