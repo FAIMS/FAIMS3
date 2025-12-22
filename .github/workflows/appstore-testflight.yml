@@ -102,10 +102,7 @@ jobs:
           export VITE_MAP_STYLE=basic
 
           printenv
-          pnpm install --frozen-lockfile --python=python3.10
-          # we install these here because of a bug in npm with platform specific
-          # dependencies
-          pnpm install @rollup/rollup-darwin-arm64 @swc/core-darwin-arm64
+          pnpm install --frozen-lockfile
           pnpm --filter=@faims3/app run configIOSbuild 
           pnpm run build
       - name: Update IOS Build
