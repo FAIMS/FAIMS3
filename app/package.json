@@ -1,7 +1,7 @@
 {
   "name": "@faims3/app",
   "packageManager": "pnpm@10.7.0",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "private": true,
   "type": "module",
   "browserslist": {
@@ -137,7 +137,7 @@
     "@types/pouchdb-browser": "^6.1.5",
     "@vitejs/plugin-react-swc": "^4.0.1",
     "@vitest/coverage-v8": "^2.1.8",
-    "esbuild": "^0.21.5",
+    "esbuild": "^0.25.0",
     "eslint-plugin-react": "^7.32.2",
     "fast-check": "2.25.0",
     "gts": "^5.3.1",

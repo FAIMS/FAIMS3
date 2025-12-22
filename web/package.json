@@ -1,6 +1,6 @@
 {
   "name": "@faims3/web",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "private": true,
   "type": "module",
   "engines": {
@@ -59,7 +59,7 @@
     "ajv": "^8.16.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "esbuild": "^0.21.5",
+    "esbuild": "^0.25.0",
     "jwt-decode": "^4.0.0",
     "lexical": "^0.12.4",
     "lodash": "^4.17.21",
