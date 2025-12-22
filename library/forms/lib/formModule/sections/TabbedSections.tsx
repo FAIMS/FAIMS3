@@ -498,7 +498,7 @@ interface MobileNavigationStepperProps {
 /**
  * Renders the mobile navigation stepper with Next/Back buttons.
  *
- * This component is used in both the top (sticky) and bottom positions
+ * This component is used in both the top and bottom positions
  * of the mobile view to provide convenient navigation controls.
  *
  * @param totalSteps - The total number of sections in the form
@@ -585,7 +585,7 @@ interface TabbedSectionDisplayProps {
  *
  * **Mobile View** (activated when screen is small or tabs would be too cramped):
  * - Simplified stepper with Next/Back buttons at both top and bottom
- * - Sticky header for navigation at top
+ * - Header for navigation at top
  * - Bottom navigation bar for convenient access after scrolling
  * - Step count indicator (e.g., "2 of 5")
  * - Automatic scroll to top navigation when changing sections
