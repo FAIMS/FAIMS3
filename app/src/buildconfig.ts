@@ -19,7 +19,8 @@
  *   which server to use and whether to include test data
  */
 
-import {MapStylesheetNameType} from './gui/components/map/styles';
+import {MapStylesheetNameType} from '@faims3/forms';
+import {MapConfig} from '@faims3/forms';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -424,6 +425,15 @@ function get_map_style(): MapStylesheetNameType {
   return map_style || 'basic';
 }
 
+// get the map configuration
+export function getMapConfig(): MapConfig {
+  return {
+    mapSource: get_map_source(),
+    mapSourceKey: get_map_key(),
+    mapStyle: get_map_style(),
+  };
+}
+
 function offline_maps(): boolean {
   const offline_maps = import.meta.env.VITE_OFFLINE_MAPS === 'true';
   const map_source = get_map_source();
@@ -456,7 +466,28 @@ function migrateOldDatabases(): boolean {
   );
 }
 
-// this should disappear once we have listing activation set up
+// Attachment service configuration
+
+/**
+ * Retrieves the configured attachment service type from environment variables.
+ * @returns {string} - The attachment service type (defaults to 'COUCH')
+ */
+function getAttachmentServiceType(): string {
+  const serviceType = import.meta.env.VITE_ATTACHMENT_SERVICE_TYPE;
+  return serviceType || 'COUCH';
+}
+
+/**
+ * Retrieves the attachment document ID prefix from environment variables.
+ * @returns {string | undefined} - Optional prefix for attachment document IDs
+ */
+function getAttachmentDocumentIdPrefix(): string | undefined {
+  const prefix = import.meta.env.VITE_ATTACHMENT_DOCUMENT_ID_PREFIX;
+  return prefix || undefined;
+}
+
+export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
+export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
@@ -481,9 +512,6 @@ export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
 export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
 export const IGNORE_TOKEN_EXP = ignoreTokenExp();
 export const OFFLINE_MAPS = offline_maps();
-export const MAP_SOURCE_KEY = get_map_key();
-export const MAP_SOURCE = get_map_source();
-export const MAP_STYLE = get_map_style();
 export const NAVIGATION_STYLE = navigation_style();
 export const SHOW_RECORD_LINKS = showRecordLinks();
 export const SUPPORT_EMAIL = get_support_email();

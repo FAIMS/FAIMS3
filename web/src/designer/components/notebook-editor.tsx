@@ -14,7 +14,7 @@
 // limitations under the License.
 
 import {TabContext, TabList} from '@mui/lab';
-import {Box, Tab} from '@mui/material';
+import {Box, Stack, Tab} from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 
 export const NotebookEditor = () => {
@@ -26,7 +26,7 @@ export const NotebookEditor = () => {
 
   return (
     <>
-      <Box p={3}>
+      <Stack direction="row" spacing={2}>
         <Box pt={0}>
           <TabContext value={pathname}>
             <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
@@ -45,7 +45,7 @@ export const NotebookEditor = () => {
             </Box>
           </TabContext>
         </Box>
-      </Box>
+      </Stack>
     </>
   );
 };

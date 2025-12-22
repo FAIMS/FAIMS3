@@ -1,0 +1,55 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  "tags": [
+    "-lintignore"
+  ],
+  "workspaces": {
+    ".": {},
+    "app": {
+      "entry" : [
+        "src/index.tsx"
+      ],
+      "project":[
+        "src/**/*.{js,ts,tsx}"
+      ]
+    },
+    "library/forms": {
+      "entry" : [
+        "lib/index.ts",
+        "src/App.tsx"
+      ],
+      "project":[
+        "lib/**/*.{js,ts,tsx}"
+      ]
+    },
+    "library/data-model": {
+      "entry" : [
+        "src/index.ts"
+      ],
+      "project":[
+        "src/**/*.{js,ts,tsx}"
+      ]
+    },
+    "infrastructure/aws-cdk": {
+      "entry" : [
+        "bin/aws-cdk-faims-infra.ts"
+      ],
+      "project":[
+        "src/**/*.{js,ts,tsx}",
+        "bin/**/*.{js,ts,tsx}"
+      ]
+    },
+    "web": {
+      "entry" : [
+        "src/main.tsx"
+      ],
+      "project":[
+        "src/**/*.{js,ts,tsx}"
+      ]
+    }
+  }
+}

@@ -29,7 +29,6 @@ import authReducer, {
 } from './slices/authSlice';
 import {databaseService} from './slices/helpers/databaseService';
 import projectsReducer from './slices/projectSlice';
-import recordsReducer from './slices/recordSlice';
 
 // The below configures indexed DB storage which has a greater limit than
 // localStorage. UI specs contain images.
@@ -63,8 +62,6 @@ export const store = configureStore({
     projects: persistedProjectsReducer,
     // not persisted - alerts
     alerts: alertsReducer,
-    // not persisted - records
-    records: recordsReducer,
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
@@ -269,10 +266,7 @@ export const wipeAllDatabases = async () => {
     }
   }
 
-  const dbsToWipe = [
-    databaseService.getDraftDatabase(),
-    databaseService.getLocalStateDatabase(),
-  ];
+  const dbsToWipe = [databaseService.getLocalStateDatabase()];
   for (const db of dbsToWipe) {
     try {
       console.debug(await db.destroy());

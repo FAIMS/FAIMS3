@@ -48,6 +48,9 @@ const config: any = {
     'process.env': {} /* some libraries check this */,
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
+  optimizeDeps: {
+    exclude: ['@ionic/pwa-elements'],
+  },
 };
 
 // Conditional configuration.  If run with --mode sourcemap

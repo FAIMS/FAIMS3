@@ -10,6 +10,8 @@ import {BreadcrumbProvider} from './context/breadcrumb-provider';
 import './index.css';
 import {routeTree} from './routeTree.gen';
 import {getThemeClass} from './lib/theme';
+import {initialiseMaps} from '@faims3/forms';
+
 /**
  * App component renders the main application layout.
  * It includes the main navigation and the main content.
@@ -29,6 +31,9 @@ declare module '@tanstack/react-router' {
     router: typeof router;
   }
 }
+
+/* Initialise offline Map database */
+initialiseMaps();
 
 /**
  * App component renders the main application layout.

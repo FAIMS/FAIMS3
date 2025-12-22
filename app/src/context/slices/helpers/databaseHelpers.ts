@@ -1,4 +1,5 @@
 import {
+  compileUiSpecConditionals,
   decodeUiSpec,
   EncodedProjectUIModel,
   GetNotebookResponse,
@@ -11,7 +12,6 @@ import {
   POUCH_BATCHES_LIMIT,
   RUNNING_UNDER_TEST,
 } from '../../../buildconfig';
-import {compileUiSpecConditionals} from '../../../uiSpecification';
 import {DatabaseConnectionConfig, ProjectIdentity} from '../projectSlice';
 import {PouchDBWrapper} from './pouchDBWrapper';
 
