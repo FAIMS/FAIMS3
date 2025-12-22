@@ -1,5 +1,5 @@
 import {useTheme} from '@mui/material/styles';
-import {CompletionResult} from '../formModule';
+import {CompletionResult} from '../formModule/types';
 
 interface ProgressBarProps {
   completion: CompletionResult;
