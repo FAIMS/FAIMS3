@@ -222,49 +222,42 @@ export default function NoteBooks() {
 
   return (
     <Box component={Paper} elevation={0} p={2}>
-      {activatedProjects.length === 0 && (
-        <Typography variant={'body1'} gutterBottom>
-          {notActivatedAdvice}
-        </Typography>
-      )}
-      {
-        <Stack
-          direction={isMobile ? 'column' : 'row'}
-          alignItems={isMobile ? 'flex-start' : 'center'}
-          justifyContent={isMobile ? 'space-evenly' : 'space-between'}
-          spacing={2}
-          sx={{mt: 1, mb: 2}}
-        >
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Button
-              variant="contained"
-              disabled={!showRefreshButton || doRefresh.isPending}
-              sx={{backgroundColor: theme.palette.primary.main}}
-              startIcon={<RefreshOutlined />}
-              onClick={() => {
-                doRefresh.mutate();
-              }}
-            >
-              Refresh {NOTEBOOK_NAME}s
-            </Button>
-            {doRefresh.isPending && <CircularProgress size={24} />}
-          </Stack>
-          <Link
-            component="button"
-            variant="body2"
-            onClick={() => setInfoDialogOpen(true)}
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 0.5,
-              cursor: 'pointer',
+      <Stack
+        direction={isMobile ? 'column' : 'row'}
+        alignItems={isMobile ? 'flex-start' : 'center'}
+        justifyContent={isMobile ? 'space-evenly' : 'space-between'}
+        spacing={2}
+        sx={{mt: 1, mb: 2}}
+      >
+        <Stack direction="row" spacing={1} alignItems="center">
+          <Button
+            variant="contained"
+            disabled={!showRefreshButton || doRefresh.isPending}
+            sx={{backgroundColor: theme.palette.primary.main}}
+            startIcon={<RefreshOutlined />}
+            onClick={() => {
+              doRefresh.mutate();
             }}
           >
-            <InfoOutlinedIcon fontSize="small" />
-            Learn more about activating {NOTEBOOK_NAME}s
-          </Link>
+            Refresh {NOTEBOOK_NAME}s
+          </Button>
+          {doRefresh.isPending && <CircularProgress size={24} />}
         </Stack>
-      }
+        <Link
+          component="button"
+          variant="body2"
+          onClick={() => setInfoDialogOpen(true)}
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.5,
+            cursor: 'pointer',
+          }}
+        >
+          <InfoOutlinedIcon fontSize="small" />
+          Learn more about activating {NOTEBOOK_NAME}s
+        </Link>
+      </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
         <Tabs
           projects={projects}
@@ -280,6 +273,12 @@ export default function NoteBooks() {
           activatedColumns={activatedColumns}
           notActivatedColumns={notActivatedColumns}
         />
+      )}
+
+      {activatedProjects.length === 0 && (
+        <Typography variant={'body1'} gutterBottom>
+          {notActivatedAdvice}
+        </Typography>
       )}
 
       <Dialog

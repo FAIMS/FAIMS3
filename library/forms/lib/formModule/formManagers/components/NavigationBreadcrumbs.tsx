@@ -142,8 +142,6 @@ export const FormBreadcrumbs = ({
           flexWrap: 'wrap',
           alignItems: 'center',
           gap: 0.25,
-          mb: 1,
-          py: 0.5,
           px: 0.5,
           fontSize: '0.8rem',
         }}
@@ -230,8 +228,6 @@ export const FormBreadcrumbs = ({
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: 0.5,
-        mb: 2,
-        py: 1,
         px: 0.5,
         fontSize: '0.875rem',
       }}

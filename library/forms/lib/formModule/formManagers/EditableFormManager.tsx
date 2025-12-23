@@ -17,6 +17,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   RelatedFieldValue,
   relatedFieldValueSchema,
+  relatedRecordPropsSchema,
 } from '../../fieldRegistry/fields/RelatedRecord/types';
 import {relationTypeToPair} from '../../fieldRegistry/fields/RelatedRecord/utils';
 import {formDataExtractor} from '../../utils';
@@ -43,6 +44,8 @@ import {
 } from './types';
 import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
 import {LiveFormProgress} from './components/FormProgress';
+import {Box, CircularProgress} from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
 
 /**
  * The validation modes:
@@ -858,127 +861,146 @@ export const EditableFormManager: React.FC<
       // If the head was navigated to via the creation of a related record, show
       if (head.explorationType === 'created-new-child') {
         // Determine props needed
-        // Field label
-        const uiSpec = dataEngine.uiSpec;
-        const fieldLabel = getFieldLabel(uiSpec, head.fieldId);
-        const formLabel = getFormLabel({uiSpec, formId: props.formId});
-        const formId = getViewsetForField(uiSpec, head.fieldId);
-        const parentFormLabel = formId
-          ? getFormLabel({uiSpec, formId})
-          : 'Unknown';
 
-        // This function needs to use the knowledge about the parent to determine how to create another record
-        const onCreate = async () => {
-          // First, grab the hydrated parent record
-          const parentFormData = await dataEngine.form.getExistingFormData({
-            recordId: head.recordId,
-            revisionId: head.revisionId,
-          });
+        // Grab the field spec info
+        const {data: fieldSpecData, error: fieldSpecError} =
+          relatedRecordPropsSchema.safeParse(
+            dataEngine.uiSpec.fields[head.fieldId]?.['component-parameters']
+          );
 
-          // Now grab the relevant field value
-          const relevantFieldValue = parentFormData.data[head.fieldId]?.data;
+        if (!fieldSpecData) {
+          console.error(
+            'Failed to parse related record field parameters for field:',
+            head.fieldId
+          );
+          console.error(fieldSpecError);
+        }
+        console.log(fieldSpecData);
 
-          // Use the related field schema to parse this - let's be safe
-          const {success, error} =
-            relatedFieldValueSchema.safeParse(relevantFieldValue);
+        // Only show if the field spec parses and the button is enabled
+        if (fieldSpecData?.showCreateAnotherButton) {
+          // Field label
+          const uiSpec = dataEngine.uiSpec;
+          const fieldLabel = getFieldLabel(uiSpec, head.fieldId);
+          const formLabel = getFormLabel({uiSpec, formId: props.formId});
+          const formId = getViewsetForField(uiSpec, head.fieldId);
+          const parentFormLabel = formId
+            ? getFormLabel({uiSpec, formId})
+            : 'Unknown';
 
-          // Don't proceed if parent seems weird
-          if (!success) {
-            setErrorMessage(
-              'Failed to parse related field data. Try refreshing the app or contact a system administrator.'
-            );
-            setErrorOpen(true);
-            console.error(
-              'Failed to parse related field value for creating another child:',
-              error
-            );
-            return;
-          }
+          // This function needs to use the knowledge about the parent to determine how to create another record
+          const onCreate = async () => {
+            // First, grab the hydrated parent record
+            const parentFormData = await dataEngine.form.getExistingFormData({
+              recordId: head.recordId,
+              revisionId: head.revisionId,
+            });
 
-          // Create the correct type of relationship (this will be placed on the
-          // new child) - we refer to the PARENT properties here since we are
-          // creating a new child related to our current parent
-          let relationship: FormRelationship;
-          const relationType =
-            head.relationType === 'parent'
-              ? 'faims-core::Child'
-              : 'faims-core::Linked';
-          const relation = {
-            fieldId: head.fieldId,
-            recordId: head.recordId,
-            relationTypeVocabPair: relationTypeToPair(relationType),
+            // Now grab the relevant field value
+            const relevantFieldValue = parentFormData.data[head.fieldId]?.data;
+
+            // Use the related field schema to parse this - let's be safe
+            const {success, error} =
+              relatedFieldValueSchema.safeParse(relevantFieldValue);
+
+            // Don't proceed if parent seems weird
+            if (!success) {
+              setErrorMessage(
+                'Failed to parse related field data. Try refreshing the app or contact a system administrator.'
+              );
+              setErrorOpen(true);
+              console.error(
+                'Failed to parse related field value for creating another child:',
+                error
+              );
+              return;
+            }
+
+            // Create the correct type of relationship (this will be placed on the
+            // new child) - we refer to the PARENT properties here since we are
+            // creating a new child related to our current parent
+            let relationship: FormRelationship;
+            const relationType =
+              head.relationType === 'parent'
+                ? 'faims-core::Child'
+                : 'faims-core::Linked';
+            const relation = {
+              fieldId: head.fieldId,
+              recordId: head.recordId,
+              relationTypeVocabPair: relationTypeToPair(relationType),
+            };
+            if (head.relationType === 'parent') {
+              relationship = {
+                parent: [relation],
+              };
+            } else {
+              relationship = {
+                linked: [relation],
+              };
+            }
+
+            // Create the sibling record using the form module
+            const res = await dataEngine.form.createRecord({
+              createdBy: props.config.user,
+              // sibling - same formId
+              formId: props.formId,
+              // this is placed onto the sibling, hence referring to parent
+              relationship,
+            });
+
+            // Convert the parent field value into an array, handling singleton
+            // case
+            const normalisedRelationships = !relevantFieldValue
+              ? []
+              : Array.isArray(relevantFieldValue)
+              ? relevantFieldValue
+              : [relevantFieldValue];
+
+            // Update the data of the parent record
+            parentFormData.data[head.fieldId].data = [
+              ...normalisedRelationships,
+              {
+                record_id: res.record._id,
+                relation_type_vocabPair: relationTypeToPair(relationType),
+              },
+            ] satisfies RelatedFieldValue;
+
+            // We are always in the midst of some edit, but the edit mode could be
+            // new or parent - this means we should respect this based on the
+            // navigation constraints
+            const updateMode = head.parentMode;
+            // Update the parent revision (awaiting)
+            await dataEngine.form.updateRevision({
+              revisionId: parentFormData.revisionId,
+              mode: updateMode,
+              recordId: parentFormData.context.record._id,
+              update: parentFormData.data,
+              updatedBy: props.activeUser,
+            });
+
+            // While nothing has necessarily changed here in the current record
+            // due to this, we should still flush before we navigate
+            await flushSave();
+
+            // Then navigate! Note - we want to strip the current head off to - we
+            // are really going to the parent, then navigating to the child. NOTE
+            // the stripping occurs first, this is defined in editRecord.tsx in
+            // /app as this navigational context needs to manage this.
+            props.config.navigation.toRecord({
+              recordId: res.record._id,
+              mode: 'new',
+              // We don't need to change the navigation at all
+            });
           };
-          if (head.relationType === 'parent') {
-            relationship = {
-              parent: [relation],
-            };
-          } else {
-            relationship = {
-              linked: [relation],
-            };
-          }
 
-          // Create the sibling record using the form module
-          const res = await dataEngine.form.createRecord({
-            createdBy: props.config.user,
-            // sibling - same formId
-            formId: props.formId,
-            // this is placed onto the sibling, hence referring to parent
-            relationship,
-          });
-
-          // Convert the parent field value into an array, handling singleton
-          // case
-          const normalisedRelationships = !relevantFieldValue
-            ? []
-            : Array.isArray(relevantFieldValue)
-            ? relevantFieldValue
-            : [relevantFieldValue];
-
-          // Update the data of the parent record
-          parentFormData.data[head.fieldId].data = [
-            ...normalisedRelationships,
-            {
-              record_id: res.record._id,
-              relation_type_vocabPair: relationTypeToPair(relationType),
-            },
-          ] satisfies RelatedFieldValue;
-
-          // We are always in the midst of some edit, but the edit mode could be
-          // new or parent - this means we should respect this based on the
-          // navigation constraints
-          const updateMode = head.parentMode;
-          // Update the parent revision (awaiting)
-          await dataEngine.form.updateRevision({
-            revisionId: parentFormData.revisionId,
-            mode: updateMode,
-            recordId: parentFormData.context.record._id,
-            update: parentFormData.data,
-            updatedBy: props.activeUser,
-          });
-
-          // While nothing has necessarily changed here in the current record
-          // due to this, we should still flush before we navigate
-          await flushSave();
-
-          // Then navigate! Note - we want to strip the current head off to - we
-          // are really going to the parent, then navigating to the child. NOTE
-          // the stripping occurs first, this is defined in editRecord.tsx in
-          // /app as this navigational context needs to manage this.
-          props.config.navigation.toRecord({
-            recordId: res.record._id,
-            mode: 'new',
-            // We don't need to change the navigation at all
-          });
-        };
-
-        createAnotherChildConfig = {
-          fieldLabel,
-          formLabel,
-          parentFormLabel,
-          relationType: head.relationType,
-          onCreate,
-        };
+          createAnotherChildConfig = {
+            fieldLabel,
+            formLabel,
+            parentFormLabel,
+            relationType: head.relationType,
+            onCreate,
+          };
+        }
       }
     }
 
@@ -1011,7 +1033,7 @@ export const EditableFormManager: React.FC<
   ]);
 
   return (
-    <Stack spacing={2}>
+    <Stack gap={2}>
       {
         // Error snackbar
       }
@@ -1039,11 +1061,11 @@ export const EditableFormManager: React.FC<
       <Grid
         container
         justifyContent="space-between"
-        spacing={1}
+        gap={0.5}
         alignItems="center"
         padding={0}
       >
-        <Grid item xs={8}>
+        <Grid item xs={7.75} padding={0}>
           {
             // Breadcrumbs
           }
@@ -1057,14 +1079,31 @@ export const EditableFormManager: React.FC<
         {
           //Loading indicator
         }
-        <Grid item xs={4} paddingRight={1}>
-          <Typography variant="body2" align="right">
-            {isSavingRef.current
-              ? 'Saving...'
-              : pendingValuesRef.current
-              ? 'Saving...'
-              : 'Saved'}
-          </Typography>
+        <Grid item xs={3.75} paddingRight={1}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 0.5,
+            }}
+          >
+            {isSavingRef.current || pendingValuesRef.current ? (
+              <>
+                <CircularProgress size={14} color="inherit" />
+                <Typography variant="body2" color="text.secondary">
+                  Saving...
+                </Typography>
+              </>
+            ) : (
+              <>
+                <CheckIcon sx={{fontSize: 16, color: 'success.main'}} />
+                <Typography variant="body2" color="text.secondary">
+                  Saved
+                </Typography>
+              </>
+            )}
+          </Box>
         </Grid>
       </Grid>
 

@@ -28,7 +28,6 @@ import {
   DataViewProps,
   getImpliedNavigationRelationships,
   ImpliedRelationship,
-  NavigationButtonsTemplate,
   StaticFormProgress,
 } from '@faims3/forms';
 import EditIcon from '@mui/icons-material/Edit';
@@ -47,6 +46,7 @@ import {useQuery} from '@tanstack/react-query';
 import React, {useCallback} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {getMapConfig} from '../../buildconfig';
+import * as ROUTES from '../../constants/routes';
 import {
   getEditRecordRoute,
   getNotebookRoute,
@@ -60,8 +60,9 @@ import {createProjectAttachmentService} from '../../utils/attachmentService';
 import {localGetDataDb} from '../../utils/database';
 import RecordDelete from '../components/notebook/delete';
 import RecordMeta from '../components/record/meta';
-import {theme} from '../themes';
 import UGCReport from '../components/record/UGCReport';
+import BackButton from '../components/ui/BackButton';
+import {theme} from '../themes';
 
 /**
  * Available tabs for the record view page
@@ -213,6 +214,7 @@ interface ViewTabContentProps {
   impliedRelationships?: ImpliedRelationship[];
   getDataEngine: () => DataEngine;
   getAttachmentService: () => ReturnType<typeof createProjectAttachmentService>;
+  onEditRecord: () => void;
 }
 
 /**
@@ -220,6 +222,7 @@ interface ViewTabContentProps {
  */
 const ViewTabContent: React.FC<ViewTabContentProps> = ({
   formData,
+  onEditRecord,
   uiSpec,
   projectId,
   serverId,
@@ -308,14 +311,8 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
     }
   }
 
-  navButtons.push({
-    label: 'Return to record list',
-    onClick: () => nav(getNotebookRoute({serverId, projectId})),
-  });
-
   return (
-    <Stack spacing={2}>
-      <NavigationButtonsTemplate buttons={navButtons} marginBottom={0} />
+    <Stack gap={2}>
       {
         // Show form progress at top of record view (static)
       }
@@ -324,6 +321,20 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
         formId={formData.formId}
         uiSpec={uiSpec}
       />
+      {
+        // Edit button below progress bar
+      }
+      <Button
+        variant="outlined"
+        startIcon={<EditIcon />}
+        onClick={onEditRecord}
+        sx={{flexShrink: 0}}
+      >
+        Edit record
+      </Button>
+      {
+        // Actual data view
+      }
       <DataView {...dataViewProps} />
     </Stack>
   );
@@ -382,6 +393,9 @@ export const ViewRecordPage: React.FC = () => {
     () => createProjectAttachmentService(projectId),
     [projectId]
   );
+
+  // back button goes to the notebook list page
+  const backLink = getNotebookRoute({serverId, projectId});
 
   // Fetch form data
   const {
@@ -468,41 +482,20 @@ export const ViewRecordPage: React.FC = () => {
   const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
   return (
-    <Stack spacing={2}>
+    <Stack gap={2}>
       {/* Header */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: {xs: 'column', sm: 'row'},
-          justifyContent: {xs: 'space-between', sm: 'flex-start'},
-          alignItems: {xs: 'flex-start', sm: 'center'},
-          gap: 2,
-        }}
-      >
-        <Stack spacing={2}>
-          <Typography variant="h3" color={theme.palette.text.primary}>Viewing: {formLabel}</Typography>
-          <Typography variant="h4" color={theme.palette.text.secondary}>
-            {formData.context.hrid}
+      <Stack gap={2}>
+        <Stack direction="row" spacing={2} alignItems="center">
+          {/* Back to record link */}
+          <BackButton link={backLink} />
+          <Typography variant="h3" color={theme.palette.text.primary}>
+            Viewing: {formLabel}
           </Typography>
         </Stack>
-        <Button
-          variant="outlined"
-          startIcon={<EditIcon />}
-          onClick={() => {
-            nav(
-              getEditRecordRoute({
-                projectId,
-                recordId,
-                serverId,
-                mode: 'parent',
-              })
-            );
-          }}
-          sx={{flexShrink: 0}}
-        >
-          Edit record
-        </Button>
-      </Box>
+        <Typography variant="h4" color={theme.palette.text.secondary}>
+          {formData.context.hrid}
+        </Typography>
+      </Stack>
 
       {/* Tab Navigation */}
       <TabContext value={activeTab}>
@@ -516,6 +509,16 @@ export const ViewRecordPage: React.FC = () => {
         <TabPanel value={RECORD_TABS.VIEW} sx={{p: 0, pt: 2}}>
           <ViewTabContent
             formData={formData}
+            onEditRecord={() => {
+              nav(
+                getEditRecordRoute({
+                  projectId,
+                  recordId,
+                  serverId,
+                  mode: 'parent',
+                })
+              );
+            }}
             uiSpec={uiSpec}
             projectId={projectId}
             serverId={serverId}

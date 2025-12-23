@@ -6,6 +6,7 @@ import {
 } from './NavigationButtonsTemplate';
 import AddIcon from '@mui/icons-material/Add';
 import DoneIcon from '@mui/icons-material/Done';
+import NorthWestIcon from '@mui/icons-material/NorthWest';
 
 type RelationshipType = 'parent' | 'linked';
 
@@ -187,9 +188,6 @@ export const FormNavigationButtons = ({
     [withFlush]
   );
 
-  // Extract HRID from label (removes "Return to " prefix if present)
-  const hrid = parentNavInfo?.label.replace('Return to ', '') ?? '';
-
   // Show subtle indicator when there are pending changes
   const showPendingIndicator = hasPendingChanges?.() && !isSaving;
   const statusText = showPendingIndicator ? 'saving...' : undefined;
@@ -226,6 +224,7 @@ export const FormNavigationButtons = ({
         disabled: isSaving,
         loading: isSaving,
         statusText,
+        icon: <NorthWestIcon fontSize="small" />,
       });
     } else {
       // No explicit navigation history
@@ -238,6 +237,7 @@ export const FormNavigationButtons = ({
           disabled: isSaving,
           loading: isSaving,
           statusText,
+          icon: <NorthWestIcon fontSize="small" />,
         });
       }
 
@@ -275,7 +275,6 @@ export const FormNavigationButtons = ({
     hasExplicitParentContext,
     parentNavInfo,
     parentFormLabel,
-    hrid,
     handleParentNavigation,
     isSaving,
     statusText,
