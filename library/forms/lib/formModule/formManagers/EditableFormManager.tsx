@@ -9,7 +9,7 @@ import {
   getViewsetForField,
   HydratedRecordDocument,
 } from '@faims3/data-model';
-import {Alert, Snackbar, Stack} from '@mui/material';
+import {Alert, Grid, Snackbar, Stack, Typography} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
 import {debounce, DebouncedFunc} from 'lodash';
@@ -1034,14 +1034,40 @@ export const EditableFormManager: React.FC<
       </Snackbar>
 
       {
-        // Breadcrumbs
+        // Breadcrumbs (left) loading (right)
       }
-      <FormBreadcrumbs
-        config={props.config}
-        currentFormId={props.formId}
-        navigateToRecordList={props.config.navigation.navigateToRecordList}
-        navigationContext={props.navigationContext}
-      />
+      <Grid
+        container
+        justifyContent="space-between"
+        spacing={1}
+        alignItems="center"
+        padding={0}
+      >
+        <Grid item xs={8}>
+          {
+            // Breadcrumbs
+          }
+          <FormBreadcrumbs
+            config={props.config}
+            currentFormId={props.formId}
+            navigateToRecordList={props.config.navigation.navigateToRecordList}
+            navigationContext={props.navigationContext}
+          />
+        </Grid>
+        {
+          //Loading indicator
+        }
+        <Grid item xs={4} paddingRight={1}>
+          <Typography variant="body2" align="right">
+            {isSavingRef.current
+              ? 'Saving...'
+              : pendingValuesRef.current
+              ? 'Saving...'
+              : 'Saved'}
+          </Typography>
+        </Grid>
+      </Grid>
+
       {
         // Heading if supplied
       }
