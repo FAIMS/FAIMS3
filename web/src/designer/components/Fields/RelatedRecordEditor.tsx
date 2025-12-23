@@ -82,9 +82,12 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
     relatedType: (componentParams.related_type as string) ?? '',
     relatedTypeLabel: (componentParams.related_type_label as string) ?? '',
     relationType: (componentParams.relation_type as string) ?? '',
-    relationLinkedPair: (componentParams.relation_linked_vocabPair as PairList) ?? [],
-    allowLinkToExisting: (componentParams.allowLinkToExisting as boolean) ?? false,
-    showCreateAnotherButton: (componentParams.showCreateAnotherButton as boolean) ?? false,
+    relationLinkedPair:
+      (componentParams.relation_linked_vocabPair as PairList) ?? [],
+    allowLinkToExisting:
+      (componentParams.allowLinkToExisting as boolean) ?? false,
+    showCreateAnotherButton:
+      (componentParams.showCreateAnotherButton as boolean) ?? false,
   };
 
   const updateField = (name: string, newField: FieldType) => {
@@ -99,11 +102,15 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
 
     newField['component-parameters'].multiple = newState.multiple;
     newField['component-parameters'].related_type = newState.relatedType;
-    newField['component-parameters'].related_type_label = newState.relatedTypeLabel;
+    newField['component-parameters'].related_type_label =
+      newState.relatedTypeLabel;
     newField['component-parameters'].relation_type = newState.relationType;
-    newField['component-parameters'].relation_linked_vocabPair = newState.relationLinkedPair;
-    newField['component-parameters'].allowLinkToExisting = newState.allowLinkToExisting;
-    newField['component-parameters'].showCreateAnotherButton = newState.showCreateAnotherButton;
+    newField['component-parameters'].relation_linked_vocabPair =
+      newState.relationLinkedPair;
+    newField['component-parameters'].allowLinkToExisting =
+      newState.allowLinkToExisting;
+    newField['component-parameters'].showCreateAnotherButton =
+      newState.showCreateAnotherButton;
 
     updateField(fieldName, newField);
   };
@@ -210,7 +217,10 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                   <Checkbox
                     checked={state.showCreateAnotherButton}
                     onChange={e =>
-                      updateProperty('showCreateAnotherButton', e.target.checked)
+                      updateProperty(
+                        'showCreateAnotherButton',
+                        e.target.checked
+                      )
                     }
                   />
                 }

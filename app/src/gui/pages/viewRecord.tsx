@@ -46,7 +46,6 @@ import {useQuery} from '@tanstack/react-query';
 import React, {useCallback} from 'react';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {getMapConfig} from '../../buildconfig';
-import * as ROUTES from '../../constants/routes';
 import {
   getEditRecordRoute,
   getNotebookRoute,

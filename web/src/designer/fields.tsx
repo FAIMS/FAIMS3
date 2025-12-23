@@ -285,7 +285,7 @@ const fields: {[key: string]: FieldType} = {
       relation_type: 'faims-core::Child',
       multiple: false,
       allowLinkToExisting: true,
-      showCreateAnotherButton: true
+      showCreateAnotherButton: true,
     },
     humanReadableName: 'Add Related Record',
     humanReadableDescription: 'Add a child or other linked record',

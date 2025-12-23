@@ -167,7 +167,6 @@ export default function NoteBooks() {
       ),
     },
   ]);
-  const showCreateNewNotebookButton = false;
 
   // What type of layout are we using?
   const isTabs = NOTEBOOK_LIST_TYPE === 'tabs';

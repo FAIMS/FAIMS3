@@ -83,8 +83,6 @@ export const RadioGroup = (props: FieldProps) => {
   } = props;
 
   const value = (state.value?.data as string) ?? '';
-  // TODO: Error state
-  const error = undefined;
 
   /**
    * Handles changes in the selected radio button, allowing users to toggle selection.
