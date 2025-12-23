@@ -24,7 +24,7 @@ export const AppBarHeading = ({link}: AppBarHeadingProps) => (
       color: 'black',
     }}
   >
-    <Box sx={{}}>
+    <Box sx={{paddingRight: 0.5}}>
       <img src="/assets/icons/icon-48.webp" />
     </Box>
     <h2>{HEADING_APP_NAME}</h2>
