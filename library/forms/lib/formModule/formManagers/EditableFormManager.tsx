@@ -752,8 +752,11 @@ export const EditableFormManager: React.FC<
         label: `View ${entry.hrid}`,
         recordId: entry.recordId,
         onNavigate() {
-          props.config.navigation.navigateToViewRecord({
+          // When in implied navigation from edit mode, go to the parent in edit
+          // mode, following the same as current form AvpUpdateMode
+          props.config.navigation.toRecord({
             recordId: entry.recordId,
+            mode: props.mode,
           });
         },
         formId: entry.formId,

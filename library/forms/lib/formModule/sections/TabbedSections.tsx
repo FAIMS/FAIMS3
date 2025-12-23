@@ -652,15 +652,15 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
   }, [fieldMeta]);
 
   // Filter sections to only those that are visible based on the visibility map
-  const visibleSections = useMemo(() => {
-    // If no visibility map, all sections are visible
-    if (!fieldVisibilityMap) {
-      return sections;
-    }
-
+  let visibleSections = [];
+  if (!fieldVisibilityMap) {
+    visibleSections = sections;
+  } else {
     const visibleViews = Object.keys(fieldVisibilityMap);
-    return sections.filter(sectionId => visibleViews.includes(sectionId));
-  }, [sections, fieldVisibilityMap]);
+    visibleSections = sections.filter(sectionId =>
+      visibleViews.includes(sectionId)
+    );
+  }
 
   // Track the currently active section
   const [activeSection, setActiveSection] = useState<string>(sections[0]);
