@@ -66,12 +66,27 @@ const scrollToField = (fieldId: string): boolean => {
  *
  * Uses smooth scrolling animation and positions the element at the top
  * of the viewport for optimal visibility during navigation.
+ * We need to implement our own scrolling here because on mobile, the top
+ * of the screen is blocked by the app bar. So we move the element to just
+ * below the app bar. (Note: 'app-bar' ID is set in app/src/gui/layout/appBar.tsx)
  *
  * @param element - The DOM element to scroll to
  */
+const toolBarHeight = document.getElementById('app-bar')?.clientHeight ?? 80;
 const scrollToElement = (element: HTMLElement | null): void => {
   if (element) {
-    element.scrollIntoView({behavior: 'smooth', block: 'start'});
+    const rect = element.getBoundingClientRect();
+    const windowRect = document.body.getBoundingClientRect();
+    const safeAreaInsetTop =
+      parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue('--sat')
+      ) || 100;
+
+    console.log('safeAreaInsetTop:', safeAreaInsetTop);
+    window.scrollTo(
+      0,
+      rect.top - windowRect.top - toolBarHeight - safeAreaInsetTop
+    );
   }
 };
 

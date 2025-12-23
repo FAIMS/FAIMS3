@@ -26,8 +26,8 @@
  *   - Pending navigation states via useNavigation
  */
 
-import '@capacitor-community/safe-area';
-import {SafeArea} from '@capacitor-community/safe-area';
+// import '@capacitor-community/safe-area';
+// import {SafeArea} from '@capacitor-community/safe-area';
 import {StyledEngineProvider, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {
@@ -56,26 +56,6 @@ import {ViewRecordPage} from './gui/pages/viewRecord';
 import Workspace from './gui/pages/workspace';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
-
-// =============================================================================
-// SAFE AREA CONFIGURATION
-// =============================================================================
-
-/**
- * Configure safe area insets for mobile devices.
- * This ensures content doesn't overlap with notches, status bars, or
- * navigation gestures on iOS and Android devices.
- */
-SafeArea.enable({
-  config: {
-    customColorsForSystemBars: true,
-    statusBarColor: '#FAFAFB',
-    statusBarContent: 'dark',
-    navigationBarColor: '#FAFAFB',
-    navigationBarContent: 'dark',
-    offset: 0,
-  },
-});
 
 // =============================================================================
 // REACT QUERY CONFIGURATION
