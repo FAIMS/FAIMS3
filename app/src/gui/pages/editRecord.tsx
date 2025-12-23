@@ -26,7 +26,12 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import {APP_NAME, DEBUG_APP, getMapConfig} from '../../buildconfig';
+import {
+  APP_NAME,
+  CAPACITOR_PLATFORM,
+  DEBUG_APP,
+  getMapConfig,
+} from '../../buildconfig';
 import {
   getEditRecordRoute,
   getNotebookRoute,
@@ -192,6 +197,7 @@ export const EditRecordPage = () => {
 
   const formConfig: FullFormConfig = {
     mode: 'full' as const,
+    platform: 'android' || CAPACITOR_PLATFORM,
     appName: APP_NAME,
     recordId,
     recordMode: mode,

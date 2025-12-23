@@ -14,11 +14,11 @@ import {
   useTheme,
 } from '@mui/material';
 import React, {useState} from 'react';
-import {APP_ID} from '../../../buildconfig';
+import {APP_ID, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {addAlert} from '../../../context/slices/alertSlice';
 import {useAppDispatch} from '../../../context/store';
-import {isWeb, replaceOrAppendRedirect} from '../../../utils/helpers';
+import {replaceOrAppendRedirect} from '../../../utils/helpers';
 import {Server} from '../../../context/slices/projectSlice';
 import {QRCodeButton} from '@faims3/forms';
 
@@ -166,7 +166,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
     const inviteCode = serverInfo.shortCodePrefix + '-' + shortCode;
     const url = `${serverInfo.serverUrl}/register?inviteId=${inviteCode}`;
 
-    if (isWeb()) {
+    if (IS_WEB_PLATFORM) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href = url + '&redirect=' + redirect;
     } else {

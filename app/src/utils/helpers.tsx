@@ -10,15 +10,6 @@ export function checkAllRequired(vals: any[]): boolean {
 }
 
 /**
- * Are we running on the web or mobile?
- * @returns true if we're running in a web browser, false if in an app
- */
-
-export function isWeb() {
-  return Capacitor.getPlatform() === 'web';
-}
-
-/**
  * Takes an element from an iterator
  * @param iterator The iterator to take first element from
  * @returns The first element of an iterator or undefined

@@ -18,21 +18,20 @@
  *   Defines the SignIn component to present login and registration options
  */
 
-import {Capacitor} from '@capacitor/core';
 import {Box, Grid} from '@mui/material';
 import * as ROUTES from '../../constants/routes';
 import {selectIsAuthenticated} from '../../context/slices/authSlice';
 import {selectServers} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
-import {isWeb} from '../../utils/helpers';
 import ClusterCard from '../components/authentication/cluster_card';
 import OnboardingComponent from '../components/authentication/oneServerLanding';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import {QRCodeRegistration, ShortCodeRegistration} from './shortcode';
+import {CAPACITOR_PLATFORM, IS_WEB_PLATFORM} from '../../buildconfig';
 
 export function SignIn() {
   const breadcrumbs = [{link: ROUTES.INDEX, title: 'Home'}, {title: 'Sign In'}];
-  const platform = Capacitor.getPlatform();
+  const platform = CAPACITOR_PLATFORM;
   const allowQr = platform === 'ios' || platform === 'android';
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const servers = useAppSelector(selectServers);
@@ -73,7 +72,7 @@ export function SignIn() {
         <Grid item lg={4} md={6} sm={8} xs={12} key="short-code">
           <ShortCodeRegistration servers={servers} />
         </Grid>
-        {isWeb() ? (
+        {IS_WEB_PLATFORM ? (
           <></>
         ) : (
           <Grid item lg={4} md={6} sm={8} xs={12} key="qr-code">
