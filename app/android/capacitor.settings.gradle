@@ -5,9 +5,6 @@ project(':capacitor-android').projectDir = new File('../../node_modules/.pnpm/@c
 include ':capacitor-community-exif'
 project(':capacitor-community-exif').projectDir = new File('../../node_modules/.pnpm/@capacitor-community+exif@7.0.0_@capacitor+core@7.4.3/node_modules/@capacitor-community/exif/android')
 
-include ':capacitor-community-safe-area'
-project(':capacitor-community-safe-area').projectDir = new File('../../node_modules/.pnpm/@capacitor-community+safe-area@7.0.0-alpha.1_@capacitor+core@7.4.3/node_modules/@capacitor-community/safe-area/android')
-
 include ':capacitor-mlkit-barcode-scanning'
 project(':capacitor-mlkit-barcode-scanning').projectDir = new File('../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@7.4.3/node_modules/@capacitor-mlkit/barcode-scanning/android')
 
@@ -36,4 +33,4 @@ include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/share/android')
 
 include ':capacitor-status-bar'
-project(':capacitor-status-bar').projectDir = new File('../../node_modules/.pnpm/@capacitor+status-bar@7.0.3_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar/android')
+project(':capacitor-status-bar').projectDir = new File('../../node_modules/.pnpm/@capacitor+status-bar@7.0.4_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar/android')
