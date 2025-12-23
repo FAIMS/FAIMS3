@@ -77,12 +77,19 @@ const scrollToElement = (element: HTMLElement | null): void => {
   if (element) {
     const rect = element.getBoundingClientRect();
     const windowRect = document.body.getBoundingClientRect();
-    const safeAreaInsetTop =
-      parseInt(
+    let safeAreaInsetTop = 100;
+    try {
+      safeAreaInsetTop = parseInt(
         getComputedStyle(document.documentElement).getPropertyValue('--sat')
-      ) || 100;
+      );
+    } catch (e) {
+      console.error(
+        'Failed to get safe area inset top:',
+        e,
+        'Defaulting to 100.'
+      );
+    }
 
-    console.log('safeAreaInsetTop:', safeAreaInsetTop);
     window.scrollTo(
       0,
       rect.top - windowRect.top - toolBarHeight - safeAreaInsetTop
