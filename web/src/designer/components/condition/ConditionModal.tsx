@@ -108,7 +108,6 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
               <Button
                 variant="contained"
                 onClick={handleSave}
-                disabled={draft === null}
               >
                 Save Changes
               </Button>
