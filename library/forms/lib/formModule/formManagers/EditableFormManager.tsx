@@ -62,6 +62,9 @@ export type ValidationMode = 'FULL' | 'ONLY_TOUCHED';
  */
 const FORM_SYNC_DEBOUNCE_MS = 1000;
 
+// Shorter debounce for responsive UI feedback
+const VISIBILITY_DEBOUNCE_MS = 150;
+
 /**
  * Props for the EditableFormManager component.
  */
@@ -290,6 +293,27 @@ export const EditableFormManager: React.FC<
     dataEngine,
   ]);
 
+  // Create visibility update function
+  const updateVisibility = useCallback(() => {
+    setVisibleMap(
+      currentlyVisibleMap({
+        values: formDataExtractor({fullData: form.state.values}),
+        uiSpec: dataEngine.uiSpec,
+        viewsetId: props.formId,
+      })
+    );
+  }, [dataEngine.uiSpec, props.formId]);
+
+  // Debounced version - much shorter than save debounce
+  const debouncedUpdateVisibility = useMemo(() => {
+    return debounce(updateVisibility, VISIBILITY_DEBOUNCE_MS);
+  }, [updateVisibility]);
+
+  // Cleanup debounce above
+  useEffect(() => {
+    return () => debouncedUpdateVisibility.cancel();
+  }, [debouncedUpdateVisibility]);
+
   /**
    * The actual save implementation - called by debounced handler.
    * Saves the provided values to the backend.
@@ -355,15 +379,6 @@ export const EditableFormManager: React.FC<
     } finally {
       isSavingRef.current = false;
     }
-
-    // Updating visibility
-    setVisibleMap(
-      currentlyVisibleMap({
-        values: formDataExtractor({fullData: form.state.values}),
-        uiSpec: dataEngine.uiSpec,
-        viewsetId: props.formId,
-      })
-    );
   }, [
     debugMode,
     ensureWorkingRevision,
@@ -440,7 +455,10 @@ export const EditableFormManager: React.FC<
     // Track that we have pending unsaved changes
     pendingValuesRef.current = true;
 
-    // Trigger debounced save
+    // Quick visibility update
+    debouncedUpdateVisibility();
+
+    // Slower trigger debounced save
     debouncedSave();
   }, [debouncedSave, debugMode]);
 
@@ -956,8 +974,8 @@ export const EditableFormManager: React.FC<
             const normalisedRelationships = !relevantFieldValue
               ? []
               : Array.isArray(relevantFieldValue)
-                ? relevantFieldValue
-                : [relevantFieldValue];
+              ? relevantFieldValue
+              : [relevantFieldValue];
 
             // Update the data of the parent record
             parentFormData.data[head.fieldId].data = [
