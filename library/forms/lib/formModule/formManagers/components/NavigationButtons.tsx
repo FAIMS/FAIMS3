@@ -5,6 +5,8 @@ import {
   NavigationButtonsTemplate,
 } from './NavigationButtonsTemplate';
 import AddIcon from '@mui/icons-material/Add';
+import DoneIcon from '@mui/icons-material/Done';
+import NorthWestIcon from '@mui/icons-material/NorthWest';
 
 type RelationshipType = 'parent' | 'linked';
 
@@ -186,9 +188,6 @@ export const FormNavigationButtons = ({
     [withFlush]
   );
 
-  // Extract HRID from label (removes "Return to " prefix if present)
-  const hrid = parentNavInfo?.label.replace('Return to ', '') ?? '';
-
   // Show subtle indicator when there are pending changes
   const showPendingIndicator = hasPendingChanges?.() && !isSaving;
   const statusText = showPendingIndicator ? 'saving...' : undefined;
@@ -205,47 +204,6 @@ export const FormNavigationButtons = ({
   const buttons = useMemo(() => {
     const result: NavigationButtonsConfig[] = [];
 
-    if (hasExplicitParentContext) {
-      // Explicit parent from navigation history - use "Return to parent"
-      result.push({
-        label: `Return to ${
-          parentNavInfo.relationType === 'linked' ? 'related' : 'parent'
-        }${parentFormLabel ? ` (${parentFormLabel})` : ''}`,
-        subtitle: hrid,
-        onClick: handleParentNavigation,
-        disabled: isSaving,
-        loading: isSaving,
-        statusText,
-      });
-    } else {
-      // No explicit navigation history
-
-      // Show navigation buttons for each implied parent/linked record (from relationship field)
-      for (const impliedParent of normalizedImpliedParents) {
-        result.push({
-          label: `Go to ${
-            impliedParent.type === 'linked' ? 'linked record' : 'parent'
-          } (${impliedParent.formId})`,
-          subtitle: impliedParent.label,
-          onClick: createImpliedParentNavigationHandler(impliedParent),
-          disabled: isSaving,
-          loading: isSaving,
-          statusText,
-        });
-      }
-
-      // Show "Return to view record" if handler provided
-      if (onNavigateToViewRecord) {
-        result.push({
-          label: 'Return to view record',
-          onClick: handleViewRecordNavigation,
-          disabled: isSaving,
-          loading: isSaving,
-          statusText,
-        });
-      }
-    }
-
     result.push({
       label: navigateToRecordList.label,
       onClick: handleRecordListNavigation,
@@ -253,6 +211,48 @@ export const FormNavigationButtons = ({
       loading: isSaving,
       statusText,
     });
+
+    if (hasExplicitParentContext) {
+      const relLabel =
+        parentNavInfo.relationType === 'linked' ? 'related' : 'parent';
+      // Explicit parent from navigation history - use "Return to parent"
+      result.push({
+        label: parentFormLabel
+          ? `Go to ${parentFormLabel} (${relLabel})`
+          : `Go to ${relLabel}`,
+        onClick: handleParentNavigation,
+        disabled: isSaving,
+        loading: isSaving,
+        statusText,
+        icon: <NorthWestIcon fontSize="small" />,
+      });
+    } else {
+      // No explicit navigation history
+      // Show navigation buttons for each implied parent/linked record (from relationship field)
+      for (const impliedParent of normalizedImpliedParents) {
+        const relLabel = impliedParent.type === 'linked' ? 'related' : 'parent';
+        result.push({
+          label: `Go to ${impliedParent.formId} (${relLabel})`,
+          onClick: createImpliedParentNavigationHandler(impliedParent),
+          disabled: isSaving,
+          loading: isSaving,
+          statusText,
+          icon: <NorthWestIcon fontSize="small" />,
+        });
+      }
+
+      // Show "Return to view record" if handler provided
+      if (onNavigateToViewRecord) {
+        result.push({
+          label: 'Review record',
+          onClick: handleViewRecordNavigation,
+          disabled: isSaving,
+          loading: isSaving,
+          statusText,
+          icon: <DoneIcon fontSize="small" />,
+        });
+      }
+    }
 
     // Create another child button, if needed
     if (createAnotherChild) {
@@ -275,7 +275,6 @@ export const FormNavigationButtons = ({
     hasExplicitParentContext,
     parentNavInfo,
     parentFormLabel,
-    hrid,
     handleParentNavigation,
     isSaving,
     statusText,

@@ -56,7 +56,6 @@
     "@bugsnag/plugin-react": "^7.19.0",
     "@bugsnag/source-maps": "^2.3.3",
     "@capacitor-community/exif": "^7.0.0",
-    "@capacitor-community/safe-area": "^7.0.0-alpha.1",
     "@capacitor-mlkit/barcode-scanning": "^7.2.1",
     "@capacitor/android": "^7.2.0",
     "@capacitor/app": "^7.0.1",

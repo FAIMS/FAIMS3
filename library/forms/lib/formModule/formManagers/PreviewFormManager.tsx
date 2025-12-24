@@ -102,6 +102,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   // Preview mode config (no backend integration)
   const config: PreviewFormConfig = {
     mode: 'preview' as const,
+    platform: 'web',
     layout: props.layout,
     mapConfig: props.mapConfig,
   };

@@ -2,9 +2,7 @@
 import {Browser} from '@capacitor/browser';
 import {Button, ButtonProps} from '@mui/material';
 import React from 'react';
-
-import {isWeb} from '../../../utils/helpers';
-import {APP_ID} from '../../../buildconfig';
+import {APP_ID, IS_WEB_PLATFORM} from '../../../buildconfig';
 
 export type LoginButtonProps = {
   conductor_url: string;
@@ -31,7 +29,7 @@ export function LoginButton(props: LoginButtonProps) {
       }}
       startIcon={props.startIcon}
       onClick={async () => {
-        if (isWeb()) {
+        if (IS_WEB_PLATFORM) {
           const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
           window.location.href =
             props.conductor_url + '/login?redirect=' + redirect;

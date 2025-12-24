@@ -35,6 +35,7 @@ import {
 import React, {useState} from 'react';
 import {
   APP_ID,
+  IS_WEB_PLATFORM,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
 } from '../../buildconfig';
@@ -42,7 +43,7 @@ import {useNotification} from '../../context/popup';
 import {addAlert} from '../../context/slices/alertSlice';
 import {Server} from '../../context/slices/projectSlice';
 import {useAppDispatch} from '../../context/store';
-import {isWeb, replaceOrAppendRedirect} from '../../utils/helpers';
+import {replaceOrAppendRedirect} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
 import {QRCodeButton} from '@faims3/forms';
 
@@ -130,7 +131,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
 
     showSuccess('Initiating registration...');
 
-    if (isWeb()) {
+    if (IS_WEB_PLATFORM) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href = url + '&redirect=' + redirect;
     } else {
