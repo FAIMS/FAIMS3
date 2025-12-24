@@ -83,8 +83,6 @@ export const RadioGroup = (props: FieldProps) => {
   } = props;
 
   const value = (state.value?.data as string) ?? '';
-  // TODO: Error state
-  const error = undefined;
 
   /**
    * Handles changes in the selected radio button, allowing users to toggle selection.
@@ -104,7 +102,7 @@ export const RadioGroup = (props: FieldProps) => {
       advancedHelperText={advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
     >
-      <FormControl sx={{mb: 4}} error={!!error}>
+      <FormControl>
         <MuiRadioGroup
           value={value}
           onChange={handleChange}

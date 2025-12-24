@@ -63,6 +63,9 @@ interface RelatedRecordDisplayProps {
   recordLabel: string;
   recordId: string;
   tools: DataViewTools;
+  hrid: string;
+  /** Optional edit button component when hydrated data is available */
+  EditButton?: React.ComponentType<{recordId: string}>;
 }
 
 /**
@@ -131,11 +134,15 @@ const EmptyState = () => <EmptyResponsePlaceholder />;
  * Title display for related record items
  */
 const RelatedRecordTitle = ({recordLabel}: {recordLabel: string}) => (
-  <Box sx={{width: '100%'}}>
-    <Typography variant="subtitle1" sx={{fontWeight: 500}}>
-      {recordLabel}
-    </Typography>
-  </Box>
+  <Typography
+    variant="body2"
+    sx={{
+      fontWeight: 500,
+      textWrap: 'wrap',
+    }}
+  >
+    {recordLabel}
+  </Typography>
 );
 
 /**
@@ -174,17 +181,20 @@ const RecordLoadError = ({error}: {error: Error}) => {
 // ============================================================================
 
 /**
- * Displays a related record as a clickable link (used when nesting limit exceeded)
+ * Displays a related record as a compact card with optional Edit and View buttons
  *
- * Shows record information with a link to view the full record in a new context.
- * Used when RENDER_NEST_LIMIT is reached to prevent infinite nesting.
+ * Shows record information with action buttons. When hydrated data is available
+ * (e.g., on mobile where nesting is disabled but data was fetched), both Edit
+ * and View buttons are shown. Layout is compact: buttons on first row, label on second.
  */
 const LinkedRecordItem = ({
   recordLabel,
   recordId,
   tools,
+  hrid,
+  EditButton,
 }: RelatedRecordDisplayProps) => {
-  const handleClick = () => {
+  const handleViewClick = () => {
     tools.navigateToRecord({recordId});
   };
 
@@ -192,33 +202,48 @@ const LinkedRecordItem = ({
     <Paper
       elevation={1}
       sx={{
-        mb: 2,
-        p: 2,
+        mb: 1,
+        p: 1.5,
         bgcolor: '#f5f5f5',
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         '&:hover': {
           bgcolor: '#eeeeee',
         },
       }}
     >
-      <Box sx={{flex: 1}}>
-        <RelatedRecordTitle recordLabel={recordLabel} />
-      </Box>
-      <Button
-        onClick={handleClick}
-        endIcon={<OpenInNewIcon sx={{fontSize: 16}} />}
-        sx={{
-          textTransform: 'none',
-          color: 'primary.main',
-        }}
-      >
-        View Record
-      </Button>
+      <Stack spacing={0.5}>
+        {/* Row 1: Action buttons */}
+        <Stack
+          direction="row"
+          spacing={1}
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          {EditButton && (
+            <Box sx={{flexShrink: 0}}>
+              <EditButton recordId={recordId} />
+            </Box>
+          )}
+          <Button
+            size="small"
+            onClick={handleViewClick}
+            endIcon={<OpenInNewIcon sx={{fontSize: 14}} />}
+            sx={{
+              textTransform: 'none',
+              color: 'primary.main',
+              minWidth: 'auto',
+              py: 0.5,
+              px: 1,
+            }}
+          >
+            View
+          </Button>
+        </Stack>
+        {/* Row 2: Record label/HRID */}
+        <RelatedRecordTitle recordLabel={hrid ?? recordLabel} />
+      </Stack>
     </Paper>
   );
 };
@@ -284,7 +309,9 @@ const NestedRecordItem = ({
             </Box>
           )}
           <Box sx={{flex: 1, minWidth: 0}}>
-            <RelatedRecordTitle recordLabel={displayLabel} />
+            <Typography variant="subtitle1" sx={{fontWeight: 500}}>
+              {displayLabel}
+            </Typography>
           </Box>
         </Stack>
       </AccordionSummary>
@@ -379,15 +406,18 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
 
   // Check if we are physically too deep in the DOM
   const isDepthLimitReached = trace.length >= RENDER_NEST_LIMIT;
+  const isMobile = useMediaQuery(useTheme().breakpoints.down('sm'));
 
   // Fetch and hydrate related records
+  // Note: We still fetch on mobile to get HRID and EditButton, even though we won't nest
   const relatedRecordQueries = useQueries({
     queries: relatedRecords.map(({record_id}) => {
       // 2. DECISION LOGIC
       // If the target record exists in our ancestry, it's a cycle.
       const isCycle = ancestorIds.has(record_id);
 
-      // We only fetch if it is NOT a cycle AND we haven't hit the depth limit.
+      // We fetch unless it's a cycle or we've hit the depth limit
+      // Mobile still fetches to get hydrated data for the compact view
       const shouldFetch = !isCycle && !isDepthLimitReached;
 
       return {
@@ -443,33 +473,52 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
         // Recalculate logic for rendering decision
         const isCycle = ancestorIds.has(key);
         // Force link mode if we are too deep OR if a cycle is detected
+        // Mobile uses link mode but may have hydrated data available
         const forceLinkMode = isDepthLimitReached || isCycle;
+        const useLinkModeForMobile = isMobile && !forceLinkMode;
 
         // 4. RENDER LOGIC
-        // If we forced link mode, we skip loading/error checks because
-        // the query was disabled and won't have data.
+        // If we forced link mode due to depth/cycle, the query was disabled
         if (forceLinkMode) {
           return (
             <LinkedRecordItem
               key={key}
-              // If it's a cycle, we usually don't have the hydrated label yet, fall back to ID or existing label
               recordLabel={recordInfo.record_label || recordInfo.record_id}
               recordId={recordInfo.record_id}
+              hrid={query?.data?.hrid ?? recordInfo.record_id}
               tools={props.renderContext.tools}
             />
           );
         }
 
+        // Handle loading state
         if (query.isPending) {
           return <LoadingRecordItem key={key} recordId={key} />;
         }
 
+        // Handle error state
         if (query.isError) {
           return (
             <ErrorRecordItem key={key} recordId={key} error={query.error} />
           );
         }
 
+        // Mobile with hydrated data: show compact link view with Edit button
+        if (useLinkModeForMobile && query.data) {
+          const EditButton = query.data.tools.editRecordButtonComponent;
+          return (
+            <LinkedRecordItem
+              key={key}
+              recordLabel={recordInfo.record_label || recordInfo.record_id}
+              recordId={recordInfo.record_id}
+              hrid={query.data.hrid ?? recordInfo.record_id}
+              tools={props.renderContext.tools}
+              EditButton={EditButton}
+            />
+          );
+        }
+
+        // Desktop: show full nested accordion view
         return (
           <NestedRecordItem
             key={key}

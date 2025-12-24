@@ -17,6 +17,8 @@ export type FieldVisibilityMap = Record<string, string[]>;
 export interface BaseFormConfig {
   mode: 'full' | 'preview';
   layout: 'inline' | 'tabs';
+  // Capacitor platform - helps with rendering decisions for low power devices
+  platform: 'ios' | 'android' | 'web';
   /** Function to return the map configuration settings */
   mapConfig: () => MapConfig;
 }

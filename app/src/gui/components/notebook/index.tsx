@@ -323,13 +323,13 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
                 />
               )}
 
-              <Tab value={2} label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
+              <Tab value={2} label="Map" {...a11yProps(2, NOTEBOOK_NAME)} />
+              <Tab value={3} label="Details" {...a11yProps(3, NOTEBOOK_NAME)} />
               <Tab
-                value={3}
+                value={4}
                 label="Settings"
                 {...a11yProps(4, NOTEBOOK_NAME)}
               />
-              <Tab value={4} label="Map" {...a11yProps(5, NOTEBOOK_NAME)} />
             </Tabs>
           </AppBar>
         </Box>
@@ -368,19 +368,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           />
         </TabPanel>
 
-        <TabPanel value={tabIndex} index={2} id={'details'}>
-          <MetadataDisplayComponent
-            handleTabChange={(index: number) => setTabIndex(index as TabIndex)}
-            project={project}
-            templateId={templateId}
-          />
-        </TabPanel>
-
-        <TabPanel value={tabIndex} index={3} id={'settings'}>
-          <NotebookSettings uiSpec={uiSpecification} />
-        </TabPanel>
-
-        <TabPanel value={tabIndex} index={4} id={'map'}>
+        <TabPanel value={tabIndex} index={2} id={'map'}>
           {uiSpecification !== null && (
             <OverviewMap
               serverId={project.serverId}
@@ -389,6 +377,18 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               uiSpec={uiSpecification}
             />
           )}
+        </TabPanel>
+
+        <TabPanel value={tabIndex} index={3} id={'details'}>
+          <MetadataDisplayComponent
+            handleTabChange={(index: number) => setTabIndex(index as TabIndex)}
+            project={project}
+            templateId={templateId}
+          />
+        </TabPanel>
+
+        <TabPanel value={tabIndex} index={4} id={'settings'}>
+          <NotebookSettings uiSpec={uiSpecification} />
         </TabPanel>
       </Box>
     </Box>

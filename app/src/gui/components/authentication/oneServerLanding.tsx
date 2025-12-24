@@ -3,16 +3,15 @@ This is a special login landing page for the most common use case i.e. one
 listing, user not logged in.
 */
 
+import {Browser} from '@capacitor/browser';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {Box, Button, Paper, Typography, useTheme} from '@mui/material';
 import {useState} from 'react';
-import {QRCodeButtonOnly, ShortCodeOnlyComponent} from './shortCodeOnly';
-import {isWeb} from '../../../utils/helpers';
-import {Browser} from '@capacitor/browser';
-import {APP_ID, APP_NAME} from '../../../buildconfig';
-import {useIsOnline} from '../../../utils/customHooks';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
+import {APP_ID, APP_NAME, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {Server} from '../../../context/slices/projectSlice';
+import {useIsOnline} from '../../../utils/customHooks';
+import {QRCodeButtonOnly, ShortCodeOnlyComponent} from './shortCodeOnly';
 
 const OnboardingComponent = ({
   scanQr,
@@ -86,7 +85,7 @@ const OnboardingComponent = ({
               <LoginOutlinedIcon sx={{color: theme.palette.primary.main}} />
             }
             onClick={async () => {
-              if (isWeb()) {
+              if (IS_WEB_PLATFORM) {
                 const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
                 window.location.href =
                   server.serverUrl + '/login?redirect=' + redirect;
