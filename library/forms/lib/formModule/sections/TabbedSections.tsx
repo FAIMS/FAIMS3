@@ -30,6 +30,12 @@ import {FormSection} from './FormSection';
 // Constants
 // ============================================================================
 
+/**
+ * Maximum number of field errors to display in the current section
+ * before showing a "and X more..." message.
+ */
+const MAX_VISIBLE_FIELD_ERRORS = 2;
+
 /** Minimum width (in pixels) per step before switching to mobile stepper view */
 const MIN_STEP_WIDTH_PX = 120;
 
@@ -303,8 +309,8 @@ interface ErrorSummaryPanelProps {
  * simplified links to navigate to those sections without listing
  * individual field errors.
  *
- * The panel is styled as a warning box with error-coloured border and
- * light background. It only renders when there are actual errors to display.
+ * The panel is styled as a warning box with error-coloured border.
+ * It only renders when there are actual errors to display.
  */
 const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
   errors,
@@ -332,6 +338,14 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
   if (Object.keys(errors).length === 0) {
     return null;
   }
+
+  // Calculate visible vs hidden errors for current section
+  const visibleCurrentSectionErrors = currentSectionErrors.slice(
+    0,
+    MAX_VISIBLE_FIELD_ERRORS
+  );
+  const hiddenCurrentSectionErrorCount =
+    currentSectionErrors.length - MAX_VISIBLE_FIELD_ERRORS;
 
   /**
    * Handles click on a field link - prevents default anchor behaviour
@@ -367,7 +381,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
     const uniqueErrors = Array.from(new Set(fieldErrors));
 
     return (
-      <Box key={fieldId} component="li" sx={{py: 0.5}}>
+      <Box key={fieldId} component="li" sx={{py: 0.25}}>
         <Link
           href={`#${getFieldId({fieldId})}`}
           onClick={e => handleFieldClick(e, sectionId, fieldId)}
@@ -376,6 +390,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
             textDecoration: 'underline',
             cursor: 'pointer',
             fontWeight: 500,
+            fontSize: '0.813rem',
             '&:hover': {
               color: theme.palette.error.main,
             },
@@ -388,7 +403,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
         {uniqueErrors.length > 0 && (
           <Typography
             component="span"
-            variant="body2"
+            variant="caption"
             sx={{color: theme.palette.text.secondary, ml: 1}}
           >
             — {uniqueErrors[0]}
@@ -407,7 +422,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
     const sectionLabel = getSectionLabel(uiSpec, sectionId);
 
     return (
-      <Box key={sectionId} component="li" sx={{py: 0.5}}>
+      <Box key={sectionId} component="li" sx={{py: 0.25}}>
         <Link
           href="#"
           onClick={e => handleSectionClick(e, sectionId)}
@@ -416,6 +431,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
             textDecoration: 'underline',
             cursor: 'pointer',
             fontWeight: 500,
+            fontSize: '0.813rem',
             '&:hover': {
               color: theme.palette.error.main,
             },
@@ -427,7 +443,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
         {/* Show count of errors in this section */}
         <Typography
           component="span"
-          variant="body2"
+          variant="caption"
           sx={{color: theme.palette.text.secondary, ml: 1}}
         >
           — {errorCount} {errorCount === 1 ? 'error' : 'errors'}
@@ -445,7 +461,6 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
         border: '1px solid',
         borderColor: theme.palette.error.light,
         borderRadius: 1,
-        bgcolor: 'rgba(211, 47, 47, 0.04)',
       }}
     >
       {/* Panel header */}
@@ -453,29 +468,31 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
         variant="subtitle1"
         sx={{
           fontWeight: 600,
-          color: theme.palette.error.dark,
-          mb: 2,
+          color: theme.palette.text.primary,
+          mb: 1.5,
         }}
       >
         Please fix the following errors
       </Typography>
 
       {/* Current section errors - shown with full detail */}
-      {currentSectionErrors.length > 0 && (
-        <Box sx={{mb: otherSectionsWithErrors.length > 0 ? 2.5 : 0}}>
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 600,
-              color: theme.palette.text.primary,
-              mb: 1,
-            }}
-          >
-            In this section:
-          </Typography>
+      {visibleCurrentSectionErrors.length > 0 && (
+        <Box sx={{mb: otherSectionsWithErrors.length > 0 ? 2 : 0}}>
           <Box component="ul" sx={{m: 0, pl: 2.5, listStyle: 'disc'}}>
-            {currentSectionErrors.map(fieldName =>
+            {visibleCurrentSectionErrors.map(fieldName =>
               renderFieldLink(activeSection, fieldName)
+            )}
+            {hiddenCurrentSectionErrorCount > 0 && (
+              <Box
+                component="li"
+                sx={{
+                  py: 0.25,
+                  color: theme.palette.text.secondary,
+                  fontSize: '0.813rem',
+                }}
+              >
+                and {hiddenCurrentSectionErrorCount} more...
+              </Box>
             )}
           </Box>
         </Box>
@@ -657,15 +674,15 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
   }, [fieldMeta]);
 
   // Filter sections to only those that are visible based on the visibility map
-  const visibleSections = useMemo(() => {
-    // If no visibility map, all sections are visible
-    if (!fieldVisibilityMap) {
-      return sections;
-    }
-
+  let visibleSections = [];
+  if (!fieldVisibilityMap) {
+    visibleSections = sections;
+  } else {
     const visibleViews = Object.keys(fieldVisibilityMap);
-    return sections.filter(sectionId => visibleViews.includes(sectionId));
-  }, [sections, fieldVisibilityMap]);
+    visibleSections = sections.filter(sectionId =>
+      visibleViews.includes(sectionId)
+    );
+  }
 
   // Track the currently active section
   const [activeSection, setActiveSection] = useState<string>(sections[0]);

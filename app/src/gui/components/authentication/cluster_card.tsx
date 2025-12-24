@@ -46,7 +46,7 @@ import {
   useTheme,
 } from '@mui/material';
 import {useState} from 'react';
-import {APP_ID} from '../../../buildconfig';
+import {APP_ID, IS_WEB_PLATFORM} from '../../../buildconfig';
 import {
   isTokenValid,
   removeServerConnection,
@@ -55,7 +55,6 @@ import {
   setActiveUser,
 } from '../../../context/slices/authSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
-import {isWeb} from '../../../utils/helpers';
 import MainCard from '../ui/main-card';
 import {LoginButton} from './login_form';
 
@@ -120,12 +119,14 @@ export default function ClusterCard(props: ClusterCardProps) {
     const redirectUrl = window.location.href;
 
     // Build the URL for the change password page
-    const changePasswordUrl = `${props.conductor_url}/change-password?username=${encodeURIComponent(
+    const changePasswordUrl = `${
+      props.conductor_url
+    }/change-password?username=${encodeURIComponent(
       username
     )}&redirect=${encodeURIComponent(redirectUrl)}`;
 
     // Navigate to the change password page
-    if (isWeb()) {
+    if (IS_WEB_PLATFORM) {
       window.location.href = changePasswordUrl;
     } else {
       Browser.open({
@@ -135,7 +136,7 @@ export default function ClusterCard(props: ClusterCardProps) {
   };
 
   const handleAddNewUser = async () => {
-    if (isWeb()) {
+    if (IS_WEB_PLATFORM) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href =
         props.conductor_url + '/login?redirect=' + redirect;
