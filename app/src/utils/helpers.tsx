@@ -1,5 +1,3 @@
-import {Capacitor} from '@capacitor/core';
-
 /**
  * Input parameter checker to ensure all values are defined
  * @param vals Values to check

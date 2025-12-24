@@ -197,7 +197,7 @@ export const EditRecordPage = () => {
 
   const formConfig: FullFormConfig = {
     mode: 'full' as const,
-    platform: 'android' || CAPACITOR_PLATFORM,
+    platform: CAPACITOR_PLATFORM,
     appName: APP_NAME,
     recordId,
     recordMode: mode,
