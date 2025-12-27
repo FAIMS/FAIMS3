@@ -119,6 +119,7 @@ export const MapPreview: React.FC<MapPreviewProps> = props => {
         zoom: 2,
       }),
       controls: [],
+      interactions: [],
     });
 
     // Fit the view to the geometry extent if features exist
