@@ -250,6 +250,7 @@ export function buildColumnFromSystemField({
     case 'LAST_UPDATED':
       return {
         ...baseColumn,
+        field: 'last_updated',
         type: 'dateTime',
         sortable: true,
         valueGetter: params => {
@@ -876,7 +877,7 @@ export function RecordsTable(props: RecordsTableProps) {
           toolbar: {handleQueryFunction: props.handleQueryFunction},
         }}
         initialState={{
-          // sorting: {sortModel: [{field: 'last_updated', sort: 'desc'}]},
+          sorting: {sortModel: [{field: 'last_updated', sort: 'desc'}]},
           pagination: {paginationModel: {pageSize: pageSize(maxRows)}},
         }}
         sx={styles.grid}
