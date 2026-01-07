@@ -224,10 +224,10 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
                     }
                   />
                 }
-                label="Show 'Create Another' button"
+                label="Hide the 'Create Another' Button"
               />
               <FormHelperText>
-                If <b>checked</b>, displays a button allowing users to quickly
+                If <b>unchecked</b>, displays a button allowing users to quickly
                 create another related record after saving one.
               </FormHelperText>
             </Grid>
