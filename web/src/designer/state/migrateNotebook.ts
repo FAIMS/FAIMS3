@@ -49,6 +49,9 @@ export const migrateNotebook = (notebook: Notebook) => {
   // NOTE: no longer required, validation arrays are not necessary
   // fixPhotoValidation(notebookCopy);
 
+  // ensure all TemplatedStringFields are marked as required
+  requireTemplatedStringFields(notebookCopy);
+
   // fix bad autoincrementer initial value
   fixAutoIncrementerInitialValue(notebookCopy);
 
@@ -64,6 +67,9 @@ export const migrateNotebook = (notebook: Notebook) => {
   // migrate deprecated Number/ControlledNumber fields to new format
   // (must be before removeValidationSchema to extract min/max)
   migrateNumberFields(notebookCopy);
+
+  // migrate any old TextField to FAIMSTextField
+  migrateTextFields(notebookCopy);
 
   // remove validation yup schema from notebooks
   removeValidationSchema(notebookCopy);
@@ -145,6 +151,26 @@ export const validateNotebook = (n: unknown) => {
     }
   }
   return valid;
+};
+
+/**
+ * Make sure all TemplatedStringField are marked as required
+ *   - this makes them eligible to be HRID fields
+ *
+ * @param notebook A notebook that might be out of date, modified
+ */
+export const requireTemplatedStringFields = (notebook: Notebook) => {
+  const fields: {[key: string]: FieldType} = {};
+
+  for (const fieldName in notebook['ui-specification'].fields) {
+    const field = notebook['ui-specification'].fields[fieldName];
+    if (field['component-name'] === 'TemplatedStringField') {
+      field['component-parameters'].required = true;
+    }
+    fields[fieldName] = field;
+  }
+
+  notebook['ui-specification'].fields = fields;
 };
 
 /**
@@ -377,6 +403,54 @@ const removeValidationSchema = (notebook: Notebook) => {
 };
 
 /**
+ * Migrate simple text fields to FAIMSTextField
+ * 
+ *   TextField: {
+ *  'component-namespace': 'formik-material-ui',
+ *  'component-name': 'TextField',
+ *  'type-returned': 'faims-core::String',
+ *  'component-parameters': {
+ *    label: 'Text Field',
+ *    fullWidth: true,
+ *    helperText: 'Enter text',
+ *    variant: 'outlined',
+ *    required: false,
+ *    InputProps: {
+ *      type: 'text',
+ *    },
+ *  },
+ *},
+ * @param notebook A notebook that might be out of date, modified
+ */
+const migrateTextFields = (notebook: Notebook) => {
+  const fields = notebook['ui-specification']?.fields;
+  if (!fields) return;
+
+  for (const fieldName in fields) {
+    const field = fields[fieldName];
+
+    // Detect old TextField pattern
+    if (
+      field['component-namespace'] === 'formik-material-ui' &&
+      field['component-name'] === 'TextField' &&
+      field['type-returned'] === 'faims-core::String' &&
+      field['component-parameters']?.InputProps?.type === 'text'
+    ) {
+      const p = field['component-parameters'];
+      const params = {
+        label: p.label,
+        name: fieldName,
+        helperText: p.helperText,
+        required: p.required || false,
+      };
+      field['component-namespace'] = 'faims-custom';
+      field['component-name'] = 'FAIMSTextField';
+      field['component-parameters'] = params;
+    }
+  }
+};
+
+/**
  * Migrate deprecated Email fields (formik-material-ui::TextField with type email)
  * to the new faims-custom::Email component.
  *
@@ -427,10 +501,11 @@ const migrateNumberFields = (notebook: Notebook) => {
     const field = fields[fieldName];
 
     // Detect old Number/ControlledNumber field pattern
+    // - TextField with InputProps.type === 'number'
     if (
       field['component-namespace'] === 'formik-material-ui' &&
       field['component-name'] === 'TextField' &&
-      field['type-returned'] === 'faims-core::Integer'
+      field['component-parameters']?.InputProps?.type === 'number'
     ) {
       // Extract min/max from validationSchema if present
       let min: number | undefined;
