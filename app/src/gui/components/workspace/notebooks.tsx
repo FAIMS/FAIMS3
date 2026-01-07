@@ -29,7 +29,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Link,
   Paper,
   Stack,
   Typography,
@@ -242,20 +241,18 @@ export default function NoteBooks() {
           </Button>
           {doRefresh.isPending && <CircularProgress size={24} />}
         </Stack>
-        <Link
-          component="button"
-          variant="body2"
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<InfoOutlinedIcon fontSize="small" />}
           onClick={() => setInfoDialogOpen(true)}
           sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.5,
-            cursor: 'pointer',
+            textTransform: 'none',
+            fontSize: 'body2.fontSize',
           }}
         >
-          <InfoOutlinedIcon fontSize="small" />
           Learn more about activating {NOTEBOOK_NAME}s
-        </Link>
+        </Button>
       </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
         <Tabs

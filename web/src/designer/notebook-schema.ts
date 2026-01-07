@@ -221,7 +221,7 @@ export const schema = {
         },
         initialValue: {},
         related_type: {type: 'string'},
-        showCreateAnotherButton: {type: 'boolean'},
+        hideCreateAnotherButton: {type: 'boolean'},
         relation_type: {type: 'string'},
         related_type_label: {type: 'string'},
         relation_linked_vocabPair: {

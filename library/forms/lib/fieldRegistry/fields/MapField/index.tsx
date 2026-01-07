@@ -26,7 +26,6 @@ import {useEffect, useState} from 'react';
 import {z} from 'zod';
 import {VectorTileStore} from '../../../components';
 import {defaultMapProjection} from '../../../components/maps/MapComponent';
-import {MapPreview} from '../../../components/maps/MapPreview';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {FullFieldProps} from '../../../formModule/types';
@@ -241,10 +240,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
             gap: theme.spacing(1),
           }}
         >
-          {props.config.platform === 'web' && (
-            <MapPreview value={props.state.value?.data} config={mapConfig} />
-          )}
-          {props.config.platform !== 'web' && isLocationSelected && (
+          {isLocationSelected && (
             <Paper
               variant="outlined"
               sx={{
