@@ -222,7 +222,7 @@ export default function NoteBooks() {
     <Box component={Paper} elevation={0} p={2}>
       <Stack
         direction={isMobile ? 'column' : 'row'}
-        alignItems={isMobile ? 'flex-start' : 'center'}
+        alignItems={isMobile ? 'stretch' : 'center'}
         justifyContent={isMobile ? 'space-evenly' : 'space-between'}
         spacing={2}
         sx={{mt: 1, mb: 2}}
@@ -231,6 +231,7 @@ export default function NoteBooks() {
           <Button
             variant="contained"
             disabled={!showRefreshButton || doRefresh.isPending}
+            fullWidth={isMobile}
             sx={{backgroundColor: theme.palette.primary.main}}
             startIcon={<RefreshOutlined />}
             onClick={() => {
@@ -244,6 +245,7 @@ export default function NoteBooks() {
         <Button
           variant="outlined"
           size="small"
+          fullWidth={isMobile}
           startIcon={<InfoOutlinedIcon fontSize="small" />}
           onClick={() => setInfoDialogOpen(true)}
           sx={{
