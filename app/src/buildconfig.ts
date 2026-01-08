@@ -19,6 +19,7 @@
  *   which server to use and whether to include test data
  */
 
+import {Capacitor} from '@capacitor/core';
 import {MapStylesheetNameType} from '@faims3/forms';
 import {MapConfig} from '@faims3/forms';
 
@@ -518,3 +519,10 @@ export const SUPPORT_EMAIL = get_support_email();
 export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
 export const CONTACT_URL = get_app_contact_url();
 export const MIGRATE_OLD_DATABASES = migrateOldDatabases();
+export const CAPACITOR_PLATFORM = Capacitor.getPlatform() as
+  | 'ios'
+  | 'android'
+  | 'web';
+export const IS_MOBILE_PLATFORM =
+  CAPACITOR_PLATFORM === 'ios' || CAPACITOR_PLATFORM === 'android';
+export const IS_WEB_PLATFORM = CAPACITOR_PLATFORM === 'web';

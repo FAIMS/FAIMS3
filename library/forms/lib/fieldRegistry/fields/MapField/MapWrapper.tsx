@@ -372,14 +372,13 @@ function MapWrapper(props: MapProps) {
                   color="inherit"
                   onClick={() => handleClose('clear')}
                   sx={{
-                    // backgroundColor: theme.palette.highlightColor.main,
-                    // color: theme.palette.dialogButton.dialogText,
                     borderRadius: '6px',
                     fontWeight: 'bold',
                     transition:
                       'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: theme.palette.text.primary,
+                      backgroundColor: 'lightgray',
+
                       transform: 'scale(1.05)',
                     },
                   }}
@@ -398,7 +397,7 @@ function MapWrapper(props: MapProps) {
                     transition:
                       'background-color 0.3s ease-in-out, transform 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: theme.palette.text.primary,
+                      backgroundColor: 'lightgray',
                       transform: 'scale(1.05)',
                     },
                   }}

@@ -18,14 +18,14 @@
  */
 
 import {Geolocation} from '@capacitor/geolocation';
-import {Alert, Box, Button, useTheme} from '@mui/material';
+import {CheckCircleOutline} from '@mui/icons-material';
+import {Alert, Box, Button, Paper, Typography, useTheme} from '@mui/material';
 import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {z} from 'zod';
 import {VectorTileStore} from '../../../components';
 import {defaultMapProjection} from '../../../components/maps/MapComponent';
-import {MapPreview} from '../../../components/maps/MapPreview';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
 import {FullFieldProps} from '../../../formModule/types';
@@ -240,7 +240,39 @@ export function MapFormField(props: FieldProps): JSX.Element {
             gap: theme.spacing(1),
           }}
         >
-          <MapPreview value={props.state.value?.data} config={mapConfig} />
+          {isLocationSelected && (
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                backgroundColor: theme.palette.success.light + '20',
+                borderColor: theme.palette.success.main,
+              }}
+            >
+              <CheckCircleOutline color="success" fontSize="small" />
+              <Typography variant="body2" color="text.secondary">
+                {featureType === 'Point' &&
+                drawnFeatures?.features?.[0]?.geometry
+                  ? `Location selected: ${(
+                      drawnFeatures.features[0].geometry as {
+                        coordinates: number[];
+                      }
+                    ).coordinates[1].toFixed(5)}, ${(
+                      drawnFeatures.features[0].geometry as {
+                        coordinates: number[];
+                      }
+                    ).coordinates[0].toFixed(5)}`
+                  : `${featureType} captured (${
+                      drawnFeatures?.features?.length ?? 0
+                    } feature${
+                      (drawnFeatures?.features?.length ?? 0) !== 1 ? 's' : ''
+                    })`}
+              </Typography>
+            </Paper>
+          )}
         </Box>
       </Box>
 

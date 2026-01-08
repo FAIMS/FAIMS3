@@ -53,6 +53,7 @@ export type ComponentParameters = {
   FormControlLabelProps?: {label: string};
   initialValue?: unknown;
   related_type?: string;
+  hideCreateAnotherButton?: boolean;
   relation_type?: string;
   related_type_label?: string;
   relation_linked_vocabPair?: [string, string][];

@@ -1,5 +1,3 @@
-import {Capacitor} from '@capacitor/core';
-
 /**
  * Input parameter checker to ensure all values are defined
  * @param vals Values to check
@@ -7,15 +5,6 @@ import {Capacitor} from '@capacitor/core';
  */
 export function checkAllRequired(vals: any[]): boolean {
   return !vals.some(v => v === undefined || v === null);
-}
-
-/**
- * Are we running on the web or mobile?
- * @returns true if we're running in a web browser, false if in an app
- */
-
-export function isWeb() {
-  return Capacitor.getPlatform() === 'web';
 }
 
 /**

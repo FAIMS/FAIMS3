@@ -121,7 +121,6 @@ const RelatedRecordListItem = ({
         </ListItemIcon>
         <ListItemText
           primary={data.hrid}
-          secondary={link.relation_type_vocabPair[0]}
           primaryTypographyProps={{
             variant: 'body2',
             fontFamily: 'monospace',

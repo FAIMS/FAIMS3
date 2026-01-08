@@ -91,9 +91,9 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         borderWidth: 1,
         borderStyle: 'solid',
         borderColor: hasErrors ? 'error.main' : 'transparent',
-        backgroundColor: hasErrors ? 'rgba(211, 47, 47, 0.03)' : 'transparent',
+        backgroundColor: 'transparent',
         boxShadow: hasErrors
-          ? '0 0 12px 2px rgba(211, 47, 47, 0.1), inset 0 0 8px rgba(211, 47, 47, 0.02)'
+          ? '0 0 8px 1px rgba(211, 47, 47, 0.05), inset 0 0 8px rgba(211, 47, 47, 0.02)'
           : 'none',
         transition: 'all 0.3s ease-in-out',
       }}
@@ -156,11 +156,27 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         </Box>
       )}
 
+      {/* Subheading (Help Text) */}
+      {subheading && (
+        <Typography
+          variant="body2"
+          sx={{
+            marginBottom: 1,
+            fontSize: {xs: '0.9rem', md: '1rem'},
+          }}
+        >
+          {subheading}
+        </Typography>
+      )}
+
+      {/* Input Field */}
+      <Box>{children}</Box>
+
       {/* Error Messages */}
       {hasErrors && (
         <Box
           sx={{
-            mt: 1.5,
+            mt: 0.8,
             p: 1.5,
             backgroundColor: 'rgba(211, 47, 47, 0.08)',
             borderLeftWidth: 4,
@@ -199,22 +215,6 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           ))}
         </Box>
       )}
-
-      {/* Subheading (Help Text) */}
-      {subheading && (
-        <Typography
-          variant="body2"
-          sx={{
-            marginBottom: 1,
-            fontSize: {xs: '0.9rem', md: '1rem'},
-          }}
-        >
-          {subheading}
-        </Typography>
-      )}
-
-      {/* Input Field */}
-      <Box>{children}</Box>
 
       {/* Advanced Helper Dialog Backdrop */}
       {open && !isMobile && (

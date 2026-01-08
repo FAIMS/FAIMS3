@@ -105,11 +105,7 @@ export const ConditionModal = (props: ConditionProps & {label: string}) => {
               <Button variant="outlined" onClick={handleCancel}>
                 Cancel Edit
               </Button>
-              <Button
-                variant="contained"
-                onClick={handleSave}
-                disabled={draft === null}
-              >
+              <Button variant="contained" onClick={handleSave}>
                 Save Changes
               </Button>
             </Stack>
