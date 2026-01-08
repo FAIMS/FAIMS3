@@ -896,10 +896,9 @@ export const EditableFormManager: React.FC<
           );
           console.error(fieldSpecError);
         }
-        console.log(fieldSpecData);
 
         // Only show if the field spec parses and the button is enabled
-        if (fieldSpecData?.showCreateAnotherButton) {
+        if (!fieldSpecData?.hideCreateAnotherButton) {
           // Field label
           const uiSpec = dataEngine.uiSpec;
           const fieldLabel = getFieldLabel(uiSpec, head.fieldId);

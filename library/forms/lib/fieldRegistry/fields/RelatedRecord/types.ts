@@ -18,7 +18,7 @@ export const relatedRecordPropsSchema = BaseFieldPropsSchema.extend({
   relation_type: relatedTypeSchema,
   multiple: z.boolean().optional().default(false),
   allowLinkToExisting: z.boolean().optional().default(false),
-  showCreateAnotherButton: z.boolean().optional().default(false),
+  hideCreateAnotherButton: z.boolean().optional().default(false),
 });
 
 export type RelatedRecordFieldProps = z.infer<typeof relatedRecordPropsSchema>;

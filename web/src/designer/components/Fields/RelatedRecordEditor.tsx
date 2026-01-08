@@ -51,7 +51,7 @@ type RelatedRecordConfig = {
   relationType: string;
   relationLinkedPair: PairList;
   allowLinkToExisting: boolean;
-  showCreateAnotherButton: boolean;
+  hideCreateAnotherButton: boolean;
 };
 
 export const RelatedRecordEditor = ({fieldName}: Props) => {
@@ -86,8 +86,8 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
       (componentParams.relation_linked_vocabPair as PairList) ?? [],
     allowLinkToExisting:
       (componentParams.allowLinkToExisting as boolean) ?? false,
-    showCreateAnotherButton:
-      (componentParams.showCreateAnotherButton as boolean) ?? false,
+    hideCreateAnotherButton:
+      (componentParams.hideCreateAnotherButton as boolean) ?? false,
   };
 
   const updateField = (name: string, newField: FieldType) => {
@@ -109,8 +109,8 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
       newState.relationLinkedPair;
     newField['component-parameters'].allowLinkToExisting =
       newState.allowLinkToExisting;
-    newField['component-parameters'].showCreateAnotherButton =
-      newState.showCreateAnotherButton;
+    newField['component-parameters'].hideCreateAnotherButton =
+      newState.hideCreateAnotherButton;
 
     updateField(fieldName, newField);
   };
@@ -215,19 +215,19 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={state.showCreateAnotherButton}
+                    checked={state.hideCreateAnotherButton}
                     onChange={e =>
                       updateProperty(
-                        'showCreateAnotherButton',
+                        'hideCreateAnotherButton',
                         e.target.checked
                       )
                     }
                   />
                 }
-                label="Show 'Create Another' button"
+                label="Hide the 'Create Another' Button"
               />
               <FormHelperText>
-                If <b>checked</b>, displays a button allowing users to quickly
+                If <b>unchecked</b>, displays a button allowing users to quickly
                 create another related record after saving one.
               </FormHelperText>
             </Grid>

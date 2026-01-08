@@ -29,7 +29,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Link,
   Paper,
   Stack,
   Typography,
@@ -223,7 +222,7 @@ export default function NoteBooks() {
     <Box component={Paper} elevation={0} p={2}>
       <Stack
         direction={isMobile ? 'column' : 'row'}
-        alignItems={isMobile ? 'flex-start' : 'center'}
+        alignItems={isMobile ? 'stretch' : 'center'}
         justifyContent={isMobile ? 'space-evenly' : 'space-between'}
         spacing={2}
         sx={{mt: 1, mb: 2}}
@@ -232,6 +231,7 @@ export default function NoteBooks() {
           <Button
             variant="contained"
             disabled={!showRefreshButton || doRefresh.isPending}
+            fullWidth={isMobile}
             sx={{backgroundColor: theme.palette.primary.main}}
             startIcon={<RefreshOutlined />}
             onClick={() => {
@@ -242,20 +242,19 @@ export default function NoteBooks() {
           </Button>
           {doRefresh.isPending && <CircularProgress size={24} />}
         </Stack>
-        <Link
-          component="button"
-          variant="body2"
+        <Button
+          variant="outlined"
+          size="small"
+          fullWidth={isMobile}
+          startIcon={<InfoOutlinedIcon fontSize="small" />}
           onClick={() => setInfoDialogOpen(true)}
           sx={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 0.5,
-            cursor: 'pointer',
+            textTransform: 'none',
+            fontSize: 'body2.fontSize',
           }}
         >
-          <InfoOutlinedIcon fontSize="small" />
           Learn more about activating {NOTEBOOK_NAME}s
-        </Link>
+        </Button>
       </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
         <Tabs
