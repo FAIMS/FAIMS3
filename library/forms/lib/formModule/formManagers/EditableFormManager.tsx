@@ -334,7 +334,6 @@ export const EditableFormManager: React.FC<
       });
     }
 
-    console.log('Setting pendingValuesRef.current to true');
     setIsSaving(true);
 
     try {
@@ -375,7 +374,6 @@ export const EditableFormManager: React.FC<
       }
 
       // Clear pending values since we've saved
-      console.log('Setting pendingValuesRef.current to false');
       pendingValuesRef.current = false;
     } catch (error) {
       console.error('Failed to update revision:', error);
@@ -386,7 +384,6 @@ export const EditableFormManager: React.FC<
         });
       }
     } finally {
-      console.log('Setting isSaving to false');
       setIsSaving(false);
     }
   }, [
@@ -1061,10 +1058,6 @@ export const EditableFormManager: React.FC<
     flushSave,
     hasPendingChanges,
   ]);
-
-  console.log(
-    `isSaving: ${isSaving}, pendingValuesRef: ${pendingValuesRef.current}`
-  );
 
   return (
     <Stack gap={2}>
