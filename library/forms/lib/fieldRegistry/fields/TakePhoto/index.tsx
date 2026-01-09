@@ -476,9 +476,8 @@ const PhotoGallery: React.FC<{
       result.push({type: 'pending', pending, tempId});
     }
 
-    // Add loaded photos in reverse order (newest first) But skip any that have
-    // a pending photo with matching attachmentId (to prevent duplicates during
-    // transition)
+    // Add loaded photos. But skip any that have a pending photo with matching
+    // attachmentId (to prevent duplicates during transition)
     const pendingAttachmentIds = new Set(
       Array.from(pendingPhotos.values())
         .map(p => p.attachmentId)
