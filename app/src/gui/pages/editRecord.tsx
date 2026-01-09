@@ -108,7 +108,9 @@ export const EditRecordPage = () => {
   if (!uiSpecificationId) return <></>;
   if (!recordId) return <div>Record ID not specified</div>;
 
-  const uiSpec = uiSpecificationId ? compiledSpecService.getSpec(uiSpecificationId) : undefined;
+  const uiSpec = uiSpecificationId
+    ? compiledSpecService.getSpec(uiSpecificationId)
+    : undefined;
   if (!uiSpec) return <div>UI Specification not found</div>;
 
   // These are handlers passed back from the editable form to assist with

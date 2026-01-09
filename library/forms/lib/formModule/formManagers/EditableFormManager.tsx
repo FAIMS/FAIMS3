@@ -993,8 +993,8 @@ export const EditableFormManager: React.FC<
             const normalisedRelationships = !relevantFieldValue
               ? []
               : Array.isArray(relevantFieldValue)
-              ? relevantFieldValue
-              : [relevantFieldValue];
+                ? relevantFieldValue
+                : [relevantFieldValue];
 
             // Update the data of the parent record
             parentFormData.data[head.fieldId].data = [

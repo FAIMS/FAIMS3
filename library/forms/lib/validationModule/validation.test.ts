@@ -240,7 +240,7 @@ describe('FormValidation', () => {
       ).toBeFalsy();
     });
   });
-  describe('form schema compilation and recompilation', () => {
+  (describe('form schema compilation and recompilation', () => {
     it('should compile schema', () => {
       FormValidation.compileFormSchema({
         uiSpec,
@@ -293,7 +293,7 @@ describe('FormValidation', () => {
 
         expect(typeof result.valid).toBe('boolean');
       });
-    });
+    }));
 
   describe('validateField', () => {
     it('should validate a single field successfully', () => {

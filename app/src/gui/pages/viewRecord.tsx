@@ -366,7 +366,9 @@ export const ViewRecordPage: React.FC = () => {
     return null;
   }
 
-  const uiSpecId = useAppSelector(state => selectProjectById(state, projectId)?.uiSpecificationId);
+  const uiSpecId = useAppSelector(
+    state => selectProjectById(state, projectId)?.uiSpecificationId
+  );
   if (!uiSpecId) {
     return null;
   }
