@@ -14,7 +14,7 @@ import {
   StorageMetadata,
   StoreAttachmentResult,
 } from './types';
-import {base64ToBlob, blobToBase64, fileToBase64} from './utils';
+import {base64ToBlob, fileToBase64} from './utils';
 
 // The default att- prefix
 export const ATTACHMENT_DEFAULT_PREFIX = 'att-';
