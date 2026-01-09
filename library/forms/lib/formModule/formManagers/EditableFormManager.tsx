@@ -9,7 +9,16 @@ import {
   getViewsetForField,
   HydratedRecordDocument,
 } from '@faims3/data-model';
-import {Alert, Grid, Snackbar, Stack, Typography} from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Grid,
+  Snackbar,
+  Stack,
+  Typography,
+} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
 import {debounce, DebouncedFunc} from 'lodash';
@@ -24,8 +33,7 @@ import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {getImpliedNavigationRelationships} from '../utils';
-import {FormManager} from './FormManager';
-import {FieldVisibilityMap} from './types';
+import {LiveFormProgress} from './components/FormProgress';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
   FormNavigationButtons,
@@ -33,35 +41,18 @@ import {
   ImpliedParentNavInfo,
   ParentNavInfo,
 } from './components/NavigationButtons';
+import {FormManager} from './FormManager';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
 } from './templatedFields';
 import {
+  FieldVisibilityMap,
   FormNavigationContext,
   FullFormConfig,
   FullFormManagerConfig,
 } from './types';
 import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
-import {LiveFormProgress} from './components/FormProgress';
-import {Box, CircularProgress} from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-
-function useWhyDidYouRender(name: string, props: Record<string, any>) {
-  const prev = useRef(props);
-  useEffect(() => {
-    const changes = Object.entries(props).filter(
-      ([key, val]) => prev.current[key] !== val
-    );
-    if (changes.length) {
-      console.log(
-        `[${name}] re-rendered because:`,
-        Object.fromEntries(changes)
-      );
-    }
-    prev.current = props;
-  });
-}
 
 /**
  * The validation modes:
@@ -136,7 +127,6 @@ export interface EditableFormManagerHandle {
 export const EditableFormManager: React.FC<
   EditableFormManagerProps
 > = props => {
-  useWhyDidYouRender('EditableFormManager', props);
   const {debugMode = false, onReady} = props;
 
   const [errorOpen, setErrorOpen] = useState<boolean>(false);
@@ -993,8 +983,8 @@ export const EditableFormManager: React.FC<
             const normalisedRelationships = !relevantFieldValue
               ? []
               : Array.isArray(relevantFieldValue)
-                ? relevantFieldValue
-                : [relevantFieldValue];
+              ? relevantFieldValue
+              : [relevantFieldValue];
 
             // Update the data of the parent record
             parentFormData.data[head.fieldId].data = [
