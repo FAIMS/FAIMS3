@@ -8,6 +8,7 @@ import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ImageIcon from '@mui/icons-material/Image';
+import SyncIcon from '@mui/icons-material/Sync';
 import {Alert, Box, Paper, Typography, useTheme} from '@mui/material';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -18,7 +19,7 @@ import IconButton from '@mui/material/IconButton';
 import ImageListItem from '@mui/material/ImageListItem';
 import ImageListItemBar from '@mui/material/ImageListItemBar';
 import {Buffer} from 'buffer';
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
@@ -34,6 +35,11 @@ import {
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+
+// Reduce image size by scaling down capacitor quality
+const IMAGE_QUALITY_0_100 = 60;
+const MAX_IMAGE_WIDTH = 1920;
+
 // Types & Schema
 // ============================================================================
 
@@ -43,6 +49,19 @@ type TakePhotoFieldProps = TakePhotoProps & FormFieldContextProps;
 
 interface FullTakePhotoFieldProps extends TakePhotoFieldProps {
   config: FullFormConfig;
+}
+
+/**
+ * Represents a photo that has been captured but not yet confirmed from the database.
+ * Used for optimistic UI updates to show photos immediately after capture.
+ */
+interface PendingPhoto {
+  /** The object URL for immediate display */
+  url: string;
+  /** The attachment ID assigned during storage (once known) */
+  attachmentId: string | null;
+  /** Timestamp for ordering */
+  capturedAt: number;
 }
 
 // ============================================================================
@@ -291,13 +310,77 @@ const PhotoItem: React.FC<{
 };
 
 /**
+ * Pending photo item - shows optimistic preview while saving to database.
+ * Displays a sync indicator overlay to show the photo is being processed.
+ */
+const PendingPhotoItem: React.FC<{
+  url: string;
+  onClick: () => void;
+}> = ({url, onClick}) => {
+  const theme = useTheme();
+
+  return (
+    <ImageItemContainer>
+      <Box
+        sx={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: theme.palette.grey[100],
+        }}
+      >
+        <Box
+          component="img"
+          src={url}
+          onClick={onClick}
+          alt="Saving photo..."
+          sx={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            cursor: 'pointer',
+          }}
+        />
+        {/* Saving indicator overlay */}
+        <ImageListItemBar
+          sx={{background: 'rgba(0, 0, 0, 0.7)'}}
+          position="top"
+          actionIcon={
+            <Box sx={{display: 'flex', alignItems: 'center', pr: 1}}>
+              <SyncIcon
+                sx={{
+                  color: 'white',
+                  fontSize: 20,
+                  animation: 'spin 1s linear infinite',
+                  '@keyframes spin': {
+                    '0%': {transform: 'rotate(0deg)'},
+                    '100%': {transform: 'rotate(360deg)'},
+                  },
+                }}
+              />
+              <Typography variant="caption" sx={{color: 'white', ml: 0.5}}>
+                Saving...
+              </Typography>
+            </Box>
+          }
+          actionPosition="right"
+        />
+      </Box>
+    </ImageItemContainer>
+  );
+};
+
+/**
  * Full-screen lightbox dialog for viewing photos at full size.
  * Opens when a user clicks on a photo thumbnail.
  */
 const Lightbox: React.FC<{
-  data: LoadedPhoto;
+  url: string;
   onClose: () => void;
-}> = ({data, onClose}) => {
+}> = ({url, onClose}) => {
   return (
     <Dialog
       open={true}
@@ -313,7 +396,7 @@ const Lightbox: React.FC<{
       <DialogContent sx={{p: 0, display: 'flex', justifyContent: 'center'}}>
         <Box
           component="img"
-          src={data.url}
+          src={url}
           alt="Full size preview"
           sx={{
             maxWidth: '100%',
@@ -327,27 +410,40 @@ const Lightbox: React.FC<{
 };
 
 /**
+ * Unified photo entry for the gallery - can be either a loaded photo or a pending one.
+ */
+type GalleryPhoto =
+  | {
+      type: 'loaded';
+      photo: useAttachmentsResult[number];
+      originalIndex: number;
+    }
+  | {
+      type: 'pending';
+      pending: PendingPhoto;
+      tempId: string;
+    };
+
+/**
  * Photo gallery component displaying all captured photos in a responsive grid.
  * Includes add photo button, delete confirmation, and lightbox functionality.
+ * Now supports optimistic display of pending photos.
  */
 const PhotoGallery: React.FC<{
   photos: useAttachmentsResult;
+  pendingPhotos: Map<string, PendingPhoto>;
   onDelete: (index: number) => void;
   onAddPhoto: () => void;
   disabled: boolean;
-}> = ({photos, onDelete, onAddPhoto, disabled}) => {
+}> = ({photos, pendingPhotos, onDelete, onAddPhoto, disabled}) => {
   const theme = useTheme();
 
   // Delete confirmation dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
 
-  // Lightbox state
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const lightboxData = lightboxImage
-    ? photos.find(p => p.data?.id === lightboxImage)
-    : undefined;
+  // Lightbox state - now stores URL directly to support both loaded and pending
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   // Handlers
   const handleDeleteClick = (index: number) => {
@@ -363,18 +459,43 @@ const PhotoGallery: React.FC<{
     setDeleteDialogOpen(false);
   };
 
-  const handleImageClick = (attachmentId: string) => {
-    setLightboxImage(attachmentId);
-    setLightboxOpen(true);
-  };
-
   const handleLightboxClose = () => {
-    setLightboxOpen(false);
-    setLightboxImage(null);
+    setLightboxUrl(null);
   };
 
-  // Reverse photos to show newest first
-  const displayPhotos = useMemo(() => [...photos].reverse(), [photos]);
+  // Build unified gallery list: pending photos first (newest), then loaded photos (newest first)
+  const galleryPhotos = useMemo((): GalleryPhoto[] => {
+    const result: GalleryPhoto[] = [];
+
+    // Add pending photos first (they're the newest), sorted by capture time descending
+    const pendingEntries = Array.from(pendingPhotos.entries()).sort(
+      ([, a], [, b]) => b.capturedAt - a.capturedAt
+    );
+
+    for (const [tempId, pending] of pendingEntries) {
+      result.push({type: 'pending', pending, tempId});
+    }
+
+    // Add loaded photos in reverse order (newest first) But skip any that have
+    // a pending photo with matching attachmentId (to prevent duplicates during
+    // transition)
+    const pendingAttachmentIds = new Set(
+      Array.from(pendingPhotos.values())
+        .map(p => p.attachmentId)
+        .filter((id): id is string => id !== null)
+    );
+
+    for (let i = 0; i < photos.length; i++) {
+      const photo = photos[i];
+      // Skip if this photo is still showing as pending
+      if (photo.data && pendingAttachmentIds.has(photo.data.id)) {
+        continue;
+      }
+      result.push({type: 'loaded', photo, originalIndex: i});
+    }
+
+    return result;
+  }, [photos, pendingPhotos]);
 
   return (
     <>
@@ -413,25 +534,39 @@ const PhotoGallery: React.FC<{
             </ImageItemContainer>
           )}
 
-          {/* Photo Grid */}
-          {displayPhotos.map((photo, displayIndex) => {
-            // Calculate original index (before reversal)
-            const originalIndex = photos.length - 1 - displayIndex;
+          {/* Photo Grid - unified pending + loaded */}
+          {galleryPhotos.map((entry, displayIndex) => {
+            if (entry.type === 'pending') {
+              return (
+                <PendingPhotoItem
+                  key={`pending-${entry.tempId}`}
+                  url={entry.pending.url}
+                  onClick={() => setLightboxUrl(entry.pending.url)}
+                />
+              );
+            }
+
+            // Loaded photo
+            const {photo, originalIndex} = entry;
 
             if (photo.isLoading) {
-              return <LoadingImagePlaceholder key={displayIndex} />;
+              return (
+                <LoadingImagePlaceholder key={`loading-${displayIndex}`} />
+              );
             }
 
             if (photo.isError || !photo.data) {
-              return <UnavailableImagePlaceholder key={displayIndex} />;
+              return (
+                <UnavailableImagePlaceholder key={`error-${displayIndex}`} />
+              );
             }
 
             return (
               <PhotoItem
-                key={displayIndex}
+                key={photo.data.id}
                 data={photo.data}
                 onDelete={() => handleDeleteClick(originalIndex)}
-                onClick={() => handleImageClick(photo.data.id)}
+                onClick={() => setLightboxUrl(photo.data.url)}
               />
             );
           })}
@@ -473,8 +608,8 @@ const PhotoGallery: React.FC<{
       </Dialog>
 
       {/* Lightbox */}
-      {lightboxOpen && lightboxImage && lightboxData?.data && (
-        <Lightbox onClose={handleLightboxClose} data={lightboxData.data} />
+      {lightboxUrl && (
+        <Lightbox url={lightboxUrl} onClose={handleLightboxClose} />
       )}
     </>
   );
@@ -488,6 +623,9 @@ const PhotoGallery: React.FC<{
  * Main TakePhoto component in full interactive mode.
  * Handles photo capture from device camera, geolocation tagging (native),
  * attachment storage, and gallery display.
+ *
+ * Uses optimistic UI updates to show photos immediately after capture,
+ * before the database write completes.
  */
 const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const {
@@ -505,6 +643,15 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const appName = props.config.appName;
   const [noPermission, setNoPermission] = useState(false);
 
+  // Optimistic photo display state
+  // Key is a temporary ID, value contains the blob URL and eventual attachment ID
+  const [pendingPhotos, setPendingPhotos] = useState<Map<string, PendingPhoto>>(
+    new Map()
+  );
+
+  // Track URLs that need cleanup on unmount
+  const pendingUrlsRef = useRef<Set<string>>(new Set());
+
   // Get attachment service (guaranteed to exist in full mode)
   const attachmentService = context.attachmentEngine();
 
@@ -514,10 +661,53 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     attachmentService
   );
 
+  // Effect to clean up pending photos once they appear in loadedPhotos
+  // This prevents flickering by keeping the optimistic preview until DB confirms
+  useEffect(() => {
+    const loadedIds = new Set(
+      loadedPhotos
+        .filter(p => p.data && !p.isLoading && !p.isError)
+        .map(p => p.data!.id)
+    );
+
+    setPendingPhotos(current => {
+      const updated = new Map(current);
+      let changed = false;
+
+      for (const [tempId, pending] of current) {
+        // Only remove if:
+        // 1. We have an attachmentId (storage completed)
+        // 2. That ID appears in successfully loaded photos
+        if (pending.attachmentId && loadedIds.has(pending.attachmentId)) {
+          // Clean up the object URL
+          URL.revokeObjectURL(pending.url);
+          pendingUrlsRef.current.delete(pending.url);
+          updated.delete(tempId);
+          changed = true;
+        }
+      }
+
+      return changed ? updated : current;
+    });
+  }, [loadedPhotos]);
+
+  // Cleanup all pending URLs on unmount
+  useEffect(() => {
+    return () => {
+      for (const url of pendingUrlsRef.current) {
+        URL.revokeObjectURL(url);
+      }
+      pendingUrlsRef.current.clear();
+    };
+  }, []);
+
   /**
    * Captures a photo from the device camera.
    * On native platforms, attempts to add geolocation EXIF data.
    * On web, uses base64 encoding for photo transfer.
+   *
+   * Uses optimistic updates to show the photo immediately while
+   * the database write happens in the background.
    */
   const takePhoto = useCallback(async () => {
     try {
@@ -544,17 +734,46 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
       // Capture photo
       const photoResult = await Camera.getPhoto({
-        quality: 90,
+        quality: IMAGE_QUALITY_0_100,
+        width: MAX_IMAGE_WIDTH,
         allowEditing: false,
         resultType: isWeb ? CameraResultType.Base64 : CameraResultType.Uri,
         correctOrientation: true,
         promptLabelHeader: 'Take or select a photo',
       });
 
-      let photoBlob: Blob;
+      // Generate temporary ID for optimistic display
+      const tempId = `temp-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}`;
+
+      let newId: string;
+      let optimisticUrl: string;
 
       if (isWeb) {
-        photoBlob = await base64ImageToBlob(photoResult);
+        // Web: create blob from base64 for optimistic display
+        const photoBlob = await base64ImageToBlob(photoResult);
+        optimisticUrl = URL.createObjectURL(photoBlob);
+        pendingUrlsRef.current.add(optimisticUrl);
+
+        // Show optimistic preview immediately
+        setPendingPhotos(current => {
+          const updated = new Map(current);
+          updated.set(tempId, {
+            url: optimisticUrl,
+            attachmentId: null,
+            capturedAt: Date.now(),
+          });
+          return updated;
+        });
+
+        // Now do the async storage
+        newId = await addAttachment({
+          contentType: `image/${photoResult.format}`,
+          type: 'photo',
+          fileFormat: photoResult.format,
+          base64: photoResult.base64String!,
+        });
       } else {
         // Native: attempt to add geolocation EXIF data
         try {
@@ -580,15 +799,41 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           throw new Error('Photo webPath is undefined');
         }
         const response = await fetch(photoResult.webPath);
-        photoBlob = await response.blob();
+        const photoBlob = await response.blob();
+
+        // Create optimistic display URL from the blob we already have
+        optimisticUrl = URL.createObjectURL(photoBlob);
+        pendingUrlsRef.current.add(optimisticUrl);
+
+        // Show optimistic preview immediately
+        setPendingPhotos(current => {
+          const updated = new Map(current);
+          updated.set(tempId, {
+            url: optimisticUrl,
+            attachmentId: null,
+            capturedAt: Date.now(),
+          });
+          return updated;
+        });
+
+        // Now do the async storage
+        newId = await addAttachment({
+          blob: photoBlob,
+          contentType: `image/${photoResult.format}`,
+          type: 'photo',
+          fileFormat: photoResult.format,
+        });
       }
 
-      // Call out to props to add attachment
-      const newId = await addAttachment({
-        blob: photoBlob,
-        contentType: `image/${photoResult.format}`,
-        type: 'photo',
-        fileFormat: photoResult.format,
+      // Update pending photo with the real attachment ID
+      // This allows the cleanup effect to know when to remove it
+      setPendingPhotos(current => {
+        const updated = new Map(current);
+        const pending = updated.get(tempId);
+        if (pending) {
+          updated.set(tempId, {...pending, attachmentId: newId});
+        }
+        return updated;
       });
 
       // Update field value
@@ -598,7 +843,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(err);
       console.error('Failed to capture photo:', err);
     }
-  }, [state.value, props.addAttachment, context]);
+  }, [state.value, addAttachment, context]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
@@ -613,6 +858,9 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     },
     [state.value, removeAttachment]
   );
+
+  // Determine if we have any photos to show (either pending or loaded)
+  const hasAnyPhotos = loadedPhotos.length > 0 || pendingPhotos.size > 0;
 
   return (
     <FieldWrapper
@@ -635,11 +883,12 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         {noPermission && <CameraPermissionIssue appName={appName} />}
 
         {/* Photo Display */}
-        {loadedPhotos.length === 0 ? (
+        {!hasAnyPhotos ? (
           <EmptyState onAddPhoto={takePhoto} disabled={disabled} />
         ) : (
           <PhotoGallery
             photos={loadedPhotos}
+            pendingPhotos={pendingPhotos}
             onDelete={handleDelete}
             onAddPhoto={takePhoto}
             disabled={disabled}

@@ -144,24 +144,11 @@ export class CouchAttachmentService extends BaseAttachmentService {
     metadata: StorageMetadata;
   }): Promise<StoreAttachmentResult> {
     const {blob, metadata} = params;
-
-    // Generate the att- ID
     const id = generateAttID();
 
-    // Convert blob to base64
-    const base64Data = await blobToBase64(blob);
-
-    // Build the attachments (pending - i.e. data directly in there)
-    const _attachments: {[key: string]: PendingAttachment} = {
-      [id]: {
-        content_type: metadata.attachmentDetails.contentType,
-        data: base64Data,
-      },
-    };
-
-    const attachmentDocument: NewPendingAttachmentDBDocument = {
+    // Create the document shell first (no attachment data)
+    const attachmentDocument: Omit<AttachmentDBDocument, '_attachments'> = {
       _id: id,
-      _attachments,
       record_id: metadata.recordContext.recordId,
       filename: metadata.attachmentDetails.filename,
       revision_id: metadata.recordContext.revisionId,
@@ -170,20 +157,21 @@ export class CouchAttachmentService extends BaseAttachmentService {
       attach_format_version: 1,
     };
 
-    // Now write it using special core op
-    try {
-      await this.core.createAttachment(attachmentDocument);
-    } catch (e) {
-      console.error(
-        'Failed to create attachment in couch DB attachment service. Error: ',
-        e
-      );
-      throw e;
-    }
+    // Create doc without attachment
+    const result = await this.core.db.put(attachmentDocument);
 
-    // Return info about the new document
+    // This attaches the document directly using the blob interface - more
+    // efficient
+    await this.core.db.putAttachment(
+      id,
+      id, // attachment name
+      result.rev,
+      blob,
+      metadata.attachmentDetails.contentType
+    );
+
     return {
-      identifier: {id: id, metadata: {}},
+      identifier: {id, metadata: {}},
       metadata: {
         contentType: metadata.attachmentDetails.contentType,
         filename: metadata.attachmentDetails.filename,

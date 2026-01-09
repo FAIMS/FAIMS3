@@ -67,7 +67,8 @@ export const Field = React.memo((props: FieldProps) => {
         const addAttachmentHandler =
           props.config.mode === 'full'
             ? async (params: {
-                blob: Blob;
+                blob?: Blob;
+                base64?: string;
                 contentType: string;
                 type: 'photo' | 'file';
                 fileFormat: string;

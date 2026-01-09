@@ -332,6 +332,14 @@ export interface DatabaseInterface<Content extends {} = {}> {
     options?: PouchDB.Core.PutOptions
   ): Promise<PouchDB.Core.Response>;
 
+  putAttachment(
+    docId: PouchDB.Core.DocumentId,
+    attachmentId: PouchDB.Core.AttachmentId,
+    rev: PouchDB.Core.RevisionId,
+    attachment: PouchDB.Core.AttachmentData,
+    type: string
+  ): Promise<PouchDB.Core.Response>;
+
   post<Model>(
     doc: PouchDB.Core.PostDocument<Content & Model>,
     options?: PouchDB.Core.Options
