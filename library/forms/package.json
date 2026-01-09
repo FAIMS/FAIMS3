@@ -58,7 +58,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "madge": "^8.0.0",
     "@eslint/js": "^9.36.0",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/react": "^16.3.0",
@@ -73,6 +72,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.32.2",
     "globals": "^16.4.0",
+    "madge": "^8.0.0",
     "ol": "^10.3.1",
     "ol-mapbox-style": "^12.5.0",
     "typescript": "^5.9.2",

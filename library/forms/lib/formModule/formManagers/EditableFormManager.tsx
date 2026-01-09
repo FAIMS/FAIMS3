@@ -47,6 +47,22 @@ import {LiveFormProgress} from './components/FormProgress';
 import {Box, CircularProgress} from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 
+function useWhyDidYouRender(name: string, props: Record<string, any>) {
+  const prev = useRef(props);
+  useEffect(() => {
+    const changes = Object.entries(props).filter(
+      ([key, val]) => prev.current[key] !== val
+    );
+    if (changes.length) {
+      console.log(
+        `[${name}] re-rendered because:`,
+        Object.fromEntries(changes)
+      );
+    }
+    prev.current = props;
+  });
+}
+
 /**
  * The validation modes:
  *
@@ -120,6 +136,7 @@ export interface EditableFormManagerHandle {
 export const EditableFormManager: React.FC<
   EditableFormManagerProps
 > = props => {
+  useWhyDidYouRender('EditableFormManager', props);
   const {debugMode = false, onReady} = props;
 
   const [errorOpen, setErrorOpen] = useState<boolean>(false);
@@ -167,7 +184,7 @@ export const EditableFormManager: React.FC<
 
   // Track pending save state for flush functionality
   const pendingValuesRef = useRef<boolean>(false);
-  const isSavingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Determine information about parent context, if necessary
   const parentNavigationInformation = useQuery({
@@ -327,7 +344,8 @@ export const EditableFormManager: React.FC<
       });
     }
 
-    isSavingRef.current = true;
+    console.log('Setting pendingValuesRef.current to true');
+    setIsSaving(true);
 
     try {
       // Updating data
@@ -367,6 +385,7 @@ export const EditableFormManager: React.FC<
       }
 
       // Clear pending values since we've saved
+      console.log('Setting pendingValuesRef.current to false');
       pendingValuesRef.current = false;
     } catch (error) {
       console.error('Failed to update revision:', error);
@@ -377,7 +396,8 @@ export const EditableFormManager: React.FC<
         });
       }
     } finally {
-      isSavingRef.current = false;
+      console.log('Setting isSaving to false');
+      setIsSaving(false);
     }
   }, [
     debugMode,
@@ -448,7 +468,7 @@ export const EditableFormManager: React.FC<
       console.log('[EditableFormManager] onChange triggered', {
         timestamp: new Date().toISOString(),
         hasPendingValues: pendingValuesRef.current,
-        isSaving: isSavingRef.current,
+        isSaving,
       });
     }
 
@@ -473,7 +493,7 @@ export const EditableFormManager: React.FC<
       console.log('[EditableFormManager] flushSave called', {
         timestamp: new Date().toISOString(),
         hasPendingValues: pendingValuesRef.current,
-        isSaving: isSavingRef.current,
+        isSaving,
       });
     }
 
@@ -490,7 +510,7 @@ export const EditableFormManager: React.FC<
     }
 
     // Wait for any in-flight save to complete
-    while (isSavingRef.current) {
+    while (isSaving) {
       if (debugMode) {
         console.log('[EditableFormManager] Waiting for in-flight save...');
       }
@@ -506,8 +526,8 @@ export const EditableFormManager: React.FC<
    * Check if there are unsaved changes pending.
    */
   const hasPendingChanges = useCallback((): boolean => {
-    return pendingValuesRef.current || isSavingRef.current;
-  }, [pendingValuesRef.current, isSavingRef.current]);
+    return pendingValuesRef.current || isSaving;
+  }, [pendingValuesRef.current, isSaving]);
 
   const validationFunction = useCallback(
     (value: FaimsFormData) => {
@@ -973,8 +993,8 @@ export const EditableFormManager: React.FC<
             const normalisedRelationships = !relevantFieldValue
               ? []
               : Array.isArray(relevantFieldValue)
-                ? relevantFieldValue
-                : [relevantFieldValue];
+              ? relevantFieldValue
+              : [relevantFieldValue];
 
             // Update the data of the parent record
             parentFormData.data[head.fieldId].data = [
@@ -1052,6 +1072,10 @@ export const EditableFormManager: React.FC<
     hasPendingChanges,
   ]);
 
+  console.log(
+    `isSaving: ${isSaving}, pendingValuesRef: ${pendingValuesRef.current}`
+  );
+
   return (
     <Stack gap={2}>
       {
@@ -1108,7 +1132,7 @@ export const EditableFormManager: React.FC<
               gap: 0.5,
             }}
           >
-            {isSavingRef.current || pendingValuesRef.current ? (
+            {isSaving || pendingValuesRef.current ? (
               <>
                 <CircularProgress size={14} color="inherit" />
                 <Typography variant="body2" color="text.secondary">

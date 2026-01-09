@@ -366,12 +366,11 @@ export const ViewRecordPage: React.FC = () => {
     return null;
   }
 
-  const project = useAppSelector(state => selectProjectById(state, projectId));
-  if (!project) {
+  const uiSpecId = useAppSelector(state => selectProjectById(state, projectId)?.uiSpecificationId);
+  if (!uiSpecId) {
     return null;
   }
 
-  const {uiSpecificationId: uiSpecId} = project;
   const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
   if (!uiSpec) {
     return <div>UI Specification not found</div>;
