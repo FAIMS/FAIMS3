@@ -679,8 +679,12 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
     visibleSections = sections;
   } else {
     const visibleViews = Object.keys(fieldVisibilityMap);
-    visibleSections = sections.filter(sectionId =>
-      visibleViews.includes(sectionId)
+    visibleSections = sections.filter(
+      sectionId =>
+        // Must be present in the visibility map and have at least one visible
+        // field
+        visibleViews.includes(sectionId) &&
+        fieldVisibilityMap[sectionId].length > 0
     );
   }
 
