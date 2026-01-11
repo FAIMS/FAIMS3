@@ -23,12 +23,13 @@ import {
 import {grey} from '@mui/material/colors';
 import 'animate.css';
 import moment from 'moment';
-import React, {useMemo} from 'react';
-import {
-  Project,
-  selectActiveServerProjects,
-} from '../context/slices/projectSlice';
+import React, {useCallback, useEffect, useState} from 'react';
+import {syncStateService} from '../context/slices/helpers/syncStateService';
+import {selectActiveServerProjects} from '../context/slices/projectSlice';
 import {useAppSelector} from '../context/store';
+
+const POLL_INTERVAL_MS = 1000;
+const LAST_SYNC_FORMAT = 'MMMM Do YYYY, LTS';
 
 // Aggregate status type
 interface AggregatedSyncStatus {
@@ -53,12 +54,14 @@ interface AggregatedSyncStatus {
 }
 
 /**
- * Aggregates sync status from multiple projects
+ * Aggregates sync status from the sync state service
  *
  * @param projects List of active projects to check
  * @returns Aggregated sync status
  */
-const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
+const aggregateSyncStatus = (
+  projects: {projectId: string; serverId: string; isActivated: boolean}[]
+): AggregatedSyncStatus => {
   // Default state when no projects are active
   if (!projects || projects.length === 0) {
     return {
@@ -86,12 +89,16 @@ const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
 
   // Process each project
   for (const project of projects) {
-    // Skip if project isn't activated or doesn't have remote connection
-    if (!project.isActivated || !project.database?.remote?.syncState) {
-      continue;
-    }
+    // Skip if project isn't activated
+    if (!project.isActivated) continue;
 
-    const syncState = project.database.remote.syncState;
+    // Read directly from the service instead of Redux
+    const syncState = syncStateService.getSyncState(
+      project.serverId,
+      project.projectId
+    );
+    if (!syncState) continue;
+
     activeProjectCount++;
 
     // Track the most recent update across all projects
@@ -135,8 +142,7 @@ const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
   }
 
   // Determine the overall status (prioritize errors)
-  let overallStatus: 'initial' | 'active' | 'paused' | 'error' | 'denied' =
-    'initial';
+  let overallStatus: AggregatedSyncStatus['status'] = 'initial';
 
   if (hasError) {
     overallStatus = 'error';
@@ -161,29 +167,57 @@ const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
   };
 };
 
+/**
+ * Hook to poll sync state only when active
+ *
+ * @param projects List of projects to monitor
+ * @param isPolling Whether polling should be active
+ * @returns Aggregated sync status
+ */
+function usePollSyncStatus(
+  projects: {projectId: string; serverId: string; isActivated: boolean}[],
+  isPolling: boolean
+): AggregatedSyncStatus {
+  const [aggregatedStatus, setAggregatedStatus] =
+    useState<AggregatedSyncStatus>(() => aggregateSyncStatus(projects));
+
+  const refresh = useCallback(() => {
+    console.log('Refreshing sync status aggregation');
+    setAggregatedStatus(aggregateSyncStatus(projects));
+  }, [projects]);
+
+  useEffect(() => {
+    if (!isPolling) return;
+
+    // Refresh immediately when we start polling
+    refresh();
+
+    const interval = setInterval(refresh, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isPolling, refresh]);
+
+  return aggregatedStatus;
+}
+
 export default function SyncStatus() {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
   // Get all projects for the active server
   const activeServerProjects = useAppSelector(selectActiveServerProjects);
 
-  // Compute aggregated sync status
-  const aggregatedStatus = useMemo(
-    () => aggregateSyncStatus(activeServerProjects),
-    [activeServerProjects]
-  );
+  // Only poll when the popover is open
+  const aggregatedStatus = usePollSyncStatus(activeServerProjects, open);
 
   const {status, isSyncingUp, isSyncingDown, isSyncError, lastUpdated} =
     aggregatedStatus;
 
-  const LAST_SYNC_FORMAT = 'MMMM Do YYYY, LTS';
   const lastUpdatedDisplay = moment(lastUpdated).format(LAST_SYNC_FORMAT);
-
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(anchorEl ? null : event.currentTarget);
   };
 
-  const open = Boolean(anchorEl);
   const id = open ? 'simple-popper' : undefined;
 
   // Generate status message based on current state
