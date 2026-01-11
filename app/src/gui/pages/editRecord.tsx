@@ -18,7 +18,7 @@ import {
 } from '@faims3/forms';
 import {CircularProgress, Stack, Typography} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   useBlocker,
   useLocation,
@@ -102,12 +102,15 @@ export const EditRecordPage = () => {
   // TODO: these missing info checks should probably just redirect back to the home page
   //  maybe with a flash message.
   if (!serverId || !projectId) return <></>;
-  const project = useAppSelector(state => selectProjectById(state, projectId));
-  if (!project) return <></>;
+  const uiSpecificationId = useAppSelector(
+    state => selectProjectById(state, projectId)?.uiSpecificationId
+  );
+  if (!uiSpecificationId) return <></>;
   if (!recordId) return <div>Record ID not specified</div>;
 
-  const {uiSpecificationId: uiSpecId} = project;
-  const uiSpec = uiSpecId ? compiledSpecService.getSpec(uiSpecId) : undefined;
+  const uiSpec = uiSpecificationId
+    ? compiledSpecService.getSpec(uiSpecificationId)
+    : undefined;
   if (!uiSpec) return <div>UI Specification not found</div>;
 
   // These are handlers passed back from the editable form to assist with
@@ -195,118 +198,139 @@ export const EditRecordPage = () => {
     onIssue: handleAutoIncrementIssue,
   });
 
-  const formConfig: FullFormConfig = {
-    mode: 'full' as const,
-    platform: CAPACITOR_PLATFORM,
-    appName: APP_NAME,
-    recordId,
-    recordMode: mode,
-    dataEngine,
-    attachmentEngine,
-    mapConfig: getMapConfig,
-    navigation: {
-      navigateToRecordList: {
-        label: 'Return to record list',
-        navigate: () => {
-          navigate(getNotebookRoute({serverId, projectId}));
-        },
-      },
-      // Takes you back to view record (note this is only shown if there are no
-      // parent navigation history)
-      navigateToViewRecord: params => {
-        navigate(
-          getViewRecordRoute({projectId, recordId: params.recordId, serverId})
-        );
-      },
-      toRecord: ({
-        recordId: targetRecordId,
-        mode,
-        stripNavigationEntry,
-        addNavigationEntry,
-        scrollTarget,
-      }: {
-        recordId: RecordID;
-        mode: AvpUpdateMode;
-        // If you want to push another navigation entry
-        addNavigationEntry?: FormNavigationChildEntry;
-        // If you want to strip the head nav entry (such as when returning to
-        // parent) - how many to take
-        stripNavigationEntry?: number;
-        scrollTarget?: RedirectInfo;
-      }) => {
-        let newNavState: FormNavigationContext = navigationContext;
-        if (newNavState.mode === 'root') {
-          // If in root mode, stripping has no effect, but we can add
-          if (addNavigationEntry !== undefined) {
-            newNavState = {mode: 'child', lineage: [addNavigationEntry]};
-          }
-        } else if (newNavState.mode === 'child') {
-          if (stripNavigationEntry !== undefined) {
-            // Strip off the latest entry
-            newNavState.lineage = newNavState.lineage.slice(
-              0,
-              -stripNavigationEntry
+  const formConfig: FullFormConfig = useMemo(
+    () => {
+      return {
+        mode: 'full' as const,
+        platform: CAPACITOR_PLATFORM,
+        appName: APP_NAME,
+        recordId,
+        recordMode: mode,
+        dataEngine,
+        attachmentEngine,
+        mapConfig: getMapConfig,
+        navigation: {
+          navigateToRecordList: {
+            label: 'Return to record list',
+            navigate: () => {
+              navigate(getNotebookRoute({serverId, projectId}));
+            },
+          },
+          // Takes you back to view record (note this is only shown if there are no
+          // parent navigation history)
+          navigateToViewRecord: params => {
+            navigate(
+              getViewRecordRoute({
+                projectId,
+                recordId: params.recordId,
+                serverId,
+              })
             );
-          }
-          if (addNavigationEntry !== undefined) {
-            // Push new entry
-            newNavState.lineage.push(addNavigationEntry);
-          }
-        }
-
-        // Update scroll target as requested
-        newNavState.scrollTarget = scrollTarget;
-
-        navigate(
-          getEditRecordRoute({
-            serverId,
-            projectId,
+          },
+          toRecord: ({
             recordId: targetRecordId,
             mode,
-          }),
-          // Include navigation state
-          {state: newNavState}
-        );
-      },
-      getToRecordLink(params) {
-        return getEditRecordRoute({
-          serverId,
-          projectId,
-          recordId: params.recordId,
-          mode,
-        });
-      },
-      navigateToLink(to) {
-        navigate(to);
-      },
+            stripNavigationEntry,
+            addNavigationEntry,
+            scrollTarget,
+          }: {
+            recordId: RecordID;
+            mode: AvpUpdateMode;
+            // If you want to push another navigation entry
+            addNavigationEntry?: FormNavigationChildEntry;
+            // If you want to strip the head nav entry (such as when returning to
+            // parent) - how many to take
+            stripNavigationEntry?: number;
+            scrollTarget?: RedirectInfo;
+          }) => {
+            let newNavState: FormNavigationContext = navigationContext;
+            if (newNavState.mode === 'root') {
+              // If in root mode, stripping has no effect, but we can add
+              if (addNavigationEntry !== undefined) {
+                newNavState = {mode: 'child', lineage: [addNavigationEntry]};
+              }
+            } else if (newNavState.mode === 'child') {
+              if (stripNavigationEntry !== undefined) {
+                // Strip off the latest entry
+                newNavState.lineage = newNavState.lineage.slice(
+                  0,
+                  -stripNavigationEntry
+                );
+              }
+              if (addNavigationEntry !== undefined) {
+                // Push new entry
+                newNavState.lineage.push(addNavigationEntry);
+              }
+            }
+
+            // Update scroll target as requested
+            newNavState.scrollTarget = scrollTarget;
+
+            navigate(
+              getEditRecordRoute({
+                serverId,
+                projectId,
+                recordId: targetRecordId,
+                mode,
+              }),
+              // Include navigation state
+              {state: newNavState}
+            );
+          },
+          getToRecordLink(params) {
+            return getEditRecordRoute({
+              serverId,
+              projectId,
+              recordId: params.recordId,
+              mode,
+            });
+          },
+          navigateToLink(to) {
+            navigate(to);
+          },
+        },
+        user: activeUser.username,
+        // Pass through the layout from the spec
+        layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
+        // Pass in the incrementer service
+        incrementerService,
+      };
     },
-    user: activeUser.username,
-    // Pass through the layout from the spec
-    layout: relevantUiSpec.data?.layout ?? DEFAULT_LAYOUT,
-    // Pass in the incrementer service
-    incrementerService,
-  };
+    // Be more careful with dependencies here to avoid unnecessary re-renders of
+    // the editable form
+    [
+      serverId,
+      navigationContext,
+      projectId,
+      recordId,
+      mode,
+      activeUser.username,
+      relevantUiSpec.data,
+    ]
+  );
 
   const formLabel = formData
     ? uiSpec.viewsets[formData.formId]?.label
     : undefined;
 
-  const headingSlot: React.ReactNode | undefined = formData ? (
-    <Stack spacing={1}>
-      <Typography variant="h3">
-        {mode === 'new' ? 'Creating' : 'Editing'}
-        {': '}
-        {formLabel ?? formData.formId}
-      </Typography>
-      {mode === 'parent' && (
-        <Typography variant="h4" color={theme.palette.text.secondary}>
-          {mode === 'parent'
-            ? formData.context.hrid
-            : formData.context.record._id}
+  const headingSlot: React.ReactNode | undefined = useMemo(() => {
+    return formData ? (
+      <Stack spacing={1}>
+        <Typography variant="h3">
+          {mode === 'new' ? 'Creating' : 'Editing'}
+          {': '}
+          {formLabel ?? formData.formId}
         </Typography>
-      )}
-    </Stack>
-  ) : undefined;
+        {mode === 'parent' && (
+          <Typography variant="h4" color={theme.palette.text.secondary}>
+            {mode === 'parent'
+              ? formData.context.hrid
+              : formData.context.record._id}
+          </Typography>
+        )}
+      </Stack>
+    ) : undefined;
+  }, [!!formData]);
 
   return (
     <div>

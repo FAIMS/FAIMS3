@@ -9,7 +9,16 @@ import {
   getViewsetForField,
   HydratedRecordDocument,
 } from '@faims3/data-model';
-import {Alert, Grid, Snackbar, Stack, Typography} from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
+import {
+  Alert,
+  Box,
+  CircularProgress,
+  Grid,
+  Snackbar,
+  Stack,
+  Typography,
+} from '@mui/material';
 import {useForm} from '@tanstack/react-form';
 import {useQuery} from '@tanstack/react-query';
 import {debounce, DebouncedFunc} from 'lodash';
@@ -24,8 +33,7 @@ import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {getImpliedNavigationRelationships} from '../utils';
-import {FormManager} from './FormManager';
-import {FieldVisibilityMap} from './types';
+import {LiveFormProgress} from './components/FormProgress';
 import {FormBreadcrumbs} from './components/NavigationBreadcrumbs';
 import {
   FormNavigationButtons,
@@ -33,19 +41,18 @@ import {
   ImpliedParentNavInfo,
   ParentNavInfo,
 } from './components/NavigationButtons';
+import {FormManager} from './FormManager';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
 } from './templatedFields';
 import {
+  FieldVisibilityMap,
   FormNavigationContext,
   FullFormConfig,
   FullFormManagerConfig,
 } from './types';
 import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
-import {LiveFormProgress} from './components/FormProgress';
-import {Box, CircularProgress} from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
 
 /**
  * The validation modes:
@@ -167,7 +174,7 @@ export const EditableFormManager: React.FC<
 
   // Track pending save state for flush functionality
   const pendingValuesRef = useRef<boolean>(false);
-  const isSavingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Determine information about parent context, if necessary
   const parentNavigationInformation = useQuery({
@@ -327,7 +334,7 @@ export const EditableFormManager: React.FC<
       });
     }
 
-    isSavingRef.current = true;
+    setIsSaving(true);
 
     try {
       // Updating data
@@ -377,7 +384,7 @@ export const EditableFormManager: React.FC<
         });
       }
     } finally {
-      isSavingRef.current = false;
+      setIsSaving(false);
     }
   }, [
     debugMode,
@@ -448,7 +455,7 @@ export const EditableFormManager: React.FC<
       console.log('[EditableFormManager] onChange triggered', {
         timestamp: new Date().toISOString(),
         hasPendingValues: pendingValuesRef.current,
-        isSaving: isSavingRef.current,
+        isSaving,
       });
     }
 
@@ -473,7 +480,7 @@ export const EditableFormManager: React.FC<
       console.log('[EditableFormManager] flushSave called', {
         timestamp: new Date().toISOString(),
         hasPendingValues: pendingValuesRef.current,
-        isSaving: isSavingRef.current,
+        isSaving,
       });
     }
 
@@ -490,7 +497,7 @@ export const EditableFormManager: React.FC<
     }
 
     // Wait for any in-flight save to complete
-    while (isSavingRef.current) {
+    while (isSaving) {
       if (debugMode) {
         console.log('[EditableFormManager] Waiting for in-flight save...');
       }
@@ -506,8 +513,8 @@ export const EditableFormManager: React.FC<
    * Check if there are unsaved changes pending.
    */
   const hasPendingChanges = useCallback((): boolean => {
-    return pendingValuesRef.current || isSavingRef.current;
-  }, [pendingValuesRef.current, isSavingRef.current]);
+    return pendingValuesRef.current || isSaving;
+  }, [pendingValuesRef.current, isSaving]);
 
   const validationFunction = useCallback(
     (value: FaimsFormData) => {
@@ -973,8 +980,8 @@ export const EditableFormManager: React.FC<
             const normalisedRelationships = !relevantFieldValue
               ? []
               : Array.isArray(relevantFieldValue)
-                ? relevantFieldValue
-                : [relevantFieldValue];
+              ? relevantFieldValue
+              : [relevantFieldValue];
 
             // Update the data of the parent record
             parentFormData.data[head.fieldId].data = [
@@ -1108,7 +1115,7 @@ export const EditableFormManager: React.FC<
               gap: 0.5,
             }}
           >
-            {isSavingRef.current || pendingValuesRef.current ? (
+            {isSaving || pendingValuesRef.current ? (
               <>
                 <CircularProgress size={14} color="inherit" />
                 <Typography variant="body2" color="text.secondary">
