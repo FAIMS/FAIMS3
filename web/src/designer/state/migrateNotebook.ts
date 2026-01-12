@@ -404,7 +404,7 @@ const removeValidationSchema = (notebook: Notebook) => {
 
 /**
  * Migrate simple text fields to FAIMSTextField
- * 
+ *
  *   TextField: {
  *  'component-namespace': 'formik-material-ui',
  *  'component-name': 'TextField',
