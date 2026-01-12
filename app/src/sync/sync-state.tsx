@@ -1,5 +1,3 @@
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import CloudIcon from '@mui/icons-material/Cloud';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
@@ -10,7 +8,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Grid,
   Paper,
   Popper,
   Table,
@@ -21,14 +18,14 @@ import {
   Typography,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
-import 'animate.css';
 import moment from 'moment';
-import React, {useMemo} from 'react';
-import {
-  Project,
-  selectActiveServerProjects,
-} from '../context/slices/projectSlice';
+import React, {useCallback, useEffect, useState} from 'react';
+import {syncStateService} from '../context/slices/helpers/syncStateService';
+import {selectActiveServerProjects} from '../context/slices/projectSlice';
 import {useAppSelector} from '../context/store';
+
+const POLL_INTERVAL_MS = 1000;
+const LAST_SYNC_FORMAT = 'MMMM Do YYYY, LTS';
 
 // Aggregate status type
 interface AggregatedSyncStatus {
@@ -53,12 +50,14 @@ interface AggregatedSyncStatus {
 }
 
 /**
- * Aggregates sync status from multiple projects
+ * Aggregates sync status from the sync state service
  *
  * @param projects List of active projects to check
  * @returns Aggregated sync status
  */
-const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
+const aggregateSyncStatus = (
+  projects: {projectId: string; serverId: string; isActivated: boolean}[]
+): AggregatedSyncStatus => {
   // Default state when no projects are active
   if (!projects || projects.length === 0) {
     return {
@@ -86,12 +85,16 @@ const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
 
   // Process each project
   for (const project of projects) {
-    // Skip if project isn't activated or doesn't have remote connection
-    if (!project.isActivated || !project.database?.remote?.syncState) {
-      continue;
-    }
+    // Skip if project isn't activated
+    if (!project.isActivated) continue;
 
-    const syncState = project.database.remote.syncState;
+    // Read directly from the service instead of Redux
+    const syncState = syncStateService.getSyncState(
+      project.serverId,
+      project.projectId
+    );
+    if (!syncState) continue;
+
     activeProjectCount++;
 
     // Track the most recent update across all projects
@@ -135,8 +138,7 @@ const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
   }
 
   // Determine the overall status (prioritize errors)
-  let overallStatus: 'initial' | 'active' | 'paused' | 'error' | 'denied' =
-    'initial';
+  let overallStatus: AggregatedSyncStatus['status'] = 'initial';
 
   if (hasError) {
     overallStatus = 'error';
@@ -161,29 +163,56 @@ const aggregateSyncStatus = (projects: Project[]): AggregatedSyncStatus => {
   };
 };
 
+/**
+ * Hook to poll sync state only when active
+ *
+ * @param projects List of projects to monitor
+ * @param isPolling Whether polling should be active
+ * @returns Aggregated sync status
+ */
+function usePollSyncStatus(
+  projects: {projectId: string; serverId: string; isActivated: boolean}[],
+  isPolling: boolean
+): AggregatedSyncStatus {
+  const [aggregatedStatus, setAggregatedStatus] =
+    useState<AggregatedSyncStatus>(() => aggregateSyncStatus(projects));
+
+  const refresh = useCallback(() => {
+    setAggregatedStatus(aggregateSyncStatus(projects));
+  }, [projects]);
+
+  useEffect(() => {
+    if (!isPolling) return;
+
+    // Refresh immediately when we start polling
+    refresh();
+
+    const interval = setInterval(refresh, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isPolling, refresh]);
+
+  return aggregatedStatus;
+}
+
 export default function SyncStatus() {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
   // Get all projects for the active server
   const activeServerProjects = useAppSelector(selectActiveServerProjects);
 
-  // Compute aggregated sync status
-  const aggregatedStatus = useMemo(
-    () => aggregateSyncStatus(activeServerProjects),
-    [activeServerProjects]
-  );
+  // Only poll when the popover is open
+  const aggregatedStatus = usePollSyncStatus(activeServerProjects, open);
 
   const {status, isSyncingUp, isSyncingDown, isSyncError, lastUpdated} =
     aggregatedStatus;
 
-  const LAST_SYNC_FORMAT = 'MMMM Do YYYY, LTS';
   const lastUpdatedDisplay = moment(lastUpdated).format(LAST_SYNC_FORMAT);
-
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(anchorEl ? null : event.currentTarget);
   };
 
-  const open = Boolean(anchorEl);
   const id = open ? 'simple-popper' : undefined;
 
   // Generate status message based on current state
@@ -219,87 +248,46 @@ export default function SyncStatus() {
     }
   };
 
+  // Render the appropriate cloud icon based on sync state
+  const renderCloudIcon = () => {
+    if (isSyncError) {
+      return (
+        <Box display="flex" alignItems="center">
+          <CloudOffIcon sx={{color: 'primary.main'}} />
+          <ErrorIcon
+            sx={{fontSize: '16px', ml: -0.5, mt: -1.5}}
+            color="warning"
+          />
+        </Box>
+      );
+    } else if (isSyncingUp || isSyncingDown) {
+      return <CloudIcon sx={{color: 'primary.main'}} />;
+    } else {
+      return <CloudQueueIcon sx={{color: 'primary.main'}} />;
+    }
+  };
+
   return (
     <React.Fragment>
       <Button
         aria-describedby={id}
         variant="text"
-        type={'button'}
+        type="button"
         onClick={handleClick}
-        sx={{p: 0}}
+        sx={{p: 0, minWidth: 'auto'}}
       >
         <Box
           sx={{
+            display: 'flex',
             justifyContent: 'center',
-            position: 'relative',
-            display: ' inline-flex',
             alignItems: 'center',
-            verticalAlign: 'middle',
             mx: 2,
-            width: '40px',
           }}
         >
-          <Box display="flex" justifyContent="center" sx={{height: '100%'}}>
-            {isSyncError ? (
-              <React.Fragment>
-                <CloudOffIcon
-                  style={{marginLeft: '11px'}}
-                  sx={{color: 'primary'}}
-                />
-                <ErrorIcon
-                  style={{fontSize: '20px', marginTop: '-5px'}}
-                  color={'warning'}
-                />
-              </React.Fragment>
-            ) : isSyncingUp || isSyncingDown ? (
-              <CloudIcon sx={{color: 'primary'}} />
-            ) : (
-              <CloudQueueIcon sx={{color: 'primary'}} />
-            )}
-          </Box>
-          {!isSyncError ? (
-            <Grid
-              container
-              style={{
-                marginLeft: '-32px',
-                maxHeight: '64px',
-                marginBottom: '-3px',
-              }}
-              spacing={0}
-            >
-              <Grid item xs={12}>
-                <Box display="flex" justifyContent="center">
-                  <ArrowDropUpIcon
-                    sx={{fontSize: '32px'}}
-                    color={!isSyncingUp ? 'disabled' : 'warning'}
-                    className={
-                      isSyncingUp
-                        ? 'animate__animated animate__flash animate__slow animate__infinite'
-                        : ''
-                    }
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Box display="flex" justifyContent="center">
-                  <ArrowDropDownIcon
-                    sx={{fontSize: '32px'}}
-                    color={!isSyncingDown ? 'disabled' : 'warning'}
-                    className={
-                      isSyncingDown
-                        ? 'animate__animated animate__flash animate__slow animate__infinite'
-                        : ''
-                    }
-                  />
-                </Box>
-              </Grid>
-            </Grid>
-          ) : (
-            ''
-          )}
+          {renderCloudIcon()}
         </Box>
       </Button>
-      <Popper id={id} open={open} anchorEl={anchorEl}>
+      <Popper id={id} open={open} anchorEl={anchorEl} sx={{zIndex: 1300}}>
         <Card variant="outlined">
           <CardContent sx={{p: 0, paddingBottom: '0 !important'}}>
             <CardHeader
