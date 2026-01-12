@@ -14,7 +14,7 @@ import {
   PayloadAction,
 } from '@reduxjs/toolkit';
 import {CONDUCTOR_URLS} from '../../buildconfig';
-import {AppDispatch, RootState, store} from '../store';
+import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
 import {
@@ -30,6 +30,7 @@ import {
 } from './helpers/databaseHelpers';
 import {databaseService} from './helpers/databaseService';
 import {PouchDBWrapper} from './helpers/pouchDBWrapper';
+import {syncStateService} from './helpers/syncStateService';
 
 // TYPES
 // =====
@@ -63,28 +64,6 @@ export interface DatabaseConnectionConfig extends DatabaseAuth {
 }
 
 /**
- * Represents the current state of a PouchDB sync operation
- */
-export interface SyncState {
-  /** Current status of the sync operation */
-  status: 'initial' | 'active' | 'paused' | 'error' | 'denied';
-  /** Timestamp of the last status update */
-  lastUpdated: number;
-  /** Number of records pending sync */
-  pendingRecords: number;
-  /** Error message if status is 'error' or 'denied' */
-  errorMessage?: string;
-  /** Error object if status is 'error' or 'denied' */
-  isError?: boolean;
-  /** Stats from the most recent change event */
-  lastChangeStats?: {
-    docsRead: number;
-    docsWritten: number;
-    direction: 'push' | 'pull';
-  };
-}
-
-/**
  * This manages a remote couch connection - a remote connection is a combination
  * of the remote database ID (see databaseService to retrieve it), the sync
  * object (which is only instantiated/active if isSyncing = true)
@@ -95,8 +74,6 @@ export interface RemoteCouchConnection {
   // The sync object ID - use databaseService to fetch - can be undefined if
   // isSyncing = false
   syncId: string | undefined;
-  // Sync state
-  syncState: SyncState;
   // The configuration for the remote connection e.g. auth, endpoint etc
   connectionConfiguration: DatabaseConnectionConfig;
 }
@@ -436,6 +413,9 @@ const projectsSlice = createSlice({
         compiledSpecService.removeSpec(project.uiSpecificationId);
       }
 
+      // Cleanup sync state
+      syncStateService.removeSyncState(payload.serverId, payload.projectId);
+
       // Remove the project from the server's projects map
       delete server.projects[payload.projectId];
     },
@@ -533,7 +513,6 @@ const projectsSlice = createSlice({
           localDbId: localDatabaseId,
           remote: {
             connectionConfiguration,
-            syncState: createInitialSyncState(),
             remoteDbId: remoteDbId,
             syncId: syncId,
           },
@@ -613,6 +592,10 @@ const projectsSlice = createSlice({
       // wipe and remove local database (cleaning records)
       // NOTE this is an async operation, deletion may not happen immediately
       databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
+
+      // Cleanup sync state
+      syncStateService.removeSyncState(payload.serverId, payload.projectId);
+
       // For the time being - don't clean up deactivated databases as a last
       // resort data recovery mechanism
       // databaseService.destroyLocalDatabase(localDatabaseId);
@@ -690,7 +673,6 @@ const projectsSlice = createSlice({
           remote: {
             connectionConfiguration,
             remoteDbId,
-            syncState: createInitialSyncState(),
             syncId,
           },
         },
@@ -731,7 +713,6 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
-            syncState: project.database.remote.syncState,
             // No sync object when syncing is paused
             syncId: undefined,
           },
@@ -772,7 +753,6 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
-            syncState: project.database.remote.syncState,
             // Set new sync ID
             syncId: project.database.remote.syncId,
           },
@@ -856,8 +836,7 @@ const projectsSlice = createSlice({
 
         const handlers = createSyncStateHandlers(
           payload.projectId,
-          payload.serverId,
-          store.dispatch
+          payload.serverId
         );
         // creates the sync object (PouchDB.Replication.Sync)
         const sync = createPouchDbSync({
@@ -899,7 +878,6 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
-            syncState: project.database.remote.syncState,
             // new sync
             syncId: updatedSyncId,
           },
@@ -986,8 +964,7 @@ const projectsSlice = createSlice({
 
         const handlers = createSyncStateHandlers(
           payload.projectId,
-          payload.serverId,
-          store.dispatch
+          payload.serverId
         );
         // creates the sync object (PouchDB.Replication.Sync)
         const sync = createPouchDbSync({
@@ -1029,63 +1006,10 @@ const projectsSlice = createSlice({
             connectionConfiguration:
               project.database.remote.connectionConfiguration,
             remoteDbId: project.database.remote.remoteDbId,
-            syncState: project.database.remote.syncState,
             // new sync
             syncId: updatedSyncId,
           },
         },
-      };
-    },
-
-    /**
-     * Updates the sync state for a specific project
-     */
-    setSyncState: (
-      state,
-      action: PayloadAction<
-        ProjectIdentity & {
-          syncState: Partial<SyncState>;
-        }
-      >
-    ) => {
-      const {projectId, serverId, syncState} = action.payload;
-
-      // Check the server exists
-      const server = serverById(state, serverId);
-      if (!server) {
-        throw new Error(
-          `Cannot update sync state for non-existent server with ID ${serverId}`
-        );
-      }
-
-      // Check the project exists
-      const project = server.projects[projectId];
-      if (!project) {
-        throw new Error(
-          `Cannot update sync state for non-existent project with ID ${projectId}`
-        );
-      }
-
-      // Check project is activated and has database with remote
-      if (
-        !project.isActivated ||
-        !project.database ||
-        !project.database.remote
-      ) {
-        throw new Error(
-          `Cannot update sync state for project that is not properly activated with remote database. Project ID: ${projectId}`
-        );
-      }
-
-      // Create a new sync state if none exists, otherwise update existing
-      const currentSyncState =
-        project.database.remote.syncState || createInitialSyncState();
-
-      // Update the sync state with the provided changes and set lastUpdated
-      server.projects[projectId].database!.remote.syncState = {
-        ...currentSyncState,
-        ...syncState,
-        lastUpdated: Date.now(),
       };
     },
   },
@@ -1339,8 +1263,7 @@ export const updateDatabaseCredentials = createAsyncThunk<
         if (project.database.isSyncing) {
           const handlers = createSyncStateHandlers(
             project.projectId,
-            project.serverId,
-            store.dispatch
+            project.serverId
           );
           const sync = createPouchDbSync({
             // re-use existing attachment sync setting
@@ -1472,11 +1395,7 @@ export const activateProject = createAsyncThunk<
   await databaseService.registerRemoteDatabase(remoteDbId, remoteDb);
 
   // creates the sync object (PouchDB.Replication.Sync)
-  const handlers = createSyncStateHandlers(
-    payload.projectId,
-    payload.serverId,
-    store.dispatch
-  );
+  const handlers = createSyncStateHandlers(payload.projectId, payload.serverId);
   const sync = createPouchDbSync({
     attachmentDownload: false,
     localDb,
@@ -1984,8 +1903,7 @@ export const resumeSyncingProject = createAsyncThunk<void, ProjectIdentity>(
 
     const handlers = createSyncStateHandlers(
       payload.projectId,
-      payload.serverId,
-      store.dispatch
+      payload.serverId
     );
     // creates the sync object (PouchDB.Replication.Sync)
     const sync = createPouchDbSync({
@@ -2070,8 +1988,7 @@ export const rebuildDbs = async (
             if (dbInfo.isSyncing && dbInfo.remote.syncId) {
               const handlers = createSyncStateHandlers(
                 project.projectId,
-                project.serverId,
-                store.dispatch
+                project.serverId
               );
               // creates the sync object (PouchDB.Replication.Sync)
               const sync = createPouchDbSync({
@@ -2114,17 +2031,6 @@ export const compileSpecs = (state: Readonly<ProjectsState>): void => {
 };
 
 /**
- * Creates an initial sync state
- */
-export function createInitialSyncState(): SyncState {
-  return {
-    status: 'initial',
-    lastUpdated: Date.now(),
-    pendingRecords: 0,
-  };
-}
-
-/**
  * Creates event handlers that dispatch setSyncState actions
  *
  * TODO optimise how these handlers dispatch events - may fire very rapidly and
@@ -2137,95 +2043,28 @@ export function createInitialSyncState(): SyncState {
  */
 export function createSyncStateHandlers(
   projectId: string,
-  serverId: string,
-  dispatch: AppDispatch
+  serverId: string
 ): SyncEventHandlers {
   return {
     active: () => {
-      dispatch(
-        setSyncState({
-          projectId,
-          serverId,
-          syncState: {
-            status: 'active',
-            isError: false,
-          },
-        })
-      );
+      syncStateService.setActive(serverId, projectId);
     },
-
     change: info => {
-      dispatch(
-        setSyncState({
-          projectId,
-          serverId,
-          syncState: {
-            status: 'active',
-            pendingRecords: info.change.pending,
-            isError: false,
-            lastChangeStats: {
-              docsRead: info.change.docs_read,
-              docsWritten: info.change.docs_written,
-              direction: info.direction,
-            },
-          },
-        })
-      );
+      syncStateService.recordChange(serverId, projectId, {
+        pending: info.change.pending ?? 0,
+        docsRead: info.change.docs_read,
+        docsWritten: info.change.docs_written,
+        direction: info.direction,
+      });
     },
-
     paused: err => {
-      if (err) {
-        dispatch(
-          setSyncState({
-            projectId,
-            serverId,
-            syncState: {
-              status: 'error',
-              errorMessage: err.message,
-              isError: true,
-            },
-          })
-        );
-      } else {
-        dispatch(
-          setSyncState({
-            projectId,
-            serverId,
-            syncState: {
-              status: 'paused',
-              isError: false,
-            },
-          })
-        );
-      }
+      syncStateService.setPaused(serverId, projectId, err);
     },
-
     denied: err => {
-      dispatch(
-        setSyncState({
-          projectId,
-          serverId,
-          syncState: {
-            status: 'denied',
-            errorMessage: err.message,
-            isError: true,
-          },
-        })
-      );
+      syncStateService.setDenied(serverId, projectId, err);
     },
-
     error: err => {
-      dispatch(
-        setSyncState({
-          projectId,
-          serverId,
-          syncState: {
-            status: 'error',
-            errorMessage: err.message,
-            isError: true,
-          },
-        })
-      );
+      syncStateService.setError(serverId, projectId, err);
     },
   };
 }
@@ -2249,7 +2088,6 @@ export const {
   updateServerDetails,
   markInitialised,
   deactivateProject,
-  setSyncState,
 } = projectsSlice.actions;
 
 export default projectsSlice.reducer;

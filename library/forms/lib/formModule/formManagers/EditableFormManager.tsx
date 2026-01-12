@@ -614,16 +614,22 @@ export const EditableFormManager: React.FC<
     async ({
       fieldId,
       blob,
+      base64,
       contentType,
       type,
       fileFormat,
     }: {
       fieldId: string;
-      blob: Blob;
+      blob?: Blob;
+      base64?: string;
       contentType: string;
       type: 'photo' | 'file';
       fileFormat: string;
     }) => {
+      if (!blob && !base64) {
+        throw new Error('Either blob or base64 data must be provided');
+      }
+
       // Ensure we have a revision to attach to
       const revisionToUse = await ensureWorkingRevision();
 
@@ -638,23 +644,46 @@ export const EditableFormManager: React.FC<
       }_${timestamp}.${fileFormat}`;
 
       // Store attachment in the attachment service
-      const attachmentResult = await props.config
-        .attachmentEngine()
-        .storeAttachmentFromBlob({
-          blob,
-          metadata: {
-            attachmentDetails: {
-              filename,
-              contentType,
+      let attachmentResult;
+      if (base64) {
+        attachmentResult = await props.config
+          .attachmentEngine()
+          .storeAttachmentFromBase64({
+            base64,
+            metadata: {
+              attachmentDetails: {
+                filename,
+                contentType,
+              },
+              recordContext: {
+                recordId: props.recordId,
+                revisionId: revisionToUse,
+                created: timestamp,
+                createdBy: props.activeUser,
+              },
             },
-            recordContext: {
-              recordId: props.recordId,
-              revisionId: revisionToUse,
-              created: timestamp,
-              createdBy: props.activeUser,
+          });
+      } else if (blob) {
+        attachmentResult = await props.config
+          .attachmentEngine()
+          .storeAttachmentFromBlob({
+            blob,
+            metadata: {
+              attachmentDetails: {
+                filename,
+                contentType,
+              },
+              recordContext: {
+                recordId: props.recordId,
+                revisionId: revisionToUse,
+                created: timestamp,
+                createdBy: props.activeUser,
+              },
             },
-          },
-        });
+          });
+      } else {
+        throw new Error('Either blob or base64 data must be provided');
+      }
 
       // Get current field state
       const state = form.state.values[fieldId];
