@@ -746,7 +746,6 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         .toString(36)
         .slice(2)}`;
 
-      let newId: string;
       let photoBlob: Blob;
 
       if (isWeb) {
@@ -796,7 +795,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       }
 
       // Now do the async storage
-      newId = await addAttachment({
+      const newId = await addAttachment({
         // Blob attachments are faster - especially on native
         blob: photoBlob,
         contentType: `image/${photoResult.format}`,
