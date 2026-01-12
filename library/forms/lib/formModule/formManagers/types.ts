@@ -83,7 +83,10 @@ export interface FormManagerAdditions {
     /** Add a new attachment to a field (inserted at start of attachment list) */
     addAttachment: (params: {
       fieldId: string;
-      blob: Blob;
+      // Blob content
+      blob?: Blob;
+      // Base64 content
+      base64?: string;
       contentType: string;
       // This informs how to name things
       type: 'photo' | 'file';

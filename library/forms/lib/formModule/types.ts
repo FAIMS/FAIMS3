@@ -66,9 +66,14 @@ export type FormFieldContextProps = {
   setFieldAnnotation: (value: FormAnnotation) => void;
   // Add new attachment (at start of attachment list)
   addAttachment: (params: {
-    blob: Blob;
+    // Blob content
+    blob?: Blob;
+    // Base64 content
+    base64?: string;
     contentType: string;
+    // This informs how to name things
     type: 'photo' | 'file';
+    // This informs the file format in the file system e.g. pdf
     fileFormat: string;
   }) => Promise<string>;
   // Delete an attachment with given ID
