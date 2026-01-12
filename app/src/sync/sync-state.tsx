@@ -1,5 +1,3 @@
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import ArrowDropUpIcon from '@mui/icons-material/ArrowDropUp';
 import CloudIcon from '@mui/icons-material/Cloud';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import CloudQueueIcon from '@mui/icons-material/CloudQueue';
@@ -10,7 +8,6 @@ import {
   Card,
   CardContent,
   CardHeader,
-  Grid,
   Paper,
   Popper,
   Table,
@@ -21,7 +18,6 @@ import {
   Typography,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
-import 'animate.css';
 import moment from 'moment';
 import React, {useCallback, useEffect, useState} from 'react';
 import {syncStateService} from '../context/slices/helpers/syncStateService';
@@ -182,7 +178,6 @@ function usePollSyncStatus(
     useState<AggregatedSyncStatus>(() => aggregateSyncStatus(projects));
 
   const refresh = useCallback(() => {
-    console.log('Refreshing sync status aggregation');
     setAggregatedStatus(aggregateSyncStatus(projects));
   }, [projects]);
 
@@ -253,87 +248,46 @@ export default function SyncStatus() {
     }
   };
 
+  // Render the appropriate cloud icon based on sync state
+  const renderCloudIcon = () => {
+    if (isSyncError) {
+      return (
+        <Box display="flex" alignItems="center">
+          <CloudOffIcon sx={{color: 'primary.main'}} />
+          <ErrorIcon
+            sx={{fontSize: '16px', ml: -0.5, mt: -1.5}}
+            color="warning"
+          />
+        </Box>
+      );
+    } else if (isSyncingUp || isSyncingDown) {
+      return <CloudIcon sx={{color: 'primary.main'}} />;
+    } else {
+      return <CloudQueueIcon sx={{color: 'primary.main'}} />;
+    }
+  };
+
   return (
     <React.Fragment>
       <Button
         aria-describedby={id}
         variant="text"
-        type={'button'}
+        type="button"
         onClick={handleClick}
-        sx={{p: 0}}
+        sx={{p: 0, minWidth: 'auto'}}
       >
         <Box
           sx={{
+            display: 'flex',
             justifyContent: 'center',
-            position: 'relative',
-            display: ' inline-flex',
             alignItems: 'center',
-            verticalAlign: 'middle',
             mx: 2,
-            width: '40px',
           }}
         >
-          <Box display="flex" justifyContent="center" sx={{height: '100%'}}>
-            {isSyncError ? (
-              <React.Fragment>
-                <CloudOffIcon
-                  style={{marginLeft: '11px'}}
-                  sx={{color: 'primary'}}
-                />
-                <ErrorIcon
-                  style={{fontSize: '20px', marginTop: '-5px'}}
-                  color={'warning'}
-                />
-              </React.Fragment>
-            ) : isSyncingUp || isSyncingDown ? (
-              <CloudIcon sx={{color: 'primary'}} />
-            ) : (
-              <CloudQueueIcon sx={{color: 'primary'}} />
-            )}
-          </Box>
-          {!isSyncError ? (
-            <Grid
-              container
-              style={{
-                marginLeft: '-32px',
-                maxHeight: '64px',
-                marginBottom: '-3px',
-              }}
-              spacing={0}
-            >
-              <Grid item xs={12}>
-                <Box display="flex" justifyContent="center">
-                  <ArrowDropUpIcon
-                    sx={{fontSize: '32px'}}
-                    color={!isSyncingUp ? 'disabled' : 'warning'}
-                    className={
-                      isSyncingUp
-                        ? 'animate__animated animate__flash animate__slow animate__infinite'
-                        : ''
-                    }
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <Box display="flex" justifyContent="center">
-                  <ArrowDropDownIcon
-                    sx={{fontSize: '32px'}}
-                    color={!isSyncingDown ? 'disabled' : 'warning'}
-                    className={
-                      isSyncingDown
-                        ? 'animate__animated animate__flash animate__slow animate__infinite'
-                        : ''
-                    }
-                  />
-                </Box>
-              </Grid>
-            </Grid>
-          ) : (
-            ''
-          )}
+          {renderCloudIcon()}
         </Box>
       </Button>
-      <Popper id={id} open={open} anchorEl={anchorEl}>
+      <Popper id={id} open={open} anchorEl={anchorEl} sx={{zIndex: 1300}}>
         <Card variant="outlined">
           <CardContent sx={{p: 0, paddingBottom: '0 !important'}}>
             <CardHeader

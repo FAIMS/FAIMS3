@@ -31,13 +31,6 @@ import {
 import {databaseService} from './helpers/databaseService';
 import {PouchDBWrapper} from './helpers/pouchDBWrapper';
 import {syncStateService} from './helpers/syncStateService';
-import {throttle} from 'lodash';
-
-// CONSTANTS
-// =========
-
-// Throttle sync update events to at most once every 500ms
-const SYNC_UPDATE_THROTTLE_MS = 500;
 
 // TYPES
 // =====
@@ -1971,26 +1964,26 @@ export function createSyncStateHandlers(
   serverId: string
 ): SyncEventHandlers {
   return {
-    active: throttle(() => {
+    active: () => {
       syncStateService.setActive(serverId, projectId);
-    }, SYNC_UPDATE_THROTTLE_MS),
-    change: throttle(info => {
+    },
+    change: info => {
       syncStateService.recordChange(serverId, projectId, {
         pending: info.change.pending ?? 0,
         docsRead: info.change.docs_read,
         docsWritten: info.change.docs_written,
         direction: info.direction,
       });
-    }, SYNC_UPDATE_THROTTLE_MS),
-    paused: throttle(err => {
+    },
+    paused: err => {
       syncStateService.setPaused(serverId, projectId, err);
-    }, SYNC_UPDATE_THROTTLE_MS),
-    denied: throttle(err => {
+    },
+    denied: err => {
       syncStateService.setDenied(serverId, projectId, err);
-    }, SYNC_UPDATE_THROTTLE_MS),
-    error: throttle(err => {
+    },
+    error: err => {
       syncStateService.setError(serverId, projectId, err);
-    }, SYNC_UPDATE_THROTTLE_MS),
+    },
   };
 }
 
