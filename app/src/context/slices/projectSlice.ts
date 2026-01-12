@@ -2048,6 +2048,9 @@ export function createInitialSyncState(): SyncState {
 /**
  * Creates event handlers that dispatch setSyncState actions
  *
+ * TODO optimise how these handlers dispatch events - may fire very rapidly and
+ * cause unwanted re-renders in consuming selectors
+ *
  * @param projectId ID of the project this sync belongs to
  * @param serverId ID of the server this project belongs to
  * @param dispatch Redux dispatch function

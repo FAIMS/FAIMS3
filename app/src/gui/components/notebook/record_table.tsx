@@ -171,7 +171,7 @@ function getDataForColumn({
 
       case 'CREATED':
         return record.created
-          ? record.updated.toLocaleString().replace('T', ' ')
+          ? record.created.toLocaleString().replace('T', ' ')
           : fallback;
 
       case 'CREATED_BY':

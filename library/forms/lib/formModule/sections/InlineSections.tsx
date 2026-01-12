@@ -48,10 +48,15 @@ export const InlineSectionDisplay: React.FC<{
     <>
       {formSpec.views.map((sectionName: string) => {
         const label = props.spec.views[sectionName].label ?? sectionName;
-        if (visibleViews ? visibleViews.includes(sectionName) : true) {
+        if (
+          visibleViews
+            ? visibleViews.includes(sectionName) &&
+              (props.fieldVisibilityMap?.[sectionName] ?? []).length > 0
+            : true
+        ) {
           return (
             <>
-              <Typography variant={'h4'}>Section: {label}</Typography>
+              <Typography variant={'h4'}>{label}</Typography>
               <FormSection
                 key={sectionName}
                 form={props.form}

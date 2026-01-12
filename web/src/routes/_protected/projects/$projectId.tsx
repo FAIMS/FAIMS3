@@ -48,7 +48,7 @@ function RouteComponent() {
         path: pathname,
         label: isLoading
           ? 'Loading...'
-          : (project?.name as string) ?? projectId,
+          : ((project?.name as string) ?? projectId),
       },
     ],
     [pathname, project, isLoading]
