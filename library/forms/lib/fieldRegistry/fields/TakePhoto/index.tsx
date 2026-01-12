@@ -747,33 +747,34 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         .slice(2)}`;
 
       let newId: string;
-      let optimisticUrl: string;
+      let photoBlob: Blob;
 
       if (isWeb) {
-        // Web: create blob from base64 for optimistic display
-        const photoBlob = await base64ImageToBlob(photoResult);
-        optimisticUrl = URL.createObjectURL(photoBlob);
-        pendingUrlsRef.current.add(optimisticUrl);
-
-        // Show optimistic preview immediately
-        setPendingPhotos(current => {
-          const updated = new Map(current);
-          updated.set(tempId, {
-            url: optimisticUrl,
-            attachmentId: null,
-            capturedAt: Date.now(),
-          });
-          return updated;
-        });
-
-        // Now do the async storage
-        newId = await addAttachment({
-          contentType: `image/${photoResult.format}`,
-          type: 'photo',
-          fileFormat: photoResult.format,
-          base64: photoResult.base64String!,
-        });
+        // Web
+        photoBlob = await base64ImageToBlob(photoResult);
       } else {
+        // Native
+        if (!photoResult.webPath) {
+          throw new Error('Photo webPath is undefined');
+        }
+        const response = await fetch(photoResult.webPath);
+        photoBlob = await response.blob();
+      }
+
+      // Setup optimistic preview
+      const optimisticUrl = URL.createObjectURL(photoBlob);
+      pendingUrlsRef.current.add(optimisticUrl);
+      setPendingPhotos(current => {
+        const updated = new Map(current);
+        updated.set(tempId, {
+          url: optimisticUrl,
+          attachmentId: null,
+          capturedAt: Date.now(),
+        });
+        return updated;
+      });
+
+      if (!isWeb) {
         // Native: attempt to add geolocation EXIF data
         try {
           const position = await Geolocation.getCurrentPosition({
@@ -792,37 +793,16 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         } catch (e) {
           console.warn('Could not add geolocation to photo:', e);
         }
-
-        // Fetch the photo as a blob
-        if (!photoResult.webPath) {
-          throw new Error('Photo webPath is undefined');
-        }
-        const response = await fetch(photoResult.webPath);
-        const photoBlob = await response.blob();
-
-        // Create optimistic display URL from the blob we already have
-        optimisticUrl = URL.createObjectURL(photoBlob);
-        pendingUrlsRef.current.add(optimisticUrl);
-
-        // Show optimistic preview immediately
-        setPendingPhotos(current => {
-          const updated = new Map(current);
-          updated.set(tempId, {
-            url: optimisticUrl,
-            attachmentId: null,
-            capturedAt: Date.now(),
-          });
-          return updated;
-        });
-
-        // Now do the async storage
-        newId = await addAttachment({
-          blob: photoBlob,
-          contentType: `image/${photoResult.format}`,
-          type: 'photo',
-          fileFormat: photoResult.format,
-        });
       }
+
+      // Now do the async storage
+      newId = await addAttachment({
+        // Blob attachments are faster - especially on native
+        blob: photoBlob,
+        contentType: `image/${photoResult.format}`,
+        type: 'photo',
+        fileFormat: photoResult.format,
+      });
 
       // Update pending photo with the real attachment ID
       // This allows the cleanup effect to know when to remove it
