@@ -15,7 +15,7 @@ import {
 } from '@reduxjs/toolkit';
 import {CONDUCTOR_URLS} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
-import {isTokenValid, selectActiveServerId} from './authSlice';
+import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
 import {
   buildCompiledSpecId,
@@ -1528,152 +1528,231 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
     }
 
     // Try and find the best possible user to fetch with
-    const activeUser = authState.activeUser;
-    let token: string | undefined = undefined;
-
-    // Try the active user - this is the best bet
-    if (activeUser && activeUser.serverId === server.serverId) {
-      if (!authState.isAuthenticated) {
-        // This means we have an active user matching the server but they
-        // are logged out! Abort.
-        throw new Error(
-          `You cannot refresh the project list for a logged out active user. Server ID ${serverId}.`
-        );
-      } else {
-        token = activeUser.token;
-      }
-    }
-
+    const token = findValidToken(authState, serverId, server);
     if (!token) {
-      const serverUsers = authState.servers[serverId]?.users ?? {};
-      for (const user of Object.values(serverUsers)) {
-        // Found a nice valid token - lucky!
-        if (isTokenValid(user)) {
-          token = user.token;
-          break;
-        } else {
-          // Didn't find one
-          continue;
-        }
-      }
-    }
-
-    if (!token) {
-      // Failed to find any token to use for this server - the user needs to
-      // login
       throw new Error(
         `Could not find a suitable active token for the server ${serverId}.`
       );
     }
 
-    // Now we have a token that is active - so let's fetch the directory (which
-    // lists projects)
-    let directoryResults: ProjectDocument[] = [];
-    await fetch(`${server.serverUrl}/api/directory`, {
+    // Fetch the directory (which lists projects)
+    const response = await fetch(`${server.serverUrl}/api/directory`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    })
-      .then(response => response.json())
-      .then(rawDirectory => {
-        directoryResults = rawDirectory as ProjectDocument[];
-      })
-      .catch(e => {
-        console.warn(
-          `Directory request failed despite valid token. Server ID ${serverId}. URL: ${server.serverUrl}. ${e}`
-        );
-      });
+    });
 
-    // Now for each result, merge details
-    for (const details of directoryResults) {
-      const projectId = details._id;
-      let meta = undefined;
-      try {
-        // compile the spec here - it's only recompiled on refresh
-        meta = await fetchProjectMetadataAndSpec({
-          compile: false,
-          projectId: projectId,
-          serverUrl: server.serverUrl,
-          token,
-        });
-      } catch (e) {
-        console.warn(
-          `Failed to get metadata from API for project ${projectId}.`
-        );
-        console.error(e);
-      }
+    if (!response.ok) {
+      throw new Error(
+        `Directory request failed. Server ID ${serverId}. URL: ${server.serverUrl}. Status: ${response.status}`
+      );
+    }
 
-      // See if we have an existing matching project
-      const project = projectByIdentity(projectState, {
-        projectId,
-        serverId,
-      });
+    const directoryResults = (await response.json()) as ProjectDocument[];
 
-      if (!details.dataDb?.base_url) {
-        throw new Error(
-          'Could not initialise from server as the base URL for the couch DB was not defined.'
-        );
-      }
+    // Fetch all project metadata in parallel
+    const metadataResults = await Promise.allSettled(
+      directoryResults.map(async details => {
+        const projectId = details._id;
 
-      if (!project) {
-        if (!meta) {
-          // noop here since we don't have mandatory metadata!
+        if (!details.dataDb?.base_url) {
+          return {
+            status: 'error' as const,
+            projectId,
+            error: 'Missing dataDb.base_url',
+          };
+        }
+
+        try {
+          const meta = await fetchProjectMetadataAndSpec({
+            compile: false,
+            projectId,
+            serverUrl: server.serverUrl,
+            token,
+          });
+
+          return {
+            status: 'success' as const,
+            projectId,
+            details,
+            meta,
+          };
+        } catch (e) {
           console.warn(
-            `Failed to get metadata from API for project ${projectId} which doesn't exist yet - minimum sufficient information not known so we won't show this record.`
+            `Failed to get metadata from API for project ${projectId}.`
+          );
+          console.error(e);
+          return {
+            status: 'error' as const,
+            projectId,
+            details,
+            error: e,
+          };
+        }
+      })
+    );
+
+    // Get fresh state before dispatching updates to avoid stale reads
+    // This is important because other thunks may have modified state during our async operations
+    const freshState = getState() as RootState;
+    const freshProjectState = freshState.projects;
+
+    // Collect all actions to dispatch
+    const actions: Array<
+      ReturnType<typeof addProject | typeof updateProjectDetails>
+    > = [];
+
+    for (const result of metadataResults) {
+      if (result.status === 'rejected') {
+        // Promise itself rejected (shouldn't happen with our structure, but safety first)
+        continue;
+      }
+
+      const value = result.value;
+
+      if (value.status === 'error') {
+        // Check if this is a missing base_url error (no details available)
+        if (!value.details) {
+          console.warn(`Skipping project ${value.projectId}: ${value.error}`);
+          continue;
+        }
+
+        // We have details but no metadata - check if project exists
+        const existingProject = projectByIdentity(freshProjectState, {
+          projectId: value.projectId,
+          serverId,
+        });
+
+        if (!existingProject) {
+          // Can't create without metadata
+          console.warn(
+            `Failed to get metadata from API for project ${value.projectId} which doesn't exist yet - minimum sufficient information not known so we won't show this record.`
           );
           continue;
         }
 
-        // create
-        appDispatch(
+        // Update existing with just the couchDbUrl if we have details
+        if (value.details?.dataDb?.base_url) {
+          actions.push(
+            updateProjectDetails({
+              name: existingProject.name,
+              metadata: existingProject.metadata,
+              projectId: value.projectId,
+              serverId,
+              rawUiSpecification: existingProject.rawUiSpecification,
+              couchDbUrl: value.details.dataDb.base_url,
+              status: existingProject.status,
+            })
+          );
+        }
+        continue;
+      }
+
+      // Success case
+      const {projectId, details, meta} = value;
+      const existingProject = projectByIdentity(freshProjectState, {
+        projectId,
+        serverId,
+      });
+
+      if (!existingProject) {
+        actions.push(
           addProject({
-            // Name is included in the GetNotebookResponse
             name: meta.name,
             metadata: meta.metadata as ProjectMetadata,
             projectId,
             serverId,
             rawUiSpecification: meta.decodedSpec,
-            couchDbUrl: details.dataDb.base_url,
+            couchDbUrl: details.dataDb.base_url!,
             status: meta.status,
           })
         );
       } else {
-        // update existing record
-        appDispatch(
+        actions.push(
           updateProjectDetails({
-            // Name can't change atm but might as well update it if present
-            name: meta?.name ?? project.name,
+            name: meta.name ?? existingProject.name,
             metadata:
-              (meta?.metadata as ProjectMetadata | undefined) ??
-              project.metadata,
-            projectId: projectId,
+              (meta.metadata as ProjectMetadata | undefined) ??
+              existingProject.metadata,
+            projectId,
             serverId,
-            rawUiSpecification: meta?.decodedSpec ?? project.rawUiSpecification,
-            couchDbUrl: details.dataDb.base_url,
-            status: meta?.status ?? project.status,
+            rawUiSpecification:
+              meta.decodedSpec ?? existingProject.rawUiSpecification,
+            couchDbUrl: details.dataDb.base_url!,
+            status: meta.status ?? existingProject.status,
           })
         );
       }
+    }
+
+    // Dispatch all actions
+    // Note: If you have redux-batched-actions middleware, you could batch these:
+    // appDispatch(batchActions(actions));
+    // Otherwise, dispatch sequentially (React 18+ auto-batches in event handlers)
+    for (const action of actions) {
+      appDispatch(action);
     }
   }
 );
 
 /**
+ * Helper to find a valid token for a server
+ */
+function findValidToken(
+  authState: AuthState,
+  serverId: string,
+  server: Server
+): string | undefined {
+  const activeUser = authState.activeUser;
+
+  // Try the active user first - this is the best bet
+  if (activeUser && activeUser.serverId === server.serverId) {
+    if (!authState.isAuthenticated) {
+      throw new Error(
+        `You cannot refresh the project list for a logged out active user. Server ID ${serverId}.`
+      );
+    }
+    return activeUser.token;
+  }
+
+  // Fall back to any valid token for this server
+  const serverUsers = authState.servers[serverId]?.users ?? {};
+  for (const user of Object.values(serverUsers)) {
+    if (isTokenValid(user)) {
+      return user.token;
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Combines initialisation of all servers' projects.
  */
 export const initialiseAllProjects = createAsyncThunk<void>(
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   'projects/initialiseAllProjects',
   async (_, {dispatch, getState}) => {
-    // cast and get state
     const state = getState() as RootState;
     const projectState = state.projects;
-    const appDispatch = dispatch as AppDispatch;
 
-    // dispatch update to all projects
-    for (const server of Object.values(projectState.servers)) {
-      appDispatch(initialiseProjects({serverId: server.serverId}));
-    }
+    // Initialize all servers in parallel
+    // Using Promise.allSettled so one server failure doesn't block others
+    const results = await Promise.allSettled(
+      Object.values(projectState.servers).map(server =>
+        dispatch(initialiseProjects({serverId: server.serverId})).unwrap()
+      )
+    );
+
+    // Log any failures
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const servers = Object.values(projectState.servers);
+        console.error(
+          `Failed to initialise projects for server ${servers[index]?.serverId}:`,
+          result.reason
+        );
+      }
+    });
   }
 );
 
