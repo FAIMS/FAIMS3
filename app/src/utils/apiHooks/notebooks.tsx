@@ -77,17 +77,14 @@ export const useRecordAudit = ({
   return useQuery({
     queryKey,
     queryFn: async (context: QueryFunctionContext) => {
-      console.log('Running sync status');
       const currentStatus: RecordStatus | undefined =
         context.client.getQueryData(queryKey);
-      const res = await validateSyncStatus({
+      return await validateSyncStatus({
         projectId,
         listingId,
         username,
         currentStatus,
       });
-      console.log(res);
-      return res;
     },
     // always try even if we're offline
     networkMode: 'always',

@@ -198,19 +198,16 @@ export function useQueryParams<T extends Record<string, any>>(config: {
   }, [config, searchParams, setSearchParams]);
 
   // Convert URL string values to typed parameters
-  const params = Object.entries(config).reduce(
-    (acc, [key, paramConfig]) => {
-      const value = searchParams.get(paramConfig.key);
-      const parser = paramConfig.parser || defaultParser;
+  const params = Object.entries(config).reduce((acc, [key, paramConfig]) => {
+    const value = searchParams.get(paramConfig.key);
+    const parser = paramConfig.parser || defaultParser;
 
-      // Use parsed URL value if present, otherwise use default
-      acc[key as keyof T] =
-        value !== null ? parser(value) : paramConfig.defaultValue;
+    // Use parsed URL value if present, otherwise use default
+    acc[key as keyof T] =
+      value !== null ? parser(value) : paramConfig.defaultValue;
 
-      return acc;
-    },
-    {} as {[K in keyof T]: QueryParamValue<T[K]>}
-  );
+    return acc;
+  }, {} as {[K in keyof T]: QueryParamValue<T[K]>});
 
   // Update a single parameter in the URL
   const setParam = useCallback(
@@ -405,16 +402,11 @@ export function invalidateProjectRecordList({
  * permission filtering) and also provides my records vs all records list(s).
  *
  * At a high level:
- * - calculate hrid field map (memoised by ui spec)
  * - useQuery to get minimal record info (i.e. gets records and their latest
  *   revision) (refetches every 10 seconds and on mount)
  * - filter out drafts (memoised by record list which has structural sharing to
  *   avoid re-renders)
- * - useQueries which for each record, performs hydration and returns the
- *   hydrated record (this is cached for 2 minutes and is told not to refetch on
- *   mount) - uses placeholder data where data = {} and hrid = "Loading..."
  * - split by current user and others (memoised)
- * - return the hydrated records (always present due to placeholder data)
  *
  * @param query The search string, if any - regex match
  * @param projectId Project ID to get records for
@@ -426,25 +418,18 @@ export const useRecordList = ({
   projectId,
   filterDeleted,
   metadataRefreshIntervalMs,
-  hydrationRefreshIntervalMs,
   uiSpecification: uiSpec,
 }: {
   query?: string;
   projectId: string;
   filterDeleted: boolean;
   metadataRefreshIntervalMs?: number | undefined | false;
-  hydrationRefreshIntervalMs?: number | undefined | false;
   uiSpecification: ProjectUIModel;
 }) => {
   // Work out our context e.g. active user, token, data db etc
   const activeUser = useAppSelector(selectActiveUser);
   const token = activeUser?.parsedToken;
   const dataDb = localGetDataDb(projectId);
-
-  // memoise the hrid field map (do once per ui spec)
-  const hridFieldMap = useMemo(() => {
-    return getHridFieldMap(uiSpec);
-  }, [uiSpec]);
 
   // First - just fetch a list of all unhydrated records
   const unhydratedRecordQuery = useQuery({
@@ -504,40 +489,6 @@ export const useRecordList = ({
     return filterOutDrafts(allRows);
   }, [unhydratedRecordQuery]);
 
-  // Now we do a separate cached query for each element of the unhydrated record
-  // list (this means we can maintain separate freshness times for each new
-  // element of the list, and or force a refetch of data for given records as
-  // needed) - cached based on record id
-
-  //const hydrateQueries = useQueries<RecordMetadata[]>({
-  //  queries: nonDraftRecords.map(unhydrated => ({
-  //    queryKey: buildHydrateKeys({
-  //      projectId,
-  //      recordId: unhydrated.record_id,
-  //      revisionId: unhydrated.revision_id,
-  //    }),
-  //    queryFn: () => {
-  //      return hydrateIndividualRecord({
-  //        record: unhydrated,
-  //        dataDb,
-  //        uiSpecification: uiSpec,
-  //        hridFieldMap: hridFieldMap,
-  //      });
-  //    },
-  //    networkMode: 'always',
-  //    refetchOnMount: false,
-  //    gcTime: 0,
-  //    refetchInterval: hydrationRefreshIntervalMs,
-  //    placeholderData: {...unhydrated, data: {}, hrid: 'Loading...'},
-  //  })),
-  //});
-
-  // Parse the response out as a list - only include rows with data
-
-  //const hydratedRecords = hydrateQueries
-  //  .map(q => q.data)
-  //  .filter(d => !!d) as RecordMetadata[];
-  //
   // Memoize the calculation of the current user rows
   const {myRecords, otherRecords} = useMemo(() => {
     let justMyRecords: UnhydratedRecord[] = [];
@@ -564,7 +515,6 @@ export const useRecordList = ({
     myRecords: myRecords,
     otherRecords: otherRecords,
     initialQuery: unhydratedRecordQuery,
-    //hydrateQuery: hydrateQueries,
   };
 };
 
