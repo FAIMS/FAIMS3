@@ -1,28 +1,8 @@
-/*
- * Copyright 2021, 2022 Macquarie University
- *
- * Licensed under the Apache License Version 2.0 (the, "License");
- * you may not use, this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing software
- * distributed under the License is distributed on an "AS IS" BASIS
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND either express or implied.
- * See, the License, for the specific language governing permissions and
- * limitations under the License.
- *
- * Filename: table.tsx
- * Description:
- *   Components for displaying record metadata in a table.
- */
-
 import {
+  DataDbType,
   fetchAndHydrateRecord,
   getSummaryFieldInformation,
   getVisibleTypes,
-  hydrateIndividualRecord,
   PostRecordStatusResponse,
   ProjectUIModel,
   ProjectUIViewsets,
@@ -34,7 +14,12 @@ import PendingIcon from '@mui/icons-material/Pending';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {
   Box,
+  FormControl,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
+  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -48,7 +33,6 @@ import {
   GridCellParams,
   GridColDef,
   GridEventListener,
-  GridSortModel,
 } from '@mui/x-data-grid';
 import {ReactNode, useCallback, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
@@ -83,6 +67,32 @@ type ColumnType =
   | 'KIND'
   | 'SYNC_STATUS';
 
+/**
+ * Available sort options for the records table.
+ * These are based on fields available in UnhydratedRecord (no hydration needed).
+ */
+type SortOption =
+  | 'updated_desc'
+  | 'updated_asc'
+  | 'created_desc'
+  | 'created_asc'
+  | 'created_by_asc'
+  | 'created_by_desc'
+  | 'updated_by_asc'
+  | 'updated_by_desc'
+  | 'type_asc'
+  | 'type_desc';
+
+/** Configuration for a sort option */
+interface SortConfig {
+  /** Display label for the dropdown */
+  label: string;
+  /** Field to sort by (must exist on UnhydratedRecord) */
+  field: keyof UnhydratedRecord;
+  /** Sort direction */
+  direction: 'asc' | 'desc';
+}
+
 /** Props for the RecordsTable component */
 interface RecordsTableProps {
   /** The project */
@@ -103,6 +113,14 @@ interface RecordsTableProps {
   recordLabel: string;
   /** Record Sync status data if available */
   recordStatus?: PostRecordStatusResponse;
+}
+
+/** Props for the sort control component */
+interface SortControlProps {
+  /** Currently selected sort option */
+  value: SortOption;
+  /** Callback when sort option changes */
+  onChange: (option: SortOption) => void;
 }
 
 // Column definition type
@@ -132,12 +150,109 @@ const LARGE_COLUMNS = MANDATORY_COLUMNS.concat([
   'LAST_UPDATED_BY',
 ]);
 
-/** Default values for text display , record grid labels */
+/** Default values for text display, record grid labels */
 export const RECORD_GRID_LABELS = {
   MISSING_DATA_PLACEHOLDER: '-',
   HRID_COLUMN_LABEL: 'ID',
   VERTICAL_STACK_COLUMN_LABEL: 'Details',
 } as const;
+
+/**
+ * Configuration for all available sort options.
+ * Maps sort option keys to their display labels and sort parameters.
+ */
+const SORT_OPTIONS: Record<SortOption, SortConfig> = {
+  updated_desc: {
+    label: 'Recently Updated',
+    field: 'updated',
+    direction: 'desc',
+  },
+  updated_asc: {
+    label: 'Oldest Updated',
+    field: 'updated',
+    direction: 'asc',
+  },
+  created_desc: {
+    label: 'Recently Created',
+    field: 'created',
+    direction: 'desc',
+  },
+  created_asc: {
+    label: 'Oldest Created',
+    field: 'created',
+    direction: 'asc',
+  },
+  created_by_asc: {
+    label: 'Created By (A-Z)',
+    field: 'created_by',
+    direction: 'asc',
+  },
+  created_by_desc: {
+    label: 'Created By (Z-A)',
+    field: 'created_by',
+    direction: 'desc',
+  },
+  updated_by_asc: {
+    label: 'Updated By (A-Z)',
+    field: 'updated_by',
+    direction: 'asc',
+  },
+  updated_by_desc: {
+    label: 'Updated By (Z-A)',
+    field: 'updated_by',
+    direction: 'desc',
+  },
+  type_asc: {
+    label: 'Type (A-Z)',
+    field: 'type',
+    direction: 'asc',
+  },
+  type_desc: {
+    label: 'Type (Z-A)',
+    field: 'type',
+    direction: 'desc',
+  },
+};
+
+/** Default sort option */
+const DEFAULT_SORT: SortOption = 'updated_desc';
+
+// ============================================================================
+// Sort Control Component
+// ============================================================================
+
+/**
+ * Dropdown control for selecting sort order.
+ * Renders a Material-UI Select with all available sort options.
+ */
+function SortControl({value, onChange}: SortControlProps) {
+  const handleChange = (event: SelectChangeEvent<SortOption>) => {
+    onChange(event.target.value as SortOption);
+  };
+
+  return (
+    <FormControl size="small" sx={{minWidth: 180}}>
+      <InputLabel id="sort-select-label">
+        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+          Sort By
+        </Box>
+      </InputLabel>
+      <Select<SortOption>
+        labelId="sort-select-label"
+        id="sort-select"
+        value={value}
+        label="Sort By"
+        onChange={handleChange}
+      >
+        {Object.entries(SORT_OPTIONS).map(([key, config]) => (
+          <MenuItem key={key} value={key}>
+            {config.label}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
 
 // ============================================================================
 // Column Builder functions
@@ -147,11 +262,11 @@ export const RECORD_GRID_LABELS = {
  * Extracts and formats data from a record metadata object based on the
  * specified column type.
  *
- * @param record The record to get data from
- * @param column The column type
- * @param uiSpecification ui Spec
- * @returns {string} The formatted string value for the column, or
- * a fallback ('-') if data is missing or invalid
+ * @param record - The record to get data from
+ * @param column - The column type
+ * @param uiSpecification - UI specification for label lookups
+ * @returns The formatted string value for the column, or a fallback ('-') if
+ *          data is missing or invalid
  */
 function getDataForColumn({
   record,
@@ -205,10 +320,9 @@ function getDataForColumn({
  * Builds a list of column definitions from summary fields specified in the UI
  * specification.
  *
- * @param summaryFields The list of fields to use as summary fields
- * @param uiSpecification The UI spec
- *
- * @returns {GridColumnType[]} Array of column definitions for the DataGrid
+ * @param summaryFields - The list of fields to use as summary fields
+ * @param uiSpecification - The UI spec
+ * @returns Array of column definitions for the DataGrid
  */
 export function buildColumnsFromSummaryFields({
   summaryFields,
@@ -224,7 +338,7 @@ export function buildColumnsFromSummaryFields({
     sortable: false,
     headerName: prettifyFieldName(field),
     type: 'string',
-    filterable: true,
+    filterable: false,
     flex: 1,
     valueGetter: params => {
       const data = 'data' in params.row ? params.row.data ?? {} : {};
@@ -239,8 +353,9 @@ export function buildColumnsFromSummaryFields({
 /**
  * Builds a column definition for a system-level column type.
  *
- * @param columnType Type of column
- * @param uiSpecification The ui spec
+ * @param columnType - Type of column to build
+ * @param uiSpecification - The UI specification
+ * @returns Column definition for the DataGrid
  */
 export function buildColumnFromSystemField({
   columnType,
@@ -255,7 +370,7 @@ export function buildColumnFromSystemField({
     type: 'string',
     sortable: false,
     flex: 1,
-    filterable: true,
+    filterable: false,
   };
 
   switch (columnType) {
@@ -263,13 +378,9 @@ export function buildColumnFromSystemField({
       return {
         ...baseColumn,
         type: 'dateTime',
-        sortable: true,
         valueGetter: params => {
           const rawValue = params.row.updated;
           return rawValue ? new Date(rawValue) : null;
-        },
-        sortComparator: (v1, v2) => {
-          return new Date(v1).getTime() - new Date(v2).getTime();
         },
       };
 
@@ -285,6 +396,7 @@ export function buildColumnFromSystemField({
           });
         },
       };
+
     case 'SYNC_STATUS':
       return {
         ...baseColumn,
@@ -296,12 +408,13 @@ export function buildColumnFromSystemField({
             uiSpecification,
           });
           return sync === 'synced' ? (
-            <CloudDoneIcon color="success"></CloudDoneIcon>
+            <CloudDoneIcon color="success" />
           ) : (
-            <PendingIcon color="warning"></PendingIcon>
+            <PendingIcon color="warning" />
           );
         },
       };
+
     case 'KIND':
     case 'LAST_UPDATED_BY':
     case 'CREATED_BY':
@@ -316,6 +429,7 @@ export function buildColumnFromSystemField({
           });
         },
       };
+
     case 'CONFLICTS':
       return {
         ...baseColumn,
@@ -341,10 +455,8 @@ export function buildColumnFromSystemField({
  *
  * @param field - The field name to extract from the data
  * @param data - The data object containing the field
- * @returns {string} A string representation of the field value, or a fallback value if:
- *   - The data object is undefined/null
- *   - The field doesn't exist in the data
- *   - The value cannot be converted to a meaningful string
+ * @returns A string representation of the field value, or a fallback value if
+ *          the data is missing or cannot be converted
  */
 function getDisplayDataFromRecordMetadata({
   field,
@@ -355,32 +467,26 @@ function getDisplayDataFromRecordMetadata({
 }): string {
   const fallback = RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
   try {
-    // Handle undefined/null data object
     if (!data) return fallback;
 
     const value = data[field];
 
-    // Handle undefined/null value
     if (value === undefined || value === null) return fallback;
 
-    // Handle different types
     switch (typeof value) {
       case 'string':
-        return value.trim() || fallback; // Return fallback if empty string
+        return value.trim() || fallback;
       case 'number':
         return Number.isFinite(value) ? value.toString() : fallback;
       case 'boolean':
         return value.toString();
       case 'object':
         if (Array.isArray(value)) {
-          // Filter out null/undefined and join array elements
           return value.filter(item => item !== null).join(', ') || fallback;
         }
-        // For dates
         if (value instanceof Date) {
           return value.toISOString();
         }
-        // For other objects, try JSON stringify if they're not too complex
         try {
           const str = JSON.stringify(value);
           return str === '{}' ? fallback : str;
@@ -399,7 +505,7 @@ function getDisplayDataFromRecordMetadata({
 /**
  * Builds a basic column definition for the HRID (Human Readable ID) field.
  *
- * @returns {GridColumnType} Column definition for the HRID field
+ * @returns Column definition for the HRID field
  */
 function buildHridColumn(): GridColumnType {
   return {
@@ -407,6 +513,8 @@ function buildHridColumn(): GridColumnType {
     headerName: 'Field ID',
     description: 'Human Readable Record ID',
     type: 'string',
+    sortable: false,
+    filterable: false,
     flex: 1,
     renderCell: (params: GridCellParams) => {
       return <Typography>{params.row.hrid}</Typography>;
@@ -415,18 +523,16 @@ function buildHridColumn(): GridColumnType {
 }
 
 /**
- * Given the summary fields and the column label to use, will build a column
- * definition for the small vertical stack record layout
+ * Builds a column definition for the small vertical stack record layout.
+ * This is used on small screens to show multiple fields stacked vertically
+ * in a single column.
  *
- * @param summaryFields - the summary fields to use if any
- * @param columnLabel - The label for the column
- * @param uiSpecification - UI spec
- * @param includeKind - should we include the record type/kind?
- * @param hasConflict - does any record have a conflict? (Triggers a check - in
- * column layout this always adds it, here it only adds if === Yes)
- *
- * @returns A single column definition which renders a vertical stack of key
- * value pairs nicely
+ * @param summaryFields - The summary fields to display
+ * @param columnLabel - The label for the column header
+ * @param uiSpecification - UI specification for label lookups
+ * @param includeKind - Whether to include the record type/kind
+ * @param hasConflict - Whether any record has a conflict (shows warning icon)
+ * @returns A single column definition with vertical key-value layout
  */
 export function buildVerticalStackColumn({
   summaryFields,
@@ -445,12 +551,11 @@ export function buildVerticalStackColumn({
     field: 'summaryVerticalStack',
     headerName: columnLabel,
     type: 'string',
-    filterable: true,
+    filterable: false,
     flex: 1,
     sortable: false,
     renderCell: (params: GridCellParams) => {
       try {
-        // Build a set of k,v fields to render vertically
         const kvp: {[fieldName: string]: string | ReactNode} = {};
 
         // Add the kind property if needed (put this first)
@@ -460,7 +565,6 @@ export function buildVerticalStackColumn({
             record: params.row,
             uiSpecification,
           });
-          // And a pretty key
           kvp[COLUMN_TO_LABEL_MAP.get('KIND') ?? 'Type'] =
             val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
         }
@@ -468,12 +572,10 @@ export function buildVerticalStackColumn({
         // Use the summary fields if present
         if (summaryFields.length > 0) {
           for (const summaryField of summaryFields) {
-            // Get the value for this entry
             const val = getDisplayDataFromRecordMetadata({
               field: summaryField,
               data: params.row.data ?? {},
             });
-            // And a pretty key
             const key = prettifyFieldName(summaryField);
             kvp[key] = val ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
           }
@@ -483,6 +585,7 @@ export function buildVerticalStackColumn({
             params.row.hrid ?? RECORD_GRID_LABELS.MISSING_DATA_PLACEHOLDER;
         }
 
+        // Add mandatory columns
         for (const mandatoryField of MANDATORY_COLUMNS) {
           const key = COLUMN_TO_LABEL_MAP.get(mandatoryField) ?? 'Details';
           kvp[key] =
@@ -500,9 +603,7 @@ export function buildVerticalStackColumn({
             record: params.row,
             uiSpecification,
           });
-          // Only put this in if necessary
           if (val === 'Yes') {
-            // And a pretty key
             kvp[COLUMN_TO_LABEL_MAP.get('CONFLICTS') ?? 'Conflicts'] = (
               <WarningAmberIcon color="warning" sx={{marginRight: 1}} />
             );
@@ -517,9 +618,9 @@ export function buildVerticalStackColumn({
         });
         kvp['Sync Status'] =
           sync === 'synced' ? (
-            <CloudDoneIcon color="success"></CloudDoneIcon>
+            <CloudDoneIcon color="success" />
           ) : (
-            <PendingIcon color="warning"></PendingIcon>
+            <PendingIcon color="warning" />
           );
 
         return <KeyValueTable data={kvp} />;
@@ -535,21 +636,21 @@ export function buildVerticalStackColumn({
 }
 
 /**
- * Builds column definitions for the data grid based on UI specifications and screen width.
+ * Builds column definitions for the data grid based on UI specifications and
+ * screen width.
  *
- * @param uiSpecification Ui spec
- * @param viewsetId the viewset relevant (if known/single entity type)
- * @param width the screen size
- * @param includeKind should we include record type in relevant display
- * @param hasConflict does any item have a conflict? If so include column for it
- *
- * @returns {GridColumnType[]} Array of column definitions for the DataGrid
+ * @param uiSpecification - UI specification
+ * @param viewsetId - The viewset ID (if known/single entity type)
+ * @param width - The current screen size category
+ * @param includeKind - Whether to include record type in display
+ * @param hasConflict - Whether any item has a conflict
+ * @returns Array of column definitions for the DataGrid
  *
  * @description
  * Generates columns based on screen width:
- * - Small: Shows a vertical stack of fields with basic information
- * - Medium: Shows summary fields (or HRID) plus mandatory columns
- * - Large: Shows all available columns including additional metadata
+ * - Small (xs/sm): Shows a vertical stack of fields with basic information
+ * - Medium (md): Shows summary fields (or HRID) plus mandatory columns
+ * - Large (lg): Shows all available columns including additional metadata
  */
 function buildColumnDefinitions({
   uiSpecification,
@@ -564,21 +665,19 @@ function buildColumnDefinitions({
   includeKind: boolean;
   hasConflict: boolean;
 }): GridColumnType[] {
-  // Get the UI spec information
   let summaryFields: string[] = [];
 
-  // Only try to fetch summary fields when we actually have a viewsetID
   if (viewsetId) {
     summaryFields = getSummaryFieldInformation(
       uiSpecification,
       viewsetId
     ).fieldNames;
   }
+
   let columnList: GridColumnType[] = [];
 
-  // Column generation based on width
   if (width === 'xs' || width === 'sm') {
-    // For small width, use vertical stack layout
+    // Small width: vertical stack layout
     columnList.push(
       buildVerticalStackColumn({
         columnLabel: RECORD_GRID_LABELS.VERTICAL_STACK_COLUMN_LABEL,
@@ -589,9 +688,7 @@ function buildColumnDefinitions({
       })
     );
   } else if (width === 'md') {
-    // For medium width, show summary fields or HRID, plus mandatory columns
-
-    // Add sync status field
+    // Medium width: summary fields or HRID, plus mandatory columns
     columnList.push(
       buildColumnFromSystemField({
         columnType: 'SYNC_STATUS',
@@ -599,7 +696,6 @@ function buildColumnDefinitions({
       })
     );
 
-    // Add kind column (if needed)
     if (includeKind) {
       columnList.push(
         buildColumnFromSystemField({
@@ -608,6 +704,7 @@ function buildColumnDefinitions({
         })
       );
     }
+
     if (summaryFields.length > 0) {
       columnList = columnList.concat(
         buildColumnsFromSummaryFields({
@@ -619,7 +716,6 @@ function buildColumnDefinitions({
       columnList.push(buildHridColumn());
     }
 
-    // Add mandatory columns
     MANDATORY_COLUMNS.forEach(columnType => {
       columnList.push(
         buildColumnFromSystemField({
@@ -628,14 +724,14 @@ function buildColumnDefinitions({
         })
       );
     });
-    // Add conflict column if needed
+
     if (hasConflict) {
       columnList.push(
         buildColumnFromSystemField({columnType: 'CONFLICTS', uiSpecification})
       );
     }
   } else if (width === 'lg') {
-    // Add kind column (if needed)
+    // Large width: all columns
     if (includeKind) {
       columnList.push(
         buildColumnFromSystemField({
@@ -645,7 +741,6 @@ function buildColumnDefinitions({
       );
     }
 
-    // Add sync status field
     columnList.push(
       buildColumnFromSystemField({
         columnType: 'SYNC_STATUS',
@@ -653,7 +748,6 @@ function buildColumnDefinitions({
       })
     );
 
-    // For large width, include all columns
     if (summaryFields.length > 0) {
       columnList = columnList.concat(
         buildColumnsFromSummaryFields({
@@ -665,7 +759,6 @@ function buildColumnDefinitions({
       columnList.push(buildHridColumn());
     }
 
-    // Add all columns defined in LARGE_COLUMNS
     LARGE_COLUMNS.forEach(columnType => {
       columnList.push(
         buildColumnFromSystemField({
@@ -675,7 +768,6 @@ function buildColumnDefinitions({
       );
     });
 
-    // Add conflict column if needed
     if (hasConflict) {
       columnList.push(
         buildColumnFromSystemField({columnType: 'CONFLICTS', uiSpecification})
@@ -687,9 +779,8 @@ function buildColumnDefinitions({
 }
 
 /**
- * A simple display for key value pair data - used in vertical summary stack
- * layout
- * @returns
+ * A simple display for key-value pair data.
+ * Used in vertical summary stack layout for small screens.
  */
 export const KeyValueTable = ({
   data,
@@ -704,7 +795,7 @@ export const KeyValueTable = ({
             <TableRow key={key}>
               <TableCell
                 sx={{
-                  minWidth: '40%',
+                  width: '30%',
                   borderBottom: 'none',
                   padding: '4px 8px',
                   textAlign: 'right',
@@ -714,7 +805,7 @@ export const KeyValueTable = ({
               </TableCell>
               <TableCell
                 sx={{
-                  maxWidth: '60%',
+                  width: '70%',
                   borderBottom: 'none',
                   padding: '4px 8px',
                   fontWeight: 'bold',
@@ -732,11 +823,61 @@ export const KeyValueTable = ({
 };
 
 // ============================================================================
+// Sorting Utilities
+// ============================================================================
+
+/**
+ * Sorts an array of records based on the specified sort option.
+ * Works with UnhydratedRecord fields only (no hydration required).
+ *
+ * @param rows - The rows to sort
+ * @param sortOption - The sort option to apply
+ * @returns A new sorted array (does not mutate the original)
+ */
+function sortRows(
+  rows: UnhydratedRecord[],
+  sortOption: SortOption
+): UnhydratedRecord[] {
+  const config = SORT_OPTIONS[sortOption];
+  const {field, direction} = config;
+
+  return [...rows].sort((a, b) => {
+    const aVal = a[field];
+    const bVal = b[field];
+
+    // Handle null/undefined values - push them to the end
+    if (aVal == null && bVal == null) return 0;
+    if (aVal == null) return 1;
+    if (bVal == null) return -1;
+
+    let comparison: number;
+
+    // Date comparison
+    if (aVal instanceof Date && bVal instanceof Date) {
+      comparison = aVal.getTime() - bVal.getTime();
+    }
+    // Boolean comparison
+    else if (typeof aVal === 'boolean' && typeof bVal === 'boolean') {
+      comparison = aVal === bVal ? 0 : aVal ? -1 : 1;
+    }
+    // String/number comparison (using localeCompare for proper string sorting)
+    else {
+      comparison = String(aVal).localeCompare(String(bVal), undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      });
+    }
+
+    return direction === 'asc' ? comparison : -comparison;
+  });
+}
+
+// ============================================================================
 // Custom Hooks
 // ============================================================================
 
 /**
- * Manages column definitions based on UI specifications and screen size
+ * Manages column definitions based on UI specifications and screen size.
  */
 const useTableColumns = ({
   uiSpec,
@@ -753,35 +894,36 @@ const useTableColumns = ({
 }) => {
   return useMemo(() => {
     if (!uiSpec) return [];
-    const cols: GridColumnType[] = [];
 
-    // Should the kind property be included?
     const includeKind = visibleTypes.length > 1;
     const viewsetId = visibleTypes.length === 1 ? visibleTypes[0] : '';
 
-    return cols.concat(
-      buildColumnDefinitions({
-        uiSpecification: uiSpec,
-        viewsetId,
-        width: size,
-        includeKind,
-        hasConflict,
-      })
-    );
+    return buildColumnDefinitions({
+      uiSpecification: uiSpec,
+      viewsetId,
+      width: size,
+      includeKind,
+      hasConflict,
+    });
   }, [uiSpec, visibleTypes, viewsets, size, hasConflict]);
 };
 
 /**
- * Manages row filtering based on visible types.
- * Specifies whether any row has conflicts.
+ * Manages row filtering based on visible types and adds sync status.
+ * Also determines whether any row has conflicts.
+ *
+ * @param rows - Raw unhydrated records
+ * @param visibleTypes - Types to filter by (empty = show all)
+ * @param recordStatus - Sync status data if available
+ * @returns Filtered rows and conflict flag
  */
-const useTableRows = (
+const useFilteredRows = (
   rows: UnhydratedRecord[] | undefined,
-  visibleTypes: string[],
-  recordStatus: PostRecordStatusResponse | undefined
+  visibleTypes: string[]
 ) => {
   return useMemo(() => {
     let relevantRows: UnhydratedRecord[] = [];
+
     if (!rows) {
       relevantRows = [];
     } else if (visibleTypes.length === 0) {
@@ -789,24 +931,108 @@ const useTableRows = (
     } else {
       relevantRows = rows.filter(row => visibleTypes.includes(row.type));
     }
-    // add status information if available
-    if (recordStatus) {
-      relevantRows = relevantRows.map(row => {
-        const synced = recordStatus.status[row.record_id];
-        return {
-          ...row,
-          synced,
-        };
-      });
-    }
 
     return {
       rows: relevantRows,
-      hasConflict: relevantRows.some(r => {
-        return r.conflicts;
-      }),
+      hasConflict: relevantRows.some(r => r.conflicts),
     };
-  }, [rows, visibleTypes, recordStatus]);
+  }, [rows, visibleTypes]);
+};
+
+/**
+ * Manages sorting and pagination of rows.
+ * Returns both the current page's rows (for hydration) and all sorted rows
+ * (for the DataGrid).
+ *
+ * @param rows - Filtered rows to sort and paginate
+ * @param sortOption - Current sort option
+ * @param paginationModel - Current pagination state
+ * @returns Sorted rows and current page slice
+ */
+const useSortedAndPaginatedRows = (
+  rows: UnhydratedRecord[],
+  sortOption: SortOption,
+  paginationModel: {page: number; pageSize: number}
+) => {
+  return useMemo(() => {
+    // Sort all rows
+    const sorted = sortRows(rows, sortOption);
+
+    // Calculate pagination slice
+    const start = paginationModel.page * paginationModel.pageSize;
+    const end = start + paginationModel.pageSize;
+    const pageRows = sorted.slice(start, end);
+
+    return {
+      allSorted: sorted,
+      pageRows,
+    };
+  }, [rows, sortOption, paginationModel]);
+};
+
+/**
+ * Manages hydration of visible rows.
+ * Creates React Query queries for each visible row and returns a map of
+ * hydrated records.
+ *
+ * @param pageRows - Current page rows to hydrate
+ * @param projectId - Project ID for fetching
+ * @param uiSpec - UI specification
+ * @param dataDb - Database instance
+ * @param activeUser - Current user for auth context
+ * @returns Object with hydration queries and a map of hydrated records
+ */
+const useRowHydration = (
+  pageRows: UnhydratedRecord[],
+  projectId: string,
+  uiSpec: ProjectUIModel,
+  dataDb: DataDbType,
+  activeUser: ReturnType<typeof selectActiveUser>
+) => {
+  const token = activeUser?.parsedToken;
+
+  const hydratedQueries = useQueries({
+    queries: pageRows.map(row => ({
+      queryKey: [
+        activeUser?.username,
+        token?.globalRoles,
+        token?.resourceRoles,
+        ...buildHydrateKeys({
+          projectId,
+          recordId: row.record_id,
+          revisionId: '',
+        }),
+      ],
+      queryFn: async () => {
+        return await fetchAndHydrateRecord({
+          dataDb,
+          uiSpecification: uiSpec,
+          projectId,
+          recordId: row.record_id,
+          revisionId: undefined,
+        });
+      },
+      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    })),
+  });
+
+  // Build a map of hydrated records by ID
+  const hydratedMap = useMemo(() => {
+    const map = new Map<string, RecordMetadata>();
+    pageRows.forEach((row, index) => {
+      const query = hydratedQueries[index];
+      if (query.data) {
+        map.set(row.record_id, query.data);
+      }
+    });
+    return map;
+  }, [pageRows, hydratedQueries]);
+
+  return {
+    hydratedQueries,
+    hydratedMap,
+    isLoading: hydratedQueries.some(q => q.isLoading),
+  };
 };
 
 // ============================================================================
@@ -814,9 +1040,16 @@ const useTableRows = (
 // ============================================================================
 
 /**
- * MUI Data Grid based RecordsTable Component
+ * MUI Data Grid based RecordsTable Component.
  *
- * Supports different views based on screen size.
+ * Features:
+ * - Lazy hydration: Only visible rows are hydrated, with results cached
+ * - Custom sorting: Managed outside DataGrid for compatibility with lazy hydration
+ * - Responsive columns: Different layouts for different screen sizes
+ * - Sync status display: Shows whether records are synced to server
+ * - Conflict indicators: Visual warning for records with conflicts
+ *
+ * @param props - Component props
  */
 export function RecordsTable(props: RecordsTableProps) {
   const {
@@ -827,67 +1060,60 @@ export function RecordsTable(props: RecordsTableProps) {
     recordStatus,
     project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
   } = props;
+
+  console.log('Re-rendering', recordStatus);
+
   const theme = useTheme();
   const history = useNavigate();
   const styles = useDataGridStyles(theme);
+
+  // Get UI specification
   const uiSpec = compiledSpecService.getSpec(uiSpecId);
   if (!uiSpec) {
     return <CircularLoading label="Loading" />;
   }
 
+  // Get visible types from UI spec
   const visibleTypes = useMemo(() => {
     return getVisibleTypes(uiSpec);
   }, [uiSpec]);
 
-  // Screen size and responsive management
+  // Screen size for responsive columns
   const {currentSize, pageSize} = useScreenSize();
 
-  // Column and row management
-  const {rows: visibleRows, hasConflict} = useTableRows(
-    rows,
-    visibleTypes,
-    recordStatus
-  );
-
+  // State: sorting and pagination
+  const [sortOption, setSortOption] = useState<SortOption>(DEFAULT_SORT);
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    // revert back to pageSize(maxRows)
-    pageSize: 5,
+    pageSize: pageSize(maxRows) ?? 25,
   });
 
-  // Apply sorting FIRST, then pagination
-  const sortedAndPaginatedEntries = useMemo(() => {
-    let sorted = [...visibleRows];
+  // Filter rows by visible types and add sync status
+  const {rows: rawFilteredRows, hasConflict} = useFilteredRows(
+    rows,
+    visibleTypes
+  );
 
-    // Apply sort if any
-    if (sortModel.length > 0) {
-      const {field, sort} = sortModel[0];
-      sorted.sort((a, b) => {
-        const aVal = a[field] ?? a.data?.[field];
-        const bVal = b[field] ?? b.data?.[field];
+  // Add sync status information if available
+  let filteredRows = rawFilteredRows;
+  if (recordStatus) {
+    filteredRows = rawFilteredRows.map(row => {
+      const synced = recordStatus.status[row.record_id];
+      return {
+        ...row,
+        synced,
+      };
+    });
+  }
 
-        // Handle different types
-        if (aVal instanceof Date && bVal instanceof Date) {
-          return sort === 'asc'
-            ? aVal.getTime() - bVal.getTime()
-            : bVal.getTime() - aVal.getTime();
-        }
+  // Sort and paginate
+  const {allSorted, pageRows} = useSortedAndPaginatedRows(
+    filteredRows,
+    sortOption,
+    paginationModel
+  );
 
-        const comparison = String(aVal ?? '').localeCompare(String(bVal ?? ''));
-        return sort === 'asc' ? comparison : -comparison;
-      });
-    }
-
-    // Then paginate
-    const start = paginationModel.page * paginationModel.pageSize;
-    const end = start + paginationModel.pageSize;
-
-    return {
-      pageRows: sorted.slice(start, end),
-      allSorted: sorted,
-    };
-  }, [visibleRows, sortModel, paginationModel]);
-
+  // Build column definitions
   const columns = useTableColumns({
     uiSpec,
     visibleTypes,
@@ -896,58 +1122,34 @@ export function RecordsTable(props: RecordsTableProps) {
     hasConflict,
   });
 
-  // Work out our context e.g. active user, token, data db etc
+  // Get auth context for hydration
   const activeUser = useAppSelector(selectActiveUser);
   const dataDb = localGetDataDb(project_id);
-  const token = activeUser?.parsedToken;
 
-  // Only hydrate the visible ones
-  const hydratedQueries = useQueries({
-    queries: sortedAndPaginatedEntries.pageRows
-      .map(row => row.record_id)
-      .map(id => ({
-        queryKey: [
-          activeUser?.username,
-          token?.globalRoles,
-          token?.resourceRoles,
-          ...buildHydrateKeys({
-            projectId: project_id,
-            recordId: id,
-            revisionId: '',
-          }),
-        ],
-        queryFn: () => {
-          // Grab the minimal metadata
-          return fetchAndHydrateRecord({
-            dataDb,
-            uiSpecification: uiSpec,
-            projectId: project_id,
-            recordId: id,
-            revisionId: undefined,
-          });
-        },
-        staleTime: 5 * 60 * 1000, // cache for 5 mins
-      })),
-  });
+  // Hydrate visible rows
+  const {hydratedMap, isLoading: isHydrating} = useRowHydration(
+    pageRows,
+    project_id,
+    uiSpec,
+    dataDb,
+    activeUser
+  );
 
-  // Build the full row list with hydrated data where available
-  const allRowsPartiallyHydrated = useMemo(() => {
-    // Create a map of hydrated records by ID
-    const hydratedMap = new Map();
-    sortedAndPaginatedEntries.pageRows.forEach((row, index) => {
-      const query = hydratedQueries[index];
-      if (query.data) {
-        hydratedMap.set(row.record_id, query.data);
-      }
-    });
+  // Merge hydrated data into sorted rows
+  const displayRows = useMemo(() => {
+    return allSorted.map(row => ({
+      ...(hydratedMap.get(row.record_id) ?? row),
+      synced: recordStatus ? recordStatus.status[row.record_id] : undefined,
+    }));
+  }, [allSorted, hydratedMap]);
 
-    // Return sorted rows with hydration applied
-    return sortedAndPaginatedEntries.allSorted.map(
-      row => hydratedMap.get(row.record_id) ?? row
-    );
-  }, [sortedAndPaginatedEntries, hydratedQueries]);
+  // Handle sort change - reset to first page when sort changes
+  const handleSortChange = useCallback((newSort: SortOption) => {
+    setSortOption(newSort);
+    setPaginationModel(prev => ({...prev, page: 0}));
+  }, []);
 
-  // Event handlers
+  // Handle row click - navigate to record view
   const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
     params => {
       history(
@@ -958,31 +1160,41 @@ export function RecordsTable(props: RecordsTableProps) {
         })
       );
     },
-    [history, project_id]
+    [history, project_id, serverId]
   );
 
   return (
     <Box component={Paper} elevation={3} sx={styles.wrapper}>
       <DataGrid
-        rows={allRowsPartiallyHydrated}
-        loading={loading || hydratedQueries.some(q => q.isLoading)}
+        rows={displayRows}
+        loading={loading || isHydrating}
         getRowId={r => r.record_id}
         columns={columns}
+        // Pagination - controlled
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
+        pageSizeOptions={[10, 15, 20, 25, 50, 100]}
+        // Disable all DataGrid sorting/filtering - we manage it ourselves
         disableColumnFilter
         disableColumnMenu
         disableColumnSelector
-        paginationModel={paginationModel}
-        onPaginationModelChange={setPaginationModel}
+        // Row configuration
         autoHeight
         getRowHeight={() => 'auto'}
-        pageSizeOptions={[10, 15, 20, 25, 50, 100]}
         disableRowSelectionOnClick
         onRowClick={handleRowClick}
         getRowClassName={params => (params.row.conflicts ? 'conflict-row' : '')}
+        // Custom toolbar with sort control
         slots={{toolbar: NotebookDataGridToolbar}}
         slotProps={{
           filterPanel: {sx: {maxWidth: '96vw'}},
-          toolbar: {handleQueryFunction: props.handleQueryFunction},
+          toolbar: {
+            handleQueryFunction: props.handleQueryFunction,
+            // Pass sort control as additional toolbar content
+            additionalControls: (
+              <SortControl value={sortOption} onChange={handleSortChange} />
+            ),
+          },
         }}
         sx={styles.grid}
       />
