@@ -24,13 +24,43 @@ const OfflineMapsConfigSchema = z.object({
     .default('basic'),
 });
 
-const SocialProvidersConfigSchema = z.object({
-  google: z
-    .object({
-      secretArn: z.string(),
-    })
-    .optional(),
+// For each provider we should have these secrets in the secrets manager
+// const AuthProviderSecretSchema = z.object({
+//   clientID: z.string(),
+//   clientSecret: z.string(),
+// });
+
+const BaseAuthProviderConfigSchema = z.object({
+  index: z.number().optional(), // order for display in UI
+  type: z.string(),
+  displayName: z.string(),
+  helperText: z.string().optional(),
 });
+
+const GoogleAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
+  type: z.literal('google'),
+});
+
+const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
+  type: z.literal('oidc'),
+  issuer: z.string(),
+  authorizationURL: z.string(),
+  tokenURL: z.string(),
+  userInfoURL: z.string(),
+});
+
+const AuthProvidersConfigSchema = z.object({
+  providers: z.array(z.string()),
+  secretArn: z.string(),
+  config: z.record(
+    z.discriminatedUnion('type', [
+      GoogleAuthProviderConfigSchema,
+      OIDCAuthProviderConfigSchema,
+    ])
+  ),
+});
+
+export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
 
 const SMTPConfigSchema = z.object({
   /** Email service type (SMTP or MOCK) */
@@ -300,7 +330,7 @@ export const ConfigSchema = z.object({
   /** Email service configuration */
   smtp: SMTPConfigSchema,
   /** Social sign in providers */
-  socialProviders: SocialProvidersConfigSchema.optional(),
+  authProviders: AuthProvidersConfigSchema.optional(),
   /** Security parameters */
   security: SecurityConfigSchema.optional().default({
     maximumLongLivedTokenDurationDays: 90,

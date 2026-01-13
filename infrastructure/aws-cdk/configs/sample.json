@@ -86,7 +86,7 @@
   "conductor": {
     "name": "FAIMS Server",
     "description": "FAIMS Conductor instance deployment.",
-    "conductorDockerImage": "org/faims3-api",
+    "conductorDockerImage": "ghcr.io/faims/faims3-api",
     "conductorDockerImageTag": "latest",
     "shortCodePrefix": "FAIMS",
     "cpu": 1024,
@@ -99,7 +99,33 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": false
+    "localhostWhitelist": false,
+    "smtp": {
+      "host": "host-url",
+      "port": "2525",
+      "secure": "false"
+    }
+  },
+  "authProviders": {
+    "providers": ["google", "someOdcProvider"],
+    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
+    "config": {
+      "google": {
+        "type": "google",
+        "index": 1,
+        "displayName": "Google",
+        "helperText": "Log in with your Google account."
+      },
+      "someOdcProvider": {
+        "type": "oidc",
+        "index": 2,
+        "displayName": "OIDC Provider",
+        "helperText": "Log in with your organization's OIDC provider.",
+        "authorizationURL": "https://your-oidc-provider.com",
+        "tokenURL": "https://your-oidc-provider.com/token",
+        "userInfoURL": "https://your-oidc-provider.com/userinfo"
+      }
+    }
   },
   "domains": {
     "baseDomain": "your-domain.com",

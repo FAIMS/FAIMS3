@@ -26,7 +26,7 @@ import * as sm from 'aws-cdk-lib/aws-secretsmanager';
 import {Construct} from 'constructs';
 import {getPathToRoot} from '../util/mono';
 import {SharedBalancer} from './networking';
-import {ConductorConfig} from '../config';
+import {AuthProvidersConfig, ConductorConfig} from '../config';
 
 const DEFAULT_SMTP_CACHE_EXPIRY = 300;
 
@@ -57,13 +57,6 @@ export interface SMTPGeneralConfig {
   testEmailAddress: string;
   /** Cache expiry in seconds (optional) */
   cacheExpirySeconds?: number;
-}
-
-export interface SocialProvidersConfig {
-  google?: {
-    // must contain CLIENT_ID and CLIENT_SECRET
-    secretArn: string;
-  };
 }
 
 /**
@@ -107,7 +100,7 @@ export interface FaimsConductorProps {
   /** SMTP general configuration */
   smtpConfig: SMTPGeneralConfig;
   /** Social providers info (if enabled) */
-  socialProviders?: SocialProvidersConfig;
+  authProviders?: AuthProvidersConfig;
   /** If true, adds typical localhost addresses to the allowable redirect
    * whitelist (DEV ONLY) */
   localhostWhitelist: boolean;
@@ -175,32 +168,37 @@ export class FaimsConductor extends Construct {
       props.smtpCredsArn
     );
 
-    const socialProviderList: string[] = [];
-    if (props.socialProviders?.google) {
-      socialProviderList.push('google');
-    }
-    const renderedProviderList = socialProviderList.join(';');
+    // Configure auth providers
+    // Based on the configuration we generate two sets of environment variables
+    // for secret and non-secret settings for each provider.
 
-    const googleSecretArn = props.socialProviders?.google?.secretArn;
-    const googleSecret = googleSecretArn
-      ? sm.Secret.fromSecretCompleteArn(
+    const authSecrets: Record<string, ecs.Secret> = {};
+    const authEnvironment: Record<string, string> = {};
+    if (props.authProviders && props.authProviders.providers.length > 0) {
+      const authSecret = sm.Secret.fromSecretCompleteArn(
           this,
-          'GoogleOAuthSecret',
-          googleSecretArn
-        )
-      : undefined;
-    const googleConfigSecrets = googleSecret
-      ? {
-          AUTH_GOOGLE_CLIENT_ID: ecs.Secret.fromSecretsManager(
-            googleSecret,
-            'CLIENT_ID'
-          ),
-          AUTH_GOOGLE_CLIENT_SECRET: ecs.Secret.fromSecretsManager(
-            googleSecret,
-            'CLIENT_SECRET'
-          ),
+          'AuthSecret',
+          props.authProviders.secretArn
+        );
+      props.authProviders.providers.forEach((provider) => {
+        const config = props.authProviders!.config[provider];
+
+        authSecrets[`AUTH_${provider}_CLIENT_ID`] = ecs.Secret.fromSecretsManager(
+            authSecret,
+            `${provider}.clientID`
+          )
+        authSecrets[`AUTH_${provider}_CLIENT_SECRET`] = ecs.Secret.fromSecretsManager(
+            authSecret,
+            `${provider}.clientSecret`
+          )
+
+        // for each key in config, convert to an env variable (AUTH_ + provider + _ + key in uppercase)
+        // and add to the environment
+        for (const [key, value] of Object.entries(config)) {
+          const envName = `AUTH_${provider.toUpperCase()}_${key.toUpperCase()}`;
+          authEnvironment[envName] = value.toString();
         }
-      : undefined;
+    });
 
     conductorTaskDfn.addContainer('conductor-container-dfn', {
       image: conductorContainerImage,
@@ -229,14 +227,8 @@ export class FaimsConductor extends Construct {
         AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         NEW_CONDUCTOR_URL: props.webUrl,
 
-        ...(googleSecret
-          ? {
-              AUTH_GOOGLE_TYPE: 'google',
-              AUTH_GOOGLE_DISPLAY_NAME: 'Google',
-              AUTH_GOOGLE_SCOPE:
-                'profile,email,https://www.googleapis.com/auth/plus.login',
-            }
-          : {}),
+        // add any auth environment variables
+        ...authEnvironment,
 
         // Security configurations
         MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
@@ -251,7 +243,7 @@ export class FaimsConductor extends Construct {
         TEST_EMAIL_ADDRESS: props.smtpConfig.testEmailAddress,
         SMTP_CACHE_EXPIRY_SECONDS: `${props.smtpConfig.cacheExpirySeconds || DEFAULT_SMTP_CACHE_EXPIRY}`,
 
-        // Whitelising for redirects - should include API, APP, WEB and APP_ID://
+        // Whitelisting for redirects - should include API, APP, WEB and APP_ID://
         REDIRECT_WHITELIST: [
           this.conductorEndpoint,
           props.webAppPublicUrl,
@@ -266,13 +258,6 @@ export class FaimsConductor extends Construct {
               ]
             : []),
         ].join(','),
-
-        // social providers (if at least one configured)
-        ...(socialProviderList.length > 0
-          ? {
-              CONDUCTOR_AUTH_PROVIDERS: renderedProviderList,
-            }
-          : {}),
       },
       secrets: {
         COUCHDB_PASSWORD: ecs.Secret.fromSecretsManager(
@@ -292,8 +277,8 @@ export class FaimsConductor extends Construct {
         SMTP_USER: ecs.Secret.fromSecretsManager(smtpSecret, 'user'),
         SMTP_PASSWORD: ecs.Secret.fromSecretsManager(smtpSecret, 'pass'),
 
-        // Include google config if provided
-        ...(googleConfigSecrets ?? {}),
+        // Include any auth config secrets
+        ...authSecrets,
       },
       logging: ecs.LogDriver.awsLogs({
         streamPrefix: 'faims-conductor',
