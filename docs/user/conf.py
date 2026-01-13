@@ -39,10 +39,11 @@ myst_enable_extensions = [
 
 NOTEBOOK_NAME = os.getenv("VITE_NOTEBOOK_NAME", "notebook")
 DASHBOARD_NAME = os.getenv("VITE_WEBSITE_TITLE", "dashboard")
+THEME_NAME = os.getenv("VITE_THEME", "default")
 
 myst_substitutions = {
   "FAIMS": project, # the product name
-  "theme": "default", # the theme name, used to select screenshots
+  "theme": THEME_NAME, # the theme name, used to select screenshots
   "notebook": NOTEBOOK_NAME, # the name of a project (notebook or survey)
   "Notebook": NOTEBOOK_NAME.title(), # variations of the notebook name
   "notebooks": NOTEBOOK_NAME + 's',

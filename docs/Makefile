@@ -1,3 +1,5 @@
+include .env
+export 
 
 docker: Dockerfile
 	docker build -t sphinx-builder .
