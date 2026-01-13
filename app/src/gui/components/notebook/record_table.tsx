@@ -19,12 +19,15 @@
  */
 
 import {
+  fetchAndHydrateRecord,
   getSummaryFieldInformation,
   getVisibleTypes,
+  hydrateIndividualRecord,
   PostRecordStatusResponse,
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
+  UnhydratedRecord,
 } from '@faims3/data-model';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import PendingIcon from '@mui/icons-material/Pending';
@@ -46,7 +49,7 @@ import {
   GridColDef,
   GridEventListener,
 } from '@mui/x-data-grid';
-import {ReactNode, useCallback, useMemo} from 'react';
+import {ReactNode, useCallback, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -56,6 +59,12 @@ import {useScreenSize} from '../../../utils/useScreenSize';
 import CircularLoading from '../ui/circular_loading';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
 import {prettifyFieldName} from '../../../utils/formUtilities';
+import {useQueries} from '@tanstack/react-query';
+import {selectActiveUser} from '../../../context/slices/authSlice';
+import {useAppSelector} from '../../../context/store';
+import {localGetDataDb} from '../../../utils/database';
+import {buildHydrateKeys} from '../../../utils/customHooks';
+import {PanoramaSharp} from '@mui/icons-material';
 
 // ============================================================================
 // Types & Interfaces
@@ -81,7 +90,7 @@ interface RecordsTableProps {
   /** Max rows to display, or null for unlimited */
   maxRows: number | null;
   /** Array of record metadata objects */
-  rows: RecordMetadata[] | undefined;
+  rows: UnhydratedRecord[] | undefined;
   /** Whether the table is in a loading state */
   loading: boolean;
   /** Optional viewsets configuration for the table */
@@ -97,7 +106,7 @@ interface RecordsTableProps {
 }
 
 // Column definition type
-type GridColumnType = GridColDef<RecordMetadata>;
+type GridColumnType = GridColDef<RecordMetadata | UnhydratedRecord>;
 
 // ============================================================================
 // Constants
@@ -149,7 +158,7 @@ function getDataForColumn({
   column,
   uiSpecification,
 }: {
-  record: RecordMetadata;
+  record: RecordMetadata | UnhydratedRecord;
   column: ColumnType;
   uiSpecification: ProjectUIModel;
 }): string | undefined {
@@ -217,9 +226,10 @@ export function buildColumnsFromSummaryFields({
     filterable: true,
     flex: 1,
     valueGetter: params => {
+      const data = 'data' in params.row ? params.row.data ?? {} : {};
       return getDisplayDataFromRecordMetadata({
         field,
-        data: params.row.data || {},
+        data: data,
       });
     },
   }));
@@ -763,12 +773,12 @@ const useTableColumns = ({
  * Specifies whether any row has conflicts.
  */
 const useTableRows = (
-  rows: RecordMetadata[] | undefined,
+  rows: UnhydratedRecord[] | undefined,
   visibleTypes: string[],
   recordStatus: PostRecordStatusResponse | undefined
 ) => {
   return useMemo(() => {
-    let relevantRows: RecordMetadata[] = [];
+    let relevantRows: UnhydratedRecord[] = [];
     if (!rows) {
       relevantRows = [];
     } else if (visibleTypes.length === 0) {
@@ -835,12 +845,70 @@ export function RecordsTable(props: RecordsTableProps) {
     visibleTypes,
     recordStatus
   );
+
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: pageSize(maxRows) ?? 25,
+  });
+
+  // calculate the visible IDs
+  const visibleEntries = useMemo(() => {
+    const start = paginationModel.page * paginationModel.pageSize;
+    const end = start + paginationModel.pageSize;
+    return visibleRows.slice(start, end);
+  }, [visibleRows, paginationModel]);
+
   const columns = useTableColumns({
     uiSpec,
     visibleTypes,
     viewsets,
     size: currentSize,
     hasConflict,
+  });
+
+  // Work out our context e.g. active user, token, data db etc
+  const activeUser = useAppSelector(selectActiveUser);
+  const dataDb = localGetDataDb(project_id);
+  const token = activeUser?.parsedToken;
+
+  // Only hydrate the visible ones
+  const hydratedQueries = useQueries({
+    queries: visibleEntries
+      .map(row => row.record_id)
+      .map(id => ({
+        queryKey: [
+          activeUser?.username,
+          token?.globalRoles,
+          token?.resourceRoles,
+          ...buildHydrateKeys({
+            projectId: project_id,
+            recordId: id,
+            revisionId: '',
+          }),
+        ],
+        queryFn: () => {
+          // Grab the minimal metadata
+          return fetchAndHydrateRecord({
+            dataDb,
+            uiSpecification: uiSpec,
+            projectId: project_id,
+            recordId: id,
+            revisionId: undefined,
+          });
+        },
+        staleTime: 5 * 60 * 1000, // cache for 5 mins
+      })),
+  });
+  const currentRows = visibleEntries?.map((row, index) => {
+    // Corresponding query result
+    const hydrationQuery = hydratedQueries[index];
+
+    // If it's done - then return the hydrated recorfd
+    if (hydrationQuery.data) {
+      return hydrationQuery.data;
+    } else {
+      return row;
+    }
   });
 
   // Event handlers
@@ -856,14 +924,19 @@ export function RecordsTable(props: RecordsTableProps) {
     },
     [history, project_id]
   );
+  console.log('Row count:', visibleRows.length);
 
   return (
     <Box component={Paper} elevation={3} sx={styles.wrapper}>
       <DataGrid
-        rows={visibleRows}
-        loading={loading}
+        rows={currentRows}
+        rowCount={visibleRows.length}
+        paginationMode="server"
+        loading={loading || hydratedQueries.some(q => q.isLoading)}
         getRowId={r => r.record_id}
         columns={columns}
+        paginationModel={paginationModel}
+        onPaginationModelChange={setPaginationModel}
         autoHeight
         getRowHeight={() => 'auto'}
         pageSizeOptions={[10, 15, 20, 25, 50, 100]}
@@ -874,10 +947,6 @@ export function RecordsTable(props: RecordsTableProps) {
         slotProps={{
           filterPanel: {sx: {maxWidth: '96vw'}},
           toolbar: {handleQueryFunction: props.handleQueryFunction},
-        }}
-        initialState={{
-          // sorting: {sortModel: [{field: 'last_updated', sort: 'desc'}]},
-          pagination: {paginationModel: {pageSize: pageSize(maxRows)}},
         }}
         sx={styles.grid}
       />
