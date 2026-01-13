@@ -48,6 +48,7 @@ import {
   GridCellParams,
   GridColDef,
   GridEventListener,
+  GridSortModel,
 } from '@mui/x-data-grid';
 import {ReactNode, useCallback, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
@@ -64,7 +65,6 @@ import {selectActiveUser} from '../../../context/slices/authSlice';
 import {useAppSelector} from '../../../context/store';
 import {localGetDataDb} from '../../../utils/database';
 import {buildHydrateKeys} from '../../../utils/customHooks';
-import {PanoramaSharp} from '@mui/icons-material';
 
 // ============================================================================
 // Types & Interfaces
@@ -221,6 +221,7 @@ export function buildColumnsFromSummaryFields({
 
   return summaryFields.map(field => ({
     field: field,
+    sortable: false,
     headerName: prettifyFieldName(field),
     type: 'string',
     filterable: true,
@@ -252,6 +253,7 @@ export function buildColumnFromSystemField({
     field: columnType.toLowerCase(),
     headerName: COLUMN_TO_LABEL_MAP.get(columnType) || columnType,
     type: 'string',
+    sortable: false,
     flex: 1,
     filterable: true,
   };
@@ -445,6 +447,7 @@ export function buildVerticalStackColumn({
     type: 'string',
     filterable: true,
     flex: 1,
+    sortable: false,
     renderCell: (params: GridCellParams) => {
       try {
         // Build a set of k,v fields to render vertically
@@ -848,15 +851,42 @@ export function RecordsTable(props: RecordsTableProps) {
 
   const [paginationModel, setPaginationModel] = useState({
     page: 0,
-    pageSize: pageSize(maxRows) ?? 25,
+    // revert back to pageSize(maxRows)
+    pageSize: 5,
   });
 
-  // calculate the visible IDs
-  const visibleEntries = useMemo(() => {
+  // Apply sorting FIRST, then pagination
+  const sortedAndPaginatedEntries = useMemo(() => {
+    let sorted = [...visibleRows];
+
+    // Apply sort if any
+    if (sortModel.length > 0) {
+      const {field, sort} = sortModel[0];
+      sorted.sort((a, b) => {
+        const aVal = a[field] ?? a.data?.[field];
+        const bVal = b[field] ?? b.data?.[field];
+
+        // Handle different types
+        if (aVal instanceof Date && bVal instanceof Date) {
+          return sort === 'asc'
+            ? aVal.getTime() - bVal.getTime()
+            : bVal.getTime() - aVal.getTime();
+        }
+
+        const comparison = String(aVal ?? '').localeCompare(String(bVal ?? ''));
+        return sort === 'asc' ? comparison : -comparison;
+      });
+    }
+
+    // Then paginate
     const start = paginationModel.page * paginationModel.pageSize;
     const end = start + paginationModel.pageSize;
-    return visibleRows.slice(start, end);
-  }, [visibleRows, paginationModel]);
+
+    return {
+      pageRows: sorted.slice(start, end),
+      allSorted: sorted,
+    };
+  }, [visibleRows, sortModel, paginationModel]);
 
   const columns = useTableColumns({
     uiSpec,
@@ -873,7 +903,7 @@ export function RecordsTable(props: RecordsTableProps) {
 
   // Only hydrate the visible ones
   const hydratedQueries = useQueries({
-    queries: visibleEntries
+    queries: sortedAndPaginatedEntries.pageRows
       .map(row => row.record_id)
       .map(id => ({
         queryKey: [
@@ -899,17 +929,23 @@ export function RecordsTable(props: RecordsTableProps) {
         staleTime: 5 * 60 * 1000, // cache for 5 mins
       })),
   });
-  const currentRows = visibleEntries?.map((row, index) => {
-    // Corresponding query result
-    const hydrationQuery = hydratedQueries[index];
 
-    // If it's done - then return the hydrated recorfd
-    if (hydrationQuery.data) {
-      return hydrationQuery.data;
-    } else {
-      return row;
-    }
-  });
+  // Build the full row list with hydrated data where available
+  const allRowsPartiallyHydrated = useMemo(() => {
+    // Create a map of hydrated records by ID
+    const hydratedMap = new Map();
+    sortedAndPaginatedEntries.pageRows.forEach((row, index) => {
+      const query = hydratedQueries[index];
+      if (query.data) {
+        hydratedMap.set(row.record_id, query.data);
+      }
+    });
+
+    // Return sorted rows with hydration applied
+    return sortedAndPaginatedEntries.allSorted.map(
+      row => hydratedMap.get(row.record_id) ?? row
+    );
+  }, [sortedAndPaginatedEntries, hydratedQueries]);
 
   // Event handlers
   const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
@@ -924,17 +960,17 @@ export function RecordsTable(props: RecordsTableProps) {
     },
     [history, project_id]
   );
-  console.log('Row count:', visibleRows.length);
 
   return (
     <Box component={Paper} elevation={3} sx={styles.wrapper}>
       <DataGrid
-        rows={currentRows}
-        rowCount={visibleRows.length}
-        paginationMode="server"
+        rows={allRowsPartiallyHydrated}
         loading={loading || hydratedQueries.some(q => q.isLoading)}
         getRowId={r => r.record_id}
         columns={columns}
+        disableColumnFilter
+        disableColumnMenu
+        disableColumnSelector
         paginationModel={paginationModel}
         onPaginationModelChange={setPaginationModel}
         autoHeight
