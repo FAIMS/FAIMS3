@@ -8,14 +8,12 @@ import {
   getHridFieldMap,
   getMinimalRecordData,
   getMinimalRecordDataWithRegex,
-  hydrateIndividualRecord,
   isAuthorized,
   ProjectUIModel,
-  RecordMetadata,
   UISpecification,
   UnhydratedRecord,
 } from '@faims3/data-model';
-import {QueryClient, useQueries, useQuery} from '@tanstack/react-query';
+import {QueryClient, useQuery} from '@tanstack/react-query';
 import _ from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
