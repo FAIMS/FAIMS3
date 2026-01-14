@@ -49,4 +49,5 @@ myst_substitutions = {
   "notebooks": NOTEBOOK_NAME + 's',
   "Notebooks": NOTEBOOK_NAME.title() + 's',
   "dashboard": DASHBOARD_NAME, # the name of the web management app
+  "Dashboard": DASHBOARD_NAME.title(),
 }
