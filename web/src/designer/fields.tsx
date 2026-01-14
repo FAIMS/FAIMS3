@@ -216,6 +216,7 @@ const fields: {[key: string]: FieldType} = {
       },
       ElementProps: {
         expandedChecklist: false,
+        enableOtherOption: false,
         options: [
           {value: 'Default', label: 'Default'},
           {value: 'Default2', label: 'Default2'},
@@ -304,7 +305,10 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
       required: false,
-      ElementProps: {options: []},
+      ElementProps: {
+        enableOtherOption: false,
+        options: [],
+      },
     },
     initialValue: '',
     humanReadableName: 'Select Field',
