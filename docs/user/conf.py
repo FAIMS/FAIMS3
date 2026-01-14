@@ -19,7 +19,7 @@ release = "1.3.0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['myst_parser', 'screenshot']
+extensions = ['myst_parser', 'screenshot', 'sphinx_wagtail_theme']
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv"]
@@ -28,8 +28,25 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv"]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'alabaster'
+html_theme = 'sphinx_wagtail_theme'
+
+# These folders are copied to the documentation's HTML output.
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+
+# These are options specifically for the Wagtail Theme.
+html_theme_options = dict(
+    project_name = project + " Documentation",
+    logo = "img/logo-dark.png",
+    logo_alt = project,
+    logo_height = 59,
+    logo_url = "/",
+    logo_width = 45,
+)
+
+copyright = "2026. FAIMS Project  "
+html_show_copyright = True
+
 
 myst_heading_anchors = 1
 
