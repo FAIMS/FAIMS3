@@ -850,3 +850,17 @@ export interface MinimalRecordMetadataResult {
   /** Count of records skipped due to errors */
   errorCount: number;
 }
+
+// ============================================================================
+// Search Types
+// ============================================================================
+
+/**
+ * Result from searching records by regex
+ */
+export interface RecordSearchResult extends MinimalRecordMetadataResult {
+  /** The regex pattern that was searched */
+  searchPattern: string;
+  /** Number of AVP matches found (before deduplication to records) */
+  avpMatchCount: number;
+}

@@ -291,7 +291,9 @@ export function useQueryParams<T extends Record<string, any>>(config: {
  *
  * Draft records are identified by the prefix `drf-` in their `record_id`.
  */
-export function filterOutDrafts<T extends MinimalRecordMetadata>(rows: T[]): T[] {
+export function filterOutDrafts<T extends MinimalRecordMetadata>(
+  rows: T[]
+): T[] {
   return rows.filter(record => !record.recordId.startsWith('drf-'));
 }
 
@@ -484,6 +486,7 @@ export const useRecordList = ({
       return isEqual ? oldData : newData;
     },
     queryFn: async () => {
+      console.log('Running query - not cached');
       const queryFnStart = performance.now();
       profile(
         `queryFn started | query="${
@@ -522,8 +525,9 @@ export const useRecordList = ({
         );
       } else {
         const fetchStart = performance.now();
-        // TODO bring back regex
-        rows = await engine.query.listMinimalRecordMetadata({
+        rows = await engine.query.searchRecordsByRegex({
+          // The regex to look for
+          regex: query,
           projectId,
           filterDeleted,
           filterFunction: rec => {
@@ -535,7 +539,7 @@ export const useRecordList = ({
           },
         });
         profile(
-          `getMinimalRecordDataWithRegex completed (${rows.count} rows, regex="${query}")`,
+          `searchRecordsByRegex completed (${rows.count} rows, regex="${query}")`,
           fetchStart
         );
       }

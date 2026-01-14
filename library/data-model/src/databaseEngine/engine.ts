@@ -44,6 +44,7 @@ import {
   RecordDBDocument,
   recordDocumentSchema,
   RecordQueryResult,
+  RecordSearchResult,
   RevisionMetadataQueryResult,
   toMinimalRevisionMetadata,
 } from './types';
@@ -51,7 +52,6 @@ import {
   normalizeRelationshipInstances,
   toDbRelationshipInstances,
 } from './utils';
-import {string} from 'zod';
 
 // =======
 // HELPERS
@@ -2047,6 +2047,135 @@ class QueryOperations {
       records: filteredRecords,
       count: filteredRecords.length,
       errorCount,
+    };
+  }
+
+  /**
+   * Search for records where AVP data matches a regular expression.
+   * Returns minimal record metadata for matching records.
+   *
+   * This:
+   * 1. Queries AVP documents where data matches the regex
+   * 2. Deduplicates to unique record IDs
+   * 3. Fetches minimal metadata for those records
+   *
+   * @param projectId - The project identifier
+   * @param options.regex - Regular expression pattern to match against AVP data
+   * @param options.filterDeleted - Whether to exclude deleted records (default: false)
+   * @param options.filterFunction - Custom optional filter function e.g. permissions
+   * @param options.batchSize - Batch size for AVP queries (default: 100)
+   *
+   * @returns Search results with minimal record metadata
+   */
+  async searchRecordsByRegex({
+    projectId,
+    regex,
+    filterDeleted = false,
+    filterFunction,
+    batchSize = 100,
+  }: {
+    projectId: string;
+    regex: string;
+    filterDeleted?: boolean;
+    filterFunction?: (rec: MinimalRecordMetadata) => boolean;
+    batchSize?: number;
+  }): Promise<RecordSearchResult> {
+    let startTime = performance.now();
+
+    // Step 1: Find AVP documents with matching data
+    const matchingRecordIds = await this.findAvpRecordIdsByRegex({
+      regex,
+      batchSize,
+    });
+
+    console.log(
+      `[searchRecordsByRegex] search query ${(
+        performance.now() - startTime
+      ).toFixed(2)}ms`
+    );
+
+    // Step 2: If no matches, return early
+    if (matchingRecordIds.recordIds.length === 0) {
+      return {
+        records: [],
+        count: 0,
+        errorCount: 0,
+        searchPattern: regex,
+        avpMatchCount: 0,
+      };
+    }
+
+    // Step 3: Get minimal metadata for matching records
+    const metadataResult = await this.listMinimalRecordMetadata({
+      projectId,
+      recordIds: matchingRecordIds.recordIds,
+      filterDeleted,
+      filterFunction,
+    });
+
+    return {
+      ...metadataResult,
+      searchPattern: regex,
+      avpMatchCount: matchingRecordIds.avpMatchCount,
+    };
+  }
+
+  /**
+   * Find record IDs from AVP documents where data matches a regex.
+   * Handles pagination internally and deduplicates results.
+   *
+   * @param options.regex - Regular expression pattern to match
+   * @param options.batchSize - Batch size for queries (default: 100)
+   *
+   * @returns Deduplicated record IDs and match count
+   */
+  private async findAvpRecordIdsByRegex({
+    regex,
+    batchSize = 100,
+  }: {
+    regex: string;
+    batchSize?: number;
+  }): Promise<{recordIds: string[]; avpMatchCount: number}> {
+    const recordIdSet = new Set<string>();
+    let skip = 0;
+    let totalAvpMatches = 0;
+    let batchCount: number;
+
+    // Query in batches since find requires a limit argument
+    do {
+      const result = await (
+        this.db as DatabaseInterface<Pick<ExistingAvpDBDocument, 'record_id'>>
+      ).find({
+        selector: {
+          avp_format_version: 1,
+          // Handle both scalar and array data values
+          $or: [{data: {$regex: regex}}, {data: {$elemMatch: {$regex: regex}}}],
+        },
+        // Only fetch the field we need
+        fields: ['record_id'],
+        limit: batchSize,
+        skip,
+      });
+
+      batchCount = result.docs.length;
+      totalAvpMatches += batchCount;
+
+      for (const doc of result.docs) {
+        const avp = doc;
+        if (avp.record_id) {
+          recordIdSet.add(avp.record_id);
+        }
+      }
+
+      skip += batchSize;
+    } while (
+      // Keep looping until we find a batch with < requested limit
+      batchCount === batchSize
+    );
+
+    return {
+      recordIds: Array.from(recordIdSet),
+      avpMatchCount: totalAvpMatches,
     };
   }
 }
