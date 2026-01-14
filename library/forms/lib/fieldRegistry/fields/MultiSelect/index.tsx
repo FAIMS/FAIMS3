@@ -580,9 +580,16 @@ const valueSchema = (props: MultiSelectFieldProps) => {
   // Handle edge case of no options defined
   if (optionValues.length === 0) {
     const baseSchema = z.array(z.string());
-    return props.required
+    const withRequiredCheck = props.required
       ? baseSchema.min(1, {message: 'Please select at least one option'})
       : baseSchema;
+
+    //  empty string validation if "Other" is enabled
+    return enableOtherOption
+      ? withRequiredCheck.refine(values => !values.some(v => v === ''), {
+          message: 'Please enter text for the "Other" option or uncheck it',
+        })
+      : withRequiredCheck;
   }
 
   // Create base schema: allow custom strings if "Other" is enabled, otherwise only predefined options
@@ -591,9 +598,22 @@ const valueSchema = (props: MultiSelectFieldProps) => {
     : z.array(z.enum(optionValues as [string, ...string[]]));
 
   // Apply required validation if needed
-  return props.required
+  const withRequiredCheck = props.required
     ? baseSchema.min(1, {message: 'Please select at least one option'})
     : baseSchema;
+
+  if (enableOtherOption) {
+    return withRequiredCheck.refine(
+      values => {
+        return !values.some(v => v === '');
+      },
+      {
+        message: 'Please enter text for the "Other" option or uncheck it',
+      }
+    );
+  }
+
+  return withRequiredCheck;
 };
 
 // ============================================================================
