@@ -31,12 +31,14 @@
  * - form (object): Formik form object for managing state and validation.
  */
 import {
+  Box,
   FormControl,
   ListItemText,
   MenuItem,
   Select as MuiSelect,
   OutlinedInput,
   SelectChangeEvent,
+  TextField,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {z} from 'zod';
@@ -55,6 +57,7 @@ const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
         key: z.string().optional(),
       })
     ),
+    enableOtherOption: z.boolean().optional(), // toggle to enable 'Other' option
   }),
   select_others: z.string().optional(),
 });
@@ -62,11 +65,19 @@ type SelectFieldProps = z.infer<typeof SelectFieldPropsSchema>;
 
 const valueSchema = (props: SelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
+  const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
   // Handle edge case of no options defined
   if (optionValues.length === 0) {
     if (props.required) {
       return z.string().min(1, {message: 'Please select an option'});
+    }
+    return z.string();
+  }
+
+  if (enableOtherOption) {
+    if (props.required) {
+      return z.string().min(1, {message: 'Please select or enter an option'});
     }
     return z.string();
   }
@@ -92,8 +103,28 @@ export const Select = (props: FieldProps) => {
   const theme = useTheme();
   const value = (props.state.value?.data as string) ?? '';
 
+  // Extract "Other" option settings
+  const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
+  const OTHER_MARKER = '__other__';
+
+  const predefinedValues = props.ElementProps.options.map(opt => opt.value);
+  const isOtherSelected =
+    enableOtherOption && value && !predefinedValues.includes(value);
+  const displayValue = isOtherSelected ? OTHER_MARKER : value;
+
   const onChange = (event: SelectChangeEvent) => {
-    props.setFieldData(event.target.value);
+    const selected = event.target.value;
+
+    if (selected === OTHER_MARKER) {
+      // if "other" selecteDd, set to empty string to allow user input
+      props.setFieldData('');
+    } else {
+      props.setFieldData(selected);
+    }
+  };
+
+  const handleOtherTextChange = (text: string) => {
+    props.setFieldData(text);
   };
 
   return (
@@ -112,7 +143,7 @@ export const Select = (props: FieldProps) => {
       >
         <MuiSelect
           onChange={onChange}
-          value={value}
+          value={displayValue}
           input={<OutlinedInput />}
           disabled={props.disabled}
           onBlur={props.handleBlur}
@@ -143,6 +174,57 @@ export const Select = (props: FieldProps) => {
               />
             </MenuItem>
           ))}
+          {/*  Other option inline text field */}
+          {enableOtherOption && (
+            <MenuItem
+              value={OTHER_MARKER}
+              sx={{
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+                display: 'block',
+                padding: '8px 16px',
+              }}
+              // dropdiown menu shouldn't close while typing.
+              onKeyDown={e => {
+                e.stopPropagation();
+              }}
+            >
+              <TextField
+                size="small"
+                placeholder="Add 'other' option"
+                value={isOtherSelected ? value : ''}
+                onChange={e => {
+                  e.stopPropagation();
+                  handleOtherTextChange(e.target.value);
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                }}
+                disabled={props.disabled}
+                variant="standard"
+                multiline
+                fullWidth
+                sx={{
+                  '& .MuiInput-input': {
+                    color: 'rgba(0, 0, 0, 0.87)',
+                    padding: '4px 0',
+                    wordBreak: 'break-word',
+                    whiteSpace: 'normal',
+                  },
+                  '& .MuiInput-input::placeholder': {
+                    color: 'rgba(0, 0, 0, 0.5)',
+                    opacity: 1,
+                  },
+                  '& .MuiInput-underline:before': {
+                    borderBottomColor: 'rgba(0, 0, 0, 0.42)',
+                  },
+                  '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
+                    borderBottomColor: 'rgba(0, 0, 0, 0.87)',
+                  },
+                }}
+              />
+            </MenuItem>
+          )}
         </MuiSelect>
       </FormControl>
     </FieldWrapper>
