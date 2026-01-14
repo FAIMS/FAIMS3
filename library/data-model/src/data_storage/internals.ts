@@ -691,13 +691,45 @@ export async function listRecordMetadata({
 
     // Get records - either allDocs or query from index based on provision of
     // recordIds filter
+
+    let startTime = performance.now();
     const rawRecords = await getRecords({
+      // this is typically not used - this means the keys field in the DB query
+      // is not used
       recordIds,
       dataDb,
     });
+    console.log(
+      `getRecords (${rawRecords?.length ?? 0} records): ${(
+        performance.now() - startTime
+      ).toFixed(2)}ms`
+    );
+
+    startTime = performance.now();
+    const rawRevisions = await getRevisions({dataDb: dataDb});
+    console.log(
+      `getRevisions (${rawRevisions?.length ?? 0} records): ${(
+        performance.now() - startTime
+      ).toFixed(2)}ms`
+    );
+
+    startTime = performance.now();
+    const revMap: Map<
+      string,
+      PouchDB.Core.ExistingDocument<Revision>
+    > = new Map();
+    rawRevisions.forEach(rev => {
+      revMap.set(rev._id, rev);
+    });
+    console.log(
+      `buildRevMap (${rawRevisions?.length ?? 0} records): ${(
+        performance.now() - startTime
+      ).toFixed(2)}ms`
+    );
 
     // Process records in parallel using Promise.all with map. Each record is
     // hydrated with data, HRID derived, and processed.
+    startTime = performance.now();
     const recordMetadataPromises = rawRecords.map(async record => {
       try {
         const revId = record.heads[0];
@@ -710,7 +742,7 @@ export async function listRecordMetadata({
           return null;
         }
 
-        const revision = await getRevision({dataDb: dataDb, revisionId: revId});
+        const revision = revMap.get(revId);
 
         // Skip if revision not found
         if (!revision) {
@@ -770,6 +802,11 @@ export async function listRecordMetadata({
 
     // Resolve all promises and filter out null values (skipped records)
     const results = await Promise.all(recordMetadataPromises);
+    console.log(
+      `recordMetadataPromises (${recordIds?.length ?? 0} records): ${(
+        performance.now() - startTime
+      ).toFixed(2)}ms`
+    );
     return results.filter(item => item !== null);
   } catch (err) {
     logError(err);
@@ -887,7 +924,7 @@ export async function getRevisions({
   revisionIds,
   dataDb,
 }: {
-  revisionIds: RevisionID[];
+  revisionIds?: RevisionID[];
   dataDb: DataDbType | RevisionDbType;
 }): Promise<PouchDB.Core.ExistingDocument<Revision>[]> {
   return await queryCouch<Revision>({
@@ -909,13 +946,10 @@ export function buildDocumentMap<Content extends {}>({
 }: {
   docs: PouchDB.Core.ExistingDocument<Content>[];
 }): {[id: string]: PouchDB.Core.ExistingDocument<Content>} {
-  return docs.reduce(
-    (map, doc) => {
-      map[doc._id] = doc;
-      return map;
-    },
-    {} as {[id: string]: PouchDB.Core.ExistingDocument<Content>}
-  );
+  return docs.reduce((map, doc) => {
+    map[doc._id] = doc;
+    return map;
+  }, {} as {[id: string]: PouchDB.Core.ExistingDocument<Content>});
 }
 
 /**

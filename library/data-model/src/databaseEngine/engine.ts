@@ -24,7 +24,12 @@ import {
   HydratedRecord,
   HydratedRecordQueryResult,
   HydratedRevisionDocument,
+  HydrationResult,
   InitialFormData,
+  MinimalRecordMetadata,
+  MinimalRecordMetadataResult,
+  MinimalRevisionMetadata,
+  MinimalRevisionMetadataInternal,
   NewAvpDBDocument,
   newAvpDocumentSchema,
   NewFormRecord,
@@ -39,11 +44,14 @@ import {
   RecordDBDocument,
   recordDocumentSchema,
   RecordQueryResult,
+  RevisionMetadataQueryResult,
+  toMinimalRevisionMetadata,
 } from './types';
 import {
   normalizeRelationshipInstances,
   toDbRelationshipInstances,
 } from './utils';
+import {string} from 'zod';
 
 // =======
 // HELPERS
@@ -176,6 +184,11 @@ export class DataEngine {
   public readonly uiSpec: UISpecification;
 
   /**
+   * Query operations - optimised bulk data retrieval using views
+   */
+  public readonly query: QueryOperations;
+
+  /**
    * Create a new DataEngine instance
    *
    * @param config - Database configuration including name and project ID
@@ -185,7 +198,13 @@ export class DataEngine {
     this.uiSpec = config.uiSpec;
     this.core = new CoreOperations(this.db);
     this.hydrated = new HydratedOperations(this.core, this.uiSpec);
-    this.form = new FormOperations(this.core, this.hydrated, this.uiSpec);
+    this.query = new QueryOperations(this.db);
+    this.form = new FormOperations(
+      this.core,
+      this.hydrated,
+      this.query,
+      this.uiSpec
+    );
   }
 }
 
@@ -848,25 +867,36 @@ class HydratedOperations {
   }
 
   /**
-   * Get multiple hydrated records efficiently in parallel
+   * Get multiple hydrated records, continuing even if some fail.
+   * Returns results in the same order as input IDs.
    *
    * @param recordIds - Array of record IDs to hydrate
    * @param config - Configuration for conflict resolution
-   * @returns Array of hydrated records in same order as input IDs
-   * @throws DocumentNotFoundError if any record doesn't exist
+   * @returns Array of hydration results (success or failure) in input order
    */
-  async getHydratedRecords(
+  async hydrateMultipleRecords(
     recordIds: string[],
     config: Partial<HydratedRecordConfig> = {}
-  ): Promise<HydratedRecord[]> {
-    // Fetch all records in parallel
-    const promises = recordIds.map(id =>
-      this.getHydratedRecord({
-        recordId: id,
-        config,
+  ): Promise<HydrationResult[]> {
+    const results = await Promise.all(
+      recordIds.map(async (id): Promise<HydrationResult> => {
+        try {
+          const record = await this.getHydratedRecord({
+            recordId: id,
+            config,
+          });
+          return {success: true, record};
+        } catch (err) {
+          return {
+            success: false,
+            recordId: id,
+            error: err instanceof Error ? err : new Error(String(err)),
+          };
+        }
       })
     );
-    return Promise.all(promises);
+
+    return results;
   }
 
   /**
@@ -975,15 +1005,12 @@ class HydratedOperations {
  * complex logic like change detection, AVP reuse, and attachment processing.
  */
 class FormOperations {
-  private readonly uiSpec: UISpecification;
-
   constructor(
     private readonly core: CoreOperations,
     private readonly hydrated: HydratedOperations,
-    uiSpec: UISpecification
-  ) {
-    this.uiSpec = uiSpec;
-  }
+    private readonly query: QueryOperations,
+    private readonly uiSpec: UISpecification
+  ) {}
 
   /**
    *
@@ -1312,79 +1339,6 @@ class FormOperations {
    *
    * @returns Paginated list of record summaries with metadata
    */
-  async getRecords({
-    formId,
-    limit = 25,
-    startKey,
-  }: {
-    formId?: string;
-    limit?: number;
-    startKey?: string;
-  }): Promise<RecordQueryResult> {
-    // Query the record index view
-    const viewResult = await this.core.db.query<RecordDBDocument>(
-      'index/record',
-      {
-        include_docs: true,
-        attachments: false,
-        // Fetch more than we need to determine if more records
-        limit: limit + 1,
-        ...(startKey ? {startkey: startKey, skip: 1} : {}),
-      }
-    );
-
-    // Determine pagination (if we got more than the requested limit)
-    const hasMore = viewResult.rows.length > limit;
-
-    // Strip off the final if needed
-    let pageRows = hasMore ? viewResult.rows.slice(0, -1) : viewResult.rows;
-
-    // Filter by formId if specified
-    if (formId) {
-      pageRows = pageRows.filter(row => row.doc?.type === formId);
-    }
-
-    const nextStartKey = hasMore
-      ? viewResult.rows[viewResult.rows.length - 1].id
-      : undefined;
-
-    // Build record summaries
-    const records: RecordQueryResult['records'] = [];
-
-    for (const row of pageRows) {
-      try {
-        records.push(recordDocumentSchema.parse(row.doc));
-      } catch (e) {
-        // Fall back to record ID if hydration fails
-        console.error(
-          'Failed record validation for record with ID',
-          row.id,
-          'Error',
-          e
-        );
-        // skipping
-        continue;
-      }
-    }
-
-    return {
-      records,
-      hasMore,
-      nextStartKey,
-    };
-  }
-
-  /**
-   * Query records with optional filtering by form type and pagination.
-   * Uses the 'index/record' view to efficiently list records.
-   *
-   * @param params.formId - Optional form type to filter by (e.g., 'SurveyArea')
-   * @param params.limit - Maximum number of records to return (default: 25)
-   * @param params.startKey - Pagination cursor from previous query's `nextStartKey`
-   * @param params.includeHrid - Whether to hydrate records to get HRID (default: true, slower)
-   *
-   * @returns Paginated list of record summaries with metadata
-   */
   async getHydratedRecords({
     formId,
     limit = 25,
@@ -1394,37 +1348,18 @@ class FormOperations {
     limit?: number;
     startKey?: string;
   }): Promise<HydratedRecordQueryResult> {
-    const documents = await this.getRecords({
+    const documents = await this.query.getRecords({
       formId,
       limit,
       startKey,
     });
 
-    const records: HydratedRecord[] = [];
-
-    for (const doc of documents.records) {
-      try {
-        records.push(
-          await this.hydrated.getHydratedRecord({
-            recordId: doc._id,
-            config: {conflictBehaviour: 'pickFirst'},
-          })
-        );
-      } catch (e) {
-        // Fall back to record ID if hydration fails
-        console.error(
-          'Failed record hydration for record with ID',
-          doc._id,
-          'Error',
-          e
-        );
-      }
-    }
-
     return {
       hasMore: documents.hasMore,
-      records,
       nextStartKey: documents.nextStartKey,
+      records: await this.hydrated.hydrateMultipleRecords(
+        documents.records.map(d => d._id)
+      ),
     };
   }
 
@@ -1880,5 +1815,238 @@ class FormOperations {
     };
 
     await this.core.updateRecord(updatedRecord);
+  }
+}
+
+/**
+ * Query operations for efficient bulk data retrieval.
+ * Uses optimised views that emit only necessary fields to avoid full document fetches.
+ */
+class QueryOperations {
+  constructor(private readonly db: DatabaseInterface) {}
+
+  /**
+   * List revision metadata using the optimised 'index/revisionMetadata' view.
+   * Returns only essential fields (created, createdBy, deleted, relationship)
+   * without fetching full revision documents.
+   *
+   * @param options.startKey - Optional start key for pagination
+   * @param options.endKey - Optional end key for filtering
+   * @param options.limit - Maximum number of results (default: no limit)
+   * @param options.descending - Whether to return results in descending order (default: false)
+   *
+   * @returns Paginated list of minimal revision metadata
+   */
+  async listRevisionMetadata(
+    options: {
+      startKey?: string;
+      endKey?: string;
+      limit?: number;
+      descending?: boolean;
+    } = {}
+  ): Promise<RevisionMetadataQueryResult> {
+    const {startKey, endKey, limit, descending = false} = options;
+
+    const viewResult = await this.db.query<MinimalRevisionMetadataInternal>(
+      'index/revisionMetadata',
+      {
+        include_docs: true,
+        ...(startKey !== undefined ? {startkey: startKey} : {}),
+        ...(endKey !== undefined ? {endkey: endKey} : {}),
+        ...(limit !== undefined ? {limit} : {}),
+        descending,
+      }
+    );
+
+    const revisions = viewResult.rows.map(row => ({
+      _id: row.id,
+      ...toMinimalRevisionMetadata(row.value),
+    }));
+
+    return {
+      revisions,
+      count: revisions.length,
+    };
+  }
+
+  /**
+   * Query records with optional filtering by form type and pagination.
+   * Uses the 'index/record' view to efficiently list records.
+   *
+   * @param params.formId - Optional form type to filter by (e.g., 'SurveyArea')
+   * @param params.limit - Maximum number of records to return (default: 25)
+   * @param params.startKey - Pagination cursor from previous query's `nextStartKey`
+   * @param params.includeHrid - Whether to hydrate records to get HRID (default: true, slower)
+   *
+   * @returns Paginated list of record summaries with metadata
+   */
+  async getRecords({
+    formId,
+    limit = 25,
+    startKey,
+  }: {
+    formId?: string;
+    limit?: number;
+    startKey?: string;
+  }): Promise<RecordQueryResult> {
+    // Query the record index view
+    const viewResult = await this.db.query<RecordDBDocument>('index/record', {
+      include_docs: true,
+      attachments: false,
+      // Fetch more than we need to determine if more records
+      limit: limit + 1,
+      ...(startKey ? {startkey: startKey, skip: 1} : {}),
+    });
+
+    // Determine pagination (if we got more than the requested limit)
+    const hasMore = viewResult.rows.length > limit;
+
+    // Strip off the final if needed
+    let pageRows = hasMore ? viewResult.rows.slice(0, -1) : viewResult.rows;
+
+    // Filter by formId if specified
+    if (formId) {
+      pageRows = pageRows.filter(row => row.doc?.type === formId);
+    }
+
+    const nextStartKey = hasMore
+      ? viewResult.rows[viewResult.rows.length - 1].id
+      : undefined;
+
+    // Build record summaries
+    const records: RecordQueryResult['records'] = [];
+
+    for (const row of pageRows) {
+      try {
+        records.push(recordDocumentSchema.parse(row.doc));
+      } catch (e) {
+        // Fall back to record ID if hydration fails
+        console.error(
+          'Failed record validation for record with ID',
+          row.id,
+          'Error',
+          e
+        );
+        // skipping
+        continue;
+      }
+    }
+
+    return {
+      records,
+      hasMore,
+      nextStartKey,
+    };
+  }
+
+  /**
+   * List minimal record metadata for listing pages.
+   * Uses optimised views to avoid fetching full documents where possible.
+   *
+   * This fetches:
+   * - All records via 'index/record' view
+   * - All revision metadata via 'index/revisionMetadata' view
+   *
+   * Then joins them to produce minimal metadata without hydrating AVPs.
+   *
+   * @param projectId - The project identifier
+   * @param options.recordIds - Optional array of specific record IDs to retrieve
+   * @param options.filterDeleted - Whether to exclude deleted records (default: false)
+   * @param options.filterFunction - Custom optional filter function e.g. permissions
+   *
+   * @returns Minimal record metadata for listing pages
+   */
+  async listMinimalRecordMetadata({
+    projectId,
+    recordIds,
+    filterDeleted = false,
+    filterFunction,
+  }: {
+    projectId: string;
+    recordIds?: string[];
+    filterDeleted?: boolean;
+    filterFunction?: (rec: MinimalRecordMetadata) => boolean;
+  }): Promise<MinimalRecordMetadataResult> {
+    let errorCount = 0;
+
+    // Step 1: Fetch all revision metadata (optimised view - no full docs)
+    let startTime = performance.now();
+    const [recordViewResult, revisionMetadataResult] = await Promise.all([
+      this.db.query<RecordDBDocument>('index/record', {
+        include_docs: true,
+        ...(recordIds ? {keys: recordIds} : {}),
+      }),
+      this.listRevisionMetadata(),
+    ]);
+    console.log(
+      `[listMinimalRecordMetadata] revision/record query ${(
+        performance.now() - startTime
+      ).toFixed(2)}ms`
+    );
+
+    // Step 3: Build revision metadata lookup map
+    const revisionMetadataMap = new Map<string, MinimalRevisionMetadata>();
+    for (const rev of revisionMetadataResult.revisions) {
+      revisionMetadataMap.set(rev._id, rev);
+    }
+
+    // Step 4: Join records with revision metadata
+    const records: MinimalRecordMetadata[] = [];
+
+    for (const row of recordViewResult.rows) {
+      const record = row.doc;
+
+      if (!record) {
+        errorCount++;
+        continue;
+      }
+
+      // Get head revision ID
+      const revisionId = record.heads[0];
+      if (!revisionId) {
+        console.warn(`Record ${record._id} has no heads[0], skipping`);
+        errorCount++;
+        continue;
+      }
+
+      // Look up revision metadata
+      const revisionMeta = revisionMetadataMap.get(revisionId);
+      if (!revisionMeta) {
+        console.warn(
+          `Revision ${revisionId} not found for record ${record._id}, skipping`
+        );
+        errorCount++;
+        continue;
+      }
+
+      // Apply deleted filter
+      if (filterDeleted && revisionMeta.deleted) {
+        continue;
+      }
+
+      records.push({
+        projectId,
+        recordId: record._id,
+        revisionId,
+        created: new Date(record.created),
+        createdBy: record.created_by,
+        updated: new Date(revisionMeta.created),
+        updatedBy: revisionMeta.createdBy,
+        conflicts: record.heads.length > 1,
+        deleted: revisionMeta.deleted ?? false,
+        type: record.type,
+        relationship: revisionMeta.relationship,
+      });
+    }
+
+    const filteredRecords = filterFunction
+      ? records.filter(filterFunction)
+      : records;
+
+    return {
+      records: filteredRecords,
+      count: filteredRecords.length,
+      errorCount,
+    };
   }
 }

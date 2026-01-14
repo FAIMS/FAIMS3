@@ -178,12 +178,11 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
+    enableProfiling: true,
     projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     metadataRefreshIntervalMs: 10000,
-    // rehydrate every 2 minutes (local only fetch - no network traffic here)
-    hydrationRefreshIntervalMs: 120000,
     uiSpecification: uiSpecification,
   });
   const forceRecordRefresh = records.initialQuery.refetch;

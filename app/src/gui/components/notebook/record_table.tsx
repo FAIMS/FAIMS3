@@ -3,6 +3,7 @@ import {
   fetchAndHydrateRecord,
   getSummaryFieldInformation,
   getVisibleTypes,
+  MinimalRecordMetadata,
   PostRecordStatusResponse,
   ProjectUIModel,
   ProjectUIViewsets,
@@ -34,21 +35,21 @@ import {
   GridColDef,
   GridEventListener,
 } from '@mui/x-data-grid';
+import {useQueries} from '@tanstack/react-query';
 import {ReactNode, useCallback, useMemo, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
+import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
 import {Project} from '../../../context/slices/projectSlice';
+import {useAppSelector} from '../../../context/store';
+import {buildHydrateKeys} from '../../../utils/customHooks';
+import {localGetDataDb} from '../../../utils/database';
+import {prettifyFieldName} from '../../../utils/formUtilities';
 import {useDataGridStyles} from '../../../utils/useDataGridStyles';
 import {useScreenSize} from '../../../utils/useScreenSize';
 import CircularLoading from '../ui/circular_loading';
 import {NotebookDataGridToolbar} from './datagrid_toolbar';
-import {prettifyFieldName} from '../../../utils/formUtilities';
-import {useQueries} from '@tanstack/react-query';
-import {selectActiveUser} from '../../../context/slices/authSlice';
-import {useAppSelector} from '../../../context/store';
-import {localGetDataDb} from '../../../utils/database';
-import {buildHydrateKeys} from '../../../utils/customHooks';
 
 // ============================================================================
 // Types & Interfaces
@@ -88,7 +89,7 @@ interface SortConfig {
   /** Display label for the dropdown */
   label: string;
   /** Field to sort by (must exist on UnhydratedRecord) */
-  field: keyof UnhydratedRecord;
+  field: keyof MinimalRecordMetadata;
   /** Sort direction */
   direction: 'asc' | 'desc';
 }
@@ -100,7 +101,7 @@ interface RecordsTableProps {
   /** Max rows to display, or null for unlimited */
   maxRows: number | null;
   /** Array of record metadata objects */
-  rows: UnhydratedRecord[] | undefined;
+  rows: MinimalRecordMetadata[] | undefined;
   /** Whether the table is in a loading state */
   loading: boolean;
   /** Optional viewsets configuration for the table */
@@ -124,7 +125,7 @@ interface SortControlProps {
 }
 
 // Column definition type
-type GridColumnType = GridColDef<RecordMetadata | UnhydratedRecord>;
+type GridColumnType = GridColDef<RecordMetadata | MinimalRecordMetadata>;
 
 // ============================================================================
 // Constants
@@ -184,22 +185,22 @@ const SORT_OPTIONS: Record<SortOption, SortConfig> = {
   },
   created_by_asc: {
     label: 'Created By (A-Z)',
-    field: 'created_by',
+    field: 'createdBy',
     direction: 'asc',
   },
   created_by_desc: {
     label: 'Created By (Z-A)',
-    field: 'created_by',
+    field: 'createdBy',
     direction: 'desc',
   },
   updated_by_asc: {
     label: 'Updated By (A-Z)',
-    field: 'updated_by',
+    field: 'updatedBy',
     direction: 'asc',
   },
   updated_by_desc: {
     label: 'Updated By (Z-A)',
-    field: 'updated_by',
+    field: 'updatedBy',
     direction: 'desc',
   },
   type_asc: {
@@ -258,6 +259,8 @@ function SortControl({value, onChange}: SortControlProps) {
 // Column Builder functions
 // ============================================================================
 
+type WithSynced<T> = T & {synced?: boolean};
+
 /**
  * Extracts and formats data from a record metadata object based on the
  * specified column type.
@@ -273,7 +276,7 @@ function getDataForColumn({
   column,
   uiSpecification,
 }: {
-  record: RecordMetadata | UnhydratedRecord;
+  record: WithSynced<RecordMetadata | MinimalRecordMetadata>;
   column: ColumnType;
   uiSpecification: ProjectUIModel;
 }): string | undefined {
@@ -281,34 +284,66 @@ function getDataForColumn({
   if (!record) return fallback;
 
   try {
-    switch (column) {
-      case 'LAST_UPDATED':
-        return record.updated
-          ? record.updated.toLocaleString().replace('T', ' ')
-          : fallback;
+    if ('createdBy' in record) {
+      switch (column) {
+        case 'LAST_UPDATED':
+          return record.updated
+            ? record.updated.toLocaleString().replace('T', ' ')
+            : fallback;
 
-      case 'LAST_UPDATED_BY':
-        return record.updated_by || fallback;
+        case 'LAST_UPDATED_BY':
+          return record.updatedBy || fallback;
 
-      case 'CONFLICTS':
-        return record.conflicts ? 'Yes' : 'No';
+        case 'CONFLICTS':
+          return record.conflicts ? 'Yes' : 'No';
 
-      case 'CREATED':
-        return record.created
-          ? record.created.toLocaleString().replace('T', ' ')
-          : fallback;
+        case 'CREATED':
+          return record.created
+            ? record.created.toLocaleString().replace('T', ' ')
+            : fallback;
 
-      case 'CREATED_BY':
-        return record.created_by || fallback;
+        case 'CREATED_BY':
+          return record.createdBy || fallback;
 
-      case 'KIND':
-        return uiSpecification.viewsets[record.type]?.label ?? record.type;
+        case 'KIND':
+          return uiSpecification.viewsets[record.type]?.label ?? record.type;
 
-      case 'SYNC_STATUS':
-        return record.synced ? 'synced' : 'pending';
+        case 'SYNC_STATUS':
+          return record.synced ? 'synced' : 'pending';
 
-      default:
-        return fallback;
+        default:
+          return fallback;
+      }
+    } else {
+      switch (column) {
+        case 'LAST_UPDATED':
+          return record.updated
+            ? record.updated.toLocaleString().replace('T', ' ')
+            : fallback;
+
+        case 'LAST_UPDATED_BY':
+          return record.updated_by || fallback;
+
+        case 'CONFLICTS':
+          return record.conflicts ? 'Yes' : 'No';
+
+        case 'CREATED':
+          return record.created
+            ? record.created.toLocaleString().replace('T', ' ')
+            : fallback;
+
+        case 'CREATED_BY':
+          return record.created_by || fallback;
+
+        case 'KIND':
+          return uiSpecification.viewsets[record.type]?.label ?? record.type;
+
+        case 'SYNC_STATUS':
+          return record.synced ? 'synced' : 'pending';
+
+        default:
+          return fallback;
+      }
     }
   } catch (error) {
     console.warn(`Error getting data for column ${column}:`, error);
@@ -835,9 +870,9 @@ export const KeyValueTable = ({
  * @returns A new sorted array (does not mutate the original)
  */
 function sortRows(
-  rows: UnhydratedRecord[],
+  rows: MinimalRecordMetadata[],
   sortOption: SortOption
-): UnhydratedRecord[] {
+): MinimalRecordMetadata[] {
   const config = SORT_OPTIONS[sortOption];
   const {field, direction} = config;
 
@@ -922,11 +957,11 @@ const useTableColumns = ({
  * @returns Filtered rows and conflict flag
  */
 const useFilteredRows = (
-  rows: UnhydratedRecord[] | undefined,
+  rows: MinimalRecordMetadata[] | undefined,
   visibleTypes: string[]
 ) => {
   return useMemo(() => {
-    let relevantRows: UnhydratedRecord[] = [];
+    let relevantRows: MinimalRecordMetadata[] = [];
 
     if (!rows) {
       relevantRows = [];
@@ -954,7 +989,7 @@ const useFilteredRows = (
  * @returns Sorted rows and current page slice
  */
 const useSortedAndPaginatedRows = (
-  rows: UnhydratedRecord[],
+  rows: MinimalRecordMetadata[],
   sortOption: SortOption,
   paginationModel: {page: number; pageSize: number}
 ) => {
@@ -987,7 +1022,7 @@ const useSortedAndPaginatedRows = (
  * @returns Object with hydration queries and a map of hydrated records
  */
 const useRowHydration = (
-  pageRows: UnhydratedRecord[],
+  pageRows: MinimalRecordMetadata[],
   projectId: string,
   uiSpec: ProjectUIModel,
   dataDb: DataDbType,
@@ -1003,7 +1038,7 @@ const useRowHydration = (
         token?.resourceRoles,
         ...buildHydrateKeys({
           projectId,
-          recordId: row.record_id,
+          recordId: row.recordId,
           revisionId: '',
         }),
       ],
@@ -1012,7 +1047,7 @@ const useRowHydration = (
           dataDb,
           uiSpecification: uiSpec,
           projectId,
-          recordId: row.record_id,
+          recordId: row.recordId,
           revisionId: undefined,
         });
       },
@@ -1026,7 +1061,7 @@ const useRowHydration = (
     pageRows.forEach((row, index) => {
       const query = hydratedQueries[index];
       if (query.data) {
-        map.set(row.record_id, query.data);
+        map.set(row.recordId, query.data);
       }
     });
     return map;
@@ -1065,8 +1100,6 @@ export function RecordsTable(props: RecordsTableProps) {
     project: {uiSpecificationId: uiSpecId, projectId: project_id, serverId},
   } = props;
 
-  console.log('Re-rendering', recordStatus);
-
   const theme = useTheme();
   const history = useNavigate();
   const styles = useDataGridStyles(theme);
@@ -1102,7 +1135,7 @@ export function RecordsTable(props: RecordsTableProps) {
   let filteredRows = rawFilteredRows;
   if (recordStatus) {
     filteredRows = rawFilteredRows.map(row => {
-      const synced = recordStatus.status[row.record_id];
+      const synced = recordStatus.status[row.recordId];
       return {
         ...row,
         synced,
@@ -1142,8 +1175,8 @@ export function RecordsTable(props: RecordsTableProps) {
   // Merge hydrated data into sorted rows
   const displayRows = useMemo(() => {
     return allSorted.map(row => ({
-      ...(hydratedMap.get(row.record_id) ?? row),
-      synced: recordStatus ? recordStatus.status[row.record_id] : undefined,
+      ...(hydratedMap.get(row.recordId) ?? row),
+      synced: recordStatus ? recordStatus.status[row.recordId] : undefined,
     }));
   }, [allSorted, hydratedMap]);
 
@@ -1172,7 +1205,9 @@ export function RecordsTable(props: RecordsTableProps) {
       <DataGrid
         rows={displayRows}
         loading={loading || isHydrating}
-        getRowId={r => r.record_id}
+        getRowId={r => {
+          return 'recordId' in r ? r.recordId : r.record_id;
+        }}
         columns={columns}
         // Pagination - controlled
         paginationModel={paginationModel}
