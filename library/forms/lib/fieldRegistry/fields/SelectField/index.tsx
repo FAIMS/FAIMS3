@@ -76,10 +76,22 @@ const valueSchema = (props: SelectFieldProps) => {
   }
 
   if (enableOtherOption) {
+    // When "Other" option is enabled, allow any non-empty string
+    const baseSchema = z.string();
+
     if (props.required) {
-      return z.string().min(1, {message: 'Please select or enter an option'});
+      // Required: must have a value (not empty)
+      return baseSchema.min(1, {message: 'Please select or enter an option'});
     }
-    return z.string();
+
+    // Optional but if "Other" is selected, must not be empty
+    // This ensures that selecting "Other" without entering text shows an error
+    return baseSchema.refine(
+      value => value === '' || value.trim().length > 0,
+      {
+        message: 'Please enter text for the "Other" option or select a different option',
+      }
+    );
   }
 
   // Valid option values schema
