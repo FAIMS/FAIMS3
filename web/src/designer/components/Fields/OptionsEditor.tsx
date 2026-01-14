@@ -634,28 +634,6 @@ export const OptionsEditor = ({
                       Add
                     </Button>
                   </Grid>
-
-                  {/* Add "Other" option show when not enalbed .*/}
-                  {!enableOther && (
-                    <Grid item>
-                      <Button
-                        color="secondary"
-                        variant="outlined"
-                        size="small"
-                        onClick={toggleEnableOtherOption}
-                        sx={{
-                          height: '40px',
-                          backgroundColor: '#fff',
-                          textTransform: 'none',
-                          '&:hover': {
-                            backgroundColor: '#f5f5f5',
-                          },
-                        }}
-                      >
-                        Add Other
-                      </Button>
-                    </Grid>
-                  )}
                 </Grid>
               </form>
             </Box>
@@ -836,40 +814,8 @@ export const OptionsEditor = ({
                       <TableCell align="center" sx={{py: 1.5}} />
                     )}
 
-                    {/* Action buttons column */}
-                    <TableCell align="right" sx={{py: 1.5}}>
-                      <IconButton
-                        size="small"
-                        disabled
-                        sx={{p: 0.5, visibility: 'hidden'}}
-                      >
-                        <ArrowDropUpRoundedIcon fontSize="large" />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        disabled
-                        sx={{p: 0.5, visibility: 'hidden'}}
-                      >
-                        <ArrowDropDownRoundedIcon fontSize="large" />
-                      </IconButton>
-                      <Tooltip title="Other option cannot be edited">
-                        <span>
-                          <IconButton size="small" disabled sx={{p: 0.5}}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      {/* Delete -  will remove "Other" option */}
-                      <Tooltip title="Remove 'Other' option">
-                        <IconButton
-                          size="small"
-                          onClick={toggleEnableOtherOption}
-                          sx={{p: 0.5}}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
+                    {/* Action buttons column - empty for "Other" option */}
+                    <TableCell align="right" sx={{py: 1.5}}></TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
