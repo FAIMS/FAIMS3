@@ -22,6 +22,7 @@ import {
   DatabaseInterface,
   DataDocument,
   DataEngine,
+  MinimalRecordMetadata,
   ProjectID,
   ProjectUIModel,
   UnhydratedRecord,
@@ -47,7 +48,7 @@ interface OverviewMapProps {
   uiSpec: ProjectUIModel;
   project_id: ProjectID;
   serverId: string;
-  records: {allRecords: UnhydratedRecord[]};
+  records: {allRecords: MinimalRecordMetadata[]};
 }
 
 interface FeatureProps {
@@ -114,15 +115,18 @@ export const OverviewMap = (props: OverviewMapProps) => {
    */
   const extractFeaturesFromRecord = useCallback(
     async (
-      record: UnhydratedRecord,
+      record: MinimalRecordMetadata,
       fields: string[]
     ): Promise<GeoJSONFeature[]> => {
       const features: GeoJSONFeature[] = [];
 
+      // TODO this is not optimal for efficiency
+      const revision = await dataEngine.core.getRevision(record.revisionId);
+
       await Promise.all(
         fields.map(async field => {
           try {
-            const avpId = record.avps[field];
+            const avpId = revision.avps[field];
             if (!avpId) return;
 
             const avpData = await dataEngine.core.getAvp(avpId);
@@ -138,9 +142,9 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
             const baseProperties: FeatureProps = {
               // TODO bring back HRID - or maybe only on records we click on?
-              name: record.record_id,
-              record_id: record.record_id,
-              revision_id: record.revision_id,
+              name: record.recordId,
+              record_id: record.recordId,
+              revision_id: record.revisionId,
             };
 
             if (geoJson.type === 'FeatureCollection') {
@@ -163,7 +167,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
           } catch (error) {
             // Log but don't fail - skip this field/record combination
             console.warn(
-              `Failed to extract GIS data for record ${record.record_id}, field ${field}:`,
+              `Failed to extract GIS data for record ${record.recordId}, field ${field}:`,
               error
             );
           }
@@ -211,7 +215,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     queryKey: [
       'overview-map-features',
       project_id,
-      records.allRecords?.map(r => `${r.record_id}:${r.revision_id}`).join(','),
+      records.allRecords?.map(r => `${r.recordId}:${r.revisionId}`).join(','),
       gisFields.join(','),
     ],
     queryFn: fetchAllFeatures,
