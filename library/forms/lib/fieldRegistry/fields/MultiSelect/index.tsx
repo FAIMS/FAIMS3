@@ -32,6 +32,7 @@
  * - disabled: Whether the field is disabled.
  */
 
+import React from 'react';
 import {
   Box,
   Checkbox,
@@ -86,6 +87,8 @@ interface ExpandedChecklistProps {
   otherText?: string;
   onOtherTextChange?: (text: string) => void;
   hasOtherSelected?: boolean;
+  onBlur?: () => void;
+  onOtherBlur?: () => void;
 }
 
 /**
@@ -101,6 +104,8 @@ const ExpandedChecklist = ({
   otherText,
   onOtherTextChange,
   hasOtherSelected,
+  onBlur,
+  onOtherBlur,
 }: ExpandedChecklistProps) => {
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
   const OTHER_MARKER = '__other__';
@@ -180,64 +185,67 @@ const ExpandedChecklist = ({
           />
         ))}
 
-        {/* "Other" option - inline text field */}
         {enableOtherOption && (
-          <Box
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={hasOtherSelected || false}
+                onChange={() => handleChange(OTHER_MARKER)}
+                disabled={selectedExclusiveOption !== undefined || disabled}
+                sx={{
+                  padding: '4px 8px 4px 0',
+                }}
+              />
+            }
+            label={
+              <TextField
+                size="small"
+                placeholder="Other"
+                value={otherText || ''}
+                onChange={e => {
+                  if (!hasOtherSelected && e.target.value.length > 0) {
+                    onChange([...value, OTHER_MARKER]);
+                  }
+                  onOtherTextChange?.(e.target.value);
+                }}
+                onFocus={() => {
+                  // Auto-check when field is focused
+                  if (!hasOtherSelected) {
+                    onChange([...value, OTHER_MARKER]);
+                  }
+                }}
+                onBlur={() => {
+                  onBlur?.();
+                  onOtherBlur?.();
+                }}
+                disabled={disabled}
+                variant="standard"
+                multiline
+                sx={{
+                  minWidth: '200px',
+                  '& .MuiInput-input': {
+                    color: 'rgba(0, 0, 0, 0.87)',
+                    wordBreak: 'break-word',
+                    whiteSpace: 'normal',
+                  },
+                  '& .MuiInput-input::placeholder': {
+                    color: 'rgba(0, 0, 0, 0.5)',
+                    opacity: 1,
+                  },
+                  '& .MuiInput-underline:before': {
+                    borderBottomColor: 'rgba(0, 0, 0, 0.42)',
+                  },
+                  '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
+                    borderBottomColor: 'rgba(0, 0, 0, 0.87)',
+                  },
+                }}
+              />
+            }
             sx={{
-              display: 'flex',
               alignItems: 'center',
-              mb: 1,
+              m: 0,
             }}
-          >
-            <Checkbox
-              checked={hasOtherSelected || false}
-              onChange={() => handleChange(OTHER_MARKER)}
-              disabled={selectedExclusiveOption !== undefined || disabled}
-              sx={{
-                padding: '4px 8px 4px 0',
-              }}
-            />
-            <TextField
-              size="small"
-              placeholder="Add 'other' option"
-              value={otherText || ''}
-              onChange={e => {
-                // ceck the checkbox when user starts typing
-                if (!hasOtherSelected && e.target.value.length > 0) {
-                  onChange([...value, OTHER_MARKER]);
-                }
-                onOtherTextChange?.(e.target.value);
-              }}
-              onFocus={() => {
-                if (!hasOtherSelected) {
-                  onChange([...value, OTHER_MARKER]);
-                }
-              }}
-              disabled={disabled}
-              variant="standard"
-              multiline
-              sx={{
-                flex: 1,
-                minWidth: '200px',
-                maxWidth: '100%',
-                '& .MuiInput-input': {
-                  color: 'rgba(0, 0, 0, 0.87)',
-                  wordBreak: 'break-word',
-                  whiteSpace: 'normal',
-                },
-                '& .MuiInput-input::placeholder': {
-                  color: 'rgba(0, 0, 0, 0.5)',
-                  opacity: 1,
-                },
-                '& .MuiInput-underline:before': {
-                  borderBottomColor: 'rgba(0, 0, 0, 0.42)',
-                },
-                '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
-                  borderBottomColor: 'rgba(0, 0, 0, 0.87)',
-                },
-              }}
-            />
-          </Box>
+          />
         )}
       </Box>
     </FormControl>
@@ -251,6 +259,7 @@ interface MuiMultiSelectProps {
   exclusiveOptions: string[];
   disabled?: boolean;
   onBlur?: () => void;
+  onOtherBlur?: () => void;
   enableOtherOption?: boolean;
   otherText?: string;
   onOtherTextChange?: (text: string) => void;
@@ -267,6 +276,7 @@ const MuiMultiSelect = ({
   exclusiveOptions,
   disabled,
   onBlur,
+  onOtherBlur,
   enableOtherOption,
   otherText,
   onOtherTextChange,
@@ -402,7 +412,7 @@ const MuiMultiSelect = ({
               />
               <TextField
                 size="small"
-                placeholder="Add 'other' option"
+                placeholder="Other"
                 value={otherText || ''}
                 onChange={e => {
                   e.stopPropagation();
@@ -412,10 +422,17 @@ const MuiMultiSelect = ({
                   onOtherTextChange?.(e.target.value);
                 }}
                 onClick={e => {
+                  // Prevent menu from closing when clicking text field
                   e.stopPropagation();
+                  // Auto-check when clicked
                   if (!hasOtherSelected) {
                     onChange([...value, OTHER_MARKER]);
                   }
+                }}
+                onBlur={e => {
+                  e.stopPropagation();
+                  onBlur?.();
+                  onOtherBlur?.();
                 }}
                 disabled={disabled}
                 variant="standard"
@@ -470,6 +487,11 @@ export const MultiSelect = (props: FieldProps) => {
     ElementProps,
   } = props;
 
+  // Track if "Other" checkbox is checked (UI state only, not stored in data)
+  const [otherCheckboxChecked, setOtherCheckboxChecked] = React.useState(false);
+  // Track if "Other" field has been touched
+  const [otherFieldTouched, setOtherFieldTouched] = React.useState(false);
+
   // Normalize value to always be an array
   const rawValue = state.value?.data;
   const value: string[] = Array.isArray(rawValue)
@@ -483,28 +505,43 @@ export const MultiSelect = (props: FieldProps) => {
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
 
   const OTHER_MARKER = '__other__';
+  const OTHER_PREFIX = 'Other: ';
 
   const predefinedValues = ElementProps.options.map(opt => opt.value);
   const selectedPredefined = value.filter(v => predefinedValues.includes(v));
-  const otherValues = value.filter(v => !predefinedValues.includes(v));
-  const hasOtherSelected = otherValues.length > 0;
-  const otherText = otherValues.find(v => v !== '') || '';
+  const otherValues = value.filter(v => v.startsWith(OTHER_PREFIX));
+  const hasOtherSelected = otherValues.length > 0 || otherCheckboxChecked;
+  const otherText = otherValues.length > 0 ? otherValues[0].slice(OTHER_PREFIX.length) : '';
+
+  const otherFieldError =
+    enableOtherOption && otherCheckboxChecked && otherFieldTouched && otherText === ''
+      ? 'Please enter text for the "Other" option or uncheck it'
+      : null;
+
+  // Combine form errors with custom "Other" field error
+  const formErrors = props.state.meta.errors as unknown as string[];
+  const allErrors = otherFieldError ? [...(formErrors || []), otherFieldError] : formErrors;
 
   const handleChange = (newValues: string[]) => {
     if (enableOtherOption) {
       // Check if __other__ marker was just selected or deselected
       const hasOtherMarker = newValues.includes(OTHER_MARKER);
 
-      const realValues = newValues.filter(v => v !== OTHER_MARKER);
+      // Filter out marker and any existing "Other: " prefixed values from newValues
+      const realValues = newValues.filter(v => v !== OTHER_MARKER && !v.startsWith(OTHER_PREFIX));
 
       if (hasOtherMarker) {
-        if (hasOtherSelected) {
+        if (otherValues.length > 0) {
+          // Preserve existing "Other" value with prefix
           setFieldData([...realValues, ...otherValues]);
         } else {
-          // will trigger hasOtherSelected to bee true and show the text field
-          setFieldData([...realValues, '']);
+        
+          setOtherCheckboxChecked(true);
+          setFieldData(realValues);
         }
       } else {
+        // Unchecked "Other" - remove all custom values and reset checkbox state
+        setOtherCheckboxChecked(false);
         setFieldData(realValues);
       }
     } else {
@@ -514,10 +551,11 @@ export const MultiSelect = (props: FieldProps) => {
 
   const handleOtherTextChange = (text: string) => {
     if (text.length > 0) {
-      setFieldData([...selectedPredefined, text]);
+      setFieldData([...selectedPredefined, OTHER_PREFIX + text]);
+      setOtherCheckboxChecked(false); 
     } else {
-      // if text is empty, keep the empty string placeholder to show the field
-      setFieldData([...selectedPredefined, '']);
+      setFieldData(selectedPredefined);
+      setOtherCheckboxChecked(true);
     }
   };
 
@@ -531,7 +569,7 @@ export const MultiSelect = (props: FieldProps) => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
-      errors={props.state.meta.errors as unknown as string[]}
+      errors={allErrors}
     >
       <Box sx={{mt: 2, mb: 2}}>
         {isExpandedChecklist ? (
@@ -545,6 +583,8 @@ export const MultiSelect = (props: FieldProps) => {
             otherText={otherText}
             onOtherTextChange={handleOtherTextChange}
             hasOtherSelected={hasOtherSelected}
+            onBlur={handleBlur}
+            onOtherBlur={() => setOtherFieldTouched(true)}
           />
         ) : (
           <MuiMultiSelect
@@ -554,6 +594,7 @@ export const MultiSelect = (props: FieldProps) => {
             exclusiveOptions={exclusiveOptions}
             disabled={disabled}
             onBlur={handleBlur}
+            onOtherBlur={() => setOtherFieldTouched(true)}
             enableOtherOption={enableOtherOption}
             otherText={otherText}
             onOtherTextChange={handleOtherTextChange}
@@ -580,40 +621,21 @@ const valueSchema = (props: MultiSelectFieldProps) => {
   // Handle edge case of no options defined
   if (optionValues.length === 0) {
     const baseSchema = z.array(z.string());
-    const withRequiredCheck = props.required
+    return props.required
       ? baseSchema.min(1, {message: 'Please select at least one option'})
       : baseSchema;
-
-    //  empty string validation if "Other" is enabled
-    return enableOtherOption
-      ? withRequiredCheck.refine(values => !values.some(v => v === ''), {
-          message: 'Please enter text for the "Other" option or uncheck it',
-        })
-      : withRequiredCheck;
   }
 
   // Create base schema: allow custom strings if "Other" is enabled, otherwise only predefined options
+  // "Other" values are stored with "Other: " prefix
   const baseSchema = enableOtherOption
     ? z.array(z.string())
     : z.array(z.enum(optionValues as [string, ...string[]]));
 
   // Apply required validation if needed
-  const withRequiredCheck = props.required
+  return props.required
     ? baseSchema.min(1, {message: 'Please select at least one option'})
     : baseSchema;
-
-  if (enableOtherOption) {
-    return withRequiredCheck.refine(
-      values => {
-        return !values.some(v => v === '');
-      },
-      {
-        message: 'Please enter text for the "Other" option or uncheck it',
-      }
-    );
-  }
-
-  return withRequiredCheck;
 };
 
 // ============================================================================
