@@ -666,6 +666,25 @@ export const OptionsEditor = ({
                 sx={{mb: 2}}
               />
             )}
+
+            {/* Add Other Option button with info icon - always visible but disabled when Other is enabled */}
+            <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 2}}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={toggleEnableOtherOption}
+                disabled={enableOther}
+                sx={{
+                  textTransform: 'none',
+                }}
+              >
+                Add "Other" Option
+              </Button>
+              <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
+                <InfoIcon color="action" fontSize="small" />
+              </Tooltip>
+            </Stack>
           </Grid>
 
           {/* Options table */}
@@ -768,29 +787,16 @@ export const OptionsEditor = ({
                     </SortableContext>
                   </DndContext>
 
-                  {/* "Other" option- always visible, can be toggled on/off */}
-                  <TableRow
-                    sx={{
-                      backgroundColor: enableOther
-                        ? 'rgba(0, 0, 0, 0.02)'
-                        : 'transparent',
-                      borderTop: '1px solid rgba(0, 0, 0, 0.12)',
-                    }}
-                  >
-                    {/* Checkbox for other opption */}
-                    <TableCell sx={{width: '40px', py: 1.5}}>
-                      <Checkbox
-                        checked={enableOther}
-                        onChange={toggleEnableOtherOption}
-                        size="small"
-                        sx={{
-                          p: 0.5,
-                        }}
-                      />
-                    </TableCell>
-
-                    <TableCell sx={{py: 1.5}}>
-                      <Stack direction="row" spacing={1.5} alignItems="center">
+                  {/* "Other" option row - only shown when enabled */}
+                  {enableOther && (
+                    <TableRow
+                      sx={{
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        borderTop: '2px solid rgba(0, 0, 0, 0.12)',
+                      }}
+                    >
+                      = <TableCell sx={{width: '40px', py: 1.5}} />={' '}
+                      <TableCell sx={{py: 1.5}}>
                         <Typography
                           sx={{
                             fontSize: '1rem',
@@ -798,25 +804,58 @@ export const OptionsEditor = ({
                             color: 'rgba(0, 0, 0, 0.87)',
                           }}
                         >
-                          Other (Add "Other" option)
+                          Other{' '}
+                          <Typography
+                            component="span"
+                            sx={{
+                              fontSize: '0.875rem',
+                              fontWeight: 400,
+                              color: 'rgba(0, 0, 0, 0.6)',
+                            }}
+                          >
+                            (Add "Other" option)
+                          </Typography>
                         </Typography>
-                        <Tooltip title='When enabled, users can select "Other" and enter custom text. The custom text will be saved as part of the form data alongside predefined options.'>
-                          <InfoIcon
-                            color="action"
-                            fontSize="small"
-                            sx={{fontSize: '1.1rem'}}
-                          />
+                      </TableCell>
+                      ={' '}
+                      {showExclusiveOptions && (
+                        <TableCell align="center" sx={{py: 1.5}} />
+                      )}
+                      {/* Action buttons - edit (disabled) and delete */}
+                      <TableCell align="right" sx={{py: 1.5}}>
+                        <IconButton
+                          size="small"
+                          disabled
+                          sx={{p: 0.5, visibility: 'hidden'}}
+                        >
+                          <ArrowDropUpRoundedIcon fontSize="large" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          disabled
+                          sx={{p: 0.5, visibility: 'hidden'}}
+                        >
+                          <ArrowDropDownRoundedIcon fontSize="large" />
+                        </IconButton>
+                        <Tooltip title="Other option cannot be edited">
+                          <span>
+                            <IconButton size="small" disabled sx={{p: 0.5}}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </span>
                         </Tooltip>
-                      </Stack>
-                    </TableCell>
-
-                    {showExclusiveOptions && (
-                      <TableCell align="center" sx={{py: 1.5}} />
-                    )}
-
-                    {/* Action buttons column - empty for "Other" option */}
-                    <TableCell align="right" sx={{py: 1.5}}></TableCell>
-                  </TableRow>
+                        <Tooltip title="Remove 'Other' option">
+                          <IconButton
+                            size="small"
+                            onClick={toggleEnableOtherOption}
+                            sx={{p: 0.5}}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </TableContainer>
