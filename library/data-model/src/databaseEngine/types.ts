@@ -712,13 +712,155 @@ export interface RecordQueryResult {
 }
 
 /**
+ * Result of attempting to hydrate a single record - handles errors gracefully
+ */
+export type HydrationResult =
+  | {success: true; record: HydratedRecord}
+  | {success: false; recordId: string; error: Error};
+
+/**
  * Query result for paginated record listing (hydrated)
  */
 export interface HydratedRecordQueryResult {
   /** Array of record summaries for this page */
-  records: HydratedRecord[];
+  records: HydrationResult[];
   /** Whether there are more records after this page */
   hasMore: boolean;
   /** Bookmark for fetching the next page (pass as `startKey` in next call) */
   nextStartKey?: string;
+}
+
+// ============================================================================
+// Minimal Revision Metadata (for optimised view queries)
+// ============================================================================
+
+/**
+ * Internal representation (snake_case) - as stored in CouchDB view values
+ */
+export const minimalRevisionMetadataInternalSchema = z.object({
+  _id: z.string(),
+  created: z.string().datetime(),
+  created_by: z.string(),
+  deleted: z.boolean().optional(),
+  relationship: relationshipSchema.optional(),
+});
+
+export type MinimalRevisionMetadataInternal = z.infer<
+  typeof minimalRevisionMetadataInternalSchema
+>;
+
+/**
+ * External representation (camelCase) - for application use
+ */
+export const minimalRevisionMetadataSchema = z.object({
+  created: z.string().datetime(),
+  createdBy: z.string(),
+  deleted: z.boolean().optional(),
+  relationship: formRelationshipSchema.optional(),
+});
+
+export type MinimalRevisionMetadata = z.infer<
+  typeof minimalRevisionMetadataSchema
+>;
+
+// ============================================================================
+// Conversion utilities
+// ============================================================================
+
+export function toMinimalRevisionMetadata(
+  internal: MinimalRevisionMetadataInternal
+): MinimalRevisionMetadata {
+  return {
+    created: internal.created,
+    createdBy: internal.created_by,
+    deleted: internal.deleted,
+    relationship: internal.relationship
+      ? {
+          parent: internal.relationship.parent
+            ? (Array.isArray(internal.relationship.parent)
+                ? internal.relationship.parent
+                : [internal.relationship.parent]
+              ).map(p => ({
+                recordId: p.record_id,
+                fieldId: p.field_id,
+                relationTypeVocabPair: p.relation_type_vocabPair as [
+                  string,
+                  string,
+                ],
+              }))
+            : undefined,
+          linked: internal.relationship.linked
+            ? (Array.isArray(internal.relationship.linked)
+                ? internal.relationship.linked
+                : [internal.relationship.linked]
+              ).map(l => ({
+                recordId: l.record_id,
+                fieldId: l.field_id,
+                relationTypeVocabPair: l.relation_type_vocabPair as [
+                  string,
+                  string,
+                ],
+              }))
+            : undefined,
+        }
+      : undefined,
+  };
+}
+
+/**
+ * Result from querying revision metadata
+ */
+export interface RevisionMetadataQueryResult {
+  /** Array of revision metadata with document IDs */
+  revisions: Array<MinimalRevisionMetadata & {_id: string}>;
+  /** Total count of revisions returned */
+  count: number;
+}
+
+// ============================================================================
+// Minimal Record Metadata Types
+// ============================================================================
+
+/**
+ * Minimal record metadata for listing pages.
+ * Does not include hydrated data, AVPs, or HRID.
+ */
+export interface MinimalRecordMetadata {
+  projectId: string;
+  recordId: string;
+  revisionId: string;
+  created: Date;
+  createdBy: string;
+  updated: Date;
+  updatedBy: string;
+  conflicts: boolean;
+  deleted: boolean;
+  type: string;
+  relationship?: FormRelationship;
+}
+
+/**
+ * Result from listing minimal record metadata
+ */
+export interface MinimalRecordMetadataResult {
+  /** Array of minimal record metadata */
+  records: MinimalRecordMetadata[];
+  /** Total count of records returned */
+  count: number;
+  /** Count of records skipped due to errors */
+  errorCount: number;
+}
+
+// ============================================================================
+// Search Types
+// ============================================================================
+
+/**
+ * Result from searching records by regex
+ */
+export interface RecordSearchResult extends MinimalRecordMetadataResult {
+  /** The regex pattern that was searched */
+  searchPattern: string;
+  /** Number of AVP matches found (before deduplication to records) */
+  avpMatchCount: number;
 }
