@@ -31,7 +31,6 @@
  * - form (object): Formik form object for managing state and validation.
  */
 import {
-  Box,
   FormControl,
   ListItemText,
   MenuItem,
@@ -47,6 +46,13 @@ import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {
+  OTHER_MARKER,
+  isOtherOptionValue,
+  extractOtherText,
+  createOtherValue,
+  otherTextFieldSx,
+} from '../otherOptionUtils';
 
 const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
@@ -86,12 +92,10 @@ const valueSchema = (props: SelectFieldProps) => {
 
     // Optional but if "Other" is selected, must not be empty
     // This ensures that selecting "Other" without entering text shows an error
-    return baseSchema.refine(
-      value => value === '' || value.trim().length > 0,
-      {
-        message: 'Please enter text for the "Other" option or select a different option',
-      }
-    );
+    return baseSchema.refine(value => value === '' || value.trim().length > 0, {
+      message:
+        'Please enter text for the "Other" option or select a different option',
+    });
   }
 
   // Valid option values schema
@@ -117,18 +121,27 @@ export const Select = (props: FieldProps) => {
 
   // Extract "Other" option settings
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
-  const OTHER_MARKER = '__other__';
 
   const predefinedValues = props.ElementProps.options.map(opt => opt.value);
+
+  // Check if current value is an "Other" value (has the prefix)
+  const isOtherValue = isOtherOptionValue(value);
   const isOtherSelected =
     enableOtherOption && value && !predefinedValues.includes(value);
-  const displayValue = isOtherSelected ? OTHER_MARKER : value;
+  const displayValue = isOtherValue || isOtherSelected ? OTHER_MARKER : value;
+
+  // Extract the text part from "Other: xxx" format
+  const otherText = isOtherValue
+    ? extractOtherText(value)
+    : isOtherSelected
+      ? value
+      : '';
 
   const onChange = (event: SelectChangeEvent) => {
     const selected = event.target.value;
 
     if (selected === OTHER_MARKER) {
-      // if "other" selecteDd, set to empty string to allow user input
+      // if "other" selected, set to empty string to allow user input
       props.setFieldData('');
     } else {
       props.setFieldData(selected);
@@ -136,7 +149,11 @@ export const Select = (props: FieldProps) => {
   };
 
   const handleOtherTextChange = (text: string) => {
-    props.setFieldData(text);
+    if (text.length > 0) {
+      props.setFieldData(createOtherValue(text));
+    } else {
+      props.setFieldData('');
+    }
   };
 
   return (
@@ -196,7 +213,7 @@ export const Select = (props: FieldProps) => {
                 display: 'block',
                 padding: '8px 16px',
               }}
-              // dropdiown menu shouldn't close while typing.
+              // Dropdown menu shouldn't close while typing
               onKeyDown={e => {
                 e.stopPropagation();
               }}
@@ -204,7 +221,7 @@ export const Select = (props: FieldProps) => {
               <TextField
                 size="small"
                 placeholder="Add 'other' option"
-                value={isOtherSelected ? value : ''}
+                value={otherText}
                 onChange={e => {
                   e.stopPropagation();
                   handleOtherTextChange(e.target.value);
@@ -217,21 +234,10 @@ export const Select = (props: FieldProps) => {
                 multiline
                 fullWidth
                 sx={{
+                  ...otherTextFieldSx,
                   '& .MuiInput-input': {
-                    color: 'rgba(0, 0, 0, 0.87)',
+                    ...((otherTextFieldSx as any)['& .MuiInput-input'] || {}),
                     padding: '4px 0',
-                    wordBreak: 'break-word',
-                    whiteSpace: 'normal',
-                  },
-                  '& .MuiInput-input::placeholder': {
-                    color: 'rgba(0, 0, 0, 0.5)',
-                    opacity: 1,
-                  },
-                  '& .MuiInput-underline:before': {
-                    borderBottomColor: 'rgba(0, 0, 0, 0.42)',
-                  },
-                  '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
-                    borderBottomColor: 'rgba(0, 0, 0, 0.87)',
                   },
                 }}
               />
