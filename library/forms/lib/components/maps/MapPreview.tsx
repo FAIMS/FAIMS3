@@ -6,7 +6,7 @@ import 'ol/ol.css';
 import VectorSource from 'ol/source/Vector';
 import {Circle as CircleStyle, Fill, Stroke, Style} from 'ol/style';
 import React, {useEffect, useMemo, useRef} from 'react';
-import {VectorTileStore} from './TileStore';
+import {createTileStore, VectorTileStore} from './TileStore';
 import {
   GeoJSONFeatureOrCollection,
   GeoJSONFeatureOrCollectionSchema,
@@ -74,7 +74,7 @@ interface MapPreviewProps {
 export const MapPreview: React.FC<MapPreviewProps> = props => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<Map | null>(null);
-  const tileStore = useMemo(() => new VectorTileStore(props.config), []);
+  const tileStore = useMemo(() => createTileStore(props.config), []);
 
   useEffect(() => {
     // Don't initialize if no map container

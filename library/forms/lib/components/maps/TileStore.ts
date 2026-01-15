@@ -53,6 +53,12 @@ const TILE_URL_MAP: {[key: string]: {[key: string]: string}} = {
     raster:
       'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
     vector: 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}',
+    satellite:
+      'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key={key}',
+  },
+  esri: {
+    satellite:
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   },
 };
 
@@ -164,7 +170,7 @@ export const initialiseMaps = () => {
  * Used by VectorTileStore and ImageTileStore to implement two kinds of map
  * tile sources.
  */
-class TileStoreBase {
+abstract class TileStoreBase {
   tileStore: MapTileDatabase;
   config: MapConfig;
 
@@ -503,6 +509,14 @@ class TileStoreBase {
     // If we got here, all features were found in at least one tile set
     return true;
   }
+
+  /** Get the tile layer for this store - implemented by subclasses */
+  abstract getTileLayer(): TileLayer | VectorTileLayer;
+
+  /** Get the attribution string for this tile source */
+  abstract getAttribution():
+    | string
+    | ReturnType<VectorTileSource['getAttributions']>;
 }
 
 export class ImageTileStore extends TileStoreBase {
@@ -519,7 +533,9 @@ export class ImageTileStore extends TileStoreBase {
   }
 
   getTileURLTemplate(): string | undefined {
-    return TILE_URL_MAP[this.config.mapSource]['image'];
+    const source = TILE_URL_MAP[this.config.mapSource];
+    // Use satellite URL if that's the style, otherwise fall back to raster
+    return source?.['satellite'] ?? source?.['raster'];
   }
 
   getTileGrid() {
@@ -683,3 +699,15 @@ export class VectorTileStore extends TileStoreBase {
     });
   }
 }
+
+/**
+ * Factory function to create the appropriate tile store based on map style.
+ * Satellite imagery uses raster tiles (ImageTileStore),
+ * while other styles use vector tiles (VectorTileStore).
+ */
+export const createTileStore = (config: MapConfig): TileStoreBase => {
+  if (config.mapStyle === 'satellite') {
+    return new ImageTileStore(config);
+  }
+  return new VectorTileStore(config);
+};

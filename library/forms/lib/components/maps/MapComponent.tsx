@@ -23,27 +23,27 @@
  * - Integration with parent component through callback
  */
 
+import {Geolocation, Position} from '@capacitor/geolocation';
 import {Box, Grid} from '@mui/material';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
 import {Extent} from 'ol/extent';
+import Feature from 'ol/Feature';
+import {Point} from 'ol/geom';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform, transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
+import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {createCenterControl} from './center-control';
-import {VectorTileStore} from './TileStore';
-import Feature from 'ol/Feature';
-import {Point} from 'ol/geom';
-import CircleStyle from 'ol/style/Circle';
-import {Geolocation, Position} from '@capacitor/geolocation';
+import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
 
 export const defaultMapProjection = 'EPSG:3857';
-const MAX_ZOOM = 20;
+const MAX_ZOOM = 19;
 const MIN_ZOOM = 12;
 
 /**
@@ -73,7 +73,7 @@ export const MapComponent = (props: MapComponentProps) => {
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const tileStore = useMemo(() => new VectorTileStore(props.config), []);
+  const tileStore = useMemo(() => createTileStore(props.config), []);
 
   // Listen for online/offline events to update isOnline state
   useEffect(() => {
