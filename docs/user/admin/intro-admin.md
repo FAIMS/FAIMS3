@@ -34,7 +34,7 @@ Users can be assigned to one or more *roles* within the system.  Permissions
 associated with roles relate to either the system as a whole,
 teams or {{notebooks}}.
 
-The details of the different roles are outlined in [Roles and Permissions](permissions.md).
+The details of the different roles are outlined in [Roles and Permissions](../core/permissions.md).
 As an administrator, one of your roles should be *Operations Administrator*; this grants you full
 control over users and teams in the system.
 
