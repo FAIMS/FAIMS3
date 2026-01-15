@@ -795,7 +795,7 @@ export const OptionsEditor = ({
                         borderTop: '2px solid rgba(0, 0, 0, 0.12)',
                       }}
                     >
-                      = <TableCell sx={{width: '40px', py: 1.5}} />={' '}
+                      <TableCell sx={{width: '40px', py: 1.5}} />
                       <TableCell sx={{py: 1.5}}>
                         <Typography
                           sx={{
@@ -817,7 +817,8 @@ export const OptionsEditor = ({
                           </Typography>
                         </Typography>
                       </TableCell>
-                      ={' '}
+
+                      {/* Empty exclusive checkbox column */}
                       {showExclusiveOptions && (
                         <TableCell align="center" sx={{py: 1.5}} />
                       )}
