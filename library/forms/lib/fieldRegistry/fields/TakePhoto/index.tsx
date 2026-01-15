@@ -85,6 +85,28 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   });
 }
 
+/**
+ * Converts a Blob to a base64 string (without data URL prefix).
+ * Used for iOS workaround where blob storage in PouchDB/IndexedDB is problematic.
+ */
+async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+      const base64 = result.split(',')[1];
+      if (base64) {
+        resolve(base64);
+      } else {
+        reject(new Error('Failed to extract base64 data from blob'));
+      }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 // ============================================================================
 // Preview Mode Component
 // ============================================================================
@@ -625,6 +647,11 @@ const PhotoGallery: React.FC<{
  *
  * Uses optimistic UI updates to show photos immediately after capture,
  * before the database write completes.
+ *
+ * **iOS Note:** On iOS, blob storage in PouchDB/IndexedDB has known WebKit
+ * issues. This component automatically uses base64 storage on iOS to avoid
+ * these issues while maintaining blob storage on other platforms for
+ * better performance.
  */
 const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   const {
@@ -640,6 +667,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
   } = props;
 
   const appName = props.config.appName;
+  const platform = props.config.platform;
   const [noPermission, setNoPermission] = useState(false);
 
   // Optimistic photo display state
@@ -707,10 +735,13 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
    *
    * Uses optimistic updates to show the photo immediately while
    * the database write happens in the background.
+   *
+   * On iOS, uses base64 storage to avoid WebKit blob issues.
    */
   const takePhoto = useCallback(async () => {
     try {
       const isWeb = Capacitor.getPlatform() === 'web';
+      const isIOS = platform === 'ios';
 
       // Check/request camera permission
       if (isWeb) {
@@ -760,7 +791,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         photoBlob = await response.blob();
       }
 
-      // Setup optimistic preview
+      // Setup optimistic preview (always use blob URL for display)
       const optimisticUrl = URL.createObjectURL(photoBlob);
       pendingUrlsRef.current.add(optimisticUrl);
       setPendingPhotos(current => {
@@ -794,14 +825,26 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         }
       }
 
-      // Now do the async storage
-      const newId = await addAttachment({
-        // Blob attachments are faster - especially on native
-        blob: photoBlob,
-        contentType: `image/${photoResult.format}`,
-        type: 'photo',
-        fileFormat: photoResult.format,
-      });
+      // Store the attachment - use base64 on iOS to avoid WebKit blob issues
+      let newId: string;
+      if (isIOS) {
+        // iOS: Convert blob to base64 and use base64 storage pathway
+        const base64Data = await blobToBase64(photoBlob);
+        newId = await addAttachment({
+          base64: base64Data,
+          contentType: `image/${photoResult.format}`,
+          type: 'photo',
+          fileFormat: photoResult.format,
+        });
+      } else {
+        // Other platforms: Use blob storage (faster)
+        newId = await addAttachment({
+          blob: photoBlob,
+          contentType: `image/${photoResult.format}`,
+          type: 'photo',
+          fileFormat: photoResult.format,
+        });
+      }
 
       // Update pending photo with the real attachment ID
       // This allows the cleanup effect to know when to remove it
@@ -821,7 +864,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       logError(err);
       console.error('Failed to capture photo:', err);
     }
-  }, [state.value, addAttachment, context]);
+  }, [state.value, addAttachment, context, platform]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
