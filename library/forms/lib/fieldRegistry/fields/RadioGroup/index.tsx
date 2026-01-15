@@ -21,16 +21,18 @@
  * - A subheading (help text) rendered using FieldWrapper.
  * - Toggle behavior: clicking a selected radio deselects it.
  * - Rich text labels: option labels support sanitized HTML content.
+ * - "Other" option: allows users to enter custom text beyond predefined choices.
  *
  * Props:
  * - label (string, optional): The field label displayed as a heading.
  * - helperText (string, optional): The field help text displayed below the heading.
- * - ElementProps (object): Contains the radio options array.
+ * - ElementProps (object): Contains the radio options array and enableOtherOption flag.
  * - required: To visually show if the field is required.
  * - disabled: Whether the field is disabled.
  */
 
-import {FormControlLabel} from '@mui/material';
+import React from 'react';
+import {FormControlLabel, TextField} from '@mui/material';
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
@@ -40,6 +42,13 @@ import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {
+  OTHER_MARKER,
+  isOtherOptionValue,
+  extractOtherText,
+  createOtherValue,
+  otherTextFieldSx,
+} from '../otherOptionUtils';
 
 // ============================================================================
 // Types & Schema
@@ -54,6 +63,7 @@ const RadioOptionSchema = z.object({
 const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
     options: z.array(RadioOptionSchema),
+    enableOtherOption: z.boolean().optional(),
   }),
 });
 
@@ -68,6 +78,7 @@ type FieldProps = RadioGroupFieldProps & FullFieldProps;
 /**
  * RadioGroup Component - A reusable radio button group with form integration.
  * Supports toggle behavior where clicking a selected option deselects it.
+ * Supports "Other" option for custom text entry.
  */
 export const RadioGroup = (props: FieldProps) => {
   const {
@@ -82,7 +93,41 @@ export const RadioGroup = (props: FieldProps) => {
     ElementProps,
   } = props;
 
-  const value = (state.value?.data as string) ?? '';
+  const rawValue = (state.value?.data as string) ?? '';
+  const enableOtherOption = ElementProps.enableOtherOption ?? false;
+
+  // Track if "Other" radio is selected
+  const [otherRadioSelected, setOtherRadioSelected] = React.useState(false);
+  // Track if "Other" field has been touched for validation
+  const [otherFieldTouched, setOtherFieldTouched] = React.useState(false);
+
+  // Determine if the current value is an "Other" value
+  const isOtherValue = isOtherOptionValue(rawValue);
+  const hasOtherSelected = isOtherValue || otherRadioSelected;
+  const otherText = extractOtherText(rawValue);
+
+  // The value to show in the radio group (predefined option or OTHER_MARKER)
+  const predefinedValues = ElementProps.options.map(opt => opt.value);
+  const displayValue = hasOtherSelected
+    ? OTHER_MARKER
+    : predefinedValues.includes(rawValue)
+      ? rawValue
+      : '';
+
+  // Validation error for empty "Other" text
+  const otherFieldError =
+    enableOtherOption &&
+    otherRadioSelected &&
+    otherFieldTouched &&
+    otherText === ''
+      ? 'Please enter text for the "Other" option or unselect it'
+      : null;
+
+  // Combine form errors with custom "Other" field error
+  const formErrors = props.state.meta.errors as unknown as string[];
+  const allErrors = otherFieldError
+    ? [...(formErrors || []), otherFieldError]
+    : formErrors;
 
   /**
    * Handles changes in the selected radio button, allowing users to toggle selection.
@@ -90,8 +135,38 @@ export const RadioGroup = (props: FieldProps) => {
    */
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedValue = event.target.value;
-    const newValue = value === selectedValue ? null : selectedValue;
-    setFieldData(newValue);
+
+    if (selectedValue === OTHER_MARKER) {
+      // Selecting "Other" option
+      if (hasOtherSelected) {
+        // Toggle off - deselect "Other"
+        setOtherRadioSelected(false);
+        setFieldData(null);
+      } else {
+        // Select "Other"
+        setOtherRadioSelected(true);
+        // Clear any previous predefined value
+        setFieldData(null);
+      }
+    } else {
+      // Selecting a predefined option
+      setOtherRadioSelected(false);
+      const newValue = displayValue === selectedValue ? null : selectedValue;
+      setFieldData(newValue);
+    }
+  };
+
+  /**
+   * Handles changes in the "Other" text field
+   */
+  const handleOtherTextChange = (text: string) => {
+    if (text.length > 0) {
+      setFieldData(createOtherValue(text));
+      setOtherRadioSelected(false);
+    } else {
+      setFieldData(null);
+      setOtherRadioSelected(true);
+    }
   };
 
   return (
@@ -100,11 +175,11 @@ export const RadioGroup = (props: FieldProps) => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
-      errors={props.state.meta.errors as unknown as string[]}
+      errors={allErrors}
     >
       <FormControl>
         <MuiRadioGroup
-          value={value}
+          value={displayValue}
           onChange={handleChange}
           onBlur={handleBlur}
         >
@@ -161,6 +236,64 @@ export const RadioGroup = (props: FieldProps) => {
               }}
             />
           ))}
+
+          {/* "Other" option with text field */}
+          {enableOtherOption && (
+            <FormControlLabel
+              value={OTHER_MARKER}
+              control={
+                <MuiRadio
+                  sx={{
+                    alignSelf: 'flex-start',
+                    paddingTop: '6px',
+                  }}
+                />
+              }
+              label={
+                <TextField
+                  size="small"
+                  placeholder="Other"
+                  value={otherText}
+                  onChange={e => {
+                    // Auto-select "Other" radio when user starts typing
+                    if (!hasOtherSelected && e.target.value.length > 0) {
+                      setOtherRadioSelected(true);
+                    }
+                    handleOtherTextChange(e.target.value);
+                  }}
+                  onFocus={() => {
+                    // Auto-select "Other" radio when field is focused
+                    if (!hasOtherSelected) {
+                      setOtherRadioSelected(true);
+                      setFieldData(null);
+                    }
+                  }}
+                  onBlur={() => {
+                    handleBlur();
+                    setOtherFieldTouched(true);
+                  }}
+                  disabled={disabled}
+                  variant="standard"
+                  multiline
+                  sx={{
+                    minWidth: '200px',
+                    marginTop: '2px',
+                    ...otherTextFieldSx,
+                  }}
+                />
+              }
+              disabled={disabled}
+              sx={{
+                alignItems: 'flex-start',
+                marginBottom: 1,
+                '& .MuiFormControlLabel-label': {
+                  display: 'block',
+                  marginTop: '0px',
+                  alignSelf: 'flex-start',
+                },
+              }}
+            />
+          )}
         </MuiRadioGroup>
       </FormControl>
     </FieldWrapper>
@@ -173,6 +306,7 @@ export const RadioGroup = (props: FieldProps) => {
 
 const valueSchema = (props: RadioGroupFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
+  const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
   // Handle edge case of no options defined
   if (optionValues.length === 0) {
@@ -184,6 +318,14 @@ const valueSchema = (props: RadioGroupFieldProps) => {
 
   // Valid option values
   const optionsSchema = z.enum(optionValues as [string, ...string[]]);
+
+  // If "Other" option is enabled, allow any string (including "Other: " prefixed values)
+  if (enableOtherOption) {
+    if (props.required) {
+      return z.string().min(1, {message: 'Please select an option'});
+    }
+    return z.union([z.string(), z.null(), z.literal('')]);
+  }
 
   if (props.required) {
     // Required: must be one of the valid options
