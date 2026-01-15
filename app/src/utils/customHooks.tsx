@@ -196,16 +196,19 @@ export function useQueryParams<T extends Record<string, any>>(config: {
   }, [config, searchParams, setSearchParams]);
 
   // Convert URL string values to typed parameters
-  const params = Object.entries(config).reduce((acc, [key, paramConfig]) => {
-    const value = searchParams.get(paramConfig.key);
-    const parser = paramConfig.parser || defaultParser;
+  const params = Object.entries(config).reduce(
+    (acc, [key, paramConfig]) => {
+      const value = searchParams.get(paramConfig.key);
+      const parser = paramConfig.parser || defaultParser;
 
-    // Use parsed URL value if present, otherwise use default
-    acc[key as keyof T] =
-      value !== null ? parser(value) : paramConfig.defaultValue;
+      // Use parsed URL value if present, otherwise use default
+      acc[key as keyof T] =
+        value !== null ? parser(value) : paramConfig.defaultValue;
 
-    return acc;
-  }, {} as {[K in keyof T]: QueryParamValue<T[K]>});
+      return acc;
+    },
+    {} as {[K in keyof T]: QueryParamValue<T[K]>}
+  );
 
   // Update a single parameter in the URL
   const setParam = useCallback(
@@ -471,9 +474,7 @@ export const useRecordList = ({
     },
     queryFn: async () => {
       const queryFnStart = performance.now();
-      profile(
-        `queryFn started`
-      );
+      profile('queryFn started');
 
       if (!token) {
         // Trying to run without token!
@@ -525,7 +526,7 @@ export const useRecordList = ({
         );
       }
 
-      profile(`queryFn completed (total)`, queryFnStart);
+      profile('queryFn completed (total)', queryFnStart);
       return rows.records;
     },
   });

@@ -1970,7 +1970,7 @@ class QueryOperations {
     let errorCount = 0;
 
     // Step 1: Fetch all revision metadata (optimised view - no full docs)
-    let startTime = performance.now();
+    const startTime = performance.now();
     const [recordViewResult, revisionMetadataResult] = await Promise.all([
       this.db.query<RecordDBDocument>('index/record', {
         include_docs: true,
@@ -2080,7 +2080,7 @@ class QueryOperations {
     filterFunction?: (rec: MinimalRecordMetadata) => boolean;
     batchSize?: number;
   }): Promise<RecordSearchResult> {
-    let startTime = performance.now();
+    const startTime = performance.now();
 
     // Step 1: Find AVP documents with matching data
     const matchingRecordIds = await this.findAvpRecordIdsByRegex({

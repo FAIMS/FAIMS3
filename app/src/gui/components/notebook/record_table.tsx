@@ -8,7 +8,6 @@ import {
   ProjectUIModel,
   ProjectUIViewsets,
   RecordMetadata,
-  UnhydratedRecord,
 } from '@faims3/data-model';
 import CloudDoneIcon from '@mui/icons-material/CloudDone';
 import PendingIcon from '@mui/icons-material/Pending';

@@ -344,7 +344,8 @@ const LinkExistingDialog = ({
                           variant: 'body2',
                           fontFamily: 'monospace',
                           fontWeight:
-                            recordResult.record.hrid !== recordResult.record.record._id
+                            recordResult.record.hrid !==
+                            recordResult.record.record._id
                               ? 'bold'
                               : 'normal',
                         }}

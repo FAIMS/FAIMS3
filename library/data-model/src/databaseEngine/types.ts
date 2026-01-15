@@ -785,7 +785,7 @@ export function toMinimalRevisionMetadata(
                 fieldId: p.field_id,
                 relationTypeVocabPair: p.relation_type_vocabPair as [
                   string,
-                  string
+                  string,
                 ],
               }))
             : undefined,
@@ -798,7 +798,7 @@ export function toMinimalRevisionMetadata(
                 fieldId: l.field_id,
                 relationTypeVocabPair: l.relation_type_vocabPair as [
                   string,
-                  string
+                  string,
                 ],
               }))
             : undefined,

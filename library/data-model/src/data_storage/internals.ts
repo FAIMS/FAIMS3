@@ -921,10 +921,13 @@ export function buildDocumentMap<Content extends {}>({
 }: {
   docs: PouchDB.Core.ExistingDocument<Content>[];
 }): {[id: string]: PouchDB.Core.ExistingDocument<Content>} {
-  return docs.reduce((map, doc) => {
-    map[doc._id] = doc;
-    return map;
-  }, {} as {[id: string]: PouchDB.Core.ExistingDocument<Content>});
+  return docs.reduce(
+    (map, doc) => {
+      map[doc._id] = doc;
+      return map;
+    },
+    {} as {[id: string]: PouchDB.Core.ExistingDocument<Content>}
+  );
 }
 
 /**

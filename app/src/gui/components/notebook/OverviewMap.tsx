@@ -25,7 +25,6 @@ import {
   MinimalRecordMetadata,
   ProjectID,
   ProjectUIModel,
-  UnhydratedRecord,
 } from '@faims3/data-model';
 import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
 import {Alert, Box, CircularProgress, Grid, Popover} from '@mui/material';
