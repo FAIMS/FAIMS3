@@ -243,6 +243,7 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
       ElementProps: {
+        enableOtherOption: false,
         options: [
           {value: '1', label: '1', RadioProps: {id: 'radio-group-field-1'}},
         ],
