@@ -20,6 +20,16 @@ intro-notebook-user/user-roles-and-permissions-guide.md
 
 ```{toctree}
 ---
+caption: Administration
+maxdepth: 1
+---
+
+admin/intro-admin.md
+
+```
+
+```{toctree}
+---
 caption: Core Documentation
 maxdepth: 1
 ---
