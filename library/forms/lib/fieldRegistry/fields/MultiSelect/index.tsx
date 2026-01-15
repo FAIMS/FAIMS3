@@ -49,6 +49,14 @@ import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrap
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {
+  OTHER_MARKER,
+  OTHER_PREFIX,
+  isOtherOptionValue,
+  extractOtherText,
+  createOtherValue,
+  otherTextFieldSx,
+} from '../otherOptionUtils';
 
 // ============================================================================
 // Types & Schema
@@ -108,7 +116,6 @@ const ExpandedChecklist = ({
   onOtherBlur,
 }: ExpandedChecklistProps) => {
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
-  const OTHER_MARKER = '__other__';
 
   const handleChange = (optionValue: string) => {
     if (optionValue === OTHER_MARKER) {
@@ -223,21 +230,7 @@ const ExpandedChecklist = ({
                 multiline
                 sx={{
                   minWidth: '200px',
-                  '& .MuiInput-input': {
-                    color: 'rgba(0, 0, 0, 0.87)',
-                    wordBreak: 'break-word',
-                    whiteSpace: 'normal',
-                  },
-                  '& .MuiInput-input::placeholder': {
-                    color: 'rgba(0, 0, 0, 0.5)',
-                    opacity: 1,
-                  },
-                  '& .MuiInput-underline:before': {
-                    borderBottomColor: 'rgba(0, 0, 0, 0.42)',
-                  },
-                  '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
-                    borderBottomColor: 'rgba(0, 0, 0, 0.87)',
-                  },
+                  ...otherTextFieldSx,
                 }}
               />
             }
@@ -282,7 +275,6 @@ const MuiMultiSelect = ({
   onOtherTextChange,
   hasOtherSelected,
 }: MuiMultiSelectProps) => {
-  const OTHER_MARKER = '__other__';
 
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
@@ -440,21 +432,10 @@ const MuiMultiSelect = ({
                 fullWidth
                 sx={{
                   flex: 1,
+                  ...otherTextFieldSx,
                   '& .MuiInput-input': {
-                    color: 'rgba(0, 0, 0, 0.87)',
+                    ...((otherTextFieldSx as any)['& .MuiInput-input'] || {}),
                     padding: '4px 0',
-                    wordBreak: 'break-word',
-                    whiteSpace: 'normal',
-                  },
-                  '& .MuiInput-input::placeholder': {
-                    color: 'rgba(0, 0, 0, 0.5)',
-                    opacity: 1,
-                  },
-                  '& .MuiInput-underline:before': {
-                    borderBottomColor: 'rgba(0, 0, 0, 0.42)',
-                  },
-                  '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
-                    borderBottomColor: 'rgba(0, 0, 0, 0.87)',
                   },
                 }}
               />
@@ -504,14 +485,11 @@ export const MultiSelect = (props: FieldProps) => {
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
 
-  const OTHER_MARKER = '__other__';
-  const OTHER_PREFIX = 'Other: ';
-
   const predefinedValues = ElementProps.options.map(opt => opt.value);
   const selectedPredefined = value.filter(v => predefinedValues.includes(v));
-  const otherValues = value.filter(v => v.startsWith(OTHER_PREFIX));
+  const otherValues = value.filter(v => isOtherOptionValue(v));
   const hasOtherSelected = otherValues.length > 0 || otherCheckboxChecked;
-  const otherText = otherValues.length > 0 ? otherValues[0].slice(OTHER_PREFIX.length) : '';
+  const otherText = otherValues.length > 0 ? extractOtherText(otherValues[0]) : '';
 
   const otherFieldError =
     enableOtherOption && otherCheckboxChecked && otherFieldTouched && otherText === ''
@@ -528,7 +506,7 @@ export const MultiSelect = (props: FieldProps) => {
       const hasOtherMarker = newValues.includes(OTHER_MARKER);
 
       // Filter out marker and any existing "Other: " prefixed values from newValues
-      const realValues = newValues.filter(v => v !== OTHER_MARKER && !v.startsWith(OTHER_PREFIX));
+      const realValues = newValues.filter(v => v !== OTHER_MARKER && !isOtherOptionValue(v));
 
       if (hasOtherMarker) {
         if (otherValues.length > 0) {
@@ -551,8 +529,8 @@ export const MultiSelect = (props: FieldProps) => {
 
   const handleOtherTextChange = (text: string) => {
     if (text.length > 0) {
-      setFieldData([...selectedPredefined, OTHER_PREFIX + text]);
-      setOtherCheckboxChecked(false); 
+      setFieldData([...selectedPredefined, createOtherValue(text)]);
+      setOtherCheckboxChecked(false);
     } else {
       setFieldData(selectedPredefined);
       setOtherCheckboxChecked(true);
