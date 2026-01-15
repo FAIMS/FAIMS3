@@ -292,8 +292,8 @@ export default function SyncStatus() {
   const getStatusLabel = (): string => {
     if (isSyncError) return 'Error';
     if (isSyncingUp || isSyncingDown) return 'In Progress';
-    if (status === 'paused') return 'Paused';
-    return 'Idle';
+    if (status === 'paused') return 'Complete';
+    return 'Complete';
   };
 
   /**
