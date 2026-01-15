@@ -5,13 +5,10 @@ import {
   DataDocument,
   DataEngine,
   fetchAndHydrateRecord,
-  getMinimalRecordData,
-  getMinimalRecordDataWithRegex,
   isAuthorized,
   MinimalRecordMetadata,
   ProjectUIModel,
   UISpecification,
-  UnhydratedRecord,
 } from '@faims3/data-model';
 import {QueryClient, useQuery} from '@tanstack/react-query';
 import _ from 'lodash';
@@ -22,11 +19,8 @@ import * as ROUTES from '../constants/routes';
 import {selectActiveUser} from '../context/slices/authSlice';
 import {useAppSelector} from '../context/store';
 import {OfflineFallbackComponent} from '../gui/components/ui/OfflineFallback';
+import {shouldDisplayRecordMinimalMetadata} from '../users';
 import {localGetDataDb} from './database';
-import {
-  shouldDisplayRecord,
-  shouldDisplayRecordMinimalMetadata,
-} from '../users';
 
 export const usePrevious = <T extends {}>(value: T): T | undefined => {
   /**
@@ -472,26 +466,13 @@ export const useRecordList = ({
     structuralSharing: (oldData, newData) => {
       const structuralSharingStart = performance.now();
       const isEqual = _.isEqual(oldData, newData);
-      if (enableProfiling) {
-        const duration = performance.now() - structuralSharingStart;
-        const oldCount = Array.isArray(oldData) ? oldData.length : 0;
-        const newCount = Array.isArray(newData) ? newData.length : 0;
-        console.log(
-          `[useRecordList:${projectId}] structuralSharing: ${duration.toFixed(
-            2
-          )}ms | ` +
-            `oldCount=${oldCount}, newCount=${newCount}, isEqual=${isEqual}`
-        );
-      }
+      profile('Structural sharing', structuralSharingStart);
       return isEqual ? oldData : newData;
     },
     queryFn: async () => {
-      console.log('Running query - not cached');
       const queryFnStart = performance.now();
       profile(
-        `queryFn started | query="${
-          query ?? ''
-        }", filterDeleted=${filterDeleted}`
+        `queryFn started`
       );
 
       if (!token) {

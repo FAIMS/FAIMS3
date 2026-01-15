@@ -691,29 +691,15 @@ export async function listRecordMetadata({
 
     // Get records - either allDocs or query from index based on provision of
     // recordIds filter
-
-    let startTime = performance.now();
     const rawRecords = await getRecords({
       // this is typically not used - this means the keys field in the DB query
       // is not used
       recordIds,
       dataDb,
     });
-    console.log(
-      `getRecords (${rawRecords?.length ?? 0} records): ${(
-        performance.now() - startTime
-      ).toFixed(2)}ms`
-    );
 
-    startTime = performance.now();
     const rawRevisions = await getRevisions({dataDb: dataDb});
-    console.log(
-      `getRevisions (${rawRevisions?.length ?? 0} records): ${(
-        performance.now() - startTime
-      ).toFixed(2)}ms`
-    );
 
-    startTime = performance.now();
     const revMap: Map<
       string,
       PouchDB.Core.ExistingDocument<Revision>
@@ -721,15 +707,9 @@ export async function listRecordMetadata({
     rawRevisions.forEach(rev => {
       revMap.set(rev._id, rev);
     });
-    console.log(
-      `buildRevMap (${rawRevisions?.length ?? 0} records): ${(
-        performance.now() - startTime
-      ).toFixed(2)}ms`
-    );
 
     // Process records in parallel using Promise.all with map. Each record is
     // hydrated with data, HRID derived, and processed.
-    startTime = performance.now();
     const recordMetadataPromises = rawRecords.map(async record => {
       try {
         const revId = record.heads[0];
@@ -802,11 +782,6 @@ export async function listRecordMetadata({
 
     // Resolve all promises and filter out null values (skipped records)
     const results = await Promise.all(recordMetadataPromises);
-    console.log(
-      `recordMetadataPromises (${recordIds?.length ?? 0} records): ${(
-        performance.now() - startTime
-      ).toFixed(2)}ms`
-    );
     return results.filter(item => item !== null);
   } catch (err) {
     logError(err);
@@ -993,7 +968,6 @@ async function createAuditHash(
     .map(item => `${item.id}:${item.rev}`)
     .join('|');
 
-  // console.log('canonical json', canonicalString);
   // Return SHA-256 hash
   return await createHash(canonicalString);
 }

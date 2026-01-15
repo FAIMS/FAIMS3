@@ -34,6 +34,7 @@ import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
+import {DEBUG_APP} from '../../../buildconfig';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -178,7 +179,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
-    enableProfiling: true,
+    // Profiling enabled when debugging
+    enableProfiling: DEBUG_APP,
     projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
