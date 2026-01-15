@@ -51,7 +51,6 @@ import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
-  OTHER_PREFIX,
   isOtherOptionValue,
   extractOtherText,
   createOtherValue,
@@ -275,7 +274,6 @@ const MuiMultiSelect = ({
   onOtherTextChange,
   hasOtherSelected,
 }: MuiMultiSelectProps) => {
-
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
 
@@ -478,8 +476,8 @@ export const MultiSelect = (props: FieldProps) => {
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
     : rawValue === '' || rawValue === undefined || rawValue === null
-    ? []
-    : [rawValue as string];
+      ? []
+      : [rawValue as string];
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
@@ -489,16 +487,22 @@ export const MultiSelect = (props: FieldProps) => {
   const selectedPredefined = value.filter(v => predefinedValues.includes(v));
   const otherValues = value.filter(v => isOtherOptionValue(v));
   const hasOtherSelected = otherValues.length > 0 || otherCheckboxChecked;
-  const otherText = otherValues.length > 0 ? extractOtherText(otherValues[0]) : '';
+  const otherText =
+    otherValues.length > 0 ? extractOtherText(otherValues[0]) : '';
 
   const otherFieldError =
-    enableOtherOption && otherCheckboxChecked && otherFieldTouched && otherText === ''
+    enableOtherOption &&
+    otherCheckboxChecked &&
+    otherFieldTouched &&
+    otherText === ''
       ? 'Please enter text for the "Other" option or uncheck it'
       : null;
 
   // Combine form errors with custom "Other" field error
   const formErrors = props.state.meta.errors as unknown as string[];
-  const allErrors = otherFieldError ? [...(formErrors || []), otherFieldError] : formErrors;
+  const allErrors = otherFieldError
+    ? [...(formErrors || []), otherFieldError]
+    : formErrors;
 
   const handleChange = (newValues: string[]) => {
     if (enableOtherOption) {
@@ -506,14 +510,15 @@ export const MultiSelect = (props: FieldProps) => {
       const hasOtherMarker = newValues.includes(OTHER_MARKER);
 
       // Filter out marker and any existing "Other: " prefixed values from newValues
-      const realValues = newValues.filter(v => v !== OTHER_MARKER && !isOtherOptionValue(v));
+      const realValues = newValues.filter(
+        v => v !== OTHER_MARKER && !isOtherOptionValue(v)
+      );
 
       if (hasOtherMarker) {
         if (otherValues.length > 0) {
           // Preserve existing "Other" value with prefix
           setFieldData([...realValues, ...otherValues]);
         } else {
-        
           setOtherCheckboxChecked(true);
           setFieldData(realValues);
         }
