@@ -26,7 +26,7 @@
 import {Geolocation, Position} from '@capacitor/geolocation';
 import {Box, Grid} from '@mui/material';
 import {View} from 'ol';
-import {Zoom, Control} from 'ol/control';
+import {Zoom} from 'ol/control';
 import {Extent} from 'ol/extent';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
@@ -142,7 +142,6 @@ export const MapComponent = (props: MapComponentProps) => {
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
     setAttribution(tileStore.getAttribution() as unknown as string);
     const tileLayer = tileStore.getTileLayer();
-
     const layers = [tileLayer];
 
     // if we're offline, limit the zoom level to 12 so that we don't go
@@ -165,14 +164,13 @@ export const MapComponent = (props: MapComponentProps) => {
 
     const theMap = new Map({
       target: element,
-      layers: [tileLayer],
+      layers,
       view: view,
       controls: [new Zoom()],
     });
 
     // Add layer toggle if satellite is available
     if (satelliteLayer && tileStore.hasSatellite()) {
-      theMap.addLayer(satelliteLayer);
       const layerToggle = createLayerToggle({
         vectorLayer: tileLayer,
         satelliteLayer,
