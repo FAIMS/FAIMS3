@@ -51,7 +51,7 @@ and {{notebooks}} in the team.
 | Act as {{notebook}} administrator for any {{notebook}} owned by the team | ❌ | ❌ | ❌ | ✅ |
 | Act as template administrator for any template owned by the team | ❌ | ❌ | ❌ | ✅ |
 
-> ⚠️ **Note**: *Team Member (Creator)* can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
+> ⚠️ **Note**: *Team Member (Creator)* can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.  They would become *{{Notebook}} Administrator* for any {{notebooks}} that they create.
 
 ### Template Roles
 

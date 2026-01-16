@@ -35,8 +35,7 @@ associated with roles relate to either the system as a whole,
 teams or {{notebooks}}.
 
 The details of the different roles are outlined in [Roles and Permissions](../core/permissions.md).
-As an administrator, one of your roles should be *Operations Administrator*; this grants you full
-control over users and teams in the system.
+As an administrator, one of your roles should be *Operations Administrator*; this grants you full control over users and teams in the system.
 
 Note that there is also an elevated *General Administrator* role that has all permissions
 over both users and their notebooks and data.  This is not a generally used role
@@ -83,4 +82,7 @@ There is currently no provision for removing users from the system; this capabil
 is on our roadmap but we need to understand the requirements for enterprise users
 more fully before implementation.
 
-## Backup and Recovery
+## Managing Users
+
+Existing users can be managed through the [{{dashboard}}](../core/web.md) interface. From here
+you can grant or remove roles and generate a password-reset link (for non-SSO users).

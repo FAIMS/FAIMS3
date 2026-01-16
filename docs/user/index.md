@@ -34,6 +34,7 @@ caption: Core Documentation
 maxdepth: 1
 ---
 
+core/web.md
 core/authentication.md
 core/permissions.md
 
