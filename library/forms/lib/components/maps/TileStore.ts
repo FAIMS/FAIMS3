@@ -70,14 +70,14 @@ const TILE_URL_MAP: {
     satellite: {
       url: 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key={key}',
       minZoom: 0,
-      maxZoom: 20,
+      maxZoom: 19,
     },
   },
   esri: {
     satellite: {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       minZoom: 0,
-      maxZoom: 18,
+      maxZoom: 19,
     },
   },
 };

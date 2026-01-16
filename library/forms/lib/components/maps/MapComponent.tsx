@@ -177,6 +177,8 @@ export const MapComponent = (props: MapComponentProps) => {
         vectorLayer: tileLayer,
         satelliteLayer,
         isOnline,
+        vectorZoomRange: tileStore.getVectorZoomRange(),
+        satelliteZoomRange: tileStore.getSatelliteZoomRange(),
         onLayerChange: isSatellite => {
           // Update attribution when layer changes
           setAttribution(
