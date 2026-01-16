@@ -14,8 +14,7 @@ export type MapStylesheetNameType =
   | 'basic'
   | 'openstreetmap'
   | 'osm-bright'
-  | 'toner'
-  | 'satellite';
+  | 'toner';
 
 export const getMapStylesheet = (style: MapStylesheetNameType) => {
   switch (style) {

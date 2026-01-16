@@ -409,13 +409,25 @@ export const MapComponent = (props: MapComponentProps) => {
           <Box
             ref={refCallback} // will create the map
             sx={{
-              height: '95%',
+              height: '97%',
               width: '100%',
             }}
           />
-          <Box sx={{height: '5%', paddingLeft: '20px'}}>
+          <Box
+            sx={{
+              height: '3%',
+              paddingLeft: '50px',
+            }}
+          >
             {attribution && (
-              <p dangerouslySetInnerHTML={{__html: attribution}} />
+              <div
+                dangerouslySetInnerHTML={{__html: attribution}}
+                style={{
+                  fontSize: '10px',
+                  lineHeight: 1.1,
+                  color: '#666',
+                }}
+              />
             )}
           </Box>
         </Box>

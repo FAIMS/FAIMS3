@@ -216,6 +216,12 @@ export class FaimsFrontEnd extends Construct {
       ...(props.offlineMaps.mapSourceKey
         ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
         : {}),
+      ...(props.offlineMaps.satelliteSource
+        ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
+        : {}),
+      ...(props.offlineMaps.satelliteSourceKey
+        ? {VITE_SATELLITE_SOURCE_KEY: props.offlineMaps.satelliteSourceKey}
+        : {}),
 
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_KEY: props.bugsnagKey} : {}),

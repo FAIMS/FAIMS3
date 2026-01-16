@@ -253,7 +253,7 @@ abstract class TileStoreBase {
 
   getSatelliteAttribution(): string {
     if (this.config.satelliteSource === 'esri') {
-      return '&copy; Esri, Maxar, Earthstar Geographics';
+      return '<em>Powered by Esri</em> | Esri, USGS, FAO, NOAA, Maxar, Earthstar Geographics, and the GIS User Community';
     }
     if (this.config.satelliteSource === 'maptiler') {
       return '&copy; MapTiler &copy; OpenStreetMap contributors';
@@ -778,12 +778,14 @@ export class VectorTileStore extends TileStoreBase {
 
 /**
  * Factory function to create the appropriate tile store based on map style.
- * Satellite imagery uses raster tiles (ImageTileStore),
- * while other styles use vector tiles (VectorTileStore).
  */
 export const createTileStore = (config: MapConfig): TileStoreBase => {
+  // Later we may wish to generate image tile stores instead of vector - based
+  // on the config
+  /**
   if (config.mapStyle === 'satellite') {
     return new ImageTileStore(config);
   }
+  */
   return new VectorTileStore(config);
 };
