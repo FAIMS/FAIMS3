@@ -45,7 +45,7 @@ import {
   OTHER_MARKER,
   otherTextFieldSx,
   useOtherOption,
-} from '../hooks/useOtherOption';
+} from '../../../hooks/useOtherOption';
 
 // ============================================================================
 // Types & Schema

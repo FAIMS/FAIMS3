@@ -55,7 +55,7 @@ import {
   isOtherOptionValue,
   otherTextFieldSx,
   useOtherOption,
-} from '../hooks/useOtherOption';
+} from '../../../hooks/useOtherOption';
 
 // ============================================================================
 // Types & Schema

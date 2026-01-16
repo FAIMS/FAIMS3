@@ -50,7 +50,7 @@ import {
   OTHER_MARKER,
   otherTextFieldSx,
   useOtherOption,
-} from '../hooks/useOtherOption';
+} from '../../../hooks/useOtherOption';
 
 const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
