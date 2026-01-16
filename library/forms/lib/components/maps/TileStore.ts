@@ -62,11 +62,13 @@ const TILE_URL_MAP: {
     },
   },
   maptiler: {
+    // Requires VITE_MAP_SOURCE_KEY env variable
     vector: {
       url: 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}',
       minZoom: 0,
       maxZoom: 22,
     },
+    // Requires VITE_SATELLITE_SOURCE_KEY env variable
     satellite: {
       url: 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key={key}',
       minZoom: 0,
@@ -74,6 +76,7 @@ const TILE_URL_MAP: {
     },
   },
   esri: {
+    // NOTE: this should only be used by licensed users - proceed with caution
     satellite: {
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       minZoom: 0,
