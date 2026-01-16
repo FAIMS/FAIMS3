@@ -26,7 +26,7 @@
 import {Geolocation, Position} from '@capacitor/geolocation';
 import {Box, Grid} from '@mui/material';
 import {View} from 'ol';
-import {Zoom} from 'ol/control';
+import {Zoom, Control} from 'ol/control';
 import {Extent} from 'ol/extent';
 import Feature from 'ol/Feature';
 import {Point} from 'ol/geom';
@@ -39,11 +39,12 @@ import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {createCenterControl} from './center-control';
+import {createLayerToggle} from './layer-toggle';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
 
 export const defaultMapProjection = 'EPSG:3857';
-const MAX_ZOOM = 19;
+const MAX_ZOOM = 20;
 const MIN_ZOOM = 12;
 
 /**
@@ -74,6 +75,13 @@ export const MapComponent = (props: MapComponentProps) => {
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const tileStore = useMemo(() => createTileStore(props.config), []);
+
+  // Update layer toggle when online status changes
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('map-online-status-change', {detail: {isOnline}})
+    );
+  }, [isOnline]);
 
   // Listen for online/offline events to update isOnline state
   useEffect(() => {
@@ -134,10 +142,19 @@ export const MapComponent = (props: MapComponentProps) => {
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
     setAttribution(tileStore.getAttribution() as unknown as string);
     const tileLayer = tileStore.getTileLayer();
+
+    const layers = [tileLayer];
+
     // if we're offline, limit the zoom level to 12 so that we don't go
     // off map.
     // TODO: Could also limit the extent to that covered by the offline
     // map.
+
+    // Add satellite layer if configured
+    const satelliteLayer = tileStore.getSatelliteLayer();
+    if (satelliteLayer) {
+      layers.push(satelliteLayer);
+    }
 
     const view = new View({
       projection: defaultMapProjection,
@@ -152,6 +169,25 @@ export const MapComponent = (props: MapComponentProps) => {
       view: view,
       controls: [new Zoom()],
     });
+
+    // Add layer toggle if satellite is available
+    if (satelliteLayer && tileStore.hasSatellite()) {
+      theMap.addLayer(satelliteLayer);
+      const layerToggle = createLayerToggle({
+        vectorLayer: tileLayer,
+        satelliteLayer,
+        isOnline,
+        onLayerChange: isSatellite => {
+          // Update attribution when layer changes
+          setAttribution(
+            isSatellite
+              ? tileStore.getSatelliteAttribution()
+              : (tileStore.getAttribution() as unknown as string)
+          );
+        },
+      });
+      theMap.addControl(layerToggle);
+    }
 
     // create the live cursor layer
     const liveCursor = createLiveCursorFeatures(theMap);

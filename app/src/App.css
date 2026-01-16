@@ -34,23 +34,50 @@ body {
     font-weight:700
 }
 
-.ol-center-button {
-    padding: 1px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgb(23 23 23);
-    border-radius: 6px;
+/* Shared control box styles */
+.ol-custom-control {
+  position: absolute;
+  right: 12px;
+  background-color: white;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
 }
-  
+
+/* Shared control button styles */
+.ol-custom-control-button {
+  padding: 1px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgb(23 23 23);
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+
+.ol-custom-control-button:hover:not(:disabled) {
+  background-color: rgb(50 50 50);
+}
+
+.ol-custom-control-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Position-specific styles */
 .ol-center-box {
-    position: absolute;
-    right: 12px;
-    bottom: 128px;
-    background-color: white;
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px;
+  bottom: 128px;
+}
+
+.ol-layer-toggle-box {
+  bottom: 195px;
+}
+
+/* Active state for layer toggle */
+.ol-layer-toggle-button.active {
+  background-color: #1a73e8;
 }

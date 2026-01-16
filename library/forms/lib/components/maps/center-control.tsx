@@ -15,7 +15,7 @@ export const createCenterControl = (
   centerMap: () => void
 ): Control => {
   const button = document.createElement('button');
-  button.className = 'ol-center-button';
+  button.className = 'ol-custom-control-button ol-center-button';
 
   button.appendChild(
     CreateDomIcon({
@@ -33,7 +33,7 @@ export const createCenterControl = (
   button.addEventListener('click', handleClick);
 
   const element = document.createElement('div');
-  element.className = 'ol-center-box';
+  element.className = 'ol-custom-control ol-center-box';
   element.appendChild(button);
 
   return new Control({

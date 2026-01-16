@@ -35,6 +35,7 @@ import VectorTile from 'ol/VectorTile';
 import {MapConfig} from './types';
 import {IDBObjectStore} from './IDBObjectStore';
 import {getMapStylesheet} from './styles';
+import {XYZ} from 'ol/source';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -44,21 +45,40 @@ const MAX_ZOOM = 14;
 // Table of map tile sources for raster and vector tiles
 // based on configuration settings we select which of these to use
 //
-const TILE_URL_MAP: {[key: string]: {[key: string]: string}} = {
+interface TileSourceConfig {
+  url: string;
+  minZoom?: number;
+  maxZoom?: number;
+}
+
+const TILE_URL_MAP: {
+  [key: string]: {vector?: TileSourceConfig; satellite?: TileSourceConfig};
+} = {
   osm: {
-    raster: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    vector: 'https://tile.openstreetmap.org/data/{z}/{x}/{y}.pbf',
+    vector: {
+      url: 'https://tile.openstreetmap.org/data/{z}/{x}/{y}.pbf',
+      minZoom: 0,
+      maxZoom: 19,
+    },
   },
   maptiler: {
-    raster:
-      'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
-    vector: 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}',
-    satellite:
-      'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key={key}',
+    vector: {
+      url: 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}',
+      minZoom: 0,
+      maxZoom: 22,
+    },
+    satellite: {
+      url: 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key={key}',
+      minZoom: 0,
+      maxZoom: 20,
+    },
   },
   esri: {
-    satellite:
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    satellite: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      minZoom: 0,
+      maxZoom: 18,
+    },
   },
 };
 
@@ -179,6 +199,68 @@ abstract class TileStoreBase {
     this.config = config;
   }
 
+  getVectorZoomRange(): {minZoom: number; maxZoom: number} {
+    const config = TILE_URL_MAP[this.config.mapSource]?.vector;
+    return {
+      minZoom: config?.minZoom ?? 0,
+      maxZoom: config?.maxZoom ?? 19,
+    };
+  }
+
+  getSatelliteZoomRange(): {minZoom: number; maxZoom: number} {
+    const source = this.config.satelliteSource;
+    if (!source) return {minZoom: 0, maxZoom: 19};
+
+    const config = TILE_URL_MAP[source]?.satellite;
+    return {
+      minZoom: config?.minZoom ?? 0,
+      maxZoom: config?.maxZoom ?? 19,
+    };
+  }
+
+  /**
+   * Check if satellite imagery is available based on config
+   */
+  hasSatellite(): boolean {
+    if (!this.config.satelliteSource) return false;
+    return !!TILE_URL_MAP[this.config.satelliteSource]?.['satellite'];
+  }
+
+  /**
+   * Get a satellite tile layer (raster imagery)
+   * Returns undefined if satellite is not configured
+   */
+  getSatelliteLayer(): TileLayer | undefined {
+    if (!this.config.satelliteSource) return undefined;
+
+    const config = TILE_URL_MAP[this.config.satelliteSource]?.satellite;
+    if (!config) return undefined;
+
+    const url = config.url.replace('{key}', this.config.satelliteKey || '');
+
+    const source = new XYZ({
+      url: url,
+      attributions: this.getSatelliteAttribution(),
+      minZoom: config.minZoom,
+      maxZoom: config.maxZoom,
+    });
+
+    return new TileLayer({
+      source: source,
+      visible: false,
+    });
+  }
+
+  getSatelliteAttribution(): string {
+    if (this.config.satelliteSource === 'esri') {
+      return '&copy; Esri, Maxar, Earthstar Geographics';
+    }
+    if (this.config.satelliteSource === 'maptiler') {
+      return '&copy; MapTiler &copy; OpenStreetMap contributors';
+    }
+    return '';
+  }
+
   /**
    * Store a tile in the database
    * @returns the key of the tile in the database
@@ -203,7 +285,7 @@ abstract class TileStoreBase {
    * @returns the configured tile URL template
    */
   getTileURLTemplate(): string | undefined {
-    return undefined;
+    return TILE_URL_MAP[this.config.mapSource]?.vector?.url;
   }
 
   /**
@@ -532,12 +614,6 @@ export class ImageTileStore extends TileStoreBase {
     this.tileLayer = new TileLayer({source: this.source});
   }
 
-  getTileURLTemplate(): string | undefined {
-    const source = TILE_URL_MAP[this.config.mapSource];
-    // Use satellite URL if that's the style, otherwise fall back to raster
-    return source?.['satellite'] ?? source?.['raster'];
-  }
-
   getTileGrid() {
     return this.source.getTileGrid();
   }
@@ -654,7 +730,7 @@ export class VectorTileStore extends TileStoreBase {
    * @returns the configured tile URL template
    */
   getTileURLTemplate(): string | undefined {
-    return TILE_URL_MAP[this.config.mapSource]['vector'];
+    return TILE_URL_MAP[this.config.mapSource]['vector']?.url;
   }
 
   getTileGrid() {
