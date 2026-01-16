@@ -265,7 +265,6 @@ export const RadioGroup = (props: FieldProps) => {
                     // Auto-select "Other" radio when field is focused
                     if (!hasOtherSelected) {
                       setOtherRadioSelected(true);
-                      setFieldData(null);
                     }
                   }}
                   onBlur={() => {

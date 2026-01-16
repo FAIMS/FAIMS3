@@ -326,7 +326,7 @@ const MuiMultiSelect = ({
             const displayText = (selected as string[])
               .map(v => {
                 if (v === OTHER_MARKER) {
-                  return otherText ? `Other: ${otherText}` : 'Other';
+                  return otherText || 'Other';
                 }
                 return v;
               })
