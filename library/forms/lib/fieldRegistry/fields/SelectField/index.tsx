@@ -220,7 +220,7 @@ export const Select = (props: FieldProps) => {
             >
               <TextField
                 size="small"
-                placeholder="Add 'other' option"
+                placeholder="Other"
                 value={otherText}
                 onChange={e => {
                   e.stopPropagation();

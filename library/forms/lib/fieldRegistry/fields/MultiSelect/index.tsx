@@ -298,11 +298,6 @@ const MuiMultiSelect = ({
 
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
-  //  rendering to include OTHER_MARKER if other is selected
-  const displayValue = hasOtherSelected
-    ? [...value.filter(v => options.some(o => o.value === v)), OTHER_MARKER]
-    : value;
-
   return (
     <>
       <FormControl
@@ -321,7 +316,7 @@ const MuiMultiSelect = ({
           multiple
           onChange={handleChange}
           onBlur={onBlur}
-          value={displayValue}
+          value={value}
           renderValue={selected => {
             const displayText = (selected as string[])
               .map(v => {
