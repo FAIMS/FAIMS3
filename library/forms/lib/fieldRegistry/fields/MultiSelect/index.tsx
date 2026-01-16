@@ -51,11 +51,11 @@ import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
-  isOtherOptionValue,
   extractOtherText,
-  createOtherValue,
+  isOtherOptionValue,
   otherTextFieldSx,
-} from '../otherOptionUtils';
+  useOtherOption,
+} from '../hooks/useOtherOption';
 
 // ============================================================================
 // Types & Schema
@@ -323,6 +323,10 @@ const MuiMultiSelect = ({
                 if (v === OTHER_MARKER) {
                   return otherText || 'Other';
                 }
+                // Strip "Other: " prefix for display - only show the text
+                if (isOtherOptionValue(v)) {
+                  return extractOtherText(v) || 'Other';
+                }
                 return v;
               })
               .join(', ');
@@ -461,39 +465,37 @@ export const MultiSelect = (props: FieldProps) => {
     ElementProps,
   } = props;
 
-  // Track if "Other" checkbox is checked (UI state only, not stored in data)
-  const [otherCheckboxChecked, setOtherCheckboxChecked] = React.useState(false);
-  // Track if "Other" field has been touched
-  const [otherFieldTouched, setOtherFieldTouched] = React.useState(false);
-
   // Normalize value to always be an array
   const rawValue = state.value?.data;
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
     : rawValue === '' || rawValue === undefined || rawValue === null
-      ? []
-      : [rawValue as string];
+    ? []
+    : [rawValue as string];
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-
   const predefinedValues = ElementProps.options.map(opt => opt.value);
+
+  const {
+    setOtherSelected,
+    setOtherFieldTouched,
+    hasOtherSelected,
+    otherText,
+    otherFieldError,
+    handleOtherTextChange,
+  } = useOtherOption({
+    enableOtherOption,
+    rawValue: value,
+    predefinedValues,
+    setFieldData,
+    emptyErrorMessage: 'Please enter text for the "Other" option or uncheck it',
+  });
+
   const selectedPredefined = value.filter(v => predefinedValues.includes(v));
   const otherValues = value.filter(v => isOtherOptionValue(v));
-  const hasOtherSelected = otherValues.length > 0 || otherCheckboxChecked;
-  const otherText =
-    otherValues.length > 0 ? extractOtherText(otherValues[0]) : '';
 
-  const otherFieldError =
-    enableOtherOption &&
-    otherCheckboxChecked &&
-    otherFieldTouched &&
-    otherText === ''
-      ? 'Please enter text for the "Other" option or uncheck it'
-      : null;
-
-  // Combine form errors with custom "Other" field error
   const formErrors = props.state.meta.errors as unknown as string[];
   const allErrors = otherFieldError
     ? [...(formErrors || []), otherFieldError]
@@ -514,26 +516,16 @@ export const MultiSelect = (props: FieldProps) => {
           // Preserve existing "Other" value with prefix
           setFieldData([...realValues, ...otherValues]);
         } else {
-          setOtherCheckboxChecked(true);
+          setOtherSelected(true);
           setFieldData(realValues);
         }
       } else {
         // Unchecked "Other" - remove all custom values and reset checkbox state
-        setOtherCheckboxChecked(false);
+        setOtherSelected(false);
         setFieldData(realValues);
       }
     } else {
       setFieldData(newValues);
-    }
-  };
-
-  const handleOtherTextChange = (text: string) => {
-    if (text.length > 0) {
-      setFieldData([...selectedPredefined, createOtherValue(text)]);
-      setOtherCheckboxChecked(false);
-    } else {
-      setFieldData(selectedPredefined);
-      setOtherCheckboxChecked(true);
     }
   };
 

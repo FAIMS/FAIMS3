@@ -31,7 +31,6 @@
  * - disabled: Whether the field is disabled.
  */
 
-import React from 'react';
 import {FormControlLabel, TextField} from '@mui/material';
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
@@ -44,11 +43,9 @@ import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
-  isOtherOptionValue,
-  extractOtherText,
-  createOtherValue,
   otherTextFieldSx,
-} from '../otherOptionUtils';
+  useOtherOption,
+} from '../hooks/useOtherOption';
 
 // ============================================================================
 // Types & Schema
@@ -95,77 +92,53 @@ export const RadioGroup = (props: FieldProps) => {
 
   const rawValue = (state.value?.data as string) ?? '';
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
-
-  // Track if "Other" radio is selected
-  const [otherRadioSelected, setOtherRadioSelected] = React.useState(false);
-  // Track if "Other" field has been touched for validation
-  const [otherFieldTouched, setOtherFieldTouched] = React.useState(false);
-
-  // Determine if the current value is an "Other" value
-  const isOtherValue = isOtherOptionValue(rawValue);
-  const hasOtherSelected = isOtherValue || otherRadioSelected;
-  const otherText = extractOtherText(rawValue);
-
-  // The value to show in the radio group (predefined option or OTHER_MARKER)
   const predefinedValues = ElementProps.options.map(opt => opt.value);
+
+  const {
+    setOtherSelected,
+    setOtherFieldTouched,
+    hasOtherSelected,
+    otherText,
+    otherFieldError,
+    handleOtherTextChange,
+  } = useOtherOption({
+    enableOtherOption,
+    rawValue,
+    predefinedValues,
+    setFieldData,
+    emptyErrorMessage:
+      'Please enter text for the "Other" option or unselect it',
+  });
+
   const displayValue = hasOtherSelected
     ? OTHER_MARKER
     : predefinedValues.includes(rawValue)
-      ? rawValue
-      : '';
+    ? rawValue
+    : '';
 
-  // Validation error for empty "Other" text
-  const otherFieldError =
-    enableOtherOption &&
-    otherRadioSelected &&
-    otherFieldTouched &&
-    otherText === ''
-      ? 'Please enter text for the "Other" option or unselect it'
-      : null;
-
-  // Combine form errors with custom "Other" field error
   const formErrors = props.state.meta.errors as unknown as string[];
   const allErrors = otherFieldError
     ? [...(formErrors || []), otherFieldError]
     : formErrors;
 
-  /**
-   * Handles changes in the selected radio button, allowing users to toggle selection.
-   * If a selected radio button is clicked again, it gets deselected (value is cleared).
-   */
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedValue = event.target.value;
 
     if (selectedValue === OTHER_MARKER) {
-      // Selecting "Other" option
       if (hasOtherSelected) {
         // Toggle off - deselect "Other"
-        setOtherRadioSelected(false);
-        setFieldData(null);
+        setOtherSelected(false);
+        setFieldData('');
       } else {
-        // Select "Other"
-        setOtherRadioSelected(true);
-        // Clear any previous predefined value
-        setFieldData(null);
+        // Select "Other" - use empty string, text will be added via the hook
+        setOtherSelected(true);
+        setFieldData('');
       }
     } else {
-      // Selecting a predefined option
-      setOtherRadioSelected(false);
-      const newValue = displayValue === selectedValue ? null : selectedValue;
+      // Selecting a predefined option (or toggling it off)
+      setOtherSelected(false);
+      const newValue = displayValue === selectedValue ? '' : selectedValue;
       setFieldData(newValue);
-    }
-  };
-
-  /**
-   * Handles changes in the "Other" text field
-   */
-  const handleOtherTextChange = (text: string) => {
-    if (text.length > 0) {
-      setFieldData(createOtherValue(text));
-      setOtherRadioSelected(false);
-    } else {
-      setFieldData(null);
-      setOtherRadioSelected(true);
     }
   };
 
@@ -257,14 +230,14 @@ export const RadioGroup = (props: FieldProps) => {
                   onChange={e => {
                     // Auto-select "Other" radio when user starts typing
                     if (!hasOtherSelected && e.target.value.length > 0) {
-                      setOtherRadioSelected(true);
+                      setOtherSelected(true);
                     }
                     handleOtherTextChange(e.target.value);
                   }}
                   onFocus={() => {
                     // Auto-select "Other" radio when field is focused
                     if (!hasOtherSelected) {
-                      setOtherRadioSelected(true);
+                      setOtherSelected(true);
                     }
                   }}
                   onBlur={() => {
@@ -315,19 +288,17 @@ const valueSchema = (props: RadioGroupFieldProps) => {
     return z.union([z.string(), z.null()]);
   }
 
-  // Valid option values
   const optionsSchema = z.enum(optionValues as [string, ...string[]]);
 
-  // If "Other" option is enabled, allow any string (including "Other: " prefixed values)
+  // When "Other" is enabled, allow any string (including "Other: xxx" values)
   if (enableOtherOption) {
     if (props.required) {
       return z.string().min(1, {message: 'Please select an option'});
     }
-    return z.union([z.string(), z.null(), z.literal('')]);
+    return z.string();
   }
 
   if (props.required) {
-    // Required: must be one of the valid options
     return optionsSchema;
   }
 

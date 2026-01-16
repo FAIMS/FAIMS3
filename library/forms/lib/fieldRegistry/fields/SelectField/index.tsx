@@ -48,11 +48,9 @@ import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
-  isOtherOptionValue,
-  extractOtherText,
-  createOtherValue,
   otherTextFieldSx,
-} from '../otherOptionUtils';
+  useOtherOption,
+} from '../hooks/useOtherOption';
 
 const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
@@ -118,41 +116,26 @@ type FieldProps = SelectFieldProps & FullFieldProps;
 export const Select = (props: FieldProps) => {
   const theme = useTheme();
   const value = (props.state.value?.data as string) ?? '';
-
-  // Extract "Other" option settings
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
-
   const predefinedValues = props.ElementProps.options.map(opt => opt.value);
 
-  // Check if current value is an "Other" value (has the prefix)
-  const isOtherValue = isOtherOptionValue(value);
-  const isOtherSelected =
-    enableOtherOption && value && !predefinedValues.includes(value);
-  const displayValue = isOtherValue || isOtherSelected ? OTHER_MARKER : value;
+  const {hasOtherSelected, otherText, handleOtherTextChange} = useOtherOption({
+    enableOtherOption,
+    rawValue: value,
+    predefinedValues,
+    setFieldData: props.setFieldData,
+  });
 
-  // Extract the text part from "Other: xxx" format
-  const otherText = isOtherValue
-    ? extractOtherText(value)
-    : isOtherSelected
-      ? value
-      : '';
+  const displayValue = hasOtherSelected ? OTHER_MARKER : value;
 
   const onChange = (event: SelectChangeEvent) => {
     const selected = event.target.value;
 
     if (selected === OTHER_MARKER) {
-      // if "other" selected, set to empty string to allow user input
+      // If "other" selected, set to empty string to allow user input
       props.setFieldData('');
     } else {
       props.setFieldData(selected);
-    }
-  };
-
-  const handleOtherTextChange = (text: string) => {
-    if (text.length > 0) {
-      props.setFieldData(createOtherValue(text));
-    } else {
-      props.setFieldData('');
     }
   };
 
