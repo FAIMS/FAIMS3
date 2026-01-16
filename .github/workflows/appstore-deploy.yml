@@ -96,7 +96,7 @@ jobs:
       - name: Set up XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.3
+          xcode-version: 16.4
       - name: Deploy iOS app to production with Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:
