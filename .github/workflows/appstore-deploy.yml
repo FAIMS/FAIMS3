@@ -76,6 +76,7 @@ jobs:
           export VITE_ENABLE_RECORD_FILTERS=${{vars.ENABLE_RECORD_FILTERS}}
           export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"
           export VITE_MAP_SOURCE=${{vars.MAP_SOURCE}}
+          export VITE_SATELLITE_SOURCE=${{vars.SATELLITE_SOURCE}}
           export VITE_MAP_SOURCE_KEY="${{secrets.MAP_SOURCE_KEY}}"
           # could make these configurable but enable by default for now
           export VITE_OFFLINE_MAPS=true
