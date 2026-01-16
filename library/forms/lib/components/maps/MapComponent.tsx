@@ -23,23 +23,24 @@
  * - Integration with parent component through callback
  */
 
+import {Geolocation, Position} from '@capacitor/geolocation';
 import {Box, Grid} from '@mui/material';
 import {View} from 'ol';
 import {Zoom} from 'ol/control';
 import {Extent} from 'ol/extent';
+import Feature from 'ol/Feature';
+import {Point} from 'ol/geom';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
 import {transform, transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, RegularShape, Stroke, Style} from 'ol/style';
+import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
 import {createCenterControl} from './center-control';
-import {VectorTileStore} from './TileStore';
-import Feature from 'ol/Feature';
-import {Point} from 'ol/geom';
-import CircleStyle from 'ol/style/Circle';
-import {Geolocation, Position} from '@capacitor/geolocation';
+import {createLayerToggle} from './layer-toggle';
+import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
 
 export const defaultMapProjection = 'EPSG:3857';
@@ -73,7 +74,14 @@ export const MapComponent = (props: MapComponentProps) => {
   const [zoomLevel, setZoomLevel] = useState(props.zoom || MIN_ZOOM); // Default zoom level
   const [attribution, setAttribution] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const tileStore = useMemo(() => new VectorTileStore(props.config), []);
+  const tileStore = useMemo(() => createTileStore(props.config), []);
+
+  // Update layer toggle when online status changes
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent('map-online-status-change', {detail: {isOnline}})
+    );
+  }, [isOnline]);
 
   // Listen for online/offline events to update isOnline state
   useEffect(() => {
@@ -134,10 +142,18 @@ export const MapComponent = (props: MapComponentProps) => {
   const createMap = useCallback(async (element: HTMLElement): Promise<Map> => {
     setAttribution(tileStore.getAttribution() as unknown as string);
     const tileLayer = tileStore.getTileLayer();
+    const layers = [tileLayer];
+
     // if we're offline, limit the zoom level to 12 so that we don't go
     // off map.
     // TODO: Could also limit the extent to that covered by the offline
     // map.
+
+    // Add satellite layer if configured
+    const satelliteLayer = tileStore.getSatelliteLayer();
+    if (satelliteLayer) {
+      layers.push(satelliteLayer);
+    }
 
     const view = new View({
       projection: defaultMapProjection,
@@ -148,10 +164,30 @@ export const MapComponent = (props: MapComponentProps) => {
 
     const theMap = new Map({
       target: element,
-      layers: [tileLayer],
+      layers,
       view: view,
       controls: [new Zoom()],
     });
+
+    // Add layer toggle if satellite is available
+    if (satelliteLayer && tileStore.hasSatellite()) {
+      const layerToggle = createLayerToggle({
+        vectorLayer: tileLayer,
+        satelliteLayer,
+        isOnline,
+        vectorZoomRange: tileStore.getVectorZoomRange(),
+        satelliteZoomRange: tileStore.getSatelliteZoomRange(),
+        onLayerChange: isSatellite => {
+          // Update attribution when layer changes
+          setAttribution(
+            isSatellite
+              ? tileStore.getSatelliteAttribution()
+              : (tileStore.getAttribution() as unknown as string)
+          );
+        },
+      });
+      theMap.addControl(layerToggle);
+    }
 
     // create the live cursor layer
     const liveCursor = createLiveCursorFeatures(theMap);
@@ -373,13 +409,25 @@ export const MapComponent = (props: MapComponentProps) => {
           <Box
             ref={refCallback} // will create the map
             sx={{
-              height: '95%',
+              height: '97%',
               width: '100%',
             }}
           />
-          <Box sx={{height: '5%', paddingLeft: '20px'}}>
+          <Box
+            sx={{
+              height: '3%',
+              paddingLeft: '50px',
+            }}
+          >
             {attribution && (
-              <p dangerouslySetInnerHTML={{__html: attribution}} />
+              <div
+                dangerouslySetInnerHTML={{__html: attribution}}
+                style={{
+                  fontSize: '10px',
+                  lineHeight: 1.1,
+                  color: '#666',
+                }}
+              />
             )}
           </Box>
         </Box>

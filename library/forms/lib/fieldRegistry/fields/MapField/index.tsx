@@ -24,7 +24,7 @@ import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {z} from 'zod';
-import {VectorTileStore} from '../../../components';
+import {createTileStore, VectorTileStore} from '../../../components';
 import {defaultMapProjection} from '../../../components/maps/MapComponent';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
@@ -116,7 +116,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
       });
 
       // now work out if we have a stored map
-      const tileStore = new VectorTileStore(mapConfig);
+      const tileStore = createTileStore(mapConfig);
       return await tileStore.mapCacheIncludes(parsedFeatures);
     } else {
       return false;

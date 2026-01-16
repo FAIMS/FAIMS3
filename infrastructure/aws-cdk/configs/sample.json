@@ -25,6 +25,7 @@
     "offlineMaps": {
       "mapSource": "maptiler",
       "mapSourceKey": "your-maptiler-api-key",
+      "satelliteSource": "esri",
       "offlineMaps": true,
       "mapStyle": "basic"
     }
