@@ -68,7 +68,7 @@ const TILE_URL_MAP: {
       minZoom: 0,
       maxZoom: 22,
     },
-    // Requires VITE_SATELLITE_SOURCE_KEY env variable
+    // Requires VITE_MAP_SOURCE_KEY env variable
     satellite: {
       url: 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key={key}',
       minZoom: 0,
@@ -239,7 +239,14 @@ abstract class TileStoreBase {
     const config = TILE_URL_MAP[this.config.satelliteSource]?.satellite;
     if (!config) return undefined;
 
-    const url = config.url.replace('{key}', this.config.satelliteKey || '');
+    let url = config.url;
+    // Perform replacement
+    if (
+      this.config.satelliteSource === 'maptiler' &&
+      this.config.mapSourceKey
+    ) {
+      url = config.url.replace('{key}', this.config.mapSourceKey || '');
+    }
 
     const source = new XYZ({
       url: url,

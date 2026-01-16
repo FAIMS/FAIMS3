@@ -254,6 +254,9 @@ Let's talk through each option in the below:
   - `mapStyle`: the map style can be basic, osm-bright, openstreetmap or toner
   - `mapSource`: currently only supports 'osm' or 'maptiler'
   - `mapSourceKey`: API key for maptiler or OSM
+  - `satelliteSource`: If you want to enable separate satellite maps (toggle
+    online only satellite) - provide either 'maptiler' or 'esri'. If maptiler,
+    also ensure you provide 'mapSourceKey'
 
 If you just want to get a deployment going, you can leave most of these options default.
 

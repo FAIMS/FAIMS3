@@ -431,11 +431,6 @@ function get_satellite_source(): 'esri' | 'maptiler' | undefined {
   return satellite_source || undefined;
 }
 
-function get_satellite_key(): string {
-  const satellite_key = import.meta.env.VITE_SATELLITE_SOURCE_KEY;
-  return satellite_key || '';
-}
-
 // get the map configuration
 export function getMapConfig(): MapConfig {
   const config: MapConfig = {
@@ -447,7 +442,6 @@ export function getMapConfig(): MapConfig {
   const satelliteSource = get_satellite_source();
   if (satelliteSource) {
     config.satelliteSource = satelliteSource;
-    config.satelliteKey = get_satellite_key();
   }
 
   return config;

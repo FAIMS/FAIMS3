@@ -16,8 +16,6 @@ const OfflineMapsConfigSchema = z.object({
   mapSourceKey: z.string().optional(),
   /** The source of satellite layers (if enabled) */
   satelliteSource: z.enum(['esri', 'maptiler']).optional(),
-  /** If your provider needs a key (maptiler) */
-  satelliteSourceKey: z.string().optional(),
   /** Enable offline map downloads. Note that some services, notably OSM, don't
    * allow map tile downloads */
   offlineMaps: z.boolean(),
