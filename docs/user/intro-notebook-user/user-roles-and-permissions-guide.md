@@ -31,7 +31,7 @@ This means you can:
 - Assign Team Administrator roles (only GENERAL_ADMIN can do this)
 - Manage all {{notebooks}} and their users
 
-> 💡 **Note**: This guide assumes you have these administrative permissions. If you cannot perform an action described here, contact your system administrator to verify your role assignments.
+> **Note**: This guide assumes you have these administrative permissions. If you cannot perform an action described here, contact your system administrator to verify your role assignments.
 
 ### What Typical Users Can Do By Default
 
@@ -47,7 +47,7 @@ This means they can immediately:
 - Invite users to {{notebooks}} they administer
 - Manage access for their team members
 
-> 💡 **Note**: Users do not create their own teams. Teams are created during provisioning, and users are assigned as Team Administrator of their team.
+> **Note**: Users do not create their own teams. Teams are created during provisioning, and users are assigned as Team Administrator of their team.
 
 ### The Three-Tier Permission Model
 
@@ -78,7 +78,7 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 ### Content
 
 - **{{Notebooks}}** — View and manage data collection {{notebooks}}
-- **Templates** — View and manage reusable notebook templates
+- **Templates** — View and manage reusable {{notebook}} templates
 
 ### Management
 
@@ -87,7 +87,7 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 
 [SCREENSHOT: {{Dashboard}} sidebar showing Content ({{Notebooks}}, Templates) and Management (Users, Teams) sections]
 
-> 💡 **Tip**: Click on any sidebar item to navigate to that section. The breadcrumb at the top (e.g., "Home > Users") shows your current location.
+> **Tip**: Click on any sidebar item to navigate to that section. The breadcrumb at the top (e.g., "Home > Users") shows your current location.
 
 ---
 
@@ -133,7 +133,7 @@ The **Users** section shows all users in the system with their email addresses a
 
 [SCREENSHOT: Role badge with × indicator for removal]
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove GENERAL_CREATOR from a user, they will no longer be able to create new {{notebooks}}.
+> **Warning**: Be careful when removing roles. If you remove GENERAL_CREATOR from a user, they will no longer be able to create new {{notebooks}}.
 
 ---
 
@@ -180,7 +180,7 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 | TEAM_MEMBER | Team Member (Contributor) | Access team resources | Contributor |
 | TEAM_MEMBER_CREATOR | Team Member (Creator) | Create {{notebooks}} only | **None** |
 
-> ⚠️ **Important**: Team Member (Creator) can create {{notebooks}} but does NOT get automatic access to existing team {{notebooks}}.
+> **Important**: Team Member (Creator) can create {{notebooks}} but does NOT get automatic access to existing team {{notebooks}}.
 
 ### Adding a User to Your Team
 
@@ -215,7 +215,7 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 
 [SCREENSHOT: Team member row with red trash icon highlighted]
 
-> ⚠️ **Warning**: Removing someone from a team removes their automatic (virtual) access to ALL team {{notebooks}}. If they have direct notebook roles, those remain until separately removed.
+> **Warning**: Removing someone from a team removes their automatic (virtual) access to ALL team {{notebooks}}. If they have direct {{notebook}} roles, those remain until separately removed.
 
 ---
 
@@ -226,7 +226,7 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 ### Viewing {{Notebook}} Users
 
 1. Click **{{Notebooks}}** in the left sidebar
-2. Click on a notebook name
+2. Click on a {{notebook}} name
 3. Click the **Users** tab
 4. You'll see a table with columns:
    - **Name** — User's display name
@@ -240,17 +240,17 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 
 | Role | Display | Permissions |
 |------|---------|-------------|
-| PROJECT_ADMIN | Administrator | Full control, manage other admins, delete notebook |
-| PROJECT_MANAGER | Manager | Edit design, close notebook, export, manage invites/access |
+| PROJECT_ADMIN | Administrator | Full control, manage other admins, delete {{notebook}} |
+| PROJECT_MANAGER | Manager | Edit design, close {{notebook}}, export, manage invites/access |
 | PROJECT_CONTRIBUTOR | Contributor | Edit others' records (plus all Guest permissions) |
-| PROJECT_GUEST | Guest | Activate notebook, create records, view/edit/delete own records |
+| PROJECT_GUEST | Guest | Activate {{notebook}}, create records, view/edit/delete own records |
 
 ### How {{Notebook}} Access Works
 
-Users can have notebook access from two sources:
+Users can have {{notebook}} access from two sources:
 
 1. **Virtual roles** — Automatic access from team membership
-2. **Direct roles** — Explicitly assigned to this notebook
+2. **Direct roles** — Explicitly assigned to this {{notebook}}
 
 | Team Role | Virtual {{Notebook}} Role |
 |-----------|----------------------|
@@ -259,40 +259,40 @@ Users can have notebook access from two sources:
 | Team Member (Contributor) | Contributor |
 | Team Member (Creator) | **None** |
 
-> 💡 **Note**: Direct roles override virtual roles. If a Team Member (Contributor) is directly assigned as Guest on a specific notebook, they have Guest access to that notebook.
+> **Note**: Direct roles override virtual roles. If a Team Member (Contributor) is directly assigned as Guest on a specific {{notebook}}, they have Guest access to that {{notebook}}.
 
 ### Inviting Users to a {{Notebook}}
 
-Unlike Teams and Users, you **cannot change roles directly** in the notebook Users tab. To add users or change roles:
+Unlike Teams and Users, you **cannot change roles directly** in the {{notebook}} Users tab. To add users or change roles:
 
-1. Navigate to your notebook
+1. Navigate to your {{notebook}}
 2. Click the **Invites** tab
 3. Click **+ Invite user** (or similar button)
 4. Enter the user's email address
-5. Select their notebook role (Administrator, Manager, Contributor, or Guest)
+5. Select their {{notebook}} role (Administrator, Manager, Contributor, or Guest)
 6. Send the invitation
 
 [SCREENSHOT: {{Notebook}} Invites tab with invite user dialog]
 
 ### Removing a User from a {{Notebook}}
 
-1. Navigate to the notebook → **Users** tab
+1. Navigate to the {{notebook}} → **Users** tab
 2. Find the user in the list
 3. Click the **trash icon** in the Remove column
 4. Confirm removal
 
-> 💡 **Note**: Removing a direct role doesn't remove team membership. If the user has a team role, they'll still have virtual access through the team.
+> **Note**: Removing a direct role doesn't remove team membership. If the user has a team role, they'll still have virtual access through the team.
 
 ### Transferring {{Notebook}} Ownership
 
-To hand off a notebook to someone else:
+To hand off a {{notebook}} to someone else:
 
-1. Go to the notebook → **Invites** tab
+1. Go to the {{notebook}} → **Invites** tab
 2. Invite the new owner with **Administrator** role
 3. Once they accept, they have full control
 4. Optionally remove yourself via the **Users** tab
 
-> ⚠️ **Warning**: Always ensure at least one Administrator remains on every notebook.
+> **Warning**: Always ensure at least one Administrator remains on every {{notebook}}.
 
 ---
 
@@ -303,14 +303,14 @@ To hand off a notebook to someone else:
 ```text
 SYSTEM LEVEL
 ├── GENERAL_ADMIN ─────── Full system control (IT administrators)
-├── GENERAL_CREATOR ───── Create {{notebooks}}/templates (default for SSO users)
+├── GENERAL_CREATOR ───── Create notebooks/templates (default for SSO users)
 └── GENERAL_USER ──────── Basic access only
 
 TEAM LEVEL
-├── Team Administrator ── Full team control, auto-grants Administrator on {{notebooks}}
-├── Team Manager ──────── Manage team members, auto-grants Manager on {{notebooks}}
+├── Team Administrator ── Full team control, auto-grants Administrator on notebooks
+├── Team Manager ──────── Manage team members, auto-grants Manager on notebooks
 ├── Team Member (Contributor) ── Access team resources, auto-grants Contributor
-└── Team Member (Creator) ────── Create {{notebooks}} only, NO automatic notebook access
+└── Team Member (Creator) ────── Create notebooks only, NO automatic notebook access
 
 NOTEBOOK LEVEL
 ├── Administrator ─────── Full control, manage admins, delete notebook
@@ -323,9 +323,9 @@ NOTEBOOK LEVEL
 
 | Scenario | Recommended Role |
 |----------|------------------|
-| Project lead who manages everything | Team Administrator + notebook Administrator |
-| Researcher who designs forms | Team Manager or notebook Manager |
-| Field worker collecting data | Team Member (Contributor) or notebook Contributor |
+| Project lead who manages everything | Team Administrator + {{notebook}} Administrator |
+| Researcher who designs forms | Team Manager or {{notebook}} Manager |
+| Field worker collecting data | Team Member (Contributor) or {{notebook}} Contributor |
 | External reviewer (limited access) | {{Notebook}} Guest |
 | Someone who creates {{notebooks}} but shouldn't see others' data | Team Member (Creator) |
 
@@ -350,7 +350,7 @@ NOTEBOOK LEVEL
 
 ### Setting Up a Project Team
 
-1. Create notebook(s) for the project ({{Notebooks}} → Create {{Notebook}})
+1. Create {{notebook}}(s) for the project ({{Notebooks}} → Create {{Notebook}})
 2. Ensure {{notebooks}} are associated with your team
 3. Add team members with appropriate roles:
    - Project lead: Team Manager or Team Administrator
@@ -366,20 +366,20 @@ NOTEBOOK LEVEL
 
 **Option B — {{Notebook}} only** (limited scope):
 
-1. Go to the specific notebook → **Invites** tab
+1. Go to the specific {{notebook}} → **Invites** tab
 2. Invite them with Contributor or Guest role
 3. They don't need team membership
 
 ### Handing Off a Project
 
 1. {{Notebook}} → **Invites** tab → Invite colleague as **Administrator**
-2. Verify they can access and manage the notebook
+2. Verify they can access and manage the {{notebook}}
 3. Optionally remove yourself from the Users tab
 
 ### Off-boarding: Removing All Access
 
 1. **Remove from {{notebooks}}** (if they have direct roles):
-   - Navigate to each notebook → Users tab → trash icon
+   - Navigate to each {{notebook}} → Users tab → trash icon
 2. **Remove from team**:
    - Navigate to team → Users tab → red trash icon
 3. **Note**: You cannot revoke system roles — contact a GENERAL_ADMIN
@@ -388,7 +388,76 @@ NOTEBOOK LEVEL
 
 ## Roles Reference
 
-See [Roles and Permissions](../core/permissions.md)
+### System-Wide Roles
+
+| Role | Display Name | Description | Typical User |
+|------|--------------|-------------|--------------|
+| GENERAL_USER | General User | View assigned resources, manage own tokens | Rarely used alone |
+| GENERAL_CREATOR | General Creator | Create {{notebooks}} and templates globally | Researchers, project managers |
+| GENERAL_ADMIN | General Admin | Full system control, manage all users | IT administrators |
+
+### Team Roles
+
+| Role | Display Name | Permissions | Virtual {{Notebook}} Role |
+|------|--------------|-------------|----------------------|
+| TEAM_ADMIN | Team Administrator | Full team control | Administrator |
+| TEAM_MANAGER | Team Manager | Manage members, create {{notebooks}} | Manager |
+| TEAM_MEMBER | Team Member (Contributor) | Access team resources | Contributor |
+| TEAM_MEMBER_CREATOR | Team Member (Creator) | Create {{notebooks}} only | **None** |
+
+> **Key restriction**: Only GENERAL_ADMIN can assign Team Administrator role.
+
+### {{Notebook}} Roles
+
+| Role | Display Name | Permissions |
+|------|--------------|-------------|
+| PROJECT_ADMIN | Administrator | Full control, manage administrators, delete {{notebook}} |
+| PROJECT_MANAGER | Manager | Edit design, close {{notebook}}, reassign team, export, manage invites/access |
+| PROJECT_CONTRIBUTOR | Contributor | Edit others' records (plus all Guest permissions) |
+| PROJECT_GUEST | Guest | Activate {{notebook}}, create records, view/edit/delete own records |
+
+### Template Roles
+
+| Role | Display Name | Permissions |
+|------|--------------|-------------|
+| TEMPLATE_ADMIN | Administrator | Update template details, archive template |
+| TEMPLATE_GUEST | Guest | View template |
+
+> **Note**: Template roles are primarily managed through team membership. Team Administrators act as template administrators for team templates.
+
+### Permission Matrix — {{Notebooks}}
+
+| Action | Guest | Contributor | Manager | Administrator |
+|--------|:-----:|:-----------:|:-------:|:-------------:|
+| Activate {{notebook}} | | | | |
+| Create records | | | | |
+| View/edit/delete own records | | | | |
+| Edit others' records | | | | |
+| Update {{notebook}} metadata/design | | | | |
+| Close {{notebook}} | | | | |
+| Reassign to different team | | | | |
+| Export data | | | | |
+| Manage invites and access | | | | |
+| Manage administrators | | | | |
+| Delete {{notebook}} | | | | |
+
+### Permission Matrix — Teams
+
+| Action | Member (Contributor) | Member (Creator) | Manager | Administrator |
+|--------|:--------------------:|:----------------:|:-------:|:-------------:|
+| View team details | | | | |
+| View team templates | | | | |
+| Read/write/edit records in team {{notebooks}} | | | | |
+| Create {{notebooks}} in team | | | | |
+| Create templates in team | | | | |
+| Update team details | | | | |
+| Add/remove team members | | | | |
+| Manage member invites | | | | |
+| Act as {{notebook}} manager (virtual role) | | | | |
+| Add/remove team managers | | | | |
+| Act as {{notebook}}/template administrator | | | | |
+
+> **Note**: Team Member (Creator) can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
 
 ---
 
@@ -398,17 +467,17 @@ See [Roles and Permissions](../core/permissions.md)
 
 **Possible causes**:
 
-- Not a member of the team that owns the notebook
+- Not a member of the team that owns the {{notebook}}
 - Team role is Team Member (Creator) — doesn't grant automatic access
-- Not directly invited to the notebook
+- Not directly invited to the {{notebook}}
 
-**Solution**: Check team membership and role. Add direct notebook access via Invites tab if needed.
+**Solution**: Check team membership and role. Add direct {{notebook}} access via Invites tab if needed.
 
 ### Can't Edit {{Notebook}} Structure
 
-**Cause**: Missing Manager or Administrator role on the notebook.
+**Cause**: Missing Manager or Administrator role on the {{notebook}}.
 
-**Solution**: Have a notebook Administrator invite you with Manager or Administrator role.
+**Solution**: Have a {{notebook}} Administrator invite you with Manager or Administrator role.
 
 ### Can't Add Users to Team
 
@@ -428,7 +497,7 @@ See [Roles and Permissions](../core/permissions.md)
 
 **Solution**: Check both:
 
-1. Direct notebook roles ({{Notebook}} → Users tab)
+1. Direct {{notebook}} roles ({{Notebook}} → Users tab)
 2. Team membership (Team → Users tab)
 
 Remove from both locations if needed.
