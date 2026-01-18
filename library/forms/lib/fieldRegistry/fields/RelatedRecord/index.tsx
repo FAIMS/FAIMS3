@@ -389,6 +389,53 @@ const LinkExistingDialog = ({
 };
 
 // ============================================================================
+// Preview Component (for form designer)
+// ============================================================================
+
+const RelatedRecordFieldPreview = (
+  props: BaseFieldProps & FormFieldContextProps
+) => {
+  const typedProps = props as FullRelatedRecordFieldProps;
+  const relatedRecordTypeLabel = typedProps.related_type ?? 'Record';
+
+  return (
+    <FieldWrapper
+      heading={props.label}
+      required={props.required}
+      subheading={props.helperText}
+      advancedHelperText={props.advancedHelperText}
+      errors={[]}
+    >
+      <div style={{display: 'flex', gap: 8, marginBottom: 16}}>
+        <Button
+          variant="outlined"
+          size="small"
+          disabled
+          startIcon={<AddIcon />}
+        >
+          Add new {relatedRecordTypeLabel}
+        </Button>
+
+        {typedProps.allowLinkToExisting && (
+          <Button
+            variant="outlined"
+            size="small"
+            disabled
+            startIcon={<LinkIcon />}
+          >
+            Link Existing
+          </Button>
+        )}
+      </div>
+
+      <Typography variant="caption" display="block" color="text.secondary">
+        No records linked.
+      </Typography>
+    </FieldWrapper>
+  );
+};
+
+// ============================================================================
 // Main Field Component
 // ============================================================================
 
@@ -636,14 +683,13 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
 const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
   if (props.config.mode === 'preview') {
-    return (
-      <Typography variant="body2">Related Record Selector (Preview)</Typography>
-    );
+    return <RelatedRecordFieldPreview {...props} />;
   } else {
     return (
       <FieldWrapper
         heading={props.label}
         required={props.required}
+        subheading={props.helperText}
         advancedHelperText={props.advancedHelperText}
         errors={props.state.meta.errors as unknown as string[]}
       >
