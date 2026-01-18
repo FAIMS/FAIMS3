@@ -241,6 +241,12 @@ The screenshot in the "Viewing Team Members" section above shows the red trash i
 ### Viewing {{Notebook}} Users
 
 1. Click **{{Notebooks}}** in the left sidebar
+
+```{screenshot} user-roles/09a-notebooks-view.png
+:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description
+:align: right
+```
+
 2. Click on a {{notebook}} name
 3. Click the **Users** tab
 4. You'll see a table with columns:
@@ -292,6 +298,13 @@ Unlike Teams and Users, you **cannot change roles directly** in the {{notebook}}
 
 ```{screenshot} user-roles/10-notebooks-invite.png
 :alt: Create Invite dialog for a {{notebook}} showing Invite title field, Role dropdown with options (Administrator, Manager, Contributor, Guest), expiry date selection with Quick Select and Custom Date options, and Create Invite button
+:align: right
+```
+
+Once created, invitations appear in the **Invites** tab where you can manage them:
+
+```{screenshot} user-roles/11-notebooks-invites-active.png
+:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove; includes + Create Invite button
 :align: right
 ```
 
