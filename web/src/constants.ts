@@ -164,6 +164,13 @@ function get_map_source(): string {
   return map_source || 'osm';
 }
 
+function get_satellite_source(): 'esri' | 'maptiler' | undefined {
+  const map_source = import.meta.env.VITE_SATELLITE_SOURCE;
+  return map_source !== 'esri' && map_source !== 'maptiler'
+    ? undefined
+    : map_source;
+}
+
 function get_map_key(): string {
   const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
   return map_key || '';
@@ -180,5 +187,6 @@ export function getMapConfig(): MapConfig {
     mapSource: get_map_source(),
     mapSourceKey: get_map_key(),
     mapStyle: get_map_style(),
+    satelliteSource: get_satellite_source(),
   };
 }

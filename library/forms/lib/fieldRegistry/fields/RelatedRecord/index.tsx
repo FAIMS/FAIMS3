@@ -200,14 +200,18 @@ const LinkExistingDialog = ({
     const relationshipKey: 'parent' | 'linked' =
       relationType === 'faims-core::Child' ? 'parent' : 'linked';
 
-    return allRecords.filter(record => {
+    return allRecords.filter(recordHydrationResult => {
+      // Successful records only
+      if (!recordHydrationResult.success) return false;
+
       // Exclude records we've already linked to from this field
-      if (excludedSet.has(record.record._id)) return false;
+      if (excludedSet.has(recordHydrationResult.record.record._id))
+        return false;
 
       // Check if this record already has a relationship of the relevant type
       // pointing back to the current record
       const existingRelationships =
-        record.revision.relationship?.[relationshipKey];
+        recordHydrationResult.record.revision.relationship?.[relationshipKey];
 
       if (existingRelationships && existingRelationships.length > 0) {
         // Filter out if any existing relationship points to the current record
@@ -223,8 +227,12 @@ const LinkExistingDialog = ({
       if (searchFilter.trim()) {
         const lowerFilter = searchFilter.toLowerCase();
         return (
-          record.hrid.toLowerCase().includes(lowerFilter) ||
-          record.record._id.toLowerCase().includes(lowerFilter)
+          recordHydrationResult.record.hrid
+            .toLowerCase()
+            .includes(lowerFilter) ||
+          recordHydrationResult.record.record._id
+            .toLowerCase()
+            .includes(lowerFilter)
         );
       }
 
@@ -313,33 +321,42 @@ const LinkExistingDialog = ({
         {!isLoading && !isError && (
           <Paper variant="outlined">
             <List dense disablePadding sx={{maxHeight: 300, overflow: 'auto'}}>
-              {filteredRecords.map(record => (
-                <ListItem key={record.record._id} disablePadding divider>
-                  <ListItemButton
-                    onClick={async () => {
-                      await handleSelect(record);
-                    }}
+              {filteredRecords
+                .filter(r => r.success)
+                .map(recordResult => (
+                  <ListItem
+                    key={recordResult.record.record._id}
+                    disablePadding
+                    divider
                   >
-                    <ListItemIcon sx={{minWidth: 40}}>
-                      <LinkIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={record.hrid}
-                      secondary={record.record._id}
-                      primaryTypographyProps={{
-                        variant: 'body2',
-                        fontFamily: 'monospace',
-                        fontWeight:
-                          record.hrid !== record.record._id ? 'bold' : 'normal',
+                    <ListItemButton
+                      onClick={async () => {
+                        await handleSelect(recordResult.record);
                       }}
-                      secondaryTypographyProps={{
-                        variant: 'caption',
-                        fontFamily: 'monospace',
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
+                    >
+                      <ListItemIcon sx={{minWidth: 40}}>
+                        <LinkIcon fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={recordResult.record.hrid}
+                        secondary={recordResult.record.record._id}
+                        primaryTypographyProps={{
+                          variant: 'body2',
+                          fontFamily: 'monospace',
+                          fontWeight:
+                            recordResult.record.hrid !==
+                            recordResult.record.record._id
+                              ? 'bold'
+                              : 'normal',
+                        }}
+                        secondaryTypographyProps={{
+                          variant: 'caption',
+                          fontFamily: 'monospace',
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
 
               {/* Load More Button */}
               {hasNextPage && (
