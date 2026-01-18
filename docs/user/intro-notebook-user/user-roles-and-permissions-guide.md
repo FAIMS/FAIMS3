@@ -85,7 +85,10 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 - **Users** — View all system users and their roles (requires appropriate permissions)
 - **Teams** — View and manage teams
 
-[SCREENSHOT: {{Dashboard}} sidebar showing Content ({{Notebooks}}, Templates) and Management (Users, Teams) sections]
+```{screenshot} user-roles/01-dashboard-sidebar.png
+:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams), plus the Users list displaying Name, Email, Roles columns with add button and General User role badges
+:align: right
+```
 
 > **Tip**: Click on any sidebar item to navigate to that section. The breadcrumb at the top (e.g., "Home > Users") shows your current location.
 
@@ -105,7 +108,7 @@ The **Users** section shows all users in the system with their email addresses a
    - **Reset Password** — Password reset option
    - **Remove** — Remove user from system
 
-[SCREENSHOT: Users list showing Name, Email, Roles columns with "add" button and "General User" badges]
+The screenshot above shows this view, with the sidebar navigation on the left and the Users table in the main content area.
 
 ### Understanding System Roles
 
@@ -122,7 +125,10 @@ The **Users** section shows all users in the system with their email addresses a
 3. Select the role to add from the dropdown
 4. The new role badge appears next to any existing roles
 
-[SCREENSHOT: Roles column showing "add" button and role selection dropdown]
+```{screenshot} user-roles/03-add-user-role.png
+:alt: Roles column in Users list showing the add button clicked, revealing a dropdown menu with role options: GENERAL_USER, GENERAL_ADMIN, and GENERAL_CREATOR
+:align: right
+```
 
 ### Removing a Role from a User
 
@@ -131,7 +137,7 @@ The **Users** section shows all users in the system with their email addresses a
 3. Click the **×** in the upper-right corner of the role badge
 4. The role is removed immediately
 
-[SCREENSHOT: Role badge with × indicator for removal]
+In the screenshot above, you can see each role badge has a small **×** in the upper-right corner — click this to remove the role.
 
 > **Warning**: Be careful when removing roles. If you remove GENERAL_CREATOR from a user, they will no longer be able to create new {{notebooks}}.
 
@@ -147,7 +153,10 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 2. Click on your team name (teams you administer appear in the expanded sidebar)
 3. You'll see tabs: **Details**, **Invites**, **{{Notebooks}}**, **Templates**, **Users**
 
-[SCREENSHOT: Team view showing Details, Invites, {{Notebooks}}, Templates, Users tabs]
+```{screenshot} user-roles/05-teams-view.png
+:alt: Team view for Fieldmark Demo Team showing the tab bar with Details (selected), Invites, {{Notebooks}}, Templates, and Users tabs, plus the Edit button; main panel displays team name, description, Created By (admin), and timestamps
+:align: right
+```
 
 ### Team Tabs Overview
 
@@ -169,7 +178,10 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
    - **Roles** — Team role badges with **+** to add roles
    - **Remove** — Red trash icon to remove member
 
-[SCREENSHOT: Team Users tab showing member list with role badges and red trash icons]
+```{screenshot} user-roles/06-teams-users.png
+:alt: Team Users tab showing member list with columns for Name, Email, Roles (displaying Team Administrator badges with × for removal and + to add roles), and Remove column with red trash icons
+:align: right
+```
 
 ### Understanding Team Roles
 
@@ -190,7 +202,10 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 4. Select their team role from the dropdown
 5. Click **Add**
 
-[SCREENSHOT: Add user dialog with email field and role dropdown]
+```{screenshot} user-roles/07-teams-add-user.png
+:alt: Add user to team dialog with User Email text field and Role dropdown showing options: Team Member (Contributor), Team Member (Creator), Team Manager, and Team Administrator
+:align: right
+```
 
 ### Adding a Role to an Existing Team Member
 
@@ -213,7 +228,7 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 3. Click the red **trash icon** in the Remove column
 4. Confirm removal when prompted
 
-[SCREENSHOT: Team member row with red trash icon highlighted]
+The screenshot in the "Viewing Team Members" section above shows the red trash icons in the Remove column.
 
 > **Warning**: Removing someone from a team removes their automatic (virtual) access to ALL team {{notebooks}}. If they have direct {{notebook}} roles, those remain until separately removed.
 
@@ -234,7 +249,10 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
    - **{{Notebook}} Roles** — Current role (display only)
    - **Remove** — Trash icon to remove user
 
-[SCREENSHOT: {{Notebook}} Users tab showing {{Notebook}} Roles column and Remove column]
+```{screenshot} user-roles/09b-notebooks-users.png
+:alt: {{Notebook}} Users tab showing user list with Name column, {{Notebook}} Roles column (displaying Administrator badges), and Remove column with trash icons
+:align: right
+```
 
 ### Understanding {{Notebook}} Roles
 
@@ -272,7 +290,10 @@ Unlike Teams and Users, you **cannot change roles directly** in the {{notebook}}
 5. Select their {{notebook}} role (Administrator, Manager, Contributor, or Guest)
 6. Send the invitation
 
-[SCREENSHOT: {{Notebook}} Invites tab with invite user dialog]
+```{screenshot} user-roles/10-notebooks-invite.png
+:alt: Create Invite dialog for a {{notebook}} showing Invite title field, Role dropdown with options (Administrator, Manager, Contributor, Guest), expiry date selection with Quick Select and Custom Date options, and Create Invite button
+:align: right
+```
 
 ### Removing a User from a {{Notebook}}
 
