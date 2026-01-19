@@ -13,7 +13,6 @@ maxdepth: 1
 ---
 
 intro-notebook-user/getting-started.md
-intro-notebook-user/quickstart-creation-and-collection.md
 intro-notebook-user/user-roles-and-permissions-guide.md
 intro-notebook-user/user-roles-task-organised.md
 
