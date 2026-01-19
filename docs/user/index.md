@@ -6,6 +6,14 @@ sd_hide_title: true
 
 **{{FAIMS}}** is an open-source tool for creating custom mobile applications to collect research data, while offline. It was launched in 2023 by the [FAIMS Project](https://faims.edu.au/) in partnership with the Australian Research Data Commons ([doi:10.47486/PL110](https://dx.doi.org/10.47486/PL110)), [Macquarie University](https://www.mq.edu.au/), [CSIRO](https://www.csiro.au/) and [other collaborators](https://faims.edu.au/partners/).
 
+## Links
+
+- {{FAIMS}} {{dashboard}} - {{WEB_URL}}
+- Data collection app (web version) - {{APP_URL}}
+- API URL (for programmatic access) - {{API_URL}}
+- {{IOS_APP_LINK}}
+- {{ANDROID_APP_LINK}}
+
 ```{toctree}
 ---
 caption: Introductory Content
@@ -13,6 +21,8 @@ maxdepth: 1
 ---
 
 intro-notebook-user/getting-started.md
+intro-notebook-user/quickstart-creation-and-collection.md
+intro-notebook-user/user-roles-and-permissions-guide.md
 
 ```
 
@@ -22,6 +32,7 @@ caption: Core Documentation
 maxdepth: 1
 ---
 
+core/web.md
 core/authentication.md
 core/permissions.md
 
@@ -29,7 +40,7 @@ core/permissions.md
 
 ```{toctree}
 ---
-caption: Authoring {{Notebooks}}
+caption: Authoring
 maxdepth: 1
 ---
 
@@ -39,5 +50,15 @@ authoring/conditions.md
 authoring/templates.md
 authoring/field-selection-best-practices.md
 authoring/field-type-reference-table.md
+
+```
+
+```{toctree}
+---
+caption: Administration
+maxdepth: 1
+---
+
+admin/intro-admin.md
 
 ```

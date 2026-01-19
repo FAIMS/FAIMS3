@@ -22,8 +22,20 @@ different configurations can be replaced appropriately.  We use markdown variabl
 to achieve this with variables in {{double-braces}}.  Please use the following in your writing:
 
 - {{FAIMS}} for the name of the product (Fieldmark or Bushfire Surveyor)
-- {{notebook}} for the name of a project (notebook or survey), similarly  {{notebooks}}, {{Notebook}}, {{Notebooks}}
-- {{dashboard}} for the name of the management web application (dashboard, manager or control centre)
+- {{notebook}} (or {{Notebook}} or {{notebooks}}) for the name of a project (notebook or survey), similarly  {{notebooks}}, {{Notebook}}, {{Notebooks}}
+- {{dashboard}} (or {{Dashboard}} for the name of the management web application (dashboard, manager or control centre)
+
+## Links
+
+You can include links to the different websites with the following macros:
+
+```markdown
+- {{FAIMS}} {{dashboard}} - {{WEB_URL}}
+- Data collection app (web version) - {{APP_URL}}
+- API URL (for programmatic access) - {{API_URL}}
+- {{IOS_APP_LINK}}
+- {{ANDROID_APP_LINK}}
+```
 
 ## Screenshots
 
