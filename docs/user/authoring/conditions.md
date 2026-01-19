@@ -86,5 +86,3 @@ refers to.
 
 The 'Add Another Condition' button below a complex condition will add a new clause
 into an existing 'or' or 'and' condition.  
-
-I

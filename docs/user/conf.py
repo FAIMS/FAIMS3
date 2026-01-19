@@ -58,6 +58,13 @@ NOTEBOOK_NAME = os.getenv("VITE_NOTEBOOK_NAME", "notebook")
 DASHBOARD_NAME = os.getenv("VITE_WEBSITE_TITLE", "dashboard")
 THEME_NAME = os.getenv("VITE_THEME", "default")
 
+API_URL = os.getenv("VITE_API_URL")
+APP_URL = os.getenv("VITE_APP_URL")
+WEB_URL = os.getenv("VITE_WEB_URL")
+ANDROID_APP_URL = os.getenv("ANDROID_APP_PUBLIC_URL")
+IOS_APP_URL = os.getenv("IOS_APP_PUBLIC_URL")
+
+
 myst_substitutions = {
   "FAIMS": project, # the product name
   "theme": THEME_NAME, # the theme name, used to select screenshots
@@ -67,4 +74,9 @@ myst_substitutions = {
   "Notebooks": NOTEBOOK_NAME.title() + 's',
   "dashboard": DASHBOARD_NAME, # the name of the web management app
   "Dashboard": DASHBOARD_NAME.title(),
+  "API_URL": "<" + API_URL + ">",
+  "APP_URL": "<" + APP_URL + ">",
+  "WEB_URL": "<" + WEB_URL + ">",
+  "IOS_APP_LINK": "<a href=\"" + IOS_APP_URL + "\">" + project + " IOS App</a>",
+  "ANDROID_APP_LINK": "<a href=\"" + ANDROID_APP_URL + "\">" + project + " Android App</a>",
 }
