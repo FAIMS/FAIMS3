@@ -1,5 +1,4 @@
 /*
-
  * Shared utilities for "Other" option functionality across
  * RadioGroup, Select, and MultiSelect fields.
  */
@@ -48,33 +47,28 @@ interface UseOtherOptionProps {
   rawValue: string | string[];
   predefinedValues: string[];
   setFieldData: (value: any) => void;
-  emptyErrorMessage?: string;
 }
 
 interface UseOtherOptionReturn {
   otherSelected: boolean;
   setOtherSelected: (selected: boolean) => void;
-  otherFieldTouched: boolean;
-  setOtherFieldTouched: (touched: boolean) => void;
   hasOtherSelected: boolean;
   otherText: string;
-  otherFieldError: string | null;
   handleOtherTextChange: (text: string) => void;
 }
 
 /**
- * Hook for managing "Other" option state. Handles UI selection state,
- * text input, validation, and syncing between UI and stored data.
+ * Hook for managing "Other" option UI state. Handles selection state,
+ * text input, and syncing between UI and stored data.
+ * Note: Validation is handled by Zod schemas in valueSchema functions.
  */
 export const useOtherOption = ({
   enableOtherOption,
   rawValue,
   predefinedValues,
   setFieldData,
-  emptyErrorMessage = 'Please enter text for the "Other" option',
 }: UseOtherOptionProps): UseOtherOptionReturn => {
   const [otherSelected, setOtherSelected] = useState(false);
-  const [otherFieldTouched, setOtherFieldTouched] = useState(false);
 
   // Check if stored data has an "Other: xxx" value
   const hasStoredOtherValue = Array.isArray(rawValue)
@@ -90,44 +84,34 @@ export const useOtherOption = ({
       ? extractOtherText(rawValue)
       : '';
 
-  const otherFieldError =
-    hasOtherSelected && otherFieldTouched && otherText.trim() === ''
-      ? emptyErrorMessage
-      : null;
-
   // Sync UI state when data changes
   useEffect(() => {
     if (hasStoredOtherValue && !otherSelected) {
       setOtherSelected(true);
     }
-  }, [hasStoredOtherValue, otherSelected]);
-
-  // Mark touched when checkbox is clicked for immediate validation
-  useEffect(() => {
-    if (otherSelected && !otherFieldTouched) {
-      setOtherFieldTouched(true);
+    // Reset otherSelected when a predefined value is selected (for single-select)
+    if (!Array.isArray(rawValue) && predefinedValues.includes(rawValue as string)) {
+      setOtherSelected(false);
     }
-  }, [otherSelected, otherFieldTouched]);
+  }, [hasStoredOtherValue, otherSelected, rawValue, predefinedValues]);
 
   const handleOtherTextChange = (text: string) => {
     if (Array.isArray(rawValue)) {
       const predefined = rawValue.filter(v => predefinedValues.includes(v));
-      setFieldData(
-        text.trim() ? [...predefined, createOtherValue(text)] : predefined
-      );
+      // Always store "Other: " prefix when Other is selected (even if empty)
+      // This allows Zod to validate that text is required
+      setFieldData([...predefined, createOtherValue(text)]);
     } else {
-      setFieldData(text.trim() ? createOtherValue(text) : '');
+      // For single-select, store the value with prefix
+      setFieldData(createOtherValue(text));
     }
   };
 
   return {
     otherSelected,
     setOtherSelected,
-    otherFieldTouched,
-    setOtherFieldTouched,
     hasOtherSelected,
     otherText,
-    otherFieldError,
     handleOtherTextChange,
   };
 };
