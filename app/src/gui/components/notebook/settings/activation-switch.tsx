@@ -77,34 +77,24 @@ export default function NotebookActivationSwitch({
       >
         <Box mb={2}>
           <Typography variant="body2" paragraph>
-            When a {NOTEBOOK_NAME_CAPITALIZED} is “{ACTIVATED_LABEL}” you are
-            safe to work offline at any point because all the data you collect
-            will be saved to your device. To {ACTIVATE_VERB_LABEL.toLowerCase()}{' '}
-            your {NOTEBOOK_NAME_CAPITALIZED}, click the "{ACTIVATE_VERB_LABEL}"
-            button below.
+            {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} downloads existing
+            records onto your device. It is important you do this with a stable
+            internet connection. Once it is {ACTIVATED_LABEL.toLowerCase()} you
+            will be safe to work offline.
           </Typography>
-          <Typography variant="body2" paragraph>
-            <b>Warning</b>: {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME_CAPITALIZED} will start the downloading of existing
-            records onto your device. We recommend you complete this procedure
-            while you have a stable internet connection.
-            <br />
-            <br />
-            Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME}, this is something we will be adding soon. If you
-            need to make space on your device you can clear the application
-            storage or remove and reinstall the application.
+          <Typography variant="body2" component="div">
+            <strong>To {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:</strong>
+            <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
+              <li>Go to the {ACTIVATED_LABEL} list and open the {NOTEBOOK_NAME}</li>
+              <li>
+                Click <strong>"Settings"</strong> (next to Map and Details)
+              </li>
+              <li>
+                Scroll down and click{' '}
+                <strong>"{DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}"</strong>
+              </li>
+            </ol>
           </Typography>
-          {/*
-          <Typography variant="subtitle1" fontWeight="bold">
-            Deactivating a survey:
-          </Typography>
-          <Typography variant="body2">
-            • This can be helpful when you need to free up space on your device
-            and when you no longer need access to surveys or survey data
-            offline.
-          </Typography>
-            */}
         </Box>
       </FaimsDialog>
     </Box>
