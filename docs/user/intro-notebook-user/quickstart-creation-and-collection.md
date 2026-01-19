@@ -1,4 +1,4 @@
-# Your First {{Notebook}} in 25-30 Minutes 🚀
+# Your First {{Notebook}} in 25-30 Minutes
 
 *Welcome to {{FAIMS}}! In the next 25-30 minutes, you'll create your first data collection {{notebook}} and enter your first record. No experience needed - just follow along!*
 
@@ -6,11 +6,11 @@
 
 By the end of this guide, you'll have:
 
-- ✅ Created a working {{notebook}} from scratch
-- ✅ Added three essential fields for data collection
-- ✅ Configured critical settings to prevent common mistakes
-- ✅ Activated your {{notebook}} and entered your first record
-- ✅ Gained confidence to build more sophisticated data collection tools
+- Created a working {{notebook}} from scratch
+- Added three essential fields for data collection
+- Configured critical settings to prevent common mistakes
+- Activated your {{notebook}} and entered your first record
+- Gained confidence to build more sophisticated data collection tools
 
 ## Before You Start
 
@@ -20,17 +20,19 @@ By the end of this guide, you'll have:
 
 **URLs you'll use**:
 
-- **{{Dashboard}} URL**: For designing and managing {{notebooks}}
-- **Data Collection App URL**: For entering records
+- **Dashboard URL**: Usually `https://dashboard.fieldmark.app` (for designing and managing {{notebooks}})
+- **Data Collection App URL**: Usually `https://app.fieldmark.app` (for entering records)
 - Note: Your organisation may have custom URLs - check with your administrator
 
-### 📖 Quick Terms to Know
+<!-- URLs comparison explained in text above - no screenshot needed -->
+
+### Quick Terms to Know
 
 Before we dive in, here are five terms you'll see:
 
 - **{{Dashboard}}**: Your home screen after logging in - think of it as mission control
 - **{{Notebook}}**: A customisable data collection form (like a digital fieldwork form)
-- **{{Notebook}} Editor**: The visual tool where you build and modify {{notebooks}} and templates (sometimes just called "Editor")
+- **Notebook Editor**: The visual tool where you build and modify {{notebooks}} and templates (sometimes just called "Editor")
 - **Records**: The actual data entries people create using your {{notebook}}
 - **Fields**: Individual input elements (like text boxes or photo buttons) in your form
 
@@ -42,7 +44,7 @@ Let's begin by logging into {{FAIMS}} and finding our way around.
 
 ### Login to {{FAIMS}}
 
-1. Open your browser and navigate to `https://dashboard.{{FAIMS}}.app`
+1. Open your browser and navigate to `https://dashboard.fieldmark.app`
 2. Enter your email and password (or select the appropriate SSO provider, e.g., Google)
 3. Click **Sign In**
 
@@ -64,9 +66,9 @@ After logging in, you'll see the {{Dashboard}} interface:
 :align: right
 ```
 
-> ✨ **Pro Tip**: Bookmark this page! You'll be coming back here often. In most browsers, press `Ctrl+D` (Windows/Linux) or `Cmd+D` (Mac) to bookmark.
+> **Pro Tip**: Bookmark this page! You'll be coming back here often. In most browsers, press `Ctrl+D` (Windows/Linux) or `Cmd+D` (Mac) to bookmark.
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] You see your name or email in the bottom-left user menu
 - [ ] The {{Dashboard}} (right pane) shows navigation options like {{Notebooks}}, Templates, Users, Teams
@@ -109,7 +111,7 @@ In the creation dialogue:
 2. Scroll through the list to find your {{notebook}} (it will be at the end)
 3. Click on your {{notebook}} name to select it
 
-### Open the {{Notebook}} Editor
+### Open the Notebook Editor
 
 1. Click the **Actions** tab
 2. Click **Open in Editor**
@@ -119,9 +121,9 @@ In the creation dialogue:
 :align: right
 ```
 
-### Hello, {{Notebook}} Editor!
+### Hello, Notebook Editor!
 
-Fantastic! You're now in the {{Notebook}} Editor. This is where the magic happens.
+Fantastic! You're now in the Notebook Editor. This is where the magic happens.
 
 You'll see the main interface elements:
 
@@ -131,18 +133,18 @@ You'll see the main interface elements:
 - **"+" button**: Click to add a new form
 - **Form editing area**: Shows "Form Name" field with "Form 1" pre-filled, and "ADD NEW FORM" button
 
-> ⚠️ **Common Mistake**: Don't worry if it looks empty - that's normal! We're about to fill it with useful fields. Remember to click the green SAVE button in the top-right when you want to save your work.
+> **Common Mistake**: Don't worry if it looks empty - that's normal! We're about to fill it with useful fields. Remember to click the green SAVE button in the top-right when you want to save your work.
 >
-> 💡 **Tip**: Notice the UNDO and REDO buttons below the top bar. Use these to recover from accidental deletions or changes. They're your safety net while building forms!
+> **Tip**: Notice the UNDO and REDO buttons below the top bar. Use these to recover from accidental deletions or changes. They're your safety net while building forms!
 
 ```{screenshot} quickstart/quickstart-004-editor-interface.png
 :alt: {{Notebook}} Editor showing DESIGN and INFO tabs, UNDO/REDO buttons, Form Name field with "Form 1", ADD NEW FORM button, and blue info box explaining the form building process
 :align: right
 ```
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
-- [ ] The {{Notebook}} Editor opens with "Form 1" in the Form Name field
+- [ ] The Notebook Editor opens with "Form 1" in the Form Name field
 - [ ] You see the blue info box with UI instruction text
 - [ ] The "+" button is visible below the info box (for adding new forms)
 - [ ] The Form Name field (showing "Form 1") is visible to the left of the green "ADD NEW FORM" button
@@ -150,7 +152,7 @@ You'll see the main interface elements:
 - [ ] SAVE and CANCEL buttons are visible in the top-right
 - [ ] No error messages appear
 
-> 📱 **Mobile Users**: The {{Notebook}} Editor works best on tablets or computers. If you're on a phone, you might want to switch devices for this setup phase. Once created, your {{notebook}} will work perfectly on mobile for data collection!
+> **Mobile Users**: The Notebook Editor works best on tablets or computers. If you're on a phone, you might want to switch devices for this setup phase. Once created, your {{notebook}} will work perfectly on mobile for data collection!
 
 ### Understanding {{Notebooks}} Structure
 
@@ -160,10 +162,10 @@ Before we add fields, let's understand how {{FAIMS}} organises your data:
 
 Think of it like this:
 
-- 📓 **{{Notebook}}** = Your entire survey or data collection project ("My First Survey")
-- 📋 **Form** = A specific data entry screen ("Site Details", "Environmental Observations", etc.)
-- 📂 **Section** = A group of related fields within a form (optional, for organisation)
-- ✏️ **Form Field** = Individual data entry points (text boxes, dropdowns, etc.)
+- **{{Notebook}}** = Your entire survey or data collection project ("My First Survey")
+- **Form** = A specific data entry screen ("Site Details", "Environmental Observations", etc.)
+- **Section** = A group of related fields within a form (optional, for organisation)
+- **Form Field** = Individual data entry points (text boxes, dropdowns, etc.)
 
 Right now, we have a {{notebook}} with one empty form called "Form 1". Let's make it more meaningful!
 
@@ -180,9 +182,9 @@ Let's give "Form 1" a descriptive name:
 :align: right
 ```
 
-> ✨ **Pro Tip**: Use descriptive form names like "Daily Observations", "Specimen Collection", or "Interview Notes" - they'll make it easier to navigate your data later.
+> **Pro Tip**: Use descriptive form names like "Daily Observations", "Specimen Collection", or "Interview Notes" - they'll make it easier to navigate your data later.
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] The form name has changed from "Form 1" to your chosen name ("Site Details")
 - [ ] You see the form badge showing "FORM: SITE DETAILS" in the editing area
@@ -205,9 +207,9 @@ Sections help organise related fields within a form. Let's create one:
 :align: right
 ```
 
-> ✨ **Pro Tip**: Use section names like "Location Details", "Measurements", or "Photos" to group related fields - this makes forms easier to navigate, especially on mobile devices.
+> **Pro Tip**: Use section names like "Location Details", "Measurements", or "Photos" to group related fields - this makes forms easier to navigate, especially on mobile devices.
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] The interface changes to show your section: "Basic Information" with a green badge showing "1" (representing "first section")
 - [ ] Section controls appear: DELETE SECTION, DUPLICATE SECTION, MOVE SECTION, EDIT SECTION NAME, ADD NEW SECTION
@@ -243,24 +245,24 @@ Now for the fun part - let's add fields to collect data! We'll add three essenti
 
 1. **Click on the grey bar** to expand the field
 2. **Configure the field**:
-   - **Label**: Already shows "Site Name" ✓
-   - **Field ID**: Auto-generated as "Site-Name" ✓
+   - **Label**: Already shows "Site Name"
+   - **Field ID**: Auto-generated as "Site-Name"
    - **Helper Text**: Type "Enter the official site designation or name"
-   - **Required**: Toggle ON ☑
+   - **Required**: Toggle ON
 
 ```{screenshot} quickstart/quickstart-010-site-name-expanded.png
 :alt: Expanded Site Name field showing Label "Site Name", Field ID "Site-Name", Helper Text "Enter the official site designation or name", Required checkbox checked with green checkmark, and additional options like Annotation, Uncertainty, Copy value to new records
 :align: right
 ```
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] The "Site Name" field appears in the "Visible Fields" area
 - [ ] Helper text displays: "Enter the official site designation or name"
-- [ ] Required ☑ is checked
+- [ ] Required is checked
 - [ ] The field is ready for data collection!
 
-> 💡 **More Options**: Fields can also have Advanced Helper Text (formatted popup help), Conditions (show/hide based on other fields), Annotations, or "Copy value to new records" for smart defaults. We'll keep it simple for now!
+> **More Options**: Fields can also have Advanced Helper Text (formatted popup help), Conditions (show/hide based on other fields), Annotations, or "Copy value to new records" for smart defaults. We'll keep it simple for now!
 
 #### Field 2: Site Type (Radio Buttons)
 
@@ -295,32 +297,32 @@ Now let's add a choice field where users select one option from a list.
 ```
 
 1. **Configure the field**:
-   - **Label**: Already shows "Site Type" ✓
-   - **Field ID**: Auto-generated as "Site-Type" ✓
+   - **Label**: Already shows "Site Type"
+   - **Field ID**: Auto-generated as "Site-Type"
    - **Helper Text**: Type "Select the primary function of this site"
-   - **Required**: Toggle ON ☑
-   - **Annotation**: Toggle ON ☑ (allows margin notes for qualifications)
-   - **Uncertainty**: Toggle ON ☑ (allows flagging uncertain observations)
+   - **Required**: Toggle ON
+   - **Annotation**: Toggle ON (allows margin notes for qualifications)
+   - **Uncertainty**: Toggle ON (allows flagging uncertain observations)
 
 ```{screenshot} quickstart/quickstart-013-site-type-expanded.png
 :alt: Expanded Site Type field showing complete options list (Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, Other) with drag handles, Required checkbox checked, Annotation checkbox checked with label "annotation", and Uncertainty checkbox checked with label "uncertainty"
 :align: right
 ```
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] The "Site Type" field shows a green "Required" badge in the header
 - [ ] All 7 options are visible in the list: Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, Other
 - [ ] Helper text displays: "Select the primary function of this site"
-- [ ] Required ☑, Annotation ☑, and Uncertainty ☑ are all checked with green checkmarks
+- [ ] Required , Annotation , and Uncertainty are all checked with green checkmarks
 - [ ] The field is ready for data collection!
 
-> ✨ **{{FAIMS}} Feature**: The **Annotation** and **Uncertainty** toggles are unique to {{FAIMS}}! They help capture data quality nuances:
+> **{{FAIMS}} Feature**: The **Annotation** and **Uncertainty** toggles are unique to {{FAIMS}}! They help capture data quality nuances:
 >
 > - **Annotation**: Add contextual notes (e.g., when selecting "Other", use annotation to describe what type of site it actually is)
 > - **Uncertainty**: Flag observations you're unsure about for later review
 >
-> 💡 **Pro Tip**: You can use markdown in option text - try `**Important Option**` to make text bold!
+> **Pro Tip**: You can use markdown in option text - try `**Important Option**` to make text bold!
 
 **Quick Save**: Click the **SAVE** button in the top-right to save your progress.
 
@@ -343,11 +345,11 @@ Let's add the ability to capture photos - essential for field documentation!
 
 1. **Click on the grey bar** to expand the field
 2. **Configure the field**:
-   - **Label**: Already shows "Site Photo" ✓
-   - **Field ID**: Auto-generated as "Site-Photo" ✓
+   - **Label**: Already shows "Site Photo"
+   - **Field ID**: Auto-generated as "Site-Photo"
    - **Helper Text**: Type "Photograph the site for documentation"
    - Leave **Required** unchecked (photos can be optional)
-   - **Annotation**: Toggle ON ☑
+   - **Annotation**: Toggle ON
    - **Annotation Label**: Change from "annotation" to **"Photo notes"**
 
 ```{screenshot} quickstart/quickstart-019-site-photo-expanded.png
@@ -355,11 +357,11 @@ Let's add the ability to capture photos - essential for field documentation!
 :align: right
 ```
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] The "Site Photo" field appears in the Visible Fields list with "TakePhoto" badge
 - [ ] Helper text displays: "Photograph the site for documentation"
-- [ ] Annotation ☑ is checked with custom label "Photo notes"
+- [ ] Annotation is checked with custom label "Photo notes"
 - [ ] All 3 fields are now visible: Site Name, Site Type, Site Photo
 - [ ] Your form is ready for data collection!
 
@@ -368,10 +370,10 @@ Let's add the ability to capture photos - essential for field documentation!
 :align: right
 ```
 
-> ✓ **Progress Check**: You should now see three fields in your Visible Fields list:
+> **Progress Check**: You should now see three fields in your Visible Fields list:
 > Site Name, Site Type, and Site Photo. Each shows its field type badge. You're doing great!
 
-### Configure Form Settings ⚠️ CRITICAL
+### Configure Form Settings CRITICAL
 
 This configuration is **essential**. The Human-Readable ID Field setting prevents your records from displaying as confusing codes like "rec_a7f3b2c1" instead of meaningful names.
 
@@ -390,21 +392,21 @@ Now let's configure how the form behaves when collecting data.
    - **Summary Fields**: Click the dropdown and select both **"Site Name"** and **"Site Type"** (these will show in the record list table)
    - **Human-Readable ID Field**: Select **"Site Name"** (provides meaningful record labels instead of opaque, computer-generated identifiers (UUIDs))
 
-> ⚠️ **CRITICAL: Human-Readable ID Field**
+> **CRITICAL: Human-Readable ID Field**
 >
 > **DO NOT skip this setting!** This is a very common mistake new users make.
 >
 > Without setting the Human-Readable ID Field, your records will display as:
 >
-> - ❌ `rec_a7f3b2c1` (meaningless code - which site is this??)
-> - ❌ `rec_9d2e4b8f` (impossible to identify!)
-> - ❌ `rec_f1c5a39e` (you'll never find what you're looking for)
+> - `rec_a7f3b2c1` (meaningless code - which site is this??)
+> - `rec_9d2e4b8f` (impossible to identify!)
+> - `rec_f1c5a39e` (you'll never find what you're looking for)
 >
 > With Human-Readable ID Field set to "Site Name", your records display as:
 >
-> - ✅ `Ancient Temple Site` (instantly recognisable!)
-> - ✅ `Northern Settlement` (clear and meaningful)
-> - ✅ `Burial Ground Alpha` (easy to find and manage)
+> - `Ancient Temple Site` (instantly recognisable!)
+> - `Northern Settlement` (clear and meaningful)
+> - `Burial Ground Alpha` (easy to find and manage)
 >
 > **Set it now before saving!** Changing it later won't fix existing records.
 
@@ -413,9 +415,9 @@ Now let's configure how the form behaves when collecting data.
 :align: right
 ```
 
-> 💡 **Advanced Option**: The "Finish Button Behavior" can be changed to "Show Only When No Errors Exist" to ensure all required fields are completed before allowing save, or "Show Once All Sections Visited" to guide users through multi-section forms.
+> **Advanced Option**: The "Finish Button Behavior" can be changed to "Show Only When No Errors Exist" to ensure all required fields are completed before allowing save, or "Show Once All Sections Visited" to guide users through multi-section forms.
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] Form Settings panel shows all four settings configured
 - [ ] Summary Fields displays "Site Name ×" and "Site Type ×" (× removes item)
@@ -424,17 +426,17 @@ Now let's configure how the form behaves when collecting data.
 
 ### Save Your Work
 
-**Important:** The {{Notebook}} Editor does not auto-save. Let's save your progress now.
+**Important:** The Notebook Editor does not auto-save. Let's save your progress now.
 
 1. **Click the green SAVE button** in the top-right corner
 2. **You'll be returned to the {{Dashboard}}** - this is expected behaviour
 3. **To continue editing later**, simply click **"Open in Editor"** again from the {{Dashboard}}
 
-> ⚠️ **Remember to Save**: Get in the habit of clicking SAVE periodically as you work. The Editor will close and return you to the {{Dashboard}} each time you save, but you can immediately click "Open in Editor" to resume editing.
+> **Remember to Save**: Get in the habit of clicking SAVE periodically as you work. The Editor will close and return you to the {{Dashboard}} each time you save, but you can immediately click "Open in Editor" to resume editing.
 >
-> 💡 **Tip**: You can always resume editing your {{notebook}} at any time by returning to the {{Dashboard}}, selecting your {{notebook}} from the list, clicking the **Actions** tab, and choosing **Open in Editor**. Your work is saved and ready to continue.
+> **Tip**: You can always resume editing your {{notebook}} at any time by returning to the {{Dashboard}}, selecting your {{notebook}} from the list, clicking the **Actions** tab, and choosing **Open in Editor**. Your work is saved and ready to continue.
 >
-> ✨ **Pro Tip**: Start simple like we just did. You can always come back to add more fields, validation rules, or conditional logic. Most successful {{notebooks}} begin with 3-7 core fields and evolve based on actual use. Once you're comfortable with the basics, explore the **INFO tab** to add project metadata like project lead, organisation, and custom key-value pairs. You can also try adding more field types - date/time fields, multi-line text for observations, location capture, and more!
+> **Pro Tip**: Start simple like we just did. You can always come back to add more fields, validation rules, or conditional logic. Most successful {{notebooks}} begin with 3-7 core fields and evolve based on actual use. Once you're comfortable with the basics, explore the **INFO tab** to add project metadata like project lead, organisation, and custom key-value pairs. You can also try adding more field types - date/time fields, multi-line text for observations, location capture, and more!
 
 ---
 
@@ -446,7 +448,7 @@ Time to see your creation in action! Let's activate your {{notebook}} in the {{F
 
 Your {{notebook}} has been saved in the Editor. Now let's activate it for data collection:
 
-1. **Open a new browser tab** and navigate to your {{FAIMS}} data collection app URL (usually `https://app.{{FAIMS}}.app`)
+1. **Open a new browser tab** and navigate to your {{FAIMS}} data collection app URL (usually `https://app.fieldmark.app`)
 2. **Log in** with the same credentials you used to access the Editor
 
 ```{screenshot} quickstart/quickstart-023-active-zero.png
@@ -486,11 +488,11 @@ When the app opens, you'll see the "My {{Notebooks}}" screen:
 :align: right
 ```
 
-> 💡 **What does Active mean?** When a {{notebook}} is "Active", all data you collect will be saved to your device for offline work. Activating downloads existing {{notebook}} records to your device. We recommend completing this while you have a stable internet connection.
+> **What does Active mean?** When a {{notebook}} is "Active", all data you collect will be saved to your device for offline work. Activating downloads existing {{notebook}} records to your device. We recommend completing this while you have a stable internet connection.
 >
-> ⚠️ **Don't see your {{notebook}}?** If your {{notebook}} doesn't appear in the NOT ACTIVE list, make sure you're logged in with the same credentials you used in the Editor. If you still don't see it, contact your {{FAIMS}} administrator about permissions.
+> **Don't see your {{notebook}}?** If your {{notebook}} doesn't appear in the NOT ACTIVE list, make sure you're logged in with the same credentials you used in the Editor. If you still don't see it, contact your {{FAIMS}} administrator about permissions.
 
-### ✓ You'll Know It Worked When...
+### You'll Know It Worked When...
 
 - [ ] The view automatically switches to the "ACTIVE" tab showing "ACTIVE (1)"
 - [ ] Your {{notebook}} appears in the list under the ACTIVE tab
@@ -500,7 +502,7 @@ When the app opens, you'll see the "My {{Notebooks}}" screen:
 
 Before we continue, here's an important feature: {{FAIMS}} is designed to work offline.
 
-> 💡 **Offline-First**: No network connection is needed for data collection in the field. Your data is saved locally to your device, and it automatically syncs to the server when you have connectivity (unless you've disabled sync in Settings). This means you can collect data anywhere, anytime.
+> **Offline-First**: No network connection is needed for data collection in the field. Your data is saved locally to your device, and it automatically syncs to the server when you have connectivity (unless you've disabled sync in Settings). This means you can collect data anywhere, anytime.
 
 This is why we "activate" {{notebooks}} - the activation process downloads the {{notebook}} structure to your device so you can work without internet.
 
@@ -552,7 +554,7 @@ You'll see the data entry form with a progress bar at the top. Notice that requi
    - Check the **uncertainty** checkbox to flag this observation as uncertain
    - This is a powerful feature for capturing data quality context!
 
-```{screenshot} quickstart/quickstart-029-annotation-interface.png
+   ```{screenshot} quickstart/quickstart-029-annotation-interface.png
 :alt: Site Type field with "Habitation" selected (green radio button), showing all seven options (Habitation, Mortuary, Ceremonial, Workshop/Industrial, Defensive, Agricultural, Other), with annotation interface expanded below displaying text area containing "This site is likely a dwelling but may be a workshop." and uncertainty checkbox checked with green checkmark
 :align: right
 ```
@@ -565,10 +567,7 @@ You'll see the data entry form with a progress bar at the top. Notice that requi
    - Take any photo (even of your desk - this is just practice!)
    - Note: Site Photo also has a blue dog ear icon for "Photo notes" annotation
 
-```{screenshot} quickstart/quickstart-030-form-100-percent.png
-:alt: Complete data entry form showing 100% Completed progress bar at top, header displaying "[Site Details] Test Location Alpha" with timestamp, DATA and INFO tabs, Site Name field filled with "Test Location Alpha", Site Type field with "Habitation" selected (green radio button), and Site Photo section displaying an uploaded photograph of a coastal landscape with rocky shoreline, plus green add photo button and trash icon for deletion
-:align: right
-```
+![Complete data entry form showing 100% Completed progress bar at top, header displaying "[Site Details] Test Location Alpha" with timestamp, DATA and INFO tabs, Site Name field filled with "Test Location Alpha", Site Type field with "Habitation" selected (green radio button), and Site Photo section displaying an uploaded photograph of a coastal landscape with rocky shoreline, plus green add photo button and trash icon for deletion](../screenshots/quickstart/final/quickstart-030-form-100-percent.png)
 
 ### Save Your Record
 
@@ -585,9 +584,9 @@ At the bottom of the form, you'll see three buttons:
 :align: right
 ```
 
-Congratulations! 🎉 You've just created your first {{FAIMS}} record!
+Congratulations! You've just created your first {{FAIMS}} record!
 
-### ✓ You'll Know It Saved When...
+### You'll Know It Saved When...
 
 You're automatically returned to the record list view. Here's what you'll see:
 
@@ -608,7 +607,7 @@ You're automatically returned to the record list view. Here's what you'll see:
   - **Last Updated By**: Your username
 - **Pagination** at bottom shows "1-1 of 1"
 
-> 💡 **About Sync**: {{FAIMS}} automatically syncs records when you're online. The orange icon with three dots means the record hasn't synced to the server yet. Once synced, it will turn into a green cloud icon with a checkmark. If other team members have added records, click the **REFRESH RECORDS** button to update your view with records that synced in the background.
+> **About Sync**: {{FAIMS}} automatically syncs records when you're online. The orange icon with three dots means the record hasn't synced to the server yet. Once synced, it will turn into a green cloud icon with a checkmark. If other team members have added records, click the **REFRESH RECORDS** button to update your view with records that synced in the background.
 >
 > If multiple team members edit the same record while offline, {{FAIMS}} has a conflict resolution interface in the data collection app to help you merge changes.
 
@@ -630,14 +629,14 @@ Before we finish, let's explore the SETTINGS tab to understand sync and data man
 
 You'll see several important controls:
 
-#### Sync {{Notebook}}
+**Sync {{Notebook}}**
 
 - Toggle switch (currently ON)
 - Controls whether this {{notebook}} syncs to the server
 - Turn this OFF to save mobile data when working in the field
 - Your data is still saved locally; it will sync when you turn it back ON
 
-#### Get attachments from other devices
+**Get attachments from other devices**
 
 - Toggle switch (currently Off)
 - When enabled, {{FAIMS}} automatically downloads photos and attachments created by other team members
@@ -645,26 +644,26 @@ You'll see several important controls:
 - **Important**: Your uploads always go to the server regardless of this setting
 - Recommended: Keep OFF to minimize data usage, turn ON when on WiFi if you want to review team photos
 
-#### Deactivate {{Notebook}}
+**Deactivate {{Notebook}}**
 
 - Removes the {{notebook}} from your active list
 - **Warning**: Make sure all your data has synced before deactivating (check for green cloud icons!)
 - Click **DEACTIVATE NOTEBOOK** button (red text) only if you're done using this {{notebook}} on this device
 
-> 💡 **Data Management Tip**: If you're working in areas with limited connectivity or want to conserve mobile data, turn OFF "Sync {{Notebook}}" while collecting data. Turn it back ON when you have WiFi to upload your records to the server.
+> **Data Management Tip**: If you're working in areas with limited connectivity or want to conserve mobile data, turn OFF "Sync {{Notebook}}" while collecting data. Turn it back ON when you have WiFi to upload your records to the server.
 
 ---
 
-## 🎯 You Did It!
+## You Did It!
 
 Congratulations! You've successfully created your first {{FAIMS}} {{notebook}} and collected your first record. You've:
 
-- ✅ Created a {{notebook}} in the {{Notebook}} Editor
-- ✅ Added forms, sections, and fields with proper configuration
-- ✅ Configured Form Settings (Summary Fields, HRID)
-- ✅ Activated the {{notebook}} in the {{FAIMS}} app
-- ✅ Created and saved your first record
-- ✅ Learned about sync settings and data management
+- Created a {{notebook}} in the Notebook Editor
+- Added forms, sections, and fields with proper configuration
+- Configured Form Settings (Summary Fields, HRID)
+- Activated the {{notebook}} in the {{FAIMS}} app
+- Created and saved your first record
+- Learned about sync settings and data management
 
 **This is a major milestone!** You now understand the core {{FAIMS}} workflow from design to data collection.
 
@@ -672,10 +671,10 @@ Congratulations! You've successfully created your first {{FAIMS}} {{notebook}} a
 
 ## Success Checklist
 
-Congratulations! 🎊 Let's review everything you've accomplished:
+Congratulations! Let's review everything you've accomplished:
 
 - [ ] Logged in to {{FAIMS}} and accessed your {{Dashboard}}
-- [ ] Created a new {{notebook}} using the {{Notebook}} Editor
+- [ ] Created a new {{notebook}} using the Notebook Editor
 - [ ] Added three fields: text, choice, and photo
 - [ ] Configured the Human-Readable ID Field (critical step!)
 - [ ] Saved your {{notebook}} (and understood that SAVE returns you to {{Dashboard}})
@@ -684,7 +683,7 @@ Congratulations! 🎊 Let's review everything you've accomplished:
 - [ ] Saw your record display properly in the records list
 - [ ] Understand how to edit and improve your {{notebook}}
 
-**If you've ticked all these boxes, you're officially a {{FAIMS}} {{notebook}} creator!** 🎯
+**If you've ticked all these boxes, you're officially a {{FAIMS}} {{notebook}} creator!**
 
 ---
 
@@ -699,18 +698,18 @@ Ready to take your {{notebook}} further? All of these features are managed throu
 - **Explore conditional logic** - Make forms that adapt based on user input
 - **Try advanced field types** - Geolocation, related records, auto-incrementers, and more
 
-> 💡 **Templates Are Advanced**: We started with direct {{notebook}} creation because it's best to field-test your design before creating reusable templates. Once you've used your {{notebook}} in real scenarios and refined it based on actual needs, you can convert it into a template for future projects. This approach prevents over-engineering and ensures your templates reflect practical requirements.
+> **Templates Are Advanced**: We started with direct {{notebook}} creation because it's best to field-test your design before creating reusable templates. Once you've used your {{notebook}} in real scenarios and refined it based on actual needs, you can convert it into a template for future projects. This approach prevents over-engineering and ensures your templates reflect practical requirements.
 >
-> 💡 **Control Centre Access**: Log into the Control Centre, select your {{notebook}} from the list, and explore the management options available to you based on your permissions.
+> **Control Centre Access**: Log into the Control Centre, select your {{notebook}} from the list, and explore the management options available to you based on your permissions.
 
 ---
 
 ## Troubleshooting {optional-reference}
 
-> 💡 **Note**: This section is optional reference material. Most users won't encounter these
+> **Note**: This section is optional reference material. Most users won't encounter these
 > issues. Refer to this section if you get stuck.
 
-### Can't Find the {{Notebook}} Editor
+### Can't Find the Notebook Editor
 
 **Solution**: Look for "{{Notebooks}}" in your navigation, click "Create {{Notebook}}" and supply required information. Note the name you give your {{notebook}}. Then find your {{notebook}} at the end of the list. Click the {{notebook}} name → Actions tab → Open in Editor. If youu don't see this option, check with your administrator about permissions.
 
@@ -739,7 +738,7 @@ will display properly (existing records will keep the old format).
 
 ### {{Notebook}} Not Appearing in Mobile App
 
-**Solution**: Make sure you're logged into the mobile app (app.{{FAIMS}}.app) with the same
+**Solution**: Make sure you're logged into the mobile app (app.fieldmark.app) with the same
 credentials you used in the {{Dashboard}}. If you still don't see it, check with your administrator
 about team permissions.
 
@@ -762,7 +761,7 @@ Photo field works best on mobile devices.
 
 You've mastered the basics - now it's time to experiment! Try creating a {{notebook}} for a real use case, test it on mobile devices, and explore the features that matter most to your work.
 
-**Welcome to the {{FAIMS}} community!** 🎉
+**Welcome to the {{FAIMS}} community!**
 
 ---
 
