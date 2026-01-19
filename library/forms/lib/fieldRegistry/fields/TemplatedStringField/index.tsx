@@ -21,6 +21,7 @@ const TemplatedStringField = (
     <FieldWrapper
       heading={props.label}
       required={props.required}
+      subheading={props.helperText}
       advancedHelperText={props.advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
     >
