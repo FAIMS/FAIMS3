@@ -77,6 +77,10 @@ body {
   bottom: 195px;
 }
 
+.ol-current-location-box {
+  top: 50px;
+}
+
 /* Active state for layer toggle */
 .ol-layer-toggle-button.active {
   background-color: #1a73e8;
