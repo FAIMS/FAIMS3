@@ -16,6 +16,32 @@ This guide is designed for:
 
 If you're looking to create {{notebooks}} or collect data, see the [Quickstart Guide](./quickstart-creation-and-collection.md) instead.
 
+### What This Guide Covers (and Doesn't)
+
+This guide covers:
+
+- Managing users at system, team, and {{notebook}} levels
+- Role assignment and access control
+- Common administrative workflows
+
+This guide does **not** cover:
+
+- Template creation or management
+- {{Notebook}} design and form building (see [Quickstart Guide](./quickstart-creation-and-collection.md))
+- Data collection and record management
+- API access and tokens
+- System configuration and SSO setup
+
+### UI Patterns at a Glance
+
+Before diving into procedures, here's how management differs across the three areas:
+
+| Location | How to Add | How to Remove |
+|----------|------------|---------------|
+| **Users** (system) | Click "add" button in Roles column | Click × on role badge |
+| **Teams → Users** | Click "+ Add user" or "+" on existing member | Click × on role badge, or trash icon to remove from team |
+| **{{Notebooks}} → Users** | Go to **Invites** tab to invite with role | Click trash icon in Remove column |
+
 ### What You Can Do As An Administrator
 
 As IT or change management staff, you have been provisioned with administrative roles:
@@ -31,7 +57,7 @@ This means you can:
 - Assign Team Administrator roles (only GENERAL_ADMIN can do this)
 - Manage all {{notebooks}} and their users
 
-> 💡 **Note**: This guide assumes you have these administrative permissions. If you cannot perform an action described here, contact your system administrator to verify your role assignments.
+> **Note**: This guide assumes you have these administrative permissions. If you cannot perform an action described here, contact your system administrator to verify your role assignments.
 
 ### What Typical Users Can Do By Default
 
@@ -47,7 +73,7 @@ This means they can immediately:
 - Invite users to {{notebooks}} they administer
 - Manage access for their team members
 
-> 💡 **Note**: Users do not create their own teams. Teams are created during provisioning, and users are assigned as Team Administrator of their team.
+> **Note**: Users do not create their own teams. Teams are typically created during initial provisioning or by a GENERAL_ADMIN, and users are assigned as Team Administrator of their team.
 
 ### The Three-Tier Permission Model
 
@@ -67,7 +93,6 @@ Regardless of their assigned roles, all users in the system can:
 
 - List {{notebooks}} they have access to
 - List templates they have access to
-- Create and revoke their own API access tokens
 
 ---
 
@@ -78,22 +103,29 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 ### Content
 
 - **{{Notebooks}}** — View and manage data collection {{notebooks}}
-- **Templates** — View and manage reusable notebook templates
+- **Templates** — View and manage reusable {{notebook}} templates
 
 ### Management
 
 - **Users** — View all system users and their roles (requires appropriate permissions)
 - **Teams** — View and manage teams
 
-[SCREENSHOT: {{Dashboard}} sidebar showing Content ({{Notebooks}}, Templates) and Management (Users, Teams) sections]
+```{screenshot} user-roles/01-dashboard-sidebar.png
+:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams), plus the Users list displaying Name, Email, Roles columns with add button and General User role badges
+:align: right
+```
 
-> 💡 **Tip**: Click on any sidebar item to navigate to that section. The breadcrumb at the top (e.g., "Home > Users") shows your current location.
+> **Tip**: Click on any sidebar item to navigate to that section. The breadcrumb at the top (e.g., "Home > Users") shows your current location.
 
 ---
 
 ## Managing System Users
 
 The **Users** section shows all users in the system with their email addresses and system-level roles.
+
+### How Users Are Created
+
+Users are automatically created when they first sign in via SSO (Single Sign-On). You cannot manually create user accounts through the {{Dashboard}}. When a user signs in for the first time, they are provisioned with default roles (see "What Typical Users Can Do By Default" above).
 
 ### Viewing Users
 
@@ -102,10 +134,10 @@ The **Users** section shows all users in the system with their email addresses a
    - **Name** — User's display name
    - **Email** — User's email address
    - **Roles** — System roles with "add" button and role badges
-   - **Reset Password** — Password reset option
+   - **Reset Password** — Password reset option (Note: For SSO users, password management is handled through your institution's identity provider, not through {{FAIMS}})
    - **Remove** — Remove user from system
 
-[SCREENSHOT: Users list showing Name, Email, Roles columns with "add" button and "General User" badges]
+The screenshot above shows this view, with the sidebar navigation on the left and the Users table in the main content area.
 
 ### Understanding System Roles
 
@@ -122,7 +154,10 @@ The **Users** section shows all users in the system with their email addresses a
 3. Select the role to add from the dropdown
 4. The new role badge appears next to any existing roles
 
-[SCREENSHOT: Roles column showing "add" button and role selection dropdown]
+```{screenshot} user-roles/03-add-user-role.png
+:alt: Roles column in Users list showing the add button clicked, revealing a dropdown menu with role options: GENERAL_USER, GENERAL_ADMIN, and GENERAL_CREATOR
+:align: right
+```
 
 ### Removing a Role from a User
 
@@ -131,9 +166,11 @@ The **Users** section shows all users in the system with their email addresses a
 3. Click the **×** in the upper-right corner of the role badge
 4. The role is removed immediately
 
-[SCREENSHOT: Role badge with × indicator for removal]
+Each role badge (visible in the {{Dashboard}} screenshot earlier) has a small **×** in the upper-right corner — click this to remove the role.
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove GENERAL_CREATOR from a user, they will no longer be able to create new {{notebooks}}.
+> **Warning**: Be careful when removing roles. If you remove GENERAL_CREATOR from a user, they will no longer be able to create new {{notebooks}}.
+
+**See also:** Troubleshooting → Can't Assign Team Administrator Role
 
 ---
 
@@ -141,13 +178,32 @@ The **Users** section shows all users in the system with their email addresses a
 
 Teams group users together and provide shared access to {{notebooks}}. When you navigate to a team, you'll see several tabs.
 
+### Creating a Team
+
+Only users with the **GENERAL_ADMIN** system role can create new teams.
+
+1. Click **Teams** in the left sidebar
+2. Click the **+ Create Team** button
+3. Enter the team details:
+   - **Name** — A descriptive name for the team
+   - **Description** — Optional description of the team's purpose
+4. Click **Create**
+5. The new team appears in the Teams list
+
+After creating a team, you'll typically want to add members and assign a Team Administrator (see "Adding a User to Your Team" below).
+
+> **Note**: Most teams are created during initial provisioning. You'll usually be managing existing teams rather than creating new ones.
+
 ### Viewing Your Team
 
 1. Click **Teams** in the left sidebar
 2. Click on your team name (teams you administer appear in the expanded sidebar)
 3. You'll see tabs: **Details**, **Invites**, **{{Notebooks}}**, **Templates**, **Users**
 
-[SCREENSHOT: Team view showing Details, Invites, {{Notebooks}}, Templates, Users tabs]
+```{screenshot} user-roles/05-teams-view.png
+:alt: Team view for {{FAIMS}} Demo Team showing the tab bar with Details (selected), Invites, {{Notebooks}}, Templates, and Users tabs, plus the Edit button; main panel displays team name, description, Created By (admin), and timestamps
+:align: right
+```
 
 ### Team Tabs Overview
 
@@ -169,18 +225,21 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
    - **Roles** — Team role badges with **+** to add roles
    - **Remove** — Red trash icon to remove member
 
-[SCREENSHOT: Team Users tab showing member list with role badges and red trash icons]
+```{screenshot} user-roles/06-teams-users.png
+:alt: Team Users tab showing member list with columns for Name, Email, Roles (displaying Team Administrator badges with × for removal and + to add roles), and Remove column with red trash icons
+:align: right
+```
 
 ### Understanding Team Roles
 
-| Role | Display | Permissions | Auto-grants on {{Notebooks}} |
-|------|---------|-------------|--------------------------|
+| Role | Display | Permissions | Virtual {{Notebook}} Role |
+|------|---------|-------------|----------------------|
 | TEAM_ADMIN | Team Administrator | Full team control | Administrator |
 | TEAM_MANAGER | Team Manager | Manage members, create {{notebooks}} | Manager |
 | TEAM_MEMBER | Team Member (Contributor) | Access team resources | Contributor |
 | TEAM_MEMBER_CREATOR | Team Member (Creator) | Create {{notebooks}} only | **None** |
 
-> ⚠️ **Important**: Team Member (Creator) can create {{notebooks}} but does NOT get automatic access to existing team {{notebooks}}.
+> **Important**: Team Member (Creator) can create {{notebooks}} but does NOT get automatic access to existing team {{notebooks}}.
 
 ### Adding a User to Your Team
 
@@ -190,7 +249,10 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 4. Select their team role from the dropdown
 5. Click **Add**
 
-[SCREENSHOT: Add user dialog with email field and role dropdown]
+```{screenshot} user-roles/07-teams-add-user.png
+:alt: Add user to team dialog with User Email text field and Role dropdown showing options: Team Member (Contributor), Team Member (Creator), Team Manager, and Team Administrator
+:align: right
+```
 
 ### Adding a Role to an Existing Team Member
 
@@ -213,9 +275,50 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 3. Click the red **trash icon** in the Remove column
 4. Confirm removal when prompted
 
-[SCREENSHOT: Team member row with red trash icon highlighted]
+The screenshot in the "Viewing Team Members" section above shows the red trash icons in the Remove column.
 
-> ⚠️ **Warning**: Removing someone from a team removes their automatic (virtual) access to ALL team {{notebooks}}. If they have direct notebook roles, those remain until separately removed.
+> **Warning**: Removing someone from a team removes their automatic (virtual) access to ALL team {{notebooks}}. If they have direct {{notebook}} roles, those remain until separately removed.
+
+### Managing Team Invites
+
+The **Invites** tab allows you to create invitation links that users can use to join your team.
+
+#### Creating a Team Invitation
+
+1. Navigate to your team
+2. Click the **Invites** tab
+3. Click **+ Create Invite**
+4. Configure the invitation:
+   - **Role** — The team role new members will receive
+   - **Expiry** — When the invitation expires (see below)
+   - **Uses** — How many times the invite can be used (optional)
+5. Click **Create Invite**
+
+#### Understanding Invite Options
+
+| Option | Description |
+|--------|-------------|
+| **Expiry** | The date/time after which the invite link no longer works. Expired invites cannot be extended — create a new one instead. |
+| **Uses remaining** | Limits how many people can use this invite. Use multi-use invites for workshops or group onboarding. Leave unlimited for open invitations. |
+| **Code** | A short code users can enter manually |
+| **Link** | A URL that users can click to accept the invitation |
+| **QR Code** | Scannable code for mobile devices — useful for in-person onboarding |
+
+#### Viewing and Managing Invites
+
+The Invites tab shows all active invitations with their status. From here you can:
+
+- See how many uses remain on each invite
+- Check expiry dates
+- Remove invites that are no longer needed (click the trash icon)
+
+> **Note**: [TO BE CONFIRMED] If you invite a user who hasn't yet signed in via SSO, the invitation will wait for them. Once they sign in for the first time, they can accept the pending invitation.
+
+**See also:**
+
+- Managing {{Notebook}} Users → Inviting Users to a {{Notebook}} (similar process)
+- Troubleshooting → Can't Add Users to Team
+- Troubleshooting → User Has Access But Shouldn't
 
 ---
 
@@ -226,7 +329,13 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 ### Viewing {{Notebook}} Users
 
 1. Click **{{Notebooks}}** in the left sidebar
-2. Click on a notebook name
+
+```{screenshot} user-roles/09a-notebooks-view.png
+:alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description
+:align: right
+```
+
+2. Click on a {{notebook}} name
 3. Click the **Users** tab
 4. You'll see a table with columns:
    - **Name** — User's display name
@@ -234,23 +343,26 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
    - **{{Notebook}} Roles** — Current role (display only)
    - **Remove** — Trash icon to remove user
 
-[SCREENSHOT: {{Notebook}} Users tab showing {{Notebook}} Roles column and Remove column]
+```{screenshot} user-roles/09b-notebooks-users.png
+:alt: {{Notebook}} Users tab showing user list with Name column, {{Notebook}} Roles column (displaying Administrator badges), and Remove column with trash icons
+:align: right
+```
 
 ### Understanding {{Notebook}} Roles
 
 | Role | Display | Permissions |
 |------|---------|-------------|
-| PROJECT_ADMIN | Administrator | Full control, manage other admins, delete notebook |
-| PROJECT_MANAGER | Manager | Edit design, close notebook, export, manage invites/access |
+| PROJECT_ADMIN | Administrator | Full control, manage other admins, delete {{notebook}} |
+| PROJECT_MANAGER | Manager | Edit design, close {{notebook}}, export, manage invites/access |
 | PROJECT_CONTRIBUTOR | Contributor | Edit others' records (plus all Guest permissions) |
-| PROJECT_GUEST | Guest | Activate notebook, create records, view/edit/delete own records |
+| PROJECT_GUEST | Guest | Activate {{notebook}}, create records, view/edit/delete own records |
 
 ### How {{Notebook}} Access Works
 
-Users can have notebook access from two sources:
+Users can have {{notebook}} access from two sources:
 
 1. **Virtual roles** — Automatic access from team membership
-2. **Direct roles** — Explicitly assigned to this notebook
+2. **Direct roles** — Explicitly assigned to this {{notebook}}
 
 | Team Role | Virtual {{Notebook}} Role |
 |-----------|----------------------|
@@ -259,40 +371,69 @@ Users can have notebook access from two sources:
 | Team Member (Contributor) | Contributor |
 | Team Member (Creator) | **None** |
 
-> 💡 **Note**: Direct roles override virtual roles. If a Team Member (Contributor) is directly assigned as Guest on a specific notebook, they have Guest access to that notebook.
+> **Note**: Direct roles override virtual roles. If a Team Member (Contributor) is directly assigned as Guest on a specific {{notebook}}, they have Guest access to that {{notebook}}.
 
 ### Inviting Users to a {{Notebook}}
 
-Unlike Teams and Users, you **cannot change roles directly** in the notebook Users tab. To add users or change roles:
+Unlike Teams and Users, you **cannot change roles directly** in the {{notebook}} Users tab. To add users or change roles:
 
-1. Navigate to your notebook
+1. Navigate to your {{notebook}}
 2. Click the **Invites** tab
 3. Click **+ Invite user** (or similar button)
 4. Enter the user's email address
-5. Select their notebook role (Administrator, Manager, Contributor, or Guest)
+5. Select their {{notebook}} role (Administrator, Manager, Contributor, or Guest)
 6. Send the invitation
 
-[SCREENSHOT: {{Notebook}} Invites tab with invite user dialog]
+```{screenshot} user-roles/10-notebooks-invite.png
+:alt: Create Invite dialog for a {{notebook}} showing Invite title field, Role dropdown with options (Administrator, Manager, Contributor, Guest), expiry date selection with Quick Select and Custom Date options, and Create Invite button
+:align: right
+```
+
+Once created, invitations appear in the **Invites** tab where you can manage them:
+
+```{screenshot} user-roles/11-notebooks-invites-active.png
+:alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove; includes + Create Invite button
+:align: right
+```
+
+The Invites tab shows:
+
+| Column | Description |
+|--------|-------------|
+| **Name** | The invitation title/description |
+| **Role** | The {{notebook}} role recipients will receive |
+| **Expiry** | When the invite expires — create a new invite if one expires |
+| **Uses remaining** | How many more people can use this invite |
+| **Code** | Short code for manual entry |
+| **Link** | Clickable URL to share |
+| **QR Code** | Scannable code for mobile onboarding |
+
+> **Tip**: Use multi-use invites with QR codes for field team onboarding sessions. Each team member can scan the same code to join with the appropriate role.
 
 ### Removing a User from a {{Notebook}}
 
-1. Navigate to the notebook → **Users** tab
+1. Navigate to the {{notebook}} → **Users** tab
 2. Find the user in the list
 3. Click the **trash icon** in the Remove column
 4. Confirm removal
 
-> 💡 **Note**: Removing a direct role doesn't remove team membership. If the user has a team role, they'll still have virtual access through the team.
+> **Note**: Removing a direct role doesn't remove team membership. If the user has a team role, they'll still have virtual access through the team.
 
 ### Transferring {{Notebook}} Ownership
 
-To hand off a notebook to someone else:
+To hand off a {{notebook}} to someone else:
 
-1. Go to the notebook → **Invites** tab
+1. Go to the {{notebook}} → **Invites** tab
 2. Invite the new owner with **Administrator** role
 3. Once they accept, they have full control
 4. Optionally remove yourself via the **Users** tab
 
-> ⚠️ **Warning**: Always ensure at least one Administrator remains on every notebook.
+> **Warning**: Always ensure at least one Administrator remains on every {{notebook}}.
+
+**See also:**
+
+- Troubleshooting → Can't See a {{Notebook}}
+- Troubleshooting → Can't Change a User's {{Notebook}} Role
 
 ---
 
@@ -303,14 +444,14 @@ To hand off a notebook to someone else:
 ```text
 SYSTEM LEVEL
 ├── GENERAL_ADMIN ─────── Full system control (IT administrators)
-├── GENERAL_CREATOR ───── Create {{notebooks}}/templates (default for SSO users)
+├── GENERAL_CREATOR ───── Create notebooks/templates (default for SSO users)
 └── GENERAL_USER ──────── Basic access only
 
 TEAM LEVEL
-├── Team Administrator ── Full team control, auto-grants Administrator on {{notebooks}}
-├── Team Manager ──────── Manage team members, auto-grants Manager on {{notebooks}}
+├── Team Administrator ── Full team control, auto-grants Administrator on notebooks
+├── Team Manager ──────── Manage team members, auto-grants Manager on notebooks
 ├── Team Member (Contributor) ── Access team resources, auto-grants Contributor
-└── Team Member (Creator) ────── Create {{notebooks}} only, NO automatic notebook access
+└── Team Member (Creator) ────── Create notebooks only, NO automatic notebook access
 
 NOTEBOOK LEVEL
 ├── Administrator ─────── Full control, manage admins, delete notebook
@@ -323,19 +464,11 @@ NOTEBOOK LEVEL
 
 | Scenario | Recommended Role |
 |----------|------------------|
-| Project lead who manages everything | Team Administrator + notebook Administrator |
-| Researcher who designs forms | Team Manager or notebook Manager |
-| Field worker collecting data | Team Member (Contributor) or notebook Contributor |
+| Project lead who manages everything | Team Administrator + {{notebook}} Administrator |
+| Researcher who designs forms | Team Manager or {{notebook}} Manager |
+| Field worker collecting data | Team Member (Contributor) or {{notebook}} Contributor |
 | External reviewer (limited access) | {{Notebook}} Guest |
 | Someone who creates {{notebooks}} but shouldn't see others' data | Team Member (Creator) |
-
-### UI Patterns Summary
-
-| Location | How to Add | How to Remove |
-|----------|------------|---------------|
-| **Users** (system) | Click "add" button in Roles column | Click × on role badge |
-| **Teams → Users** | Click "+ Add user" or "+" on existing member | Click × on role badge, or trash icon to remove from team |
-| **{{Notebooks}} → Users** | Go to **Invites** tab to invite with role | Click trash icon in Remove column |
 
 ---
 
@@ -350,7 +483,7 @@ NOTEBOOK LEVEL
 
 ### Setting Up a Project Team
 
-1. Create notebook(s) for the project ({{Notebooks}} → Create {{Notebook}})
+1. Create {{notebook}}(s) for the project ({{Notebooks}} → Create {{Notebook}})
 2. Ensure {{notebooks}} are associated with your team
 3. Add team members with appropriate roles:
    - Project lead: Team Manager or Team Administrator
@@ -366,20 +499,20 @@ NOTEBOOK LEVEL
 
 **Option B — {{Notebook}} only** (limited scope):
 
-1. Go to the specific notebook → **Invites** tab
+1. Go to the specific {{notebook}} → **Invites** tab
 2. Invite them with Contributor or Guest role
 3. They don't need team membership
 
 ### Handing Off a Project
 
 1. {{Notebook}} → **Invites** tab → Invite colleague as **Administrator**
-2. Verify they can access and manage the notebook
+2. Verify they can access and manage the {{notebook}}
 3. Optionally remove yourself from the Users tab
 
 ### Off-boarding: Removing All Access
 
 1. **Remove from {{notebooks}}** (if they have direct roles):
-   - Navigate to each notebook → Users tab → trash icon
+   - Navigate to each {{notebook}} → Users tab → trash icon
 2. **Remove from team**:
    - Navigate to team → Users tab → red trash icon
 3. **Note**: You cannot revoke system roles — contact a GENERAL_ADMIN
@@ -388,7 +521,67 @@ NOTEBOOK LEVEL
 
 ## Roles Reference
 
-See [Roles and Permissions](../core/permissions.md)
+### System-Wide Roles
+
+| Role | Display Name | Description | Typical User |
+|------|--------------|-------------|--------------|
+| GENERAL_USER | General User | View assigned resources, manage own tokens | Rarely used alone |
+| GENERAL_CREATOR | General Creator | Create {{notebooks}} and templates globally | Researchers, project managers |
+| GENERAL_ADMIN | General Admin | Full system control, manage all users | IT administrators |
+
+### Team Roles
+
+| Role | Display Name | Permissions | Virtual {{Notebook}} Role |
+|------|--------------|-------------|----------------------|
+| TEAM_ADMIN | Team Administrator | Full team control | Administrator |
+| TEAM_MANAGER | Team Manager | Manage members, create {{notebooks}} | Manager |
+| TEAM_MEMBER | Team Member (Contributor) | Access team resources | Contributor |
+| TEAM_MEMBER_CREATOR | Team Member (Creator) | Create {{notebooks}} only | **None** |
+
+> **Key restriction**: Only GENERAL_ADMIN can assign Team Administrator role.
+
+### {{Notebook}} Roles
+
+| Role | Display Name | Permissions |
+|------|--------------|-------------|
+| PROJECT_ADMIN | Administrator | Full control, manage administrators, delete {{notebook}} |
+| PROJECT_MANAGER | Manager | Edit design, close {{notebook}}, reassign team, export, manage invites/access |
+| PROJECT_CONTRIBUTOR | Contributor | Edit others' records (plus all Guest permissions) |
+| PROJECT_GUEST | Guest | Activate {{notebook}}, create records, view/edit/delete own records |
+
+### Permission Matrix — {{Notebooks}}
+
+| Action | Guest | Contributor | Manager | Administrator |
+|--------|:-----:|:-----------:|:-------:|:-------------:|
+| Activate {{notebook}} | | | | |
+| Create records | | | | |
+| View/edit/delete own records | | | | |
+| Edit others' records | | | | |
+| Update {{notebook}} metadata/design | | | | |
+| Close {{notebook}} | | | | |
+| Reassign to different team | | | | |
+| Export data | | | | |
+| Manage invites and access | | | | |
+| Manage administrators | | | | |
+| Delete {{notebook}} | | | | |
+
+### Permission Matrix — Teams
+
+| Action | Member (Contributor) | Member (Creator) | Manager | Administrator |
+|--------|:--------------------:|:----------------:|:-------:|:-------------:|
+| View team details | | | | |
+| View team templates | | | | |
+| Read/write/edit records in team {{notebooks}} | | | | |
+| Create {{notebooks}} in team | | | | |
+| Create templates in team | | | | |
+| Update team details | | | | |
+| Add/remove team members | | | | |
+| Manage member invites | | | | |
+| Act as {{notebook}} manager (virtual role) | | | | |
+| Add/remove team managers | | | | |
+| Act as {{notebook}}/template administrator | | | | |
+
+> **Note**: Team Member (Creator) can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
 
 ---
 
@@ -398,17 +591,17 @@ See [Roles and Permissions](../core/permissions.md)
 
 **Possible causes**:
 
-- Not a member of the team that owns the notebook
+- Not a member of the team that owns the {{notebook}}
 - Team role is Team Member (Creator) — doesn't grant automatic access
-- Not directly invited to the notebook
+- Not directly invited to the {{notebook}}
 
-**Solution**: Check team membership and role. Add direct notebook access via Invites tab if needed.
+**Solution**: Check team membership and role. Add direct {{notebook}} access via Invites tab if needed.
 
 ### Can't Edit {{Notebook}} Structure
 
-**Cause**: Missing Manager or Administrator role on the notebook.
+**Cause**: Missing Manager or Administrator role on the {{notebook}}.
 
-**Solution**: Have a notebook Administrator invite you with Manager or Administrator role.
+**Solution**: Have a {{notebook}} Administrator invite you with Manager or Administrator role.
 
 ### Can't Add Users to Team
 
@@ -428,7 +621,7 @@ See [Roles and Permissions](../core/permissions.md)
 
 **Solution**: Check both:
 
-1. Direct notebook roles ({{Notebook}} → Users tab)
+1. Direct {{notebook}} roles ({{Notebook}} → Users tab)
 2. Team membership (Team → Users tab)
 
 Remove from both locations if needed.
@@ -447,5 +640,5 @@ Remove from both locations if needed.
 
 ---
 
-*Guide Version: 1.2*
-*Last Updated: 2026-01-13*
+*Guide Version: 1.3*
+*Last Updated: 2026-01-18*
