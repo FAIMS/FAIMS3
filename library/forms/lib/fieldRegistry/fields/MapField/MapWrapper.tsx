@@ -49,6 +49,7 @@ import proj4 from 'proj4';
 import {useCallback, useEffect, useState} from 'react';
 import {MapComponent} from '../../../components/maps/MapComponent';
 import {MapConfig} from '../../../components/maps/types';
+import {Feature} from 'ol';
 
 export type MapAction = 'save' | 'close';
 
@@ -416,6 +417,27 @@ function MapWrapper(props: MapProps) {
               center={props.center}
               extent={featuresExtent}
               zoom={props.zoom}
+              additionalControls={{
+                // Add use current location control for points
+                useCurrentLocation:
+                  props.featureType === 'Point'
+                    ? {
+                        onClick(point) {
+                          // Clear existing features and add the current location as the selected point
+                          if (featuresLayer) {
+                            const source = featuresLayer.getSource();
+                            if (source) {
+                              source.clear();
+                              const feature = new Feature({
+                                geometry: point,
+                              });
+                              source.addFeature(feature);
+                            }
+                          }
+                        },
+                      }
+                    : undefined,
+              }}
             />
           </Grid>
         </Dialog>
