@@ -40,6 +40,7 @@ import {
   TextField,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
+import {useState, useEffect} from 'react';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
@@ -149,13 +150,19 @@ export const Select = (props: FieldProps) => {
     setFieldData: props.setFieldData,
   });
 
+  // state for textfield to prevent re-renders while typing in dropdown
+  const [localOtherText, setLocalOtherText] = useState(otherText);
+
+  useEffect(() => {
+    setLocalOtherText(otherText);
+  }, [otherText]);
+
   const displayValue = hasOtherSelected ? OTHER_MARKER : value;
 
   const onChange = (event: SelectChangeEvent) => {
     const selected = event.target.value;
 
     if (selected === OTHER_MARKER) {
-      // Store empty "Other: " so Zod can validate it
       props.setFieldData(OTHER_PREFIX);
     } else {
       props.setFieldData(selected);
@@ -182,6 +189,24 @@ export const Select = (props: FieldProps) => {
           input={<OutlinedInput />}
           disabled={props.disabled}
           onBlur={props.handleBlur}
+          renderValue={selected => {
+            if (selected === OTHER_MARKER) {
+              return otherText || 'Other';
+            }
+            const option = props.ElementProps.options.find(
+              opt => opt.value === selected
+            );
+            if (option) {
+              return (
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: contentToSanitizedHtml(option.label),
+                  }}
+                />
+              );
+            }
+            return selected;
+          }}
         >
           {props.ElementProps.options.map((option: any) => (
             <MenuItem
@@ -220,19 +245,23 @@ export const Select = (props: FieldProps) => {
                 padding: '8px 16px',
               }}
               onKeyDown={e => e.stopPropagation()}
-              onClick={e => e.stopPropagation()}
             >
               <TextField
                 size="small"
                 placeholder="Other"
-                value={otherText}
+                value={localOtherText}
                 onChange={e => {
                   e.stopPropagation();
-                  handleOtherTextChange(e.target.value);
+                  setLocalOtherText(e.target.value);
+                }}
+                onBlur={e => {
+                  e.stopPropagation();
+                  handleOtherTextChange(localOtherText);
                 }}
                 onClick={e => e.stopPropagation()}
                 onMouseDown={e => e.stopPropagation()}
                 onFocus={e => e.stopPropagation()}
+                onKeyDown={e => e.stopPropagation()}
                 disabled={props.disabled}
                 variant="standard"
                 multiline
