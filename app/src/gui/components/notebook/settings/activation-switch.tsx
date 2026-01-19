@@ -77,21 +77,47 @@ export default function NotebookActivationSwitch({
       >
         <Box mb={2}>
           <Typography variant="body2" paragraph>
-            {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} downloads existing
-            records onto your device. It is important you do this with a stable
-            internet connection. Once it is {ACTIVATED_LABEL.toLowerCase()} you
-            will be safe to work offline.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME} ensures that you
+            are safe to work offline at any point by downloading any existing
+            records onto your device. Please do this with a stable internet
+            connection.
+          </Typography>
+          <Typography variant="body2" paragraph>
+            <strong>"{DE_ACTIVATE_VERB}"</strong> a {NOTEBOOK_NAME} offloads records from your
+            device, to {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:
           </Typography>
           <Typography variant="body2" component="div">
-            <strong>To {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:</strong>
             <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
-              <li>Go to the {ACTIVATED_LABEL} list and open the {NOTEBOOK_NAME}</li>
               <li>
-                Click <strong>"Settings"</strong> (next to Map and Details)
+                Select the {NOTEBOOK_NAME} you want to{' '}
+                {DE_ACTIVATE_VERB.toLowerCase()}
               </li>
               <li>
-                Scroll down and click{' '}
-                <strong>"{DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}"</strong>
+                Ensure you are online, and all data in the {NOTEBOOK_NAME} has
+                been synced to the cloud
+              </li>
+              <li>
+                Click <strong>"Settings"</strong> tab (next to Map and Details tabs)
+              </li>
+              <li>
+                Select the red <strong>"{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"</strong> at the bottom
+                <Box sx={{mt: 1, mb: 0.5}}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    disableRipple
+                    sx={{
+                      pointerEvents: 'none',
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                      py: 0.5,
+                      px: 1,
+                    }}
+                  >
+                    {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+                  </Button>
+                </Box>
               </li>
             </ol>
           </Typography>
