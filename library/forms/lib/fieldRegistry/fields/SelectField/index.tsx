@@ -48,6 +48,7 @@ import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
+  OTHER_PREFIX,
   otherTextFieldSx,
   useOtherOption,
 } from '../../../hooks/useOtherOption';
@@ -80,20 +81,42 @@ const valueSchema = (props: SelectFieldProps) => {
   }
 
   if (enableOtherOption) {
-    // When "Other" option is enabled, allow any non-empty string
     const baseSchema = z.string();
 
     if (props.required) {
-      // Required: must have a value (not empty)
-      return baseSchema.min(1, {message: 'Please select or enter an option'});
+      // Required: must have a value AND if "Other" is selected, must have text
+      return baseSchema
+        .min(1, {message: 'Please select or enter an option'})
+        .refine(
+          value => {
+            if (optionValues.includes(value)) return true;
+            if (value.startsWith(OTHER_PREFIX)) {
+              return value.slice(OTHER_PREFIX.length).trim().length > 0;
+            }
+            return false;
+          },
+          {
+            message:
+              'Please enter text for the "Other" option or select a different option',
+          }
+        );
     }
 
-    // Optional but if "Other" is selected, must not be empty
-    // This ensures that selecting "Other" without entering text shows an error
-    return baseSchema.refine(value => value === '' || value.trim().length > 0, {
-      message:
-        'Please enter text for the "Other" option or select a different option',
-    });
+    // Optional: allow empty or valid predefined options or valid "Other: xxx" values
+    return baseSchema.refine(
+      value => {
+        if (value === '') return true;
+        if (optionValues.includes(value)) return true;
+        if (value.startsWith(OTHER_PREFIX)) {
+          return value.slice(OTHER_PREFIX.length).trim().length > 0;
+        }
+        return false;
+      },
+      {
+        message:
+          'Please enter text for the "Other" option or select a different option',
+      }
+    );
   }
 
   // Valid option values schema
@@ -132,8 +155,8 @@ export const Select = (props: FieldProps) => {
     const selected = event.target.value;
 
     if (selected === OTHER_MARKER) {
-      // If "other" selected, set to empty string to allow user input
-      props.setFieldData('');
+      // Store empty "Other: " so Zod can validate it
+      props.setFieldData(OTHER_PREFIX);
     } else {
       props.setFieldData(selected);
     }
@@ -196,10 +219,8 @@ export const Select = (props: FieldProps) => {
                 display: 'block',
                 padding: '8px 16px',
               }}
-              // Dropdown menu shouldn't close while typing
-              onKeyDown={e => {
-                e.stopPropagation();
-              }}
+              onKeyDown={e => e.stopPropagation()}
+              onClick={e => e.stopPropagation()}
             >
               <TextField
                 size="small"
@@ -209,9 +230,9 @@ export const Select = (props: FieldProps) => {
                   e.stopPropagation();
                   handleOtherTextChange(e.target.value);
                 }}
-                onClick={e => {
-                  e.stopPropagation();
-                }}
+                onClick={e => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
+                onFocus={e => e.stopPropagation()}
                 disabled={props.disabled}
                 variant="standard"
                 multiline
