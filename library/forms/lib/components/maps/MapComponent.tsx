@@ -244,6 +244,7 @@ export const MapComponent = (props: MapComponentProps) => {
 
     // Watch real GPS position and update cursor when it changes
     Geolocation.watchPosition(
+      // maximum age to avoid using cached position of the user.
       {enableHighAccuracy: true, timeout: 10000, maximumAge: 0},
       (position, err) => {
         if (err) {
