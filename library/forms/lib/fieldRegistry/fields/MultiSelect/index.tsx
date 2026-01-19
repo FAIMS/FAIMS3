@@ -51,6 +51,7 @@ import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
+  OTHER_PREFIX,
   extractOtherText,
   isOtherOptionValue,
   otherTextFieldSx,
@@ -72,7 +73,7 @@ const MultiSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
     options: z.array(ElementOptionSchema),
     expandedChecklist: z.boolean().optional(),
     exclusiveOptions: z.array(z.string()).optional(),
-    enableOtherOption: z.boolean().optional(), // toggle to enable 'Other' option (always labeled "Other")
+    enableOtherOption: z.boolean().optional(),
   }),
 });
 
@@ -95,12 +96,8 @@ interface ExpandedChecklistProps {
   onOtherTextChange?: (text: string) => void;
   hasOtherSelected?: boolean;
   onBlur?: () => void;
-  onOtherBlur?: () => void;
 }
 
-/**
- * A component that displays options as an expanded list of checkboxes
- */
 const ExpandedChecklist = ({
   options,
   value,
@@ -112,7 +109,6 @@ const ExpandedChecklist = ({
   onOtherTextChange,
   hasOtherSelected,
   onBlur,
-  onOtherBlur,
 }: ExpandedChecklistProps) => {
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
@@ -121,19 +117,14 @@ const ExpandedChecklist = ({
       if (hasOtherSelected) {
         onChange(value.filter(v => v !== OTHER_MARKER));
       } else {
-        // Select "Other"
         onChange([...value, OTHER_MARKER]);
       }
       return;
     }
 
-    // If the new selection is exclusive, then we either deselect all or select
-    // just that value
     if (exclusiveOptions.includes(optionValue)) {
       onChange(value.includes(optionValue) ? [] : [optionValue]);
     } else {
-      // As long as we don't have an exclusive option selected, add or remove
-      // this option as per usual
       if (!selectedExclusiveOption) {
         const newValues = value.includes(optionValue)
           ? value.filter(v => v !== optionValue)
@@ -215,15 +206,11 @@ const ExpandedChecklist = ({
                   onOtherTextChange?.(e.target.value);
                 }}
                 onFocus={() => {
-                  // Auto-check when field is focused
                   if (!hasOtherSelected) {
                     onChange([...value, OTHER_MARKER]);
                   }
                 }}
-                onBlur={() => {
-                  onBlur?.();
-                  onOtherBlur?.();
-                }}
+                onBlur={onBlur}
                 disabled={disabled}
                 variant="standard"
                 multiline
@@ -251,16 +238,12 @@ interface MuiMultiSelectProps {
   exclusiveOptions: string[];
   disabled?: boolean;
   onBlur?: () => void;
-  onOtherBlur?: () => void;
   enableOtherOption?: boolean;
   otherText?: string;
   onOtherTextChange?: (text: string) => void;
   hasOtherSelected?: boolean;
 }
 
-/**
- * A component that displays options in a Material-UI dropdown select
- */
 const MuiMultiSelect = ({
   options,
   value,
@@ -268,7 +251,6 @@ const MuiMultiSelect = ({
   exclusiveOptions,
   disabled,
   onBlur,
-  onOtherBlur,
   enableOtherOption,
   otherText,
   onOtherTextChange,
@@ -277,7 +259,6 @@ const MuiMultiSelect = ({
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
 
-    // Check if any selection is exclusive, if so just update with that
     let exclusive = undefined;
     for (const v of selectedValues) {
       if (exclusiveOptions.includes(v)) {
@@ -286,13 +267,11 @@ const MuiMultiSelect = ({
       }
     }
 
-    // Just update with exclusive - deleting all other selections
     if (exclusive) {
       onChange([exclusive]);
       return;
     }
 
-    // Otherwise, just update with the raw selection
     onChange(selectedValues);
   };
 
@@ -323,7 +302,6 @@ const MuiMultiSelect = ({
                 if (v === OTHER_MARKER) {
                   return otherText || 'Other';
                 }
-                // Strip "Other: " prefix for display - only show the text
                 if (isOtherOptionValue(v)) {
                   return extractOtherText(v) || 'Other';
                 }
@@ -378,7 +356,6 @@ const MuiMultiSelect = ({
             </MenuItem>
           ))}
 
-          {/* "Other" option in dropdown - inline text field */}
           {enableOtherOption && (
             <MenuItem
               value={OTHER_MARKER}
@@ -391,7 +368,6 @@ const MuiMultiSelect = ({
                 padding: '8px 16px',
               }}
               onKeyDown={e => {
-                // dropdown menu shouldn't close while typing in other text field
                 e.stopPropagation();
               }}
             >
@@ -411,9 +387,7 @@ const MuiMultiSelect = ({
                   onOtherTextChange?.(e.target.value);
                 }}
                 onClick={e => {
-                  // Prevent menu from closing when clicking text field
                   e.stopPropagation();
-                  // Auto-check when clicked
                   if (!hasOtherSelected) {
                     onChange([...value, OTHER_MARKER]);
                   }
@@ -421,7 +395,6 @@ const MuiMultiSelect = ({
                 onBlur={e => {
                   e.stopPropagation();
                   onBlur?.();
-                  onOtherBlur?.();
                 }}
                 disabled={disabled}
                 variant="standard"
@@ -448,10 +421,6 @@ const MuiMultiSelect = ({
 // Main Component
 // ============================================================================
 
-/**
- * MultiSelect Component - A reusable multi-selection field that supports
- * both expanded checklist and dropdown modes.
- */
 export const MultiSelect = (props: FieldProps) => {
   const {
     label,
@@ -465,62 +434,47 @@ export const MultiSelect = (props: FieldProps) => {
     ElementProps,
   } = props;
 
-  // Normalize value to always be an array
   const rawValue = state.value?.data;
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
     : rawValue === '' || rawValue === undefined || rawValue === null
-    ? []
-    : [rawValue as string];
+      ? []
+      : [rawValue as string];
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
   const predefinedValues = ElementProps.options.map(opt => opt.value);
 
-  const {
-    setOtherSelected,
-    setOtherFieldTouched,
-    hasOtherSelected,
-    otherText,
-    otherFieldError,
-    handleOtherTextChange,
-  } = useOtherOption({
-    enableOtherOption,
-    rawValue: value,
-    predefinedValues,
-    setFieldData,
-    emptyErrorMessage: 'Please enter text for the "Other" option or uncheck it',
-  });
+  const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
+    useOtherOption({
+      enableOtherOption,
+      rawValue: value,
+      predefinedValues,
+      setFieldData,
+    });
 
   const selectedPredefined = value.filter(v => predefinedValues.includes(v));
   const otherValues = value.filter(v => isOtherOptionValue(v));
 
-  const formErrors = props.state.meta.errors as unknown as string[];
-  const allErrors = otherFieldError
-    ? [...(formErrors || []), otherFieldError]
-    : formErrors;
-
   const handleChange = (newValues: string[]) => {
     if (enableOtherOption) {
-      // Check if __other__ marker was just selected or deselected
       const hasOtherMarker = newValues.includes(OTHER_MARKER);
 
-      // Filter out marker and any existing "Other: " prefixed values from newValues
       const realValues = newValues.filter(
         v => v !== OTHER_MARKER && !isOtherOptionValue(v)
       );
 
       if (hasOtherMarker) {
         if (otherValues.length > 0) {
-          // Preserve existing "Other" value with prefix
+          // Preserve existing "Other: xxx" value
           setFieldData([...realValues, ...otherValues]);
         } else {
+          // Store empty "Other: " so Zod can validate it
           setOtherSelected(true);
-          setFieldData(realValues);
+          setFieldData([...realValues, OTHER_PREFIX]);
         }
       } else {
-        // Unchecked "Other" - remove all custom values and reset checkbox state
         setOtherSelected(false);
         setFieldData(realValues);
       }
@@ -539,7 +493,7 @@ export const MultiSelect = (props: FieldProps) => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
-      errors={allErrors}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <Box sx={{mt: 2, mb: 2}}>
         {isExpandedChecklist ? (
@@ -554,7 +508,6 @@ export const MultiSelect = (props: FieldProps) => {
             onOtherTextChange={handleOtherTextChange}
             hasOtherSelected={hasOtherSelected}
             onBlur={handleBlur}
-            onOtherBlur={() => setOtherFieldTouched(true)}
           />
         ) : (
           <MuiMultiSelect
@@ -564,7 +517,6 @@ export const MultiSelect = (props: FieldProps) => {
             exclusiveOptions={exclusiveOptions}
             disabled={disabled}
             onBlur={handleBlur}
-            onOtherBlur={() => setOtherFieldTouched(true)}
             enableOtherOption={enableOtherOption}
             otherText={otherText}
             onOtherTextChange={handleOtherTextChange}
@@ -580,15 +532,10 @@ export const MultiSelect = (props: FieldProps) => {
 // Value Schema
 // ============================================================================
 
-/**
- * Generate a zod schema for the value based on the field props.
- * Returns an array of strings representing the selected option values.
- */
 const valueSchema = (props: MultiSelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
-  // Handle edge case of no options defined
   if (optionValues.length === 0) {
     const baseSchema = z.array(z.string());
     return props.required
@@ -596,13 +543,49 @@ const valueSchema = (props: MultiSelectFieldProps) => {
       : baseSchema;
   }
 
-  // Create base schema: allow custom strings if "Other" is enabled, otherwise only predefined options
-  // "Other" values are stored with "Other: " prefix
-  const baseSchema = enableOtherOption
-    ? z.array(z.string())
-    : z.array(z.enum(optionValues as [string, ...string[]]));
+  if (enableOtherOption) {
+    const baseSchema = z.array(z.string());
 
-  // Apply required validation if needed
+    if (props.required) {
+      return baseSchema
+        .min(1, {message: 'Please select at least one option'})
+        .refine(
+          values => {
+            // Aother values must have text for eg. - Other: text 
+            return values.every(v => {
+              if (optionValues.includes(v)) return true;
+              if (v.startsWith(OTHER_PREFIX)) {
+                return v.slice(OTHER_PREFIX.length).trim().length > 0;
+              }
+              return false;
+            });
+          },
+          {
+            message: 'Please enter text for the "Other" option or uncheck it',
+          }
+        );
+    }
+
+    //  vaalidate "Other" values have text if present
+    return baseSchema.refine(
+      values => {
+        return values.every(v => {
+          if (optionValues.includes(v)) return true;
+          if (v.startsWith(OTHER_PREFIX)) {
+            return v.slice(OTHER_PREFIX.length).trim().length > 0;
+          }
+          return false;
+        });
+      },
+      {
+        message: 'Please enter text for the "Other" option or uncheck it',
+      }
+    );
+  }
+
+  
+  const baseSchema = z.array(z.enum(optionValues as [string, ...string[]]));
+
   return props.required
     ? baseSchema.min(1, {message: 'Please select at least one option'})
     : baseSchema;
@@ -612,9 +595,6 @@ const valueSchema = (props: MultiSelectFieldProps) => {
 // Field Registration
 // ============================================================================
 
-/**
- * Export a constant with the information required to register this field type
- */
 export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
   namespace: 'faims-custom',
   name: 'MultiSelect',
