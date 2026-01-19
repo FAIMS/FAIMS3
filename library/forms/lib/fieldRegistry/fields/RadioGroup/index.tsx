@@ -43,6 +43,7 @@ import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
+  OTHER_PREFIX,
   otherTextFieldSx,
   useOtherOption,
 } from '../../../hooks/useOtherOption';
@@ -94,48 +95,33 @@ export const RadioGroup = (props: FieldProps) => {
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
   const predefinedValues = ElementProps.options.map(opt => opt.value);
 
-  const {
-    setOtherSelected,
-    setOtherFieldTouched,
-    hasOtherSelected,
-    otherText,
-    otherFieldError,
-    handleOtherTextChange,
-  } = useOtherOption({
-    enableOtherOption,
-    rawValue,
-    predefinedValues,
-    setFieldData,
-    emptyErrorMessage:
-      'Please enter text for the "Other" option or unselect it',
-  });
+  const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
+    useOtherOption({
+      enableOtherOption,
+      rawValue,
+      predefinedValues,
+      setFieldData,
+    });
 
   const displayValue = hasOtherSelected
     ? OTHER_MARKER
     : predefinedValues.includes(rawValue)
-    ? rawValue
-    : '';
-
-  const formErrors = props.state.meta.errors as unknown as string[];
-  const allErrors = otherFieldError
-    ? [...(formErrors || []), otherFieldError]
-    : formErrors;
+      ? rawValue
+      : '';
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedValue = event.target.value;
 
     if (selectedValue === OTHER_MARKER) {
       if (hasOtherSelected) {
-        // Toggle off - deselect "Other"
         setOtherSelected(false);
         setFieldData('');
       } else {
-        // Select "Other" - use empty string, text will be added via the hook
+        // Store empty "Other: " so Zod can validate it
         setOtherSelected(true);
-        setFieldData('');
+        setFieldData(OTHER_PREFIX);
       }
     } else {
-      // Selecting a predefined option (or toggling it off)
       setOtherSelected(false);
       const newValue = displayValue === selectedValue ? '' : selectedValue;
       setFieldData(newValue);
@@ -148,7 +134,7 @@ export const RadioGroup = (props: FieldProps) => {
       subheading={helperText}
       required={required}
       advancedHelperText={advancedHelperText}
-      errors={allErrors}
+      errors={props.state.meta.errors as unknown as string[]}
     >
       <FormControl>
         <MuiRadioGroup
@@ -192,9 +178,6 @@ export const RadioGroup = (props: FieldProps) => {
                   display: 'block',
                   marginTop: '0px',
                   alignSelf: 'flex-start',
-                  // markdown formatted text will be wrapped in a <p> tag
-                  // so we need to remove the default margin
-                  // and padding from the <p> tag
                   '& p': {
                     margin: 0,
                     padding: 0,
@@ -228,22 +211,17 @@ export const RadioGroup = (props: FieldProps) => {
                   placeholder="Other"
                   value={otherText}
                   onChange={e => {
-                    // Auto-select "Other" radio when user starts typing
                     if (!hasOtherSelected && e.target.value.length > 0) {
                       setOtherSelected(true);
                     }
                     handleOtherTextChange(e.target.value);
                   }}
                   onFocus={() => {
-                    // Auto-select "Other" radio when field is focused
                     if (!hasOtherSelected) {
                       setOtherSelected(true);
                     }
                   }}
-                  onBlur={() => {
-                    handleBlur();
-                    setOtherFieldTouched(true);
-                  }}
+                  onBlur={handleBlur}
                   disabled={disabled}
                   variant="standard"
                   multiline
@@ -290,19 +268,48 @@ const valueSchema = (props: RadioGroupFieldProps) => {
 
   const optionsSchema = z.enum(optionValues as [string, ...string[]]);
 
-  // When "Other" is enabled, allow any string (including "Other: xxx" values)
   if (enableOtherOption) {
+    const baseSchema = z.string();
+
     if (props.required) {
-      return z.string().min(1, {message: 'Please select an option'});
+      // add ed  a check to  must have a value AND if "Other" is selected, must have text
+      return baseSchema
+        .min(1, {message: 'Please select an option'})
+        .refine(
+          value => {
+            if (optionValues.includes(value)) return true;
+            if (value.startsWith(OTHER_PREFIX)) {
+              return value.slice(OTHER_PREFIX.length).trim().length > 0;
+            }
+            return false;
+          },
+          {
+            message:
+              'Please enter text for the "Other" option or select a different option',
+          }
+        );
     }
-    return z.string();
+
+    return baseSchema.refine(
+      value => {
+        if (value === '') return true;
+        if (optionValues.includes(value)) return true;
+        if (value.startsWith(OTHER_PREFIX)) {
+          return value.slice(OTHER_PREFIX.length).trim().length > 0;
+        }
+        return false;
+      },
+      {
+        message:
+          'Please enter text for the "Other" option or select a different option',
+      }
+    );
   }
 
   if (props.required) {
     return optionsSchema;
   }
 
-  // Optional: allow null or empty string for no selection
   return z.union([optionsSchema, z.null(), z.literal('')]);
 };
 
@@ -310,9 +317,6 @@ const valueSchema = (props: RadioGroupFieldProps) => {
 // Field Registration
 // ============================================================================
 
-/**
- * Export a constant with the information required to register this field type
- */
 export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   namespace: 'faims-custom',
   name: 'RadioGroup',
