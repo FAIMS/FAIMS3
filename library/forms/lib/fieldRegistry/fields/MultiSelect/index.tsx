@@ -32,7 +32,7 @@
  * - disabled: Whether the field is disabled.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import {
   Box,
   Checkbox,
@@ -256,6 +256,9 @@ const MuiMultiSelect = ({
   onOtherTextChange,
   hasOtherSelected,
 }: MuiMultiSelectProps) => {
+  // state to control dropdown open/close
+  const [isOpen, setIsOpen] = useState(false);
+
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
 
@@ -293,6 +296,9 @@ const MuiMultiSelect = ({
       >
         <Select
           multiple
+          open={isOpen}
+          onOpen={() => setIsOpen(true)}
+          onClose={() => setIsOpen(false)}
           onChange={handleChange}
           onBlur={onBlur}
           value={value}
@@ -395,6 +401,14 @@ const MuiMultiSelect = ({
                 onBlur={e => {
                   e.stopPropagation();
                   onBlur?.();
+                }}
+                onKeyDown={e => {
+                  e.stopPropagation();
+                  // save and close dropdown on Enter key
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setIsOpen(false);
+                  }
                 }}
                 disabled={disabled}
                 variant="standard"

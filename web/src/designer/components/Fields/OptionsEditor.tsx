@@ -813,7 +813,8 @@ export const OptionsEditor = ({
                               color: 'rgba(0, 0, 0, 0.6)',
                             }}
                           >
-                            (Add "Other" option)
+                            (Allow users to select “Other” and enter custom
+                            text)
                           </Typography>
                         </Typography>
                       </TableCell>

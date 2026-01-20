@@ -40,7 +40,7 @@ import {
   TextField,
 } from '@mui/material';
 import {useTheme} from '@mui/material/styles';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
 import {DefaultRenderer} from '../../../rendering/fields/fallback';
@@ -152,6 +152,10 @@ export const Select = (props: FieldProps) => {
 
   // state for textfield to prevent re-renders while typing in dropdown
   const [localOtherText, setLocalOtherText] = useState(otherText);
+  // state to control dropdown open/close
+  const [isOpen, setIsOpen] = useState(false);
+  // ref to the select element for programmatic closing
+  const selectRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocalOtherText(otherText);
@@ -184,6 +188,10 @@ export const Select = (props: FieldProps) => {
         }}
       >
         <MuiSelect
+          ref={selectRef}
+          open={isOpen}
+          onOpen={() => setIsOpen(true)}
+          onClose={() => setIsOpen(false)}
           onChange={onChange}
           value={displayValue}
           input={<OutlinedInput />}
@@ -261,7 +269,15 @@ export const Select = (props: FieldProps) => {
                 onClick={e => e.stopPropagation()}
                 onMouseDown={e => e.stopPropagation()}
                 onFocus={e => e.stopPropagation()}
-                onKeyDown={e => e.stopPropagation()}
+                onKeyDown={e => {
+                  e.stopPropagation();
+                  // save and close dropdown on Enter key
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleOtherTextChange(localOtherText);
+                    setIsOpen(false);
+                  }
+                }}
                 disabled={props.disabled}
                 variant="standard"
                 multiline
