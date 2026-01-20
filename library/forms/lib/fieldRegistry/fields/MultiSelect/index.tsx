@@ -32,6 +32,7 @@
  * - disabled: Whether the field is disabled.
  */
 
+import React, {useState} from 'react';
 import {
   Box,
   Checkbox,
@@ -40,6 +41,7 @@ import {
   ListItemText,
   MenuItem,
   Select,
+  TextField,
 } from '@mui/material';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
@@ -47,6 +49,14 @@ import {ListWrapper} from '../../../rendering/fields/view/wrappers/PrimitiveWrap
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {
+  OTHER_MARKER,
+  OTHER_PREFIX,
+  extractOtherText,
+  isOtherOptionValue,
+  otherTextFieldSx,
+  useOtherOption,
+} from '../../../hooks/useOtherOption';
 
 // ============================================================================
 // Types & Schema
@@ -63,6 +73,7 @@ const MultiSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
     options: z.array(ElementOptionSchema),
     expandedChecklist: z.boolean().optional(),
     exclusiveOptions: z.array(z.string()).optional(),
+    enableOtherOption: z.boolean().optional(),
   }),
 });
 
@@ -80,28 +91,40 @@ interface ExpandedChecklistProps {
   onChange: (values: string[]) => void;
   exclusiveOptions: string[];
   disabled?: boolean;
+  enableOtherOption?: boolean;
+  otherText?: string;
+  onOtherTextChange?: (text: string) => void;
+  hasOtherSelected?: boolean;
+  onBlur?: () => void;
 }
 
-/**
- * A component that displays options as an expanded list of checkboxes
- */
 const ExpandedChecklist = ({
   options,
   value,
   onChange,
   exclusiveOptions,
   disabled,
+  enableOtherOption,
+  otherText,
+  onOtherTextChange,
+  hasOtherSelected,
+  onBlur,
 }: ExpandedChecklistProps) => {
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   const handleChange = (optionValue: string) => {
-    // If the new selection is exclusive, then we either deselect all or select
-    // just that value
+    if (optionValue === OTHER_MARKER) {
+      if (hasOtherSelected) {
+        onChange(value.filter(v => v !== OTHER_MARKER));
+      } else {
+        onChange([...value, OTHER_MARKER]);
+      }
+      return;
+    }
+
     if (exclusiveOptions.includes(optionValue)) {
       onChange(value.includes(optionValue) ? [] : [optionValue]);
     } else {
-      // As long as we don't have an exclusive option selected, add or remove
-      // this option as per usual
       if (!selectedExclusiveOption) {
         const newValues = value.includes(optionValue)
           ? value.filter(v => v !== optionValue)
@@ -158,6 +181,51 @@ const ExpandedChecklist = ({
             }}
           />
         ))}
+
+        {enableOtherOption && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={hasOtherSelected || false}
+                onChange={() => handleChange(OTHER_MARKER)}
+                disabled={selectedExclusiveOption !== undefined || disabled}
+                sx={{
+                  padding: '4px 8px 4px 0',
+                }}
+              />
+            }
+            label={
+              <TextField
+                size="small"
+                placeholder="Other"
+                value={otherText || ''}
+                onChange={e => {
+                  if (!hasOtherSelected && e.target.value.length > 0) {
+                    onChange([...value, OTHER_MARKER]);
+                  }
+                  onOtherTextChange?.(e.target.value);
+                }}
+                onFocus={() => {
+                  if (!hasOtherSelected) {
+                    onChange([...value, OTHER_MARKER]);
+                  }
+                }}
+                onBlur={onBlur}
+                disabled={disabled}
+                variant="standard"
+                multiline
+                sx={{
+                  minWidth: '200px',
+                  ...otherTextFieldSx,
+                }}
+              />
+            }
+            sx={{
+              alignItems: 'center',
+              m: 0,
+            }}
+          />
+        )}
       </Box>
     </FormControl>
   );
@@ -170,11 +238,12 @@ interface MuiMultiSelectProps {
   exclusiveOptions: string[];
   disabled?: boolean;
   onBlur?: () => void;
+  enableOtherOption?: boolean;
+  otherText?: string;
+  onOtherTextChange?: (text: string) => void;
+  hasOtherSelected?: boolean;
 }
 
-/**
- * A component that displays options in a Material-UI dropdown select
- */
 const MuiMultiSelect = ({
   options,
   value,
@@ -182,11 +251,17 @@ const MuiMultiSelect = ({
   exclusiveOptions,
   disabled,
   onBlur,
+  enableOtherOption,
+  otherText,
+  onOtherTextChange,
+  hasOtherSelected,
 }: MuiMultiSelectProps) => {
+  // state to control dropdown open/close
+  const [isOpen, setIsOpen] = useState(false);
+
   const handleChange = (event: any) => {
     const selectedValues = event.target.value;
 
-    // Check if any selection is exclusive, if so just update with that
     let exclusive = undefined;
     for (const v of selectedValues) {
       if (exclusiveOptions.includes(v)) {
@@ -195,83 +270,164 @@ const MuiMultiSelect = ({
       }
     }
 
-    // Just update with exclusive - deleting all other selections
     if (exclusive) {
       onChange([exclusive]);
       return;
     }
 
-    // Otherwise, just update with the raw selection
     onChange(selectedValues);
   };
 
   const selectedExclusiveOption = value.find(v => exclusiveOptions.includes(v));
 
   return (
-    <FormControl
-      sx={{
-        width: '100%',
-        mt: 2,
-        '& .MuiSelect-select': {
-          whiteSpace: 'normal',
-          wordBreak: 'break-word',
-          padding: '12px',
-        },
-      }}
-      disabled={disabled}
-    >
-      <Select
-        multiple
-        onChange={handleChange}
-        onBlur={onBlur}
-        value={value}
-        renderValue={selected => (
-          <span
-            dangerouslySetInnerHTML={{
-              __html: contentToSanitizedHtml(selected.join(', ')),
-            }}
-          />
-        )}
-        MenuProps={{
-          PaperProps: {
-            style: {
-              maxHeight: 300,
-              marginTop: 8,
-            },
+    <>
+      <FormControl
+        sx={{
+          width: '100%',
+          mt: 2,
+          '& .MuiSelect-select': {
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            padding: '12px',
           },
         }}
+        disabled={disabled}
       >
-        {options.map(option => (
-          <MenuItem
-            key={option.key || option.value}
-            value={option.value}
-            disabled={
-              selectedExclusiveOption !== undefined &&
-              option.value !== selectedExclusiveOption
-            }
-            sx={{
-              whiteSpace: 'normal',
-              wordWrap: 'break-word',
-            }}
-          >
-            <Checkbox checked={value.includes(option.value)} />
-            <ListItemText
-              primary={
-                <span
-                  style={{
-                    whiteSpace: 'normal',
-                    wordBreak: 'break-word',
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: contentToSanitizedHtml(option.label),
-                  }}
-                />
+        <Select
+          multiple
+          open={isOpen}
+          onOpen={() => setIsOpen(true)}
+          onClose={() => setIsOpen(false)}
+          onChange={handleChange}
+          onBlur={onBlur}
+          value={value}
+          renderValue={selected => {
+            const displayText = (selected as string[])
+              .map(v => {
+                if (v === OTHER_MARKER) {
+                  return otherText || 'Other';
+                }
+                if (isOtherOptionValue(v)) {
+                  return extractOtherText(v) || 'Other';
+                }
+                return v;
+              })
+              .join(', ');
+
+            return (
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: contentToSanitizedHtml(displayText),
+                }}
+              />
+            );
+          }}
+          MenuProps={{
+            PaperProps: {
+              style: {
+                maxHeight: 300,
+                marginTop: 8,
+              },
+            },
+          }}
+        >
+          {options.map(option => (
+            <MenuItem
+              key={option.key || option.value}
+              value={option.value}
+              disabled={
+                selectedExclusiveOption !== undefined &&
+                option.value !== selectedExclusiveOption
               }
-            />
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
+              sx={{
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+              }}
+            >
+              <Checkbox checked={value.includes(option.value)} />
+              <ListItemText
+                primary={
+                  <span
+                    style={{
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: contentToSanitizedHtml(option.label),
+                    }}
+                  />
+                }
+              />
+            </MenuItem>
+          ))}
+
+          {enableOtherOption && (
+            <MenuItem
+              value={OTHER_MARKER}
+              disabled={selectedExclusiveOption !== undefined}
+              sx={{
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+                display: 'flex',
+                alignItems: 'flex-start',
+                padding: '8px 16px',
+              }}
+              onKeyDown={e => {
+                e.stopPropagation();
+              }}
+            >
+              <Checkbox
+                checked={hasOtherSelected || false}
+                sx={{mr: 1, alignSelf: 'flex-start', mt: '4px'}}
+              />
+              <TextField
+                size="small"
+                placeholder="Other"
+                value={otherText || ''}
+                onChange={e => {
+                  e.stopPropagation();
+                  if (!hasOtherSelected && e.target.value.length > 0) {
+                    onChange([...value, OTHER_MARKER]);
+                  }
+                  onOtherTextChange?.(e.target.value);
+                }}
+                onClick={e => {
+                  e.stopPropagation();
+                  if (!hasOtherSelected) {
+                    onChange([...value, OTHER_MARKER]);
+                  }
+                }}
+                onBlur={e => {
+                  e.stopPropagation();
+                  onBlur?.();
+                }}
+                onKeyDown={e => {
+                  e.stopPropagation();
+                  // save and close dropdown on Enter key
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setIsOpen(false);
+                  }
+                }}
+                disabled={disabled}
+                variant="standard"
+                multiline
+                fullWidth
+                sx={{
+                  flex: 1,
+                  ...otherTextFieldSx,
+                  '& .MuiInput-input': {
+                    ...((otherTextFieldSx as any)['& .MuiInput-input'] || {}),
+                    padding: '4px 0',
+                  },
+                }}
+              />
+            </MenuItem>
+          )}
+        </Select>
+      </FormControl>
+    </>
   );
 };
 
@@ -279,10 +435,6 @@ const MuiMultiSelect = ({
 // Main Component
 // ============================================================================
 
-/**
- * MultiSelect Component - A reusable multi-selection field that supports
- * both expanded checklist and dropdown modes.
- */
 export const MultiSelect = (props: FieldProps) => {
   const {
     label,
@@ -296,7 +448,6 @@ export const MultiSelect = (props: FieldProps) => {
     ElementProps,
   } = props;
 
-  // Normalize value to always be an array
   const rawValue = state.value?.data;
   const value: string[] = Array.isArray(rawValue)
     ? rawValue
@@ -306,10 +457,49 @@ export const MultiSelect = (props: FieldProps) => {
 
   const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
+  const enableOtherOption = ElementProps.enableOtherOption ?? false;
+  const predefinedValues = ElementProps.options.map(opt => opt.value);
+
+  const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
+    useOtherOption({
+      enableOtherOption,
+      rawValue: value,
+      predefinedValues,
+      setFieldData,
+    });
+
+  const selectedPredefined = value.filter(v => predefinedValues.includes(v));
+  const otherValues = value.filter(v => isOtherOptionValue(v));
 
   const handleChange = (newValues: string[]) => {
-    setFieldData(newValues);
+    if (enableOtherOption) {
+      const hasOtherMarker = newValues.includes(OTHER_MARKER);
+
+      const realValues = newValues.filter(
+        v => v !== OTHER_MARKER && !isOtherOptionValue(v)
+      );
+
+      if (hasOtherMarker) {
+        if (otherValues.length > 0) {
+          // Preserve existing "Other: xxx" value
+          setFieldData([...realValues, ...otherValues]);
+        } else {
+          // Store empty "Other: " so Zod can validate it
+          setOtherSelected(true);
+          setFieldData([...realValues, OTHER_PREFIX]);
+        }
+      } else {
+        setOtherSelected(false);
+        setFieldData(realValues);
+      }
+    } else {
+      setFieldData(newValues);
+    }
   };
+
+  const uiValue = hasOtherSelected
+    ? [...selectedPredefined, OTHER_MARKER]
+    : selectedPredefined;
 
   return (
     <FieldWrapper
@@ -323,19 +513,28 @@ export const MultiSelect = (props: FieldProps) => {
         {isExpandedChecklist ? (
           <ExpandedChecklist
             options={ElementProps.options}
-            value={value}
+            value={uiValue}
             onChange={handleChange}
             exclusiveOptions={exclusiveOptions}
             disabled={disabled}
+            enableOtherOption={enableOtherOption}
+            otherText={otherText}
+            onOtherTextChange={handleOtherTextChange}
+            hasOtherSelected={hasOtherSelected}
+            onBlur={handleBlur}
           />
         ) : (
           <MuiMultiSelect
             options={ElementProps.options}
-            value={value}
+            value={uiValue}
             onChange={handleChange}
             exclusiveOptions={exclusiveOptions}
             disabled={disabled}
             onBlur={handleBlur}
+            enableOtherOption={enableOtherOption}
+            otherText={otherText}
+            onOtherTextChange={handleOtherTextChange}
+            hasOtherSelected={hasOtherSelected}
           />
         )}
       </Box>
@@ -347,39 +546,68 @@ export const MultiSelect = (props: FieldProps) => {
 // Value Schema
 // ============================================================================
 
-/**
- * Generate a zod schema for the value based on the field props.
- * Returns an array of strings representing the selected option values.
- */
 const valueSchema = (props: MultiSelectFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
+  const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
-  // Handle edge case of no options defined
   if (optionValues.length === 0) {
     const baseSchema = z.array(z.string());
-    if (props.required) {
-      return baseSchema.min(1, {message: 'Please select at least one option'});
-    }
-    return baseSchema;
+    return props.required
+      ? baseSchema.min(1, {message: 'Please select at least one option'})
+      : baseSchema;
   }
 
-  // Base schema: array of valid option values
+  if (enableOtherOption) {
+    const baseSchema = z.array(z.string());
+
+    if (props.required) {
+      return baseSchema
+        .min(1, {message: 'Please select at least one option'})
+        .refine(
+          values => {
+            // Aother values must have text for eg. - Other: text
+            return values.every(v => {
+              if (optionValues.includes(v)) return true;
+              if (v.startsWith(OTHER_PREFIX)) {
+                return v.slice(OTHER_PREFIX.length).trim().length > 0;
+              }
+              return false;
+            });
+          },
+          {
+            message: 'Please enter text for the "Other" option or uncheck it',
+          }
+        );
+    }
+
+    //  vaalidate "Other" values have text if present
+    return baseSchema.refine(
+      values => {
+        return values.every(v => {
+          if (optionValues.includes(v)) return true;
+          if (v.startsWith(OTHER_PREFIX)) {
+            return v.slice(OTHER_PREFIX.length).trim().length > 0;
+          }
+          return false;
+        });
+      },
+      {
+        message: 'Please enter text for the "Other" option or uncheck it',
+      }
+    );
+  }
+
   const baseSchema = z.array(z.enum(optionValues as [string, ...string[]]));
 
-  if (props.required) {
-    return baseSchema.min(1, {message: 'Please select at least one option'});
-  }
-
-  return baseSchema;
+  return props.required
+    ? baseSchema.min(1, {message: 'Please select at least one option'})
+    : baseSchema;
 };
 
 // ============================================================================
 // Field Registration
 // ============================================================================
 
-/**
- * Export a constant with the information required to register this field type
- */
 export const multiSelectFieldSpec: FieldInfo<FieldProps> = {
   namespace: 'faims-custom',
   name: 'MultiSelect',
