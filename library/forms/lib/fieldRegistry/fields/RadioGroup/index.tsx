@@ -273,21 +273,19 @@ const valueSchema = (props: RadioGroupFieldProps) => {
 
     if (props.required) {
       // add ed  a check to  must have a value AND if "Other" is selected, must have text
-      return baseSchema
-        .min(1, {message: 'Please select an option'})
-        .refine(
-          value => {
-            if (optionValues.includes(value)) return true;
-            if (value.startsWith(OTHER_PREFIX)) {
-              return value.slice(OTHER_PREFIX.length).trim().length > 0;
-            }
-            return false;
-          },
-          {
-            message:
-              'Please enter text for the "Other" option or select a different option',
+      return baseSchema.min(1, {message: 'Please select an option'}).refine(
+        value => {
+          if (optionValues.includes(value)) return true;
+          if (value.startsWith(OTHER_PREFIX)) {
+            return value.slice(OTHER_PREFIX.length).trim().length > 0;
           }
-        );
+          return false;
+        },
+        {
+          message:
+            'Please enter text for the "Other" option or select a different option',
+        }
+      );
     }
 
     return baseSchema.refine(

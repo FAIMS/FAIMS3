@@ -90,7 +90,10 @@ export const useOtherOption = ({
       setOtherSelected(true);
     }
     // Reset otherSelected when a predefined value is selected (for single-select)
-    if (!Array.isArray(rawValue) && predefinedValues.includes(rawValue as string)) {
+    if (
+      !Array.isArray(rawValue) &&
+      predefinedValues.includes(rawValue as string)
+    ) {
       setOtherSelected(false);
     }
   }, [hasStoredOtherValue, otherSelected, rawValue, predefinedValues]);

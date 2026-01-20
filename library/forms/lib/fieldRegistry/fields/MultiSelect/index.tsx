@@ -565,7 +565,7 @@ const valueSchema = (props: MultiSelectFieldProps) => {
         .min(1, {message: 'Please select at least one option'})
         .refine(
           values => {
-            // Aother values must have text for eg. - Other: text 
+            // Aother values must have text for eg. - Other: text
             return values.every(v => {
               if (optionValues.includes(v)) return true;
               if (v.startsWith(OTHER_PREFIX)) {
@@ -597,7 +597,6 @@ const valueSchema = (props: MultiSelectFieldProps) => {
     );
   }
 
-  
   const baseSchema = z.array(z.enum(optionValues as [string, ...string[]]));
 
   return props.required
