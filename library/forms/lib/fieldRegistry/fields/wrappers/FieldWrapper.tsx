@@ -244,7 +244,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           PaperProps={{
             sx: {
               borderRadius: 2,
-              p: 2,
+              p: 1,
               boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
               position: 'relative',
             },
@@ -257,7 +257,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
               paddingRight: 4,
             }}
           >
-            Field: {typeof heading === 'string' ? heading : null}
+            {heading}
             <IconButton
               onClick={() => setOpenDialog(false)}
               sx={{position: 'absolute', right: 16, top: 16}}
