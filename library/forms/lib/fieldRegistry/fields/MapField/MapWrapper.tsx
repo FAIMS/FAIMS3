@@ -36,6 +36,7 @@ import {
   useTheme,
 } from '@mui/material';
 import Button, {ButtonProps} from '@mui/material/Button';
+import {Feature} from 'ol';
 import {Extent} from 'ol/extent';
 import GeoJSON, {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import {Draw, Modify} from 'ol/interaction';
@@ -46,7 +47,7 @@ import {register} from 'ol/proj/proj4';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Icon, Stroke, Style} from 'ol/style';
 import proj4 from 'proj4';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {MapComponent} from '../../../components/maps/MapComponent';
 import {MapConfig} from '../../../components/maps/types';
 
@@ -66,6 +67,7 @@ interface MapProps extends ButtonProps {
   isLocationSelected: boolean;
   openMap?: () => void;
   disabled?: boolean;
+  allowSetToCurrentPoint?: boolean;
 }
 
 // define some EPSG codes - these are for two sample images
@@ -81,10 +83,50 @@ proj4.defs(
 );
 register(proj4);
 
+/** Builds the point layer which renders points as pins */
+const generatePointLayer = () => {
+  const vectorSource = new VectorSource();
+  // @TODO: RG - Stretch goal to show a popup on click of any point with lat-long info
+  // icon downloaded from https://freepngimg.com/png/66934-map-google-pin-icons-maps-computer-maker
+  const pinIcon = new Icon({
+    src: '/static/map-pin.png',
+    anchor: [0.5, 1],
+    scale: 0.25,
+  });
+
+  const fill = new Fill({
+    color: 'rgba(255,255,255,0.4)',
+  });
+  const stroke = new Stroke({
+    color: '#3399CC',
+    width: 2,
+  });
+  const pinStyle = new Style({
+    image: pinIcon,
+    fill,
+    stroke,
+  });
+
+  return new VectorLayer({
+    source: vectorSource,
+    style: pinStyle,
+  });
+};
+
 function MapWrapper(props: MapProps) {
   const [mapOpen, setMapOpen] = useState<boolean>(false);
   const [map, setMap] = useState<Map | undefined>();
-  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer>();
+  const [featuresLayer, setFeaturesLayer] = useState<VectorLayer | undefined>(
+    undefined
+  );
+
+  // Some callbacks need to track this and closures can get funky without stable
+  // reference
+  const featuresLayerRef = useRef<
+    VectorLayer<VectorSource<Feature>> | undefined
+  >(undefined);
+  const mapRef = useRef<Map | undefined>(undefined);
+
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
@@ -94,54 +136,40 @@ function MapWrapper(props: MapProps) {
   // draw interaction with pin mark added and scaled
   const addDrawInteraction = useCallback(
     (theMap: Map, props: MapProps) => {
-      const vectorSource = new VectorSource();
-      // @TODO: RG - Stretch goal to show a popup on click of any point with lat-long info
-      // icon downloaded from https://freepngimg.com/png/66934-map-google-pin-icons-maps-computer-maker
-      const pinIcon = new Icon({
-        src: '/static/map-pin.png',
-        anchor: [0.5, 1],
-        scale: 0.25,
-      });
+      // Build the new point layer (doesn't have any features yet)
+      const layer = generatePointLayer();
+      const source = layer.getSource();
 
-      const fill = new Fill({
-        color: 'rgba(255,255,255,0.4)',
-      });
-      const stroke = new Stroke({
-        color: '#3399CC',
-        width: 2,
-      });
-      const pinStyle = new Style({
-        image: pinIcon,
-        fill,
-        stroke,
-      });
+      // This should not happen
+      if (!source) {
+        console.error('No source found for features layer');
+        return;
+      }
 
-      const layer = new VectorLayer({
-        source: vectorSource,
-        style: pinStyle,
-      });
-
+      // Add the draw interaction
       const draw = new Draw({
-        source: vectorSource,
+        source: source,
         type: props.featureType || 'Point',
       });
-      const modify = new Modify({source: vectorSource});
+
+      const modify = new Modify({source: source});
 
       // Only allow one point at a time
       draw.on('drawstart', () => {
-        vectorSource.clear();
+        source.clear();
       });
 
+      // import any exiting features
       if (props.features && props.features.type) {
         const parsedFeatures = geoJson.readFeatures(props.features, {
           dataProjection: 'EPSG:4326',
           featureProjection: theMap.getView().getProjection(),
         });
-        vectorSource.addFeatures(parsedFeatures);
+        source.addFeatures(parsedFeatures);
 
         // pass the extent in the EPSG:4326 projection
         const extent = transformExtent(
-          vectorSource.getExtent(),
+          source.getExtent(),
           theMap.getView().getProjection(),
           'EPSG:4326'
         );
@@ -149,10 +177,12 @@ function MapWrapper(props: MapProps) {
         if (!extent.includes(Infinity)) setFeaturesExtent(extent);
       }
 
+      // Add layer to the map
       theMap.addLayer(layer);
       theMap.addInteraction(draw);
       theMap.addInteraction(modify);
       setFeaturesLayer(layer);
+      featuresLayerRef.current = layer;
     },
     [geoJson, setFeaturesExtent]
   );
@@ -194,7 +224,6 @@ function MapWrapper(props: MapProps) {
 
   // open map
   const handleClickOpen = () => {
-    console.log('MapWrapper: handleClickOpen', props.disabled);
     if (props.disabled) return;
     setMapOpen(true);
     setTimeout(() => {
@@ -215,9 +244,11 @@ function MapWrapper(props: MapProps) {
       }
     }, 300);
   };
+
   // always re-apply draw interaction if maps open.
   useEffect(() => {
     if (mapOpen && map) addDrawInteraction(map, props);
+    // NOTE: Adding addDrawInteraction causes infinite loop
   }, [mapOpen, map]);
 
   return (
@@ -412,10 +443,35 @@ function MapWrapper(props: MapProps) {
             <MapComponent
               config={props.config}
               key={mapOpen ? 'map-open' : 'map-closed'}
-              parentSetMap={setMap}
+              parentSetMap={m => {
+                setMap(m);
+                mapRef.current = m;
+              }}
               center={props.center}
               extent={featuresExtent}
               zoom={props.zoom}
+              additionalControls={{
+                // Add use current location control for points
+                setSelectionAsCurrentLocation:
+                  props.featureType === 'Point' && props.allowSetToCurrentPoint
+                    ? point => {
+                        const source = featuresLayerRef.current?.getSource();
+                        if (source) {
+                          source.clear();
+                          const feature = new Feature({
+                            geometry: point,
+                          });
+                          source.addFeature(feature);
+                        }
+                        // Center map on the point
+                        if (mapRef.current && point) {
+                          mapRef.current
+                            .getView()
+                            .setCenter(point.getCoordinates());
+                        }
+                      }
+                    : undefined,
+              }}
             />
           </Grid>
         </Dialog>

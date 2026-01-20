@@ -38,10 +38,11 @@ import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
-import {createCenterControl} from './center-control';
-import {createLayerToggle} from './layer-toggle';
+import {createCenterControl} from './controls/center-control';
+import {createLayerToggle} from './controls/layer-toggle';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
+import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -59,6 +60,13 @@ export interface MapComponentProps {
   center?: [number, number]; // in EPSG:4326
   extent?: Extent; // note that the extent should be in EPSG:4326, not in the map projection
   zoom?: number;
+
+  // Additional controls to embed into the map - with associated callbacks
+  additionalControls?: {
+    // Adds a button which, when current location is available, chooses this
+    // location
+    setSelectionAsCurrentLocation?: (point: Point) => void;
+  };
 }
 
 /**
@@ -166,7 +174,32 @@ export const MapComponent = (props: MapComponentProps) => {
       target: element,
       layers,
       view: view,
-      controls: [new Zoom()],
+      controls: [
+        new Zoom(),
+        // Only show this control if provided
+        ...(props.additionalControls?.setSelectionAsCurrentLocation
+          ? [
+              createSetPointToCurrentLocationControl({
+                setPoint: () => {
+                  if (liveLocationRef.current) {
+                    const coords = transform(
+                      [
+                        liveLocationRef.current.coords.longitude,
+                        liveLocationRef.current.coords.latitude,
+                      ],
+                      'EPSG:4326',
+                      defaultMapProjection
+                    );
+                    props.additionalControls!.setSelectionAsCurrentLocation!(
+                      new Point(coords)
+                    );
+                  }
+                },
+                isLocationAvailable: liveLocationRef.current !== null,
+              }),
+            ]
+          : []),
+      ],
     });
 
     // Add layer toggle if satellite is available
@@ -208,15 +241,32 @@ export const MapComponent = (props: MapComponentProps) => {
 
     // Watch real GPS position and update cursor when it changes
     Geolocation.watchPosition(
-      {enableHighAccuracy: true, timeout: 10000, maximumAge: 0}, // maximum age to avoid using cached position of the user.
+      // maximum age to avoid using cached position of the user.
+      {enableHighAccuracy: true, timeout: 10000, maximumAge: 0},
       (position, err) => {
         if (err) {
           console.warn('Geolocation error:', err.message || err);
+          // Emit location unavailable on error
+          window.dispatchEvent(
+            new CustomEvent('map-location-availability-change', {
+              detail: {isAvailable: false},
+            })
+          );
           return;
         }
         if (position) {
+          const wasUnavailable = liveLocationRef.current === null;
           liveLocationRef.current = position;
           liveCursor.updateCursorLocation(position);
+
+          // Emit location available when we first get a position
+          if (wasUnavailable) {
+            window.dispatchEvent(
+              new CustomEvent('map-location-availability-change', {
+                detail: {isAvailable: true},
+              })
+            );
+          }
         }
       }
     ).then(id => {
