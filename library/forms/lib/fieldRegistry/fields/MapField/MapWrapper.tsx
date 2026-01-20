@@ -118,11 +118,13 @@ function MapWrapper(props: MapProps) {
   const [featuresLayer, setFeaturesLayer] = useState<VectorLayer | undefined>(
     undefined
   );
+
   // Some callbacks need to track this and closures can get funky without stable
   // reference
   const featuresLayerRef = useRef<
     VectorLayer<VectorSource<Feature>> | undefined
   >(undefined);
+  const mapRef = useRef<Map | undefined>(undefined);
 
   const geoJson = new GeoJSON();
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
@@ -440,7 +442,10 @@ function MapWrapper(props: MapProps) {
             <MapComponent
               config={props.config}
               key={mapOpen ? 'map-open' : 'map-closed'}
-              parentSetMap={setMap}
+              parentSetMap={m => {
+                setMap(m);
+                mapRef.current = m;
+              }}
               center={props.center}
               extent={featuresExtent}
               zoom={props.zoom}
@@ -450,8 +455,6 @@ function MapWrapper(props: MapProps) {
                   props.featureType === 'Point'
                     ? {
                         setPoint(point) {
-                          // Clear existing features and add the current
-                          // location as the selected point
                           const source = featuresLayerRef.current?.getSource();
                           if (source) {
                             source.clear();
@@ -459,6 +462,12 @@ function MapWrapper(props: MapProps) {
                               geometry: point,
                             });
                             source.addFeature(feature);
+                          }
+                          // Center map on the point
+                          if (mapRef.current && point) {
+                            mapRef.current
+                              .getView()
+                              .setCenter(point.getCoordinates());
                           }
                         },
                       }
