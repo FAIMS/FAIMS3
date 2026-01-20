@@ -523,6 +523,7 @@ function MapWrapper(props: MapProps) {
                             geometry: point,
                           });
                           source.addFeature(feature);
+                          setHasDrawnFeatures(true);
                         }
                         // Center map on the point
                         if (mapRef.current && point) {
