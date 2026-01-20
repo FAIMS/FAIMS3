@@ -65,8 +65,8 @@ export interface MapComponentProps {
   additionalControls?: {
     // Adds a button which, when current location is available, chooses this
     // location
-    useCurrentLocation?: {
-      onClick: (point: Point) => void;
+    setSelectionAsCurrentLocation?: {
+      setPoint: (point: Point) => void;
     };
   };
 }
@@ -179,11 +179,11 @@ export const MapComponent = (props: MapComponentProps) => {
       controls: [
         new Zoom(),
         // Only show this control if provided
-        ...(props.additionalControls?.useCurrentLocation
+        ...(props.additionalControls?.setSelectionAsCurrentLocation
           ? [
               createUseCurrentLocationControl({
                 view,
-                onClick: () => {
+                setPoint: () => {
                   if (liveLocationRef.current) {
                     const coords = transform(
                       [
@@ -193,7 +193,7 @@ export const MapComponent = (props: MapComponentProps) => {
                       'EPSG:4326',
                       defaultMapProjection
                     );
-                    props.additionalControls!.useCurrentLocation!.onClick(
+                    props.additionalControls!.setSelectionAsCurrentLocation!.setPoint(
                       new Point(coords)
                     );
                   }

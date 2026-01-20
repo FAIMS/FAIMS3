@@ -10,7 +10,7 @@ export interface UseCurrentLocationOptions {
   /** The map view instance */
   view: View;
   /** Callback fired when the button is clicked */
-  onClick: () => void;
+  setPoint: () => void;
   /** Whether location is currently available */
   isLocationAvailable?: boolean;
 }
@@ -28,7 +28,7 @@ export interface UseCurrentLocationOptions {
  */
 export const createUseCurrentLocationControl = ({
   view,
-  onClick,
+  setPoint,
   isLocationAvailable = false,
 }: UseCurrentLocationOptions): Control => {
   // State
@@ -63,7 +63,7 @@ export const createUseCurrentLocationControl = ({
       console.warn('Current location is not available');
       return;
     }
-    onClick();
+    setPoint();
   };
 
   /**
