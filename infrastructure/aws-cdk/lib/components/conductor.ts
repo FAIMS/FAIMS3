@@ -176,21 +176,17 @@ export class FaimsConductor extends Construct {
     const authEnvironment: Record<string, string> = {};
     if (props.authProviders && props.authProviders.providers.length > 0) {
       const authSecret = sm.Secret.fromSecretCompleteArn(
-          this,
-          'AuthSecret',
-          props.authProviders.secretArn
-        );
-      props.authProviders.providers.forEach((provider) => {
+        this,
+        'AuthSecret',
+        props.authProviders.secretArn
+      );
+      props.authProviders.providers.forEach(provider => {
         const config = props.authProviders!.config[provider];
 
-        authSecrets[`AUTH_${provider}_CLIENT_ID`] = ecs.Secret.fromSecretsManager(
-            authSecret,
-            `${provider}.clientID`
-          )
-        authSecrets[`AUTH_${provider}_CLIENT_SECRET`] = ecs.Secret.fromSecretsManager(
-            authSecret,
-            `${provider}.clientSecret`
-          )
+        authSecrets[`AUTH_${provider}_CLIENT_ID`] =
+          ecs.Secret.fromSecretsManager(authSecret, `${provider}.clientID`);
+        authSecrets[`AUTH_${provider}_CLIENT_SECRET`] =
+          ecs.Secret.fromSecretsManager(authSecret, `${provider}.clientSecret`);
 
         // for each key in config, convert to an env variable (AUTH_ + provider + _ + key in uppercase)
         // and add to the environment
@@ -198,7 +194,8 @@ export class FaimsConductor extends Construct {
           const envName = `AUTH_${provider.toUpperCase()}_${key.toUpperCase()}`;
           authEnvironment[envName] = value.toString();
         }
-    });
+      });
+    }
 
     conductorTaskDfn.addContainer('conductor-container-dfn', {
       image: conductorContainerImage,

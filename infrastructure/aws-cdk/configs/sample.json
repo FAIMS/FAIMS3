@@ -113,8 +113,7 @@
       "google": {
         "type": "google",
         "index": 1,
-        "displayName": "Google",
-        "helperText": "Log in with your Google account."
+        "displayName": "Google"
       },
       "someOdcProvider": {
         "type": "oidc",

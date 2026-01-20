@@ -49,16 +49,26 @@ const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
   userInfoURL: z.string(),
 });
 
-const AuthProvidersConfigSchema = z.object({
-  providers: z.array(z.string()),
-  secretArn: z.string(),
-  config: z.record(
-    z.discriminatedUnion('type', [
-      GoogleAuthProviderConfigSchema,
-      OIDCAuthProviderConfigSchema,
-    ])
-  ),
-});
+const AuthProvidersConfigSchema = z
+  .object({
+    providers: z.array(z.string()),
+    secretArn: z.string(),
+    config: z.record(
+      z.discriminatedUnion('type', [
+        GoogleAuthProviderConfigSchema,
+        OIDCAuthProviderConfigSchema,
+      ])
+    ),
+  })
+  .refine(
+    data => {
+      // Ensure all providers listed in 'providers' have a corresponding config
+      return data.providers.every(provider => provider in data.config);
+    },
+    {
+      message: 'All providers must have a corresponding configuration entry',
+    }
+  );
 
 export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
 

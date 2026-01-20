@@ -65,7 +65,7 @@ pnpm i aws-cdk -g
 cdk bootstrap aws://123456789012/ap-southeast-2
 ```
 
-Or, use the installed copy of `aws-sdk` from the parent folder:
+Or, use the installed copy of `aws-cdk` from the parent folder:
 
 ```sh
 ./aws-cdk/node_modules/.bin/cdk bootstrap aws://123456789012/ap-southeast-2
@@ -112,7 +112,7 @@ The CDK deployment refers to a remote repository to manage configuration files. 
 
 In short, create a private repository, and create the following files/structure within it
 
-```
+```text
 .
 ├── infrastructure
 │   └── dev
@@ -123,7 +123,7 @@ In short, create a private repository, and create the following files/structure 
 
 Replacing `dev` with your proposed stage. There can be multiple stages, as in this example. I am going to deploy the `prod` stage.
 
-```
+```text
 .
 ├── infrastructure
 │   ├── dev
@@ -345,7 +345,7 @@ The above expression schedules a daily update at 3am - in combination with 30 da
 
 **Note** The backup vault you create here will not be deleted in the case of a failed
 deployment.  This will then result in future deployments failing because there is
-already a backup vault with this name.   You can remove the backup vault with the command:
+already a backup vault with this name.   You can remove the backup vault from the AWS console or with the command:
 
 ```sh
 aws backup delete-backup-vault \
@@ -443,11 +443,72 @@ Put in the public links to the iOS and Android apps, once they are deployed. I w
   },
 ```
 
+### Authentication Configuration
+
+By default only local authentication (email and password) is supported but additional
+identity providers can be configured.  Currently supported providers are Google and any
+OIDC compliant provider.
+
+To configure additional providers add the '"authProviders"' property to the production
+configuration.  The following example shows both Google and an OIDC provider:
+
+```json
+"authProviders": {
+    "providers": ["google", "someOdcProvider"],
+    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
+    "config": {
+      "google": {
+        "type": "google",
+        "index": 1,
+        "displayName": "Google",
+        "helperText": "Login with Google"
+      },
+      "someOdcProvider": {
+        "type": "oidc",
+        "index": 2,
+        "displayName": "OIDC Provider",
+        "helperText": "Log in with your organization's OIDC provider.",
+        "authorizationURL": "https://your-oidc-provider.com",
+        "tokenURL": "https://your-oidc-provider.com/token",
+        "userInfoURL": "https://your-oidc-provider.com/userinfo"
+      }
+    }
+  },
+```
+
+The `providers` property lists the providers to be configured; for each of these
+there must be a property in the `config` object containing the detailed configuration.
+
+The `secretArn` property contains the identity of an AWS Secret Manager secret containing
+the `clientID` and `clientSecret` for each provider (see [Creating Secrets](#creating-secrets)).
+For each provider you should include:
+
+```json
+"provider": {
+  "clientID": "your-client-id",
+  "clientSecret": "your-client-secret"
+}
+```
+
+where `provider` matches the provider name in your main configuration.
+
+The `config` property contains the detailed configuration for each provider. The `type`
+property determines what type of provider it is. We currently support `google` and `oidc`.
+
+There should only be one entry of type `google`.  The optional `index` property defines where this
+appears in the list of providers.  The `displayName` property will be used to title the
+login button (`Continue with XXX`).  The optional `helperText` property is a string that
+will be displayed below the login button.
+
+There can be more than one OIDC provider.  In addition to the properties there are three
+properties that configure the OIDC endpoint.
+
 ### SMTP Configuration
 
 As noted previously, you need to have an SMTP server configured to send email validations, password resets etc.
 
-First, gather your connection details, then create an AWS Secret Manager secret with the following template fields:
+First, gather your connection details, then create an AWS Secret Manager secret
+with the following content (see [Creating Secrets](#creating-secrets)).
 
 ```json
 {
@@ -459,22 +520,6 @@ First, gather your connection details, then create an AWS Secret Manager secret 
 }
 ```
 
-Create the secret with the above KVPs, and then copy the secret ARN.  For example, run the command:
-
-```sh
-aws secretsmanager create-secret \
-  --name faims-smtp-credentials-prod \
-  --description "SMTP credentials for FAIMS email service" \
-  --secret-string '{
-    "host": "host-url",
-    "port": "2525",
-    "secure": "false",
-    "user": "email@email.com",
-    "pass": "password"
-  }' \
-  --region ap-southeast-2
-```
-
 Include the secret ARN alongside other parameters in the config file:
 
 ```json
@@ -484,7 +529,68 @@ Include the secret ARN alongside other parameters in the config file:
     "replyTo": "support@your-domain.com",
     "testEmailAddress": "admin@your-domain.com",
     "cacheExpirySeconds": 300,
+    "credentialsSecretArn": "your secret arn"
 ```
+
+## Creating Secrets
+
+To manage the secrets for authentication and SMTP configurations there is a script `genSecrets.sh`
+which will create secrets in AWS Secrets Manager from a JSON configuration file. 
+
+First create a configuration file by copying `configs/secrets-sample.json`
+
+```json
+{
+  "faims-auth-credentials-prod": {
+    "google": {
+      "clientID": "your-google-client-id",
+      "clientSecret": "your-google-client-secret"
+    },
+    "someOdcProvider": {
+      "clientID": "your-oidc-client-id",
+      "clientSecret": "your-oidc-client-secret"
+    }
+  },
+  "faims-smtp-credentials-prod": {
+    "host": "host-url",
+    "port": "2525",
+    "secure": "false",
+    "user": "email@email.com",
+    "pass": "password"
+  }
+}
+```
+
+The top level properties in this file will be the names of the secrets created. The values of each property will be the value of the secret.  
+
+Run the script:
+
+```text
+Usage: ./scripts/genSecrets.sh <secrets_file> <region> [--replace]
+  <secrets_file>: Path to JSON file containing secrets
+  <region>: AWS region (e.g., us-east-1, ap-southeast-2)
+  [--replace]: Optional flag to replace existing secrets instead of aborting.
+```
+
+For example:
+
+```sh
+./scripts/genSecrets.sh configs/my-secrets.json ap-southeast-2
+```
+
+The script will show an error if the secrets already exist. In this case you can add the
+`--replace` flag to have it replace them with new secrets. 
+
+The script will show the details of the secrets created. Eg.
+
+```json
+{
+  "faims-auth-credentials-prod": "arn:aws:secretsmanager:ap-southeast-...",
+  "faims-smtp-credentials-prod": "arn:aws:secretsmanager:ap-southeast-..."
+}
+```
+
+You can then copy these into the appropriate places in your main configuration file.
 
 ## Deploying using your configuration
 
