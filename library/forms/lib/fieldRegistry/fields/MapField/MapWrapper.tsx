@@ -453,23 +453,21 @@ function MapWrapper(props: MapProps) {
                 // Add use current location control for points
                 setSelectionAsCurrentLocation:
                   props.featureType === 'Point'
-                    ? {
-                        setPoint(point) {
-                          const source = featuresLayerRef.current?.getSource();
-                          if (source) {
-                            source.clear();
-                            const feature = new Feature({
-                              geometry: point,
-                            });
-                            source.addFeature(feature);
-                          }
-                          // Center map on the point
-                          if (mapRef.current && point) {
-                            mapRef.current
-                              .getView()
-                              .setCenter(point.getCoordinates());
-                          }
-                        },
+                    ? point => {
+                        const source = featuresLayerRef.current?.getSource();
+                        if (source) {
+                          source.clear();
+                          const feature = new Feature({
+                            geometry: point,
+                          });
+                          source.addFeature(feature);
+                        }
+                        // Center map on the point
+                        if (mapRef.current && point) {
+                          mapRef.current
+                            .getView()
+                            .setCenter(point.getCoordinates());
+                        }
                       }
                     : undefined,
               }}

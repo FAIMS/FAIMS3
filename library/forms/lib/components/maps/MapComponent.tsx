@@ -42,7 +42,7 @@ import {createCenterControl} from './controls/center-control';
 import {createLayerToggle} from './controls/layer-toggle';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
-import {createUseCurrentLocationControl} from './controls/emitCurrentLocation';
+import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -65,9 +65,7 @@ export interface MapComponentProps {
   additionalControls?: {
     // Adds a button which, when current location is available, chooses this
     // location
-    setSelectionAsCurrentLocation?: {
-      setPoint: (point: Point) => void;
-    };
+    setSelectionAsCurrentLocation?: (point: Point) => void;
   };
 }
 
@@ -181,8 +179,7 @@ export const MapComponent = (props: MapComponentProps) => {
         // Only show this control if provided
         ...(props.additionalControls?.setSelectionAsCurrentLocation
           ? [
-              createUseCurrentLocationControl({
-                view,
+              createSetPointToCurrentLocationControl({
                 setPoint: () => {
                   if (liveLocationRef.current) {
                     const coords = transform(
@@ -193,7 +190,7 @@ export const MapComponent = (props: MapComponentProps) => {
                       'EPSG:4326',
                       defaultMapProjection
                     );
-                    props.additionalControls!.setSelectionAsCurrentLocation!.setPoint(
+                    props.additionalControls!.setSelectionAsCurrentLocation!(
                       new Point(coords)
                     );
                   }

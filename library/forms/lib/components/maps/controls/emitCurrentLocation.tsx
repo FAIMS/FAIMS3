@@ -6,9 +6,7 @@ import {CreateDomIcon} from '../dom-icon';
 /**
  * Configuration options for the UseCurrentLocation control
  */
-export interface UseCurrentLocationOptions {
-  /** The map view instance */
-  view: View;
+export interface SetPointToCurrentLocationProps {
   /** Callback fired when the button is clicked */
   setPoint: () => void;
   /** Whether location is currently available */
@@ -26,11 +24,10 @@ export interface UseCurrentLocationOptions {
  * @param options - Configuration options
  * @returns The custom control instance
  */
-export const createUseCurrentLocationControl = ({
-  view,
+export const createSetPointToCurrentLocationControl = ({
   setPoint,
   isLocationAvailable = false,
-}: UseCurrentLocationOptions): Control => {
+}: SetPointToCurrentLocationProps): Control => {
   // State
   let locationAvailable = isLocationAvailable;
 
