@@ -18,27 +18,36 @@
  *   Display an overview map of the records in the notebook.
  */
 
-import {ProjectID, ProjectUIModel, RecordMetadata} from '@faims3/data-model';
-import {Box, Grid, Popover} from '@mui/material';
+import {
+  DatabaseInterface,
+  DataDocument,
+  DataEngine,
+  MinimalRecordMetadata,
+  ProjectID,
+  ProjectUIModel,
+} from '@faims3/data-model';
+import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
+import {Alert, Box, CircularProgress, Grid, Popover} from '@mui/material';
+import {useQuery} from '@tanstack/react-query';
+import {Extent} from 'ol/extent';
 import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
+import {transformExtent} from 'ol/proj';
 import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Link} from 'react-router-dom';
-import * as ROUTES from '../../../constants/routes';
-import {MapComponent} from '@faims3/forms';
-import {Extent} from 'ol/extent';
-import {transformExtent} from 'ol/proj';
 import {getMapConfig} from '../../../buildconfig';
+import * as ROUTES from '../../../constants/routes';
+import {localGetDataDb} from '../../../utils/database';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
   project_id: ProjectID;
   serverId: string;
-  records: {allRecords: RecordMetadata[]};
+  records: {allRecords: MinimalRecordMetadata[]};
 }
 
 interface FeatureProps {
@@ -47,212 +56,365 @@ interface FeatureProps {
   revision_id: string;
 }
 
+interface GeoJSONFeature {
+  type: string;
+  geometry?: unknown;
+  properties?: FeatureProps;
+}
+
+interface FeatureCollection {
+  type: 'FeatureCollection';
+  features: GeoJSONFeature[];
+}
+
+/**
+ * Get the names of all GIS fields in a UI Specification
+ */
+const getGISFields = (uiSpec: ProjectUIModel): string[] => {
+  const fields = Object.getOwnPropertyNames(uiSpec.fields);
+  return fields.filter(
+    (field: string) =>
+      uiSpec.fields[field]['component-name'] === 'MapFormField' ||
+      uiSpec.fields[field]['component-name'] === 'TakePoint'
+  );
+};
+
 /**
  * Create an overview map of the records in the notebook.
- * Wrapped in memo to prevent re-rendering when nothing has changed.
- *
- * @param props {uiSpec, project_id}
  */
 export const OverviewMap = (props: OverviewMapProps) => {
+  const {uiSpec, project_id, serverId, records} = props;
+
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
   const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
 
+  // Track if we've added the layer to prevent duplicates
+  const layerAddedRef = useRef(false);
+  const vectorLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+
   const mapConfig = getMapConfig();
 
-  /**
-   * Get the names of all GIS fields in this UI Specification
-   * @param uiSpec UI specification for the project
-   * @returns
-   */
-  const getGISFields = () => {
-    const fields = Object.getOwnPropertyNames(props.uiSpec.fields);
-    return fields.filter(
-      (field: string) =>
-        props.uiSpec.fields[field]['component-name'] === 'MapFormField' ||
-        props.uiSpec.fields[field]['component-name'] === 'TakePoint'
-    );
-  };
-  const gisFields = useMemo(getGISFields, [props.uiSpec]);
+  // Memoize the data engine to prevent recreation on every render
+  const dataEngine = useMemo(() => {
+    const dataDb = localGetDataDb(project_id);
+    return new DataEngine({
+      dataDb: dataDb as DatabaseInterface<DataDocument>,
+      uiSpec: uiSpec,
+    });
+  }, [project_id, uiSpec]);
+
+  // Memoize GIS fields
+  const gisFields = useMemo(() => getGISFields(uiSpec), [uiSpec]);
 
   /**
-   * Extract all of the features from the records in the notebook that
-   * we will display on the map.  To be used in the useQuery hook below.
-   *
-   * @returns a FeatureProps object containing all of the features in the record
+   * Extract features from a single record for the given GIS fields
    */
-  const getFeatures = (records: any[], gisFields: string[]) => {
-    const f: FeatureProps[] = [];
-    if (gisFields.length > 0) {
-      if (records) {
-        records.forEach(record => {
-          if (record.data) {
-            gisFields.forEach((field: string) => {
-              // two options here, if it's a TakePoint field we'll have a single feature
-              // if it's a MapFormField we'll have an object with multiple features
-              if (record.data?.[field] && record.data[field].type) {
-                if (record.data[field].type === 'FeatureCollection') {
-                  record.data[field].features.forEach((feature: any) => {
-                    // add properties to the feature for display
-                    feature.properties = {
-                      name: record.hrid,
-                      record_id: record.record_id,
-                      revision_id: record.revision_id,
-                    };
-                    f.push(feature);
-                  });
-                } else {
-                  f.push({
-                    ...record.data[field],
-                    properties: {
-                      name: record.hrid,
-                      record_id: record.record_id,
-                      revision_id: record.revision_id,
-                    },
+  const extractFeaturesFromRecord = useCallback(
+    async (
+      record: MinimalRecordMetadata,
+      fields: string[]
+    ): Promise<GeoJSONFeature[]> => {
+      const features: GeoJSONFeature[] = [];
+
+      // TODO this is not optimal for efficiency
+      const revision = await dataEngine.core.getRevision(record.revisionId);
+
+      await Promise.all(
+        fields.map(async field => {
+          try {
+            const avpId = revision.avps[field];
+            if (!avpId) return;
+
+            const avpData = await dataEngine.core.getAvp(avpId);
+            const dataRaw = avpData?.data;
+            if (!dataRaw) return;
+
+            const {data: geoJson, success} =
+              GeoJSONFeatureOrCollectionSchema.safeParse(dataRaw);
+
+            if (!success) {
+              return;
+            }
+
+            const baseProperties: FeatureProps = {
+              // TODO bring back HRID - or maybe only on records we click on?
+              name: record.recordId,
+              record_id: record.recordId,
+              revision_id: record.revisionId,
+            };
+
+            if (geoJson.type === 'FeatureCollection') {
+              // Handle FeatureCollection with multiple features
+              geoJson.features?.forEach(feature => {
+                if (feature && feature.geometry) {
+                  features.push({
+                    ...feature,
+                    properties: baseProperties,
                   });
                 }
-              }
-            });
+              });
+            } else if (geoJson.type === 'Feature') {
+              // Handle single Feature or geometry object
+              features.push({
+                ...geoJson,
+                properties: baseProperties,
+              });
+            }
+          } catch (error) {
+            // Log but don't fail - skip this field/record combination
+            console.warn(
+              `Failed to extract GIS data for record ${record.recordId}, field ${field}:`,
+              error
+            );
           }
-        });
-      }
-    }
-    return {
-      type: 'FeatureCollection',
-      features: f,
-    };
-  };
+        })
+      );
 
-  const features = useMemo(() => {
-    return getFeatures(props.records.allRecords, gisFields);
-  }, [props.records.allRecords, gisFields]);
+      return features;
+    },
+    [dataEngine]
+  );
 
   /**
-   * Add the features to the map and set the map view to
-   * encompass the features.
-   *
-   * @param theMap OpenLayers map object
+   * Query function to fetch all features from all records
    */
-  const addFeaturesToMap = (theMap: Map) => {
-    const source = new VectorSource();
-    const geoJson = new GeoJSON();
+  const fetchAllFeatures = useCallback(async (): Promise<FeatureCollection> => {
+    if (gisFields.length === 0 || !records.allRecords?.length) {
+      return {type: 'FeatureCollection', features: []};
+    }
 
-    const layer = new VectorLayer({
-      source: source,
-      style: new Style({
-        stroke: new Stroke({
-          color: '#FF0000',
-          width: 4,
-        }),
-        image: new CircleStyle({
-          radius: 7,
-          fill: new Fill({color: '#FF0000'}),
-        }),
-      }),
-    });
+    // Process records in parallel with concurrency limit to avoid overwhelming the DB
+    const BATCH_SIZE = 10;
+    const allFeatures: GeoJSONFeature[] = [];
 
-    if (features && features.features.length > 0) {
-      const parsedFeatures = geoJson.readFeatures(features, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: theMap.getView().getProjection(),
-      });
-      source.addFeatures(parsedFeatures);
-
-      // set the view so that we can see the features
-      // but don't zoom too much
-      // this extent will be in the map projection, so need to transform to EPSG:4326
-      const extent = transformExtent(
-        source.getExtent(),
-        theMap.getView().getProjection(),
-        'EPSG:4326'
+    for (let i = 0; i < records.allRecords.length; i += BATCH_SIZE) {
+      const batch = records.allRecords.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.all(
+        batch.map(record => extractFeaturesFromRecord(record, gisFields))
       );
-      // don't set if the extent is infinite because it crashes
-      if (!extent.includes(Infinity)) {
-        setFeaturesExtent(extent);
+      allFeatures.push(...batchResults.flat());
+    }
+
+    return {
+      type: 'FeatureCollection',
+      features: allFeatures,
+    };
+  }, [gisFields, records.allRecords, extractFeaturesFromRecord]);
+
+  // Use React Query to manage the async feature fetching
+  const {
+    data: featureCollection,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: [
+      'overview-map-features',
+      project_id,
+      records.allRecords?.map(r => `${r.recordId}:${r.revisionId}`).join(','),
+      gisFields.join(','),
+    ],
+    queryFn: fetchAllFeatures,
+    enabled: gisFields.length > 0 && records.allRecords?.length > 0,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: 2,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
+  });
+
+  /**
+   * Add the features to the map and set the map view to encompass the features.
+   */
+  const addFeaturesToMap = useCallback(
+    (theMap: Map, features: FeatureCollection) => {
+      // Remove existing layer if present
+      if (vectorLayerRef.current) {
+        theMap.removeLayer(vectorLayerRef.current);
+        vectorLayerRef.current = null;
       }
-    }
 
-    theMap.addLayer(layer);
-  };
+      const source = new VectorSource();
+      const geoJson = new GeoJSON();
 
-  useEffect(() => {
-    // when we have features, add them to the map
-    if (features && map) {
-      addFeaturesToMap(map);
-
-      // add click handler for map features
-      map.on('click', evt => {
-        const feature = map.forEachFeatureAtPixel(
-          evt.pixel,
-          feature => {
-            // only return features that relate to records (not general map features)
-            if (feature.getProperties().record_id)
-              return feature.getProperties();
-          },
-          {
-            hitTolerance: 10,
-          }
-        );
-        if (!feature) {
-          return;
-        }
-        setSelectedFeature(feature as FeatureProps);
+      const layer = new VectorLayer({
+        source: source,
+        style: new Style({
+          stroke: new Stroke({
+            color: '#FF0000',
+            width: 4,
+          }),
+          image: new CircleStyle({
+            radius: 7,
+            fill: new Fill({color: '#FF0000'}),
+          }),
+        }),
       });
+
+      if (features.features.length > 0) {
+        try {
+          const parsedFeatures = geoJson.readFeatures(features, {
+            dataProjection: 'EPSG:4326',
+            featureProjection: theMap.getView().getProjection(),
+          });
+          source.addFeatures(parsedFeatures);
+
+          // Calculate and set extent
+          const sourceExtent = source.getExtent();
+          if (sourceExtent && !sourceExtent.some(val => !isFinite(val))) {
+            const extent = transformExtent(
+              sourceExtent,
+              theMap.getView().getProjection(),
+              'EPSG:4326'
+            );
+            if (!extent.some(val => !isFinite(val))) {
+              setFeaturesExtent(extent);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to parse GeoJSON features:', error);
+        }
+      }
+
+      theMap.addLayer(layer);
+      vectorLayerRef.current = layer;
+      layerAddedRef.current = true;
+    },
+    []
+  );
+
+  // Effect to add features to map when both are ready
+  useEffect(() => {
+    if (!map || !featureCollection || featureCollection.features.length === 0) {
+      return;
     }
-  }, [features, map]);
+
+    addFeaturesToMap(map, featureCollection);
+
+    // Click handler for map features
+    const handleClick = (evt: {pixel: number[]}) => {
+      const feature = map.forEachFeatureAtPixel(
+        evt.pixel,
+        olFeature => {
+          const props = olFeature.getProperties();
+          if (props.record_id) {
+            return props as FeatureProps;
+          }
+          return undefined;
+        },
+        {hitTolerance: 10}
+      );
+
+      if (feature) {
+        setSelectedFeature(feature);
+      }
+    };
+
+    map.on('click', handleClick);
+
+    // Cleanup
+    return () => {
+      map.un('click', handleClick);
+      if (vectorLayerRef.current) {
+        map.removeLayer(vectorLayerRef.current);
+        vectorLayerRef.current = null;
+      }
+      layerAddedRef.current = false;
+    };
+  }, [map, featureCollection, addFeaturesToMap]);
 
   const handlePopoverClose = () => {
     setSelectedFeature(null);
   };
 
+  // Render states
   if (gisFields.length === 0) {
-    return <Box>No GIS fields found.</Box>;
-  } else if (features?.features.length === 0) {
-    return <Box>No records with locations found.</Box>;
-  } else if (features === undefined) {
-    return <Box>Loading...</Box>;
-  } else
     return (
-      <Grid
-        container
-        spacing={2}
+      <Box sx={{p: 2}}>
+        <Alert severity="info">
+          No GIS fields found in this project's form definition.
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <Box
         sx={{
-          height: '600px',
-          width: '90vw',
-          marginTop: '20px',
-          marginLeft: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '400px',
+          gap: 2,
         }}
       >
-        <MapComponent
-          parentSetMap={setMap}
-          extent={featuresExtent}
-          config={mapConfig}
-        />
-        <Popover
-          open={!!selectedFeature}
-          onClose={handlePopoverClose}
-          anchorEl={map?.getTargetElement()}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-        >
-          {selectedFeature && (
-            <Box sx={{padding: '50px'}}>
-              <Link
-                to={ROUTES.getEditRecordRoute({
-                  serverId: props.serverId,
-                  projectId: props.project_id,
-                  recordId: selectedFeature.record_id,
-                })}
-              >
-                {selectedFeature.name}
-              </Link>
-            </Box>
-          )}
-        </Popover>
-      </Grid>
+        <CircularProgress size={24} />
+        <span>Loading map data...</span>
+      </Box>
     );
+  }
+
+  if (isError) {
+    return (
+      <Box sx={{p: 2}}>
+        <Alert severity="error">
+          Failed to load map data:{' '}
+          {error instanceof Error ? error.message : 'Unknown error'}
+        </Alert>
+      </Box>
+    );
+  }
+
+  if (!featureCollection || featureCollection.features.length === 0) {
+    return (
+      <Box sx={{p: 2}}>
+        <Alert severity="info">No records with location data found.</Alert>
+      </Box>
+    );
+  }
+
+  return (
+    <Grid
+      container
+      spacing={2}
+      sx={{
+        height: '600px',
+        width: '90vw',
+        marginTop: '20px',
+        marginLeft: '20px',
+      }}
+    >
+      <MapComponent
+        parentSetMap={setMap}
+        extent={featuresExtent}
+        config={mapConfig}
+      />
+      <Popover
+        open={!!selectedFeature}
+        onClose={handlePopoverClose}
+        anchorEl={map?.getTargetElement()}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+      >
+        {selectedFeature && (
+          <Box sx={{padding: '50px'}}>
+            <Link
+              to={ROUTES.getEditRecordRoute({
+                serverId: serverId,
+                projectId: project_id,
+                recordId: selectedFeature.record_id,
+              })}
+            >
+              {selectedFeature.name}
+            </Link>
+          </Box>
+        )}
+      </Popover>
+    </Grid>
+  );
 };

@@ -24,7 +24,7 @@ import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {z} from 'zod';
-import {VectorTileStore} from '../../../components';
+import {createTileStore} from '../../../components';
 import {defaultMapProjection} from '../../../components/maps/MapComponent';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
@@ -37,6 +37,7 @@ import MapWrapper, {MapAction} from './MapWrapper';
 const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
   featureType: z.enum(['Point', 'Polygon', 'LineString']).optional(),
+  allowSetToCurrentPoint: z.boolean().optional().default(false),
   geoTiff: z.string().optional(),
   projection: z.string().optional(),
   center: z.tuple([z.number(), z.number()]),
@@ -116,7 +117,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
       });
 
       // now work out if we have a stored map
-      const tileStore = new VectorTileStore(mapConfig);
+      const tileStore = createTileStore(mapConfig);
       return await tileStore.mapCacheIncludes(parsedFeatures);
     } else {
       return false;
@@ -230,6 +231,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
             setNoPermission={setNoPermission}
             isLocationSelected={isLocationSelected}
             disabled={props.disabled}
+            allowSetToCurrentPoint={props.allowSetToCurrentPoint}
           />
         )}
         <Box

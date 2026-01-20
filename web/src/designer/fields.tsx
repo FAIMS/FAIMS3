@@ -216,6 +216,7 @@ const fields: {[key: string]: FieldType} = {
       },
       ElementProps: {
         expandedChecklist: false,
+        enableOtherOption: false,
         options: [
           {value: 'Default', label: 'Default'},
           {value: 'Default2', label: 'Default2'},
@@ -242,6 +243,7 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
       ElementProps: {
+        enableOtherOption: false,
         options: [
           {value: '1', label: '1', RadioProps: {id: 'radio-group-field-1'}},
         ],
@@ -304,7 +306,10 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
       required: false,
-      ElementProps: {options: []},
+      ElementProps: {
+        enableOtherOption: false,
+        options: [],
+      },
     },
     initialValue: '',
     humanReadableName: 'Select Field',

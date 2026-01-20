@@ -21,16 +21,17 @@
  * - A subheading (help text) rendered using FieldWrapper.
  * - Toggle behavior: clicking a selected radio deselects it.
  * - Rich text labels: option labels support sanitized HTML content.
+ * - "Other" option: allows users to enter custom text beyond predefined choices.
  *
  * Props:
  * - label (string, optional): The field label displayed as a heading.
  * - helperText (string, optional): The field help text displayed below the heading.
- * - ElementProps (object): Contains the radio options array.
+ * - ElementProps (object): Contains the radio options array and enableOtherOption flag.
  * - required: To visually show if the field is required.
  * - disabled: Whether the field is disabled.
  */
 
-import {FormControlLabel} from '@mui/material';
+import {FormControlLabel, TextField} from '@mui/material';
 import FormControl from '@mui/material/FormControl';
 import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
@@ -40,6 +41,12 @@ import {DefaultRenderer} from '../../../rendering/fields/fallback';
 import {FieldInfo} from '../../types';
 import {contentToSanitizedHtml} from '../RichText/DomPurifier';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {
+  OTHER_MARKER,
+  OTHER_PREFIX,
+  otherTextFieldSx,
+  useOtherOption,
+} from '../../../hooks/useOtherOption';
 
 // ============================================================================
 // Types & Schema
@@ -54,6 +61,7 @@ const RadioOptionSchema = z.object({
 const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
     options: z.array(RadioOptionSchema),
+    enableOtherOption: z.boolean().optional(),
   }),
 });
 
@@ -68,6 +76,7 @@ type FieldProps = RadioGroupFieldProps & FullFieldProps;
 /**
  * RadioGroup Component - A reusable radio button group with form integration.
  * Supports toggle behavior where clicking a selected option deselects it.
+ * Supports "Other" option for custom text entry.
  */
 export const RadioGroup = (props: FieldProps) => {
   const {
@@ -82,16 +91,41 @@ export const RadioGroup = (props: FieldProps) => {
     ElementProps,
   } = props;
 
-  const value = (state.value?.data as string) ?? '';
+  const rawValue = (state.value?.data as string) ?? '';
+  const enableOtherOption = ElementProps.enableOtherOption ?? false;
+  const predefinedValues = ElementProps.options.map(opt => opt.value);
 
-  /**
-   * Handles changes in the selected radio button, allowing users to toggle selection.
-   * If a selected radio button is clicked again, it gets deselected (value is cleared).
-   */
+  const {setOtherSelected, hasOtherSelected, otherText, handleOtherTextChange} =
+    useOtherOption({
+      enableOtherOption,
+      rawValue,
+      predefinedValues,
+      setFieldData,
+    });
+
+  const displayValue = hasOtherSelected
+    ? OTHER_MARKER
+    : predefinedValues.includes(rawValue)
+      ? rawValue
+      : '';
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedValue = event.target.value;
-    const newValue = value === selectedValue ? null : selectedValue;
-    setFieldData(newValue);
+
+    if (selectedValue === OTHER_MARKER) {
+      if (hasOtherSelected) {
+        setOtherSelected(false);
+        setFieldData('');
+      } else {
+        // Store empty "Other: " so Zod can validate it
+        setOtherSelected(true);
+        setFieldData(OTHER_PREFIX);
+      }
+    } else {
+      setOtherSelected(false);
+      const newValue = displayValue === selectedValue ? '' : selectedValue;
+      setFieldData(newValue);
+    }
   };
 
   return (
@@ -104,7 +138,7 @@ export const RadioGroup = (props: FieldProps) => {
     >
       <FormControl>
         <MuiRadioGroup
-          value={value}
+          value={displayValue}
           onChange={handleChange}
           onBlur={handleBlur}
         >
@@ -144,9 +178,6 @@ export const RadioGroup = (props: FieldProps) => {
                   display: 'block',
                   marginTop: '0px',
                   alignSelf: 'flex-start',
-                  // markdown formatted text will be wrapped in a <p> tag
-                  // so we need to remove the default margin
-                  // and padding from the <p> tag
                   '& p': {
                     margin: 0,
                     padding: 0,
@@ -161,6 +192,58 @@ export const RadioGroup = (props: FieldProps) => {
               }}
             />
           ))}
+
+          {/* "Other" option with text field */}
+          {enableOtherOption && (
+            <FormControlLabel
+              value={OTHER_MARKER}
+              control={
+                <MuiRadio
+                  sx={{
+                    alignSelf: 'flex-start',
+                    paddingTop: '6px',
+                  }}
+                />
+              }
+              label={
+                <TextField
+                  size="small"
+                  placeholder="Other"
+                  value={otherText}
+                  onChange={e => {
+                    if (!hasOtherSelected && e.target.value.length > 0) {
+                      setOtherSelected(true);
+                    }
+                    handleOtherTextChange(e.target.value);
+                  }}
+                  onFocus={() => {
+                    if (!hasOtherSelected) {
+                      setOtherSelected(true);
+                    }
+                  }}
+                  onBlur={handleBlur}
+                  disabled={disabled}
+                  variant="standard"
+                  multiline
+                  sx={{
+                    minWidth: '200px',
+                    marginTop: '2px',
+                    ...otherTextFieldSx,
+                  }}
+                />
+              }
+              disabled={disabled}
+              sx={{
+                alignItems: 'flex-start',
+                marginBottom: 1,
+                '& .MuiFormControlLabel-label': {
+                  display: 'block',
+                  marginTop: '0px',
+                  alignSelf: 'flex-start',
+                },
+              }}
+            />
+          )}
         </MuiRadioGroup>
       </FormControl>
     </FieldWrapper>
@@ -173,6 +256,7 @@ export const RadioGroup = (props: FieldProps) => {
 
 const valueSchema = (props: RadioGroupFieldProps) => {
   const optionValues = props.ElementProps.options.map(option => option.value);
+  const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
 
   // Handle edge case of no options defined
   if (optionValues.length === 0) {
@@ -182,15 +266,48 @@ const valueSchema = (props: RadioGroupFieldProps) => {
     return z.union([z.string(), z.null()]);
   }
 
-  // Valid option values
   const optionsSchema = z.enum(optionValues as [string, ...string[]]);
 
+  if (enableOtherOption) {
+    const baseSchema = z.string();
+
+    if (props.required) {
+      // add ed  a check to  must have a value AND if "Other" is selected, must have text
+      return baseSchema.min(1, {message: 'Please select an option'}).refine(
+        value => {
+          if (optionValues.includes(value)) return true;
+          if (value.startsWith(OTHER_PREFIX)) {
+            return value.slice(OTHER_PREFIX.length).trim().length > 0;
+          }
+          return false;
+        },
+        {
+          message:
+            'Please enter text for the "Other" option or select a different option',
+        }
+      );
+    }
+
+    return baseSchema.refine(
+      value => {
+        if (value === '') return true;
+        if (optionValues.includes(value)) return true;
+        if (value.startsWith(OTHER_PREFIX)) {
+          return value.slice(OTHER_PREFIX.length).trim().length > 0;
+        }
+        return false;
+      },
+      {
+        message:
+          'Please enter text for the "Other" option or select a different option',
+      }
+    );
+  }
+
   if (props.required) {
-    // Required: must be one of the valid options
     return optionsSchema;
   }
 
-  // Optional: allow null or empty string for no selection
   return z.union([optionsSchema, z.null(), z.literal('')]);
 };
 
@@ -198,9 +315,6 @@ const valueSchema = (props: RadioGroupFieldProps) => {
 // Field Registration
 // ============================================================================
 
-/**
- * Export a constant with the information required to register this field type
- */
 export const radioGroupFieldSpec: FieldInfo<FieldProps> = {
   namespace: 'faims-custom',
   name: 'RadioGroup',

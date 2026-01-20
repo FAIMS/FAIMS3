@@ -5,6 +5,7 @@ export type MapConfig = {
   mapSource: string;
   mapSourceKey: string;
   mapStyle: MapStylesheetNameType;
+  satelliteSource?: 'esri' | 'maptiler';
 };
 
 /**
