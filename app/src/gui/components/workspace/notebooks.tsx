@@ -76,6 +76,7 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 
 // E.g. "You cannot currently de-activate a survey"
 export const DE_ACTIVATE_VERB = 'De-activate';
+export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
 export default function NoteBooks() {
   // get the active user - this will allow us to check roles against it
@@ -286,7 +287,9 @@ export default function NoteBooks() {
         fullWidth
       >
         <DialogTitle>
-          {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_CAPITALIZED}s
+          <Typography variant="h4">
+            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_CAPITALIZED}s
+          </Typography>
         </DialogTitle>
         <DialogContent>
           <Typography paragraph>
@@ -296,9 +299,9 @@ export default function NoteBooks() {
             with a stable internet connection.
           </Typography>
           <Typography paragraph>
-            <strong>"{DE_ACTIVATE_VERB}"</strong> a {NOTEBOOK_NAME} offloads
-            records from your device, to {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME}:
+            <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
+            offloads records from your device, to{' '}
+            {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:
           </Typography>
           <Typography component="div">
             <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
