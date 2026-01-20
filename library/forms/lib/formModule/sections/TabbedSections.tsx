@@ -689,8 +689,10 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
   }
 
   // Track the currently active section
-  const [activeSection, setActiveSection] = useState<string>(sections[0]);
-  const activeIndex = sections.indexOf(activeSection);
+  const [activeSection, setActiveSection] = useState<string>(
+    visibleSections[0] ?? sections[0]
+  );
+  const activeIndex = visibleSections.indexOf(activeSection);
 
   // Measure container width for responsive behaviour
   const containerRef = useRef<HTMLDivElement>(null);
@@ -739,6 +741,19 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
       }
     }
   }, []);
+
+  // Reset activeSection if it's no longer in visibleSections - this could
+  // happen if the visible sections update was debounced post user-navigation -
+  // edge case management
+  useEffect(() => {
+    if (
+      visibleSections.length > 0 &&
+      !visibleSections.includes(activeSection)
+    ) {
+      // Current section is no longer visible, navigate to the first visible section
+      setActiveSection(visibleSections[0]);
+    }
+  }, [visibleSections, activeSection]);
 
   /**
    * Marks all fields in the current section as touched and triggers validation.
@@ -827,8 +842,8 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
       const nextIndex =
         direction === 'next' ? activeIndex + 1 : activeIndex - 1;
 
-      if (nextIndex >= 0 && nextIndex < sections.length) {
-        setActiveSection(sections[nextIndex]);
+      if (nextIndex >= 0 && nextIndex < visibleSections.length) {
+        setActiveSection(visibleSections[nextIndex]);
 
         // Scroll to the top navigation header after section change
         // Use requestAnimationFrame to ensure the DOM has updated
@@ -837,7 +852,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         });
       }
     },
-    [activeIndex, handleSectionExit, sections]
+    [activeIndex, handleSectionExit, visibleSections]
   );
 
   // Check if the active section should be displayed
@@ -978,7 +993,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
             }}
           >
             <MobileNavigationStepper
-              totalSteps={sections.length}
+              totalSteps={visibleSections.length}
               activeStep={activeIndex}
               onStep={handleStep}
             />
@@ -1040,7 +1055,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
           }}
         >
           <MobileNavigationStepper
-            totalSteps={sections.length}
+            totalSteps={visibleSections.length}
             activeStep={activeIndex}
             onStep={handleStep}
           />
