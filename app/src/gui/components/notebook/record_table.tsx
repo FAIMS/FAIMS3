@@ -375,7 +375,7 @@ export function buildColumnsFromSummaryFields({
     filterable: false,
     flex: 1,
     valueGetter: params => {
-      const data = 'data' in params.row ? params.row.data ?? {} : {};
+      const data = 'data' in params.row ? (params.row.data ?? {}) : {};
       return getDisplayDataFromRecordMetadata({
         field,
         data: data,
@@ -1050,6 +1050,7 @@ const useRowHydration = (
           revisionId: undefined,
         });
       },
+      networkMode: 'always',
       staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     })),
   });
@@ -1188,13 +1189,28 @@ export function RecordsTable(props: RecordsTableProps) {
   // Handle row click - navigate to record view
   const handleRowClick = useCallback<GridEventListener<'rowClick'>>(
     params => {
-      history(
-        ROUTES.getViewRecordRoute({
+      // TODO note this is untidy - it's because we have lost typing here on the
+      // params.row - it can be either a record_id or recordId as the hydrated
+      // type RecordMetadata uses record_id, and the unhydrated type
+      // UnhydratedRecord uses recordId
+      let route = undefined;
+      if (params.row.recordId) {
+        route = ROUTES.getViewRecordRoute({
+          serverId,
+          projectId: project_id,
+          recordId: params.row.recordId,
+        });
+      } else if (params.row.record_id) {
+        route = ROUTES.getViewRecordRoute({
           serverId,
           projectId: project_id,
           recordId: params.row.record_id,
-        })
-      );
+        });
+      } else {
+        // do nothing in this case - there is an issue
+        return;
+      }
+      history(route);
     },
     [history, project_id, serverId]
   );
