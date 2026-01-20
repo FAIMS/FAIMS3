@@ -51,6 +51,8 @@ export type ComponentParameters = {
   FormLabelProps?: {children?: string};
   FormHelperTextProps?: {children?: string};
   FormControlLabelProps?: {label: string};
+  // default false
+  allowSetToCurrentPoint?: boolean;
   initialValue?: unknown;
   related_type?: string;
   hideCreateAnotherButton?: boolean;

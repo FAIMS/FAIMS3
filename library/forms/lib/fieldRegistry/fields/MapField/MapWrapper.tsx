@@ -67,6 +67,7 @@ interface MapProps extends ButtonProps {
   isLocationSelected: boolean;
   openMap?: () => void;
   disabled?: boolean;
+  allowSetToCurrentPoint?: boolean;
 }
 
 // define some EPSG codes - these are for two sample images
@@ -452,7 +453,7 @@ function MapWrapper(props: MapProps) {
               additionalControls={{
                 // Add use current location control for points
                 setSelectionAsCurrentLocation:
-                  props.featureType === 'Point'
+                  props.featureType === 'Point' && props.allowSetToCurrentPoint
                     ? point => {
                         const source = featuresLayerRef.current?.getSource();
                         if (source) {
