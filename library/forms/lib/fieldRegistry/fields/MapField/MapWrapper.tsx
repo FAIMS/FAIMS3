@@ -131,6 +131,14 @@ function MapWrapper(props: MapProps) {
   const [showConfirmSave, setShowConfirmSave] = useState<boolean>(false);
   const [featuresExtent, setFeaturesExtent] = useState<Extent>();
 
+  // Has the user drawn features?
+  const [hasDrawnFeatures, setHasDrawnFeatures] = useState<boolean>(false);
+
+  // Does the map have features already?
+  const hasExistingFeatures = !!(
+    props.features?.features && props.features.features.length > 0
+  );
+
   const theme = useTheme();
 
   // draw interaction with pin mark added and scaled
@@ -157,6 +165,10 @@ function MapWrapper(props: MapProps) {
       // Only allow one point at a time
       draw.on('drawstart', () => {
         source.clear();
+      });
+
+      draw.on('drawend', () => {
+        setHasDrawnFeatures(true);
       });
 
       // import any exiting features
@@ -194,6 +206,7 @@ function MapWrapper(props: MapProps) {
     const source = featuresLayer?.getSource();
 
     if (action === 'clear') {
+      setHasDrawnFeatures(false);
       source?.clear();
       return;
     }
@@ -225,6 +238,10 @@ function MapWrapper(props: MapProps) {
   // open map
   const handleClickOpen = () => {
     if (props.disabled) return;
+
+    // Reset this
+    setHasDrawnFeatures(false);
+
     setMapOpen(true);
     setTimeout(() => {
       if (map) {
@@ -346,6 +363,7 @@ function MapWrapper(props: MapProps) {
           <AppBar
             sx={{
               position: 'relative',
+              height: '50px',
               backgroundColor: theme.palette.background.default,
             }}
           >
@@ -432,6 +450,8 @@ function MapWrapper(props: MapProps) {
                       transform: 'scale(1.05)',
                     },
                   }}
+                  // Gray out when no features and hasn't drawn any
+                  disabled={!hasExistingFeatures && !hasDrawnFeatures}
                 >
                   Save
                 </Button>
@@ -440,6 +460,47 @@ function MapWrapper(props: MapProps) {
           </AppBar>
 
           <Grid container spacing={2} sx={{height: '100%'}}>
+            {/* Info Banner */}
+            <Box
+              sx={{
+                position: 'absolute',
+                top:
+                  props.featureType === 'Point' && props.allowSetToCurrentPoint
+                    ? '70px' // align properly
+                    : '68px',
+                left: 8,
+                // Account for the "Use Current Location" button if present
+                right:
+                  props.featureType === 'Point' && props.allowSetToCurrentPoint
+                    ? 70 // Leave space for the control button
+                    : 8,
+                zIndex: 1000,
+                backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                backdropFilter: 'blur(4px)',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.15)',
+                pointerEvents: 'none', // Allow clicks to pass through to map
+              }}
+            >
+              <Typography
+                variant="body2"
+                sx={{
+                  color: theme.palette.text.primary,
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                {props.featureType === 'Point'
+                  ? 'Click on the map to select a point.'
+                  : props.featureType === 'LineString'
+                    ? 'Click on the map for each segment of your line. Click twice on the final segment to complete your line.'
+                    : 'Click on the map for each corner of your shape, finishing where you started.'}
+              </Typography>
+            </Box>
+
             <MapComponent
               config={props.config}
               key={mapOpen ? 'map-open' : 'map-closed'}
