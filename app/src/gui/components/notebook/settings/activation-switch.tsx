@@ -15,7 +15,7 @@ import FaimsDialog from '../../ui/Faims_Dialog';
 import {
   ACTIVATE_ACTIVE_VERB_LABEL,
   ACTIVATE_VERB_LABEL,
-  ACTIVATED_LABEL,
+  DE_ACTIVATE_ACTIVE_VERB,
   DE_ACTIVATE_VERB,
 } from '../../workspace/notebooks';
 
@@ -77,34 +77,56 @@ export default function NotebookActivationSwitch({
       >
         <Box mb={2}>
           <Typography variant="body2" paragraph>
-            When a {NOTEBOOK_NAME_CAPITALIZED} is “{ACTIVATED_LABEL}” you are
-            safe to work offline at any point because all the data you collect
-            will be saved to your device. To {ACTIVATE_VERB_LABEL.toLowerCase()}{' '}
-            your {NOTEBOOK_NAME_CAPITALIZED}, click the "{ACTIVATE_VERB_LABEL}"
-            button below.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
+            ensures that you are safe to work offline at any point by
+            downloading any existing records onto your device. Please do this
+            with a stable internet connection.
           </Typography>
           <Typography variant="body2" paragraph>
-            <b>Warning</b>: {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME_CAPITALIZED} will start the downloading of existing
-            records onto your device. We recommend you complete this procedure
-            while you have a stable internet connection.
-            <br />
-            <br />
-            Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME}, this is something we will be adding soon. If you
-            need to make space on your device you can clear the application
-            storage or remove and reinstall the application.
+            <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
+            offloads records from your device, to{' '}
+            {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:
           </Typography>
-          {/*
-          <Typography variant="subtitle1" fontWeight="bold">
-            Deactivating a survey:
+          <Typography variant="body2" component="div">
+            <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
+              <li>
+                Select the {NOTEBOOK_NAME} you want to{' '}
+                {DE_ACTIVATE_VERB.toLowerCase()}
+              </li>
+              <li>
+                Ensure you are online, and all data in the {NOTEBOOK_NAME} has
+                been synced to the cloud
+              </li>
+              <li>
+                Click <strong>"Settings"</strong> tab (next to Map and Details
+                tabs)
+              </li>
+              <li>
+                Select the red{' '}
+                <strong>
+                  "{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"
+                </strong>{' '}
+                at the bottom
+                <Box sx={{mt: 1, mb: 0.5}}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    disableRipple
+                    sx={{
+                      pointerEvents: 'none',
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                      py: 0.5,
+                      px: 1,
+                    }}
+                  >
+                    {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+                  </Button>
+                </Box>
+              </li>
+            </ol>
           </Typography>
-          <Typography variant="body2">
-            • This can be helpful when you need to free up space on your device
-            and when you no longer need access to surveys or survey data
-            offline.
-          </Typography>
-            */}
         </Box>
       </FaimsDialog>
     </Box>
