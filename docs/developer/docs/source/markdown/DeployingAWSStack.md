@@ -345,7 +345,7 @@ The above expression schedules a daily update at 3am - in combination with 30 da
 
 **Note** The backup vault you create here will not be deleted in the case of a failed
 deployment.  This will then result in future deployments failing because there is
-already a backup vault with this name.   You can remove the backup vault from the AWS console or with the command:
+already a backup vault with this name.   You can remove the backup vault [from the AWS console](https://docs.aws.amazon.com/aws-backup/latest/devguide/create-a-vault.html#delete-a-vault) or, if there are no existing backup snapshots, with the command:
 
 ```sh
 aws backup delete-backup-vault \
@@ -484,10 +484,8 @@ the `clientID` and `clientSecret` for each provider (see [Creating Secrets](#cre
 For each provider you should include:
 
 ```json
-"provider": {
-  "clientID": "your-client-id",
-  "clientSecret": "your-client-secret"
-}
+  "provider-clientID": "your-client-id",
+  "provider-clientSecret": "your-client-secret"
 ```
 
 where `provider` matches the provider name in your main configuration.
@@ -535,21 +533,17 @@ Include the secret ARN alongside other parameters in the config file:
 ## Creating Secrets
 
 To manage the secrets for authentication and SMTP configurations there is a script `genSecrets.sh`
-which will create secrets in AWS Secrets Manager from a JSON configuration file. 
+which will create secrets in AWS Secrets Manager from a JSON configuration file.
 
 First create a configuration file by copying `configs/secrets-sample.json`
 
 ```json
 {
   "auth": {
-    "google": {
-      "clientID": "your-google-client-id",
-      "clientSecret": "your-google-client-secret"
-    },
-    "someOdcProvider": {
-      "clientID": "your-oidc-client-id",
-      "clientSecret": "your-oidc-client-secret"
-    }
+    "google-clientID": "your-google-client-id",
+    "google-clientSecret": "your-google-client-secret",
+    "someOidcProvider-clientID": "your-oidc-client-id",
+    "someOidcProvider-clientSecret": "your-oidc-client-secret"
   },
   "smtp": {
     "host": "host-url",
