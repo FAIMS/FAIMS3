@@ -280,6 +280,11 @@ export const OptionsEditor = ({
     field['component-parameters'].ElementProps?.exclusiveOptions || [];
   const enableOther =
     field['component-parameters'].ElementProps?.enableOtherOption ?? false;
+  const otherOptionPosition =
+    field['component-parameters'].ElementProps?.otherOptionPosition ??
+    options.length;
+
+  const totalItems = enableOther ? options.length + 1 : options.length;
 
   /**
    * Validates option text for duplicates and empty values
@@ -573,11 +578,39 @@ export const OptionsEditor = ({
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
       enableOtherOption: newValue,
+      // When enabling, set position to end of list; when disabling, cler r it
+      otherOptionPosition: newValue ? options.length : undefined,
     };
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
     });
+  };
+
+  /**
+   * Updates the position of the "Other" option
+   */
+  const updateOtherPosition = (newPosition: number) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    newField['component-parameters'].ElementProps = {
+      ...(newField['component-parameters'].ElementProps ?? {}),
+      otherOptionPosition: newPosition,
+    };
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
+
+  /**
+   * Moves the "Other" option up or down
+   */
+  const moveOtherOption = (direction: 'up' | 'down') => {
+    const currentPos = otherOptionPosition;
+    const newPos = direction === 'up' ? currentPos - 1 : currentPos + 1;
+    if (newPos >= 0 && newPos <= options.length) {
+      updateOtherPosition(newPos);
+    }
   };
 
   return (
@@ -769,95 +802,148 @@ export const OptionsEditor = ({
                       items={options.map(o => o.value)}
                       strategy={verticalListSortingStrategy}
                     >
-                      {options.map((option, index) => (
-                        <SortableItem
-                          key={option.value}
-                          id={option.value}
-                          option={option}
-                          index={index}
-                          showExclusiveOptions={showExclusiveOptions}
-                          exclusiveOptions={exclusiveOptions}
-                          onExclusiveToggle={handleExclusiveToggle}
-                          onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
-                          onRemove={removeOption}
-                          onMove={moveOption}
-                          totalItems={options.length}
-                        />
-                      ))}
+                      {/* Render options and "Other" in correct order based on otherOptionPosition */}
+                      {(() => {
+                        const rows: React.ReactNode[] = [];
+                        let optionIndex = 0;
+
+                        for (let i = 0; i <= options.length; i++) {
+                          // Render "Other" row at its position
+                          if (enableOther && i === otherOptionPosition) {
+                            rows.push(
+                              <TableRow
+                                key="__other__"
+                                sx={{
+                                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                                }}
+                              >
+                                {/* Drag handle column - visual only, not draggable */}
+                                <TableCell sx={{width: '40px', py: 1}}>
+                                  <IconButton
+                                    size="small"
+                                    sx={{
+                                      p: 0.5,
+                                      cursor: 'default',
+                                      opacity: 0.5,
+                                    }}
+                                    disabled
+                                  >
+                                    <DragIndicatorIcon />
+                                  </IconButton>
+                                </TableCell>
+
+                                {/* Option text column */}
+                                <TableCell sx={{py: 1}}>
+                                  <Tooltip title="Allows custom text input">
+                                    <Typography
+                                      noWrap
+                                      sx={{maxWidth: 400, fontSize: '0.875rem'}}
+                                    >
+                                      Other{' '}
+                                      <Typography
+                                        component="span"
+                                        sx={{
+                                          fontSize: '0.75rem',
+                                          color: 'rgba(0, 0, 0, 0.6)',
+                                        }}
+                                      >
+                                        (allows custom text input)
+                                      </Typography>
+                                    </Typography>
+                                  </Tooltip>
+                                </TableCell>
+
+                                {/* Empty exclusive checkbox column */}
+                                {showExclusiveOptions && (
+                                  <TableCell align="center" sx={{py: 1}} />
+                                )}
+
+                                {/* Action buttons */}
+                                <TableCell align="right" sx={{py: 1}}>
+                                  <Tooltip title="Move up">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        disabled={otherOptionPosition === 0}
+                                        onClick={() => moveOtherOption('up')}
+                                        sx={{p: 0.5}}
+                                      >
+                                        <ArrowDropUpRoundedIcon fontSize="large" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                  <Tooltip title="Move down">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        disabled={
+                                          otherOptionPosition === options.length
+                                        }
+                                        onClick={() => moveOtherOption('down')}
+                                        sx={{p: 0.5}}
+                                      >
+                                        <ArrowDropDownRoundedIcon fontSize="large" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                  <Tooltip title="Other option cannot be edited">
+                                    <span>
+                                      <IconButton
+                                        size="small"
+                                        disabled
+                                        sx={{p: 0.5}}
+                                      >
+                                        <EditIcon fontSize="small" />
+                                      </IconButton>
+                                    </span>
+                                  </Tooltip>
+                                  <Tooltip title="Remove 'Other' option">
+                                    <IconButton
+                                      size="small"
+                                      onClick={toggleEnableOtherOption}
+                                      sx={{p: 0.5}}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          }
+
+                          // Render regular option if we haven't reached the end
+                          if (optionIndex < options.length) {
+                            const option = options[optionIndex];
+                            // Calculate the visual index for the option (accounting for "Other" position)
+                            const visualIndex =
+                              enableOther && otherOptionPosition <= optionIndex
+                                ? optionIndex + 1
+                                : optionIndex;
+                            rows.push(
+                              <SortableItem
+                                key={option.value}
+                                id={option.value}
+                                option={option}
+                                index={optionIndex}
+                                showExclusiveOptions={showExclusiveOptions}
+                                exclusiveOptions={exclusiveOptions}
+                                onExclusiveToggle={handleExclusiveToggle}
+                                onEdit={(val, idx) =>
+                                  handleOpenEditDialog(val, idx)
+                                }
+                                onRemove={removeOption}
+                                onMove={moveOption}
+                                totalItems={options.length}
+                              />
+                            );
+                            optionIndex++;
+                          }
+                        }
+
+                        return rows;
+                      })()}
                     </SortableContext>
                   </DndContext>
-
-                  {/* "Other" option row - only shown when enabled */}
-                  {enableOther && (
-                    <TableRow
-                      sx={{
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                        borderTop: '2px solid rgba(0, 0, 0, 0.12)',
-                      }}
-                    >
-                      <TableCell sx={{width: '40px', py: 1.5}} />
-                      <TableCell sx={{py: 1.5}}>
-                        <Typography
-                          sx={{
-                            fontSize: '1rem',
-                            fontWeight: 700,
-                            color: 'rgba(0, 0, 0, 0.87)',
-                          }}
-                        >
-                          Other{' '}
-                          <Typography
-                            component="span"
-                            sx={{
-                              fontSize: '0.875rem',
-                              fontWeight: 400,
-                              color: 'rgba(0, 0, 0, 0.6)',
-                            }}
-                          >
-                            (Allow users to select “Other” and enter custom
-                            text)
-                          </Typography>
-                        </Typography>
-                      </TableCell>
-
-                      {/* Empty exclusive checkbox column */}
-                      {showExclusiveOptions && (
-                        <TableCell align="center" sx={{py: 1.5}} />
-                      )}
-                      {/* Action buttons - edit (disabled) and delete */}
-                      <TableCell align="right" sx={{py: 1.5}}>
-                        <IconButton
-                          size="small"
-                          disabled
-                          sx={{p: 0.5, visibility: 'hidden'}}
-                        >
-                          <ArrowDropUpRoundedIcon fontSize="large" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          disabled
-                          sx={{p: 0.5, visibility: 'hidden'}}
-                        >
-                          <ArrowDropDownRoundedIcon fontSize="large" />
-                        </IconButton>
-                        <Tooltip title="Other option cannot be edited">
-                          <span>
-                            <IconButton size="small" disabled sx={{p: 0.5}}>
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title="Remove 'Other' option">
-                          <IconButton
-                            size="small"
-                            onClick={toggleEnableOtherOption}
-                            sx={{p: 0.5}}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  )}
                 </TableBody>
               </Table>
             </TableContainer>

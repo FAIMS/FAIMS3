@@ -93,7 +93,7 @@ interface ExpandedChecklistProps {
   exclusiveOptions: string[];
   disabled?: boolean;
   enableOtherOption?: boolean;
-  otherOptionPosition?: number; // Position of "Other" in the list
+  otherOptionPosition?: number;
   otherText?: string;
   onOtherTextChange?: (text: string) => void;
   hasOtherSelected?: boolean;
@@ -268,7 +268,7 @@ interface MuiMultiSelectProps {
   disabled?: boolean;
   onBlur?: () => void;
   enableOtherOption?: boolean;
-  otherOptionPosition?: number; // Position of "Other" in the list
+  otherOptionPosition?: number;
   otherText?: string;
   onOtherTextChange?: (text: string) => void;
   hasOtherSelected?: boolean;

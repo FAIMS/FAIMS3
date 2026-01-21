@@ -62,7 +62,7 @@ const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
     options: z.array(RadioOptionSchema),
     enableOtherOption: z.boolean().optional(),
-    otherOptionPosition: z.number().optional(), // Position of "Other" in the list
+    otherOptionPosition: z.number().optional(), 
   }),
 });
 

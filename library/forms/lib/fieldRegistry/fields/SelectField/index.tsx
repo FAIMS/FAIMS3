@@ -63,8 +63,8 @@ const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
         key: z.string().optional(),
       })
     ),
-    enableOtherOption: z.boolean().optional(), // toggle to enable 'Other' option
-    otherOptionPosition: z.number().optional(), // Position of "Other" in the list
+    enableOtherOption: z.boolean().optional(),
+    otherOptionPosition: z.number().optional(),
   }),
   select_others: z.string().optional(),
 });
