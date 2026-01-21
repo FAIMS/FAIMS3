@@ -224,17 +224,14 @@ const ExpandedChecklist = ({
     />
   );
 
-  // Build items array with "Other" at correct position
   const renderItems = () => {
     const items: React.ReactNode[] = [];
     let optionIndex = 0;
 
     for (let i = 0; i <= options.length; i++) {
-      // Render "Other" at its position
       if (enableOtherOption && i === otherPosition) {
         items.push(renderOtherOption());
       }
-      // Render regular option
       if (optionIndex < options.length) {
         items.push(renderOption(options[optionIndex]));
         optionIndex++;
