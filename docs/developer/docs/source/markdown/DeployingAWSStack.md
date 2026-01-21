@@ -461,7 +461,8 @@ configuration.  The following example shows both Google and an OIDC provider:
         "type": "google",
         "index": 1,
         "displayName": "Google",
-        "helperText": "Login with Google"
+        "helperText": "Login with Google",
+        "scope": "profile,email,https://www.googleapis.com/auth/plus.login"
       },
       "someOdcProvider": {
         "type": "oidc",
@@ -470,7 +471,8 @@ configuration.  The following example shows both Google and an OIDC provider:
         "helperText": "Log in with your organization's OIDC provider.",
         "authorizationURL": "https://your-oidc-provider.com",
         "tokenURL": "https://your-oidc-provider.com/token",
-        "userInfoURL": "https://your-oidc-provider.com/userinfo"
+        "userInfoURL": "https://your-oidc-provider.com/userinfo",
+        "scope": "profile,email"
       }
     }
   },

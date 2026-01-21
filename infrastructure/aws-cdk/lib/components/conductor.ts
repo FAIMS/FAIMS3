@@ -191,7 +191,8 @@ export class FaimsConductor extends Construct {
         // for each key in config, convert to an env variable (AUTH_ + provider + _ + key in uppercase)
         // and add to the environment
         for (const [key, value] of Object.entries(config)) {
-          const envName = `AUTH_${provider.toUpperCase()}_${key.toUpperCase()}`;
+          const envName = `AUTH_${provider.toUpperCase()}_${camelToSnakeCase(key)}`;
+          console.log('ENV', envName, value);
           authEnvironment[envName] = value.toString();
         }
       });
@@ -410,3 +411,10 @@ export class FaimsConductor extends Construct {
     );
   }
 }
+
+const camelToSnakeCase = (str: string): string => {
+  return str
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .replace(/[\s-]+/g, '_')
+    .toUpperCase();
+};
