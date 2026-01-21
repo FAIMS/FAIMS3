@@ -121,6 +121,119 @@ interface SortableItemProps {
   totalItems: number;
 }
 
+const OTHER_OPTION_ID = '__other__';
+
+interface SortableOtherItemProps {
+  showExclusiveOptions?: boolean;
+  otherOptionPosition: number;
+  totalOptions: number;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}
+
+/**
+ * Sortable "Other" option row component
+ *  drag-and-drop functionality for the special "Other" option
+ */
+const SortableOtherItem = ({
+  showExclusiveOptions,
+  otherOptionPosition,
+  totalOptions,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: SortableOtherItemProps) => {
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id: OTHER_OPTION_ID});
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      sx={{
+        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+      }}
+    >
+      {/* Drag handle column */}
+      <TableCell sx={{width: '40px', py: 1}}>
+        <IconButton
+          size="small"
+          sx={{cursor: 'grab', p: 0.5}}
+          {...attributes}
+          {...listeners}
+        >
+          <DragIndicatorIcon />
+        </IconButton>
+      </TableCell>
+
+      <TableCell sx={{py: 1}}>
+        <Tooltip title="Allows custom text input">
+          <Typography noWrap sx={{maxWidth: 400, fontSize: '0.875rem'}}>
+            <strong>Other</strong>{' '}
+            <Typography
+              component="span"
+              sx={{
+                fontSize: '0.75rem',
+                color: 'rgba(0, 0, 0, 0.6)',
+              }}
+            >
+              (allows custom text input)
+            </Typography>
+          </Typography>
+        </Tooltip>
+      </TableCell>
+
+      {/* Empty exclusive checkbox column */}
+      {showExclusiveOptions && <TableCell align="center" sx={{py: 1}} />}
+
+      {/* Action buttons */}
+      <TableCell align="right" sx={{py: 1}}>
+        <Tooltip title="Move up">
+          <span>
+            <IconButton
+              size="small"
+              disabled={otherOptionPosition === 0}
+              onClick={onMoveUp}
+              sx={{p: 0.5}}
+            >
+              <ArrowDropUpRoundedIcon fontSize="large" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Move down">
+          <span>
+            <IconButton
+              size="small"
+              disabled={otherOptionPosition === totalOptions}
+              onClick={onMoveDown}
+              sx={{p: 0.5}}
+            >
+              <ArrowDropDownRoundedIcon fontSize="large" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Other option cannot be edited">
+          <span>
+            <IconButton size="small" disabled sx={{p: 0.5}}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Remove 'Other' option">
+          <IconButton size="small" onClick={onRemove} sx={{p: 0.5}}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </TableCell>
+    </TableRow>
+  );
+};
+
 /**
  * Individual sortable item row component for the options table
  * Handles drag-and-drop functionality and row actions
@@ -388,22 +501,61 @@ export const OptionsEditor = ({
 
   /**
    * Handles drag-and-drop reordering
+   * Supports both regular options and the special "Other" option
    */
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
 
-    // if we are over something - and the over id is not equal to the active id
-    // (i.e. we have moved)
-    if (over && active.id !== over.id) {
+    if (!over || active.id === over.id) return;
+
+    const isOtherActive = active.id === OTHER_OPTION_ID;
+    const isOtherOver = over.id === OTHER_OPTION_ID;
+
+    if (isOtherActive) {
+      // "Other" is being dragged - calculate new position
+      if (isOtherOver) return; // Dropped on itself
+
+      // Find where it was dropped relative to options
+      const overOptionIndex = options.findIndex(item => item.value === over.id);
+      if (overOptionIndex !== -1) {
+        // Determine if dropped before or after the target option
+        const newPosition =
+          overOptionIndex > otherOptionPosition
+            ? overOptionIndex
+            : overOptionIndex;
+        updateOtherPosition(newPosition);
+      }
+    } else if (isOtherOver) {
+      // A regular option is being dropped on "Other"
+      const activeOptionIndex = options.findIndex(
+        item => item.value === active.id
+      );
+      if (activeOptionIndex !== -1) {
+        // Move the option to where "Other" is
+        const newOptions = [...options];
+        const [movedItem] = newOptions.splice(activeOptionIndex, 1);
+
+        // Adjust position based on where "Other" is
+        const insertIndex =
+          activeOptionIndex < otherOptionPosition
+            ? otherOptionPosition - 1
+            : otherOptionPosition;
+        newOptions.splice(insertIndex, 0, movedItem);
+
+        updateField(newOptions, exclusiveOptions);
+      }
+    } else {
+      // Regular option to regular option - original behavior
       const oldIndex = options.findIndex(item => item.value === active.id);
       const newIndex = options.findIndex(item => item.value === over.id);
 
-      // Reorder options array
-      const newOptions = [...options];
-      const [movedItem] = newOptions.splice(oldIndex, 1);
-      newOptions.splice(newIndex, 0, movedItem);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOptions = [...options];
+        const [movedItem] = newOptions.splice(oldIndex, 1);
+        newOptions.splice(newIndex, 0, movedItem);
 
-      updateField(newOptions, exclusiveOptions);
+        updateField(newOptions, exclusiveOptions);
+      }
     }
   };
 
@@ -799,7 +951,10 @@ export const OptionsEditor = ({
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={options.map(o => o.value)}
+                      items={[
+                        ...options.map(o => o.value),
+                        ...(enableOther ? [OTHER_OPTION_ID] : []),
+                      ]}
                       strategy={verticalListSortingStrategy}
                     >
                       {/* Render options and "Other" in correct order based on otherOptionPosition */}
@@ -808,106 +963,18 @@ export const OptionsEditor = ({
                         let optionIndex = 0;
 
                         for (let i = 0; i <= options.length; i++) {
-                          // Render "Other" row at its position
+                          // Render "Other" row at its position using SortableOtherItem
                           if (enableOther && i === otherOptionPosition) {
                             rows.push(
-                              <TableRow
-                                key="__other__"
-                                sx={{
-                                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                }}
-                              >
-                                {/* Drag handle column - visual only, not draggable */}
-                                <TableCell sx={{width: '40px', py: 1}}>
-                                  <IconButton
-                                    size="small"
-                                    sx={{
-                                      p: 0.5,
-                                      cursor: 'default',
-                                      opacity: 0.5,
-                                    }}
-                                    disabled
-                                  >
-                                    <DragIndicatorIcon />
-                                  </IconButton>
-                                </TableCell>
-
-                                {/* Option text column */}
-                                <TableCell sx={{py: 1}}>
-                                  <Tooltip title="Allows custom text input">
-                                    <Typography
-                                      noWrap
-                                      sx={{maxWidth: 400, fontSize: '0.875rem'}}
-                                    >
-                                      Other{' '}
-                                      <Typography
-                                        component="span"
-                                        sx={{
-                                          fontSize: '0.75rem',
-                                          color: 'rgba(0, 0, 0, 0.6)',
-                                        }}
-                                      >
-                                        (allows custom text input)
-                                      </Typography>
-                                    </Typography>
-                                  </Tooltip>
-                                </TableCell>
-
-                                {/* Empty exclusive checkbox column */}
-                                {showExclusiveOptions && (
-                                  <TableCell align="center" sx={{py: 1}} />
-                                )}
-
-                                {/* Action buttons */}
-                                <TableCell align="right" sx={{py: 1}}>
-                                  <Tooltip title="Move up">
-                                    <span>
-                                      <IconButton
-                                        size="small"
-                                        disabled={otherOptionPosition === 0}
-                                        onClick={() => moveOtherOption('up')}
-                                        sx={{p: 0.5}}
-                                      >
-                                        <ArrowDropUpRoundedIcon fontSize="large" />
-                                      </IconButton>
-                                    </span>
-                                  </Tooltip>
-                                  <Tooltip title="Move down">
-                                    <span>
-                                      <IconButton
-                                        size="small"
-                                        disabled={
-                                          otherOptionPosition === options.length
-                                        }
-                                        onClick={() => moveOtherOption('down')}
-                                        sx={{p: 0.5}}
-                                      >
-                                        <ArrowDropDownRoundedIcon fontSize="large" />
-                                      </IconButton>
-                                    </span>
-                                  </Tooltip>
-                                  <Tooltip title="Other option cannot be edited">
-                                    <span>
-                                      <IconButton
-                                        size="small"
-                                        disabled
-                                        sx={{p: 0.5}}
-                                      >
-                                        <EditIcon fontSize="small" />
-                                      </IconButton>
-                                    </span>
-                                  </Tooltip>
-                                  <Tooltip title="Remove 'Other' option">
-                                    <IconButton
-                                      size="small"
-                                      onClick={toggleEnableOtherOption}
-                                      sx={{p: 0.5}}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                </TableCell>
-                              </TableRow>
+                              <SortableOtherItem
+                                key={OTHER_OPTION_ID}
+                                showExclusiveOptions={showExclusiveOptions}
+                                otherOptionPosition={otherOptionPosition}
+                                totalOptions={options.length}
+                                onMoveUp={() => moveOtherOption('up')}
+                                onMoveDown={() => moveOtherOption('down')}
+                                onRemove={toggleEnableOtherOption}
+                              />
                             );
                           }
 
