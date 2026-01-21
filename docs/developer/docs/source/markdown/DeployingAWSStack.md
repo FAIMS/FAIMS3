@@ -541,7 +541,7 @@ First create a configuration file by copying `configs/secrets-sample.json`
 
 ```json
 {
-  "faims-auth-credentials-prod": {
+  "auth": {
     "google": {
       "clientID": "your-google-client-id",
       "clientSecret": "your-google-client-secret"
@@ -551,7 +551,7 @@ First create a configuration file by copying `configs/secrets-sample.json`
       "clientSecret": "your-oidc-client-secret"
     }
   },
-  "faims-smtp-credentials-prod": {
+  "smtp": {
     "host": "host-url",
     "port": "2525",
     "secure": "false",
@@ -566,31 +566,23 @@ The top level properties in this file will be the names of the secrets created. 
 Run the script:
 
 ```text
-Usage: ./scripts/genSecrets.sh <secrets_file> <region> [--replace]
-  <secrets_file>: Path to JSON file containing secrets
-  <region>: AWS region (e.g., us-east-1, ap-southeast-2)
+Usage: ./scripts/genSecrets.sh <secrets_file> <config_file> [--replace]
+  <secrets_file>: Path to JSON file containing secrets (with 'auth' and 'smtp' keys)
+  <config_file>: Path to deployment configuration JSON file
   [--replace]: Optional flag to replace existing secrets instead of aborting.
 ```
 
 For example:
 
 ```sh
-./scripts/genSecrets.sh configs/my-secrets.json ap-southeast-2
+./scripts/genSecrets.sh configs/my-secrets.json configs/prod.json
 ```
 
 The script will show an error if the secrets already exist. In this case you can add the
-`--replace` flag to have it replace them with new secrets. 
+`--replace` flag to have it replace them with new secrets.
 
-The script will show the details of the secrets created. Eg.
-
-```json
-{
-  "faims-auth-credentials-prod": "arn:aws:secretsmanager:ap-southeast-...",
-  "faims-smtp-credentials-prod": "arn:aws:secretsmanager:ap-southeast-..."
-}
-```
-
-You can then copy these into the appropriate places in your main configuration file.
+The script will copy the resulting ARNs into the correct places in your main
+configuration file.
 
 ## Deploying using your configuration
 
