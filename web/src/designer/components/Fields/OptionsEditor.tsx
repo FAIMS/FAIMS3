@@ -518,12 +518,7 @@ export const OptionsEditor = ({
       // Find where it was dropped relative to options
       const overOptionIndex = options.findIndex(item => item.value === over.id);
       if (overOptionIndex !== -1) {
-        // Determine if dropped before or after the target option
-        const newPosition =
-          overOptionIndex > otherOptionPosition
-            ? overOptionIndex
-            : overOptionIndex;
-        updateOtherPosition(newPosition);
+        updateOtherPosition(overOptionIndex);
       }
     } else if (isOtherOver) {
       // A regular option is being dropped on "Other"
