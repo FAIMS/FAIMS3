@@ -183,9 +183,9 @@ export class FaimsConductor extends Construct {
       props.authProviders.providers.forEach(provider => {
         const config = props.authProviders!.config[provider];
 
-        authSecrets[`AUTH_${provider}_CLIENT_ID`] =
+        authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_ID`] =
           ecs.Secret.fromSecretsManager(authSecret, `${provider}.clientID`);
-        authSecrets[`AUTH_${provider}_CLIENT_SECRET`] =
+        authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`] =
           ecs.Secret.fromSecretsManager(authSecret, `${provider}.clientSecret`);
 
         // for each key in config, convert to an env variable (AUTH_ + provider + _ + key in uppercase)
