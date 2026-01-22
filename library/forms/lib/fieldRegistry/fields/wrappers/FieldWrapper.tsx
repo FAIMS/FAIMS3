@@ -117,7 +117,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             {heading}
             {required && (
               <span
-                data-testid="required-indicator" 
+                data-testid="required-indicator"
                 style={{
                   color: theme.palette.error.main,
                   marginLeft: 2,
@@ -150,6 +150,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                   sx={{
                     fontSize: '1.6rem',
                     strokeWidth: 0.8,
+                    color: theme.palette.secondary.main,
                   }}
                 />
               </IconButton>
