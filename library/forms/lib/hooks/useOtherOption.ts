@@ -101,18 +101,9 @@ export const useOtherOption = ({
   const handleOtherTextChange = (text: string) => {
     if (Array.isArray(rawValue)) {
       const predefined = rawValue.filter(v => predefinedValues.includes(v));
-      // Only store "Other: text" if there's actual text, otherwise just store predefined values
-      if (text.trim()) {
-        setFieldData([...predefined, createOtherValue(text)]);
-      } else {
-        setFieldData(predefined);
-      }
+      setFieldData([...predefined, createOtherValue(text)]);
     } else {
-      if (text.trim()) {
-        setFieldData(createOtherValue(text));
-      } else {
-        setFieldData('');
-      }
+      setFieldData(createOtherValue(text));
     }
   };
 

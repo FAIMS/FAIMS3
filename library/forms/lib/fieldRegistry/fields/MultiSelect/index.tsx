@@ -534,16 +534,12 @@ export const MultiSelect = (props: FieldProps) => {
 
       if (hasOtherMarker) {
         if (otherValues.length > 0) {
-          // Preserve existing "Other: xxx" value only if it has text
-          const otherWithText = otherValues.filter(
-            v => v.slice(OTHER_PREFIX.length).trim().length > 0
-          );
-          setFieldData([...realValues, ...otherWithText]);
+          // Preserve existing "Other: xxx" value
+          setFieldData([...realValues, ...otherValues]);
         } else {
-          // Don't store anything for "Other" when no text is entered
-          // The text field will handle storing the value when text is entered
+          // Store "Other: " prefix immediately so required validation passes
           setOtherSelected(true);
-          setFieldData(realValues);
+          setFieldData([...realValues, OTHER_PREFIX]);
         }
       } else {
         setOtherSelected(false);

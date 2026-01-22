@@ -404,8 +404,6 @@ export const OptionsEditor = ({
     field['component-parameters'].ElementProps?.otherOptionPosition ??
     options.length;
 
-  const totalItems = enableOther ? options.length + 1 : options.length;
-
   /**
    * made a combined list (options + other) in visual order.
    * This combined list is thee source of truth for sortable order.

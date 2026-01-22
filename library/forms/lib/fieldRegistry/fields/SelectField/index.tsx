@@ -163,9 +163,8 @@ export const Select = (props: FieldProps) => {
     const selected = event.target.value;
 
     if (selected === OTHER_MARKER) {
-      // Don't store anything when "Other" is selected without text
-      // The text field will handle storing the value when text is entered
-      props.setFieldData('');
+      // Store "Other: " prefix immediately so required validation passes
+      props.setFieldData(OTHER_PREFIX);
     } else {
       props.setFieldData(selected);
     }

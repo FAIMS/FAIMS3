@@ -120,10 +120,9 @@ export const RadioGroup = (props: FieldProps) => {
         setOtherSelected(false);
         setFieldData('');
       } else {
-        // Don't store anything when "Other" is selected without text
-        // The text field will handle storing the value when text is entered
+        // Store "Other: " prefix immediately so required validation passes
         setOtherSelected(true);
-        setFieldData('');
+        setFieldData(OTHER_PREFIX);
       }
     } else {
       setOtherSelected(false);
