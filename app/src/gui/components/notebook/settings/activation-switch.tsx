@@ -82,51 +82,6 @@ export default function NotebookActivationSwitch({
             downloading any existing records onto your device. Please do this
             with a stable internet connection.
           </Typography>
-          <Typography variant="body2" paragraph>
-            <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
-            offloads records from your device, to{' '}
-            {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:
-          </Typography>
-          <Typography variant="body2" component="div">
-            <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
-              <li>
-                Select the {NOTEBOOK_NAME} you want to{' '}
-                {DE_ACTIVATE_VERB.toLowerCase()}
-              </li>
-              <li>
-                Ensure you are online, and all data in the {NOTEBOOK_NAME} has
-                been synced to the cloud
-              </li>
-              <li>
-                Click <strong>"Settings"</strong> tab (next to Map and Details
-                tabs)
-              </li>
-              <li>
-                Select the red{' '}
-                <strong>
-                  "{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"
-                </strong>{' '}
-                at the bottom
-                <Box sx={{mt: 1, mb: 0.5}}>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    disableRipple
-                    sx={{
-                      pointerEvents: 'none',
-                      textTransform: 'uppercase',
-                      fontSize: '0.75rem',
-                      py: 0.5,
-                      px: 1,
-                    }}
-                  >
-                    {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
-                  </Button>
-                </Box>
-              </li>
-            </ol>
-          </Typography>
         </Box>
       </FaimsDialog>
     </Box>
