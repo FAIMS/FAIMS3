@@ -254,7 +254,7 @@ export default function NoteBooks() {
             fontSize: 'body2.fontSize',
           }}
         >
-          Learn more about activating {NOTEBOOK_NAME}s
+          Learn about activating/deactivating {NOTEBOOK_NAME}s
         </Button>
       </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
