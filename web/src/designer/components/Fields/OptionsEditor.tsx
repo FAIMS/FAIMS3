@@ -21,6 +21,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import {
+  arrayMove,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
@@ -123,7 +124,7 @@ interface SortableItemProps {
 
 const OTHER_OPTION_ID = '__other__';
 
-interface SortableOtherItemProps {
+interface OtherOptionRowProps {
   showExclusiveOptions?: boolean;
   otherOptionPosition: number;
   totalOptions: number;
@@ -133,39 +134,28 @@ interface SortableOtherItemProps {
 }
 
 /**
- * Sortable "Other" option row component
- *  drag-and-drop functionality for the special "Other" option
+ * "Other" option row component (non-draggable, uses arrow buttons for positioning)
  */
-const SortableOtherItem = ({
+const OtherOptionRow = ({
   showExclusiveOptions,
   otherOptionPosition,
   totalOptions,
   onMoveUp,
   onMoveDown,
   onRemove,
-}: SortableOtherItemProps) => {
-  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
-    useSortable({id: OTHER_OPTION_ID});
-
+}: OtherOptionRowProps) => {
   return (
     <TableRow
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
-      }}
       sx={{
         backgroundColor: 'rgba(0, 0, 0, 0.02)',
       }}
     >
-      {/* Drag handle column */}
+      {/* Empty drag handle column (Other uses arrow buttons instead) */}
       <TableCell sx={{width: '40px', py: 1}}>
         <IconButton
           size="small"
-          sx={{cursor: 'grab', p: 0.5}}
-          {...attributes}
-          {...listeners}
+          sx={{cursor: 'default', p: 0.5, opacity: 0.3}}
+          disabled
         >
           <DragIndicatorIcon />
         </IconButton>
@@ -500,92 +490,23 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Builds the visual order of items (options + Other) for SortableContext
-   * This ensures drag-and-drop works correctly by reflecting visual positions
-   */
-  const getSortableItems = (): string[] => {
-    if (!enableOther) {
-      return options.map(o => o.value);
-    }
-
-    const items: string[] = [];
-    let optIdx = 0;
-    for (let i = 0; i <= options.length; i++) {
-      if (i === otherOptionPosition) {
-        items.push(OTHER_OPTION_ID);
-      }
-      if (optIdx < options.length) {
-        items.push(options[optIdx].value);
-        optIdx++;
-      }
-    }
-    return items;
-  };
-
-  /**
-   * Handles drag-and-drop reordering
-   * Supports both regular options and the special "Other" option
+   * Handles drag-and-drop reordering for regular options only.
+   * "Other" option uses arrow buttons for positioning (not drag-and-drop).
    */
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
 
+    // Only handle drag if we have a valid drop target and it's different from source
     if (!over || active.id === over.id) return;
 
-    const isOtherActive = active.id === OTHER_OPTION_ID;
-    const isOtherOver = over.id === OTHER_OPTION_ID;
+    // Find indices in the options array (only regular options, not "Other")
+    const oldIndex = options.findIndex(item => item.value === active.id);
+    const newIndex = options.findIndex(item => item.value === over.id);
 
-    if (isOtherActive) {
-      // "Other" is being dragged
-      // Find the target option's index to determine new position
-      const overOptionIndex = options.findIndex(item => item.value === over.id);
-      if (overOptionIndex !== -1) {
-        // Place "Other" at this option's position
-        // If dragging down past this option, place after it
-        const visualOrder = getSortableItems();
-        const activeIdx = visualOrder.indexOf(active.id as string);
-        const overIdx = visualOrder.indexOf(over.id as string);
-
-        let newPosition: number;
-        if (activeIdx < overIdx) {
-          // Moving down - place after the target
-          newPosition = overOptionIndex + 1;
-        } else {
-          // Moving up - place at the target's position
-          newPosition = overOptionIndex;
-        }
-        newPosition = Math.max(0, Math.min(newPosition, options.length));
-        updateOtherPosition(newPosition);
-      }
-    } else if (isOtherOver) {
-      // Regular option is being dropped on "Other"
-      const activeOptionIndex = options.findIndex(
-        item => item.value === active.id
-      );
-      if (activeOptionIndex === -1) return;
-
-      // Move the option to where "Other" is
-      const newOptions = [...options];
-      const [movedItem] = newOptions.splice(activeOptionIndex, 1);
-
-      // Insert at otherOptionPosition (adjusted for removal)
-      let insertIndex = otherOptionPosition;
-      if (activeOptionIndex < otherOptionPosition) {
-        insertIndex = otherOptionPosition - 1;
-      }
-      insertIndex = Math.max(0, Math.min(insertIndex, newOptions.length));
-      newOptions.splice(insertIndex, 0, movedItem);
+    // Only proceed if both indices are valid and different
+    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+      const newOptions = arrayMove(options, oldIndex, newIndex);
       updateField(newOptions, exclusiveOptions);
-    } else {
-      // Regular option to regular option - standard swap
-      const oldIndex = options.findIndex(item => item.value === active.id);
-      const newIndex = options.findIndex(item => item.value === over.id);
-
-      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        const newOptions = [...options];
-        const [movedItem] = newOptions.splice(oldIndex, 1);
-        newOptions.splice(newIndex, 0, movedItem);
-        updateField(newOptions, exclusiveOptions);
-      }
     }
   };
 
@@ -981,7 +902,7 @@ export const OptionsEditor = ({
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={getSortableItems()}
+                      items={options.map(o => o.value)}
                       strategy={verticalListSortingStrategy}
                     >
                       {/* Render options and "Other" in correct order based on otherOptionPosition */}
@@ -990,10 +911,10 @@ export const OptionsEditor = ({
                         let optionIndex = 0;
 
                         for (let i = 0; i <= options.length; i++) {
-                          // Render "Other" row at its position using SortableOtherItem
+                          // Render "Other" row at its position (non-draggable)
                           if (enableOther && i === otherOptionPosition) {
                             rows.push(
-                              <SortableOtherItem
+                              <OtherOptionRow
                                 key={OTHER_OPTION_ID}
                                 showExclusiveOptions={showExclusiveOptions}
                                 otherOptionPosition={otherOptionPosition}
