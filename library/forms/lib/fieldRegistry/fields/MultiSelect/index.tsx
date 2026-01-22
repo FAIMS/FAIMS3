@@ -534,12 +534,16 @@ export const MultiSelect = (props: FieldProps) => {
 
       if (hasOtherMarker) {
         if (otherValues.length > 0) {
-          // Preserve existing "Other: xxx" value
-          setFieldData([...realValues, ...otherValues]);
+          // Preserve existing "Other: xxx" value only if it has text
+          const otherWithText = otherValues.filter(
+            v => v.slice(OTHER_PREFIX.length).trim().length > 0
+          );
+          setFieldData([...realValues, ...otherWithText]);
         } else {
-          // Store empty "Other: " so Zod can validate it
+          // Don't store anything for "Other" when no text is entered
+          // The text field will handle storing the value when text is entered
           setOtherSelected(true);
-          setFieldData([...realValues, OTHER_PREFIX]);
+          setFieldData(realValues);
         }
       } else {
         setOtherSelected(false);
@@ -620,34 +624,29 @@ const valueSchema = (props: MultiSelectFieldProps) => {
         .min(1, {message: 'Please select at least one option'})
         .refine(
           values => {
-            // Aother values must have text for eg. - Other: text
             return values.every(v => {
               if (optionValues.includes(v)) return true;
-              if (v.startsWith(OTHER_PREFIX)) {
-                return v.slice(OTHER_PREFIX.length).trim().length > 0;
-              }
+              // accept any "Other: " value, even if empty
+              if (v.startsWith(OTHER_PREFIX)) return true;
               return false;
             });
           },
           {
-            message: 'Please enter text for the "Other" option or uncheck it',
+            message: 'Please select valid options',
           }
         );
     }
 
-    //  vaalidate "Other" values have text if present
     return baseSchema.refine(
       values => {
         return values.every(v => {
           if (optionValues.includes(v)) return true;
-          if (v.startsWith(OTHER_PREFIX)) {
-            return v.slice(OTHER_PREFIX.length).trim().length > 0;
-          }
+          if (v.startsWith(OTHER_PREFIX)) return true;
           return false;
         });
       },
       {
-        message: 'Please enter text for the "Other" option or uncheck it',
+        message: 'Please select valid options',
       }
     );
   }

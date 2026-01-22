@@ -120,9 +120,10 @@ export const RadioGroup = (props: FieldProps) => {
         setOtherSelected(false);
         setFieldData('');
       } else {
-        // Store empty "Other: " so Zod can validate it
+        // Don't store anything when "Other" is selected without text
+        // The text field will handle storing the value when text is entered
         setOtherSelected(true);
-        setFieldData(OTHER_PREFIX);
+        setFieldData('');
       }
     } else {
       setOtherSelected(false);
@@ -298,18 +299,15 @@ const valueSchema = (props: RadioGroupFieldProps) => {
     const baseSchema = z.string();
 
     if (props.required) {
-      // add ed  a check to  must have a value AND if "Other" is selected, must have text
       return baseSchema.min(1, {message: 'Please select an option'}).refine(
         value => {
           if (optionValues.includes(value)) return true;
-          if (value.startsWith(OTHER_PREFIX)) {
-            return value.slice(OTHER_PREFIX.length).trim().length > 0;
-          }
+          // accept any "Other: " value, even if empty
+          if (value.startsWith(OTHER_PREFIX)) return true;
           return false;
         },
         {
-          message:
-            'Please enter text for the "Other" option or select a different option',
+          message: 'Please select an option',
         }
       );
     }
@@ -318,14 +316,12 @@ const valueSchema = (props: RadioGroupFieldProps) => {
       value => {
         if (value === '') return true;
         if (optionValues.includes(value)) return true;
-        if (value.startsWith(OTHER_PREFIX)) {
-          return value.slice(OTHER_PREFIX.length).trim().length > 0;
-        }
+        // a ccept any "Other: " value, even if empty
+        if (value.startsWith(OTHER_PREFIX)) return true;
         return false;
       },
       {
-        message:
-          'Please enter text for the "Other" option or select a different option',
+        message: 'Please select a valid option',
       }
     );
   }
