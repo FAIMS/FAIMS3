@@ -322,7 +322,7 @@ export default function NoteBooks() {
                 <strong>
                   "{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"
                 </strong>{' '}
-                at the bottom
+                at the bottom that looks like the following:
                 <Box sx={{mt: 1, mb: 0.5}}>
                   <Button
                     variant="outlined"

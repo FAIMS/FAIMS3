@@ -79,8 +79,9 @@ export default function NotebookActivationSwitch({
           <Typography variant="body2" paragraph>
             <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
             ensures that you are safe to work offline at any point by
-            downloading any existing records onto your device. Please do this
-            with a stable internet connection.
+            downloading any existing records onto your device.
+            <br />
+            <strong>Please do this with a stable internet connection.</strong>
           </Typography>
         </Box>
       </FaimsDialog>
