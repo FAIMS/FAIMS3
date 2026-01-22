@@ -500,6 +500,29 @@ export const OptionsEditor = ({
   };
 
   /**
+   * Builds the visual order of items (options + Other) for SortableContext
+   * This ensures drag-and-drop works correctly by reflecting visual positions
+   */
+  const getSortableItems = (): string[] => {
+    if (!enableOther) {
+      return options.map(o => o.value);
+    }
+
+    const items: string[] = [];
+    let optIdx = 0;
+    for (let i = 0; i <= options.length; i++) {
+      if (i === otherOptionPosition) {
+        items.push(OTHER_OPTION_ID);
+      }
+      if (optIdx < options.length) {
+        items.push(options[optIdx].value);
+        optIdx++;
+      }
+    }
+    return items;
+  };
+
+  /**
    * Handles drag-and-drop reordering
    * Supports both regular options and the special "Other" option
    */
@@ -508,49 +531,63 @@ export const OptionsEditor = ({
 
     if (!over || active.id === over.id) return;
 
+    // Get the current visual order of all items
+    const visualOrder = getSortableItems();
+    const activeVisualIndex = visualOrder.indexOf(active.id as string);
+    const overVisualIndex = visualOrder.indexOf(over.id as string);
+
+    if (activeVisualIndex === -1 || overVisualIndex === -1) return;
+
     const isOtherActive = active.id === OTHER_OPTION_ID;
-    const isOtherOver = over.id === OTHER_OPTION_ID;
 
     if (isOtherActive) {
-      // "Other" is being dragged - calculate new position
-      if (isOtherOver) return; // Dropped on itself
-
-      // Find where it was dropped relative to options
-      const overOptionIndex = options.findIndex(item => item.value === over.id);
-      if (overOptionIndex !== -1) {
-        updateOtherPosition(overOptionIndex);
+      // "Other" is being dragged - calculate new position based on visual index
+      // The new position is where "Other" should appear in the visual list
+      // which translates to an option index
+      let newPosition: number;
+      if (overVisualIndex <= otherOptionPosition) {
+        // Moving up or to same spot
+        newPosition = overVisualIndex;
+      } else {
+        // Moving down
+        newPosition = overVisualIndex;
       }
-    } else if (isOtherOver) {
-      // A regular option is being dropped on "Other"
+      // Clamp to valid range
+      newPosition = Math.max(0, Math.min(newPosition, options.length));
+      updateOtherPosition(newPosition);
+    } else {
+      // Regular option is being dragged
       const activeOptionIndex = options.findIndex(
         item => item.value === active.id
       );
-      if (activeOptionIndex !== -1) {
-        // Move the option to where "Other" is
-        const newOptions = [...options];
-        const [movedItem] = newOptions.splice(activeOptionIndex, 1);
 
-        // Adjust position based on where "Other" is
-        const insertIndex =
-          activeOptionIndex < otherOptionPosition
-            ? otherOptionPosition - 1
-            : otherOptionPosition;
-        newOptions.splice(insertIndex, 0, movedItem);
+      if (activeOptionIndex === -1) return;
 
-        updateField(newOptions, exclusiveOptions);
+      // Calculate target position in options array based on visual positions
+      // We need to figure out where in the options array this item should go
+      const newOptions = [...options];
+      const [movedItem] = newOptions.splice(activeOptionIndex, 1);
+
+      // Count how many regular options come before the target visual position
+      let targetOptionIndex = 0;
+      for (let i = 0; i < overVisualIndex; i++) {
+        if (visualOrder[i] !== OTHER_OPTION_ID) {
+          targetOptionIndex++;
+        }
       }
-    } else {
-      // Regular option to regular option - original behavior
-      const oldIndex = options.findIndex(item => item.value === active.id);
-      const newIndex = options.findIndex(item => item.value === over.id);
 
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOptions = [...options];
-        const [movedItem] = newOptions.splice(oldIndex, 1);
-        newOptions.splice(newIndex, 0, movedItem);
-
-        updateField(newOptions, exclusiveOptions);
+      // If we're moving down (activeVisualIndex < overVisualIndex),
+      // we need to adjust because removing the item shifts indices
+      if (activeVisualIndex < overVisualIndex) {
+        // Don't count the item we're moving
+        targetOptionIndex = Math.max(0, targetOptionIndex - 1);
       }
+
+      // Ensure index is within bounds
+      targetOptionIndex = Math.min(targetOptionIndex, newOptions.length);
+
+      newOptions.splice(targetOptionIndex, 0, movedItem);
+      updateField(newOptions, exclusiveOptions);
     }
   };
 
@@ -946,10 +983,7 @@ export const OptionsEditor = ({
                     onDragEnd={handleDragEnd}
                   >
                     <SortableContext
-                      items={[
-                        ...options.map(o => o.value),
-                        ...(enableOther ? [OTHER_OPTION_ID] : []),
-                      ]}
+                      items={getSortableItems()}
                       strategy={verticalListSortingStrategy}
                     >
                       {/* Render options and "Other" in correct order based on otherOptionPosition */}
