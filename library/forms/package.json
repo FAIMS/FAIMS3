@@ -47,7 +47,7 @@
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
     "dompurify": "^3.2.4",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "markdown-it": "^14.1.0",
     "mustache": "^4.2.0",
     "proj4": "^2.9.0",
