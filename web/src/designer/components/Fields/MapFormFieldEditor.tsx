@@ -32,6 +32,7 @@ type FieldState = {
   featureType: string;
   zoom: number;
   allowSetToCurrentPoint: boolean;
+  buttonLabelText: string;
 };
 
 export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
@@ -44,6 +45,8 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
   const initFeatureType = field['component-parameters'].featureType;
   const initAllowSetToCurrentPoint =
     field['component-parameters'].allowSetToCurrentPoint ?? false;
+  const initButtonLabelText =
+    field['component-parameters'].buttonLabelText ?? '';
 
   const updateField = (fieldName: string, newField: FieldType) => {
     dispatch({
@@ -57,6 +60,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
     zoom: field['component-parameters'].zoom || 0,
     allowSetToCurrentPoint:
       field['component-parameters'].allowSetToCurrentPoint ?? false,
+    buttonLabelText: field['component-parameters'].buttonLabelText ?? '',
   };
 
   const updateFieldFromState = (newState: FieldState) => {
@@ -68,6 +72,13 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
       newState.featureType === 'Point'
         ? newState.allowSetToCurrentPoint
         : false;
+    // Store buttonLabelText, or remove if empty
+    if (newState.buttonLabelText.trim()) {
+      newField['component-parameters'].buttonLabelText =
+        newState.buttonLabelText;
+    } else {
+      delete newField['component-parameters'].buttonLabelText;
+    }
     updateField(fieldName, newField);
   };
 
@@ -110,6 +121,18 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                   <MenuItem value="LineString">LineString</MenuItem>
                 </Select>
               </FormControl>
+            </Grid>
+            <Grid item sm={6} xs={12}>
+              <DebouncedTextField
+                variant="outlined"
+                label="Button Label Text"
+                value={initButtonLabelText}
+                placeholder="Leave empty to use field label"
+                onChange={e =>
+                  updateProperty('buttonLabelText', e.target.value)
+                }
+                helperText="Custom text for the location button. If empty, the field label will be used."
+              />
             </Grid>
             {initFeatureType === 'Point' && (
               <Grid item xs={12}>

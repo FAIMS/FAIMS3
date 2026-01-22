@@ -273,43 +273,45 @@ function MapWrapper(props: MapProps) {
       <div>
         {!props.isLocationSelected ? (
           <Button
-            variant="contained"
             fullWidth
+            variant="contained"
             disabled={props.disabled}
             onClick={handleClickOpen}
             sx={{
               width: {xs: '100%', sm: '50%', md: '40%'},
-              maxWidth: '450px',
+              maxWidth: {xs: '100%', sm: '300px'},
               backgroundColor: theme.palette.primary.main,
               color: theme.palette.background.default,
-              padding: '12px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              borderRadius: '12px',
-              boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-              transition: 'all 0.3s ease-in-out',
-              display: props.isLocationSelected ? 'none' : 'block',
-              alignItems: 'left',
+              padding: {xs: '10px 16px', sm: '12px 20px'},
+              fontSize: {xs: '13px', sm: '14px'},
+              fontWeight: 600,
+              borderRadius: '8px',
+              boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
+              transition: 'all 0.2s ease-in-out',
+              display: props.isLocationSelected ? 'none' : 'inline-flex',
+              alignItems: 'center',
               justifyContent: 'center',
+              textTransform: 'none',
               '&:hover': {
                 backgroundColor: theme.palette.secondary.main,
-                transform: 'scale(1.03)',
-                boxShadow: '0px 6px 14px rgba(0, 0, 0, 0.3)',
+                transform: 'scale(1.02)',
+                boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
               },
             }}
           >
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
               <MapIcon
                 sx={{
-                  fontSize: 26,
+                  fontSize: {xs: 18, sm: 20},
                   color: theme.palette.background.default,
-                  transform: 'scale(1.5)',
                 }}
               />
-
               <Typography
-                variant="h6"
-                sx={{fontWeight: 'bold', fontSize: '18px'}}
+                component="span"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: {xs: '13px', sm: '14px'},
+                }}
               >
                 {props.label}
               </Typography>
