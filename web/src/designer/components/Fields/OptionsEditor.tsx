@@ -531,63 +531,61 @@ export const OptionsEditor = ({
 
     if (!over || active.id === over.id) return;
 
-    // Get the current visual order of all items
-    const visualOrder = getSortableItems();
-    const activeVisualIndex = visualOrder.indexOf(active.id as string);
-    const overVisualIndex = visualOrder.indexOf(over.id as string);
-
-    if (activeVisualIndex === -1 || overVisualIndex === -1) return;
-
     const isOtherActive = active.id === OTHER_OPTION_ID;
+    const isOtherOver = over.id === OTHER_OPTION_ID;
 
     if (isOtherActive) {
-      // "Other" is being dragged - calculate new position based on visual index
-      // The new position is where "Other" should appear in the visual list
-      // which translates to an option index
-      let newPosition: number;
-      if (overVisualIndex <= otherOptionPosition) {
-        // Moving up or to same spot
-        newPosition = overVisualIndex;
-      } else {
-        // Moving down
-        newPosition = overVisualIndex;
+      // "Other" is being dragged
+      // Find the target option's index to determine new position
+      const overOptionIndex = options.findIndex(item => item.value === over.id);
+      if (overOptionIndex !== -1) {
+        // Place "Other" at this option's position
+        // If dragging down past this option, place after it
+        const visualOrder = getSortableItems();
+        const activeIdx = visualOrder.indexOf(active.id as string);
+        const overIdx = visualOrder.indexOf(over.id as string);
+
+        let newPosition: number;
+        if (activeIdx < overIdx) {
+          // Moving down - place after the target
+          newPosition = overOptionIndex + 1;
+        } else {
+          // Moving up - place at the target's position
+          newPosition = overOptionIndex;
+        }
+        newPosition = Math.max(0, Math.min(newPosition, options.length));
+        updateOtherPosition(newPosition);
       }
-      // Clamp to valid range
-      newPosition = Math.max(0, Math.min(newPosition, options.length));
-      updateOtherPosition(newPosition);
-    } else {
-      // Regular option is being dragged
+    } else if (isOtherOver) {
+      // Regular option is being dropped on "Other"
       const activeOptionIndex = options.findIndex(
         item => item.value === active.id
       );
-
       if (activeOptionIndex === -1) return;
 
-      // Calculate target position in options array based on visual positions
-      // We need to figure out where in the options array this item should go
+      // Move the option to where "Other" is
       const newOptions = [...options];
       const [movedItem] = newOptions.splice(activeOptionIndex, 1);
 
-      // Count how many regular options come before the target visual position
-      let targetOptionIndex = 0;
-      for (let i = 0; i < overVisualIndex; i++) {
-        if (visualOrder[i] !== OTHER_OPTION_ID) {
-          targetOptionIndex++;
-        }
+      // Insert at otherOptionPosition (adjusted for removal)
+      let insertIndex = otherOptionPosition;
+      if (activeOptionIndex < otherOptionPosition) {
+        insertIndex = otherOptionPosition - 1;
       }
-
-      // If we're moving down (activeVisualIndex < overVisualIndex),
-      // we need to adjust because removing the item shifts indices
-      if (activeVisualIndex < overVisualIndex) {
-        // Don't count the item we're moving
-        targetOptionIndex = Math.max(0, targetOptionIndex - 1);
-      }
-
-      // Ensure index is within bounds
-      targetOptionIndex = Math.min(targetOptionIndex, newOptions.length);
-
-      newOptions.splice(targetOptionIndex, 0, movedItem);
+      insertIndex = Math.max(0, Math.min(insertIndex, newOptions.length));
+      newOptions.splice(insertIndex, 0, movedItem);
       updateField(newOptions, exclusiveOptions);
+    } else {
+      // Regular option to regular option - standard swap
+      const oldIndex = options.findIndex(item => item.value === active.id);
+      const newIndex = options.findIndex(item => item.value === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        const newOptions = [...options];
+        const [movedItem] = newOptions.splice(oldIndex, 1);
+        newOptions.splice(newIndex, 0, movedItem);
+        updateField(newOptions, exclusiveOptions);
+      }
     }
   };
 
