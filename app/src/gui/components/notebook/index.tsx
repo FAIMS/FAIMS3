@@ -14,7 +14,11 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  DEBUG_APP,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -29,12 +33,12 @@ import {
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
+import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
 import {RecordsTable} from './record_table';
 import NotebookSettings from './settings';
-import {DEBUG_APP} from '../../../buildconfig';
 
 // Define how tabs appear in the query string arguments, providing a two way map
 type TabIndexLabel =
@@ -237,7 +241,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
           This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
           uploaded, but no additional data can be collected. It is recommended
-          to deactivate this {NOTEBOOK_NAME} in the settings tab below.
+          to {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} in the
+          settings tab below.
         </Alert>
       )}
       <Box>

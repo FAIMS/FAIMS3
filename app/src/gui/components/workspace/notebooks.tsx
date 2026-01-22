@@ -254,7 +254,8 @@ export default function NoteBooks() {
             fontSize: 'body2.fontSize',
           }}
         >
-          Learn more about activating {NOTEBOOK_NAME}s
+          Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
+          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME}s
         </Button>
       </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
@@ -322,7 +323,7 @@ export default function NoteBooks() {
                 <strong>
                   "{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"
                 </strong>{' '}
-                at the bottom
+                at the bottom that looks like the following:
                 <Box sx={{mt: 1, mb: 0.5}}>
                   <Button
                     variant="outlined"

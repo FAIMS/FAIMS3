@@ -33,21 +33,25 @@ import {
   Switch,
   Typography,
 } from '@mui/material';
+import React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
+import {addAlert} from '../../../../context/slices/alertSlice';
 import {
+  deactivateProject,
   selectProjectById,
   startSyncingAttachments,
   stopSyncingAttachments,
-  deactivateProject,
 } from '../../../../context/slices/projectSlice';
-import {addAlert} from '../../../../context/slices/alertSlice';
 import {useAppDispatch, useAppSelector} from '../../../../context/store';
 import {theme} from '../../../themes';
+import {
+  DE_ACTIVATE_ACTIVE_VERB,
+  DE_ACTIVATE_VERB,
+} from '../../workspace/notebooks';
 import AutoIncrementerSettingsList from './auto_incrementers';
 import NotebookSyncSwitch from './sync_switch';
-import React from 'react';
-import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 
 export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
   const nav = useNavigate();
@@ -172,20 +176,21 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
           <Box component={Paper} variant={'outlined'} elevation={0} p={2}>
             <Typography variant={'h6'} sx={{mb: 2}}>
-              Deactivate {NOTEBOOK_NAME_CAPITALIZED}
+              {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
             </Typography>
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
-                Deactivating this {NOTEBOOK_NAME_CAPITALIZED} will remove it
-                from your active notebooks list. Make sure all your data has
-                been synced to the server before deactivating.
+                {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME_CAPITALIZED} will
+                remove it from your active notebooks list. Make sure all your
+                data has been synced to the server before{' '}
+                {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()}.
               </Typography>
               <Button
                 variant={'outlined'}
                 color={'error'}
                 onClick={handleDeactivateClick}
               >
-                Deactivate {NOTEBOOK_NAME_CAPITALIZED}
+                {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
               </Button>
             </Box>
           </Box>
@@ -200,18 +205,21 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
       {/* Deactivation Confirmation Dialog */}
       <Dialog open={openDeactivateDialog} onClose={handleDeactivateCancel}>
-        <DialogTitle>Deactivate {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
+        <DialogTitle>
+          {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+        </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to deactivate this {NOTEBOOK_NAME_CAPITALIZED}
-            ? Deactivation may result in unintended data loss if your records
-            have not been uploaded to the server.
+            Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} this{' '}
+            {NOTEBOOK_NAME_CAPITALIZED}? {DE_ACTIVATE_ACTIVE_VERB} may result in
+            unintended data loss if your records have not been uploaded to the
+            server.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeactivateCancel}>Cancel</Button>
           <Button onClick={handleDeactivateConfirm} color="error">
-            Deactivate
+            {DE_ACTIVATE_VERB}
           </Button>
         </DialogActions>
       </Dialog>
