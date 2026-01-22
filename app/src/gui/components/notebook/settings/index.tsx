@@ -199,7 +199,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
       </Grid>
 
       {/* Deactivation Confirmation Dialog */}
-      {/* <Dialog open={openDeactivateDialog} onClose={handleDeactivateCancel}>
+      <Dialog open={openDeactivateDialog} onClose={handleDeactivateCancel}>
         <DialogTitle>Deactivate {NOTEBOOK_NAME_CAPITALIZED}</DialogTitle>
         <DialogContent>
           <DialogContentText>
@@ -214,7 +214,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             Deactivate
           </Button>
         </DialogActions>
-      </Dialog> */}
+      </Dialog>
     </Box>
   );
 }
