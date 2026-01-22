@@ -57,7 +57,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -125,6 +125,7 @@ interface SortableItemProps {
 const OTHER_OPTION_ID = '__other__';
 
 interface OtherOptionRowProps {
+  id: string;
   showExclusiveOptions?: boolean;
   otherOptionPosition: number;
   totalOptions: number;
@@ -136,7 +137,8 @@ interface OtherOptionRowProps {
 /**
  * "Other" option row component (non-draggable, uses arrow buttons for positioning)
  */
-const OtherOptionRow = ({
+const SortableOtherOptionRow = ({
+  id,
   showExclusiveOptions,
   otherOptionPosition,
   totalOptions,
@@ -144,18 +146,28 @@ const OtherOptionRow = ({
   onMoveDown,
   onRemove,
 }: OtherOptionRowProps) => {
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id});
+
   return (
     <TableRow
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
       sx={{
         backgroundColor: 'rgba(0, 0, 0, 0.02)',
       }}
     >
-      {/* Empty drag handle column (Other uses arrow buttons instead) */}
+      {/* EDITED: Drag handle is ENABLED for Other */}
       <TableCell sx={{width: '40px', py: 1}}>
         <IconButton
           size="small"
-          sx={{cursor: 'default', p: 0.5, opacity: 0.3}}
-          disabled
+          sx={{cursor: 'grab', p: 0.5}}
+          {...attributes}
+          {...listeners}
         >
           <DragIndicatorIcon />
         </IconButton>
@@ -329,6 +341,10 @@ const SortableItem = ({
   );
 };
 
+type CombinedRow =
+  | {id: string; type: 'option'; option: {label: string; value: string}}
+  | {id: string; type: 'other'};
+
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,
@@ -378,16 +394,51 @@ export const OptionsEditor = ({
     updateConditions: boolean;
   } | null>(null);
 
-  const options = field['component-parameters'].ElementProps?.options || [];
-  const exclusiveOptions =
+  const options: Array<{label: string; value: string}> =
+    field['component-parameters'].ElementProps?.options || [];
+  const exclusiveOptions: string[] =
     field['component-parameters'].ElementProps?.exclusiveOptions || [];
-  const enableOther =
+  const enableOther: boolean =
     field['component-parameters'].ElementProps?.enableOtherOption ?? false;
-  const otherOptionPosition =
+  const otherOptionPosition: number =
     field['component-parameters'].ElementProps?.otherOptionPosition ??
     options.length;
 
   const totalItems = enableOther ? options.length + 1 : options.length;
+
+  /**
+   * made a combined list (options + other) in visual order.
+   * This combined list is thee source of truth for sortable order.
+   */
+  const combinedRows: CombinedRow[] = useMemo(() => {
+    const rows: CombinedRow[] = [];
+    let insertedOther = false;
+
+    if (!enableOther) {
+      return options.map(o => ({id: o.value, type: 'option', option: o}));
+    }
+
+    const safeOtherPos = Math.max(
+      0,
+      Math.min(otherOptionPosition, options.length)
+    );
+
+    for (let i = 0; i <= options.length; i++) {
+      if (i === safeOtherPos && !insertedOther) {
+        rows.push({id: OTHER_OPTION_ID, type: 'other'});
+        insertedOther = true;
+      }
+      if (i < options.length) {
+        rows.push({id: options[i].value, type: 'option', option: options[i]});
+      }
+    }
+
+    if (!insertedOther) {
+      rows.push({id: OTHER_OPTION_ID, type: 'other'});
+    }
+
+    return rows;
+  }, [enableOther, options, otherOptionPosition]);
 
   /**
    * Validates option text for duplicates and empty values
@@ -418,7 +469,8 @@ export const OptionsEditor = ({
    */
   const updateField = (
     updatedOptions: Array<{label: string; value: string}>,
-    updatedExclusiveOptions: string[]
+    updatedExclusiveOptions: string[],
+    updatedOtherOptionPosition?: number
   ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
@@ -435,12 +487,12 @@ export const OptionsEditor = ({
         return o;
       }),
       exclusiveOptions: updatedExclusiveOptions,
+      ...(enableOther && updatedOtherOptionPosition !== undefined
+        ? {otherOptionPosition: updatedOtherOptionPosition}
+        : {}),
     };
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -496,18 +548,39 @@ export const OptionsEditor = ({
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
 
+    if (!over) return;
+
+    if (active.id === over.id) return;
+
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
     // Only handle drag if we have a valid drop target and it's different from source
-    if (!over || active.id === over.id) return;
+    // if (!over || active.id === over.id) return;
 
-    // Find indices in the options array (only regular options, not "Other")
-    const oldIndex = options.findIndex(item => item.value === active.id);
-    const newIndex = options.findIndex(item => item.value === over.id);
+    const oldIndex = combinedRows.findIndex(r => r.id === activeId);
+    const newIndex = combinedRows.findIndex(r => r.id === overId);
 
-    // Only proceed if both indices are valid and different
-    if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-      const newOptions = arrayMove(options, oldIndex, newIndex);
-      updateField(newOptions, exclusiveOptions);
-    }
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newCombined = arrayMove(combinedRows, oldIndex, newIndex);
+
+    // If Other is enabled, compute its new position (index in combined list)
+    const newOtherPos = enableOther
+      ? newCombined.findIndex(r => r.id === OTHER_OPTION_ID)
+      : undefined;
+
+    // Rebuild options array from the combined order (excluding Other)
+    const optionMap = new Map(options.map(o => [o.value, o]));
+    const newOptions = newCombined
+      .filter(r => r.type === 'option')
+      .map(r => optionMap.get(r.id))
+      .filter(Boolean) as Array<{label: string; value: string}>;
+
+    // Safety: if mapping failed, do nothing
+    if (newOptions.length !== options.length) return;
+
+    updateField(newOptions, exclusiveOptions, newOtherPos);
   };
 
   /**
@@ -678,12 +751,13 @@ export const OptionsEditor = ({
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
     const newValue =
       !field['component-parameters'].ElementProps?.enableOtherOption;
+
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
       enableOtherOption: newValue,
-      // When enabling, set position to end of list; when disabling, cler r it
       otherOptionPosition: newValue ? options.length : undefined,
     };
+
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
@@ -895,68 +969,54 @@ export const OptionsEditor = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {/* Drag and drop context wrapper */}
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
+                    {/* SortableContext now includes "Other" id when enabled */}
                     <SortableContext
-                      items={options.map(o => o.value)}
+                      items={combinedRows.map(r => r.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      {/* Render options and "Other" in correct order based on otherOptionPosition */}
-                      {(() => {
-                        const rows: React.ReactNode[] = [];
-                        let optionIndex = 0;
-
-                        for (let i = 0; i <= options.length; i++) {
-                          // Render "Other" row at its position (non-draggable)
-                          if (enableOther && i === otherOptionPosition) {
-                            rows.push(
-                              <OtherOptionRow
-                                key={OTHER_OPTION_ID}
-                                showExclusiveOptions={showExclusiveOptions}
-                                otherOptionPosition={otherOptionPosition}
-                                totalOptions={options.length}
-                                onMoveUp={() => moveOtherOption('up')}
-                                onMoveDown={() => moveOtherOption('down')}
-                                onRemove={toggleEnableOtherOption}
-                              />
-                            );
-                          }
-
-                          // Render regular option if we haven't reached the end
-                          if (optionIndex < options.length) {
-                            const option = options[optionIndex];
-                            // Calculate the visual index for the option (accounting for "Other" position)
-                            const visualIndex =
-                              enableOther && otherOptionPosition <= optionIndex
-                                ? optionIndex + 1
-                                : optionIndex;
-                            rows.push(
-                              <SortableItem
-                                key={option.value}
-                                id={option.value}
-                                option={option}
-                                index={optionIndex}
-                                showExclusiveOptions={showExclusiveOptions}
-                                exclusiveOptions={exclusiveOptions}
-                                onExclusiveToggle={handleExclusiveToggle}
-                                onEdit={(val, idx) =>
-                                  handleOpenEditDialog(val, idx)
-                                }
-                                onRemove={removeOption}
-                                onMove={moveOption}
-                                totalItems={options.length}
-                              />
-                            );
-                            optionIndex++;
-                          }
+                      {combinedRows.map(row => {
+                        if (row.type === 'other') {
+                          return (
+                            <SortableOtherOptionRow
+                              key={OTHER_OPTION_ID}
+                              id={OTHER_OPTION_ID}
+                              showExclusiveOptions={showExclusiveOptions}
+                              otherOptionPosition={otherOptionPosition}
+                              totalOptions={options.length}
+                              onMoveUp={() => moveOtherOption('up')}
+                              onMoveDown={() => moveOtherOption('down')}
+                              onRemove={toggleEnableOtherOption}
+                            />
+                          );
                         }
 
-                        return rows;
-                      })()}
+                        const optionIndex = options.findIndex(
+                          o => o.value === row.option.value
+                        );
+
+                        return (
+                          <SortableItem
+                            key={row.option.value}
+                            id={row.option.value}
+                            option={row.option}
+                            index={optionIndex}
+                            showExclusiveOptions={showExclusiveOptions}
+                            exclusiveOptions={exclusiveOptions}
+                            onExclusiveToggle={handleExclusiveToggle}
+                            onEdit={(val, idx) =>
+                              handleOpenEditDialog(val, idx)
+                            }
+                            onRemove={removeOption}
+                            onMove={moveOption}
+                            totalItems={options.length}
+                          />
+                        );
+                      })}
                     </SortableContext>
                   </DndContext>
                 </TableBody>
