@@ -1,4 +1,3 @@
-import {View} from 'ol';
 import {Control} from 'ol/control';
 import src from '../icons/pin.svg';
 import {CreateDomIcon} from '../dom-icon';

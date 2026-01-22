@@ -117,7 +117,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
             {heading}
             {required && (
               <span
-                data-testid="required-indicator" 
+                data-testid="required-indicator"
                 style={{
                   color: theme.palette.error.main,
                   marginLeft: 2,
