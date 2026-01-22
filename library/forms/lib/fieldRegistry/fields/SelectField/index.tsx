@@ -63,7 +63,8 @@ const SelectFieldPropsSchema = BaseFieldPropsSchema.extend({
         key: z.string().optional(),
       })
     ),
-    enableOtherOption: z.boolean().optional(), // toggle to enable 'Other' option
+    enableOtherOption: z.boolean().optional(),
+    otherOptionPosition: z.number().optional(),
   }),
   select_others: z.string().optional(),
 });
@@ -85,37 +86,30 @@ const valueSchema = (props: SelectFieldProps) => {
     const baseSchema = z.string();
 
     if (props.required) {
-      // Required: must have a value AND if "Other" is selected, must have text
       return baseSchema
         .min(1, {message: 'Please select or enter an option'})
         .refine(
           value => {
             if (optionValues.includes(value)) return true;
-            if (value.startsWith(OTHER_PREFIX)) {
-              return value.slice(OTHER_PREFIX.length).trim().length > 0;
-            }
+            if (value.startsWith(OTHER_PREFIX)) return true;
             return false;
           },
           {
-            message:
-              'Please enter text for the "Other" option or select a different option',
+            message: 'Please select an option',
           }
         );
     }
 
-    // Optional: allow empty or valid predefined options or valid "Other: xxx" values
     return baseSchema.refine(
       value => {
         if (value === '') return true;
         if (optionValues.includes(value)) return true;
-        if (value.startsWith(OTHER_PREFIX)) {
-          return value.slice(OTHER_PREFIX.length).trim().length > 0;
-        }
+        // accept any "Other: " value, even if empty
+        if (value.startsWith(OTHER_PREFIX)) return true;
         return false;
       },
       {
-        message:
-          'Please enter text for the "Other" option or select a different option',
+        message: 'Please select a valid option',
       }
     );
   }
@@ -141,6 +135,8 @@ export const Select = (props: FieldProps) => {
   const theme = useTheme();
   const value = (props.state.value?.data as string) ?? '';
   const enableOtherOption = props.ElementProps.enableOtherOption ?? false;
+  const otherOptionPosition =
+    props.ElementProps.otherOptionPosition ?? props.ElementProps.options.length;
   const predefinedValues = props.ElementProps.options.map(opt => opt.value);
 
   const {hasOtherSelected, otherText, handleOtherTextChange} = useOtherOption({
@@ -167,6 +163,7 @@ export const Select = (props: FieldProps) => {
     const selected = event.target.value;
 
     if (selected === OTHER_MARKER) {
+      // Store "Other: " prefix immediately so required validation passes
       props.setFieldData(OTHER_PREFIX);
     } else {
       props.setFieldData(selected);
@@ -216,82 +213,105 @@ export const Select = (props: FieldProps) => {
             return selected;
           }}
         >
-          {props.ElementProps.options.map((option: any) => (
-            <MenuItem
-              key={option.key ? option.key : option.value}
-              value={option.value}
-              sx={{
-                whiteSpace: 'normal',
-                wordWrap: 'break-word',
-              }}
-            >
-              <ListItemText
-                primary={
-                  <span
-                    style={{
-                      display: 'contents',
-                      whiteSpace: 'normal',
-                      wordBreak: 'break-word',
-                      lineHeight: '0.1rem',
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: contentToSanitizedHtml(option.label),
-                    }}
-                  />
-                }
-              />
-            </MenuItem>
-          ))}
-          {/*  Other option inline text field */}
-          {enableOtherOption && (
-            <MenuItem
-              value={OTHER_MARKER}
-              sx={{
-                whiteSpace: 'normal',
-                wordWrap: 'break-word',
-                display: 'block',
-                padding: '8px 16px',
-              }}
-              onKeyDown={e => e.stopPropagation()}
-            >
-              <TextField
-                size="small"
-                placeholder="Other"
-                value={localOtherText}
-                onChange={e => {
-                  e.stopPropagation();
-                  setLocalOtherText(e.target.value);
-                }}
-                onBlur={e => {
-                  e.stopPropagation();
-                  handleOtherTextChange(localOtherText);
-                }}
-                onClick={e => e.stopPropagation()}
-                onMouseDown={e => e.stopPropagation()}
-                onFocus={e => e.stopPropagation()}
-                onKeyDown={e => {
-                  e.stopPropagation();
-                  // save and close dropdown on Enter key
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleOtherTextChange(localOtherText);
-                    setIsOpen(false);
-                  }
-                }}
-                disabled={props.disabled}
-                variant="standard"
-                multiline
-                fullWidth
+          {/* Render options and "Other" in correct order */}
+          {(() => {
+            const items: React.ReactNode[] = [];
+            let optionIndex = 0;
+            const options = props.ElementProps.options;
+
+            // Render the "Other" option MenuItem
+            const renderOtherMenuItem = () => (
+              <MenuItem
+                key="__other__"
+                value={OTHER_MARKER}
                 sx={{
-                  ...otherTextFieldSx,
-                  '& .MuiInput-input': {
-                    ...((otherTextFieldSx as any)['& .MuiInput-input'] || {}),
-                    padding: '4px 0',
-                  },
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word',
+                  display: 'block',
+                  padding: '8px 16px',
                 }}
-              />
-            </MenuItem>
-          )}
+                onKeyDown={e => e.stopPropagation()}
+              >
+                <TextField
+                  size="small"
+                  placeholder="Other"
+                  value={localOtherText}
+                  onChange={e => {
+                    e.stopPropagation();
+                    setLocalOtherText(e.target.value);
+                  }}
+                  onBlur={e => {
+                    e.stopPropagation();
+                    handleOtherTextChange(localOtherText);
+                  }}
+                  onClick={e => e.stopPropagation()}
+                  onMouseDown={e => e.stopPropagation()}
+                  onFocus={e => e.stopPropagation()}
+                  onKeyDown={e => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleOtherTextChange(localOtherText);
+                      setIsOpen(false);
+                    }
+                  }}
+                  disabled={props.disabled}
+                  variant="standard"
+                  multiline
+                  fullWidth
+                  sx={{
+                    ...otherTextFieldSx,
+                    '& .MuiInput-input': {
+                      ...((otherTextFieldSx as any)['& .MuiInput-input'] || {}),
+                      padding: '4px 0',
+                    },
+                  }}
+                />
+              </MenuItem>
+            );
+
+            // Render a regular option MenuItem
+            const renderOptionMenuItem = (option: any) => (
+              <MenuItem
+                key={option.key ? option.key : option.value}
+                value={option.value}
+                sx={{
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word',
+                }}
+              >
+                <ListItemText
+                  primary={
+                    <span
+                      style={{
+                        display: 'contents',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        lineHeight: '0.1rem',
+                      }}
+                      dangerouslySetInnerHTML={{
+                        __html: contentToSanitizedHtml(option.label),
+                      }}
+                    />
+                  }
+                />
+              </MenuItem>
+            );
+
+            for (let i = 0; i <= options.length; i++) {
+              // Render "Other" at its position
+              if (enableOtherOption && i === otherOptionPosition) {
+                items.push(renderOtherMenuItem());
+              }
+              // Render regular option
+              if (optionIndex < options.length) {
+                items.push(renderOptionMenuItem(options[optionIndex]));
+                optionIndex++;
+              }
+            }
+
+            return items;
+          })()}
         </MuiSelect>
       </FormControl>
     </FieldWrapper>

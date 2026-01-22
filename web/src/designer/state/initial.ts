@@ -40,6 +40,7 @@ export type ComponentParameters = {
     // can be selecting, greying out/excluding other options
     exclusiveOptions?: string[];
     enableOtherOption?: boolean;
+    otherOptionPosition?: number;
     options?: {
       value: string;
       label: string;
