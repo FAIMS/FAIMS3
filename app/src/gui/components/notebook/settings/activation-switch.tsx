@@ -15,8 +15,6 @@ import FaimsDialog from '../../ui/Faims_Dialog';
 import {
   ACTIVATE_ACTIVE_VERB_LABEL,
   ACTIVATE_VERB_LABEL,
-  DE_ACTIVATE_ACTIVE_VERB,
-  DE_ACTIVATE_VERB,
 } from '../../workspace/notebooks';
 
 type NotebookActivationSwitchProps = {
