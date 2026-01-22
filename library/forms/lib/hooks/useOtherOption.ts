@@ -101,12 +101,18 @@ export const useOtherOption = ({
   const handleOtherTextChange = (text: string) => {
     if (Array.isArray(rawValue)) {
       const predefined = rawValue.filter(v => predefinedValues.includes(v));
-      // Always store "Other: " prefix when Other is selected (even if empty)
-      // This allows Zod to validate that text is required
-      setFieldData([...predefined, createOtherValue(text)]);
+      // Only store "Other: text" if there's actual text, otherwise just store predefined values
+      if (text.trim()) {
+        setFieldData([...predefined, createOtherValue(text)]);
+      } else {
+        setFieldData(predefined);
+      }
     } else {
-      // For single-select, store the value with prefix
-      setFieldData(createOtherValue(text));
+      if (text.trim()) {
+        setFieldData(createOtherValue(text));
+      } else {
+        setFieldData('');
+      }
     }
   };
 
