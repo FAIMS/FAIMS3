@@ -37,16 +37,16 @@ import MuiRadio from '@mui/material/Radio';
 import MuiRadioGroup from '@mui/material/RadioGroup';
 import {z} from 'zod';
 import {BaseFieldPropsSchema, FullFieldProps} from '../../../formModule/types';
-import {DefaultRenderer} from '../../../rendering/fields/fallback';
-import {FieldInfo} from '../../types';
-import {contentToSanitizedHtml} from '../RichText/DomPurifier';
-import FieldWrapper from '../wrappers/FieldWrapper';
 import {
   OTHER_MARKER,
   OTHER_PREFIX,
   otherTextFieldSx,
   useOtherOption,
 } from '../../../hooks/useOtherOption';
+import {DefaultRenderer} from '../../../rendering/fields/fallback';
+import {FieldInfo} from '../../types';
+import {contentToSanitizedHtml} from '../RichText/DomPurifier';
+import FieldWrapper from '../wrappers/FieldWrapper';
 
 // ============================================================================
 // Types & Schema
@@ -62,7 +62,7 @@ const RadioGroupFieldPropsSchema = BaseFieldPropsSchema.extend({
   ElementProps: z.object({
     options: z.array(RadioOptionSchema),
     enableOtherOption: z.boolean().optional(),
-    otherOptionPosition: z.number().optional(), 
+    otherOptionPosition: z.number().optional(),
   }),
 });
 
