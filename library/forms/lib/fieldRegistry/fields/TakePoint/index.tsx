@@ -247,6 +247,8 @@ export const TakePoint = (props: FieldProps) => {
           startIcon={<LocationOn />}
           sx={{
             width: {xs: '100%', sm: 'auto'},
+            minWidth: {xs: 'auto', sm: '200px'},
+            maxWidth: {xs: '100%', sm: '320px'},
             padding: '10px 20px',
             minHeight: '44px',
             fontSize: '14px',
@@ -254,6 +256,8 @@ export const TakePoint = (props: FieldProps) => {
             borderRadius: '8px',
             boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
             textTransform: 'none',
+            whiteSpace: 'normal',
+            wordWrap: 'break-word',
             '&:hover': {
               boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
             },

@@ -90,9 +90,18 @@ export function MapFormField(props: FieldProps): JSX.Element {
   // default to point if not specified
   const featureType = props.featureType ?? 'Point';
 
+  // Map featureType to user-friendly label
+  const featureTypeLabel: Record<string, string> = {
+    Point: 'Point',
+    LineString: 'Line',
+    Polygon: 'Polygon',
+  };
+
   // Button label: use buttonLabelText if provided, otherwise fall back to label or default
   const buttonLabel =
-    props.buttonLabelText ?? props.label ?? `Get ${props.featureType}`;
+    props.buttonLabelText ??
+    props.label ??
+    `Select ${featureTypeLabel[featureType] ?? featureType}`;
 
   // A location is selected if there are features provided
   const isLocationSelected =
