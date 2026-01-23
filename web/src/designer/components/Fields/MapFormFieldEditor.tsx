@@ -127,7 +127,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                 variant="outlined"
                 label="Button Label Text"
                 value={initButtonLabelText}
-                placeholder="Leave empty to use field label"
+                placeholder="Leave empty to use the field label"
                 onChange={e =>
                   updateProperty('buttonLabelText', e.target.value)
                 }

@@ -45,7 +45,7 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
             variant="outlined"
             label="Button Label Text"
             value={buttonLabelText}
-            placeholder="Leave empty to use field label"
+            placeholder="Leave empty to use the field label"
             onChange={e => updateButtonLabel(e.target.value)}
             helperText="Custom text for the button. If empty, the field label will be used."
           />
