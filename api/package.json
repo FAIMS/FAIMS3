@@ -1,6 +1,6 @@
 {
   "name": "@faims3/api",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "private": true,
   "main": "build/src/index.js",
   "packageManager": "pnpm@10.7.0",
