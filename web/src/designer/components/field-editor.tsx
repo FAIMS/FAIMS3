@@ -59,6 +59,7 @@ import {ControlledNumberFieldEditor} from './Fields/ControlledNumberFieldEditor'
 import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
 import {NumberFieldEditor} from './Fields/NumberFieldEditor';
+import {TakePointFieldEditor} from './Fields/TakePointFieldEditor';
 import {OptionsEditor} from './Fields/OptionsEditor';
 import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
 import {RichTextEditor} from './Fields/RichTextEditor';
@@ -743,6 +744,9 @@ export const FieldEditor = ({
             )) ||
             (fieldComponent === 'MapFormField' && (
               <MapFormFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'TakePoint' && (
+              <TakePointFieldEditor fieldName={fieldName} />
             )) ||
             (fieldComponent === 'NumberField' && (
               <NumberFieldEditor fieldName={fieldName} />
