@@ -287,6 +287,8 @@ function MapWrapper(props: MapProps) {
             sx={{
               marginTop: '12px',
               width: {xs: '100%', sm: 'auto'},
+              minWidth: {xs: 'auto', sm: '200px'},
+              maxWidth: {xs: '100%', sm: '320px'},
               backgroundColor: theme.palette.primary.main,
               color: theme.palette.background.default,
               padding: '10px 20px',
@@ -300,6 +302,8 @@ function MapWrapper(props: MapProps) {
               alignItems: 'center',
               justifyContent: 'center',
               textTransform: 'none',
+              whiteSpace: 'normal',
+              wordWrap: 'break-word',
               '&:hover': {
                 backgroundColor: theme.palette.secondary.main,
                 boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
