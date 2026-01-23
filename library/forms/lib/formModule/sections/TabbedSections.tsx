@@ -532,6 +532,11 @@ interface MobileNavigationStepperProps {
   activeStep: number;
   /** Callback invoked when the user clicks Next or Back */
   onStep: (direction: 'next' | 'back') => void;
+  /** Optional handler for completing the form on the final section */
+  onCompleteHandler?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 /**
@@ -549,30 +554,35 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
   totalSteps,
   activeStep,
   onStep,
+  onCompleteHandler,
 }) => {
+  const isLastStep = activeStep === totalSteps - 1;
+
   return (
     <MobileStepper
       variant="text"
       steps={totalSteps}
       position="static"
       activeStep={activeStep}
-      sx={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        bgcolor: 'transparent',
-      }}
       nextButton={
-        <Button
-          size="small"
-          onClick={() => onStep('next')}
-          disabled={activeStep === totalSteps - 1}
-          sx={{fontWeight: 'bold'}}
-        >
-          <Badge badgeContent={0} color="error">
+        isLastStep && onCompleteHandler ? (
+          <Button
+            size="small"
+            onClick={onCompleteHandler.onClick}
+            sx={{fontWeight: 'bold', color: 'success'}}
+          >
+            {onCompleteHandler.label}
+          </Button>
+        ) : (
+          <Button
+            size="small"
+            onClick={() => onStep('next')}
+            disabled={isLastStep}
+            sx={{fontWeight: 'bold'}}
+          >
             Next
-          </Badge>
-        </Button>
+          </Button>
+        )
       }
       backButton={
         <Button
@@ -609,6 +619,14 @@ interface TabbedSectionDisplayProps {
    * When undefined, all fields and sections are visible.
    */
   fieldVisibilityMap: FieldVisibilityMap | undefined;
+  /**
+   * Optional handler for the mobile stepper's complete action on the final section.
+   * When provided, replaces the disabled "Next" button with a clickable button.
+   */
+  onCompleteHandler?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 /**
@@ -650,6 +668,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
   spec,
   config,
   fieldVisibilityMap,
+  onCompleteHandler,
 }) => {
   const theme = useTheme();
 
@@ -996,6 +1015,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
               totalSteps={visibleSections.length}
               activeStep={activeIndex}
               onStep={handleStep}
+              onCompleteHandler={onCompleteHandler}
             />
           </Box>
 
@@ -1058,6 +1078,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
             totalSteps={visibleSections.length}
             activeStep={activeIndex}
             onStep={handleStep}
+            onCompleteHandler={onCompleteHandler}
           />
         </Box>
       )}
