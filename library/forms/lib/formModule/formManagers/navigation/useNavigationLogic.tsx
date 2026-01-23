@@ -180,8 +180,7 @@ export function useNavigationLogic({
 
       result.push({
         id: 'create-another-child',
-        label: `Create another ${formLabel} in ${relationLabel} ${childParentFormLabel}`,
-        subtitle: `Create and link a new ${formLabel} from ${relationLabel} ${childParentFormLabel} in field '${fieldLabel}'`,
+        label: `Finish and create another ${formLabel} in ${relationLabel} ${childParentFormLabel}`,
         onClick: withSaveFlush(onCreate),
         disabled: isSaving,
         loading: isSaving,
