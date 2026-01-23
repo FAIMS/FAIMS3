@@ -69,6 +69,7 @@ export type ComponentParameters = {
   is_auto_pick?: boolean;
   zoom?: number;
   featureType?: string;
+  buttonLabelText?: string;
   variant_style?: string;
   html_tag?: string;
   content?: string;

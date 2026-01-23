@@ -36,6 +36,7 @@ import MapWrapper, {MapAction} from './MapWrapper';
 
 const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
+  buttonLabelText: z.string().optional(),
   featureType: z.enum(['Point', 'Polygon', 'LineString']).optional(),
   allowSetToCurrentPoint: z.boolean().optional().default(false),
   geoTiff: z.string().optional(),
@@ -89,8 +90,18 @@ export function MapFormField(props: FieldProps): JSX.Element {
   // default to point if not specified
   const featureType = props.featureType ?? 'Point';
 
-  // default label
-  const label = props.label ?? `Get ${props.featureType}`;
+  // Map featureType to user-friendly label
+  const featureTypeLabel: Record<string, string> = {
+    Point: 'Point',
+    LineString: 'Line',
+    Polygon: 'Polygon',
+  };
+
+  // Button label: use buttonLabelText if provided, otherwise fall back to label or default
+  const buttonLabel =
+    props.buttonLabelText ??
+    props.label ??
+    `Select ${featureTypeLabel[featureType] ?? featureType}`;
 
   // A location is selected if there are features provided
   const isLocationSelected =
@@ -220,7 +231,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
         ) : (
           <MapWrapper
             config={mapConfig}
-            label={label}
+            label={buttonLabel}
             featureType={featureType}
             features={drawnFeatures}
             zoom={zoom}
