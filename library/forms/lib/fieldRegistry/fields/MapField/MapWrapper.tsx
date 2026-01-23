@@ -273,17 +273,25 @@ function MapWrapper(props: MapProps) {
       <div>
         {!props.isLocationSelected ? (
           <Button
-            fullWidth
             variant="contained"
             disabled={props.disabled}
             onClick={handleClickOpen}
+            startIcon={
+              <MapIcon
+                sx={{
+                  fontSize: '20px !important',
+                  color: theme.palette.background.default,
+                }}
+              />
+            }
             sx={{
-              width: {xs: '100%', sm: '50%', md: '40%'},
-              maxWidth: {xs: '100%', sm: '300px'},
+              marginTop: '12px',
+              width: {xs: '100%', sm: 'auto'},
               backgroundColor: theme.palette.primary.main,
               color: theme.palette.background.default,
-              padding: {xs: '10px 16px', sm: '12px 20px'},
-              fontSize: {xs: '13px', sm: '14px'},
+              padding: '10px 20px',
+              minHeight: '44px',
+              fontSize: '14px',
               fontWeight: 600,
               borderRadius: '8px',
               boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
@@ -294,28 +302,11 @@ function MapWrapper(props: MapProps) {
               textTransform: 'none',
               '&:hover': {
                 backgroundColor: theme.palette.secondary.main,
-                transform: 'scale(1.02)',
                 boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
               },
             }}
           >
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-              <MapIcon
-                sx={{
-                  fontSize: {xs: 18, sm: 20},
-                  color: theme.palette.background.default,
-                }}
-              />
-              <Typography
-                component="span"
-                sx={{
-                  fontWeight: 600,
-                  fontSize: {xs: '13px', sm: '14px'},
-                }}
-              >
-                {props.label}
-              </Typography>
-            </Box>
+            {props.label}
           </Button>
         ) : (
           <Box>

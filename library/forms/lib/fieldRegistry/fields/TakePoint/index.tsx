@@ -36,6 +36,7 @@
 
 import {Geolocation, Position} from '@capacitor/geolocation';
 import {FAIMSPosition, logError} from '@faims3/data-model';
+import LocationOn from '@mui/icons-material/LocationOn';
 import {Alert, Box, Paper, Typography} from '@mui/material';
 import Button from '@mui/material/Button';
 import {useTheme} from '@mui/material/styles';
@@ -52,6 +53,7 @@ import FieldWrapper from '../wrappers/FieldWrapper';
 // ============================================================================
 
 const TakePointFieldPropsSchema = BaseFieldPropsSchema.extend({
+  buttonLabelText: z.string().optional(),
   enableHighAccuracy: z.boolean().optional(),
   timeout: z.number().optional(),
   maximumAge: z.number().optional(),
@@ -179,6 +181,7 @@ const PositionDisplay = ({position}: PositionDisplayProps) => {
 export const TakePoint = (props: FieldProps) => {
   const {
     label,
+    buttonLabelText,
     helperText,
     required,
     advancedHelperText,
@@ -189,6 +192,9 @@ export const TakePoint = (props: FieldProps) => {
     timeout = 10000,
     maximumAge = 0,
   } = props;
+
+  // Button label: use buttonLabelText if provided, otherwise fall back to label or default
+  const buttonLabel = buttonLabelText ?? label ?? 'Take Point';
 
   const [noPermission, setNoPermission] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -232,15 +238,28 @@ export const TakePoint = (props: FieldProps) => {
       advancedHelperText={advancedHelperText}
       errors={props.state.meta.errors as unknown as string[]}
     >
-      <Box sx={{mt: 1}}>
+      <Box sx={{mt: 1.5}}>
         <Button
-          variant="outlined"
-          fullWidth
+          variant="contained"
           color="primary"
           disabled={disabled || isCapturing}
           onClick={takePoint}
+          startIcon={<LocationOn />}
+          sx={{
+            width: {xs: '100%', sm: 'auto'},
+            padding: '10px 20px',
+            minHeight: '44px',
+            fontSize: '14px',
+            fontWeight: 600,
+            borderRadius: '8px',
+            boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.15)',
+            textTransform: 'none',
+            '&:hover': {
+              boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
+            },
+          }}
         >
-          {isCapturing ? 'Capturing...' : 'Take Point'}
+          {isCapturing ? 'Capturing...' : buttonLabel}
         </Button>
 
         {/* Display captured position */}

@@ -58,6 +58,7 @@ import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
 import {ControlledNumberFieldEditor} from './Fields/ControlledNumberFieldEditor';
 import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
+import {TakePointFieldEditor} from './Fields/TakePointFieldEditor';
 import {NumberFieldEditor} from './Fields/NumberFieldEditor';
 import {OptionsEditor} from './Fields/OptionsEditor';
 import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
@@ -743,6 +744,9 @@ export const FieldEditor = ({
             )) ||
             (fieldComponent === 'MapFormField' && (
               <MapFormFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'TakePoint' && (
+              <TakePointFieldEditor fieldName={fieldName} />
             )) ||
             (fieldComponent === 'NumberField' && (
               <NumberFieldEditor fieldName={fieldName} />
