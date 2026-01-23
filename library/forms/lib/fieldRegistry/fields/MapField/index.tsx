@@ -90,7 +90,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
   // default to point if not specified
   const featureType = props.featureType ?? 'Point';
 
-  // Button label: use buttonLabelText if provuided, otherwise fall back to label or default
+  // Button label: use buttonLabelText if provided, otherwise fall back to label or default
   const buttonLabel =
     props.buttonLabelText ?? props.label ?? `Get ${props.featureType}`;
 
