@@ -246,9 +246,7 @@ export const TakePoint = (props: FieldProps) => {
           onClick={takePoint}
           startIcon={<LocationOn />}
           sx={{
-            width: {xs: '100%', sm: 'auto'},
-            minWidth: {xs: 'auto', sm: '200px'},
-            maxWidth: {xs: '100%', sm: '320px'},
+            width: {xs: '100%', md: '350px'},
             padding: '10px 20px',
             minHeight: '44px',
             fontSize: '14px',

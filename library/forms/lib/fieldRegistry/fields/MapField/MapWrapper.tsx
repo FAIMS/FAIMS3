@@ -286,9 +286,7 @@ function MapWrapper(props: MapProps) {
             }
             sx={{
               marginTop: '12px',
-              width: {xs: '100%', sm: 'auto'},
-              minWidth: {xs: 'auto', sm: '200px'},
-              maxWidth: {xs: '100%', sm: '320px'},
+              width: {xs: '100%', md: '350px'},
               backgroundColor: theme.palette.primary.main,
               color: theme.palette.background.default,
               padding: '10px 20px',
