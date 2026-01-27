@@ -10,11 +10,39 @@ import {FieldInfo} from '../../types';
 import {BaseMuiTextField} from '../wrappers/BaseMuiTextField';
 
 /**
- * Single-line text field component.
+ * Extended props schema for fields with speech-to-text support.
+ */
+const SpeechEnabledFieldPropsSchema = BaseFieldPropsSchema.extend({
+  /** Enable speech-to-text input (default: true) */
+  enableSpeech: z.boolean().optional().default(true),
+  /** Language for speech recognition (default: 'en-AU') */
+  speechLanguage: z.string().optional().default('en-AU'),
+  /** Whether to append speech to existing text or replace */
+  speechAppendMode: z.boolean().optional(),
+});
+
+type SpeechEnabledFieldProps = z.infer<typeof SpeechEnabledFieldPropsSchema>;
+
+/**
+ * Single-line text field component with optional speech-to-text.
  * Uses the base MUI text field with default single-line configuration.
  */
-const TextField: React.FC<BaseFieldProps & FormFieldContextProps> = props => {
-  return <BaseMuiTextField {...props} multiline={false} inputType="text" />;
+const TextField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
+  enableSpeech = true,
+  speechLanguage = 'en-AU',
+  speechAppendMode,
+  ...props
+}) => {
+  return (
+    <BaseMuiTextField
+      {...props}
+      multiline={false}
+      inputType="text"
+      enableSpeech={enableSpeech}
+      speechLanguage={speechLanguage}
+      speechAppendMode={speechAppendMode ?? false} // Single-line defaults to replace
+    />
+  );
 };
 
 /**
@@ -30,23 +58,25 @@ const textFieldValueSchema = (props: BaseFieldProps) => {
 
 /**
  * Field specification for FAIMSTextField.
- * Single-line text input for free-form entries.
+ * Single-line text input for free-form entries with optional speech-to-text.
  */
-export const textFieldSpec: FieldInfo = {
+export const textFieldSpec: FieldInfo<
+  SpeechEnabledFieldProps & FormFieldContextProps
+> = {
   namespace: 'faims-custom',
   name: 'FAIMSTextField',
   returns: 'faims-core::String',
   component: TextField,
-  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldPropsSchema: SpeechEnabledFieldPropsSchema,
   fieldDataSchemaFunction: textFieldValueSchema,
   view: {component: DefaultRenderer, config: {}},
 };
 
 /**
  * Extended props schema for MultilineTextField.
- * Includes configuration for the number of rows.
+ * Includes configuration for the number of rows and speech support.
  */
-const MultilineTextFieldPropsSchema = BaseFieldPropsSchema.extend({
+const MultilineTextFieldPropsSchema = SpeechEnabledFieldPropsSchema.extend({
   InputProps: z
     .object({
       /** Number of rows to display (default: 4) */
@@ -61,21 +91,31 @@ type MultilineTextFieldFullProps = MultilineTextFieldProps &
   FormFieldContextProps;
 
 /**
- * Multi-line text area component for longer text entries.
+ * Multi-line text area component for longer text entries with optional speech-to-text.
  * Uses the base MUI text field with multiline configuration.
  */
-const MultilineTextField: React.FC<MultilineTextFieldFullProps> = props => {
-  const {
-    InputProps: {rows},
-    ...baseProps
-  } = props;
-
-  return <BaseMuiTextField {...baseProps} multiline={true} rows={rows} />;
+const MultilineTextField: React.FC<MultilineTextFieldFullProps> = ({
+  InputProps: {rows},
+  enableSpeech = true,
+  speechLanguage = 'en-AU',
+  speechAppendMode,
+  ...baseProps
+}) => {
+  return (
+    <BaseMuiTextField
+      {...baseProps}
+      multiline={true}
+      rows={rows}
+      enableSpeech={enableSpeech}
+      speechLanguage={speechLanguage}
+      speechAppendMode={speechAppendMode ?? true} // Multiline defaults to append
+    />
+  );
 };
 
 /**
  * Field specification for MultilineTextField.
- * Multi-line text area for longer notes and descriptions.
+ * Multi-line text area for longer notes and descriptions with optional speech-to-text.
  *
  * This replaces the legacy formik-material-ui::MultipleTextField
  */
@@ -92,9 +132,24 @@ export const multilineTextFieldSpec: FieldInfo<MultilineTextFieldFullProps> = {
 /**
  * Email field component with built-in email validation.
  * Uses the base MUI text field with email input type.
+ * Note: Speech-to-text is disabled by default for email fields as
+ * dictating email addresses is typically not practical.
  */
-const EmailField: React.FC<BaseFieldProps & FormFieldContextProps> = props => {
-  return <BaseMuiTextField {...props} inputType="email" />;
+const EmailField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
+  enableSpeech = false, // Disabled by default for email
+  speechLanguage = 'en-AU',
+  speechAppendMode,
+  ...props
+}) => {
+  return (
+    <BaseMuiTextField
+      {...props}
+      inputType="email"
+      enableSpeech={enableSpeech}
+      speechLanguage={speechLanguage}
+      speechAppendMode={speechAppendMode ?? false}
+    />
+  );
 };
 
 /**
@@ -110,7 +165,6 @@ const emailValueSchema = (props: BaseFieldProps) => {
       z.string().email({message: 'Enter a valid email address'}),
     ]);
   }
-
   return z
     .string()
     .min(1, {message: 'This field is required'})
@@ -120,15 +174,18 @@ const emailValueSchema = (props: BaseFieldProps) => {
 /**
  * Field specification for Email.
  * Validates and captures an e-mail address.
+ * Speech-to-text is disabled by default but can be enabled if needed.
  *
  * This replaces the legacy formik-material-ui::TextField with email type.
  */
-export const emailFieldSpec: FieldInfo = {
+export const emailFieldSpec: FieldInfo<
+  SpeechEnabledFieldProps & FormFieldContextProps
+> = {
   namespace: 'faims-custom',
   name: 'Email',
   returns: 'faims-core::String',
   component: EmailField,
-  fieldPropsSchema: BaseFieldPropsSchema,
+  fieldPropsSchema: SpeechEnabledFieldPropsSchema,
   fieldDataSchemaFunction: emailValueSchema,
   view: {component: DefaultRenderer, config: {}},
 };

@@ -107,7 +107,8 @@ export const getFieldInfo = ({
   const key = buildKey({namespace, name});
   const fieldInfo = FIELD_REGISTRY.get(key);
   if (fieldInfo) return {fieldInfo, fallback: false};
-  else return {fieldInfo: textFieldSpec, fallback: true};
+  // TODO fix this typing hack
+  else return {fieldInfo: textFieldSpec as FieldInfo, fallback: true};
 };
 
 // Validate the registry on load
