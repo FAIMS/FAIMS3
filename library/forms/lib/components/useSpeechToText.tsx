@@ -155,7 +155,7 @@ export function useSpeechToText(
         const timestamp = new Date().toISOString().substr(11, 12);
         const prefix = `[SpeechToText:${instanceId.current} ${timestamp}]`;
         if (data !== undefined) {
-          console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+          console.log(`${prefix} ${message}`, data);
         } else {
           console.log(`${prefix} ${message}`);
         }
