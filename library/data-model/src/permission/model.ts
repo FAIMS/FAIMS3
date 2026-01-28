@@ -820,6 +820,7 @@ export enum Role {
   GENERAL_USER = 'GENERAL_USER',
   GENERAL_ADMIN = 'GENERAL_ADMIN',
   GENERAL_CREATOR = 'GENERAL_CREATOR',
+  OPERATIONS_ADMIN = 'OPERATIONS_ADMIN',
 
   // PROJECT ROLES
   // ================
@@ -868,7 +869,7 @@ export const roleDetails: Record<Role, RoleDetails> = {
     scope: RoleScope.GLOBAL,
   },
   [Role.GENERAL_ADMIN]: {
-    name: 'System Administrator',
+    name: 'Super User',
     description:
       'Full access to all system resources and management capabilities',
     scope: RoleScope.GLOBAL,
@@ -877,6 +878,12 @@ export const roleDetails: Record<Role, RoleDetails> = {
     name: 'Content Creator',
     description:
       'Ability to create and manage templates and surveys across the system',
+    scope: RoleScope.GLOBAL,
+  },
+  [Role.OPERATIONS_ADMIN]: {
+    name: 'Operations Administrator',
+    description:
+      'Manage system operations such as user management and system settings',
     scope: RoleScope.GLOBAL,
   },
 
@@ -1074,7 +1081,7 @@ export const roleActions: Record<
   [Role.GENERAL_CREATOR]: {
     actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
   },
-  [Role.GENERAL_ADMIN]: {
+  [Role.OPERATIONS_ADMIN]: {
     actions: [
       Action.VIEW_USER_LIST,
       Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
@@ -1100,8 +1107,15 @@ export const roleActions: Record<
       Action.EDIT_ANY_LONG_LIVED_TOKEN,
       Action.REVOKE_ANY_LONG_LIVED_TOKEN,
     ],
+    inheritedRoles: [],
+  },
+
+  // Super User Admin role can see all user data - to be used sparingly
+  [Role.GENERAL_ADMIN]: {
+    actions: [],
     inheritedRoles: [
       // God role
+      Role.OPERATIONS_ADMIN,
       Role.GENERAL_CREATOR,
       Role.PROJECT_ADMIN,
       Role.TEAM_ADMIN,
