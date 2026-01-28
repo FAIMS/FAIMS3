@@ -91,7 +91,7 @@ const DEFAULT_OPTIONS = {
   maxResults: 3,
   partialResults: true,
   addPunctuation: true,
-  allowForSilence: 3000,
+  allowForSilence: 4000,
   appendMode: false,
   debugMode: false,
   finalizeDelay: 150,
@@ -144,7 +144,7 @@ export function useSpeechToText(
   const isEnabled = mergedOptions.enabled;
 
   // Instance ID for debugging multiple hook instances
-  const instanceId = useRef(Math.random().toString(36).substr(2, 9));
+  const instanceId = useRef(Math.random().toString(36).substring(2, 9));
 
   /**
    * Debug logger - only logs when debugMode is enabled
@@ -178,7 +178,7 @@ export function useSpeechToText(
   const isListeningRef = useRef<boolean>(false);
   const baseTranscriptRef = useRef<string>('');
   const interimTranscriptRef = useRef<string>('');
-  const finalizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const finalizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep interimTranscriptRef in sync with state
   useEffect(() => {

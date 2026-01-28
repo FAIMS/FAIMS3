@@ -117,10 +117,16 @@ export const SpeechToTextButton: React.FC<SpeechToTextButtonProps> = ({
   listeningColor,
 }) => {
   const theme = useTheme();
+
+  // If not available - don't have any button
+  if (!isAvailable) {
+    return null;
+  }
+
   const isListening = status === 'listening';
   const isLoading = status === 'initializing' || status === 'processing';
   const isError = status === 'error' || status === 'permission-denied';
-  const isDisabled = disabled || !isAvailable || status === 'unavailable';
+  const isDisabled = disabled || status === 'unavailable';
 
   const activeColor = listeningColor || theme.palette.error.main;
   const defaultColor = theme.palette.action.active;
@@ -131,7 +137,7 @@ export const SpeechToTextButton: React.FC<SpeechToTextButtonProps> = ({
   const statusText = getStatusText(status);
 
   const getIcon = () => {
-    if (!isAvailable || status === 'unavailable') {
+    if (status === 'unavailable') {
       return <MicOffIcon />;
     }
     if (isError) {

@@ -12,16 +12,14 @@ import {BaseMuiTextField} from '../wrappers/BaseMuiTextField';
 /**
  * Extended props schema for fields with speech-to-text support.
  */
-const SpeechEnabledFieldPropsSchema = BaseFieldPropsSchema.extend({
+const TextFieldPropsSchema = BaseFieldPropsSchema.extend({
   /** Enable speech-to-text input (default: true) */
   enableSpeech: z.boolean().optional().default(true),
-  /** Language for speech recognition (default: 'en-AU') */
-  speechLanguage: z.string().optional().default('en-AU'),
   /** Whether to append speech to existing text or replace */
   speechAppendMode: z.boolean().optional(),
 });
 
-type SpeechEnabledFieldProps = z.infer<typeof SpeechEnabledFieldPropsSchema>;
+type SpeechEnabledFieldProps = z.infer<typeof TextFieldPropsSchema>;
 
 /**
  * Single-line text field component with optional speech-to-text.
@@ -29,7 +27,6 @@ type SpeechEnabledFieldProps = z.infer<typeof SpeechEnabledFieldPropsSchema>;
  */
 const TextField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
   enableSpeech = true,
-  speechLanguage = 'en-AU',
   speechAppendMode,
   ...props
 }) => {
@@ -39,7 +36,6 @@ const TextField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
       multiline={false}
       inputType="text"
       enableSpeech={enableSpeech}
-      speechLanguage={speechLanguage}
       speechAppendMode={speechAppendMode ?? false} // Single-line defaults to replace
     />
   );
@@ -67,7 +63,7 @@ export const textFieldSpec: FieldInfo<
   name: 'FAIMSTextField',
   returns: 'faims-core::String',
   component: TextField,
-  fieldPropsSchema: SpeechEnabledFieldPropsSchema,
+  fieldPropsSchema: TextFieldPropsSchema,
   fieldDataSchemaFunction: textFieldValueSchema,
   view: {component: DefaultRenderer, config: {}},
 };
@@ -76,7 +72,7 @@ export const textFieldSpec: FieldInfo<
  * Extended props schema for MultilineTextField.
  * Includes configuration for the number of rows and speech support.
  */
-const MultilineTextFieldPropsSchema = SpeechEnabledFieldPropsSchema.extend({
+const MultilineTextFieldPropsSchema = TextFieldPropsSchema.extend({
   InputProps: z
     .object({
       /** Number of rows to display (default: 4) */
@@ -97,7 +93,6 @@ type MultilineTextFieldFullProps = MultilineTextFieldProps &
 const MultilineTextField: React.FC<MultilineTextFieldFullProps> = ({
   InputProps: {rows},
   enableSpeech = true,
-  speechLanguage = 'en-AU',
   speechAppendMode,
   ...baseProps
 }) => {
@@ -107,7 +102,6 @@ const MultilineTextField: React.FC<MultilineTextFieldFullProps> = ({
       multiline={true}
       rows={rows}
       enableSpeech={enableSpeech}
-      speechLanguage={speechLanguage}
       speechAppendMode={speechAppendMode ?? true} // Multiline defaults to append
     />
   );
@@ -137,7 +131,6 @@ export const multilineTextFieldSpec: FieldInfo<MultilineTextFieldFullProps> = {
  */
 const EmailField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
   enableSpeech = false, // Disabled by default for email
-  speechLanguage = 'en-AU',
   speechAppendMode,
   ...props
 }) => {
@@ -146,7 +139,6 @@ const EmailField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
       {...props}
       inputType="email"
       enableSpeech={enableSpeech}
-      speechLanguage={speechLanguage}
       speechAppendMode={speechAppendMode ?? false}
     />
   );
@@ -185,7 +177,7 @@ export const emailFieldSpec: FieldInfo<
   name: 'Email',
   returns: 'faims-core::String',
   component: EmailField,
-  fieldPropsSchema: SpeechEnabledFieldPropsSchema,
+  fieldPropsSchema: TextFieldPropsSchema,
   fieldDataSchemaFunction: emailValueSchema,
   view: {component: DefaultRenderer, config: {}},
 };

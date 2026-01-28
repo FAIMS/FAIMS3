@@ -138,29 +138,17 @@ adb reverse tcp:5984 tcp:5984   # CouchDB
 ./dev.sh
 ```
 
+
+### Step 6: Switch Capacitor Config and launch
+
 Then from within `/app`:
 
 ```bash
-# Sync and deploy to device
+# Sync to android build
 pnpm cap sync android
-```
-
-### Step 6: Switch Capacitor Config
-
-From within `/app`:
-
-```bash
+# Replace config with local debugging version
 ./setup-adb-testing.sh
-```
-
-### Step 7: Develop with Live Reload
-
-Build/launch onto android:
-
-From within `/app`:
-
-```bash
-# Sync and deploy to device
+# Deploy to device
 pnpm cap run android
 ```
 
