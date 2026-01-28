@@ -14,8 +14,8 @@ echo ""
 
 # Check if ADB forward config exists
 if [ ! -f "$ADB_CONFIG_FILE" ]; then
-    echo "ERROR: $ADB_CONFIG_FILE not found"
-    exit 1
+  echo "ERROR: $ADB_CONFIG_FILE not found"
+  exit 1
 fi
 
 # Copy ADB forward config
@@ -27,5 +27,3 @@ echo "Config updated. Now run:"
 echo "  pnpm cap sync android"
 echo "  pnpm cap run android"
 echo ""
-echo "To restore original config later:"
-echo "  cp capacitor.config.backup.json capacitor.config.json"

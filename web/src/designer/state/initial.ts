@@ -85,10 +85,9 @@ export type ComponentParameters = {
   hidden?: boolean;
   allowLinkToExisting?: boolean;
   /** Enable speech-to-text input (default: true) */
-  enableSpeech?: boolean,
+  enableSpeech?: boolean;
   /** Whether to append speech to existing text or replace */
-  speechAppendMode?: boolean,
-
+  speechAppendMode?: boolean;
 };
 
 export type FieldType = {

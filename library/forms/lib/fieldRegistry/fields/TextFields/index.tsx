@@ -19,13 +19,13 @@ const TextFieldPropsSchema = BaseFieldPropsSchema.extend({
   speechAppendMode: z.boolean().optional(),
 });
 
-type SpeechEnabledFieldProps = z.infer<typeof TextFieldPropsSchema>;
+type TextFieldProps = z.infer<typeof TextFieldPropsSchema>;
 
 /**
  * Single-line text field component with optional speech-to-text.
  * Uses the base MUI text field with default single-line configuration.
  */
-const TextField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
+const TextField: React.FC<TextFieldProps & FormFieldContextProps> = ({
   enableSpeech = true,
   speechAppendMode,
   ...props
@@ -57,7 +57,7 @@ const textFieldValueSchema = (props: BaseFieldProps) => {
  * Single-line text input for free-form entries with optional speech-to-text.
  */
 export const textFieldSpec: FieldInfo<
-  SpeechEnabledFieldProps & FormFieldContextProps
+  TextFieldProps & FormFieldContextProps
 > = {
   namespace: 'faims-custom',
   name: 'FAIMSTextField',
@@ -129,7 +129,7 @@ export const multilineTextFieldSpec: FieldInfo<MultilineTextFieldFullProps> = {
  * Note: Speech-to-text is disabled by default for email fields as
  * dictating email addresses is typically not practical.
  */
-const EmailField: React.FC<SpeechEnabledFieldProps & FormFieldContextProps> = ({
+const EmailField: React.FC<TextFieldProps & FormFieldContextProps> = ({
   enableSpeech = false, // Disabled by default for email
   speechAppendMode,
   ...props
@@ -171,7 +171,7 @@ const emailValueSchema = (props: BaseFieldProps) => {
  * This replaces the legacy formik-material-ui::TextField with email type.
  */
 export const emailFieldSpec: FieldInfo<
-  SpeechEnabledFieldProps & FormFieldContextProps
+  TextFieldProps & FormFieldContextProps
 > = {
   namespace: 'faims-custom',
   name: 'Email',
