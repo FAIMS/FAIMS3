@@ -68,6 +68,7 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
     enableSpeech = false,
     speechLanguage = 'en-AU',
     speechAppendMode,
+    config,
   } = props;
 
   const value = (state.value?.data as string) || '';
@@ -88,9 +89,9 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
           onResult: text => {
             setFieldData(text);
           },
-          enabled: true
+          enabled: true,
         }
-      : {enabled: false} 
+      : {enabled: false, debugMode: false}
   );
 
   // Sync speech transcript with field value when value changes externally
