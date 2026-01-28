@@ -692,8 +692,20 @@ export async function listRecordMetadata({
     // Get records - either allDocs or query from index based on provision of
     // recordIds filter
     const rawRecords = await getRecords({
+      // this is typically not used - this means the keys field in the DB query
+      // is not used
       recordIds,
       dataDb,
+    });
+
+    const rawRevisions = await getRevisions({dataDb: dataDb});
+
+    const revMap: Map<
+      string,
+      PouchDB.Core.ExistingDocument<Revision>
+    > = new Map();
+    rawRevisions.forEach(rev => {
+      revMap.set(rev._id, rev);
     });
 
     // Process records in parallel using Promise.all with map. Each record is
@@ -710,7 +722,7 @@ export async function listRecordMetadata({
           return null;
         }
 
-        const revision = await getRevision({dataDb: dataDb, revisionId: revId});
+        const revision = revMap.get(revId);
 
         // Skip if revision not found
         if (!revision) {
@@ -887,7 +899,7 @@ export async function getRevisions({
   revisionIds,
   dataDb,
 }: {
-  revisionIds: RevisionID[];
+  revisionIds?: RevisionID[];
   dataDb: DataDbType | RevisionDbType;
 }): Promise<PouchDB.Core.ExistingDocument<Revision>[]> {
   return await queryCouch<Revision>({
@@ -959,7 +971,6 @@ async function createAuditHash(
     .map(item => `${item.id}:${item.rev}`)
     .join('|');
 
-  // console.log('canonical json', canonicalString);
   // Return SHA-256 hash
   return await createHash(canonicalString);
 }

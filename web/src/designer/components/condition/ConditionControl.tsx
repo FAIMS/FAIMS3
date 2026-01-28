@@ -471,12 +471,21 @@ export const FieldConditionControl = (props: ConditionProps) => {
     const cName = targetFieldDef['component-name'];
     const params = targetFieldDef['component-parameters'] || {};
     const possibleOptions = params.ElementProps?.options || [];
+    const enableOtherOption = params.ElementProps?.enableOtherOption ?? false;
+
+    if (
+      enableOtherOption &&
+      (cName === 'Select' || cName === 'MultiSelect' || cName === 'RadioGroup')
+    ) {
+      return true;
+    }
 
     if (cName === 'Select' || cName === 'RadioGroup') {
       return possibleOptions.some((o: any) => o.value === condition.value);
     }
     if (cName === 'MultiSelect') {
       if (!Array.isArray(condition.value)) return false;
+      if (enableOtherOption) return true;
       return (condition.value as any[]).every((val: any) =>
         possibleOptions.some((o: any) => o.value === val)
       );

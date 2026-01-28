@@ -14,7 +14,11 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {useQueryClient} from '@tanstack/react-query';
 import React, {useState} from 'react';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  DEBUG_APP,
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {selectActiveUser} from '../../../context/slices/authSlice';
 import {compiledSpecService} from '../../../context/slices/helpers/compiledSpecService';
@@ -29,6 +33,7 @@ import {
   useRecordList,
 } from '../../../utils/customHooks';
 import CircularLoading from '../ui/circular_loading';
+import {DE_ACTIVATE_VERB} from '../workspace/notebooks';
 import AddRecordButtons from './add_record_by_type';
 import {MetadataDisplayComponent} from './MetadataDisplay';
 import {OverviewMap} from './OverviewMap';
@@ -178,12 +183,12 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
   const [query, setQuery] = useState<string>('');
   const records = useRecordList({
     query: query,
+    // Profiling enabled when debugging
+    enableProfiling: DEBUG_APP,
     projectId: project.projectId,
     filterDeleted: true,
     // refetch every 10 seconds (local only fetch - no network traffic here)
     metadataRefreshIntervalMs: 10000,
-    // rehydrate every 2 minutes (local only fetch - no network traffic here)
-    hydrationRefreshIntervalMs: 120000,
     uiSpecification: uiSpecification,
   });
   const forceRecordRefresh = records.initialQuery.refetch;
@@ -236,7 +241,8 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
           <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
           This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
           uploaded, but no additional data can be collected. It is recommended
-          to deactivate this {NOTEBOOK_NAME} in the settings tab below.
+          to {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} in the
+          settings tab below.
         </Alert>
       )}
       <Box>

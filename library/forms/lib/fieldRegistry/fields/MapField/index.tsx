@@ -24,7 +24,7 @@ import type {GeoJSONFeatureCollection} from 'ol/format/GeoJSON';
 import GeoJSON from 'ol/format/GeoJSON';
 import {useEffect, useState} from 'react';
 import {z} from 'zod';
-import {VectorTileStore} from '../../../components';
+import {createTileStore} from '../../../components';
 import {defaultMapProjection} from '../../../components/maps/MapComponent';
 import {GeoJSONFeatureCollectionSchema} from '../../../components/maps/types';
 import {LocationPermissionIssue} from '../../../components/PermissionAlerts';
@@ -36,7 +36,9 @@ import MapWrapper, {MapAction} from './MapWrapper';
 
 const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
+  buttonLabelText: z.string().optional(),
   featureType: z.enum(['Point', 'Polygon', 'LineString']).optional(),
+  allowSetToCurrentPoint: z.boolean().optional().default(false),
   geoTiff: z.string().optional(),
   projection: z.string().optional(),
   center: z.tuple([z.number(), z.number()]),
@@ -88,8 +90,18 @@ export function MapFormField(props: FieldProps): JSX.Element {
   // default to point if not specified
   const featureType = props.featureType ?? 'Point';
 
-  // default label
-  const label = props.label ?? `Get ${props.featureType}`;
+  // Map featureType to user-friendly label
+  const featureTypeLabel: Record<string, string> = {
+    Point: 'Point',
+    LineString: 'Line',
+    Polygon: 'Polygon',
+  };
+
+  // Button label: use buttonLabelText if provided, otherwise fall back to label or default
+  const buttonLabel =
+    props.buttonLabelText ??
+    props.label ??
+    `Select ${featureTypeLabel[featureType] ?? featureType}`;
 
   // A location is selected if there are features provided
   const isLocationSelected =
@@ -116,7 +128,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
       });
 
       // now work out if we have a stored map
-      const tileStore = new VectorTileStore(mapConfig);
+      const tileStore = createTileStore(mapConfig);
       return await tileStore.mapCacheIncludes(parsedFeatures);
     } else {
       return false;
@@ -219,7 +231,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
         ) : (
           <MapWrapper
             config={mapConfig}
-            label={label}
+            label={buttonLabel}
             featureType={featureType}
             features={drawnFeatures}
             zoom={zoom}
@@ -230,6 +242,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
             setNoPermission={setNoPermission}
             isLocationSelected={isLocationSelected}
             disabled={props.disabled}
+            allowSetToCurrentPoint={props.allowSetToCurrentPoint}
           />
         )}
         <Box

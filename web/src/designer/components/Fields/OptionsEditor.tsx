@@ -21,6 +21,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import {
+  arrayMove,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
@@ -56,7 +57,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
@@ -120,6 +121,120 @@ interface SortableItemProps {
   // how many items in total?
   totalItems: number;
 }
+
+const OTHER_OPTION_ID = '__other__';
+
+interface OtherOptionRowProps {
+  id: string;
+  showExclusiveOptions?: boolean;
+  otherOptionPosition: number;
+  totalOptions: number;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}
+
+/**
+ * "Other" option row component (non-draggable, uses arrow buttons for positioning)
+ */
+const SortableOtherOptionRow = ({
+  id,
+  showExclusiveOptions,
+  otherOptionPosition,
+  totalOptions,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: OtherOptionRowProps) => {
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id});
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      sx={{
+        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+      }}
+    >
+      {/* EDITED: Drag handle is ENABLED for Other */}
+      <TableCell sx={{width: '40px', py: 1}}>
+        <IconButton
+          size="small"
+          sx={{cursor: 'grab', p: 0.5}}
+          {...attributes}
+          {...listeners}
+        >
+          <DragIndicatorIcon />
+        </IconButton>
+      </TableCell>
+
+      <TableCell sx={{py: 1}}>
+        <Tooltip title="Allows custom text input">
+          <Typography noWrap sx={{maxWidth: 400, fontSize: '0.875rem'}}>
+            <strong>Other</strong>{' '}
+            <Typography
+              component="span"
+              sx={{
+                fontSize: '0.75rem',
+                color: 'rgba(0, 0, 0, 0.6)',
+              }}
+            >
+              (allows custom text input)
+            </Typography>
+          </Typography>
+        </Tooltip>
+      </TableCell>
+
+      {/* Empty exclusive checkbox column */}
+      {showExclusiveOptions && <TableCell align="center" sx={{py: 1}} />}
+
+      {/* Action buttons */}
+      <TableCell align="right" sx={{py: 1}}>
+        <Tooltip title="Move up">
+          <span>
+            <IconButton
+              size="small"
+              disabled={otherOptionPosition === 0}
+              onClick={onMoveUp}
+              sx={{p: 0.5}}
+            >
+              <ArrowDropUpRoundedIcon fontSize="large" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Move down">
+          <span>
+            <IconButton
+              size="small"
+              disabled={otherOptionPosition === totalOptions}
+              onClick={onMoveDown}
+              sx={{p: 0.5}}
+            >
+              <ArrowDropDownRoundedIcon fontSize="large" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Other option cannot be edited">
+          <span>
+            <IconButton size="small" disabled sx={{p: 0.5}}>
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Remove 'Other' option">
+          <IconButton size="small" onClick={onRemove} sx={{p: 0.5}}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </TableCell>
+    </TableRow>
+  );
+};
 
 /**
  * Individual sortable item row component for the options table
@@ -226,6 +341,10 @@ const SortableItem = ({
   );
 };
 
+type CombinedRow =
+  | {id: string; type: 'option'; option: {label: string; value: string}}
+  | {id: string; type: 'other'};
+
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,
@@ -275,9 +394,49 @@ export const OptionsEditor = ({
     updateConditions: boolean;
   } | null>(null);
 
-  const options = field['component-parameters'].ElementProps?.options || [];
-  const exclusiveOptions =
+  const options: Array<{label: string; value: string}> =
+    field['component-parameters'].ElementProps?.options || [];
+  const exclusiveOptions: string[] =
     field['component-parameters'].ElementProps?.exclusiveOptions || [];
+  const enableOther: boolean =
+    field['component-parameters'].ElementProps?.enableOtherOption ?? false;
+  const otherOptionPosition: number =
+    field['component-parameters'].ElementProps?.otherOptionPosition ??
+    options.length;
+
+  /**
+   * made a combined list (options + other) in visual order.
+   * This combined list is thee source of truth for sortable order.
+   */
+  const combinedRows: CombinedRow[] = useMemo(() => {
+    const rows: CombinedRow[] = [];
+    let insertedOther = false;
+
+    if (!enableOther) {
+      return options.map(o => ({id: o.value, type: 'option', option: o}));
+    }
+
+    const safeOtherPos = Math.max(
+      0,
+      Math.min(otherOptionPosition, options.length)
+    );
+
+    for (let i = 0; i <= options.length; i++) {
+      if (i === safeOtherPos && !insertedOther) {
+        rows.push({id: OTHER_OPTION_ID, type: 'other'});
+        insertedOther = true;
+      }
+      if (i < options.length) {
+        rows.push({id: options[i].value, type: 'option', option: options[i]});
+      }
+    }
+
+    if (!insertedOther) {
+      rows.push({id: OTHER_OPTION_ID, type: 'other'});
+    }
+
+    return rows;
+  }, [enableOther, options, otherOptionPosition]);
 
   /**
    * Validates option text for duplicates and empty values
@@ -308,7 +467,8 @@ export const OptionsEditor = ({
    */
   const updateField = (
     updatedOptions: Array<{label: string; value: string}>,
-    updatedExclusiveOptions: string[]
+    updatedExclusiveOptions: string[],
+    updatedOtherOptionPosition?: number
   ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
@@ -325,12 +485,12 @@ export const OptionsEditor = ({
         return o;
       }),
       exclusiveOptions: updatedExclusiveOptions,
+      ...(enableOther && updatedOtherOptionPosition !== undefined
+        ? {otherOptionPosition: updatedOtherOptionPosition}
+        : {}),
     };
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -380,24 +540,45 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Handles drag-and-drop reordering
+   * Handles drag-and-drop reordering for regular options only.
+   * "Other" option uses arrow buttons for positioning (not drag-and-drop).
    */
   const handleDragEnd = (event: DragEndEvent) => {
     const {active, over} = event;
 
-    // if we are over something - and the over id is not equal to the active id
-    // (i.e. we have moved)
-    if (over && active.id !== over.id) {
-      const oldIndex = options.findIndex(item => item.value === active.id);
-      const newIndex = options.findIndex(item => item.value === over.id);
+    if (!over) return;
 
-      // Reorder options array
-      const newOptions = [...options];
-      const [movedItem] = newOptions.splice(oldIndex, 1);
-      newOptions.splice(newIndex, 0, movedItem);
+    if (active.id === over.id) return;
 
-      updateField(newOptions, exclusiveOptions);
-    }
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Only handle drag if we have a valid drop target and it's different from source
+    // if (!over || active.id === over.id) return;
+
+    const oldIndex = combinedRows.findIndex(r => r.id === activeId);
+    const newIndex = combinedRows.findIndex(r => r.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newCombined = arrayMove(combinedRows, oldIndex, newIndex);
+
+    // If Other is enabled, compute its new position (index in combined list)
+    const newOtherPos = enableOther
+      ? newCombined.findIndex(r => r.id === OTHER_OPTION_ID)
+      : undefined;
+
+    // Rebuild options array from the combined order (excluding Other)
+    const optionMap = new Map(options.map(o => [o.value, o]));
+    const newOptions = newCombined
+      .filter(r => r.type === 'option')
+      .map(r => optionMap.get(r.id))
+      .filter(Boolean) as Array<{label: string; value: string}>;
+
+    // Safety: if mapping failed, do nothing
+    if (newOptions.length !== options.length) return;
+
+    updateField(newOptions, exclusiveOptions, newOtherPos);
   };
 
   /**
@@ -561,6 +742,52 @@ export const OptionsEditor = ({
     });
   };
 
+  /**
+   * "Other" option feature
+   */
+  const toggleEnableOtherOption = () => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    const newValue =
+      !field['component-parameters'].ElementProps?.enableOtherOption;
+
+    newField['component-parameters'].ElementProps = {
+      ...(newField['component-parameters'].ElementProps ?? {}),
+      enableOtherOption: newValue,
+      otherOptionPosition: newValue ? options.length : undefined,
+    };
+
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
+
+  /**
+   * Updates the position of the "Other" option
+   */
+  const updateOtherPosition = (newPosition: number) => {
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
+    newField['component-parameters'].ElementProps = {
+      ...(newField['component-parameters'].ElementProps ?? {}),
+      otherOptionPosition: newPosition,
+    };
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
+  };
+
+  /**
+   * Moves the "Other" option up or down
+   */
+  const moveOtherOption = (direction: 'up' | 'down') => {
+    const currentPos = otherOptionPosition;
+    const newPos = direction === 'up' ? currentPos - 1 : currentPos + 1;
+    if (newPos >= 0 && newPos <= options.length) {
+      updateOtherPosition(newPos);
+    }
+  };
+
   return (
     <BaseFieldEditor fieldName={fieldName}>
       <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
@@ -647,6 +874,25 @@ export const OptionsEditor = ({
                 sx={{mb: 2}}
               />
             )}
+
+            {/* Add Other Option button with info icon - always visible but disabled when Other is enabled */}
+            <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 2}}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                onClick={toggleEnableOtherOption}
+                disabled={enableOther}
+                sx={{
+                  textTransform: 'none',
+                }}
+              >
+                Add "Other" Option
+              </Button>
+              <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
+                <InfoIcon color="action" fontSize="small" />
+              </Tooltip>
+            </Stack>
           </Grid>
 
           {/* Options table */}
@@ -721,31 +967,54 @@ export const OptionsEditor = ({
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {/* Drag and drop context wrapper */}
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                   >
+                    {/* SortableContext now includes "Other" id when enabled */}
                     <SortableContext
-                      items={options.map(o => o.value)}
+                      items={combinedRows.map(r => r.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      {options.map((option, index) => (
-                        <SortableItem
-                          key={option.value}
-                          id={option.value}
-                          option={option}
-                          index={index}
-                          showExclusiveOptions={showExclusiveOptions}
-                          exclusiveOptions={exclusiveOptions}
-                          onExclusiveToggle={handleExclusiveToggle}
-                          onEdit={(val, idx) => handleOpenEditDialog(val, idx)}
-                          onRemove={removeOption}
-                          onMove={moveOption}
-                          totalItems={options.length}
-                        />
-                      ))}
+                      {combinedRows.map(row => {
+                        if (row.type === 'other') {
+                          return (
+                            <SortableOtherOptionRow
+                              key={OTHER_OPTION_ID}
+                              id={OTHER_OPTION_ID}
+                              showExclusiveOptions={showExclusiveOptions}
+                              otherOptionPosition={otherOptionPosition}
+                              totalOptions={options.length}
+                              onMoveUp={() => moveOtherOption('up')}
+                              onMoveDown={() => moveOtherOption('down')}
+                              onRemove={toggleEnableOtherOption}
+                            />
+                          );
+                        }
+
+                        const optionIndex = options.findIndex(
+                          o => o.value === row.option.value
+                        );
+
+                        return (
+                          <SortableItem
+                            key={row.option.value}
+                            id={row.option.value}
+                            option={row.option}
+                            index={optionIndex}
+                            showExclusiveOptions={showExclusiveOptions}
+                            exclusiveOptions={exclusiveOptions}
+                            onExclusiveToggle={handleExclusiveToggle}
+                            onEdit={(val, idx) =>
+                              handleOpenEditDialog(val, idx)
+                            }
+                            onRemove={removeOption}
+                            onMove={moveOption}
+                            totalItems={options.length}
+                          />
+                        );
+                      })}
                     </SortableContext>
                   </DndContext>
                 </TableBody>

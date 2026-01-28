@@ -76,6 +76,7 @@ jobs:
           export VITE_ENABLE_RECORD_FILTERS=${{vars.ENABLE_RECORD_FILTERS}}
           export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"
           export VITE_MAP_SOURCE=${{vars.MAP_SOURCE}}
+          export VITE_SATELLITE_SOURCE=${{vars.SATELLITE_SOURCE}}
           export VITE_MAP_SOURCE_KEY="${{secrets.MAP_SOURCE_KEY}}"
           # could make these configurable but enable by default for now
           export VITE_OFFLINE_MAPS=true
@@ -96,7 +97,7 @@ jobs:
       - name: Set up XCode version
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 16.3
+          xcode-version: 16.4
       - name: Deploy iOS app to production with Fastlane
         uses: maierj/fastlane-action@v2.3.0
         with:

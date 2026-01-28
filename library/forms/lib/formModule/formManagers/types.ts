@@ -79,11 +79,18 @@ export type FormNavigationContext = z.infer<typeof FormNavigationContextSchema>;
 export interface FormManagerAdditions {
   /** The nav context */
   navigationContext: FormNavigationContext;
+  /** Optional handler to call when the form is finished - this is used to
+   * replace the Next button in the mobile stepper - it can be derived from the
+   * navigation context */
+  onCompleteHandler?: {label: string; onClick: () => void};
   attachmentHandlers: {
     /** Add a new attachment to a field (inserted at start of attachment list) */
     addAttachment: (params: {
       fieldId: string;
-      blob: Blob;
+      // Blob content
+      blob?: Blob;
+      // Base64 content
+      base64?: string;
       contentType: string;
       // This informs how to name things
       type: 'photo' | 'file';

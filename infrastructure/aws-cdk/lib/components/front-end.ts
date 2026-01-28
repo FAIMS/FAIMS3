@@ -216,6 +216,9 @@ export class FaimsFrontEnd extends Construct {
       ...(props.offlineMaps.mapSourceKey
         ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
         : {}),
+      ...(props.offlineMaps.satelliteSource
+        ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
+        : {}),
 
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_KEY: props.bugsnagKey} : {}),
@@ -354,6 +357,15 @@ export class FaimsFrontEnd extends Construct {
       VITE_NOTEBOOK_NAME: props.notebookName,
       VITE_THEME: props.uiTheme,
       VITE_WEBSITE_TITLE: 'Control Centre',
+      // Maps setup for web
+      VITE_MAP_SOURCE: props.offlineMaps.mapSource,
+      VITE_MAP_STYLE: props.offlineMaps.mapStyle,
+      ...(props.offlineMaps.mapSourceKey
+        ? {VITE_MAP_SOURCE_KEY: props.offlineMaps.mapSourceKey}
+        : {}),
+      ...(props.offlineMaps.satelliteSource
+        ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
+        : {}),
       VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
         props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
     };

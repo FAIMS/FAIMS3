@@ -15,8 +15,6 @@ import FaimsDialog from '../../ui/Faims_Dialog';
 import {
   ACTIVATE_ACTIVE_VERB_LABEL,
   ACTIVATE_VERB_LABEL,
-  ACTIVATED_LABEL,
-  DE_ACTIVATE_VERB,
 } from '../../workspace/notebooks';
 
 type NotebookActivationSwitchProps = {
@@ -77,34 +75,12 @@ export default function NotebookActivationSwitch({
       >
         <Box mb={2}>
           <Typography variant="body2" paragraph>
-            When a {NOTEBOOK_NAME_CAPITALIZED} is “{ACTIVATED_LABEL}” you are
-            safe to work offline at any point because all the data you collect
-            will be saved to your device. To {ACTIVATE_VERB_LABEL.toLowerCase()}{' '}
-            your {NOTEBOOK_NAME_CAPITALIZED}, click the "{ACTIVATE_VERB_LABEL}"
-            button below.
-          </Typography>
-          <Typography variant="body2" paragraph>
-            <b>Warning</b>: {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME_CAPITALIZED} will start the downloading of existing
-            records onto your device. We recommend you complete this procedure
-            while you have a stable internet connection.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
+            ensures that you are safe to work offline at any point by
+            downloading any existing records onto your device.
             <br />
-            <br />
-            Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME}, this is something we will be adding soon. If you
-            need to make space on your device you can clear the application
-            storage or remove and reinstall the application.
+            <strong>Please do this with a stable internet connection.</strong>
           </Typography>
-          {/*
-          <Typography variant="subtitle1" fontWeight="bold">
-            Deactivating a survey:
-          </Typography>
-          <Typography variant="body2">
-            • This can be helpful when you need to free up space on your device
-            and when you no longer need access to surveys or survey data
-            offline.
-          </Typography>
-            */}
         </Box>
       </FaimsDialog>
     </Box>

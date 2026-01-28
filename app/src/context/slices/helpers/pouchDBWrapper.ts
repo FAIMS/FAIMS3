@@ -151,6 +151,19 @@ export class PouchDBWrapper<T extends {}> implements DatabaseInterface<T> {
     else return this.withRetry(() => this.db.put<Model>(doc), 'put');
   }
 
+  async putAttachment(
+    docId: PouchDB.Core.DocumentId,
+    attachmentId: PouchDB.Core.AttachmentId,
+    rev: PouchDB.Core.RevisionId,
+    attachment: PouchDB.Core.AttachmentData,
+    type: string
+  ): Promise<PouchDB.Core.Response> {
+    return this.withRetry(
+      () => this.db.putAttachment(docId, attachmentId, rev, attachment, type),
+      'putAttachment'
+    );
+  }
+
   async post<Model extends {}>(
     doc: PouchDB.Core.PostDocument<T & Model>,
     options?: any
