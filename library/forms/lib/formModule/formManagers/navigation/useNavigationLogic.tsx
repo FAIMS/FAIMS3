@@ -99,13 +99,17 @@ export function useNavigationLogic({
   /**
    * Navigate to view mode for the current record.
    */
-  const handleNavigateToViewRecord = useMemo(() => {
-    if (!navigationService.navigateToViewRecord) return null;
 
-    return withSaveFlush(() => {
-      navigationService.navigateToViewRecord!({recordId: ''}); // recordId injected at call site
-    });
-  }, [navigationService.navigateToViewRecord, withSaveFlush]);
+  /**
+   * 
+   const handleNavigateToViewRecord = useMemo(() => {
+     if (!navigationService.navigateToViewRecord) return null;
+
+     return withSaveFlush(() => {
+       navigationService.navigateToViewRecord!({recordId: ''}); // recordId injected at call site
+     });
+   }, [navigationService.navigateToViewRecord, withSaveFlush]);
+   */
 
   /**
    * Creates a navigation handler for an implied parent.
@@ -169,7 +173,6 @@ export function useNavigationLogic({
     // -------------------------------------------------------------------------
     if (createAnotherChild) {
       const {
-        fieldLabel,
         formLabel,
         onCreate,
         parentFormLabel: childParentFormLabel,

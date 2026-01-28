@@ -626,7 +626,6 @@ export function useSpeechToText(
     debug('Hook mounted - initializing');
     checkAvailability();
     checkPermission();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEnabled]);
 
   // Cleanup on unmount
@@ -646,7 +645,6 @@ export function useSpeechToText(
         stateListenerRef.current.remove().catch(console.warn);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Return disabled stub if not enabled
