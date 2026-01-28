@@ -16,7 +16,6 @@ import {Card, Grid} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
-// import SpeechSettingsEditor from '../modules/SpeechSettingsEditor';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 export const MultipleTextFieldEditor = ({fieldName}: {fieldName: string}) => {
@@ -53,11 +52,6 @@ export const MultipleTextFieldEditor = ({fieldName}: {fieldName: string}) => {
           </Grid>
         </Card>
       </Grid>
-      {/* Speech-to-text settings - only show for string/text fields */}
-      {
-
-      // <SpeechSettingsEditor fieldName={fieldName} />
-      }
     </BaseFieldEditor>
   );
 };
