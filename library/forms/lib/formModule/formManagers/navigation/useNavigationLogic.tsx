@@ -100,16 +100,13 @@ export function useNavigationLogic({
    * Navigate to view mode for the current record.
    */
 
-  /**
-   * 
-   const handleNavigateToViewRecord = useMemo(() => {
-     if (!navigationService.navigateToViewRecord) return null;
+  // const handleNavigateToViewRecord = useMemo(() => {
+  //   if (!navigationService.navigateToViewRecord) return null;
 
-     return withSaveFlush(() => {
-       navigationService.navigateToViewRecord!({recordId: ''}); // recordId injected at call site
-     });
-   }, [navigationService.navigateToViewRecord, withSaveFlush]);
-   */
+  //   return withSaveFlush(() => {
+  //     navigationService.navigateToViewRecord!({recordId: ''}); // recordId injected at call site
+  //   });
+  // }, [navigationService.navigateToViewRecord, withSaveFlush]);
 
   /**
    * Creates a navigation handler for an implied parent.

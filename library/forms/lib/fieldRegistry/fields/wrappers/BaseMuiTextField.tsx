@@ -68,7 +68,6 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
     enableSpeech = false,
     speechLanguage = 'en-AU',
     speechAppendMode,
-    config,
   } = props;
 
   const value = (state.value?.data as string) || '';
@@ -99,7 +98,6 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
     if (value !== speech.transcript && !speech.isListening) {
       speech.setTranscript(value);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
