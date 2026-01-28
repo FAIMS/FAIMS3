@@ -84,7 +84,7 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
           appendMode: effectiveAppendMode,
           partialResults: true,
           addPunctuation: true,
-          debugMode: false,
+          debugMode: true,
           onResult: text => {
             setFieldData(text);
           },

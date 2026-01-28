@@ -527,6 +527,11 @@ export function useSpeechToText(
       return;
     }
 
+    // CAPTURE the transcript BEFORE stopping - iOS sends empty partialResults
+    // after stop()
+    const capturedTranscript = interimTranscriptRef.current;
+    debug('Captured transcript before stop:', capturedTranscript);
+
     updateStatus('processing');
     isListeningRef.current = false;
 
@@ -538,14 +543,26 @@ export function useSpeechToText(
       // Clear any pending finalize timeout since we're manually stopping
       clearFinalizeTimeout();
 
-      // Small delay to allow final results to arrive
-      await new Promise(resolve =>
-        setTimeout(resolve, mergedOptions.finalizeDelay)
-      );
-
-      // Finalize transcript
-      finalizeTranscript();
+      // Clean up listeners immediately to prevent late events from mutating
+      // state
       await cleanupListeners();
+
+      // Now finalize with the captured value
+      if (capturedTranscript) {
+        const newTranscript = mergedOptionsRef.current.appendMode
+          ? `${baseTranscriptRef.current} ${capturedTranscript}`.trim()
+          : capturedTranscript;
+
+        debug(`Setting final transcript from captured: "${newTranscript}"`);
+        setTranscript(newTranscript);
+        setInterimTranscript('');
+        optionsRef.current.onResult?.(newTranscript);
+      } else {
+        debug('No captured transcript to finalize');
+        setInterimTranscript('');
+      }
+
+      updateStatus('idle');
       debug('stopListening completed successfully');
     } catch (err) {
       debug('stopListening caught error', err);
