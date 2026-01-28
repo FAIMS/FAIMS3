@@ -35,6 +35,7 @@ const BaseAuthProviderConfigSchema = z.object({
   type: z.string(),
   displayName: z.string(),
   helperText: z.string().optional(),
+  scope: z.string(),
 });
 
 const GoogleAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
