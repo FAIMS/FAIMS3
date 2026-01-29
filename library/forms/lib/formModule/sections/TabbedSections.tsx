@@ -4,7 +4,6 @@ import {
   type UISpecification,
 } from '@faims3/data-model';
 import {
-  Badge,
   Box,
   Button,
   Link,

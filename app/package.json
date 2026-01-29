@@ -69,6 +69,7 @@
     "@capacitor/ios": "^7.2.0",
     "@capacitor/share": "^7.0.1",
     "@capacitor/status-bar": "^7.0.1",
+    "@capgo/capacitor-speech-recognition": "^8.0.4",
     "@emotion/react": "11.11.4",
     "@emotion/styled": "11.10.8",
     "@faims3/data-model": "workspace:*",
