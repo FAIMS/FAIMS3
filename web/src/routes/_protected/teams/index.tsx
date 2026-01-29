@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_protected/teams/')({
  *
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
-function RouteComponent() {
+export function RouteComponent() {
   const {user} = useAuth();
   const pathname = useRouter().state.location.pathname;
 

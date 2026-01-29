@@ -1083,15 +1083,31 @@ export const roleActions: Record<
   },
   [Role.OPERATIONS_ADMIN]: {
     actions: [
+      Action.VERIFY_EMAIL,
+
+      // Manage users
       Action.VIEW_USER_LIST,
       Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
       Action.RESET_USER_PASSWORD,
       Action.DELETE_USER,
+
+      // System operations
       Action.INITIALISE_SYSTEM_API,
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
-      Action.CREATE_TEAM,
       Action.SEND_TEST_EMAIL,
+
+      // Teams
+      Action.CREATE_TEAM,
+      Action.DELETE_TEAM,
+      Action.UPDATE_TEAM_DETAILS,
+      Action.VIEW_TEAM_DETAILS,
+      Action.VIEW_TEAM_INVITES,
+      Action.VIEW_TEAM_MEMBERS,
+      Action.ADD_MANAGER_TO_TEAM,
+      Action.REMOVE_MANAGER_FROM_TEAM,
+      Action.ADD_MEMBER_TO_TEAM,
+      Action.REMOVE_MEMBER_FROM_TEAM,
 
       // These are special permissions!
       Action.ADD_ADMIN_TO_TEAM,
@@ -1103,6 +1119,7 @@ export const roleActions: Record<
       Action.DELETE_ADMIN_TEAM_INVITE,
 
       // Long-lived token admin actions
+      Action.CREATE_LONG_LIVED_TOKEN,
       Action.READ_ANY_LONG_LIVED_TOKENS,
       Action.EDIT_ANY_LONG_LIVED_TOKEN,
       Action.REVOKE_ANY_LONG_LIVED_TOKEN,
@@ -1115,6 +1132,7 @@ export const roleActions: Record<
     actions: [],
     inheritedRoles: [
       // God role
+      Role.GENERAL_USER,
       Role.OPERATIONS_ADMIN,
       Role.GENERAL_CREATOR,
       Role.PROJECT_ADMIN,
