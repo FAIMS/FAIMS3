@@ -62,7 +62,7 @@
     "esbuild": "^0.25.0",
     "jwt-decode": "^4.0.0",
     "lexical": "^0.12.4",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "lucide-react": "^0.468.0",
     "mdi-material-ui": "^7.7.0",
     "mustache": "^4.2.0",

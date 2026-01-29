@@ -52,7 +52,7 @@
   },
   "dependencies": {
     "@types/pouchdb": "^6.4.2",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "pouchdb-security-helper": "^2.1.2",
     "uuid": "^9.0.0",
     "zod": "^3.24.1"
