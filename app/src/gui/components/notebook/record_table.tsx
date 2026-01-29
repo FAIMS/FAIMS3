@@ -1052,6 +1052,11 @@ const useRowHydration = (
       },
       networkMode: 'always',
       staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      // Force a refresh on mount - this will help to ensure that the live page
+      // is not stale - this does not invalidate the total record list query
+      // which is more expensive in very large record lists. The old data will
+      // also be shown in the meantime.
+      refetchOnMount: 'always',
     })),
   });
 
