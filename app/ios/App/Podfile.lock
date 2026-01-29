@@ -27,6 +27,8 @@ PODS:
     - Capacitor
   - CapacitorStatusBar (7.0.4):
     - Capacitor
+  - CapgoCapacitorSpeechRecognition (8.0.4):
+    - Capacitor
   - GoogleDataTransport (10.1.0):
     - nanopb (~> 3.30910.0)
     - PromisesObjC (~> 2.4)
@@ -90,6 +92,7 @@ DEPENDENCIES:
   - "CapacitorMlkitBarcodeScanning (from `../../../node_modules/.pnpm/@capacitor-mlkit+barcode-scanning@7.3.0_@capacitor+core@7.4.3/node_modules/@capacitor-mlkit/barcode-scanning`)"
   - "CapacitorShare (from `../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/share`)"
   - "CapacitorStatusBar (from `../../../node_modules/.pnpm/@capacitor+status-bar@7.0.4_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar`)"
+  - "CapgoCapacitorSpeechRecognition (from `../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.0.4_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-speech-recognition`)"
 
 SPEC REPOS:
   trunk:
@@ -134,6 +137,8 @@ EXTERNAL SOURCES:
     :path: "../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/share"
   CapacitorStatusBar:
     :path: "../../../node_modules/.pnpm/@capacitor+status-bar@7.0.4_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar"
+  CapgoCapacitorSpeechRecognition:
+    :path: "../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.0.4_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-speech-recognition"
 
 SPEC CHECKSUMS:
   Capacitor: 28d6c01026a9a3f7156529498ec1f389a2a28dbc
@@ -149,6 +154,7 @@ SPEC CHECKSUMS:
   CapacitorMlkitBarcodeScanning: 05b2dfc7a70099f6d4594365c521534d79a17b1d
   CapacitorShare: be166411fa995ead2d39b104aa0aae56d8615c66
   CapacitorStatusBar: d0e0151c89c001a9c7125bac59ddedf76b664768
+  CapgoCapacitorSpeechRecognition: 06b624a9f4c97f8e9770ccb6be63f2b50c15d032
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMLKit: eff9e23ec1d90ea4157a1ee2e32a4f610c5b3318
   GoogleToolboxForMac: d1a2cbf009c453f4d6ded37c105e2f67a32206d8
@@ -163,6 +169,6 @@ SPEC CHECKSUMS:
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: 451b6e3f10770b9fc5603449307d171aae579007
+PODFILE CHECKSUM: ff7125bcfff34f40a851e062617668f4ea358f59
 
 COCOAPODS: 1.15.2

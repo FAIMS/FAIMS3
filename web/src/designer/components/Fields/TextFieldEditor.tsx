@@ -13,10 +13,10 @@
 // limitations under the License.
 
 import {Card, Grid} from '@mui/material';
-import {useAppSelector, useAppDispatch} from '../../state/hooks';
-import {BaseFieldEditor} from './BaseFieldEditor';
+import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {BaseFieldEditor} from './BaseFieldEditor';
 
 export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(

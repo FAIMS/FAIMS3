@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {getMapConfig} from '@/constants';
 import {UISpecification} from '@faims3/data-model';
 import {PreviewFormManager} from '@faims3/forms';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
@@ -26,6 +27,7 @@ import {
   Button,
   Card,
   Checkbox,
+  createTheme,
   Dialog,
   DialogActions,
   DialogContent,
@@ -40,12 +42,12 @@ import {
   StepButton,
   Stepper,
   Switch,
+  ThemeProvider,
   Tooltip,
   Typography,
 } from '@mui/material';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
-import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {useQueryClient} from '@tanstack/react-query';
 import {cloneDeep} from 'lodash';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -57,7 +59,6 @@ import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
-import {getMapConfig} from '@/constants';
 
 type Props = {
   viewSetId: string;

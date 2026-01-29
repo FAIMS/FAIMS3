@@ -34,3 +34,6 @@ project(':capacitor-share').projectDir = new File('../../node_modules/.pnpm/@cap
 
 include ':capacitor-status-bar'
 project(':capacitor-status-bar').projectDir = new File('../../node_modules/.pnpm/@capacitor+status-bar@7.0.4_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar/android')
+
+include ':capgo-capacitor-speech-recognition'
+project(':capgo-capacitor-speech-recognition').projectDir = new File('../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.0.4_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-speech-recognition/android')

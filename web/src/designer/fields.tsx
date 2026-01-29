@@ -21,12 +21,15 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'FAIMSTextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'FAIMS Text Field',
+      label: 'Text Field',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
+      // Default speech settings
+      speechAppendMode: false,
+      enableSpeech: true,
     },
     initialValue: '',
     humanReadableName: 'FAIMS Text Field',
@@ -503,7 +506,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'MultipleTextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Text Field',
+      label: 'Multi-line Text Field',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
@@ -512,9 +515,12 @@ const fields: {[key: string]: FieldType} = {
       InputProps: {
         rows: 4,
       },
+      // Default speech settings
+      speechAppendMode: false,
+      enableSpeech: true,
     },
     initialValue: '',
-    humanReadableName: 'Text Field',
+    humanReadableName: 'Multi-line Text Field',
     humanReadableDescription: 'Multi-line text area for longer notes',
     category: CategoryKey.TEXT,
     showInChooser: true,

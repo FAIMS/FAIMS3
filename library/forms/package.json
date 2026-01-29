@@ -36,6 +36,7 @@
     "@capacitor/camera": "^7.0.2",
     "@capacitor/core": "^7.4.3",
     "@capacitor/geolocation": "^7.1.5",
+    "@capgo/capacitor-speech-recognition": "^8.0.4",
     "@emotion/react": "11.11.4",
     "@emotion/styled": "11.10.8",
     "@faims3/data-model": "workspace:*",
