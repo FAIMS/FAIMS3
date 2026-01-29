@@ -12,6 +12,7 @@ import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
 import {AuthProviderConfigMap} from './strategies/strategyTypes';
+import {RegisteredAuthProviders} from './strategies/applyStrategies';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -202,7 +203,7 @@ export function providersToRenderDetails({
   inviteId = undefined,
   action,
 }: {
-  handlers: AuthProviderConfigMap | null;
+  handlers: RegisteredAuthProviders | null;
   redirectUrl: string;
   inviteId?: string;
   action: AuthAction;
@@ -211,9 +212,9 @@ export function providersToRenderDetails({
   for (const id in handlers) {
     providers.push({
       id: id,
-      index: handlers[id].index ?? 100,
-      name: handlers[id].displayName,
-      helperText: handlers[id].helperText,
+      index: handlers[id].config.index ?? 100,
+      name: handlers[id].config.displayName,
+      helperText: handlers[id].config.helperText,
       targetUrl: `/auth/${id}${buildQueryString({
         values: {
           redirect: redirectUrl,

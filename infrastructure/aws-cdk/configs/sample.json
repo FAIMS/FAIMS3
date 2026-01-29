@@ -108,22 +108,41 @@
     }
   },
   "authProviders": {
-    "providers": ["google", "someOdcProvider"],
+    "providers": [
+      "google",
+      "someOidcProvider",
+      "someSamlProvider"
+    ],
     "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
     "config": {
       "google": {
         "type": "google",
         "index": 1,
-        "displayName": "Google"
+        "displayName": "Google",
+        "scope": "profile email"
       },
-      "someOdcProvider": {
+      "someOidcProvider": {
         "type": "oidc",
         "index": 2,
         "displayName": "OIDC Provider",
         "helperText": "Log in with your organization's OIDC provider.",
-        "authorizationURL": "https://your-oidc-provider.com",
+        "issuer": "https://your-oidc-provider.com",
+        "authorizationURL": "https://your-oidc-provider.com/authorize",
         "tokenURL": "https://your-oidc-provider.com/token",
-        "userInfoURL": "https://your-oidc-provider.com/userinfo"
+        "userInfoURL": "https://your-oidc-provider.com/userinfo",
+        "scope": "openid profile email"
+      },
+      "someSamlProvider": {
+        "type": "saml",
+        "index": 3,
+        "displayName": "Enterprise SSO",
+        "helperText": "Log in with your organization's identity provider.",
+        "scope": "profile email",
+        "entryPoint": "https://idp.example.com/saml2/sso",
+        "issuer": "https://faims.example.com",
+        "callbackUrl": "https://faims.example.com/auth/saml/callback",
+        "signatureAlgorithm": "sha256",
+        "wantAssertionsSigned": true
       }
     }
   },
