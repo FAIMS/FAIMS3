@@ -54,7 +54,7 @@ export const getColumns = ({
             <AddRolePopover
               roles={Object.entries(roleDetails)
                 .filter(([, {scope}]) => scope === RoleScope.GLOBAL)
-                .map(([value]) => value)}
+                .map(([id, roleDetail]) => ({id, ...roleDetail}))}
               userId={userId}
             />
           )}
