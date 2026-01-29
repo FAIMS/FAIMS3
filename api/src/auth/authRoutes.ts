@@ -72,7 +72,8 @@ import {
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {AuthProviderConfigMap} from './strategies/strategyTypes';
+import {RegisteredAuthProviders} from './strategies/applyStrategies';
+import {Strategy as SamlStrategy} from 'passport-saml';
 
 patch();
 
@@ -203,7 +204,7 @@ const purgeLockoutStore = () => {
  */
 export function addAuthRoutes(
   app: Router,
-  socialProviders: AuthProviderConfigMap | null
+  socialProviders: RegisteredAuthProviders | null
 ) {
   // For legacy versions of the app, we provide a message on /auth to
   // let them know they need to upgrade to the latest version
@@ -865,7 +866,26 @@ export function addAuthRoutes(
 
   // For each handler, deploy an auth route + auth return route
   for (const provider in socialProviders) {
-    const handlerDetails = socialProviders[provider];
+    const handlerDetails = socialProviders[provider].config;
+    const handlerStrategy = socialProviders[provider].strategy;
+
+    if (handlerDetails.type === 'saml') {
+      // Get the strategy instance from passport
+      const strategy = handlerStrategy as SamlStrategy;
+
+      // Metadata endpoint
+      app.get(`/auth/${provider}/metadata`, (req, res) => {
+        res.type('application/xml');
+        res.send(
+          strategy.generateServiceProviderMetadata(
+            // Use this to sign assertions send to me
+            handlerDetails.publicKey,
+            // Use this to sign requests I send to the IDP
+            handlerDetails.publicKey
+          )
+        );
+      });
+    }
 
     // **Login OR register** method for this handler - this will result in a
     // redirection to the configured providers URL, then called back to the
@@ -912,7 +932,8 @@ export function addAuthRoutes(
 
     // the callback URL for this provider - all we need to do is call the
     // validate function again since we will have come back with enough info now
-    app.get(providerAuthReturnUrl(provider), (req, res, next) => {
+    // NOTE: we accept all methods because some protocols e.g. SAML use POST
+    app.all(providerAuthReturnUrl(provider), (req, res, next) => {
       // we expect these values! (Or some of them e.g. invite may not be
       // present)
       const redirectValues = {

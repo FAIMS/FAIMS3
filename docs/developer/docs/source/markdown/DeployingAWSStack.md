@@ -50,14 +50,14 @@ pnpm i
 
 ## AWS Pre-requisites
 
-You will need an IAM account with high level permissions (suggest `AdministratorAccess`) to carry out the deployment.  You will need to have the `aws` command line tools [installed for your platform](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+You will need an IAM account with high level permissions (suggest `AdministratorAccess`) to carry out the deployment. You will need to have the `aws` command line tools [installed for your platform](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 and be authenticated in the current terminal session (`aws configure`).
 
 ## CDK Bootstrap
 
 Follow the guide at [CDK Bootstrap](https://docs.aws.amazon.com/cdk/v2/guide/bootstrapping-env.html) to bootstrap your AWS account with CDK.
 
-Bootstrap can't be run from within the `aws-cdk` directory because it will be confused by the presence of `cdk.json`.   Two options are to install
+Bootstrap can't be run from within the `aws-cdk` directory because it will be confused by the presence of `cdk.json`. Two options are to install
 `aws-cdk` globally and run bootstrap from another directory:
 
 ```sh
@@ -347,8 +347,8 @@ These snapshots retain the **EBS Volume backing couch** - we have tested that yo
 The above expression schedules a daily update at 3am - in combination with 30 day retentions, this means 30 concurrent snapshots - if you have a lot of data, this could result in a lot of storage costs - so beware.
 
 **Note** The backup vault you create here will not be deleted in the case of a failed
-deployment.  This will then result in future deployments failing because there is
-already a backup vault with this name.   You can remove the backup vault [from the AWS console](https://docs.aws.amazon.com/aws-backup/latest/devguide/create-a-vault.html#delete-a-vault) or, if there are no existing backup snapshots, with the command:
+deployment. This will then result in future deployments failing because there is
+already a backup vault with this name. You can remove the backup vault [from the AWS console](https://docs.aws.amazon.com/aws-backup/latest/devguide/create-a-vault.html#delete-a-vault) or, if there are no existing backup snapshots, with the command:
 
 ```sh
 aws backup delete-backup-vault \
@@ -449,11 +449,11 @@ Put in the public links to the iOS and Android apps, once they are deployed. I w
 ### Authentication Configuration
 
 By default only local authentication (email and password) is supported but additional
-identity providers can be configured.  Currently supported providers are Google and any
+identity providers can be configured. Currently supported providers are Google and any
 OIDC compliant provider.
 
 To configure additional providers add the '"authProviders"' property to the production
-configuration.  The following example shows both Google and an OIDC provider:
+configuration. The following example shows both Google and an OIDC provider:
 
 ```json
 "authProviders": {
@@ -484,6 +484,8 @@ configuration.  The following example shows both Google and an OIDC provider:
 The `providers` property lists the providers to be configured; for each of these
 there must be a property in the `config` object containing the detailed configuration.
 
+**SAML** providers are more complex to configure. The JSON configuration should include detailed configuration specs which are documented in `SAMLAuthProviderConfigSchema` in the CDK config. This is basedo n the passport-saml spec available [here](https://www.passportjs.org/packages/passport-saml/).
+
 The `secretArn` property contains the identity of an AWS Secret Manager secret containing
 the `clientID` and `clientSecret` for each provider (see [Creating Secrets](#creating-secrets)).
 For each provider you should include:
@@ -495,15 +497,24 @@ For each provider you should include:
 
 where `provider` matches the provider name in your main configuration.
 
+For **SAML** authentication, include a private and public key in the standard PEM format, such as:
+
+```json
+{
+  "provider-privateKey": "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----",
+  "provider-publicKey": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
+}
+```
+
 The `config` property contains the detailed configuration for each provider. The `type`
 property determines what type of provider it is. We currently support `google` and `oidc`.
 
-There should only be one entry of type `google`.  The optional `index` property defines where this
-appears in the list of providers.  The `displayName` property will be used to title the
-login button (`Continue with XXX`).  The optional `helperText` property is a string that
+There should only be one entry of type `google`. The optional `index` property defines where this
+appears in the list of providers. The `displayName` property will be used to title the
+login button (`Continue with XXX`). The optional `helperText` property is a string that
 will be displayed below the login button.
 
-There can be more than one OIDC provider.  In addition to the properties there are three
+There can be more than one OIDC provider. In addition to the properties there are three
 properties that configure the OIDC endpoint.
 
 ### SMTP Configuration
@@ -560,7 +571,7 @@ First create a configuration file by copying `configs/secrets-sample.json`
 }
 ```
 
-The top level properties in this file will be the names of the secrets created. The values of each property will be the value of the secret.  
+The top level properties in this file will be the names of the secrets created. The values of each property will be the value of the secret.
 
 Run the script:
 
