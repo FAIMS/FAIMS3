@@ -143,7 +143,7 @@ export class FaimsInfraStack extends cdk.Stack {
         testEmailAddress: config.smtp.testEmailAddress,
         cacheExpirySeconds: config.smtp.cacheExpirySeconds,
       },
-      socialProviders: config.socialProviders,
+      authProviders: config.authProviders,
       localhostWhitelist: config.conductor.localhostWhitelist,
     });
 

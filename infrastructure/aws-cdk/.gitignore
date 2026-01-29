@@ -136,7 +136,8 @@ local
 
 configs/*
 !configs/config-class.ts
-!configs/sample.json
+!configs/*sample.json
+
 
 # we shouldn't track this!
 cdk.context.json
