@@ -20,7 +20,11 @@ export const TemplateCellComponent = ({
     return <p>Unauthenticated</p>;
   }
 
-  const {data: template, isLoading, isError} = useGetTemplate({user, templateId});
+  const {
+    data: template,
+    isLoading,
+    isError,
+  } = useGetTemplate({user, templateId});
 
   return isLoading ? (
     <Skeleton className="h-5 w-24" />
