@@ -24,7 +24,7 @@ export const Route = createFileRoute('/_protected/teams/$teamId')({
 function RouteComponent() {
   const {teamId} = Route.useParams();
   const {user} = useAuth();
-  const {data: team, isLoading} = useGetTeam(user, teamId);
+  const {data: team, isLoading} = useGetTeam({user, teamId});
   const pathname = useRouter().state.location.pathname;
 
   // breadcrumbs addition

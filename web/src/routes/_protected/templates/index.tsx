@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_protected/templates/')({
  */
 function RouteComponent() {
   const {user} = useAuth();
-  const {isPending, data} = useGetTemplates(user);
+  const {isPending, data} = useGetTemplates({user});
   const navigate = useNavigate();
 
   // can they create templates outside team?

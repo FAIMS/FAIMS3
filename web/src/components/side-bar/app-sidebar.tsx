@@ -39,11 +39,14 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   // currently anyone can list teams - but it is filtered per resource
   const canSeeTeams = true;
 
+  const {data: projects} = useGetProjects({user, enabled: canSeeProjects});
+  const {data: templates} = useGetTemplates({user, enabled: canSeeTemplates});
+  const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
+
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];
 
   if (canSeeProjects) {
-    const {data: projects} = useGetProjects(user);
     topSectionNavItems.push({
       title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
       url: '/projects',
@@ -61,7 +64,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   }
 
   if (canSeeTemplates) {
-    const {data: templates} = useGetTemplates(user);
     topSectionNavItems.push({
       title: 'Templates',
       url: '/templates',
@@ -89,7 +91,6 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   }
 
   if (canSeeTeams) {
-    const {data: teams} = useGetTeams(user);
     bottomSectionNavItems.push({
       title: 'Teams',
       url: '/teams',

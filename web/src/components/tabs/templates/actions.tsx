@@ -29,7 +29,7 @@ import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team
 const TemplateActions = () => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data, isLoading} = useGetTemplate(user, templateId);
+  const {data, isLoading} = useGetTemplate({user, templateId});
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
 

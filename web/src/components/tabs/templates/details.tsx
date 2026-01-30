@@ -39,7 +39,7 @@ interface TemplateDetailsProps {
 const TemplateDetails = ({templateId}: TemplateDetailsProps) => {
   const {user} = useAuth();
 
-  const {data, isPending} = useGetTemplate(user, templateId);
+  const {data, isPending} = useGetTemplate({user, templateId});
 
   return (
     <Card>
