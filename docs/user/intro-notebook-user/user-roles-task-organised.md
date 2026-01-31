@@ -24,7 +24,7 @@
 
 The diagram below shows roles at each of the three levels (System, Team, {{Notebook}}) and how team roles automatically grant corresponding {{notebook}} access through virtual role inheritance. Note that Team Member (Creator) does not automatically gain access to team {{notebooks}} — they must be explicitly invited.
 
-```{image} ../../inputs/diagrams/images/permissions-hierarchy.png
+```{image} ../images/permissions-hierarchy.png
 :alt: {{FAIMS}} Permissions Hierarchy Diagram showing three tiers: System Level (General Admin with full system control, General Creator for {{notebooks}} and templates, General User for basic access), Team Level (Team Administrator, Team Manager, Team Member Contributor, Team Member Creator with warning that Creator gets no automatic {{notebook}} access), and {{Notebook}} Level (Administrator, Manager, Contributor, Guest). Arrows indicate virtual role inheritance from team to {{notebook}} roles. A sidebar shows the inheritance mapping: Team Administrator grants Administrator, Team Manager grants Manager, Team Member Contributor grants Contributor, Team Member Creator grants none.
 ```
 

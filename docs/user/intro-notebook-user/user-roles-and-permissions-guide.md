@@ -56,7 +56,7 @@ Roles are assigned at three levels:
 
 The nearby diagram shows roles at each level and how team roles automatically grant corresponding {{notebook}} access (virtual roles).
 
-```{image} ../../inputs/diagrams/images/permissions-hierarchy.png
+```{image} ../images/permissions-hierarchy.png
 :alt: {{FAIMS}} Permissions Hierarchy Diagram showing System Level (General Admin, General Creator, General User), Team Level (Team Administrator, Team Manager, Team Member Contributor, Team Member Creator), and {{Notebook}} Level (Administrator, Manager, Contributor, Guest) with arrows indicating virtual role inheritance from team to {{notebook}} roles
 ```
 
