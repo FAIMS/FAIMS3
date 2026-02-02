@@ -177,6 +177,7 @@ The new team member will immediately have virtual access to all team {{notebooks
 ```{screenshot} user-roles/08-teams-create-dialog.png
 :alt: Create Team dialog showing Name field and Description field with Create team button
 :align: right
+:width: 100%
 ```
 
 5. The new team appears in the Teams list with you as the creator
@@ -364,6 +365,7 @@ Use this when transferring a single {{notebook}} while keeping team structure in
 ```{screenshot} user-roles/08b-teams-create-invite.png
 :alt: Create Team Invite dialog showing Role dropdown with team roles, Expiry date field, and Create Invite button
 :align: right
+:width: 100%
 ```
 
 Once created, the invite appears in the Invites tab:
@@ -371,6 +373,7 @@ Once created, the invite appears in the Invites tab:
 ```{screenshot} user-roles/08a-teams-invites-tab.png
 :alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
 :align: right
+:width: 100%
 ```
 
 **Creating {{notebook}} invites:**
@@ -383,6 +386,7 @@ Once created, the invite appears in the Invites tab:
 ```{screenshot} user-roles/10-notebooks-invite.png
 :alt: Create Invite dialog for a {{notebook}} showing Invite title field, Role dropdown with options (Administrator, Manager, Contributor, Guest), expiry date selection with Quick Select and Custom Date options, and Create Invite button
 :align: right
+:width: 100%
 ```
 
 **Managing pending invites:**

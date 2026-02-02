@@ -132,6 +132,7 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 ```{screenshot} user-roles/01-dashboard-sidebar.png
 :alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams), plus the Users list displaying Name, Email, Roles columns with add button and General User role badges
 :align: right
+:width: 100%
 ```
 
 > **Tip:** Click on any sidebar item to navigate to that section. The breadcrumb at the top (e.g., "Home > Users") shows your current location.
@@ -172,6 +173,7 @@ There are three system roles: **General User** (basic access), **General Creator
 ```{screenshot} user-roles/03-add-user-role.png
 :alt: Roles column in Users list showing the add button clicked, revealing a dropdown menu with role options: GENERAL_USER, GENERAL_ADMIN, and GENERAL_CREATOR
 :align: right
+:width: 100%
 ```
 
 ### Removing a Role from a User
@@ -208,6 +210,7 @@ Only users with the **GENERAL_ADMIN** system role can create new teams.
 ```{screenshot} user-roles/08-teams-create-dialog.png
 :alt: Create Team dialog showing Name field and Description field with Create team button
 :align: right
+:width: 100%
 ```
 
 After creating a team, you'll typically want to add members and assign a Team Administrator (see "Adding a User to Your Team" below).
@@ -223,6 +226,7 @@ After creating a team, you'll typically want to add members and assign a Team Ad
 ```{screenshot} user-roles/05-teams-view.png
 :alt: Team view for {{FAIMS}} Demo Team showing the tab bar with Details (selected), Invites, {{Notebooks}}, Templates, and Users tabs, plus the Edit button; main panel displays team name, description, Created By (admin), and timestamps
 :align: right
+:width: 100%
 ```
 
 ### Team Tabs Overview
@@ -248,6 +252,7 @@ After creating a team, you'll typically want to add members and assign a Team Ad
 ```{screenshot} user-roles/06-teams-users.png
 :alt: Team Users tab showing member list with columns for Name, Email, Roles (displaying Team Administrator badges with × for removal and + to add roles), and Remove column with red trash icons
 :align: right
+:width: 100%
 ```
 
 ### Understanding Team Roles
@@ -267,6 +272,7 @@ There are four team roles: **Team Administrator** (full control), **Team Manager
 ```{screenshot} user-roles/07-teams-add-user.png
 :alt: Add user to team dialog with User Email text field and Role dropdown showing options: Team Member (Contributor), Team Member (Creator), Team Manager, and Team Administrator
 :align: right
+:width: 100%
 ```
 
 ### Adding a Role to an Existing Team Member
@@ -312,6 +318,7 @@ The **Invites** tab allows you to create invitation links that users can use to 
 ```{screenshot} user-roles/08b-teams-create-invite.png
 :alt: Create Team Invite dialog showing Role dropdown with team roles, Expiry date field, and Create Invite button
 :align: right
+:width: 100%
 ```
 
 #### Understanding Invite Options
@@ -331,6 +338,7 @@ The Invites tab shows all active invitations with their status.
 ```{screenshot} user-roles/08a-teams-invites-tab.png
 :alt: Team Invites tab showing list of pending invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove
 :align: right
+:width: 100%
 ```
 
 From here you can:
@@ -358,6 +366,7 @@ From here you can:
 ```{screenshot} user-roles/09a-notebooks-view.png
 :alt: {{Notebooks}} list view showing sidebar with {{Notebooks}} expanded, and main content area with table columns for Name, Team, Template, {{Notebook}} Lead, and Description
 :align: right
+:width: 100%
 ```
 
 2. Click on a {{notebook}} name
@@ -371,6 +380,7 @@ From here you can:
 ```{screenshot} user-roles/09b-notebooks-users.png
 :alt: {{Notebook}} Users tab showing user list with Name column, {{Notebook}} Roles column (displaying Administrator badges), and Remove column with trash icons
 :align: right
+:width: 100%
 ```
 
 ### Understanding {{Notebook}} Roles
@@ -400,6 +410,7 @@ Unlike Teams and Users, you **cannot change roles directly** in the {{notebook}}
 ```{screenshot} user-roles/10-notebooks-invite.png
 :alt: Create Invite dialog for a {{notebook}} showing Invite title field, Role dropdown with options (Administrator, Manager, Contributor, Guest), expiry date selection with Quick Select and Custom Date options, and Create Invite button
 :align: right
+:width: 100%
 ```
 
 Once created, invitations appear in the **Invites** tab where you can manage them:
@@ -407,6 +418,7 @@ Once created, invitations appear in the **Invites** tab where you can manage the
 ```{screenshot} user-roles/11-notebooks-invites-active.png
 :alt: {{Notebook}} Invites tab showing list of active invitations with columns for Name, Role, Expiry, Uses remaining, Code, Link, QR Code, and Remove; includes + Create Invite button
 :align: right
+:width: 100%
 ```
 
 The Invites tab shows:
