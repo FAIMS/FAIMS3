@@ -305,22 +305,22 @@ export const samlStrategyGenerator = (
       // Required
       entryPoint: options.entryPoint,
       issuer: options.issuer,
-      cert: options.publicKey, // passport-saml calls this 'cert'
-
+      // The IdP's public cert (for verifying IdP signatures)
+      cert: options.idpPublicKey,
       // Callback URL
       callbackUrl:
         options.callbackUrl ||
         CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl(options.id),
       path: options.path,
-
-      // SP signing key
+      // SP signing/decryption keys
       privateKey: options.privateKey,
-
+      decryptionPvk: options.enableDecryptionPvk
+        ? options.privateKey
+        : undefined,
       // Signature configuration
       signatureAlgorithm: options.signatureAlgorithm,
       digestAlgorithm: options.digestAlgorithm,
       wantAssertionsSigned: options.wantAssertionsSigned,
-
       // SAML behavior
       identifierFormat: options.identifierFormat,
       authnContext: options.authnContext
@@ -330,21 +330,17 @@ export const samlStrategyGenerator = (
         : undefined,
       disableRequestedAuthnContext: options.disableRequestedAuthnContext,
       forceAuthn: options.forceAuthn,
-
       // Validation
       acceptedClockSkewMs: options.acceptedClockSkewMs,
       maxAssertionAgeMs: options.maxAssertionAgeMs,
       validateInResponseTo: options.validateInResponseTo,
       requestIdExpirationPeriodMs: options.requestIdExpirationPeriodMs,
-
       // Logout
       logoutUrl: options.logoutUrl,
       logoutCallbackUrl: options.logoutCallbackUrl,
-
       // IdP validation
       idpIssuer: options.idpIssuer,
       audience: options.audience,
-
       // Pass request to callback for session access
       passReqToCallback: true,
     },

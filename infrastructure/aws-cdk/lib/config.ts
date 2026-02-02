@@ -60,17 +60,18 @@ const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
  *
  * NOTE:
  *
- * This excludes two key values:
+ * This excludes your SP keypair (Service Provider signing keys).
  *
  * privateKey: include this in your secrets as provider-privateKey
- * publicKey (cert): include this in your secrets as provider-publicKey
+ * publicKey: include this in your secrets as provider-publicKey
  *
+ * The idpPublicKey (Identity Provider's certificate) can be included here
+ * or in secrets as provider-idpPublicKey.
  *
  * See https://www.passportjs.org/packages/passport-saml/ for details.
  */
 const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
   type: z.literal('saml'),
-
   // Required fields
   entryPoint: z
     .string()
@@ -80,7 +81,6 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .describe(
       'Service Provider entity ID - identifies your application to the IdP'
     ),
-
   // Callback configuration (at least one needed)
   callbackUrl: z
     .string()
@@ -93,18 +93,19 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .optional()
     .default('/saml/callback')
     .describe('Callback path if callbackUrl not specified'),
-
-  // SP signing/decryption
-  privateKey: z
+  // IdP certificate for verifying signatures (can also be in secrets)
+  idpPublicKey: z
     .string()
     .optional()
-    .describe('SP private key for signing requests (PEM format)'),
+    .describe('IdP public certificate for verifying signatures (PEM format)'),
+  // SP signing/decryption behavior
   enableDecryptionPvk: z
     .boolean()
     .optional()
     .default(true)
-    .describe('Use the PK to decrypt IdP assertions. Default True.'),
-
+    .describe(
+      'Use the SP private key to decrypt IdP assertions. Default True.'
+    ),
   // Signature configuration
   signatureAlgorithm: z
     .enum(['sha1', 'sha256', 'sha512'])
@@ -112,7 +113,6 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .default('sha256'),
   digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
   wantAssertionsSigned: z.boolean().optional().default(true),
-
   // SAML behavior options
   identifierFormat: z
     .string()
@@ -130,7 +130,6 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .boolean()
     .optional()
     .describe('Force re-authentication even with valid session'),
-
   // Validation options
   acceptedClockSkewMs: z
     .number()
@@ -152,14 +151,12 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .optional()
     .default(28800000)
     .describe('How long request IDs are valid (default 8 hours)'),
-
   // Logout
   logoutUrl: z
     .string()
     .optional()
     .describe('IdP logout URL (defaults to entryPoint)'),
   logoutCallbackUrl: z.string().optional().describe('SP logout callback URL'),
-
   // IdP validation
   idpIssuer: z
     .string()

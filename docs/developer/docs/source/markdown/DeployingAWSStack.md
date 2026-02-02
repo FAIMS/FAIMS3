@@ -449,15 +449,15 @@ Put in the public links to the iOS and Android apps, once they are deployed. I w
 ### Authentication Configuration
 
 By default only local authentication (email and password) is supported but additional
-identity providers can be configured. Currently supported providers are Google and any
-OIDC compliant provider.
+identity providers can be configured. Currently supported providers are Google, any
+OIDC compliant provider, and SAML 2.0 identity providers.
 
-To configure additional providers add the '"authProviders"' property to the production
+To configure additional providers add the `"authProviders"` property to the production
 configuration. The following example shows both Google and an OIDC provider:
 
 ```json
 "authProviders": {
-    "providers": ["google", "someOdcProvider"],
+    "providers": ["google", "someOidcProvider"],
     "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
     "config": {
       "google": {
@@ -467,7 +467,7 @@ configuration. The following example shows both Google and an OIDC provider:
         "helperText": "Login with Google",
         "scope": "profile,email,https://www.googleapis.com/auth/plus.login"
       },
-      "someOdcProvider": {
+      "someOidcProvider": {
         "type": "oidc",
         "index": 2,
         "displayName": "OIDC Provider",
@@ -484,20 +484,91 @@ configuration. The following example shows both Google and an OIDC provider:
 The `providers` property lists the providers to be configured; for each of these
 there must be a property in the `config` object containing the detailed configuration.
 
-**SAML** providers are more complex to configure. The JSON configuration should include detailed configuration specs which are documented in `SAMLAuthProviderConfigSchema` in the CDK config. This is basedo n the passport-saml spec available [here](https://www.passportjs.org/packages/passport-saml/).
-
 The `secretArn` property contains the identity of an AWS Secret Manager secret containing
-the `clientID` and `clientSecret` for each provider (see [Creating Secrets](#creating-secrets)).
-For each provider you should include:
+the credentials for each provider (see [Creating Secrets](#creating-secrets)).
+
+For **Google** and **OIDC** providers, include:
 
 ```json
+{
   "provider-clientID": "your-client-id",
   "provider-clientSecret": "your-client-secret"
+}
 ```
 
 where `provider` matches the provider name in your main configuration.
 
-For **SAML** authentication, include a private and public key in the standard PEM format, such as:
+The `config` property contains the detailed configuration for each provider. The `type`
+property determines what type of provider it is. We currently support `google`, `oidc`, and `saml`.
+There should only be one entry of type `google`. The optional `index` property defines where this
+appears in the list of providers. The `displayName` property will be used to title the
+login button (`Continue with XXX`). The optional `helperText` property is a string that
+will be displayed below the login button.
+
+There can be more than one OIDC provider. In addition to the common properties there are three
+properties that configure the OIDC endpoint: `authorizationURL`, `tokenURL`, and `userInfoURL`.
+
+#### SAML Authentication
+
+SAML 2.0 providers require more detailed configuration. The configuration is based on the
+[passport-saml](https://www.passportjs.org/packages/passport-saml/) specification, with full
+schema documentation available in `SAMLAuthProviderConfigSchema` in the CDK config.
+
+**Example SAML configuration:**
+
+```json
+"authProviders": {
+    "providers": ["enterprise-sso"],
+    "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
+    "config": {
+      "enterprise-sso": {
+        "type": "saml",
+        "index": 1,
+        "displayName": "Enterprise SSO",
+        "helperText": "Log in with your organization account",
+        "entryPoint": "https://idp.example.com/sso/saml",
+        "issuer": "https://your-app.example.com",
+        "idpPublicKey": "-----BEGIN CERTIFICATE-----\nMIIC...\n-----END CERTIFICATE-----",
+        "identifierFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+        "wantAssertionsSigned": true,
+        "signatureAlgorithm": "sha256"
+      }
+    }
+  }
+```
+
+**Required SAML fields:**
+
+| Field        | Description                                                        |
+| ------------ | ------------------------------------------------------------------ |
+| `entryPoint` | The IdP's SSO URL where authentication requests are sent           |
+| `issuer`     | Your Service Provider entity ID (typically your application's URL) |
+
+**Recommended SAML fields:**
+
+| Field                  | Description                                                                                                                                                     |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `idpPublicKey`         | The IdP's public certificate for verifying signatures (PEM format). Can be placed in config or secrets.                                                         |
+| `identifierFormat`     | The NameID format to request. Common values: `urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress` or `urn:oasis:names:tc:SAML:2.0:nameid-format:persistent` |
+| `wantAssertionsSigned` | Set to `true` to require signed assertions (recommended for security)                                                                                           |
+| `signatureAlgorithm`   | Algorithm for signing requests: `sha1`, `sha256`, or `sha512` (default: `sha256`)                                                                               |
+
+**Optional SAML fields:**
+
+| Field                          | Description                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `callbackUrl`                  | Full callback URL for SAML responses. If not specified, the system generates one automatically. |
+| `disableRequestedAuthnContext` | Set to `true` for ADFS compatibility                                                            |
+| `forceAuthn`                   | Set to `true` to force re-authentication even with a valid IdP session                          |
+| `acceptedClockSkewMs`          | Allowed clock drift in milliseconds between SP and IdP (default: `0`, use `-1` to disable)      |
+| `logoutUrl`                    | IdP's logout URL for single logout support                                                      |
+| `audience`                     | Expected audience value in SAML responses (for additional validation)                           |
+| `idpIssuer`                    | Expected issuer value from IdP (for logout validation)                                          |
+
+**SAML secrets:**
+
+For SAML providers, the secret should contain your Service Provider's keypair for signing
+requests and decrypting assertions:
 
 ```json
 {
@@ -506,16 +577,24 @@ For **SAML** authentication, include a private and public key in the standard PE
 }
 ```
 
-The `config` property contains the detailed configuration for each provider. The `type`
-property determines what type of provider it is. We currently support `google` and `oidc`.
+| Secret Key              | Description                                                                             |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `provider-privateKey`   | Your SP's private key for signing requests and decrypting assertions (PEM format)       |
+| `provider-publicKey`    | Your SP's public certificate, included in metadata for the IdP (PEM format)             |
 
-There should only be one entry of type `google`. The optional `index` property defines where this
-appears in the list of providers. The `displayName` property will be used to title the
-login button (`Continue with XXX`). The optional `helperText` property is a string that
-will be displayed below the login button.
+**Note:** The `idpPublicKey` can be specified either in the config (as shown in the example) or
+in the secrets as `provider-idpPublicKey`. If provided in both places, the secrets value takes precedence.
 
-There can be more than one OIDC provider. In addition to the properties there are three
-properties that configure the OIDC endpoint.
+**SP Metadata:**
+
+Once configured, your Service Provider metadata is available at:
+
+```
+https://your-conductor-url/auth/provider-name/metadata
+```
+
+Provide this URL to your Identity Provider administrator to configure the trust relationship.
+The metadata includes your entity ID, callback URL, and public certificates for encryption and signing.
 
 ### SMTP Configuration
 

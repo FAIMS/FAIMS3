@@ -46,7 +46,7 @@ export type OIDCAuthProviderConfig = z.infer<
 >;
 
 /**
- * SAML auth provider schema
+ * SAML auth provider schema (with secrets merged)
  *
  * Based on passport-saml configuration options.
  * See https://www.passportjs.org/packages/passport-saml/ for details.
@@ -54,25 +54,27 @@ export type OIDCAuthProviderConfig = z.infer<
 export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
   {
     type: z.literal('saml'),
-
     // Required fields
     /** IdP SSO URL - where to send authentication requests */
     entryPoint: z.string(),
     /** Service Provider entity ID - identifies your application to the IdP */
     issuer: z.string(),
-
     // Callback configuration
     /** Full callback URL for SAML responses */
     callbackUrl: z.string().optional(),
     /** Callback path if callbackUrl not specified (default: /saml/callback) */
     path: z.string().optional(),
-
-    // SP signing/decryption keys (PEM format)
+    // SP signing/decryption keys (PEM format) - from secrets
     /** SP private key for signing requests */
     privateKey: z.string().optional(),
-    /** IdP public certificate for verifying signatures */
-    publicKey: z.string(),
-
+    /** SP public key (included in metadata for IdP to validate our signatures) */
+    publicKey: z.string().optional(),
+    // IdP certificate (can come from config or secrets)
+    /** IdP public certificate for verifying IdP signatures */
+    idpPublicKey: z.string(),
+    // SP signing/decryption behavior
+    /** Use the SP private key to decrypt IdP assertions (default: true) */
+    enableDecryptionPvk: z.boolean().optional(),
     // Signature configuration
     /** Signature algorithm: 'sha1', 'sha256', or 'sha512' (default: sha256) */
     signatureAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
@@ -80,7 +82,6 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     digestAlgorithm: z.enum(['sha1', 'sha256', 'sha512']).optional(),
     /** Request signed assertions from IdP (default: true) */
     wantAssertionsSigned: z.boolean().optional(),
-
     // SAML behavior options
     /** NameID format to request from IdP */
     identifierFormat: z.string().optional(),
@@ -90,7 +91,6 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     disableRequestedAuthnContext: z.boolean().optional(),
     /** Force re-authentication even with valid session */
     forceAuthn: z.boolean().optional(),
-
     // Validation options
     /** Allowed clock skew in ms for NotBefore/NotOnOrAfter (-1 to disable, default: 0) */
     acceptedClockSkewMs: z.number().optional(),
@@ -100,13 +100,11 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     validateInResponseTo: z.boolean().optional(),
     /** How long request IDs are valid in ms (default: 8 hours) */
     requestIdExpirationPeriodMs: z.number().optional(),
-
     // Logout
     /** IdP logout URL (defaults to entryPoint) */
     logoutUrl: z.string().optional(),
     /** SP logout callback URL */
     logoutCallbackUrl: z.string().optional(),
-
     // IdP validation
     /** Expected IdP issuer for logout validation */
     idpIssuer: z.string().optional(),
@@ -114,6 +112,7 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     audience: z.string().optional(),
   }
 );
+
 export type SAMLAuthProviderConfig = z.infer<
   typeof SAMLAuthProviderConfigSchema
 >;

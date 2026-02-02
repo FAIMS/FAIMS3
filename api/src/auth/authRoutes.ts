@@ -878,10 +878,16 @@ export function addAuthRoutes(
         res.type('application/xml');
         res.send(
           strategy.generateServiceProviderMetadata(
-            // Use this to sign assertions send to me
-            handlerDetails.publicKey,
-            // Use this to sign requests I send to the IDP
-            handlerDetails.publicKey
+            // Decryption cert: IdP uses this to encrypt assertions sent to us
+            // Only include if we're set up to decrypt
+            handlerDetails.enableDecryptionPvk
+              ? (handlerDetails.publicKey ?? null)
+              : null,
+            // Signing cert: IdP uses this to verify requests we sign
+            // Only include if we have a private key for signing
+            handlerDetails.privateKey
+              ? (handlerDetails.publicKey ?? null)
+              : null
           )
         );
       });
