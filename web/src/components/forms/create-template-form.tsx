@@ -30,7 +30,7 @@ export function CreateTemplateForm({
 }: CreateTemplateFormProps) {
   const {user, refreshToken} = useAuth();
   const queryClient = useQueryClient();
-  const {data: teams} = useGetTeams(user);
+  const {data: teams} = useGetTeams({user});
 
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({

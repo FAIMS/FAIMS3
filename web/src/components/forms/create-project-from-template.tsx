@@ -27,7 +27,7 @@ export function CreateProjectFromTemplateForm({
 
   const QueryClient = useQueryClient();
 
-  const {data: teams} = useGetTeams(user);
+  const {data: teams} = useGetTeams({user});
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const fields = useMemo(

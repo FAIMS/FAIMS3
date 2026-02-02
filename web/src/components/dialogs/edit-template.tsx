@@ -29,7 +29,7 @@ import {Pencil} from 'lucide-react';
 export const EditTemplateDialog = ({onSuccess}: {onSuccess: () => void}) => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
-  const {data} = useGetTemplate(user, templateId);
+  const {data} = useGetTemplate({user, templateId});
   const [open, setOpen] = useState(false);
 
   return (

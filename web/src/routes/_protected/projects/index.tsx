@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_protected/projects/')({
 export function ProjectsRouteComponent() {
   const {user} = useAuth();
 
-  const {isLoading, data} = useGetProjects(user);
+  const {isLoading, data} = useGetProjects({user});
   const pathname = useRouter().state.location.pathname;
 
   // breadcrumbs addition

@@ -39,9 +39,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   // currently anyone can list teams - but it is filtered per resource
   const canSeeTeams = true;
 
-  const {data: projects} = useGetProjects(user);
-  const {data: teams} = useGetTeams(user);
-  const {data: templates} = useGetTemplates(user);
+  const {data: projects} = useGetProjects({user, enabled: canSeeProjects});
+  const {data: templates} = useGetTemplates({user, enabled: canSeeTemplates});
+  const {data: teams} = useGetTeams({user, enabled: canSeeTeams});
 
   const topSectionNavItems: NavItem[] = [];
   const bottomSectionNavItems: NavItem[] = [];
@@ -115,7 +115,9 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain title="Content" items={topSectionNavItems} />
+        {topSectionNavItems.length > 0 && (
+          <NavMain title="Content" items={topSectionNavItems} />
+        )}
         {bottomSectionNavItems.length > 0 && (
           <NavMain title="Management" items={bottomSectionNavItems} />
         )}

@@ -37,7 +37,7 @@ export const Route = createFileRoute('/_protected/templates/$templateId')({
 function RouteComponent() {
   const {templateId} = Route.useParams();
   const {user} = useAuth();
-  const {data: template, isLoading} = useGetTemplate(user, templateId);
+  const {data: template, isLoading} = useGetTemplate({user, templateId});
   const pathname = useRouter().state.location.pathname;
 
   // breadcrumbs addition

@@ -138,11 +138,11 @@ api.get(
       throw new Exceptions.UnauthorizedException('You are not logged in.');
     }
 
-    if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
-      throw new Exceptions.ForbiddenException(
-        'You are not allowed to get users.'
-      );
-    }
+    // if (!userHasGlobalRole({user: req.user, role: Role.GENERAL_ADMIN})) {
+    //   throw new Exceptions.ForbiddenException(
+    //     'You are not allowed to get users.'
+    //   );
+    // }
 
     const allUsers = await getUsers();
 

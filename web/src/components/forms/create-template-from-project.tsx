@@ -28,7 +28,7 @@ export function CreateTemplateFromProjectForm({
 }: CreateTemplateFromProjectForm) {
   const {user, refreshToken} = useAuth();
   const queryClient = useQueryClient();
-  const {data: teams} = useGetTeams(user);
+  const {data: teams} = useGetTeams({user});
   const {data: projectData} = useGetProject({user, projectId});
 
   // can they create projects outside team?

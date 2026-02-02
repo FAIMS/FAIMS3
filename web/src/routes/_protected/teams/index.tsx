@@ -20,7 +20,7 @@ export const Route = createFileRoute('/_protected/teams/')({
  *
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
-function RouteComponent() {
+export function RouteComponent() {
   const {user} = useAuth();
   const pathname = useRouter().state.location.pathname;
 
@@ -48,7 +48,7 @@ function RouteComponent() {
   // Can the user create a new team?
   const canCreateTeam = useIsAuthorisedTo({action: Action.CREATE_TEAM});
 
-  const {isPending, data} = useGetTeams(user);
+  const {isPending, data} = useGetTeams({user});
 
   const navigate = useNavigate();
 

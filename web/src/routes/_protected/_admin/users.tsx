@@ -19,7 +19,7 @@ export const Route = createFileRoute('/_protected/_admin/users')({
  */
 function RouteComponent() {
   const {user: authUser} = useAuth();
-  const {data, isPending} = useGetUsers(authUser);
+  const {data, isPending} = useGetUsers({user: authUser});
 
   // breadcrumbs addition
   const paths = useMemo(

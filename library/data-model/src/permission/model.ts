@@ -820,6 +820,7 @@ export enum Role {
   GENERAL_USER = 'GENERAL_USER',
   GENERAL_ADMIN = 'GENERAL_ADMIN',
   GENERAL_CREATOR = 'GENERAL_CREATOR',
+  OPERATIONS_ADMIN = 'OPERATIONS_ADMIN',
 
   // PROJECT ROLES
   // ================
@@ -868,7 +869,7 @@ export const roleDetails: Record<Role, RoleDetails> = {
     scope: RoleScope.GLOBAL,
   },
   [Role.GENERAL_ADMIN]: {
-    name: 'System Administrator',
+    name: 'Super User',
     description:
       'Full access to all system resources and management capabilities',
     scope: RoleScope.GLOBAL,
@@ -877,6 +878,12 @@ export const roleDetails: Record<Role, RoleDetails> = {
     name: 'Content Creator',
     description:
       'Ability to create and manage templates and surveys across the system',
+    scope: RoleScope.GLOBAL,
+  },
+  [Role.OPERATIONS_ADMIN]: {
+    name: 'Operations Administrator',
+    description:
+      'Manage system operations such as user management and system settings',
     scope: RoleScope.GLOBAL,
   },
 
@@ -1074,17 +1081,33 @@ export const roleActions: Record<
   [Role.GENERAL_CREATOR]: {
     actions: [Action.CREATE_PROJECT, Action.CREATE_TEMPLATE],
   },
-  [Role.GENERAL_ADMIN]: {
+  [Role.OPERATIONS_ADMIN]: {
     actions: [
+      Action.VERIFY_EMAIL,
+
+      // Manage users
       Action.VIEW_USER_LIST,
       Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
       Action.RESET_USER_PASSWORD,
       Action.DELETE_USER,
+
+      // System operations
       Action.INITIALISE_SYSTEM_API,
       Action.RESTORE_FROM_BACKUP,
       Action.VALIDATE_DBS,
-      Action.CREATE_TEAM,
       Action.SEND_TEST_EMAIL,
+
+      // Teams
+      Action.CREATE_TEAM,
+      Action.DELETE_TEAM,
+      Action.UPDATE_TEAM_DETAILS,
+      Action.VIEW_TEAM_DETAILS,
+      Action.VIEW_TEAM_INVITES,
+      Action.VIEW_TEAM_MEMBERS,
+      Action.ADD_MANAGER_TO_TEAM,
+      Action.REMOVE_MANAGER_FROM_TEAM,
+      Action.ADD_MEMBER_TO_TEAM,
+      Action.REMOVE_MEMBER_FROM_TEAM,
 
       // These are special permissions!
       Action.ADD_ADMIN_TO_TEAM,
@@ -1096,12 +1119,21 @@ export const roleActions: Record<
       Action.DELETE_ADMIN_TEAM_INVITE,
 
       // Long-lived token admin actions
+      Action.CREATE_LONG_LIVED_TOKEN,
       Action.READ_ANY_LONG_LIVED_TOKENS,
       Action.EDIT_ANY_LONG_LIVED_TOKEN,
       Action.REVOKE_ANY_LONG_LIVED_TOKEN,
     ],
+    inheritedRoles: [],
+  },
+
+  // Super User Admin role can see all user data - to be used sparingly
+  [Role.GENERAL_ADMIN]: {
+    actions: [],
     inheritedRoles: [
       // God role
+      Role.GENERAL_USER,
+      Role.OPERATIONS_ADMIN,
       Role.GENERAL_CREATOR,
       Role.PROJECT_ADMIN,
       Role.TEAM_ADMIN,

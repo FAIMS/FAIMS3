@@ -124,7 +124,6 @@ export const useGetColumns = ({
           original: {roles, username},
         },
       }) => {
-        console.log('roles for ', username, roles);
         return (
           <div
             className="flex flex-wrap gap-1 items-center"

@@ -24,7 +24,7 @@ export const Route = createFileRoute('/_protected/teams/$teamId')({
 function RouteComponent() {
   const {teamId} = Route.useParams();
   const {user} = useAuth();
-  const {data: team, isLoading} = useGetTeam(user, teamId);
+  const {data: team, isLoading} = useGetTeam({user, teamId});
   const pathname = useRouter().state.location.pathname;
 
   // breadcrumbs addition
@@ -66,6 +66,14 @@ function RouteComponent() {
     action: Action.VIEW_TEAM_MEMBERS,
     resourceId: teamId,
   });
+  const canViewTeamProjects = useIsAuthorisedTo({
+    action: Action.LIST_PROJECTS,
+    resourceId: teamId,
+  });
+  const canViewTeamTemplates = useIsAuthorisedTo({
+    action: Action.LIST_TEMPLATES,
+    resourceId: teamId,
+  });
 
   const tabs: {label?: string; id: TabLabel; Component: any}[] = [];
 
@@ -76,12 +84,16 @@ function RouteComponent() {
   if (canSeeTeamInvites) {
     tabs.push({id: 'Invites', Component: TeamInvites});
   }
-  tabs.push({
-    id: 'Projects',
-    label: NOTEBOOK_NAME_CAPITALIZED + 's',
-    Component: TeamProjects,
-  });
-  tabs.push({id: 'Templates', Component: TeamTemplates});
+  if (canViewTeamProjects) {
+    tabs.push({
+      id: 'Projects',
+      label: NOTEBOOK_NAME_CAPITALIZED + 's',
+      Component: TeamProjects,
+    });
+  }
+  if (canViewTeamTemplates) {
+    tabs.push({id: 'Templates', Component: TeamTemplates});
+  }
   // members?
   if (canViewTeamMembers) {
     tabs.push({id: 'Users', Component: TeamUsers});
