@@ -307,24 +307,28 @@ const SortableItem = ({
       {/* Action buttons column */}
       <TableCell align="right" sx={{py: 1}}>
         <Tooltip title="Move up">
-          <IconButton
-            size="small"
-            disabled={index === 0}
-            onClick={() => onMove(index, 'up')}
-            sx={{p: 0.5}}
-          >
-            <ArrowDropUpRoundedIcon fontSize="large" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              disabled={index === 0}
+              onClick={() => onMove(index, 'up')}
+              sx={{p: 0.5}}
+            >
+              <ArrowDropUpRoundedIcon fontSize="large" />
+            </IconButton>
+          </span>
         </Tooltip>
         <Tooltip title="Move down">
-          <IconButton
-            size="small"
-            disabled={index === totalItems - 1}
-            onClick={() => onMove(index, 'down')}
-            sx={{p: 0.5}}
-          >
-            <ArrowDropDownRoundedIcon fontSize="large" />
-          </IconButton>
+          <span>
+            <IconButton
+              size="small"
+              disabled={index === totalItems - 1}
+              onClick={() => onMove(index, 'down')}
+              sx={{p: 0.5}}
+            >
+              <ArrowDropDownRoundedIcon fontSize="large" />
+            </IconButton>
+          </span>
         </Tooltip>
         <IconButton
           size="small"
