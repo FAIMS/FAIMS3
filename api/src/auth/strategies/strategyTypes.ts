@@ -13,6 +13,12 @@ export const BaseAuthProviderConfigSchema = z.object({
   displayName: z.string(),
   helperText: z.string().optional(),
   scope: z.array(z.string()),
+  /** HTTP methods accepted for the auth callback. Default: ['GET'] */
+  callbackMethods: z
+    .array(z.enum(['GET', 'POST']))
+    .optional()
+    .default(['GET'])
+    .describe('HTTP methods accepted for the auth return callback'),
 });
 export type BaseAuthProviderConfig = z.infer<
   typeof BaseAuthProviderConfigSchema
@@ -54,6 +60,12 @@ export type OIDCAuthProviderConfig = z.infer<
 export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
   {
     type: z.literal('saml'),
+    // Override default callback method to just POST
+    callbackMethods: z
+      .array(z.enum(['GET', 'POST']))
+      .optional()
+      .default(['POST'])
+      .describe('HTTP methods accepted for the auth return callback'),
     // Required fields
     /** IdP SSO URL - where to send authentication requests */
     entryPoint: z.string(),

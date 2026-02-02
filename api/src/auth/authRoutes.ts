@@ -33,7 +33,7 @@ import {
   PostResetPasswordInputSchema,
   PutLogoutInputSchema,
 } from '@faims3/data-model';
-import {NextFunction, Router} from 'express';
+import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
 import {processRequest} from 'zod-express-middleware';
 import {WEBAPP_PUBLIC_URL} from '../buildconfig';
@@ -56,7 +56,7 @@ import {
   UnauthorizedException,
 } from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
-import {AuthAction, CustomSessionData} from '../types';
+import {AuthAction, CustomRequest, CustomSessionData} from '../types';
 import {
   sendEmailVerificationChallenge,
   sendPasswordResetEmail,
@@ -936,10 +936,7 @@ export function addAuthRoutes(
       }
     );
 
-    // the callback URL for this provider - all we need to do is call the
-    // validate function again since we will have come back with enough info now
-    // NOTE: we accept all methods because some protocols e.g. SAML use POST
-    app.all(providerAuthReturnUrl(provider), (req, res, next) => {
+    const callbackHandler: RequestHandler = (req, res, next) => {
       // we expect these values! (Or some of them e.g. invite may not be
       // present)
       const redirectValues = {
@@ -1013,6 +1010,19 @@ export function addAuthRoutes(
           });
         }
       )(req, res, next);
-    });
+    };
+
+    // the callback URL for this provider - all we need to do is call the
+    // validate function again since we will have come back with enough info now
+    const allowedMethods = handlerDetails.callbackMethods ?? ['GET'];
+    const callbackUrl = providerAuthReturnUrl(provider);
+
+    // Register only the specific methods allowed for this provider
+    if (allowedMethods.includes('GET')) {
+      app.get(callbackUrl, callbackHandler);
+    }
+    if (allowedMethods.includes('POST')) {
+      app.post(callbackUrl, callbackHandler);
+    }
   }
 }

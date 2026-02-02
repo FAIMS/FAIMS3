@@ -38,6 +38,12 @@ const BaseAuthProviderConfigSchema = z.object({
   displayName: z.string(),
   helperText: z.string().optional(),
   scope: z.string(),
+  /** HTTP methods accepted for the auth callback. Default: ['GET'] */
+  callbackMethods: z
+    .array(z.enum(['GET', 'POST']))
+    .optional()
+    .default(['GET'])
+    .describe('HTTP methods accepted for the auth return callback'),
 });
 
 const GoogleAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
@@ -71,7 +77,14 @@ const OIDCAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
  * See https://www.passportjs.org/packages/passport-saml/ for details.
  */
 const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
+  // Discrimination field
   type: z.literal('saml'),
+  // Override default callback method to just POST
+  callbackMethods: z
+    .array(z.enum(['GET', 'POST']))
+    .optional()
+    .default(['POST'])
+    .describe('HTTP methods accepted for the auth return callback'),
   // Required fields
   entryPoint: z
     .string()
