@@ -28,6 +28,8 @@
     "restore-backup": "env-cmd node --expose-gc --max-old-space-size=8000 -r ts-node/register src/scripts/restoreBackup.ts"
   },
   "dependencies": {
+    "@bugsnag/js": "^7.20.2",
+    "@bugsnag/plugin-express": "^7.0.0",
     "@faims3/data-model": "workspace:*",
     "@types/passport-openidconnect": "^0.1.3",
     "archiver": "^6.0.1",

@@ -680,3 +680,33 @@ function maximumLongLivedDurationDays(): number | undefined {
 }
 
 export const MAXIMUM_LONG_LIVED_DURATION_DAYS = maximumLongLivedDurationDays();
+
+/**
+ * Gets the Bugsnag API key from environment variables.
+ * @returns The Bugsnag API key, or undefined if not configured.
+ */
+function bugsnagApiKey(): string | undefined {
+  const apiKey = process.env.BUGSNAG_API_KEY;
+  if (apiKey === '' || apiKey === undefined) {
+    console.log('BUGSNAG_API_KEY not set, error reporting disabled');
+    return undefined;
+  }
+  return apiKey;
+}
+
+export const BUGSNAG_API_KEY = bugsnagApiKey();
+
+/**
+ * Gets the API version from environment variables.
+ * @returns The API version, or undefined if not configured.
+ */
+function apiVersion(): string | undefined {
+  const version = process.env.API_VERSION;
+  if (version === '' || version === undefined) {
+    console.log('API_VERSION not set');
+    return undefined;
+  }
+  return version;
+}
+
+export const API_VERSION = apiVersion();

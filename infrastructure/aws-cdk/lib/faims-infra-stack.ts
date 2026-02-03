@@ -145,6 +145,9 @@ export class FaimsInfraStack extends cdk.Stack {
       },
       authProviders: config.authProviders,
       localhostWhitelist: config.conductor.localhostWhitelist,
+      // Bugsnag
+      apiVersion: config.appVersion,
+      bugsnagApiKey: config.bugMonitoring.bugsnagKey,
     });
 
     // FRONT-END
