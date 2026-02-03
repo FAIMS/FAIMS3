@@ -623,8 +623,9 @@ export const PostCreateInviteInputSchema = z.object({
  */
 export const InviteInfoResponseSchema = z.object({
   id: z.string(),
-  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
-  resourceId: z.string(),
+  inviteType: z.nativeEnum(RoleScope),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]).optional(),
+  resourceId: z.string().optional(),
   name: z.string(),
   role: z.nativeEnum(Role),
   createdAt: z.number(),
@@ -685,6 +686,11 @@ export const PostCreateProjectInviteResponseSchema = InviteDocumentSchema;
 export const PostCreateTeamInviteResponseSchema = InviteDocumentSchema;
 
 /**
+ * POST /api/invites/global response
+ */
+export const PostCreateGlobalInviteResponseSchema = InviteDocumentSchema;
+
+/**
  * POST /api/invites/:inviteId/use response
  */
 export const PostUseInviteResponseSchema = z.object({
@@ -710,6 +716,9 @@ export type PostCreateProjectInviteResponse = z.infer<
 >;
 export type PostCreateTeamInviteResponse = z.infer<
   typeof PostCreateTeamInviteResponseSchema
+>;
+export type PostCreateGlobalInviteResponse = z.infer<
+  typeof PostCreateGlobalInviteResponseSchema
 >;
 export type PostUseInviteResponse = z.infer<typeof PostUseInviteResponseSchema>;
 

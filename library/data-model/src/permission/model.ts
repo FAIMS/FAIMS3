@@ -206,6 +206,15 @@ export enum Action {
   REVOKE_ANY_LONG_LIVED_TOKEN = 'REVOKE_ANY_LONG_LIVED_TOKEN',
 
   // ============================================================
+  // GLOBAL ACTIONS
+  // ============================================================
+
+  CREATE_GLOBAL_INVITE = 'CREATE_GLOBAL_INVITE',
+  EDIT_GLOBAL_INVITE = 'EDIT_GLOBAL_INVITE',
+  DELETE_GLOBAL_INVITE = 'DELETE_GLOBAL_INVITE',
+  VIEW_GLOBAL_INVITES = 'VIEW_GLOBAL_INVITES',
+
+  // ============================================================
   // SYSTEM ACTIONS
   // ============================================================
 
@@ -711,6 +720,37 @@ export const actionDetails: Record<Action, ActionDetails> = {
   },
 
   // ============================================================
+  // GLOBAL ACTIONS
+  // ============================================================
+  [Action.CREATE_GLOBAL_INVITE]: {
+    name: 'Create Global Invite',
+    description: 'Create a new global invitation to the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  [Action.EDIT_GLOBAL_INVITE]: {
+    name: 'Edit Global Invite',
+    description: 'Edit an existing global invitation in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  [Action.DELETE_GLOBAL_INVITE]: {
+    name: 'Delete Global Invite',
+    description: 'Delete an existing global invitation in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  [Action.VIEW_GLOBAL_INVITES]: {
+    name: 'View Global Invites',
+    description: 'View existing global invitations in the system',
+    resourceSpecific: false,
+    resource: Resource.SYSTEM,
+  },
+
+  // ============================================================
   // SYSTEM ACTIONS
   // ============================================================
   [Action.INITIALISE_SYSTEM_API]: {
@@ -1117,6 +1157,12 @@ export const roleActions: Record<
       Action.CREATE_ADMIN_TEAM_INVITE,
       Action.EDIT_ADMIN_TEAM_INVITE,
       Action.DELETE_ADMIN_TEAM_INVITE,
+
+      // Global Invites
+      Action.CREATE_GLOBAL_INVITE,
+      Action.EDIT_GLOBAL_INVITE,
+      Action.DELETE_GLOBAL_INVITE,
+      Action.VIEW_GLOBAL_INVITES,
 
       // Long-lived token admin actions
       Action.CREATE_LONG_LIVED_TOKEN,

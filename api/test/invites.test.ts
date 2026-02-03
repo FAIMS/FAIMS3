@@ -24,6 +24,7 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 import {
+  addGlobalRole,
   addProjectRole,
   addTeamRole,
   EncodedProjectUIModel,
@@ -31,6 +32,7 @@ import {
   registerClient,
   Resource,
   Role,
+  userHasGlobalRole,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
@@ -38,6 +40,7 @@ import request from 'supertest';
 import {WEBAPP_PUBLIC_URL} from '../src/buildconfig';
 import {
   consumeInvite,
+  createGlobalInvite,
   createResourceInvite,
   deleteInvite,
   getInvite,
@@ -292,13 +295,6 @@ describe('Invite Tests', () => {
         })
       ).to.be.false;
 
-      // Add the role
-      addProjectRole({
-        user: localUser!,
-        projectId: projectId!,
-        role: Role.PROJECT_CONTRIBUTOR,
-      });
-
       // Use the invite
       const updatedInvite = await consumeInvite({
         invite,
@@ -317,6 +313,48 @@ describe('Invite Tests', () => {
           user: localUser!,
           projectId: projectId!,
           role: Role.PROJECT_CONTRIBUTOR,
+        })
+      ).to.be.true;
+    });
+
+    it('can use a global invite and record usage', async () => {
+      const invite = await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Test Global Invite',
+        createdBy: 'admin',
+        usesOriginal: 3,
+      });
+
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(localUser).to.not.be.null;
+
+      // Check initial state
+      expect(invite.usesConsumed).to.equal(0);
+      expect(invite.uses).to.be.an('array').that.is.empty;
+      expect(
+        userHasGlobalRole({
+          user: localUser!,
+          role: Role.OPERATIONS_ADMIN,
+        })
+      ).to.be.false;
+
+      // Use the invite
+      const updatedInvite = await consumeInvite({
+        invite,
+        user: localUser!,
+      });
+      await saveCouchUser(localUser!);
+
+      // Check results
+      expect(updatedInvite.usesConsumed).to.equal(1);
+      expect(updatedInvite.uses).to.be.an('array').with.lengthOf(1);
+      expect(updatedInvite.uses[0].userId).to.equal(localUser!.user_id);
+
+      // Double check the role was added
+      expect(
+        userHasGlobalRole({
+          user: localUser!,
+          role: Role.OPERATIONS_ADMIN,
         })
       ).to.be.true;
     });
@@ -574,6 +612,63 @@ describe('Invite Tests', () => {
         })
         .expect(401); // Unauthorized
     });
+  });
+
+  it('POST /api/invites/global creates a global invite', async () => {
+    // Add admin role to the admin user
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
+    if (!adminUser) {
+      throw new Error('Admin user not found');
+    }
+
+    addGlobalRole({
+      user: adminUser,
+      role: Role.OPERATIONS_ADMIN,
+    });
+
+    const response = await request(app)
+      .post('/api/invites/global')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Op Admin Invite',
+        uses: 10,
+      })
+      .expect(200);
+
+    expect(response.body._id).to.exist;
+    expect(response.body.resourceType).to.be.undefined;
+    expect(response.body.resourceId).to.be.undefined;
+    expect(response.body.role).to.equal(Role.OPERATIONS_ADMIN);
+    expect(response.body.name).to.equal('Op Admin Invite');
+    expect(response.body.usesOriginal).to.equal(10);
+  });
+
+  it('DELETE /api/invites/global/:inviteId deletes a global invite', async () => {
+    // Add admin role to the admin user
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
+    if (!adminUser) {
+      throw new Error('Admin user not found');
+    }
+
+    addGlobalRole({
+      user: adminUser,
+      role: Role.OPERATIONS_ADMIN,
+    });
+
+    const invite = await createGlobalInvite({
+      role: Role.OPERATIONS_ADMIN,
+      name: 'Deletable Global Invite',
+      createdBy: 'admin',
+    });
+
+    await request(app)
+      .delete(`/api/invites/global/${invite._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const fetchedInvite = await getInvite({inviteId: invite._id});
+    expect(fetchedInvite).to.be.null;
   });
 });
 

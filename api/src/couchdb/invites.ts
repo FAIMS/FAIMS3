@@ -26,6 +26,7 @@ import {
   Resource,
   Role,
   RoleScope,
+  addGlobalRole,
   addProjectRole,
   addTeamRole,
   safeWriteDocument,
@@ -86,7 +87,6 @@ export async function createResourceInvite({
   return await writeNewInvite(invite);
 }
 
-
 /**
  * Create an invite for a resource and role if one doesn't already exist.
  * If it already exists, return the existing invite.
@@ -106,7 +106,6 @@ export async function createGlobalInvite({
   expiry = Date.now() + DEFAULT_INVITE_EXPIRY,
   usesOriginal,
 }: {
-  resourceId: string;
   role: Role;
   name: string;
   createdBy: string;
@@ -282,9 +281,11 @@ export async function consumeInvite({
   });
 
   // Now grant the associated role
-  if (invite.resourceType === Resource.TEAM) {
+  if (invite.inviteType === RoleScope.GLOBAL) {
+    addGlobalRole({user, role: invite.role});
+  } else if (invite.resourceId && invite.resourceType === Resource.TEAM) {
     addTeamRole({user, role: invite.role, teamId: invite.resourceId});
-  } else if (invite.resourceType === Resource.PROJECT) {
+  } else if (invite.resourceId && invite.resourceType === Resource.PROJECT) {
     addProjectRole({user, role: invite.role, projectId: invite.resourceId});
   } else {
     throw new Exceptions.InternalSystemError(
@@ -328,6 +329,27 @@ export async function getInvitesForResource({
     throw Error('Unable to connect to invites database');
   }
 }
+
+/**
+ * Get all global invites
+ *
+ * @returns {Promise<ExistingInvitesDBDocument[]>} Array of invite documents
+ * @throws {Error} If unable to connect to the invites database
+ */
+export async function getGlobalInvites(): Promise<ExistingInvitesDBDocument[]> {
+  const inviteDb = getInvitesDB();
+  if (inviteDb) {
+    const result = await inviteDb.find({
+      selector: {
+        inviteType: {$eq: RoleScope.GLOBAL},
+      },
+    });
+    return result.docs as ExistingInvitesDBDocument[];
+  } else {
+    throw Error('Unable to connect to invites database');
+  }
+}
+
 
 /**
  * Check if an invite is valid (not expired and not exceeded usage limits).

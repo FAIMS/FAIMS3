@@ -27,16 +27,20 @@ import {
   PostCreateInviteInputSchema,
   PostCreateProjectInviteResponse,
   PostCreateTeamInviteResponse,
+  PostCreateGlobalInviteResponse,
   projectInviteToAction,
   Resource,
   teamInviteToAction,
+  RoleScope,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
+  createGlobalInvite,
   createResourceInvite,
   deleteInvite,
+  getGlobalInvites,
   getInvite,
   getInvitesForResource,
   isInviteValid,
@@ -379,6 +383,7 @@ api.get(
     // Return basic info about the invite (without sensitive data)
     res.json({
       id: invite._id,
+      inviteType: invite.inviteType,
       resourceType: invite.resourceType,
       resourceId: invite.resourceId,
       name: invite.name,
@@ -391,5 +396,130 @@ api.get(
         ? Math.max(0, invite.usesOriginal - invite.usesConsumed)
         : undefined,
     });
+  }
+);
+
+/**
+ * Global Invites
+ */
+
+/**
+ * GET all global invites
+ */
+api.get(
+  '/global',
+  requireAuthenticationAPI,
+  async ({user}, res: Response<GetTeamInvitesResponse>) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    // Check if user has permission to view team invites
+    if (
+      !isAuthorized({
+        action: Action.VIEW_GLOBAL_INVITES,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to view global invites'
+      );
+    }
+
+    // only return valid invites
+    const invites = (await getGlobalInvites()).filter(
+      invite => isInviteValid({invite}).isValid
+    );
+
+    res.json(invites);
+  }
+);
+
+/**
+ * POST create a global invite
+ */
+api.post(
+  '/global',
+  requireAuthenticationAPI,
+  processRequest({
+    body: PostCreateInviteInputSchema,
+  }),
+  async ({user, body}, res: Response<PostCreateGlobalInviteResponse>) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    if (
+      !isAuthorized({
+        action: Action.CREATE_GLOBAL_INVITE,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to create this invite'
+      );
+    }
+
+    const invite = await createGlobalInvite({
+      role: body.role,
+      name: body.name,
+      createdBy: user.user_id,
+      expiry: body.expiry,
+      usesOriginal: body.uses,
+    });
+
+    res.json(invite);
+  }
+);
+
+/**
+ * DELETE a team invite
+ */
+api.delete(
+  '/global/:inviteId',
+  requireAuthenticationAPI,
+  processRequest({
+    params: z.object({
+      inviteId: z.string(),
+    }),
+  }),
+  async ({user, params: {inviteId}}, res) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const invite = await getInvite({inviteId});
+
+    if (!invite) {
+      throw new Exceptions.ItemNotFoundException('Invite not found');
+    }
+
+    // verify that this invite is a global invite
+    if (invite.inviteType !== RoleScope.GLOBAL) {
+      throw new Exceptions.ValidationException('Invite is not a global invite');
+    }
+
+    if (
+      !isAuthorized({
+        action: Action.DELETE_GLOBAL_INVITE,
+        decodedToken: {
+          globalRoles: user.globalRoles,
+          resourceRoles: user.resourceRoles,
+        },
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to delete this invite'
+      );
+    }
+
+    await deleteInvite({invite});
+    res.status(200).end();
   }
 );
