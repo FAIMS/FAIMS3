@@ -16,7 +16,15 @@ export default defineConfig({
     host: true,
     fs: {allow: ['..']},
   },
-  optimizeDeps: {include: ['designer']},
+  optimizeDeps: {
+    include: [
+      '@mui/material',
+      '@mui/icons-material',
+      '@emotion/react',
+      '@emotion/styled',
+      '@emotion/react/jsx-runtime',
+    ],
+  },
   // Polyfill global in case of weird importing going on!
   define: {
     global: 'globalThis',

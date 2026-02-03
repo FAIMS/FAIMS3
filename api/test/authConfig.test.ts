@@ -21,6 +21,10 @@
 import {expect} from 'chai';
 import sinon from 'sinon';
 import {readAuthProviderConfigFromEnv} from '../src/auth/strategies/applyStrategies';
+import {
+  GoogleAuthProviderConfig,
+  OIDCAuthProviderConfig,
+} from '../src/auth/strategies/strategyTypes';
 
 describe('readAuthProviderConfigFromEnv', () => {
   const originalEnv = process.env;
@@ -74,7 +78,8 @@ describe('readAuthProviderConfigFromEnv', () => {
       clientID: 'google-client-id',
       clientSecret: 'google-client-secret',
       scope: ['profile', 'email', 'https://www.googleapis.com/auth/plus.login'],
-    });
+      callbackMethods: ['GET'],
+    } satisfies GoogleAuthProviderConfig);
   });
 
   it('should parse a valid OIDC provider configuration', () => {
@@ -112,7 +117,8 @@ describe('readAuthProviderConfigFromEnv', () => {
       clientID: 'aaf-client-id',
       clientSecret: 'aaf-client-secret',
       scope: ['profile', 'email'],
-    });
+      callbackMethods: ['GET'],
+    } satisfies OIDCAuthProviderConfig);
   });
 
   it('should handle multiple providers simultaneously', () => {
