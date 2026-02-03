@@ -1,4 +1,4 @@
-import {Resource, ResourceRole, Role} from '../../permission';
+import {Resource, ResourceRole, Role, RoleScope} from '../../permission';
 import {
   AuthRecordV1ExistingDocumentSchema,
   AuthRecordV2ExistingDocumentSchema,
@@ -11,6 +11,7 @@ import {
   V1InviteDBFields,
   V2InviteDBFields,
   V3InviteDBFields,
+  V4InviteDBFields,
 } from '../invitesDB';
 import {
   PeopleV1Document,
@@ -306,7 +307,32 @@ export const invitesV2toV3Migration: MigrationFunc = doc => {
     // No uses in the log
     uses: [],
   };
-  return {action: 'update', outputDoc};
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+export const invitesV3toV4Migration: MigrationFunc = doc => {
+  // Cast input document to V3 type
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<V3InviteDBFields>;
+
+  // Create the new V4 document structure
+  const outputDoc: PouchDB.Core.ExistingDocument<V4InviteDBFields> = {
+    // retain ID and rev
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    name: inputDoc.name,
+    expiry: inputDoc.expiry,
+    resourceId: inputDoc.resourceId,
+    resourceType: inputDoc.resourceType,
+    // All existing invites are resource specific
+    inviteType: RoleScope.RESOURCE_SPECIFIC,
+    role: inputDoc.role,
+    createdAt: inputDoc.createdAt,
+    createdBy: inputDoc.createdBy,
+    usesConsumed: inputDoc.usesConsumed,
+    uses: inputDoc.uses,
+  };
+  return {action: 'update', updatedRecord: outputDoc};
 };
 
 /**
@@ -387,7 +413,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.DATA]: {defaultVersion: 1, targetVersion: 1},
   [DatabaseType.DIRECTORY]: {defaultVersion: 1, targetVersion: 1},
   // invites v3
-  [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 3},
+  [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
   // people v3
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 4},
@@ -482,5 +508,13 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'No-op migration to prompt V5 of schema which includes the new long lived token document.',
     migrationFunction: authV4toV5Migration,
+  },
+  {
+    dbType: DatabaseType.INVITES,
+    from: 3,
+    to: 4,
+    description:
+      "Introduces global invites which don't refer to a specific resource.",
+    migrationFunction: invitesV3toV4Migration,
   },
 ];

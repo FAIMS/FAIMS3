@@ -38,7 +38,7 @@ import request from 'supertest';
 import {WEBAPP_PUBLIC_URL} from '../src/buildconfig';
 import {
   consumeInvite,
-  createInvite,
+  createResourceInvite,
   deleteInvite,
   getInvite,
   getInvitesForResource,
@@ -75,7 +75,7 @@ describe('Invite Tests', () => {
   describe('Database Methods Tests', () => {
     it('can create an invite for a project', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -106,7 +106,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_MEMBER,
@@ -127,7 +127,7 @@ describe('Invite Tests', () => {
 
     it('can get an invite by ID', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -149,7 +149,7 @@ describe('Invite Tests', () => {
 
     it('can get invites for a resource', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -157,7 +157,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_ADMIN,
@@ -184,7 +184,7 @@ describe('Invite Tests', () => {
 
     it('can delete an invite', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -203,7 +203,7 @@ describe('Invite Tests', () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
 
       // Create valid invite
-      const validInvite = await createInvite({
+      const validInvite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -217,7 +217,7 @@ describe('Invite Tests', () => {
       expect(validityCheck.reason).to.be.undefined;
 
       // Create expired invite
-      const expiredInvite = await createInvite({
+      const expiredInvite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -231,7 +231,7 @@ describe('Invite Tests', () => {
       expect(expiredCheck.reason).to.equal('Invite has expired');
 
       // Create limited use invite
-      const limitedInvite = await createInvite({
+      const limitedInvite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -269,7 +269,7 @@ describe('Invite Tests', () => {
 
     it('can use an invite and record usage', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -326,7 +326,7 @@ describe('Invite Tests', () => {
   describe('API Endpoint Tests', () => {
     it('GET /api/invites/:inviteId returns invite details', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -357,7 +357,7 @@ describe('Invite Tests', () => {
     it('GET /api/invites/notebook/:projectId returns project invites', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -365,7 +365,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_ADMIN,
@@ -398,7 +398,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_MEMBER,
@@ -406,7 +406,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_ADMIN,
@@ -495,7 +495,7 @@ describe('Invite Tests', () => {
 
     it('DELETE /api/invites/notebook/:projectId/:inviteId deletes a project invite', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -533,7 +533,7 @@ describe('Invite Tests', () => {
         role: Role.TEAM_ADMIN,
       });
 
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_MEMBER,
@@ -598,7 +598,7 @@ describe('Registration', () => {
     const role = Role.PROJECT_GUEST;
 
     if (project_id) {
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         createdBy: payload.email,
         name: 'test',
         resourceId: project_id,

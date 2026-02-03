@@ -25,6 +25,7 @@ import {
   PeopleDBDocument,
   Resource,
   Role,
+  RoleScope,
   addProjectRole,
   addTeamRole,
   safeWriteDocument,
@@ -51,7 +52,7 @@ export const DEFAULT_INVITE_EXPIRY = 30 * 24 * 60 * 60 * 1000;
  * @param {number} [params.usesOriginal] - Maximum number of times invite can be used (infinite if undefined)
  * @returns {Promise<ExistingInvitesDBDocument>} The invite document
  */
-export async function createInvite({
+export async function createResourceInvite({
   resourceType,
   resourceId,
   role,
@@ -72,6 +73,49 @@ export async function createInvite({
   const invite: InvitesDBFields = {
     resourceType,
     resourceId,
+    inviteType: RoleScope.RESOURCE_SPECIFIC,
+    role,
+    name,
+    createdBy,
+    createdAt: Date.now(),
+    expiry,
+    usesOriginal,
+    usesConsumed: 0,
+    uses: [],
+  };
+  return await writeNewInvite(invite);
+}
+
+
+/**
+ * Create an invite for a resource and role if one doesn't already exist.
+ * If it already exists, return the existing invite.
+ *
+ * @param {Object} params - The parameters for creating the invite
+ * @param {Role} params.role - Role to grant
+ * @param {string} params.name - Name/purpose of the invite
+ * @param {string} params.createdBy - User ID of the creator
+ * @param {number} [params.expiry] - Timestamp when invite expires
+ * @param {number} [params.usesOriginal] - Maximum number of times invite can be used (infinite if undefined)
+ * @returns {Promise<ExistingInvitesDBDocument>} The invite document
+ */
+export async function createGlobalInvite({
+  role,
+  name,
+  createdBy,
+  expiry = Date.now() + DEFAULT_INVITE_EXPIRY,
+  usesOriginal,
+}: {
+  resourceId: string;
+  role: Role;
+  name: string;
+  createdBy: string;
+  expiry?: number;
+  usesOriginal?: number;
+}): Promise<ExistingInvitesDBDocument> {
+  // Create a new invite
+  const invite: InvitesDBFields = {
+    inviteType: RoleScope.GLOBAL,
     role,
     name,
     createdBy,

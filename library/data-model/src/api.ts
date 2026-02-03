@@ -4,7 +4,7 @@ import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
 } from './data_storage/templatesDB/types';
-import {Resource, Role} from './permission/model';
+import {Resource, Role, RoleScope} from './permission/model';
 import {EncodedUISpecificationSchema} from './types';
 
 // ==================
@@ -635,15 +635,17 @@ export const InviteInfoResponseSchema = z.object({
 });
 
 /**
- * Full invite document schema (internal)
+ * Invite documents can be either resource specific or global
+ * but have a common base structure
  */
-export const InviteDocumentSchema = z.object({
+const InviteDocumentSchema = z.object({
   _id: z.string(),
   _rev: z.string(),
-  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
-  resourceId: z.string(),
   name: z.string(),
   role: z.nativeEnum(Role),
+  inviteType: z.nativeEnum(RoleScope),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]).optional(),
+  resourceId: z.string().optional(),
   createdBy: z.string(),
   createdAt: z.number(),
   expiry: z.number(),

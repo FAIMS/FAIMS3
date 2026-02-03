@@ -35,7 +35,7 @@ import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
-  createInvite,
+  createResourceInvite,
   deleteInvite,
   getInvite,
   getInvitesForResource,
@@ -176,7 +176,7 @@ api.post(
       );
     }
 
-    const invite = await createInvite({
+    const invite = await createResourceInvite({
       resourceType: Resource.PROJECT,
       resourceId: projectId,
       role: body.role,
@@ -229,7 +229,7 @@ api.post(
       );
     }
 
-    const invite = await createInvite({
+    const invite = await createResourceInvite({
       resourceType: Resource.TEAM,
       resourceId: teamId,
       role: body.role,
