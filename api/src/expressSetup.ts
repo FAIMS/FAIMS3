@@ -237,16 +237,15 @@ addAuthRoutes(app, socialProviders);
  * Home Page (-> /login)
  */
 app.get('/', async (req, res) => {
-  throw new Error('Testing error - hi Bugnsnag!');
-  //if (databaseValidityReport.valid) {
-  //  res.redirect('/login');
-  //} else {
-  //  res.render('fallback', {
-  //    report: databaseValidityReport,
-  //    couchdb_url: COUCHDB_INTERNAL_URL,
-  //    layout: 'fallback',
-  //  });
-  //}
+  if (databaseValidityReport.valid) {
+    res.redirect('/login');
+  } else {
+    res.render('fallback', {
+      report: databaseValidityReport,
+      couchdb_url: COUCHDB_INTERNAL_URL,
+      layout: 'fallback',
+    });
+  }
 });
 
 /**
