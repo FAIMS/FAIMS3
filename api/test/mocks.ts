@@ -16,6 +16,7 @@ import {
   getUsersDB,
   initialiseDbAndKeys,
   getTeamsDB,
+  getInvitesDB,
 } from '../src/couchdb';
 import {registerAdminUser} from '../src/couchdb/users';
 
@@ -60,6 +61,9 @@ export const resetDatabases = async () => {
 
   const projectsDB = localGetProjectsDb();
   await clearDB(projectsDB);
+
+  const invitesDB = getInvitesDB();
+  await clearDB(invitesDB);
 
   const templatesDB = getTemplatesDb();
   await clearDB(templatesDB);

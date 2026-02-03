@@ -676,6 +676,11 @@ export const GetProjectInvitesResponseSchema = z.array(InviteDocumentSchema);
 export const GetTeamInvitesResponseSchema = z.array(InviteDocumentSchema);
 
 /**
+ * GET /api/invites/global response
+ */
+export const GetGlobalInvitesResponseSchema = z.array(InviteDocumentSchema);
+
+/**
  * POST /api/invites/project/:projectId response
  */
 export const PostCreateProjectInviteResponseSchema = InviteDocumentSchema;
@@ -710,6 +715,9 @@ export type GetProjectInvitesResponse = z.infer<
 >;
 export type GetTeamInvitesResponse = z.infer<
   typeof GetTeamInvitesResponseSchema
+>;
+export type GetGlobalInvitesResponse = z.infer<
+  typeof GetGlobalInvitesResponseSchema
 >;
 export type PostCreateProjectInviteResponse = z.infer<
   typeof PostCreateProjectInviteResponseSchema

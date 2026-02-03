@@ -84,6 +84,15 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   if (canSeeUsers) {
     bottomSectionNavItems.push({
+      title: 'Invites',
+      url: '/invites',
+      icon: Users,
+    });
+  }
+
+
+  if (canSeeUsers) {
+    bottomSectionNavItems.push({
       title: 'Users',
       url: '/users',
       icon: Users,

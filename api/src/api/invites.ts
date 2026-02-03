@@ -32,6 +32,7 @@ import {
   Resource,
   teamInviteToAction,
   RoleScope,
+  GetGlobalInvitesResponse,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -363,43 +364,6 @@ api.delete(
 );
 
 /**
- * GET a specific invite by ID
- */
-api.get(
-  '/:inviteId',
-  processRequest({
-    params: z.object({inviteId: z.string()}),
-  }),
-  async (req, res: Response<GetInviteByIdResponse>) => {
-    const invite = await getInvite({inviteId: req.params.inviteId});
-
-    if (!invite) {
-      throw new Exceptions.ItemNotFoundException('Invite not found');
-    }
-
-    // Check if invite is valid
-    const validityCheck = isInviteValid({invite});
-
-    // Return basic info about the invite (without sensitive data)
-    res.json({
-      id: invite._id,
-      inviteType: invite.inviteType,
-      resourceType: invite.resourceType,
-      resourceId: invite.resourceId,
-      name: invite.name,
-      role: invite.role,
-      createdAt: invite.createdAt,
-      expiry: invite.expiry,
-      isValid: validityCheck.isValid,
-      invalidReason: validityCheck.reason,
-      usesRemaining: invite.usesOriginal
-        ? Math.max(0, invite.usesOriginal - invite.usesConsumed)
-        : undefined,
-    });
-  }
-);
-
-/**
  * Global Invites
  */
 
@@ -409,7 +373,8 @@ api.get(
 api.get(
   '/global',
   requireAuthenticationAPI,
-  async ({user}, res: Response<GetTeamInvitesResponse>) => {
+  async ({user}, res: Response<GetGlobalInvitesResponse>) => {
+    console.log('GET /api/invites/global called');
     if (!user) {
       throw new Exceptions.UnauthorizedException();
     }
@@ -521,5 +486,43 @@ api.delete(
 
     await deleteInvite({invite});
     res.status(200).end();
+  }
+);
+
+/**
+ * GET a specific invite by ID
+ *  - include this route last so that it doesn't clobber /global above
+ */
+api.get(
+  '/:inviteId',
+  processRequest({
+    params: z.object({inviteId: z.string()}),
+  }),
+  async (req, res: Response<GetInviteByIdResponse>) => {
+    const invite = await getInvite({inviteId: req.params.inviteId});
+
+    if (!invite) {
+      throw new Exceptions.ItemNotFoundException('Invite not found');
+    }
+
+    // Check if invite is valid
+    const validityCheck = isInviteValid({invite});
+
+    // Return basic info about the invite (without sensitive data)
+    res.json({
+      id: invite._id,
+      inviteType: invite.inviteType,
+      resourceType: invite.resourceType,
+      resourceId: invite.resourceId,
+      name: invite.name,
+      role: invite.role,
+      createdAt: invite.createdAt,
+      expiry: invite.expiry,
+      isValid: validityCheck.isValid,
+      invalidReason: validityCheck.reason,
+      usesRemaining: invite.usesOriginal
+        ? Math.max(0, invite.usesOriginal - invite.usesConsumed)
+        : undefined,
+    });
   }
 );

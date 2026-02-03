@@ -21,6 +21,7 @@ import { Route as ProtectedTeamsTeamIdRouteImport } from './routes/_protected/te
 import { Route as ProtectedProjectsProjectIdRouteImport } from './routes/_protected/projects/$projectId'
 import { Route as ProtectedProfileLongLivedTokensRouteImport } from './routes/_protected/profile/long-lived-tokens'
 import { Route as ProtectedAdminUsersRouteImport } from './routes/_protected/_admin/users'
+import { Route as ProtectedAdminInvitesRouteImport } from './routes/_protected/_admin/invites'
 
 const ProtectedRoute = ProtectedRouteImport.update({
   id: '/_protected',
@@ -83,9 +84,15 @@ const ProtectedAdminUsersRoute = ProtectedAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => ProtectedAdminRoute,
 } as any)
+const ProtectedAdminInvitesRoute = ProtectedAdminInvitesRouteImport.update({
+  id: '/invites',
+  path: '/invites',
+  getParentRoute: () => ProtectedAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ProtectedIndexRoute
+  '/invites': typeof ProtectedAdminInvitesRoute
   '/users': typeof ProtectedAdminUsersRoute
   '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof ProtectedIndexRoute
+  '/invites': typeof ProtectedAdminInvitesRoute
   '/users': typeof ProtectedAdminUsersRoute
   '/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/_protected': typeof ProtectedRouteWithChildren
   '/_protected/_admin': typeof ProtectedAdminRouteWithChildren
   '/_protected/': typeof ProtectedIndexRoute
+  '/_protected/_admin/invites': typeof ProtectedAdminInvitesRoute
   '/_protected/_admin/users': typeof ProtectedAdminUsersRoute
   '/_protected/profile/long-lived-tokens': typeof ProtectedProfileLongLivedTokensRoute
   '/_protected/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/invites'
     | '/users'
     | '/profile/long-lived-tokens'
     | '/projects/$projectId'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/invites'
     | '/users'
     | '/profile/long-lived-tokens'
     | '/projects/$projectId'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/_protected'
     | '/_protected/_admin'
     | '/_protected/'
+    | '/_protected/_admin/invites'
     | '/_protected/_admin/users'
     | '/_protected/profile/long-lived-tokens'
     | '/_protected/projects/$projectId'
@@ -254,14 +266,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedAdminUsersRouteImport
       parentRoute: typeof ProtectedAdminRoute
     }
+    '/_protected/_admin/invites': {
+      id: '/_protected/_admin/invites'
+      path: '/invites'
+      fullPath: '/invites'
+      preLoaderRoute: typeof ProtectedAdminInvitesRouteImport
+      parentRoute: typeof ProtectedAdminRoute
+    }
   }
 }
 
 interface ProtectedAdminRouteChildren {
+  ProtectedAdminInvitesRoute: typeof ProtectedAdminInvitesRoute
   ProtectedAdminUsersRoute: typeof ProtectedAdminUsersRoute
 }
 
 const ProtectedAdminRouteChildren: ProtectedAdminRouteChildren = {
+  ProtectedAdminInvitesRoute: ProtectedAdminInvitesRoute,
   ProtectedAdminUsersRoute: ProtectedAdminUsersRoute,
 }
 

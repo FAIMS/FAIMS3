@@ -366,6 +366,41 @@ export const useGetTeamInvites = ({
   });
 
 /**
+ * useGetTeamInvites hook returns a query for fetching invites.
+ *
+ * @param {User} user - The user object.
+ * @param {string} teamId - The ID of the notebook.
+ * @returns {Query} A query for fetching invites.
+ */
+export const useGetGlobalInvites = ({
+  user,
+  redirect,
+}: {
+  user: User | null;
+  redirect: string;
+}) =>
+  useQuery({
+    queryKey: ['globalinvites'],
+    queryFn: async () => {
+      const invites = await get<GetTeamInvitesResponse>(
+        '/api/invites/global',
+        user
+      );
+      const promises = invites.map(async invite => {
+        const url = buildRegisterUrl({inviteId: invite._id, redirect});
+        return {
+          ...invite,
+          url: url,
+          qrCode: await QRCode.toDataURL(url),
+        };
+      });
+      return Promise.all(promises);
+    },
+    // Only run the query if both user and notebookId are available
+    enabled: !!user,
+  });
+
+/**
  * useGetRecords hook returns a query for fetching records.
  * @param {User} user - The user object.
  * @param {string} projectId - The ID of the project.

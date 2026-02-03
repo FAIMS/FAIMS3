@@ -43,6 +43,7 @@ import {
   createGlobalInvite,
   createResourceInvite,
   deleteInvite,
+  getGlobalInvites,
   getInvite,
   getInvitesForResource,
   isInviteValid,
@@ -315,6 +316,35 @@ describe('Invite Tests', () => {
           role: Role.PROJECT_CONTRIBUTOR,
         })
       ).to.be.true;
+    });
+
+    it('can get global invites', async () => {
+      await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Admin Invite',
+        createdBy: 'admin',
+      });
+
+      await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Another Admin Invite',
+        createdBy: 'admin',
+      });
+
+      const invites = await getGlobalInvites();
+
+      console.log('Global Invites:', invites);
+
+      expect(invites).to.be.an('array').with.lengthOf(2);
+      expect(invites[0].name).to.be.oneOf([
+        'Admin Invite',
+        'Another Admin Invite',
+      ]);
+      expect(invites[1].name).to.be.oneOf([
+        'Admin Invite',
+        'Another Admin Invite',
+      ]);
+      expect(invites[0].name).to.not.equal(invites[1].name);
     });
 
     it('can use a global invite and record usage', async () => {
@@ -612,6 +642,35 @@ describe('Invite Tests', () => {
         })
         .expect(401); // Unauthorized
     });
+  });
+
+  it('GET /api/invites/global gets all global invites', async () => {
+    await createGlobalInvite({
+      role: Role.OPERATIONS_ADMIN,
+      name: 'Admin Invite',
+      createdBy: 'admin',
+    });
+
+    await createGlobalInvite({
+      role: Role.OPERATIONS_ADMIN,
+      name: 'Another Admin Invite',
+      createdBy: 'admin',
+    });
+
+    const response = await request(app)
+      .get('/api/invites/global')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(response.body).to.be.an('array').with.lengthOf(2);
+    expect(response.body[0].name).to.be.oneOf([
+      'Admin Invite',
+      'Another Admin Invite',
+    ]);
+    expect(response.body[1].name).to.be.oneOf([
+      'Admin Invite',
+      'AnotherAdmin Invite',
+    ]);
   });
 
   it('POST /api/invites/global creates a global invite', async () => {
