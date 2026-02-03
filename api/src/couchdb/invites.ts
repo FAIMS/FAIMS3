@@ -350,7 +350,6 @@ export async function getGlobalInvites(): Promise<ExistingInvitesDBDocument[]> {
   }
 }
 
-
 /**
  * Check if an invite is valid (not expired and not exceeded usage limits).
  *
