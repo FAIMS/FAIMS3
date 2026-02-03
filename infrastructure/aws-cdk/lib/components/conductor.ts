@@ -171,7 +171,6 @@ export class FaimsConductor extends Construct {
     // Configure auth providers
     // Based on the configuration we generate two sets of environment variables
     // for secret and non-secret settings for each provider.
-
     const authSecrets: Record<string, ecs.Secret> = {};
     const authEnvironment: Record<string, string> = {};
     if (props.authProviders && props.authProviders.providers.length > 0) {
@@ -183,17 +182,47 @@ export class FaimsConductor extends Construct {
       props.authProviders.providers.forEach(provider => {
         const config = props.authProviders!.config[provider];
 
-        authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_ID`] =
-          ecs.Secret.fromSecretsManager(authSecret, `${provider}-clientID`);
-        authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`] =
-          ecs.Secret.fromSecretsManager(authSecret, `${provider}-clientSecret`);
+        // Handle secrets based on provider type
+        if (config.type === 'saml') {
+          // SAML uses privateKey and publicKey (certificate) instead of clientID/clientSecret
+          authSecrets[`AUTH_${provider.toUpperCase()}_PRIVATE_KEY`] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-privateKey`);
+          authSecrets[`AUTH_${provider.toUpperCase()}_PUBLIC_KEY`] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-publicKey`);
+        } else {
+          // Google and OIDC use clientID and clientSecret
+          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_ID`] =
+            ecs.Secret.fromSecretsManager(authSecret, `${provider}-clientID`);
+          authSecrets[`AUTH_${provider.toUpperCase()}_CLIENT_SECRET`] =
+            ecs.Secret.fromSecretsManager(
+              authSecret,
+              `${provider}-clientSecret`
+            );
+        }
 
-        // for each key in config, convert to an env variable (AUTH_ + provider + _ + key in uppercase)
-        // and add to the environment
+        // For each key in config, convert to an env variable
+        // (AUTH_ + provider + _ + key in uppercase) and add to the environment
+
         for (const [key, value] of Object.entries(config)) {
+          // Skip undefined/null values
+          if (value === undefined || value === null) {
+            continue;
+          }
+
           const envName = `AUTH_${provider.toUpperCase()}_${camelToSnakeCase(key)}`;
-          console.log('ENV', envName, value);
-          authEnvironment[envName] = value.toString();
+
+          // Handle different value types appropriately
+          if (Array.isArray(value)) {
+            // For arrays (e.g., authnContext), join with commas
+            authEnvironment[envName] = value.join(',');
+          } else if (typeof value === 'object') {
+            // For objects, stringify to JSON
+            authEnvironment[envName] = JSON.stringify(value);
+          } else {
+            authEnvironment[envName] = String(value);
+          }
+
+          console.log('ENV', envName, authEnvironment[envName]);
         }
       });
     }
