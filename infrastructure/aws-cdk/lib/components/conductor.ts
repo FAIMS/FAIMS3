@@ -113,6 +113,11 @@ export interface FaimsConductorProps {
   localhostWhitelist: boolean;
   /** Maximum long-lived token duration in days (undefined = infinite) */
   maximumLongLivedDurationDays?: number;
+  /** Bugsnag config */
+  /** Version e.g. v1.2.3 */
+  apiVersion?: string;
+  /** Bugsnag API key */
+  bugsnagApiKey?: string;
 }
 
 /**
@@ -228,6 +233,10 @@ export class FaimsConductor extends Construct {
         KEY_SOURCE: 'AWS_SM',
         AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         NEW_CONDUCTOR_URL: props.webUrl,
+
+        // Bugsnag (optional)
+        ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
+        ...(props.apiVersion ? {API_VERSION: props.apiVersion} : {}),
 
         ...(googleSecret
           ? {
