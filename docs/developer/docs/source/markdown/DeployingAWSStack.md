@@ -555,15 +555,16 @@ schema documentation available in `SAMLAuthProviderConfigSchema` in the CDK conf
 
 **Optional SAML fields:**
 
-| Field                          | Description                                                                                     |
-| ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `callbackUrl`                  | Full callback URL for SAML responses. If not specified, the system generates one automatically. |
-| `disableRequestedAuthnContext` | Set to `true` for ADFS compatibility                                                            |
-| `forceAuthn`                   | Set to `true` to force re-authentication even with a valid IdP session                          |
-| `acceptedClockSkewMs`          | Allowed clock drift in milliseconds between SP and IdP (default: `0`, use `-1` to disable)      |
-| `logoutUrl`                    | IdP's logout URL for single logout support                                                      |
-| `audience`                     | Expected audience value in SAML responses (for additional validation)                           |
-| `idpIssuer`                    | Expected issuer value from IdP (for logout validation)                                          |
+| Field                          | Description                                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `signMetadata`                 | Sign the metadata endpoint document using the provided privateKey? 'true' or 'false'. Default false. |
+| `callbackUrl`                  | Full callback URL for SAML responses. If not specified, the system generates one automatically.      |
+| `disableRequestedAuthnContext` | Set to `true` for ADFS compatibility                                                                 |
+| `forceAuthn`                   | Set to `true` to force re-authentication even with a valid IdP session                               |
+| `acceptedClockSkewMs`          | Allowed clock drift in milliseconds between SP and IdP (default: `0`, use `-1` to disable)           |
+| `logoutUrl`                    | IdP's logout URL for single logout support                                                           |
+| `audience`                     | Expected audience value in SAML responses (for additional validation)                                |
+| `idpIssuer`                    | Expected issuer value from IdP (for logout validation)                                               |
 
 **SAML secrets:**
 
@@ -577,10 +578,10 @@ requests and decrypting assertions:
 }
 ```
 
-| Secret Key              | Description                                                                             |
-| ----------------------- | --------------------------------------------------------------------------------------- |
-| `provider-privateKey`   | Your SP's private key for signing requests and decrypting assertions (PEM format)       |
-| `provider-publicKey`    | Your SP's public certificate, included in metadata for the IdP (PEM format)             |
+| Secret Key            | Description                                                                       |
+| --------------------- | --------------------------------------------------------------------------------- |
+| `provider-privateKey` | Your SP's private key for signing requests and decrypting assertions (PEM format) |
+| `provider-publicKey`  | Your SP's public certificate, included in metadata for the IdP (PEM format)       |
 
 **Note:** The `idpPublicKey` can be specified either in the config (as shown in the example) or
 in the secrets as `provider-idpPublicKey`. If provided in both places, the secrets value takes precedence.
@@ -595,6 +596,29 @@ https://your-conductor-url/auth/provider-name/metadata
 
 Provide this URL to your Identity Provider administrator to configure the trust relationship.
 The metadata includes your entity ID, callback URL, and public certificates for encryption and signing.
+
+If you want to **sign this metadata using your private key** ensure you have a
+`privateKey` set and include the `signMetadata` true configuration.
+
+#### Validating SAML metadata
+
+To ensure your metadata is signed appropriately you can use the below validation script.
+
+First, install the xml cryptography package needed
+
+```
+sudo apt-get install xmlsec1
+```
+
+Then
+
+```
+# From FAIMS3 repo root
+cd api
+./scripts/validateSamlMetadata.sh <API_URL>/auth/<PROVIDER_NAME>/metadata
+```
+
+This will curl the metadata, and validate the signature.
 
 ### SMTP Configuration
 

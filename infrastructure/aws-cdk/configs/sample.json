@@ -136,6 +136,7 @@
         "type": "saml",
         "index": 3,
         "displayName": "Enterprise SSO",
+        "signMetadata": true,
         "helperText": "Log in with your organization's identity provider.",
         "scope": "profile email",
         "entryPoint": "https://idp.example.com/saml2/sso",
