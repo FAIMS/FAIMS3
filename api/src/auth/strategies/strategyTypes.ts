@@ -15,10 +15,14 @@ export const BaseAuthProviderConfigSchema = z.object({
   scope: z.array(z.string()),
   /** HTTP methods accepted for the auth callback. Default: ['GET'] */
   callbackMethods: z
-    .array(z.enum(['GET', 'POST']))
+    .string()
     .optional()
-    .default(['GET'])
-    .describe('HTTP methods accepted for the auth return callback'),
+    .default('GET')
+    .transform(val => val.split(',').map(m => m.trim().toUpperCase()))
+    .pipe(z.array(z.enum(['GET', 'POST'])))
+    .describe(
+      'HTTP methods accepted for the auth return callback (comma-separated)'
+    ),
 });
 export type BaseAuthProviderConfig = z.infer<
   typeof BaseAuthProviderConfigSchema
@@ -62,10 +66,14 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     type: z.literal('saml'),
     // Override default callback method to just POST
     callbackMethods: z
-      .array(z.enum(['GET', 'POST']))
+      .string()
       .optional()
-      .default(['POST'])
-      .describe('HTTP methods accepted for the auth return callback'),
+      .default('POST')
+      .transform(val => val.split(',').map(m => m.trim().toUpperCase()))
+      .pipe(z.array(z.enum(['GET', 'POST'])))
+      .describe(
+        'HTTP methods accepted for the auth return callback (comma-separated)'
+      ),
     // Required fields
     /** IdP SSO URL - where to send authentication requests */
     entryPoint: z.string(),
