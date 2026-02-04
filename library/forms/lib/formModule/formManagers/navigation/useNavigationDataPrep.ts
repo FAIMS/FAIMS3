@@ -22,6 +22,7 @@ import {
   ImpliedParentNavInfo,
   NavigationType,
 } from './types';
+import {logError} from '../../../logging';
 
 // ============================================================================
 // Types
@@ -247,10 +248,9 @@ export function useNavigationDataPreparation({
       relatedRecordPropsSchema.safeParse(fieldSpec);
 
     if (!fieldSpecData) {
-      console.error(
-        'Failed to parse related record field parameters for field:',
-        head.fieldId,
-        fieldSpecError
+      logError(
+        new Error('Failed to parse related record field parameters for field:'),
+        {fieldId: head.fieldId, fieldSpecError}
       );
       return undefined;
     }
@@ -285,7 +285,7 @@ export function useNavigationDataPreparation({
           onError(
             'Failed to parse related field data. Try refreshing the app or contact a system administrator.'
           );
-          console.error('Failed to parse related field value:', error);
+          logError(new Error('Failed to parse related field value:'), {error});
           return;
         }
 
@@ -348,7 +348,7 @@ export function useNavigationDataPreparation({
           mode: 'new',
         });
       } catch (error) {
-        console.error('Failed to create another child:', error);
+        logError(new Error('Failed to create another child:'), {error});
         onError('Failed to create another record. Please try again.');
       }
     };

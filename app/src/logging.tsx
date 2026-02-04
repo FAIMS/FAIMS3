@@ -18,15 +18,16 @@
  *   Wrappers for logging functions for errors etc.
  */
 
-import {BUGSNAG_KEY} from './buildconfig';
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginReact from '@bugsnag/plugin-react';
-import React, {ErrorInfo, useEffect} from 'react';
-
-import {Grid, Typography, Button} from '@mui/material';
-import * as ROUTES from './constants/routes';
-import {useTheme} from '@mui/material/styles';
+import {FormLogger, LoggingService} from '@faims3/forms';
 import DashboardIcon from '@mui/icons-material/Dashboard';
+import {Button, Grid, Typography} from '@mui/material';
+import {useTheme} from '@mui/material/styles';
+import React, {ErrorInfo, useEffect} from 'react';
+import {BUGSNAG_KEY, DEBUG_APP} from './buildconfig';
+import * as ROUTES from './constants/routes';
+
 interface EBProps {
   children?: React.ReactNode;
 }
@@ -147,3 +148,119 @@ if (BUGSNAG_KEY && BUGSNAG_KEY !== '<your bugsnag API key>') {
 export const ErrorBoundary = bugsnag
   ? bugsnag.createErrorBoundary(React)
   : FAIMSErrorBoundary;
+
+// ============================================================================
+// Forms Module Logger Registration
+// ============================================================================
+
+const createBugsnagFormLogger = (
+  bugsnagClient: typeof Bugsnag,
+  bugsnagKey?: string
+): FormLogger => {
+  let sessionContext: Record<string, unknown> = {};
+
+  const serializeArgs = (args: unknown[]): Record<string, unknown> => {
+    const serialized: Record<string, unknown> = {};
+    args.forEach((arg, i) => {
+      if (arg instanceof Error) {
+        serialized[`arg${i}_error`] = arg.message;
+        serialized[`arg${i}_stack`] = arg.stack;
+      } else if (typeof arg === 'object' && arg !== null) {
+        try {
+          serialized[`arg${i}`] = arg;
+        } catch {
+          serialized[`arg${i}`] = String(arg);
+        }
+      } else {
+        serialized[`arg${i}`] = arg;
+      }
+    });
+    return serialized;
+  };
+
+  if (bugsnagKey) {
+    return {
+      error: (error, context) => {
+        console.error('[FormLogger] Error:', error.message, {
+          ...sessionContext,
+          ...context,
+          stack: error.stack,
+        });
+        bugsnagClient.notify(error, event => {
+          event.addMetadata('formContext', {...sessionContext, ...context});
+        });
+      },
+      warn: (message, ...args) => {
+        console.warn('[FormLogger] Warning:', message, ...args);
+        bugsnagClient.leaveBreadcrumb(
+          message,
+          {...sessionContext, ...serializeArgs(args)},
+          'log'
+        );
+      },
+      info: (message, ...args) => {
+        console.info('[FormLogger] Info:', message, ...args);
+        bugsnagClient.leaveBreadcrumb(
+          message,
+          {...sessionContext, ...serializeArgs(args)},
+          'log'
+        );
+      },
+      debug: (message, ...args) => {
+        if (DEBUG_APP) {
+          console.debug('[FormLogger] Debug:', message, ...args);
+        }
+        // Still leave breadcrumb for Bugsnag even if not logging to console
+        bugsnagClient.leaveBreadcrumb(
+          message,
+          {...sessionContext, ...serializeArgs(args)},
+          'log'
+        );
+      },
+      setContext: context => {
+        sessionContext = {...sessionContext, ...context};
+        bugsnagClient.addMetadata('formSession', sessionContext);
+      },
+    };
+  } else {
+    return {
+      error: (error, context) => {
+        console.error('[FormLogger] Error:', error.message, {
+          ...sessionContext,
+          ...context,
+          stack: error.stack,
+        });
+      },
+      warn: (message, ...args) => {
+        console.warn('[FormLogger] Warning:', message, ...args);
+      },
+      info: (message, ...args) => {
+        console.info('[FormLogger] Info:', message, ...args);
+      },
+      debug: (message, ...args) => {
+        if (DEBUG_APP) {
+          console.debug('[FormLogger] Debug:', message, ...args);
+        }
+      },
+      setContext: context => {
+        sessionContext = {...sessionContext, ...context};
+      },
+    };
+  }
+};
+
+/**
+ * Register the forms module logger with Bugsnag integration.
+ * This runs once when this module is loaded.
+ */
+const registerFormsLogger = (): void => {
+  const formLogger = createBugsnagFormLogger(Bugsnag, BUGSNAG_KEY);
+  LoggingService.register(formLogger);
+  console.debug('[FormLogger] Registered with LoggingService', {
+    bugsnagEnabled: !!BUGSNAG_KEY,
+    debugEnabled: DEBUG_APP,
+  });
+};
+
+// Self-executing registration on module load
+registerFormsLogger();

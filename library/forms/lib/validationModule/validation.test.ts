@@ -1,18 +1,18 @@
-import {describe, it, expect} from 'vitest';
-import {z} from 'zod';
-import {
-  FormValidation,
-  DEFAULT_VALIDATION_SETTINGS,
-  CompiledFormSchema,
-} from './validation';
 import {
   compileUiSpecConditionals,
+  currentlyVisibleFields,
   decodeUiSpec,
   EncodedUISpecification,
   getFieldNamesForViewset,
-  currentlyVisibleFields,
 } from '@faims3/data-model';
+import {describe, expect, it} from 'vitest';
+import {z} from 'zod';
 import sampleNotebook from '../../src/sample-notebook.json';
+import {
+  CompiledFormSchema,
+  DEFAULT_VALIDATION_SETTINGS,
+  FormValidation,
+} from './validation';
 
 const uiSpec = decodeUiSpec(
   sampleNotebook['ui-specification'] as EncodedUISpecification
@@ -273,7 +273,6 @@ describe('FormValidation', () => {
           uiSpec,
           formId: 'Person',
         });
-        console.error(JSON.stringify(result, null, 2));
 
         expect(result.valid).toBe(true);
       });
@@ -335,8 +334,6 @@ describe('FormValidation', () => {
         formId: 'Person',
       });
 
-      console.log(result);
-
       expect(result.valid).toBe(true);
     });
 
@@ -352,7 +349,6 @@ describe('FormValidation', () => {
         formId: 'Person',
       });
 
-      console.log(result);
       expect(result.valid).toBe(true);
 
       // Now this should fail
@@ -367,7 +363,6 @@ describe('FormValidation', () => {
         formId: 'Person',
       });
 
-      console.log(result);
       expect(result.valid).toBe(false);
 
       // Now this should fail too as we validate all
@@ -383,7 +378,6 @@ describe('FormValidation', () => {
         config: {visibleBehaviour: 'include'},
       });
 
-      console.log(result);
       expect(result.valid).toBe(false);
     });
   });

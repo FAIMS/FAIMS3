@@ -15,6 +15,7 @@ import {
 } from './types';
 import {getFieldId} from './utils';
 import {Alert} from '@mui/material';
+import { logInfo } from '../logging';
 
 interface FieldProps {
   fieldId: string;
@@ -81,7 +82,7 @@ export const Field = React.memo((props: FieldProps) => {
                 });
               }
             : async () => {
-                console.log('Mock addAttachment');
+                logInfo('Mock addAttachment');
                 return 'fakeId';
               };
         const removeAttachmentHandler =
@@ -95,14 +96,14 @@ export const Field = React.memo((props: FieldProps) => {
                 });
               }
             : async () => {
-                console.log('Mock removeAttachment');
+                logInfo('Mock removeAttachment');
               };
         const triggers =
           props.config.mode === 'full'
             ? props.config.trigger
             : {
                 commit: async () => {
-                  console.log('Mock triggered commit() function.');
+                  logInfo('Mock triggered commit() function.');
                 },
               };
         return (

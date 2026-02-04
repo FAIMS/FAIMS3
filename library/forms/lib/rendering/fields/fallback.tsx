@@ -1,4 +1,5 @@
 import {DataViewFieldRenderProps} from '../types';
+import {logError} from '../../logging';
 
 /**
  * The default fallback renderer. Just JSON stringifies the data.
@@ -9,7 +10,9 @@ export const DefaultRenderer = (props: DataViewFieldRenderProps) => {
   try {
     val = JSON.stringify(props.value);
   } catch (e) {
-    console.error('Error stringifying value for DefaultRenderer', e);
+    logError(new Error('Error stringifying value for DefaultRenderer'), {
+      error: e,
+    });
   }
   return <div>{val}</div>;
 };
