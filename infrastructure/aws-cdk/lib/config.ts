@@ -106,6 +106,8 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .optional()
     .default('/saml/callback')
     .describe('Callback path if callbackUrl not specified'),
+  // If you want the metadata document signed using your PK
+  signMetadata: z.boolean().optional().default(false),
   // IdP certificate for verifying signatures (can also be in secrets)
   idpPublicKey: z
     .string()

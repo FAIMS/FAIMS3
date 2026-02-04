@@ -76,6 +76,12 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     callbackUrl: z.string().optional(),
     /** Callback path if callbackUrl not specified (default: /saml/callback) */
     path: z.string().optional(),
+    /** Sign the metadata document with PK? */
+    signMetadata: z
+      .string()
+      .optional()
+      .default('false')
+      .transform(val => val.toUpperCase() === 'TRUE'),
     // SP signing/decryption keys (PEM format) - from secrets
     /** SP private key for signing requests */
     privateKey: z.string().optional(),
