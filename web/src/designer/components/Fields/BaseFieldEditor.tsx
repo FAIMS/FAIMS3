@@ -434,7 +434,7 @@ export const BaseFieldEditor = ({
                       }
                     />
                   ) : (
-                    <div />
+                    <></>
                   )}
                 </Grid>
                 <Grid item xs={12} md={6}>
@@ -448,7 +448,7 @@ export const BaseFieldEditor = ({
                       }
                     />
                   ) : (
-                    <div />
+                    <></>
                   )}
                 </Grid>
               </Grid>
@@ -527,7 +527,7 @@ export const BaseFieldEditor = ({
                         label="Allow Hiding"
                       />
                     ) : (
-                      <div />
+                      <></>
                     )}
                   </Grid>
                 </>
