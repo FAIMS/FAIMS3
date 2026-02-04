@@ -26,7 +26,6 @@ import {
   Resource,
   Role,
   RoleScope,
-  actionDetails,
   addGlobalRole,
   addProjectRole,
   addTeamRole,

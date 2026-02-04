@@ -56,7 +56,7 @@ import {
   UnauthorizedException,
 } from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
-import {AuthAction, CustomRequest, CustomSessionData} from '../types';
+import {AuthAction, CustomSessionData} from '../types';
 import {
   sendEmailVerificationChallenge,
   sendPasswordResetEmail,
