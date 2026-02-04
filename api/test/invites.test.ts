@@ -717,6 +717,44 @@ describe('Invite Tests', () => {
     expect(response.body.usesOriginal).to.equal(10);
   });
 
+  it('POST /api/invites/global does not create global invite if role is not global', async () => {
+    // Add admin role to the admin user
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
+    if (!adminUser) {
+      throw new Error('Admin user not found');
+    }
+
+    addGlobalRole({
+      user: adminUser,
+      role: Role.OPERATIONS_ADMIN,
+    });
+
+    const response = await request(app)
+      .post('/api/invites/global')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        role: Role.PROJECT_CONTRIBUTOR, // Not a global role
+        name: 'Op Admin Invite',
+        uses: 10,
+      })
+      .expect(400); // Bad Request
+    expect(response.body.error.message).to.equal(
+      'Role must be a global role to create a global invite'
+    );
+  });
+
+  it('POST /api/invites/global unauthorised user cannot create a global invite', async () => {
+    await request(app)
+      .post('/api/invites/global')
+      .set('Authorization', `Bearer ${localUserToken}`)
+      .send({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Invite that should not be created',
+        uses: 10,
+      })
+      .expect(401); // Unauthorized
+  });
+
   it('DELETE /api/invites/global/:inviteId deletes a global invite', async () => {
     // Add admin role to the admin user
     const adminUser = await getExpressUserFromEmailOrUserId('admin');
