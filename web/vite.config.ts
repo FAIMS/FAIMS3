@@ -23,7 +23,13 @@ export default defineConfig({
     fs: {allow: ['..']},
   },
   optimizeDeps: {
-    include: [],
+    include: [
+      '@mui/material',
+      '@mui/icons-material',
+      '@emotion/react',
+      '@emotion/styled',
+      '@emotion/react/jsx-runtime',
+    ],
     exclude: [],
   },
   // Polyfill global in case of weird importing going on!
