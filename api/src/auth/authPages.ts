@@ -19,6 +19,7 @@
  *   which server to use and whether to include test data
  */
 
+import {TERMS_OF_SERVICE_URL} from '../buildconfig';
 import {AuthContext} from '@faims3/data-model';
 import {Router} from 'express';
 import {z} from 'zod';
@@ -34,7 +35,6 @@ import {
 import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
-import {AuthProviderConfigMap} from './strategies/strategyTypes';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 
 // This must occur before express app is used
@@ -173,6 +173,7 @@ export function addAuthPages(
         } satisfies AuthContext,
         localAuth: true,
         messages: req.flash(),
+        termsOfServiceUrl: TERMS_OF_SERVICE_URL,
       });
     }
   );

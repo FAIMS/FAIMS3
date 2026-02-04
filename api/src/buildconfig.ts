@@ -710,3 +710,13 @@ function apiVersion(): string | undefined {
 }
 
 export const API_VERSION = apiVersion();
+
+function termsOfServiceUrl(): string | undefined {
+  const url = process.env.TERMS_OF_SERVICE_URL;
+  if (url === '' || url === undefined) {
+    return undefined;
+  }
+  return url;
+}
+
+export const TERMS_OF_SERVICE_URL = termsOfServiceUrl();

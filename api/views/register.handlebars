@@ -68,6 +68,24 @@
         {{/if}}
     </div>
 
+    {{#if termsOfServiceUrl}}
+    <div class="mb-3">
+        <div class="form-check">
+            <input type="checkbox" 
+                   name="acceptTerms" 
+                   class="form-check-input" 
+                   id="AcceptTerms"
+                   required>
+            <label for="AcceptTerms" class="form-check-label">
+                By registering, you confirm you have read and accept the <a href="{{termsOfServiceUrl}}" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+            </label>
+        </div>
+        {{#if messages.error.acceptTerms}}
+        <div class="alert alert-danger">{{messages.error.acceptTerms.msg}}</div>
+        {{/if}}
+    </div>
+    {{/if}}
+
     <button type="submit" class="auth-button">Create account</button>
     {{#if messages.error.registrationError}}
       <div class='alert alert-danger'>{{messages.error.registrationError.msg}}</div>
