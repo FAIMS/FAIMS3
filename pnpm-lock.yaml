@@ -44,7 +44,7 @@ importers:
         version: 17.23.1(eslint@8.57.1)(typescript@5.9.3)
       eslint-plugin-prettier:
         specifier: ^5.2.1
-        version: 5.5.4(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.6.2)
+        version: 5.5.4(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.2.5)
       gts:
         specifier: ^5.3.1
         version: 5.3.1(typescript@5.9.3)
@@ -927,6 +927,12 @@ importers:
 
   web:
     dependencies:
+      '@bugsnag/js':
+        specifier: ^7.20.2
+        version: 7.25.0
+      '@bugsnag/plugin-react':
+        specifier: ^7.19.0
+        version: 7.25.0(@bugsnag/core@7.25.0)
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -15137,7 +15143,7 @@ snapshots:
       exit: 0.1.2
       graceful-fs: 4.2.11
       jest-changed-files: 29.7.0
-      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
+      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
       jest-haste-map: 29.7.0
       jest-message-util: 29.7.0
       jest-regex-util: 29.6.3
@@ -18218,10 +18224,10 @@ snapshots:
       '@types/node': 22.18.8
     optional: true
 
-  '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)':
+  '@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.1
-      '@typescript-eslint/parser': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
+      '@typescript-eslint/parser': 5.62.0(eslint@8.57.1)(typescript@5.9.3)
       '@typescript-eslint/scope-manager': 5.62.0
       '@typescript-eslint/type-utils': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
       '@typescript-eslint/utils': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
@@ -20484,7 +20490,7 @@ snapshots:
   cookie-session@2.1.1:
     dependencies:
       cookies: 0.9.1
-      debug: 3.2.7(supports-color@8.1.1)
+      debug: 3.2.7(supports-color@5.5.0)
       on-headers: 1.1.0
       safe-buffer: 5.2.1
     transitivePeerDependencies:
@@ -20555,7 +20561,7 @@ snapshots:
       chalk: 4.1.2
       exit: 0.1.2
       graceful-fs: 4.2.11
-      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
+      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
       jest-util: 29.7.0
       prompts: 2.4.2
     transitivePeerDependencies:
@@ -21417,11 +21423,6 @@ snapshots:
     dependencies:
       eslint: 8.57.0
 
-  eslint-config-prettier@9.1.0(eslint@8.57.1):
-    dependencies:
-      eslint: 8.57.1
-    optional: true
-
   eslint-plugin-es-x@7.8.0(eslint@8.57.1):
     dependencies:
       '@eslint-community/eslint-utils': 4.9.0(eslint@8.57.1)
@@ -21471,14 +21472,14 @@ snapshots:
     optionalDependencies:
       eslint-config-prettier: 9.1.0(eslint@8.57.0)
 
-  eslint-plugin-prettier@5.5.4(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.6.2):
+  eslint-plugin-prettier@5.5.4(eslint-config-prettier@9.1.0(eslint@8.57.1))(eslint@8.57.1)(prettier@3.2.5):
     dependencies:
       eslint: 8.57.1
-      prettier: 3.6.2
+      prettier: 3.2.5
       prettier-linter-helpers: 1.0.0
       synckit: 0.11.11
     optionalDependencies:
-      eslint-config-prettier: 9.1.0(eslint@8.57.1)
+      eslint-config-prettier: 9.1.0(eslint@8.57.0)
 
   eslint-plugin-react-hooks@4.6.2(eslint@8.57.1):
     dependencies:
@@ -22477,7 +22478,7 @@ snapshots:
 
   gts@5.3.1(typescript@5.9.3):
     dependencies:
-      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.0)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)
+      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.0)(typescript@5.9.3)
       '@typescript-eslint/parser': 5.62.0(eslint@8.57.0)(typescript@5.9.3)
       chalk: 4.1.2
       eslint: 8.57.0
@@ -23237,7 +23238,7 @@ snapshots:
       create-jest: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)
       exit: 0.1.2
       import-local: 3.2.0
-      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.2(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
+      jest-config: 29.7.0(@types/node@22.18.8)(babel-plugin-macros@3.1.0)(ts-node@10.9.1(@swc/core@1.13.5)(@types/node@22.18.8)(typescript@5.9.3))
       jest-util: 29.7.0
       jest-validate: 29.7.0
       yargs: 17.7.2

@@ -190,3 +190,33 @@ export function getMapConfig(): MapConfig {
     satelliteSource: get_satellite_source(),
   };
 }
+
+/**
+ * Gets the Bugsnag API key from environment variables.
+ * @returns The Bugsnag API key, or undefined if not configured.
+ */
+function getBugsnagApiKey(): string | undefined {
+  const apiKey = import.meta.env.VITE_BUGSNAG_API_KEY as string | undefined;
+  if (apiKey === '' || apiKey === undefined) {
+    console.log('VITE_BUGSNAG_API_KEY not set, error reporting disabled');
+    return undefined;
+  }
+  return apiKey;
+}
+
+export const BUGSNAG_API_KEY = getBugsnagApiKey();
+
+/**
+ * Gets the API version from environment variables.
+ * @returns The API version, or undefined if not configured.
+ */
+function getVersion(): string | undefined {
+  const version = import.meta.env.VITE_APP_VERSION as string | undefined;
+  if (version === '' || version === undefined) {
+    console.log('VITE_APP_VERSION not set');
+    return undefined;
+  }
+  return version;
+}
+
+export const APP_VERSION = getVersion();
