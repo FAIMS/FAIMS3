@@ -3,13 +3,16 @@ import {z} from 'zod';
 import {googleStrategyGenerator} from './googleStrategy';
 import {getLocalAuthStrategy} from './localStrategy';
 import {oidcStrategyGenerator} from './oidcStrategy';
+import {samlStrategyGenerator} from './samlStrategy';
 import {
+  AuthProviderConfig,
   AuthProviderConfigMap,
   AuthProviderConfigMapSchema,
   AuthProviderSchema,
   BaseAuthProviderConfig,
   GoogleAuthProviderConfig,
   OIDCAuthProviderConfig,
+  SAMLAuthProviderConfig,
 } from './strategyTypes';
 
 // Convert a SNAKE_CASE identifier to camelCase with a few exceptions
@@ -47,15 +50,29 @@ export const readAuthProviderConfigFromEnv =
       if (match) {
         const provider = match[1].toLowerCase();
         const property = snakeToCamel(match[2]);
-        // look at the zod schema to see if this property is an array type
-        const isArray = AuthProviderSchema.options.some(schema => {
+        // look at the zod schema to see if this property is an array type or boolean
+        let isArray = false;
+        let isBoolean = false;
+        let isNumber = false;
+
+        AuthProviderSchema.options.some(schema => {
           const shape = schema.shape as Record<string, z.ZodSchema>;
           if (property in shape) {
-            // Check if this schema is for our provider type
-            return shape[property] instanceof z.ZodArray;
+            const fieldSchema = shape[property];
+            // Unwrap optional schemas
+            const unwrapped =
+              fieldSchema instanceof z.ZodOptional
+                ? fieldSchema.unwrap()
+                : fieldSchema;
+
+            isArray = unwrapped instanceof z.ZodArray;
+            isBoolean = unwrapped instanceof z.ZodBoolean;
+            isNumber = unwrapped instanceof z.ZodNumber;
+            return true;
           }
           return false;
         });
+
         // initialise the provider if we haven't already
         if (!config[provider]) {
           config[provider] = {id: provider};
@@ -64,6 +81,13 @@ export const readAuthProviderConfigFromEnv =
         if (isArray) {
           // simple split on commas and trim the values
           config[provider][property] = value?.split(',').map(v => v.trim());
+        } else if (isBoolean) {
+          // parse boolean from string
+          config[provider][property] =
+            value?.toLowerCase() === 'true' || value === '1';
+        } else if (isNumber) {
+          // parse number from string
+          config[provider][property] = parseInt(value || '0', 10);
         } else {
           config[provider][property] = value;
         }
@@ -126,30 +150,56 @@ export const getStrategyGenerator = (
   return AUTH_STRATEGIES[provider];
 };
 
-export const registerAuthProviders = () => {
-  // register the local provider always
+// Type for the return value containing both config and strategy
+export type RegisteredAuthProvider = {
+  config: AuthProviderConfig;
+  strategy: passport.Strategy;
+};
 
+export type RegisteredAuthProviders = Record<string, RegisteredAuthProvider>;
+
+export const registerAuthProviders = (): RegisteredAuthProviders => {
+  // register the local provider always
   console.log('Registering auth providers: ');
   const localStrategy = getLocalAuthStrategy();
   console.log('  local');
   passport.use('local', localStrategy);
 
+  const registeredProviders: RegisteredAuthProviders = {};
+
   // register any other providers from the config
   const providers = getAuthProviderConfig();
   if (!providers) {
-    return {};
+    return registeredProviders;
   }
+
   Object.entries(providers).forEach(([providerId, config]) => {
     console.log(`  ${config.displayName} (${config.type})`);
+
+    let strategy: passport.Strategy;
+
     if (config.type === 'google') {
-      const strategy = googleStrategyGenerator(
-        config as GoogleAuthProviderConfig
-      );
-      passport.use(providerId, strategy);
+      strategy = googleStrategyGenerator(config as GoogleAuthProviderConfig);
     } else if (config.type === 'oidc') {
-      const strategy = oidcStrategyGenerator(config as OIDCAuthProviderConfig);
-      passport.use(providerId, strategy);
+      strategy = oidcStrategyGenerator(config as OIDCAuthProviderConfig);
+    } else if (config.type === 'saml') {
+      strategy = samlStrategyGenerator(
+        config as SAMLAuthProviderConfig
+      ) as passport.Strategy;
+    } else {
+      console.warn(`Unknown auth provider type: ${(config as any).type}`);
+      return;
     }
+
+    // Register with passport
+    passport.use(providerId, strategy);
+
+    // Store both config and strategy for later use
+    registeredProviders[providerId] = {
+      config,
+      strategy,
+    };
   });
-  return providers;
+
+  return registeredProviders;
 };

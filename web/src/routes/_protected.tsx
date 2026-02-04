@@ -170,18 +170,21 @@ function RouteComponent() {
               <div className="flex">
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger>
-                      <Button variant="outline" className="mr-2 p-2">
-                        <a href={APP_URL} target="_blank">
-                          <span className="mr-2">
-                            <LogoIcon size={24} />
-                          </span>
-                          <span className="align-middle font-semibold">
-                            {APP_SHORT_NAME} App{' '}
-                          </span>
-                          <ExternalLinkIcon className="inline-block" />
-                        </a>
-                      </Button>
+                    <TooltipTrigger asChild>
+                      {/* asChild and span here avoids a DOM nesting issue with TooltipTrigger */}
+                      <span>
+                        <Button variant="outline" className="mr-2 p-2">
+                          <a href={APP_URL} target="_blank">
+                            <span className="mr-2">
+                              <LogoIcon size={24} />
+                            </span>
+                            <span className="align-middle font-semibold">
+                              {APP_SHORT_NAME} App{' '}
+                            </span>
+                            <ExternalLinkIcon className="inline-block" />
+                          </a>
+                        </Button>
+                      </span>
                     </TooltipTrigger>
                     <TooltipContent className="w-32 text-balance">
                       Open the {APP_NAME} data collection app in a new window
