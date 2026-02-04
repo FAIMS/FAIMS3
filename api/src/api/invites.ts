@@ -47,7 +47,7 @@ import {
   isInviteValid,
 } from '../couchdb/invites';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
+import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -373,25 +373,10 @@ api.delete(
 api.get(
   '/global',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.VIEW_GLOBAL_INVITES}),
   async ({user}, res: Response<GetGlobalInvitesResponse>) => {
-    console.log('GET /api/invites/global called');
     if (!user) {
       throw new Exceptions.UnauthorizedException();
-    }
-
-    // Check if user has permission to view team invites
-    if (
-      !isAuthorized({
-        action: Action.VIEW_GLOBAL_INVITES,
-        decodedToken: {
-          globalRoles: user.globalRoles,
-          resourceRoles: user.resourceRoles,
-        },
-      })
-    ) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not authorized to view global invites'
-      );
     }
 
     // only return valid invites
@@ -409,26 +394,13 @@ api.get(
 api.post(
   '/global',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.CREATE_GLOBAL_INVITE}),
   processRequest({
     body: PostCreateInviteInputSchema,
   }),
   async ({user, body}, res: Response<PostCreateGlobalInviteResponse>) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
-    }
-
-    if (
-      !isAuthorized({
-        action: Action.CREATE_GLOBAL_INVITE,
-        decodedToken: {
-          globalRoles: user.globalRoles,
-          resourceRoles: user.resourceRoles,
-        },
-      })
-    ) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not authorized to create this invite'
-      );
     }
 
     const invite = await createGlobalInvite({
@@ -444,11 +416,12 @@ api.post(
 );
 
 /**
- * DELETE a team invite
+ * DELETE a global invite
  */
 api.delete(
   '/global/:inviteId',
   requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.DELETE_GLOBAL_INVITE}),
   processRequest({
     params: z.object({
       inviteId: z.string(),
@@ -468,20 +441,6 @@ api.delete(
     // verify that this invite is a global invite
     if (invite.inviteType !== RoleScope.GLOBAL) {
       throw new Exceptions.ValidationException('Invite is not a global invite');
-    }
-
-    if (
-      !isAuthorized({
-        action: Action.DELETE_GLOBAL_INVITE,
-        decodedToken: {
-          globalRoles: user.globalRoles,
-          resourceRoles: user.resourceRoles,
-        },
-      })
-    ) {
-      throw new Exceptions.UnauthorizedException(
-        'You are not authorized to delete this invite'
-      );
     }
 
     await deleteInvite({invite});

@@ -333,8 +333,6 @@ describe('Invite Tests', () => {
 
       const invites = await getGlobalInvites();
 
-      console.log('Global Invites:', invites);
-
       expect(invites).to.be.an('array').with.lengthOf(2);
       expect(invites[0].name).to.be.oneOf([
         'Admin Invite',
@@ -438,6 +436,13 @@ describe('Invite Tests', () => {
         resourceId: projectId!,
         role: Role.PROJECT_ADMIN,
         name: 'Admin Invite',
+        createdBy: 'admin',
+      });
+
+      // add a global invite to ensure that it doesn't show up in the project invites list
+      await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Global Invite',
         createdBy: 'admin',
       });
 
@@ -657,6 +662,15 @@ describe('Invite Tests', () => {
       createdBy: 'admin',
     });
 
+    // create a resource specific invite to confirm it doesn't show up in the global list
+    await createResourceInvite({
+      resourceType: Resource.PROJECT,
+      resourceId: 'some-project-id',
+      role: Role.PROJECT_CONTRIBUTOR,
+      name: 'Project Invite',
+      createdBy: 'admin',
+    });
+
     const response = await request(app)
       .get('/api/invites/global')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -669,7 +683,7 @@ describe('Invite Tests', () => {
     ]);
     expect(response.body[1].name).to.be.oneOf([
       'Admin Invite',
-      'AnotherAdmin Invite',
+      'Another Admin Invite',
     ]);
   });
 
