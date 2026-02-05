@@ -24,6 +24,7 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory')); // enable memory adapter for testing
 
 import {
+  addGlobalRole,
   addProjectRole,
   addTeamRole,
   EncodedProjectUIModel,
@@ -31,6 +32,7 @@ import {
   registerClient,
   Resource,
   Role,
+  userHasGlobalRole,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {expect} from 'chai';
@@ -38,8 +40,10 @@ import request from 'supertest';
 import {WEBAPP_PUBLIC_URL} from '../src/buildconfig';
 import {
   consumeInvite,
-  createInvite,
+  createGlobalInvite,
+  createResourceInvite,
   deleteInvite,
+  getGlobalInvites,
   getInvite,
   getInvitesForResource,
   isInviteValid,
@@ -75,7 +79,7 @@ describe('Invite Tests', () => {
   describe('Database Methods Tests', () => {
     it('can create an invite for a project', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -106,7 +110,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_MEMBER,
@@ -127,7 +131,7 @@ describe('Invite Tests', () => {
 
     it('can get an invite by ID', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -149,7 +153,7 @@ describe('Invite Tests', () => {
 
     it('can get invites for a resource', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -157,7 +161,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_ADMIN,
@@ -184,7 +188,7 @@ describe('Invite Tests', () => {
 
     it('can delete an invite', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -203,7 +207,7 @@ describe('Invite Tests', () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
 
       // Create valid invite
-      const validInvite = await createInvite({
+      const validInvite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -217,7 +221,7 @@ describe('Invite Tests', () => {
       expect(validityCheck.reason).to.be.undefined;
 
       // Create expired invite
-      const expiredInvite = await createInvite({
+      const expiredInvite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -231,7 +235,7 @@ describe('Invite Tests', () => {
       expect(expiredCheck.reason).to.equal('Invite has expired');
 
       // Create limited use invite
-      const limitedInvite = await createInvite({
+      const limitedInvite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -269,7 +273,7 @@ describe('Invite Tests', () => {
 
     it('can use an invite and record usage', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -292,13 +296,6 @@ describe('Invite Tests', () => {
         })
       ).to.be.false;
 
-      // Add the role
-      addProjectRole({
-        user: localUser!,
-        projectId: projectId!,
-        role: Role.PROJECT_CONTRIBUTOR,
-      });
-
       // Use the invite
       const updatedInvite = await consumeInvite({
         invite,
@@ -320,13 +317,82 @@ describe('Invite Tests', () => {
         })
       ).to.be.true;
     });
+
+    it('can get global invites', async () => {
+      await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Admin Invite',
+        createdBy: 'admin',
+      });
+
+      await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Another Admin Invite',
+        createdBy: 'admin',
+      });
+
+      const invites = await getGlobalInvites();
+
+      expect(invites).to.be.an('array').with.lengthOf(2);
+      expect(invites[0].name).to.be.oneOf([
+        'Admin Invite',
+        'Another Admin Invite',
+      ]);
+      expect(invites[1].name).to.be.oneOf([
+        'Admin Invite',
+        'Another Admin Invite',
+      ]);
+      expect(invites[0].name).to.not.equal(invites[1].name);
+    });
+
+    it('can use a global invite and record usage', async () => {
+      const invite = await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Test Global Invite',
+        createdBy: 'admin',
+        usesOriginal: 3,
+      });
+
+      const localUser = await getExpressUserFromEmailOrUserId(localUserName);
+      expect(localUser).to.not.be.null;
+
+      // Check initial state
+      expect(invite.usesConsumed).to.equal(0);
+      expect(invite.uses).to.be.an('array').that.is.empty;
+      expect(
+        userHasGlobalRole({
+          user: localUser!,
+          role: Role.OPERATIONS_ADMIN,
+        })
+      ).to.be.false;
+
+      // Use the invite
+      const updatedInvite = await consumeInvite({
+        invite,
+        user: localUser!,
+      });
+      await saveCouchUser(localUser!);
+
+      // Check results
+      expect(updatedInvite.usesConsumed).to.equal(1);
+      expect(updatedInvite.uses).to.be.an('array').with.lengthOf(1);
+      expect(updatedInvite.uses[0].userId).to.equal(localUser!.user_id);
+
+      // Double check the role was added
+      expect(
+        userHasGlobalRole({
+          user: localUser!,
+          role: Role.OPERATIONS_ADMIN,
+        })
+      ).to.be.true;
+    });
   });
 
   // API ENDPOINT TESTS
   describe('API Endpoint Tests', () => {
     it('GET /api/invites/:inviteId returns invite details', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -357,7 +423,7 @@ describe('Invite Tests', () => {
     it('GET /api/invites/notebook/:projectId returns project invites', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -365,11 +431,18 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_ADMIN,
         name: 'Admin Invite',
+        createdBy: 'admin',
+      });
+
+      // add a global invite to ensure that it doesn't show up in the project invites list
+      await createGlobalInvite({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Global Invite',
         createdBy: 'admin',
       });
 
@@ -398,7 +471,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_MEMBER,
@@ -406,7 +479,7 @@ describe('Invite Tests', () => {
         createdBy: 'admin',
       });
 
-      await createInvite({
+      await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_ADMIN,
@@ -493,9 +566,44 @@ describe('Invite Tests', () => {
       expect(response.body.usesOriginal).to.equal(10);
     });
 
+    it('POST /api/invites/team/:teamId does not create team invite if role is not global', async () => {
+      const team = await createTeamDocument({
+        name: 'Test Team',
+        description: 'A team for testing',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        createdBy: 'admin',
+      });
+
+      // Add admin role to the admin user for this team
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+
+      addTeamRole({
+        user: adminUser,
+        teamId: team._id,
+        role: Role.TEAM_ADMIN,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/team/${team._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.GENERAL_CREATOR, // This is a global role, not a team role, so should be rejected
+          name: 'This should not work',
+          uses: 10,
+        })
+        .expect(400);
+      expect(response.body[0].errors.issues[0].message).to.equal(
+        'Role must be a resource specific role to create a resource specific invite'
+      );
+    });
+
     it('DELETE /api/invites/notebook/:projectId/:inviteId deletes a project invite', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.PROJECT,
         resourceId: projectId!,
         role: Role.PROJECT_CONTRIBUTOR,
@@ -533,7 +641,7 @@ describe('Invite Tests', () => {
         role: Role.TEAM_ADMIN,
       });
 
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         resourceType: Resource.TEAM,
         resourceId: team._id,
         role: Role.TEAM_MEMBER,
@@ -575,6 +683,139 @@ describe('Invite Tests', () => {
         .expect(401); // Unauthorized
     });
   });
+
+  it('GET /api/invites/global gets all global invites', async () => {
+    await createGlobalInvite({
+      role: Role.OPERATIONS_ADMIN,
+      name: 'Admin Invite',
+      createdBy: 'admin',
+    });
+
+    await createGlobalInvite({
+      role: Role.OPERATIONS_ADMIN,
+      name: 'Another Admin Invite',
+      createdBy: 'admin',
+    });
+
+    // create a resource specific invite to confirm it doesn't show up in the global list
+    await createResourceInvite({
+      resourceType: Resource.PROJECT,
+      resourceId: 'some-project-id',
+      role: Role.PROJECT_CONTRIBUTOR,
+      name: 'Project Invite',
+      createdBy: 'admin',
+    });
+
+    const response = await request(app)
+      .get('/api/invites/global')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    expect(response.body).to.be.an('array').with.lengthOf(2);
+    expect(response.body[0].name).to.be.oneOf([
+      'Admin Invite',
+      'Another Admin Invite',
+    ]);
+    expect(response.body[1].name).to.be.oneOf([
+      'Admin Invite',
+      'Another Admin Invite',
+    ]);
+  });
+
+  it('POST /api/invites/global creates a global invite', async () => {
+    // Add admin role to the admin user
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
+    if (!adminUser) {
+      throw new Error('Admin user not found');
+    }
+
+    addGlobalRole({
+      user: adminUser,
+      role: Role.OPERATIONS_ADMIN,
+    });
+
+    const response = await request(app)
+      .post('/api/invites/global')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Op Admin Invite',
+        uses: 10,
+      })
+      .expect(200);
+
+    expect(response.body._id).to.exist;
+    expect(response.body.resourceType).to.be.undefined;
+    expect(response.body.resourceId).to.be.undefined;
+    expect(response.body.role).to.equal(Role.OPERATIONS_ADMIN);
+    expect(response.body.name).to.equal('Op Admin Invite');
+    expect(response.body.usesOriginal).to.equal(10);
+  });
+
+  it('POST /api/invites/global does not create global invite if role is not global', async () => {
+    // Add admin role to the admin user
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
+    if (!adminUser) {
+      throw new Error('Admin user not found');
+    }
+
+    addGlobalRole({
+      user: adminUser,
+      role: Role.OPERATIONS_ADMIN,
+    });
+
+    const response = await request(app)
+      .post('/api/invites/global')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        role: Role.PROJECT_CONTRIBUTOR, // Not a global role
+        name: 'Op Admin Invite',
+        uses: 10,
+      })
+      .expect(400); // Bad Request
+    expect(response.body[0].errors.issues[0].message).to.equal(
+      'Role must be a global role to create a global invite'
+    );
+  });
+
+  it('POST /api/invites/global unauthorised user cannot create a global invite', async () => {
+    await request(app)
+      .post('/api/invites/global')
+      .set('Authorization', `Bearer ${localUserToken}`)
+      .send({
+        role: Role.OPERATIONS_ADMIN,
+        name: 'Invite that should not be created',
+        uses: 10,
+      })
+      .expect(401); // Unauthorized
+  });
+
+  it('DELETE /api/invites/global/:inviteId deletes a global invite', async () => {
+    // Add admin role to the admin user
+    const adminUser = await getExpressUserFromEmailOrUserId('admin');
+    if (!adminUser) {
+      throw new Error('Admin user not found');
+    }
+
+    addGlobalRole({
+      user: adminUser,
+      role: Role.OPERATIONS_ADMIN,
+    });
+
+    const invite = await createGlobalInvite({
+      role: Role.OPERATIONS_ADMIN,
+      name: 'Deletable Global Invite',
+      createdBy: 'admin',
+    });
+
+    await request(app)
+      .delete(`/api/invites/global/${invite._id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(200);
+
+    const fetchedInvite = await getInvite({inviteId: invite._id});
+    expect(fetchedInvite).to.be.null;
+  });
 });
 
 describe('Registration', () => {
@@ -598,7 +839,7 @@ describe('Registration', () => {
     const role = Role.PROJECT_GUEST;
 
     if (project_id) {
-      const invite = await createInvite({
+      const invite = await createResourceInvite({
         createdBy: payload.email,
         name: 'test',
         resourceId: project_id,
