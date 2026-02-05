@@ -12,6 +12,7 @@ import {
   ValidationSettings,
 } from './types';
 import {getFieldInfo} from '../fieldRegistry';
+import { logWarn } from '../logging';
 
 /**
  * Default validation settings.
@@ -335,7 +336,7 @@ export const FormValidation = {
   }): ZodTypeAny | undefined {
     const details = uiSpec.fields[fieldId];
     if (!details) {
-      console.warn(`Field ${fieldId} not found in UI specification`);
+      logWarn(`Field ${fieldId} not found in UI specification`);
       return undefined;
     }
     const required =
@@ -490,7 +491,7 @@ export const FormValidation = {
   }): FieldValidationResult {
     const details = uiSpec.fields[fieldId];
     if (!details) {
-      console.warn(`Field "${fieldId}" not found in UI specification`);
+      logWarn(`Field "${fieldId}" not found in UI specification`);
       return {valid: true};
     }
 

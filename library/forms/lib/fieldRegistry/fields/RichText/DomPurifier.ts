@@ -22,6 +22,7 @@
  * 5. Forced security attributes for external links
  */
 
+import {logError} from '../../../logging';
 import type {Config} from 'dompurify';
 import DOMPurify from 'dompurify';
 import MarkdownIt from 'markdown-it';
@@ -185,7 +186,7 @@ export const contentToSanitizedHtml = (content: string): string => {
     const sanitizedContent = purify.sanitize(renderedContent, purifyConfig);
     return sanitizedContent;
   } catch (e) {
-    console.error('Could not sanitize/parse content string. Error: ', e);
+    logError(new Error('Could not sanitize/parse content string.'), {error: e});
     return 'Error';
   }
 };
