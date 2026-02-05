@@ -70,6 +70,8 @@ export interface FaimsFrontEndProps {
 
   /** Bugsnag key - enables app monitoring if desired */
   bugsnagKey?: string;
+  /** Bugsnag app version - tags the app version in bug snag */
+  appVersion?: string;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -368,6 +370,9 @@ export class FaimsFrontEnd extends Construct {
         : {}),
       VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
         props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
+      // Monitoring
+      ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
+      ...(props.appVersion ? {VITE_APP_VERSION: props.appVersion} : {}),
     };
 
     // Setup a deployment into this bucket with static files

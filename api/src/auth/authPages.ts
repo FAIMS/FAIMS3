@@ -34,7 +34,6 @@ import {
 import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
-import {AuthProviderConfigMap} from './strategies/strategyTypes';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 
 // This must occur before express app is used

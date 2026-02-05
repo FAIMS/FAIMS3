@@ -4,7 +4,7 @@ import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
 } from './data_storage/templatesDB/types';
-import {Resource, Role} from './permission/model';
+import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {EncodedUISpecificationSchema} from './types';
 
 // ==================
@@ -611,8 +611,24 @@ export type GetTeamMembersResponse = z.infer<
 /**
  * Schema for creating a project invite
  */
-export const PostCreateInviteInputSchema = z.object({
-  role: z.nativeEnum(Role),
+export const PostCreateResourceInviteInputSchema = z.object({
+  role: z.nativeEnum(Role).refine(r => {
+    const roleDetail = roleDetails[r];
+    return roleDetail.scope === RoleScope.RESOURCE_SPECIFIC;
+  }, 'Role must be a resource specific role to create a resource specific invite'),
+  name: z.string().min(1, 'Invite name is required'),
+  uses: z.number().min(1, 'Uses must be at least 1').optional(),
+  expiry: z.number().optional(),
+});
+
+/**
+ * Schema for creating a project invite
+ */
+export const PostCreateGlobalInviteInputSchema = z.object({
+  role: z.nativeEnum(Role).refine(r => {
+    const roleDetail = roleDetails[r];
+    return roleDetail.scope === RoleScope.GLOBAL;
+  }, 'Role must be a global role to create a global invite'),
   name: z.string().min(1, 'Invite name is required'),
   uses: z.number().min(1, 'Uses must be at least 1').optional(),
   expiry: z.number().optional(),
@@ -623,8 +639,9 @@ export const PostCreateInviteInputSchema = z.object({
  */
 export const InviteInfoResponseSchema = z.object({
   id: z.string(),
-  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
-  resourceId: z.string(),
+  inviteType: z.nativeEnum(RoleScope),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]).optional(),
+  resourceId: z.string().optional(),
   name: z.string(),
   role: z.nativeEnum(Role),
   createdAt: z.number(),
@@ -635,15 +652,17 @@ export const InviteInfoResponseSchema = z.object({
 });
 
 /**
- * Full invite document schema (internal)
+ * Invite documents can be either resource specific or global
+ * but have a common base structure
  */
-export const InviteDocumentSchema = z.object({
+const InviteDocumentSchema = z.object({
   _id: z.string(),
   _rev: z.string(),
-  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]),
-  resourceId: z.string(),
   name: z.string(),
   role: z.nativeEnum(Role),
+  inviteType: z.nativeEnum(RoleScope),
+  resourceType: z.enum([Resource.PROJECT, Resource.TEAM]).optional(),
+  resourceId: z.string().optional(),
   createdBy: z.string(),
   createdAt: z.number(),
   expiry: z.number(),
@@ -673,6 +692,11 @@ export const GetProjectInvitesResponseSchema = z.array(InviteDocumentSchema);
 export const GetTeamInvitesResponseSchema = z.array(InviteDocumentSchema);
 
 /**
+ * GET /api/invites/global response
+ */
+export const GetGlobalInvitesResponseSchema = z.array(InviteDocumentSchema);
+
+/**
  * POST /api/invites/project/:projectId response
  */
 export const PostCreateProjectInviteResponseSchema = InviteDocumentSchema;
@@ -681,6 +705,11 @@ export const PostCreateProjectInviteResponseSchema = InviteDocumentSchema;
  * POST /api/invites/team/:teamId response
  */
 export const PostCreateTeamInviteResponseSchema = InviteDocumentSchema;
+
+/**
+ * POST /api/invites/global response
+ */
+export const PostCreateGlobalInviteResponseSchema = InviteDocumentSchema;
 
 /**
  * POST /api/invites/:inviteId/use response
@@ -693,7 +722,7 @@ export const PostUseInviteResponseSchema = z.object({
 });
 
 // inferred types
-export type PostCreateInviteInput = z.infer<typeof PostCreateInviteInputSchema>;
+export type PostCreateInviteInput = z.infer<typeof PostCreateResourceInviteInputSchema>;
 export type InviteInfoResponse = z.infer<typeof InviteInfoResponseSchema>;
 export type InviteDocument = z.infer<typeof InviteDocumentSchema>;
 export type GetInviteByIdResponse = z.infer<typeof GetInviteByIdResponseSchema>;
@@ -703,11 +732,17 @@ export type GetProjectInvitesResponse = z.infer<
 export type GetTeamInvitesResponse = z.infer<
   typeof GetTeamInvitesResponseSchema
 >;
+export type GetGlobalInvitesResponse = z.infer<
+  typeof GetGlobalInvitesResponseSchema
+>;
 export type PostCreateProjectInviteResponse = z.infer<
   typeof PostCreateProjectInviteResponseSchema
 >;
 export type PostCreateTeamInviteResponse = z.infer<
   typeof PostCreateTeamInviteResponseSchema
+>;
+export type PostCreateGlobalInviteResponse = z.infer<
+  typeof PostCreateGlobalInviteResponseSchema
 >;
 export type PostUseInviteResponse = z.infer<typeof PostUseInviteResponseSchema>;
 

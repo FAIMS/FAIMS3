@@ -77,33 +77,54 @@ function setStoredUser(user: User | null) {
 }
 
 /**
+ * Get the current stored user
+ * @returns The parsed user object from local storage
+ */
+export function getStoredUser(): User | null {
+  const storedUser = localStorage.getItem(key);
+  return parseUserJSON(storedUser);
+}
+
+/**
+ * Parse the stored user from localStorage.
+ *
+ * @returns the User object if we have a valid user or null if not
+ */
+export function parseUserJSON(storedUser: any): User | null {
+  if (!storedUser) return null;
+
+  try {
+    const parsedUser = JSON.parse(storedUser);
+    // Add decoded token to stored user if it exists
+    if (parsedUser && parsedUser.token) {
+      parsedUser.decodedToken = decodeToken(parsedUser.token);
+    }
+    return parsedUser;
+  } catch (e) {
+    console.error('Failed to parse stored user:', e);
+    return null;
+  }
+}
+
+export const isUserExpired = (user: User | null) => {
+  // Safe backout if no token present
+  if (!user || !user.decodedToken || !user.token) return true;
+  // Consider a token expired if it's within 1 minute of expiry
+  return user.decodedToken.exp * 1000 < Date.now();
+};
+
+/**
  * Provides authentication context to its children.
  * @param {{children: React.ReactNode}} props - The children components that will receive the auth context.
  * @returns {JSX.Element} The AuthProvider component.
  */
 export function AuthProvider({children}: {children: React.ReactNode}) {
   const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem(key);
-    if (!storedUser) return null;
-
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      // Add decoded token to stored user if it exists
-      if (parsedUser && parsedUser.token) {
-        parsedUser.decodedToken = decodeToken(parsedUser.token);
-      }
-      return parsedUser;
-    } catch (e) {
-      console.error('Failed to parse stored user:', e);
-      return null;
-    }
+    return getStoredUser();
   });
 
   const isExpired = () => {
-    // Safe backout if no token present
-    if (!user || !user.decodedToken || !user.token) return true;
-    // Consider a token expired if it's within 1 minute of expiry
-    return user.decodedToken.exp * 1000 < Date.now();
+    return isUserExpired(user);
   };
 
   const isAuthenticated = !!user && !isExpired();
