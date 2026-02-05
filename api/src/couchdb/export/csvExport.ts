@@ -97,7 +97,8 @@ function getHeaderGeneratorForFieldType(
 }
 
 /**
- * Generate CSV headers from UI specification fields
+ * Generate CSV headers from UI specification fields. Uses the registered field
+ * type header generators to produce the additional headers for each data type.
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -107,10 +108,14 @@ export function getHeaderInfoFromUiSpecification({
   const additionalHeaders: string[] = [];
 
   for (const field of fields) {
+    // Get the appropriate header generator for this field type
     const generator = getHeaderGeneratorForFieldType(field.type);
+
+    // Generate base headers for this field type
     const fieldHeaders = generator(field.name);
     additionalHeaders.push(...fieldHeaders);
 
+    // Add annotation and uncertainty columns if present
     if (field.annotation !== '') {
       additionalHeaders.push(`${field.name}_${field.annotation}`);
     }
@@ -492,11 +497,15 @@ export const streamNotebookRecordsAsCSV = async (
     projectId,
     uiSpecification,
     viewID,
+    // Don't use the attachment loader to download attachments - we don't need
+    // the actual data, just the HRID of the record + fieldname is sufficient
     includeAttachments: false,
   });
 
   // Get information about the fields
   const fields = getNotebookFieldTypes({uiSpecification, viewID});
+
+  // Extrapolate from the fields, the final set of CSV column headings
   const dataHeaderInfo = getHeaderInfoFromUiSpecification({fields});
 
   // setup stringifier
@@ -515,8 +524,11 @@ export const streamNotebookRecordsAsCSV = async (
   while (!done) {
     if (record) {
       const hrid = record.hrid || record.record_id;
+
+      // Start by generating the general record info
       const row = [...generateRecordPrefixInformation(record)];
 
+      // Then ask each field to dump out its data
       const outputData = convertDataForOutput(
         fields,
         record.data,
@@ -534,6 +546,9 @@ export const streamNotebookRecordsAsCSV = async (
         }
       }
 
+
+      // Sanity check - error here is pretty bad - we should always generate
+      // internally consistent exports
       if (row.length !== CSV_PREFIX_HEADERS.length + dataHeaderInfo.length) {
         throw new Error(
           `CSV row length mismatch: expected ${

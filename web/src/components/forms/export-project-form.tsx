@@ -4,6 +4,7 @@ import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   decodeUiSpec,
   EncodedUISpecification,
+  GetExportNotebookResponse,
   isValidForSpatialExport,
   ProjectUIViewsets,
 } from '@faims3/data-model';
@@ -94,32 +95,37 @@ const ExportProjectForm = () => {
     format: ExportType;
   }) => {
     if (user) {
-      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}&viewID=${form}`;
+      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}&viewID=${form}`;
 
-      const response = await fetch(downloadURL, {
+      const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
       });
+      const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
+        .url;
 
-      if (response.redirected) window.open(response.url, '_self');
+      window.open(downloadUrl, '_self');
     }
     return undefined;
   };
 
   const handleGeospatialSubmit = async ({format}: {format: ExportType}) => {
     if (user) {
-      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}`;
+      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=${format}`;
 
-      const response = await fetch(downloadURL, {
+      const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
       });
 
-      if (response.redirected) window.open(response.url, '_self');
+      const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
+        .url;
+
+      window.open(downloadUrl, '_self');
     }
     return undefined;
   };

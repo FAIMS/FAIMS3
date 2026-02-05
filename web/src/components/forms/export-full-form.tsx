@@ -6,8 +6,10 @@ import {Route} from '@/routes/_protected/projects/$projectId';
 import {
   decodeUiSpec,
   EncodedUISpecification,
+  GetExportNotebookResponse,
   isValidForSpatialExport,
 } from '@faims3/data-model';
+import {responsiveFontSizes} from '@mui/material';
 import {useMemo, useState} from 'react';
 
 interface ExportOptions {
@@ -72,18 +74,17 @@ const ExportFullForm = () => {
         includeMetadata: options.includeMetadata.toString(),
       });
 
-      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?${params.toString()}`;
-
-      const response = await fetch(downloadURL, {
+      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?${params.toString()}`;
+      const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
       });
+      const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
+        .url;
 
-      if (response.redirected) {
-        window.open(response.url, '_self');
-      }
+      window.open(downloadUrl, '_self');
     } finally {
       setIsSubmitting(false);
     }

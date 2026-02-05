@@ -24,6 +24,7 @@ import {
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
+  GetExportNotebookResponse,
   getIdsByFieldName,
   GetNotebookListResponse,
   GetNotebookResponse,
@@ -53,7 +54,11 @@ import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
+import {
+  CONDUCTOR_PUBLIC_URL,
+  DEVELOPER_MODE,
+  KEY_SERVICE,
+} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -590,7 +595,7 @@ api.get(
       id: z.string(),
     }),
   }),
-  async (req, res) => {
+  async (req, res: Response<GetExportNotebookResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('Not authenticated.');
     }
@@ -639,7 +644,12 @@ api.get(
       user: req.user,
       payload: payload,
     });
-    return res.redirect(`/api/notebooks/download/${jwt}`);
+
+    // Return the url explicitly - rather than a redirect. Hard to carefully
+    // handle the auto redirect while triggering export only once
+    return res.json({
+      url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
+    });
   }
 );
 
