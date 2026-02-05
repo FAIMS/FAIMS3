@@ -493,7 +493,6 @@ export async function getHRID({
   }
   const hridAvpId = revision.avps[hridFieldName];
   if (hridAvpId === undefined) {
-    console.warn('No HRID field set for revision');
     return null;
   }
   try {

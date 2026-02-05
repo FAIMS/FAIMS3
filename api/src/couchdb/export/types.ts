@@ -68,46 +68,54 @@ export interface SpatialExportStats {
 }
 
 /**
- * Complete metadata for a comprehensive export
+ * RO-Crate compatible metadata structure
+ */
+export interface ROCrateMetadata {
+  '@context': 'https://w3id.org/ro/crate/1.1/context';
+  '@graph': ROCrateEntity[];
+}
+
+export interface ROCrateEntity {
+  '@id': string;
+  '@type': string | string[];
+  name?: string;
+  description?: string;
+  datePublished?: string;
+  encodingFormat?: string;
+  author?: {'@id': string};
+  hasPart?: {'@id': string}[];
+  conformsTo?: {'@id': string};
+  about?: {'@id': string};
+  // Custom properties (keeping your stats)
+  recordCount?: number;
+  attachmentCount?: number;
+  spatialFeatures?: number;
+}
+
+/**
+ * Update the existing metadata interface to serve as our working state
+ * before we finalize it into the RO-Crate graph.
  */
 export interface ComprehensiveExportMetadata {
-  /** Project identifier */
   projectId: string;
-
-  /** ISO timestamp of when export was generated */
   exportedAt: string;
-
-  /** User who initiated the export */
   exportedBy: string;
-
-  /** Configuration used for this export */
   config: ComprehensiveExportConfig;
-
-  /** Per-view statistics */
   views: {
     viewId: string;
     label: string;
     recordCount: number;
     attachmentCount: number;
+    csvPath?: string;
+    attachmentPath?: string;
   }[];
-
-  /** Aggregate totals */
   totals: {
     views: number;
     records: number;
     attachments: number;
     spatialFeatures: number;
   };
-
-  /** Files included in the archive */
-  includedFiles: {
-    csvFiles: string[];
-    attachmentFolders: string[];
-    spatialFiles: string[];
-    metadataFile: string | null;
-  };
-
-  /** Any warnings or issues encountered during export */
+  includedFiles: string[]; // Flat list of all paths for RO-Crate "hasPart"
   warnings: string[];
 }
 
