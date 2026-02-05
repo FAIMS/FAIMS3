@@ -24,6 +24,7 @@ import {
 } from '../../../rendering/fields';
 import {FieldInfo, FieldReturnType} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import { logError } from '../../../logging';
 
 // =============================================================================
 // Props Schema
@@ -294,9 +295,11 @@ function toDatetimeLocalFormat(isoString: string): string {
     const localDate = new Date(date.getTime() - offset);
     return localDate.toISOString().slice(0, 19);
   } catch (e) {
-    console.error(
-      `Failed to convert input isoString to datetime format for input text field. Input: ${isoString}. Error `,
-      e
+    logError(
+      new Error(
+        `Failed to convert input isoString to datetime format for input text field. Input: ${isoString}.`
+      ),
+      {error: e}
     );
     return '';
   }

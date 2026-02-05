@@ -2,7 +2,6 @@ import {Exif} from '@capacitor-community/exif';
 import {Camera, CameraResultType, Photo} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Geolocation} from '@capacitor/geolocation';
-import {logError} from '@faims3/data-model';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
@@ -35,6 +34,7 @@ import {
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
+import {logWarn, logError} from '../../../logging';
 
 // Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
@@ -790,7 +790,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
             });
           }
         } catch (e) {
-          console.warn('Could not add geolocation to photo:', e);
+          logWarn('Could not add geolocation to photo:', e);
         }
       }
 
@@ -818,8 +818,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
       const currentData = props.state.value?.data as string[] | undefined;
       props.setFieldData([...(currentData ?? []), newId]);
     } catch (err: any) {
-      logError(err);
-      console.error('Failed to capture photo:', err);
+      logError(new Error('Failed to capture photo:'), {error: err});
     }
   }, [state.value, addAttachment, context]);
 
