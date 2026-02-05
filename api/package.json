@@ -69,6 +69,7 @@
     "req-flash": "^0.0.3",
     "swagger-ui-dist": "^5.9.1",
     "uuid": "9.0.1",
+    "xml-crypto": "^6.1.2",
     "zod": "^3.24.1",
     "zod-express-middleware": "^1.4.0"
   },
@@ -100,6 +101,7 @@
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-dist": "^3.30.3",
     "@types/uuid": "9.0.7",
+    "@types/xml-crypto": "^1.4.6",
     "chai": "^4.3.10",
     "copyfiles": "^2.4.1",
     "cross-env": "^7.0.3",

@@ -18,23 +18,23 @@
  *   (e.g., myGovID/FAS, ADFS, etc.)
  */
 
-import {Profile, Strategy, VerifyWithRequest} from 'passport-saml';
-
 import {
   addEmails,
   ExistingPeopleDBDocument,
   VerifiableEmail,
 } from '@faims3/data-model';
+import {Profile, Strategy, VerifyWithRequest} from 'passport-saml';
+import {SignedXml} from 'xml-crypto';
+import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
 import {
   createUser,
   getCouchUserFromEmailOrUserId,
   saveCouchUser,
 } from '../../couchdb/users';
 import {CustomSessionData} from '../../types';
+import {providerAuthReturnUrl} from '../authRoutes';
 import {lookupAndValidateInvite} from '../helpers';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {providerAuthReturnUrl} from '../authRoutes';
-import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
 import {SAMLAuthProviderConfig} from './strategyTypes';
 
 /**
@@ -351,4 +351,40 @@ export const samlStrategyGenerator = (
   );
 
   return strategy;
+};
+
+/**
+ * Signs SAML metadata XML using the SP's private key
+ * @param metadataXml - The unsigned metadata XML string
+ * @param privateKey - PEM-encoded private key
+ * @returns Signed metadata XML string
+ */
+export const signSamlMetadata = (
+  metadataXml: string,
+  privateKey: string
+): string => {
+  const sig = new SignedXml();
+
+  sig.signatureAlgorithm = 'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256';
+  sig.canonicalizationAlgorithm = 'http://www.w3.org/2001/10/xml-exc-c14n#';
+
+  sig.addReference({
+    xpath: "/*[local-name(.)='EntityDescriptor']",
+    digestAlgorithm: 'http://www.w3.org/2001/04/xmlenc#sha256',
+    transforms: [
+      'http://www.w3.org/2000/09/xmldsig#enveloped-signature',
+      'http://www.w3.org/2001/10/xml-exc-c14n#',
+    ],
+  });
+
+  sig.privateKey = privateKey;
+
+  sig.computeSignature(metadataXml, {
+    location: {
+      reference: "/*[local-name(.)='EntityDescriptor']",
+      action: 'prepend',
+    },
+  });
+
+  return sig.getSignedXml();
 };
