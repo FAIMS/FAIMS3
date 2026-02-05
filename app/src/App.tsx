@@ -87,6 +87,10 @@ const queryClient = new QueryClient({
 
       // Refetch when network reconnects (important for offline-first)
       refetchOnReconnect: true,
+
+      // Always default to running queries with network mode always - as most
+      // queries are to Pouch - can be overridden for network only queries
+      networkMode: 'always',
     },
     mutations: {
       // Don't retry mutations - let the user explicitly retry on failure

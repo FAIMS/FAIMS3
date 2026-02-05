@@ -76,6 +76,7 @@ export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 
 // E.g. "You cannot currently de-activate a survey"
 export const DE_ACTIVATE_VERB = 'De-activate';
+export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
 export default function NoteBooks() {
   // get the active user - this will allow us to check roles against it
@@ -253,7 +254,8 @@ export default function NoteBooks() {
             fontSize: 'body2.fontSize',
           }}
         >
-          Learn more about activating {NOTEBOOK_NAME}s
+          Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
+          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME}s
         </Button>
       </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
@@ -286,29 +288,61 @@ export default function NoteBooks() {
         fullWidth
       >
         <DialogTitle>
-          What does {ACTIVATED_LABEL} and {NOT_ACTIVATED_LABEL} mean?
+          <Typography variant="h4">
+            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_CAPITALIZED}s
+          </Typography>
         </DialogTitle>
         <DialogContent>
           <Typography paragraph>
-            When a {NOTEBOOK_NAME} is "{ACTIVATED_LABEL}" you are safe to work
-            offline at any point because all the data you collect will be saved
-            to your device.
+            <strong>"{ACTIVATE_ACTIVE_VERB_LABEL}"</strong> a {NOTEBOOK_NAME}{' '}
+            ensures that you are safe to work offline at any point by
+            downloading any existing records onto your device. Please do this
+            with a stable internet connection.
           </Typography>
           <Typography paragraph>
-            {ACTIVATE_ACTIVE_VERB_LABEL} a {NOTEBOOK_NAME} will start the
-            downloading of existing {NOTEBOOK_NAME} records onto your device. We
-            recommend you complete this procedure while you have a stable
-            internet connection.
+            <strong>"{DE_ACTIVATE_ACTIVE_VERB}"</strong> a {NOTEBOOK_NAME}{' '}
+            offloads records from your device, to{' '}
+            {DE_ACTIVATE_VERB.toLowerCase()} a {NOTEBOOK_NAME}:
           </Typography>
-          <Typography paragraph>
-            Currently, you cannot {DE_ACTIVATE_VERB.toLowerCase()} a{' '}
-            {NOTEBOOK_NAME}, this is something we will be adding soon. If you
-            need to make space on your device you can clear the application
-            storage or delete the application.
-          </Typography>
-          <Typography>
-            If a {NOTEBOOK_NAME} is "{NOT_ACTIVATED_LABEL}" you are unable to
-            start using it.
+          <Typography component="div">
+            <ol style={{margin: '8px 0', paddingLeft: '20px'}}>
+              <li>
+                Select the {NOTEBOOK_NAME} you want to{' '}
+                {DE_ACTIVATE_VERB.toLowerCase()}
+              </li>
+              <li>
+                Ensure you are online, and all data in the {NOTEBOOK_NAME} has
+                been synced to the cloud
+              </li>
+              <li>
+                Click <strong>"Settings"</strong> tab (next to Map and Details
+                tabs)
+              </li>
+              <li>
+                Select the red{' '}
+                <strong>
+                  "{DE_ACTIVATE_VERB} {NOTEBOOK_NAME}"
+                </strong>{' '}
+                at the bottom that looks like the following:
+                <Box sx={{mt: 1, mb: 0.5}}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    size="small"
+                    disableRipple
+                    sx={{
+                      pointerEvents: 'none',
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                      py: 0.5,
+                      px: 1,
+                    }}
+                  >
+                    {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
+                  </Button>
+                </Box>
+              </li>
+            </ol>
           </Typography>
         </DialogContent>
         <DialogActions>

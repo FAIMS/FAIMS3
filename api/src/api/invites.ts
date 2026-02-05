@@ -24,25 +24,31 @@ import {
   GetProjectInvitesResponse,
   GetTeamInvitesResponse,
   isAuthorized,
-  PostCreateInviteInputSchema,
+  PostCreateResourceInviteInputSchema,
   PostCreateProjectInviteResponse,
   PostCreateTeamInviteResponse,
+  PostCreateGlobalInviteResponse,
   projectInviteToAction,
   Resource,
   teamInviteToAction,
+  RoleScope,
+  GetGlobalInvitesResponse,
+  PostCreateGlobalInviteInputSchema,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {
-  createInvite,
+  createGlobalInvite,
+  createResourceInvite,
   deleteInvite,
+  getGlobalInvites,
   getInvite,
   getInvitesForResource,
   isInviteValid,
 } from '../couchdb/invites';
 import * as Exceptions from '../exceptions';
-import {requireAuthenticationAPI} from '../middleware';
+import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -145,7 +151,7 @@ api.post(
   requireAuthenticationAPI,
   processRequest({
     params: z.object({projectId: z.string()}),
-    body: PostCreateInviteInputSchema,
+    body: PostCreateResourceInviteInputSchema,
   }),
   async (
     {user, body, params: {projectId}},
@@ -176,7 +182,7 @@ api.post(
       );
     }
 
-    const invite = await createInvite({
+    const invite = await createResourceInvite({
       resourceType: Resource.PROJECT,
       resourceId: projectId,
       role: body.role,
@@ -198,7 +204,7 @@ api.post(
   requireAuthenticationAPI,
   processRequest({
     params: z.object({teamId: z.string()}),
-    body: PostCreateInviteInputSchema,
+    body: PostCreateResourceInviteInputSchema,
   }),
   async (
     {user, body, params: {teamId}},
@@ -229,7 +235,7 @@ api.post(
       );
     }
 
-    const invite = await createInvite({
+    const invite = await createResourceInvite({
       resourceType: Resource.TEAM,
       resourceId: teamId,
       role: body.role,
@@ -359,7 +365,93 @@ api.delete(
 );
 
 /**
+ * Global Invites
+ */
+
+/**
+ * GET all global invites
+ */
+api.get(
+  '/global',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.VIEW_GLOBAL_INVITES}),
+  async ({user}, res: Response<GetGlobalInvitesResponse>) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    // only return valid invites
+    const invites = (await getGlobalInvites()).filter(
+      invite => isInviteValid({invite}).isValid
+    );
+
+    res.json(invites);
+  }
+);
+
+/**
+ * POST create a global invite
+ */
+api.post(
+  '/global',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.CREATE_GLOBAL_INVITE}),
+  processRequest({
+    body: PostCreateGlobalInviteInputSchema,
+  }),
+  async ({user, body}, res: Response<PostCreateGlobalInviteResponse>) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const invite = await createGlobalInvite({
+      role: body.role,
+      name: body.name,
+      createdBy: user.user_id,
+      expiry: body.expiry,
+      usesOriginal: body.uses,
+    });
+
+    res.json(invite);
+  }
+);
+
+/**
+ * DELETE a global invite
+ */
+api.delete(
+  '/global/:inviteId',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({action: Action.DELETE_GLOBAL_INVITE}),
+  processRequest({
+    params: z.object({
+      inviteId: z.string(),
+    }),
+  }),
+  async ({user, params: {inviteId}}, res) => {
+    if (!user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+
+    const invite = await getInvite({inviteId});
+
+    if (!invite) {
+      throw new Exceptions.ItemNotFoundException('Invite not found');
+    }
+
+    // verify that this invite is a global invite
+    if (invite.inviteType !== RoleScope.GLOBAL) {
+      throw new Exceptions.ValidationException('Invite is not a global invite');
+    }
+
+    await deleteInvite({invite});
+    res.status(200).end();
+  }
+);
+
+/**
  * GET a specific invite by ID
+ *  - include this route last so that it doesn't clobber /global above
  */
 api.get(
   '/:inviteId',
@@ -379,6 +471,7 @@ api.get(
     // Return basic info about the invite (without sensitive data)
     res.json({
       id: invite._id,
+      inviteType: invite.inviteType,
       resourceType: invite.resourceType,
       resourceId: invite.resourceId,
       name: invite.name,

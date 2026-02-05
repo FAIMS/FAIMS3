@@ -11,10 +11,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import {RoleDetails} from '@faims3/data-model';
+
+// Extend RoleDetails with the Id of the role so we can identify it
+type RoleDetailWithId = RoleDetails & {id: string};
 
 /**
  * A popover that allows the user to add a role to a user.
- * @param roles - The list of roles that the user can have.
+ * @param roles - The list of roles that the user can have as RoleDetailWithId objects.
  * @param userId - The ID of the user to add the role to.
  * @returns A popover that allows the user to add a role to a user.
  */
@@ -22,7 +26,7 @@ export const AddRolePopover = ({
   roles,
   userId,
 }: {
-  roles: string[];
+  roles: RoleDetailWithId[];
   userId: string;
 }) => {
   const {user} = useAuth();
@@ -56,7 +60,7 @@ export const AddRolePopover = ({
       <PopoverContent className="flex gap-1 p-2 w-fit text-sm" align="start">
         {roles.map(role => (
           <RoleCard
-            key={role}
+            key={role.id}
             onClick={async () => {
               try {
                 const response = await fetch(
@@ -69,7 +73,7 @@ export const AddRolePopover = ({
                     },
                     body: JSON.stringify({
                       addrole: true,
-                      role,
+                      role: role.id,
                     }),
                   }
                 );
@@ -89,7 +93,7 @@ export const AddRolePopover = ({
               }
             }}
           >
-            {role}
+            {role.name}
           </RoleCard>
         ))}
       </PopoverContent>

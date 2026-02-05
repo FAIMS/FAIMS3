@@ -164,6 +164,13 @@ function get_map_source(): string {
   return map_source || 'osm';
 }
 
+function get_satellite_source(): 'esri' | 'maptiler' | undefined {
+  const map_source = import.meta.env.VITE_SATELLITE_SOURCE;
+  return map_source !== 'esri' && map_source !== 'maptiler'
+    ? undefined
+    : map_source;
+}
+
 function get_map_key(): string {
   const map_key = import.meta.env.VITE_MAP_SOURCE_KEY;
   return map_key || '';
@@ -180,5 +187,36 @@ export function getMapConfig(): MapConfig {
     mapSource: get_map_source(),
     mapSourceKey: get_map_key(),
     mapStyle: get_map_style(),
+    satelliteSource: get_satellite_source(),
   };
 }
+
+/**
+ * Gets the Bugsnag API key from environment variables.
+ * @returns The Bugsnag API key, or undefined if not configured.
+ */
+function getBugsnagApiKey(): string | undefined {
+  const apiKey = import.meta.env.VITE_BUGSNAG_API_KEY as string | undefined;
+  if (apiKey === '' || apiKey === undefined) {
+    console.log('VITE_BUGSNAG_API_KEY not set, error reporting disabled');
+    return undefined;
+  }
+  return apiKey;
+}
+
+export const BUGSNAG_API_KEY = getBugsnagApiKey();
+
+/**
+ * Gets the API version from environment variables.
+ * @returns The API version, or undefined if not configured.
+ */
+function getVersion(): string | undefined {
+  const version = import.meta.env.VITE_APP_VERSION as string | undefined;
+  if (version === '' || version === undefined) {
+    console.log('VITE_APP_VERSION not set');
+    return undefined;
+  }
+  return version;
+}
+
+export const APP_VERSION = getVersion();

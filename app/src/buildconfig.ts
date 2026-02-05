@@ -426,13 +426,25 @@ function get_map_style(): MapStylesheetNameType {
   return map_style || 'basic';
 }
 
+function get_satellite_source(): 'esri' | 'maptiler' | undefined {
+  const satellite_source = import.meta.env.VITE_SATELLITE_SOURCE;
+  return satellite_source || undefined;
+}
+
 // get the map configuration
 export function getMapConfig(): MapConfig {
-  return {
+  const config: MapConfig = {
     mapSource: get_map_source(),
     mapSourceKey: get_map_key(),
     mapStyle: get_map_style(),
   };
+
+  const satelliteSource = get_satellite_source();
+  if (satelliteSource) {
+    config.satelliteSource = satelliteSource;
+  }
+
+  return config;
 }
 
 function offline_maps(): boolean {

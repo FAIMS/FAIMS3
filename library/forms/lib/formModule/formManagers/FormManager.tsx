@@ -35,6 +35,8 @@ export interface FormManagerProps extends ComponentProps<any> {
  * viewsets containing sections (views), which in turn contain fields.
  */
 export const FormManager = (props: FormManagerProps) => {
+  const onCompleteHandler =
+    props.config.mode === 'full' ? props.config.onCompleteHandler : undefined;
   return (
     <>
       {/* Render Inline (Vertical) Layout */}
@@ -56,6 +58,7 @@ export const FormManager = (props: FormManagerProps) => {
           formId={props.formName}
           spec={props.uiSpec}
           fieldVisibilityMap={props.fieldVisibilityMap}
+          onCompleteHandler={onCompleteHandler}
         />
       )}
 

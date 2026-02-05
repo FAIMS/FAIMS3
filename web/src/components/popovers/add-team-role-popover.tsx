@@ -39,10 +39,12 @@ export const AddTeamRolePopover = ({
     return (
       <TooltipProvider>
         <Tooltip>
-          <TooltipTrigger>
-            <Button variant="outline" className="font-normal h-7" disabled>
-              <Plus />
-            </Button>
+          <TooltipTrigger asChild>
+            <span>
+              <Button variant="outline" className="font-normal h-7" disabled>
+                <Plus />
+              </Button>
+            </span>
           </TooltipTrigger>
           <TooltipContent>
             <p>No more roles available to add</p>

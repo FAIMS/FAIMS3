@@ -753,16 +753,24 @@ describe('DataEngine', () => {
       });
 
       // Retrieve multiple records
-      const hydrated = await engine.hydrated.getHydratedRecords([
+      const hydrated = await engine.hydrated.hydrateMultipleRecords([
         recordId1,
         recordId2,
       ]);
 
       expect(hydrated).toHaveLength(2);
-      expect(hydrated[0].record._id).toBe(recordId1);
-      expect(hydrated[1].record._id).toBe(recordId2);
-      expect(hydrated[0].data['First-1'].data).toBe('Record 1 data');
-      expect(hydrated[1].data['First-2'].data).toBe('Record 2 data');
+      expect(hydrated[0].success && hydrated[0].record.record._id).toBe(
+        recordId1
+      );
+      expect(hydrated[1].success && hydrated[1].record.record._id).toBe(
+        recordId2
+      );
+      expect(
+        hydrated[0].success && hydrated[0].record.data['First-1'].data
+      ).toBe('Record 1 data');
+      expect(
+        hydrated[1].success && hydrated[1].record.data['First-2'].data
+      ).toBe('Record 2 data');
     });
 
     test('should retrieve specific revision when specified', async () => {

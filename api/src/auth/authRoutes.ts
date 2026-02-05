@@ -33,8 +33,9 @@ import {
   PostResetPasswordInputSchema,
   PutLogoutInputSchema,
 } from '@faims3/data-model';
-import {NextFunction, Router} from 'express';
+import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
+import {Strategy as SamlStrategy} from 'passport-saml';
 import {processRequest} from 'zod-express-middleware';
 import {WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
@@ -71,8 +72,9 @@ import {
   validateRedirect,
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
+import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {AuthProviderConfigMap} from './strategies/strategyTypes';
+import {signSamlMetadata} from './strategies/samlStrategy';
 
 patch();
 
@@ -203,7 +205,7 @@ const purgeLockoutStore = () => {
  */
 export function addAuthRoutes(
   app: Router,
-  socialProviders: AuthProviderConfigMap | null
+  socialProviders: RegisteredAuthProviders | null
 ) {
   // For legacy versions of the app, we provide a message on /auth to
   // let them know they need to upgrade to the latest version
@@ -865,7 +867,30 @@ export function addAuthRoutes(
 
   // For each handler, deploy an auth route + auth return route
   for (const provider in socialProviders) {
-    const handlerDetails = socialProviders[provider];
+    const handlerDetails = socialProviders[provider].config;
+    const handlerStrategy = socialProviders[provider].strategy;
+
+    // If SAML - we expose a metadata endpoint, optionally signed
+    if (handlerDetails.type === 'saml') {
+      const strategy = handlerStrategy as SamlStrategy;
+
+      app.get(`/auth/${provider}/metadata`, (req, res) => {
+        let metadata = strategy.generateServiceProviderMetadata(
+          handlerDetails.enableDecryptionPvk
+            ? (handlerDetails.publicKey ?? null)
+            : null,
+          handlerDetails.privateKey ? (handlerDetails.publicKey ?? null) : null
+        );
+
+        // Sign metadata if configured and private key is available
+        if (handlerDetails.signMetadata && handlerDetails.privateKey) {
+          metadata = signSamlMetadata(metadata, handlerDetails.privateKey);
+        }
+
+        res.type('application/xml');
+        res.send(metadata);
+      });
+    }
 
     // **Login OR register** method for this handler - this will result in a
     // redirection to the configured providers URL, then called back to the
@@ -910,9 +935,7 @@ export function addAuthRoutes(
       }
     );
 
-    // the callback URL for this provider - all we need to do is call the
-    // validate function again since we will have come back with enough info now
-    app.get(providerAuthReturnUrl(provider), (req, res, next) => {
+    const callbackHandler: RequestHandler = (req, res, next) => {
       // we expect these values! (Or some of them e.g. invite may not be
       // present)
       const redirectValues = {
@@ -986,6 +1009,19 @@ export function addAuthRoutes(
           });
         }
       )(req, res, next);
-    });
+    };
+
+    // the callback URL for this provider - all we need to do is call the
+    // validate function again since we will have come back with enough info now
+    const allowedMethods = handlerDetails.callbackMethods ?? ['GET'];
+    const callbackUrl = providerAuthReturnUrl(provider);
+
+    // Register only the specific methods allowed for this provider
+    if (allowedMethods.includes('GET')) {
+      app.get(callbackUrl, callbackHandler);
+    }
+    if (allowedMethods.includes('POST')) {
+      app.post(callbackUrl, callbackHandler);
+    }
   }
 }

@@ -25,7 +25,7 @@ const detailsFields = [
 const TeamDetails = ({teamId}: {teamId: string}) => {
   const {user} = useAuth();
 
-  const {data: rawData, isPending} = useGetTeam(user, teamId);
+  const {data: rawData, isPending} = useGetTeam({user, teamId});
 
   const data = useMemo(() => {
     return rawData

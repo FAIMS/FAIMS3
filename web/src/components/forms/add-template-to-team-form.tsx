@@ -24,7 +24,7 @@ export function AddTemplateToTeamForm({
 }: AddTemplateToTeamFormProps) {
   const {user} = useAuth();
   const QueryClient = useQueryClient();
-  const teams = useGetTeams(user);
+  const teams = useGetTeams({user});
 
   // can we add a user to the team?
   const canAddTemplateToTeam = useIsAuthorisedTo({

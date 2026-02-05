@@ -18,39 +18,48 @@
  *   File is creating custom tool bar instead of default GridToolbar to disable export button
  */
 
-import React, {useEffect} from 'react';
+import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
+import TuneIcon from '@mui/icons-material/Tune';
 import {
   Box,
   Grid,
-  TextField,
-  InputAdornment,
   IconButton,
-  Paper,
+  InputAdornment,
+  Stack,
+  TextField,
+  useMediaQuery,
 } from '@mui/material';
 import {GridToolbarContainer, GridToolbarFilterButton} from '@mui/x-data-grid';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
-import TuneIcon from '@mui/icons-material/Tune';
+import React, {ReactNode, useEffect} from 'react';
 import {usePrevious} from '../../../utils/customHooks';
 import {theme} from '../../themes';
 
 interface ToolbarProps {
-  handleQueryFunction: any;
+  /** Function to handle search query changes */
+  handleQueryFunction: (query: string) => void;
+  /** Optional additional controls to render (e.g., sort dropdown) */
+  additionalControls?: ReactNode;
 }
 
 const enableFilters = import.meta.env.VITE_ENABLE_RECORD_FILTERS !== 'false';
 
 /**
- * Custom search button with improved layout handling
+ * Custom search button with improved layout handling.
+ * Provides a text input for searching record data with submit and clear actions.
  */
-export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
+export function GridToolbarSearchRecordDataButton({
+  handleQueryFunction,
+}: {
+  handleQueryFunction: (query: string) => void;
+}) {
   const [value, setValue] = React.useState('');
   const prevValue = usePrevious(value);
 
   /**
    * Handles the input change event in the search field.
    *
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The event for the search input field.
+   * @param event - The event for the search input field.
    */
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setValue(event.target.value);
@@ -60,7 +69,7 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
    * Handles search submission by invoking the query function with the current value.
    */
   const handleSubmit = () => {
-    props.handleQueryFunction(value);
+    handleQueryFunction(value);
   };
 
   /**
@@ -80,6 +89,9 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
     }
   }, [value]);
 
+  /**
+   * Handles Enter key press to submit search.
+   */
   const handleKeyPress = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter') {
       handleSubmit();
@@ -87,156 +99,107 @@ export function GridToolbarSearchRecordDataButton(props: ToolbarProps) {
   };
 
   return (
-    <Box
-      component={Paper}
-      elevation={0}
+    <TextField
+      placeholder="Search record data (case sensitive)"
+      value={value}
+      onChange={handleChange}
+      onKeyDown={handleKeyPress}
+      data-testid="record-search-input"
+      variant="outlined"
+      size="small"
+      fullWidth
       sx={{
-        backgroundColor: 'transparent',
+        '& .MuiOutlinedInput-root': {
+          backgroundColor: '#ffffff',
+          transition: 'all 0.3s ease-in-out',
+          borderRadius: '8px',
+          boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+          border: '1px solid #e0e0e0',
+          '&:hover': {
+            borderColor: '#bdbdbd',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
+          },
+          '&.Mui-focused': {
+            borderColor: '#e0e0e0',
+            boxShadow: 'none',
+          },
+        },
+        '& .MuiOutlinedInput-input': {
+          padding: '10px 14px',
+          fontSize: '0.9rem',
+          '&::placeholder': {
+            color: '#757575',
+            opacity: 0.8,
+          },
+        },
       }}
-    >
-      <Grid container spacing={1} alignItems="center" wrap="nowrap">
-        <Grid item xs>
-          <TextField
-            placeholder="Search record data (case sensitive)"
-            value={value}
-            onChange={handleChange}
-            onKeyDown={handleKeyPress}
-            data-testid="record-search-input"
-            variant="outlined"
-            size="small"
-            fullWidth
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#ffffff',
-                transition: 'all 0.3s ease-in-out',
-                borderRadius: '8px',
-                boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
-                border: '1px solid #e0e0e0',
-                '&:hover': {
-                  borderColor: '#bdbdbd',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                },
-                '&.Mui-focused': {
-                  borderColor: '#e0e0e0',
-                  boxShadow: 'none',
-                },
-              },
-              '& .MuiOutlinedInput-input': {
-                padding: '10px 14px',
-                fontSize: '0.9rem',
-                '&::placeholder': {
-                  color: '#757575',
-                  opacity: 0.8,
-                },
-              },
-            }}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconButton
-                    onClick={handleSubmit}
-                    size="medium"
-                    data-testid="searchButton"
-                    sx={{
-                      color: theme => theme.palette.primary.main,
-                      transition: 'all 0.3s ease-in-out',
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                        transform: 'scale(1.05)',
-                      },
-                    }}
-                  >
-                    <SearchIcon
-                      style={{
-                        color: theme.palette.primary.main,
-                        fontSize: '1.75rem',
-                        fontWeight: 'bold',
-                      }}
-                    />
-                  </IconButton>
-                </InputAdornment>
-              ),
-              endAdornment: value && (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={handleClear}
-                    size="medium"
-                    sx={{
-                      color: theme.palette.secondary.main,
-                      transition: 'all 0.3s',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
-                        color: '#424242',
-                      },
-                    }}
-                  >
-                    <ClearIcon
-                      style={{
-                        color: theme.palette.secondary.main,
-                        fontWeight: 'bold',
-                        fontSize: '1.60rem',
-                      }}
-                    />
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-        </Grid>
-
-        {enableFilters && (
-          <Grid item sx={{flexShrink: 0, ml: 1}}>
-            <GridToolbarFilterButton
-              componentsProps={{
-                button: {
-                  startIcon: (
-                    <TuneIcon
-                      style={{
-                        color: theme.palette.primary.main,
-                        fontSize: '1.85rem',
-                        fontWeight: 'bold',
-                        marginRight: theme.spacing(1),
-                      }}
-                    />
-                  ),
-                },
-              }}
+      InputProps={{
+        startAdornment: (
+          <InputAdornment position="start">
+            <IconButton
+              onClick={handleSubmit}
+              size="medium"
+              data-testid="searchButton"
               sx={{
-                borderRadius: '8px',
-                padding: '8px',
-                minWidth: 'auto',
-                backgroundColor: theme.palette.background.default,
-                border: '2px solid #e0e0e0',
-                transition: 'all 0.2s ease-in-out',
-                textTransform: 'none',
-                boxShadow: value ? '0 2px 4px rgba(0, 0, 0, 0.15)' : 'none',
+                color: theme => theme.palette.primary.main,
+                transition: 'all 0.3s ease-in-out',
                 '&:hover': {
                   backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                  borderColor: theme => theme.palette.primary.main,
-                },
-                '& .MuiButton-startIcon': {
-                  margin: 0,
-                },
-                '& .MuiButton-endIcon': {
-                  display: 'none',
+                  transform: 'scale(1.05)',
                 },
               }}
-            />
-          </Grid>
-        )}
-      </Grid>
-    </Box>
+            >
+              <SearchIcon
+                style={{
+                  color: theme.palette.primary.main,
+                  fontSize: '1.75rem',
+                  fontWeight: 'bold',
+                }}
+              />
+            </IconButton>
+          </InputAdornment>
+        ),
+        endAdornment: value && (
+          <InputAdornment position="end">
+            <IconButton
+              onClick={handleClear}
+              size="medium"
+              sx={{
+                color: theme.palette.secondary.main,
+                transition: 'all 0.3s',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  color: '#424242',
+                },
+              }}
+            >
+              <ClearIcon
+                style={{
+                  color: theme.palette.secondary.main,
+                  fontWeight: 'bold',
+                  fontSize: '1.60rem',
+                }}
+              />
+            </IconButton>
+          </InputAdornment>
+        ),
+      }}
+    />
   );
 }
 
 /**
  * Main toolbar component for the DataGrid.
- * This replaces the default toolbar to include custom search and filter functionalities.
+ * Replaces the default toolbar to include custom search, filter, and sort
+ * functionalities.
  *
- * @param props - Properties to handle search functionality.
- * @returns Custom toolbar for the DataGrid.
+ * @param props - Properties including search handler and optional additional controls
+ * @returns Custom toolbar for the DataGrid
  */
 export function NotebookDataGridToolbar(props: ToolbarProps) {
+  const {handleQueryFunction, additionalControls} = props;
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <GridToolbarContainer
       sx={{
@@ -247,9 +210,62 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
       }}
     >
       <Box width="100%">
-        <GridToolbarSearchRecordDataButton
-          handleQueryFunction={props.handleQueryFunction}
-        />
+        <Stack
+          // Conditional layout here
+          spacing={isMobile ? 1.5 : 1}
+          direction={isMobile ? 'column' : 'row'}
+          alignItems={isMobile ? 'stretch' : 'center'}
+        >
+          {/* Search input - takes remaining space */}
+          <GridToolbarSearchRecordDataButton
+            handleQueryFunction={handleQueryFunction}
+          />
+
+          {/* Additional controls (e.g., sort dropdown) */}
+          {additionalControls && additionalControls}
+
+          {/* Filter button */}
+          {enableFilters && (
+            <Grid item sx={{flexShrink: 0}}>
+              <GridToolbarFilterButton
+                componentsProps={{
+                  button: {
+                    startIcon: (
+                      <TuneIcon
+                        style={{
+                          color: theme.palette.primary.main,
+                          fontSize: '1.85rem',
+                          fontWeight: 'bold',
+                          marginRight: theme.spacing(1),
+                        }}
+                      />
+                    ),
+                  },
+                }}
+                sx={{
+                  borderRadius: '8px',
+                  padding: '8px',
+                  minWidth: 'auto',
+                  backgroundColor: theme.palette.background.default,
+                  border: '2px solid #e0e0e0',
+                  transition: 'all 0.2s ease-in-out',
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': {
+                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                    borderColor: theme => theme.palette.primary.main,
+                  },
+                  '& .MuiButton-startIcon': {
+                    margin: 0,
+                  },
+                  '& .MuiButton-endIcon': {
+                    display: 'none',
+                  },
+                }}
+              />
+            </Grid>
+          )}
+        </Stack>
       </Box>
     </GridToolbarContainer>
   );

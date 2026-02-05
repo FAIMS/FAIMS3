@@ -39,6 +39,8 @@ export type ComponentParameters = {
     // These items must correspond to values in the options[]. Only one of such
     // can be selecting, greying out/excluding other options
     exclusiveOptions?: string[];
+    enableOtherOption?: boolean;
+    otherOptionPosition?: number;
     options?: {
       value: string;
       label: string;
@@ -51,6 +53,8 @@ export type ComponentParameters = {
   FormLabelProps?: {children?: string};
   FormHelperTextProps?: {children?: string};
   FormControlLabelProps?: {label: string};
+  // default false
+  allowSetToCurrentPoint?: boolean;
   initialValue?: unknown;
   related_type?: string;
   hideCreateAnotherButton?: boolean;
@@ -65,6 +69,7 @@ export type ComponentParameters = {
   is_auto_pick?: boolean;
   zoom?: number;
   featureType?: string;
+  buttonLabelText?: string;
   variant_style?: string;
   html_tag?: string;
   content?: string;
@@ -79,6 +84,10 @@ export type ComponentParameters = {
   protection?: 'protected' | 'allow-hiding' | 'none';
   hidden?: boolean;
   allowLinkToExisting?: boolean;
+  /** Enable speech-to-text input (default: true) */
+  enableSpeech?: boolean;
+  /** Whether to append speech to existing text or replace */
+  speechAppendMode?: boolean;
 };
 
 export type FieldType = {

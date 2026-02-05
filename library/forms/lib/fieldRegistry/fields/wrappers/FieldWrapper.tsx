@@ -119,6 +119,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
               <span
                 data-testid="required-indicator"
                 style={{
+                  color: theme.palette.error.main,
                   marginLeft: 2,
                   fontSize: '1.4em',
                   fontWeight: 'bold',
@@ -149,6 +150,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                   sx={{
                     fontSize: '1.6rem',
                     strokeWidth: 0.8,
+                    color: theme.palette.secondary.main,
                   }}
                 />
               </IconButton>
@@ -243,7 +245,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           PaperProps={{
             sx: {
               borderRadius: 2,
-              p: 2,
+              p: 1,
               boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
               position: 'relative',
             },
@@ -256,7 +258,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
               paddingRight: 4,
             }}
           >
-            Field: {typeof heading === 'string' ? heading : null}
+            {heading}
             <IconButton
               onClick={() => setOpenDialog(false)}
               sx={{position: 'absolute', right: 16, top: 16}}

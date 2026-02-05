@@ -42,5 +42,9 @@
 	{
 		"pkg": "@capacitor/status-bar",
 		"classpath": "com.capacitorjs.plugins.statusbar.StatusBarPlugin"
+	},
+	{
+		"pkg": "@capgo/capacitor-speech-recognition",
+		"classpath": "app.capgo.speechrecognition.SpeechRecognitionPlugin"
 	}
 ]

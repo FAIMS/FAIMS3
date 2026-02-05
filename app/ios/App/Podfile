@@ -22,6 +22,7 @@ def capacitor_pods
   pod 'CapacitorGeolocation', :path => '../../../node_modules/.pnpm/@capacitor+geolocation@7.1.5_@capacitor+core@7.4.3/node_modules/@capacitor/geolocation'
   pod 'CapacitorShare', :path => '../../../node_modules/.pnpm/@capacitor+share@7.0.2_@capacitor+core@7.4.3/node_modules/@capacitor/share'
   pod 'CapacitorStatusBar', :path => '../../../node_modules/.pnpm/@capacitor+status-bar@7.0.4_@capacitor+core@7.4.3/node_modules/@capacitor/status-bar'
+  pod 'CapgoCapacitorSpeechRecognition', :path => '../../../node_modules/.pnpm/@capgo+capacitor-speech-recognition@8.0.4_@capacitor+core@7.4.3/node_modules/@capgo/capacitor-speech-recognition'
 end
 
 target 'App' do

@@ -49,7 +49,6 @@ import {
   getCouchUserFromEmailOrUserId,
   getUsersForTeam,
   saveCouchUser,
-  saveExpressUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {
@@ -141,10 +140,6 @@ api.post(
 
     // Create the new team and return it
     const newTeam = await createTeamDocument(teamData);
-
-    // Now add the user as an admin of the team
-    addTeamRole({role: Role.TEAM_ADMIN, teamId: newTeam._id, user: req.user});
-    await saveExpressUser(req.user);
 
     res.json(newTeam);
   }

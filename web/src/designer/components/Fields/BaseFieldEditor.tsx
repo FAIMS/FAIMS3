@@ -47,6 +47,18 @@ import {
 } from '@/designer/state/helpers/uiSpec-helpers';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
+import SpeechSettingsEditor from './SpeechSettingsEditor';
+
+export const SPEECH_ENABLED_FIELDS = [
+  'faims-custom::FAIMSTextField',
+  'formik-material-ui::MultipleTextField',
+];
+
+const checkSpeechEnabled = (field: FieldType) => {
+  return SPEECH_ENABLED_FIELDS.includes(
+    `${field['component-namespace']}::${field['component-name']}`
+  );
+};
 
 type Props = {
   fieldName: string;
@@ -422,7 +434,7 @@ export const BaseFieldEditor = ({
                       }
                     />
                   ) : (
-                    <div />
+                    <></>
                   )}
                 </Grid>
                 <Grid item xs={12} md={6}>
@@ -436,7 +448,7 @@ export const BaseFieldEditor = ({
                       }
                     />
                   ) : (
-                    <div />
+                    <></>
                   )}
                 </Grid>
               </Grid>
@@ -515,7 +527,7 @@ export const BaseFieldEditor = ({
                         label="Allow Hiding"
                       />
                     ) : (
-                      <div />
+                      <></>
                     )}
                   </Grid>
                 </>
@@ -523,6 +535,9 @@ export const BaseFieldEditor = ({
             </Grid>
           </Card>
         </Grid>
+      )}
+      {checkSpeechEnabled(field) && (
+        <SpeechSettingsEditor fieldName={fieldName} />
       )}
     </Grid>
   );

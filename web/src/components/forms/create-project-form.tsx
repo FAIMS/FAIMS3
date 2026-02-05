@@ -39,8 +39,8 @@ export function CreateProjectForm({
   // can they create projects outside team?
   const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
-  const {data: templates} = useGetTemplates(user);
-  const {data: teams} = useGetTeams(user);
+  const {data: templates} = useGetTemplates({user});
+  const {data: teams} = useGetTeams({user});
 
   const fields: Field[] = [
     {

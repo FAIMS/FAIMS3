@@ -35,6 +35,7 @@ import VectorTile from 'ol/VectorTile';
 import {MapConfig} from './types';
 import {IDBObjectStore} from './IDBObjectStore';
 import {getMapStylesheet} from './styles';
+import {XYZ} from 'ol/source';
 
 // When downloading maps we start at this zoom level
 const START_ZOOM = 2;
@@ -44,15 +45,43 @@ const MAX_ZOOM = 14;
 // Table of map tile sources for raster and vector tiles
 // based on configuration settings we select which of these to use
 //
-const TILE_URL_MAP: {[key: string]: {[key: string]: string}} = {
+interface TileSourceConfig {
+  url: string;
+  minZoom?: number;
+  maxZoom?: number;
+}
+
+const TILE_URL_MAP: {
+  [key: string]: {vector?: TileSourceConfig; satellite?: TileSourceConfig};
+} = {
   osm: {
-    raster: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    vector: 'https://tile.openstreetmap.org/data/{z}/{x}/{y}.pbf',
+    vector: {
+      url: 'https://tile.openstreetmap.org/data/{z}/{x}/{y}.pbf',
+      minZoom: 0,
+      maxZoom: 19,
+    },
   },
   maptiler: {
-    raster:
-      'https://api.maptiler.com/maps/outdoor-v2/{z}/{x}/{y}.png?key={key}',
-    vector: 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}',
+    // Requires VITE_MAP_SOURCE_KEY env variable
+    vector: {
+      url: 'https://api.maptiler.com/tiles/v3/{z}/{x}/{y}.pbf?key={key}',
+      minZoom: 0,
+      maxZoom: 22,
+    },
+    // Requires VITE_MAP_SOURCE_KEY env variable
+    satellite: {
+      url: 'https://api.maptiler.com/maps/satellite/{z}/{x}/{y}.jpg?key={key}',
+      minZoom: 0,
+      maxZoom: 19,
+    },
+  },
+  esri: {
+    // NOTE: this should only be used by licensed users - proceed with caution
+    satellite: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      minZoom: 0,
+      maxZoom: 19,
+    },
   },
 };
 
@@ -164,13 +193,82 @@ export const initialiseMaps = () => {
  * Used by VectorTileStore and ImageTileStore to implement two kinds of map
  * tile sources.
  */
-class TileStoreBase {
+abstract class TileStoreBase {
   tileStore: MapTileDatabase;
   config: MapConfig;
 
   constructor(config: MapConfig) {
     this.tileStore = MapTileDatabase.getInstance();
     this.config = config;
+  }
+
+  getVectorZoomRange(): {minZoom: number; maxZoom: number} {
+    const config = TILE_URL_MAP[this.config.mapSource]?.vector;
+    return {
+      minZoom: config?.minZoom ?? 0,
+      maxZoom: config?.maxZoom ?? 19,
+    };
+  }
+
+  getSatelliteZoomRange(): {minZoom: number; maxZoom: number} {
+    const source = this.config.satelliteSource;
+    if (!source) return {minZoom: 0, maxZoom: 19};
+
+    const config = TILE_URL_MAP[source]?.satellite;
+    return {
+      minZoom: config?.minZoom ?? 0,
+      maxZoom: config?.maxZoom ?? 19,
+    };
+  }
+
+  /**
+   * Check if satellite imagery is available based on config
+   */
+  hasSatellite(): boolean {
+    if (!this.config.satelliteSource) return false;
+    return !!TILE_URL_MAP[this.config.satelliteSource]?.['satellite'];
+  }
+
+  /**
+   * Get a satellite tile layer (raster imagery)
+   * Returns undefined if satellite is not configured
+   */
+  getSatelliteLayer(): TileLayer | undefined {
+    if (!this.config.satelliteSource) return undefined;
+
+    const config = TILE_URL_MAP[this.config.satelliteSource]?.satellite;
+    if (!config) return undefined;
+
+    let url = config.url;
+    // Perform replacement
+    if (
+      this.config.satelliteSource === 'maptiler' &&
+      this.config.mapSourceKey
+    ) {
+      url = config.url.replace('{key}', this.config.mapSourceKey || '');
+    }
+
+    const source = new XYZ({
+      url: url,
+      attributions: this.getSatelliteAttribution(),
+      minZoom: config.minZoom,
+      maxZoom: config.maxZoom,
+    });
+
+    return new TileLayer({
+      source: source,
+      visible: false,
+    });
+  }
+
+  getSatelliteAttribution(): string {
+    if (this.config.satelliteSource === 'esri') {
+      return '<em>Powered by Esri</em> | Esri, USGS, FAO, NOAA, Maxar, Earthstar Geographics, and the GIS User Community';
+    }
+    if (this.config.satelliteSource === 'maptiler') {
+      return '&copy; MapTiler &copy; OpenStreetMap contributors';
+    }
+    return '';
   }
 
   /**
@@ -197,7 +295,7 @@ class TileStoreBase {
    * @returns the configured tile URL template
    */
   getTileURLTemplate(): string | undefined {
-    return undefined;
+    return TILE_URL_MAP[this.config.mapSource]?.vector?.url;
   }
 
   /**
@@ -503,6 +601,14 @@ class TileStoreBase {
     // If we got here, all features were found in at least one tile set
     return true;
   }
+
+  /** Get the tile layer for this store - implemented by subclasses */
+  abstract getTileLayer(): TileLayer | VectorTileLayer;
+
+  /** Get the attribution string for this tile source */
+  abstract getAttribution():
+    | string
+    | ReturnType<VectorTileSource['getAttributions']>;
 }
 
 export class ImageTileStore extends TileStoreBase {
@@ -516,10 +622,6 @@ export class ImageTileStore extends TileStoreBase {
       loader: this.tileLoader.bind(this),
     });
     this.tileLayer = new TileLayer({source: this.source});
-  }
-
-  getTileURLTemplate(): string | undefined {
-    return TILE_URL_MAP[this.config.mapSource]['image'];
   }
 
   getTileGrid() {
@@ -638,7 +740,7 @@ export class VectorTileStore extends TileStoreBase {
    * @returns the configured tile URL template
    */
   getTileURLTemplate(): string | undefined {
-    return TILE_URL_MAP[this.config.mapSource]['vector'];
+    return TILE_URL_MAP[this.config.mapSource]['vector']?.url;
   }
 
   getTileGrid() {
@@ -683,3 +785,17 @@ export class VectorTileStore extends TileStoreBase {
     });
   }
 }
+
+/**
+ * Factory function to create the appropriate tile store based on map style.
+ */
+export const createTileStore = (config: MapConfig): TileStoreBase => {
+  // Later we may wish to generate image tile stores instead of vector - based
+  // on the config
+  /**
+  if (config.mapStyle === 'satellite') {
+    return new ImageTileStore(config);
+  }
+  */
+  return new VectorTileStore(config);
+};

@@ -31,11 +31,10 @@ import {
   providersToRenderDetails,
   validateRedirect,
 } from './helpers';
-
 import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
-import {AuthProviderConfigMap} from './strategies/strategyTypes';
+import {RegisteredAuthProviders} from './strategies/applyStrategies';
 
 // This must occur before express app is used
 patch();
@@ -51,7 +50,7 @@ patch();
  */
 export function addAuthPages(
   app: Router,
-  socialProviders: AuthProviderConfigMap | null
+  socialProviders: RegisteredAuthProviders | null
 ) {
   // PAGES
   // =====

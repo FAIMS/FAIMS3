@@ -119,11 +119,17 @@ export const useGetProject = ({
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching projects.
  */
-export const useGetProjects = (user: User | null) =>
+export const useGetProjects = ({
+  user,
+  enabled = true,
+}: {
+  user: User | null;
+  enabled?: boolean;
+}) =>
   useQuery({
     queryKey: ['projects', user?.token],
     queryFn: () => get<GetNotebookListResponse>('/api/notebooks/', user),
-    enabled: !!user,
+    enabled: !!user && enabled,
   });
 
 /**
@@ -133,7 +139,13 @@ export const useGetProjects = (user: User | null) =>
  * @param {string} templateId - The ID of the template.
  * @returns {Query} A query for fetching a template.
  */
-export const useGetTemplate = (user: User | null, templateId: string) =>
+export const useGetTemplate = ({
+  user,
+  templateId,
+}: {
+  user: User | null;
+  templateId: string;
+}) =>
   useQuery({
     queryKey: ['templates', templateId],
     queryFn: () =>
@@ -205,7 +217,13 @@ export const useGetUsersForTeam = ({
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching a team.
  */
-export const useGetTeam = (user: User | null, teamId: string | undefined) =>
+export const useGetTeam = ({
+  user,
+  teamId,
+}: {
+  user: User | null;
+  teamId: string | undefined;
+}) =>
   useQuery({
     queryKey: ['teams', teamId],
     queryFn: async () => get<GetTeamByIdResponse>(`/api/teams/${teamId}`, user),
@@ -218,11 +236,17 @@ export const useGetTeam = (user: User | null, teamId: string | undefined) =>
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching projects.
  */
-export const useGetTeams = (user: User | null) =>
+export const useGetTeams = ({
+  user,
+  enabled = true,
+}: {
+  user: User | null;
+  enabled?: boolean;
+}) =>
   useQuery({
     queryKey: ['teams'],
     queryFn: async () => get<GetListTeamsResponse>('/api/teams/', user),
-    enabled: !!user,
+    enabled: !!user && enabled,
   });
 
 /**
@@ -231,13 +255,20 @@ export const useGetTeams = (user: User | null) =>
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching templates.
  */
-export const useGetTemplates = (user: User | null) =>
+export const useGetTemplates = ({
+  user,
+  enabled = true,
+}: {
+  user: User | null;
+  enabled?: boolean;
+}) =>
   useQuery({
     queryKey: ['templates', user?.token],
     queryFn: async () => {
       const data = await get<GetListTemplatesResponse>('/api/templates/', user);
       return data.templates;
     },
+    enabled: !!user && enabled,
   });
 
 /**
@@ -246,10 +277,17 @@ export const useGetTemplates = (user: User | null) =>
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching users.
  */
-export const useGetUsers = (user: User | null) =>
+export const useGetUsers = ({
+  user,
+  enabled = true,
+}: {
+  user: User | null;
+  enabled?: boolean;
+}) =>
   useQuery({
     queryKey: ['users'],
     queryFn: () => get<PeopleDBDocument[]>('/api/users', user),
+    enabled: !!user && enabled,
   });
 
 /**
@@ -328,12 +366,53 @@ export const useGetTeamInvites = ({
   });
 
 /**
+ * useGetTeamInvites hook returns a query for fetching invites.
+ *
+ * @param {User} user - The user object.
+ * @param {string} teamId - The ID of the notebook.
+ * @returns {Query} A query for fetching invites.
+ */
+export const useGetGlobalInvites = ({
+  user,
+  redirect,
+}: {
+  user: User | null;
+  redirect: string;
+}) =>
+  useQuery({
+    queryKey: ['globalinvites'],
+    queryFn: async () => {
+      const invites = await get<GetTeamInvitesResponse>(
+        '/api/invites/global',
+        user
+      );
+      const promises = invites.map(async invite => {
+        const url = buildRegisterUrl({inviteId: invite._id, redirect});
+        return {
+          ...invite,
+          url: url,
+          qrCode: await QRCode.toDataURL(url),
+        };
+      });
+      return Promise.all(promises);
+    },
+    // Only run the query if both user and notebookId are available
+    enabled: !!user,
+  });
+
+/**
  * useGetRecords hook returns a query for fetching records.
  * @param {User} user - The user object.
  * @param {string} projectId - The ID of the project.
  * @returns {Query} A query for fetching records.
  */
-export const useGetRecords = (user: User | null, projectId: string) =>
+export const useGetRecords = ({
+  user,
+  projectId,
+}: {
+  user: User | null;
+  projectId: string;
+}) =>
   useQuery({
     queryKey: ['records', projectId],
     queryFn: () =>
