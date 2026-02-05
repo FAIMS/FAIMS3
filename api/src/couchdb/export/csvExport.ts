@@ -200,7 +200,7 @@ export const appendAllCSVsToArchive = async ({
     const dataHeaderInfo = getHeaderInfoFromUiSpecification({fields});
 
     // Generate unique filename
-    let baseFilename = generateSafeFilename(viewLabel);
+    const baseFilename = generateSafeFilename(viewLabel);
     let filename = `${pathPrefix}${baseFilename}.csv`;
     let counter = 1;
     while (usedFilenames.includes(filename)) {
@@ -545,7 +545,6 @@ export const streamNotebookRecordsAsCSV = async (
           row.push('');
         }
       }
-
 
       // Sanity check - error here is pretty bad - we should always generate
       // internally consistent exports

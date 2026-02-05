@@ -11,7 +11,6 @@ import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
-import {AuthProviderConfigMap} from './strategies/strategyTypes';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 
 /**

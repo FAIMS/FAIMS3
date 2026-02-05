@@ -193,7 +193,10 @@ function processRecordForSpatial(
  * @param fieldData - Field value
  * @returns True if the field is spatial with valid data
  */
-function isSpatialFieldWithData(fieldInfo: FieldSummary, fieldData: any): boolean {
+function isSpatialFieldWithData(
+  fieldInfo: FieldSummary,
+  fieldData: any
+): boolean {
   return (
     !!fieldInfo.isSpatial &&
     fieldData !== undefined &&
@@ -366,7 +369,9 @@ function writeKMLPlacemark(
     stream.write('</Placemark>');
     return true;
   } catch (e) {
-    console.error(`Error converting geometry to KML for record ${recordId}: ${e}`);
+    console.error(
+      `Error converting geometry to KML for record ${recordId}: ${e}`
+    );
     return false;
   }
 }
@@ -556,7 +561,10 @@ export const appendGeoJSONToArchive = async ({
       );
 
       for (const geom of geometries) {
-        const properties = buildFeatureProperties(baseProperties, geom.geometrySource);
+        const properties = buildFeatureProperties(
+          baseProperties,
+          geom.geometrySource
+        );
         writeGeoJSONFeature(geojsonStream, geom, properties, isFirstFeature);
         isFirstFeature = false;
         stats.featureCount++;
@@ -617,8 +625,19 @@ export const appendKMLToArchive = async ({
       );
 
       for (const geom of geometries) {
-        const properties = buildFeatureProperties(baseProperties, geom.geometrySource);
-        if (writeKMLPlacemark(kmlStream, hrid, geom.geometry, properties, record.record_id)) {
+        const properties = buildFeatureProperties(
+          baseProperties,
+          geom.geometrySource
+        );
+        if (
+          writeKMLPlacemark(
+            kmlStream,
+            hrid,
+            geom.geometry,
+            properties,
+            record.record_id
+          )
+        ) {
           stats.featureCount++;
         }
       }
@@ -658,7 +677,10 @@ export const appendBothSpatialFormatsToArchive = async ({
   kmlFilename: string;
 }): Promise<{geojson: SpatialAppendStats; kml: SpatialAppendStats}> => {
   const context = await initSpatialExportContext(projectId);
-  const geojsonStats = createInitialStats(geojsonFilename, context.hasSpatialFields);
+  const geojsonStats = createInitialStats(
+    geojsonFilename,
+    context.hasSpatialFields
+  );
   const kmlStats = createInitialStats(kmlFilename, context.hasSpatialFields);
 
   if (!context.hasSpatialFields) {
@@ -689,15 +711,31 @@ export const appendBothSpatialFormatsToArchive = async ({
       );
 
       for (const geom of geometries) {
-        const properties = buildFeatureProperties(baseProperties, geom.geometrySource);
+        const properties = buildFeatureProperties(
+          baseProperties,
+          geom.geometrySource
+        );
 
         // Write GeoJSON feature
-        writeGeoJSONFeature(geojsonStream, geom, properties, isFirstGeoJSONFeature);
+        writeGeoJSONFeature(
+          geojsonStream,
+          geom,
+          properties,
+          isFirstGeoJSONFeature
+        );
         isFirstGeoJSONFeature = false;
         geojsonStats.featureCount++;
 
         // Write KML placemark
-        if (writeKMLPlacemark(kmlStream, hrid, geom.geometry, properties, record.record_id)) {
+        if (
+          writeKMLPlacemark(
+            kmlStream,
+            hrid,
+            geom.geometry,
+            properties,
+            record.record_id
+          )
+        ) {
           kmlStats.featureCount++;
         }
       }
@@ -738,7 +776,9 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
   if (!context.hasSpatialFields) {
     res.end();
-    throw new Error('No spatial fields in any view, cannot produce a GeoJSON export!');
+    throw new Error(
+      'No spatial fields in any view, cannot produce a GeoJSON export!'
+    );
   }
 
   const filenames: string[] = [];
@@ -757,7 +797,10 @@ export const streamNotebookRecordsAsGeoJSON = async (
       );
 
       for (const geom of geometries) {
-        const properties = buildFeatureProperties(baseProperties, geom.geometrySource);
+        const properties = buildFeatureProperties(
+          baseProperties,
+          geom.geometrySource
+        );
         writeGeoJSONFeature(res, geom, properties, isFirstFeature);
         isFirstFeature = false;
       }
@@ -787,7 +830,9 @@ export const streamNotebookRecordsAsKML = async (
 
   if (!context.hasSpatialFields) {
     res.end();
-    throw new Error('No spatial fields in any view, cannot produce a KML export!');
+    throw new Error(
+      'No spatial fields in any view, cannot produce a KML export!'
+    );
   }
 
   const filenames: string[] = [];
@@ -805,8 +850,17 @@ export const streamNotebookRecordsAsKML = async (
       );
 
       for (const geom of geometries) {
-        const properties = buildFeatureProperties(baseProperties, geom.geometrySource);
-        writeKMLPlacemark(res, hrid, geom.geometry, properties, record.record_id);
+        const properties = buildFeatureProperties(
+          baseProperties,
+          geom.geometrySource
+        );
+        writeKMLPlacemark(
+          res,
+          hrid,
+          geom.geometry,
+          properties,
+          record.record_id
+        );
       }
     }
 
