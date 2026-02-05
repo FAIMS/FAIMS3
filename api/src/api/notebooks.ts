@@ -738,68 +738,55 @@ api.get(
       exportLabel = slugify(payload.projectID);
     }
 
-    switch (payload.format) {
-      case 'csv':
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${exportLabel}-export.csv"`
-        );
-        streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
-        break;
-
-      case 'zip':
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${exportLabel}-photos.zip"`
-        );
-        res.setHeader('Content-Type', 'application/zip');
-        streamNotebookFilesAsZip({
-          projectId: payload.projectID,
-          targetViewID: payload.viewID,
-          res,
-        });
-        break;
-
-      case 'geojson':
-        res.setHeader('Content-Type', 'application/geo+json');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
-        );
-        streamNotebookRecordsAsGeoJSON(payload.projectID, res);
-        break;
-
-      case 'kml':
-        res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${slugify(payload.projectID)}-export.kml"`
-        );
-        streamNotebookRecordsAsKML(payload.projectID, res);
-        break;
-
-      case 'full':
-        const fullFilename = generateFullExportFilename(payload.projectID);
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${fullFilename}"`
-        );
-        await streamFullExport({
-          projectId: payload.projectID,
-          userId: payload.userID,
-          config: payload.fullConfig,
-          res,
-        });
-        break;
-
-      default:
-        // TypeScript exhaustiveness check
-        const _exhaustive: never = payload.format;
-        throw new Exceptions.InvalidRequestException(
-          `Unknown export format: ${_exhaustive}`
-        );
+    if (payload.format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${exportLabel}-export.csv"`
+      );
+      streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
+    } else if (payload.format === 'zip') {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${exportLabel}-photos.zip"`
+      );
+      res.setHeader('Content-Type', 'application/zip');
+      streamNotebookFilesAsZip({
+        projectId: payload.projectID,
+        targetViewID: payload.viewID,
+        res,
+      });
+    } else if (payload.format === 'geojson') {
+      res.setHeader('Content-Type', 'application/geo+json');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+      );
+      streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+    } else if (payload.format === 'kml') {
+      res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+      );
+      streamNotebookRecordsAsKML(payload.projectID, res);
+    } else if (payload.format === 'full') {
+      const fullFilename = generateFullExportFilename(payload.projectID);
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${fullFilename}"`
+      );
+      await streamFullExport({
+        projectId: payload.projectID,
+        userId: payload.userID,
+        config: payload.fullConfig,
+        res,
+      });
+    } else {
+      throw new Exceptions.InvalidRequestException(
+        `Unknown export format: ${payload.format}`
+      );
     }
   }
 );
