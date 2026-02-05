@@ -611,7 +611,7 @@ export type GetTeamMembersResponse = z.infer<
 /**
  * Schema for creating a project invite
  */
-export const PostCreateInviteInputSchema = z.object({
+export const PostCreateResourceInviteInputSchema = z.object({
   role: z.nativeEnum(Role).refine(r => {
     const roleDetail = roleDetails[r];
     return roleDetail.scope === RoleScope.RESOURCE_SPECIFIC;
@@ -722,7 +722,7 @@ export const PostUseInviteResponseSchema = z.object({
 });
 
 // inferred types
-export type PostCreateInviteInput = z.infer<typeof PostCreateInviteInputSchema>;
+export type PostCreateInviteInput = z.infer<typeof PostCreateResourceInviteInputSchema>;
 export type InviteInfoResponse = z.infer<typeof InviteInfoResponseSchema>;
 export type InviteDocument = z.infer<typeof InviteDocumentSchema>;
 export type GetInviteByIdResponse = z.infer<typeof GetInviteByIdResponseSchema>;

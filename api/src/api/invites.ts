@@ -24,7 +24,7 @@ import {
   GetProjectInvitesResponse,
   GetTeamInvitesResponse,
   isAuthorized,
-  PostCreateInviteInputSchema,
+  PostCreateResourceInviteInputSchema,
   PostCreateProjectInviteResponse,
   PostCreateTeamInviteResponse,
   PostCreateGlobalInviteResponse,
@@ -151,7 +151,7 @@ api.post(
   requireAuthenticationAPI,
   processRequest({
     params: z.object({projectId: z.string()}),
-    body: PostCreateInviteInputSchema,
+    body: PostCreateResourceInviteInputSchema,
   }),
   async (
     {user, body, params: {projectId}},
