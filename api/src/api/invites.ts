@@ -33,6 +33,7 @@ import {
   teamInviteToAction,
   RoleScope,
   GetGlobalInvitesResponse,
+  PostCreateGlobalInviteInputSchema,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
@@ -396,7 +397,7 @@ api.post(
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.CREATE_GLOBAL_INVITE}),
   processRequest({
-    body: PostCreateInviteInputSchema,
+    body: PostCreateGlobalInviteInputSchema,
   }),
   async ({user, body}, res: Response<PostCreateGlobalInviteResponse>) => {
     if (!user) {

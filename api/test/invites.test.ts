@@ -566,6 +566,41 @@ describe('Invite Tests', () => {
       expect(response.body.usesOriginal).to.equal(10);
     });
 
+    it('POST /api/invites/team/:teamId does not create team invite if role is not global', async () => {
+      const team = await createTeamDocument({
+        name: 'Test Team',
+        description: 'A team for testing',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        createdBy: 'admin',
+      });
+
+      // Add admin role to the admin user for this team
+      const adminUser = await getExpressUserFromEmailOrUserId('admin');
+      if (!adminUser) {
+        throw new Error('Admin user not found');
+      }
+
+      addTeamRole({
+        user: adminUser,
+        teamId: team._id,
+        role: Role.TEAM_ADMIN,
+      });
+
+      const response = await request(app)
+        .post(`/api/invites/team/${team._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          role: Role.GENERAL_CREATOR, // This is a global role, not a team role, so should be rejected
+          name: 'This should not work',
+          uses: 10,
+        })
+        .expect(400);
+      expect(response.body[0].errors.issues[0].message).to.equal(
+        'Role must be a resource specific role to create a resource specific invite'
+      );
+    });
+
     it('DELETE /api/invites/notebook/:projectId/:inviteId deletes a project invite', async () => {
       const projectId = await createNotebook('test-notebook', uispec, {});
       const invite = await createResourceInvite({
@@ -738,7 +773,7 @@ describe('Invite Tests', () => {
         uses: 10,
       })
       .expect(400); // Bad Request
-    expect(response.body.error.message).to.equal(
+    expect(response.body[0].errors.issues[0].message).to.equal(
       'Role must be a global role to create a global invite'
     );
   });

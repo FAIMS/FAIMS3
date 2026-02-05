@@ -4,7 +4,7 @@ import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
 } from './data_storage/templatesDB/types';
-import {Resource, Role, RoleScope} from './permission/model';
+import {Resource, Role, roleDetails, RoleScope} from './permission/model';
 import {EncodedUISpecificationSchema} from './types';
 
 // ==================
@@ -612,7 +612,23 @@ export type GetTeamMembersResponse = z.infer<
  * Schema for creating a project invite
  */
 export const PostCreateInviteInputSchema = z.object({
-  role: z.nativeEnum(Role),
+  role: z.nativeEnum(Role).refine(r => {
+    const roleDetail = roleDetails[r];
+    return roleDetail.scope === RoleScope.RESOURCE_SPECIFIC;
+  }, 'Role must be a resource specific role to create a resource specific invite'),
+  name: z.string().min(1, 'Invite name is required'),
+  uses: z.number().min(1, 'Uses must be at least 1').optional(),
+  expiry: z.number().optional(),
+});
+
+/**
+ * Schema for creating a project invite
+ */
+export const PostCreateGlobalInviteInputSchema = z.object({
+  role: z.nativeEnum(Role).refine(r => {
+    const roleDetail = roleDetails[r];
+    return roleDetail.scope === RoleScope.GLOBAL;
+  }, 'Role must be a global role to create a global invite'),
   name: z.string().min(1, 'Invite name is required'),
   uses: z.number().min(1, 'Uses must be at least 1').optional(),
   expiry: z.number().optional(),

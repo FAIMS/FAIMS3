@@ -71,14 +71,6 @@ export async function createResourceInvite({
   expiry?: number;
   usesOriginal?: number;
 }): Promise<ExistingInvitesDBDocument> {
-  // Confirm that the role is a resource specific role
-  const roleDetail = roleDetails[role];
-  if (roleDetail.scope !== RoleScope.RESOURCE_SPECIFIC) {
-    throw new Exceptions.InvalidRequestException(
-      'Role must be a resource specific role to create a resource specific invite'
-    );
-  }
-
   // Create a new invite
   const invite: InvitesDBFields = {
     resourceType,
@@ -121,14 +113,6 @@ export async function createGlobalInvite({
   expiry?: number;
   usesOriginal?: number;
 }): Promise<ExistingInvitesDBDocument> {
-  // Confirm that the role is a global role
-  const roleDetail = roleDetails[role];
-  if (roleDetail.scope !== RoleScope.GLOBAL) {
-    throw new Exceptions.InvalidRequestException(
-      'Role must be a global role to create a global invite'
-    );
-  }
-
   // Create a new invite
   const invite: InvitesDBFields = {
     inviteType: RoleScope.GLOBAL,
