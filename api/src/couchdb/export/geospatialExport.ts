@@ -8,58 +8,88 @@ import {
   buildViewsetFieldSummaries,
   notebookRecordIterator,
 } from '@faims3/data-model';
+import {PassThrough} from 'stream';
+import archiver from 'archiver';
 import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
 import {convertDataForOutput} from './utils';
 
 /**
- * Stream the records in a notebook as a GeoJSON file
- *
- * @param projectId Project ID
- * @param res writeable stream
+ * Statistics returned from spatial export operations
  */
-export const streamNotebookRecordsAsGeoJSON = async (
-  projectId: ProjectID,
-  res: NodeJS.WritableStream
-) => {
-  // Get the database
-  const dataDb = await getDataDb(projectId);
+export interface SpatialAppendStats {
+  featureCount: number;
+  filename: string;
+  hasSpatialFields: boolean;
+}
 
-  // get the UI spec
+/**
+ * Checks if a project has any spatial fields
+ */
+export const projectHasSpatialFields = async (
+  projectId: ProjectID
+): Promise<boolean> => {
   const uiSpecification = await getProjectUIModel(projectId);
-
-  // get a mapping of viewset ID -> field summaries
   const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
 
-  // First do validation to ensure spatial elements are present
-  if (
-    !Array.from(Object.keys(viewFieldsMap)).some(viewsetID =>
-      viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
-    )
-  ) {
-    res.end();
-    throw new Error(
-      'No spatial fields in any view, cannot produce a GeoJSON export!'
-    );
+  return Array.from(Object.keys(viewFieldsMap)).some(viewsetID =>
+    viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
+  );
+};
+
+/**
+ * Appends a GeoJSON file to an existing archive.
+ *
+ * Uses a PassThrough stream to pipe GeoJSON output directly
+ * into the archiver without buffering in memory.
+ *
+ * @param projectId - Project ID
+ * @param archive - Archiver instance to append to
+ * @param filename - Filename in the archive (e.g., 'spatial/export.geojson')
+ * @returns Statistics about the exported GeoJSON
+ */
+export const appendGeoJSONToArchive = async ({
+  projectId,
+  archive,
+  filename,
+}: {
+  projectId: ProjectID;
+  archive: archiver.Archiver;
+  filename: string;
+}): Promise<SpatialAppendStats> => {
+  const stats: SpatialAppendStats = {
+    featureCount: 0,
+    filename,
+    hasSpatialFields: false,
+  };
+
+  // Get the database
+  const dataDb = await getDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
+
+  // Check for spatial fields
+  stats.hasSpatialFields = Array.from(Object.keys(viewFieldsMap)).some(
+    viewsetID => viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
+  );
+
+  if (!stats.hasSpatialFields) {
+    return stats;
   }
 
-  // Everything appears to be in order, so we...
+  // Create a PassThrough stream for the archive
+  const geojsonStream = new PassThrough();
+  archive.append(geojsonStream, {name: filename});
 
-  // a) track filenames
+  // Track filenames for attachment references
   const filenames: string[] = [];
 
-  // b) write out the header
-  res.write('{"type":"FeatureCollection","features":[');
+  // Write header
+  geojsonStream.write('{"type":"FeatureCollection","features":[');
 
-  // c) stream individual features in the GeoJSON feature collection, one
-  // viewset at a time
-
-  // For the first one, don't prepend a comma
   let isFirstRecord = true;
 
   for (const viewID of Object.keys(viewFieldsMap)) {
-    // This is a record iterator which returns an efficient iteration through the
-    // records each containing a data object with a hydrated {key, value} dataset
     const iterator = await notebookRecordIterator({
       dataDb,
       projectId,
@@ -69,12 +99,9 @@ export const streamNotebookRecordsAsGeoJSON = async (
 
     let {record, done} = await iterator.next();
     while (!done) {
-      // For each valid record (row)
       if (record) {
-        // Get the HRID
         const hrid = record.hrid || record.record_id;
 
-        // Setup the base JSON data
         const baseJsonData: Record<string, any> = {
           hrid,
           record_id: record.record_id,
@@ -86,16 +113,11 @@ export const streamNotebookRecordsAsGeoJSON = async (
           updated_time: record.updated.toISOString(),
         };
 
-        // extract data out
         const data = record.data;
 
-        // As we go, track the encountered geometric entries
         const geometric: {
-          // The geoJSON geometry type (feature,point,polygon etc)
           type: string;
-          // The geometry string
           geometry: string;
-          // We also want to track the geometry source in the properties
           geometrySource: {
             viewsetId: string;
             viewId: string;
@@ -104,30 +126,18 @@ export const streamNotebookRecordsAsGeoJSON = async (
           };
         }[] = [];
 
-        // Then iterate through the fields, and extra data if available
         viewFieldsMap[viewID].forEach(fieldInfo => {
-          // Does the record contain a corresponding entry?
           if (Object.keys(data).includes(fieldInfo.name)) {
-            // get it out
             const fieldData = data[fieldInfo.name];
 
-            // Is this a geospatial field? If so - just mark our geometric
-            // objects to add and proceed
             if (
-              // Is it spatial
               fieldInfo.isSpatial &&
-              // Does it seem to be valid/defined?
               fieldData !== undefined &&
               fieldData !== null &&
-              // Empty string check
               fieldData !== '' &&
-              // General truthy check
               !!fieldInfo
             ) {
-              // If the record is spatial its data is typically GeoJSON - let's
-              // try figure that out
               try {
-                // get the first feature
                 let feature: any = {};
                 if (fieldData.type === 'FeatureCollection') {
                   feature = fieldData['features'][0];
@@ -139,11 +149,9 @@ export const streamNotebookRecordsAsGeoJSON = async (
                   feature.geometry &&
                   feature.geometry.coordinates
                 ) {
-                  // We handle this specially by promoting above
                   geometric.push({
                     type: feature.type,
                     geometry: feature.geometry,
-                    // where did this geometry come from?
                     geometrySource: {
                       fieldId: fieldInfo.name,
                       viewsetId: fieldInfo.viewsetId,
@@ -153,20 +161,16 @@ export const streamNotebookRecordsAsGeoJSON = async (
                   });
                 } else {
                   console.warn(
-                    `Encountered geometry which appeared on the surface to be valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}. Feature: ${JSON.stringify(feature)}.`
+                    `Encountered geometry which appeared valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}.`
                   );
                 }
               } catch (e) {
-                // Just log this error - nothing specifically needs to happen -
-                // we should be able to proceed
                 console.error(
-                  `issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${record?.record_id}. Field info: ${JSON.stringify(fieldInfo)}.`
+                  `Issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${record?.record_id}.`
                 );
               }
             }
 
-            // Regardless we append typical data fields to retain consistency
-            // with existing encoding approaches
             const convertedData = convertDataForOutput(
               viewFieldsMap[viewID],
               data,
@@ -176,25 +180,18 @@ export const streamNotebookRecordsAsGeoJSON = async (
               viewID
             );
 
-            // this is a possible set of things to append - append them
             for (const kv of Object.entries(convertedData)) {
               baseJsonData[kv[0]] = kv[1];
             }
           }
         });
 
-        // We've gone through all fields and either created properties or
-        // geometries, for each geometry, append the properties, then add to
-        // GeoJSON
         for (const geom of geometric) {
-          // output is {type, geometry, properties}
           const output = {
             type: geom.type,
             geometry: geom.geometry,
             properties: {
               ...baseJsonData,
-              // Here we append additional information about the geometry source
-              // so that if there are more than one geometry per
               geometry_source_view_id: geom.geometrySource.viewId,
               geometry_source_viewset_id: geom.geometrySource.viewsetId,
               geometry_source_field_id: geom.geometrySource.fieldId,
@@ -202,28 +199,535 @@ export const streamNotebookRecordsAsGeoJSON = async (
             },
           };
 
-          // And write this out (prepending a comma if NOT first record)
-          res.write(`${isFirstRecord ? '' : ','}${JSON.stringify(output)}`);
-
-          // No longer first record
+          geojsonStream.write(
+            `${isFirstRecord ? '' : ','}${JSON.stringify(output)}`
+          );
           isFirstRecord = false;
+          stats.featureCount++;
         }
       }
 
-      // Go to next record (if available)
       const next = await iterator.next();
       record = next.record;
       done = next.done;
     }
   }
 
-  // Close up shop
+  // Close the GeoJSON
+  geojsonStream.write(']}');
+  geojsonStream.end();
+
+  // Wait for stream to finish
+  await new Promise<void>((resolve, reject) => {
+    geojsonStream.on('finish', resolve);
+    geojsonStream.on('error', reject);
+  });
+
+  return stats;
+};
+
+/**
+ * Appends a KML file to an existing archive.
+ *
+ * @param projectId - Project ID
+ * @param archive - Archiver instance to append to
+ * @param filename - Filename in the archive (e.g., 'spatial/export.kml')
+ * @returns Statistics about the exported KML
+ */
+export const appendKMLToArchive = async ({
+  projectId,
+  archive,
+  filename,
+}: {
+  projectId: ProjectID;
+  archive: archiver.Archiver;
+  filename: string;
+}): Promise<SpatialAppendStats> => {
+  const stats: SpatialAppendStats = {
+    featureCount: 0,
+    filename,
+    hasSpatialFields: false,
+  };
+
+  // Get the database
+  const dataDb = await getDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
+
+  // Check for spatial fields
+  stats.hasSpatialFields = Array.from(Object.keys(viewFieldsMap)).some(
+    viewsetID => viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
+  );
+
+  if (!stats.hasSpatialFields) {
+    return stats;
+  }
+
+  // Create a PassThrough stream for the archive
+  const kmlStream = new PassThrough();
+  archive.append(kmlStream, {name: filename});
+
+  // Track filenames
+  const filenames: string[] = [];
+
+  // Write KML header
+  kmlStream.write('<?xml version="1.0" encoding="UTF-8"?>');
+  kmlStream.write('<kml xmlns="http://www.opengis.net/kml/2.2">');
+  kmlStream.write('<Document>');
+
+  for (const viewID of Object.keys(viewFieldsMap)) {
+    const iterator = await notebookRecordIterator({
+      dataDb,
+      projectId,
+      uiSpecification,
+      viewID,
+    });
+
+    let {record, done} = await iterator.next();
+    while (!done) {
+      if (record) {
+        const hrid = record.hrid || record.record_id;
+
+        const baseProperties: Record<string, any> = {
+          hrid,
+          record_id: record.record_id,
+          revision_id: record.revision_id,
+          type: record.type,
+          created_by: record.created_by,
+          created_time: record.created.toISOString(),
+          updated_by: record.updated_by,
+          updated_time: record.updated.toISOString(),
+        };
+
+        const data = record.data;
+
+        const geometric: {
+          type: string;
+          geometry: any;
+          geometrySource: {
+            viewsetId: string;
+            viewId: string;
+            fieldId: string;
+            type: string;
+          };
+        }[] = [];
+
+        viewFieldsMap[viewID].forEach(fieldInfo => {
+          if (Object.keys(data).includes(fieldInfo.name)) {
+            const fieldData = data[fieldInfo.name];
+
+            if (
+              fieldInfo.isSpatial &&
+              fieldData !== undefined &&
+              fieldData !== null &&
+              fieldData !== '' &&
+              !!fieldInfo
+            ) {
+              try {
+                let feature: any = {};
+                if (fieldData.type === 'FeatureCollection') {
+                  feature = fieldData['features'][0];
+                } else if (fieldData.type === 'Feature') {
+                  feature = fieldData;
+                }
+                if (
+                  feature &&
+                  feature.geometry &&
+                  feature.geometry.coordinates
+                ) {
+                  geometric.push({
+                    type: feature.type,
+                    geometry: feature.geometry,
+                    geometrySource: {
+                      fieldId: fieldInfo.name,
+                      viewsetId: fieldInfo.viewsetId,
+                      type: fieldInfo.type,
+                      viewId: fieldInfo.viewId,
+                    },
+                  });
+                } else {
+                  console.warn(
+                    `Encountered geometry which appeared valid but had no geometry or coordinates fields.`
+                  );
+                }
+              } catch (e) {
+                console.error(
+                  `Issue while converting geometry ${e}. Record: ${record?.record_id}.`
+                );
+              }
+            }
+
+            const convertedData = convertDataForOutput(
+              viewFieldsMap[viewID],
+              data,
+              record!.annotations,
+              hrid,
+              filenames,
+              viewID
+            );
+
+            for (const kv of Object.entries(convertedData)) {
+              baseProperties[kv[0]] = kv[1];
+            }
+          }
+        });
+
+        for (const geom of geometric) {
+          const properties = {
+            ...baseProperties,
+            geometry_source_view_id: geom.geometrySource.viewId,
+            geometry_source_viewset_id: geom.geometrySource.viewsetId,
+            geometry_source_field_id: geom.geometrySource.fieldId,
+            geometry_source_type: geom.geometrySource.type,
+          };
+
+          try {
+            const name = escapeXml(hrid);
+            const geometryKML = convertGeometryToKML(geom.geometry);
+            const extendedData = buildExtendedData(properties);
+
+            kmlStream.write('<Placemark>');
+            kmlStream.write(`<name>${name}</name>`);
+            kmlStream.write(extendedData);
+            kmlStream.write(geometryKML);
+            kmlStream.write('</Placemark>');
+            stats.featureCount++;
+          } catch (e) {
+            console.error(
+              `Error converting geometry to KML for record ${record.record_id}: ${e}`
+            );
+          }
+        }
+      }
+
+      const next = await iterator.next();
+      record = next.record;
+      done = next.done;
+    }
+  }
+
+  // Close KML document
+  kmlStream.write('</Document>');
+  kmlStream.write('</kml>');
+  kmlStream.end();
+
+  // Wait for stream to finish
+  await new Promise<void>((resolve, reject) => {
+    kmlStream.on('finish', resolve);
+    kmlStream.on('error', reject);
+  });
+
+  return stats;
+};
+
+/**
+ * Stream the records in a notebook as a GeoJSON file
+ */
+export const streamNotebookRecordsAsGeoJSON = async (
+  projectId: ProjectID,
+  res: NodeJS.WritableStream
+) => {
+  const dataDb = await getDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
+
+  if (
+    !Array.from(Object.keys(viewFieldsMap)).some(viewsetID =>
+      viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
+    )
+  ) {
+    res.end();
+    throw new Error(
+      'No spatial fields in any view, cannot produce a GeoJSON export!'
+    );
+  }
+
+  const filenames: string[] = [];
+  res.write('{"type":"FeatureCollection","features":[');
+  let isFirstRecord = true;
+
+  for (const viewID of Object.keys(viewFieldsMap)) {
+    const iterator = await notebookRecordIterator({
+      dataDb,
+      projectId,
+      uiSpecification,
+      viewID,
+    });
+
+    let {record, done} = await iterator.next();
+    while (!done) {
+      if (record) {
+        const hrid = record.hrid || record.record_id;
+
+        const baseJsonData: Record<string, any> = {
+          hrid,
+          record_id: record.record_id,
+          revision_id: record.revision_id,
+          type: record.type,
+          created_by: record.created_by,
+          created_time: record.created.toISOString(),
+          updated_by: record.updated_by,
+          updated_time: record.updated.toISOString(),
+        };
+
+        const data = record.data;
+
+        const geometric: {
+          type: string;
+          geometry: string;
+          geometrySource: {
+            viewsetId: string;
+            viewId: string;
+            fieldId: string;
+            type: string;
+          };
+        }[] = [];
+
+        viewFieldsMap[viewID].forEach(fieldInfo => {
+          if (Object.keys(data).includes(fieldInfo.name)) {
+            const fieldData = data[fieldInfo.name];
+
+            if (
+              fieldInfo.isSpatial &&
+              fieldData !== undefined &&
+              fieldData !== null &&
+              fieldData !== '' &&
+              !!fieldInfo
+            ) {
+              try {
+                let feature: any = {};
+                if (fieldData.type === 'FeatureCollection') {
+                  feature = fieldData['features'][0];
+                } else if (fieldData.type === 'Feature') {
+                  feature = fieldData;
+                }
+                if (
+                  feature &&
+                  feature.geometry &&
+                  feature.geometry.coordinates
+                ) {
+                  geometric.push({
+                    type: feature.type,
+                    geometry: feature.geometry,
+                    geometrySource: {
+                      fieldId: fieldInfo.name,
+                      viewsetId: fieldInfo.viewsetId,
+                      type: fieldInfo.type,
+                      viewId: fieldInfo.viewId,
+                    },
+                  });
+                }
+              } catch (e) {
+                console.error(`issue while converting geometry ${e}`);
+              }
+            }
+
+            const convertedData = convertDataForOutput(
+              viewFieldsMap[viewID],
+              data,
+              record!.annotations,
+              hrid,
+              filenames,
+              viewID
+            );
+
+            for (const kv of Object.entries(convertedData)) {
+              baseJsonData[kv[0]] = kv[1];
+            }
+          }
+        });
+
+        for (const geom of geometric) {
+          const output = {
+            type: geom.type,
+            geometry: geom.geometry,
+            properties: {
+              ...baseJsonData,
+              geometry_source_view_id: geom.geometrySource.viewId,
+              geometry_source_viewset_id: geom.geometrySource.viewsetId,
+              geometry_source_field_id: geom.geometrySource.fieldId,
+              geometry_source_type: geom.geometrySource.type,
+            },
+          };
+
+          res.write(`${isFirstRecord ? '' : ','}${JSON.stringify(output)}`);
+          isFirstRecord = false;
+        }
+      }
+
+      const next = await iterator.next();
+      record = next.record;
+      done = next.done;
+    }
+  }
+
   res.write(']}');
   res.end();
 };
 
 /**
- * Helper function to escape XML special characters
+ * Stream the records in a notebook as a KML file
+ */
+export const streamNotebookRecordsAsKML = async (
+  projectId: ProjectID,
+  res: NodeJS.WritableStream
+) => {
+  const dataDb = await getDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
+
+  if (
+    !Array.from(Object.keys(viewFieldsMap)).some(viewsetID =>
+      viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
+    )
+  ) {
+    res.end();
+    throw new Error(
+      'No spatial fields in any view, cannot produce a KML export!'
+    );
+  }
+
+  const filenames: string[] = [];
+
+  res.write('<?xml version="1.0" encoding="UTF-8"?>');
+  res.write('<kml xmlns="http://www.opengis.net/kml/2.2">');
+  res.write('<Document>');
+
+  for (const viewID of Object.keys(viewFieldsMap)) {
+    const iterator = await notebookRecordIterator({
+      dataDb,
+      projectId,
+      uiSpecification,
+      viewID,
+    });
+
+    let {record, done} = await iterator.next();
+    while (!done) {
+      if (record) {
+        const hrid = record.hrid || record.record_id;
+
+        const baseProperties: Record<string, any> = {
+          hrid,
+          record_id: record.record_id,
+          revision_id: record.revision_id,
+          type: record.type,
+          created_by: record.created_by,
+          created_time: record.created.toISOString(),
+          updated_by: record.updated_by,
+          updated_time: record.updated.toISOString(),
+        };
+
+        const data = record.data;
+
+        const geometric: {
+          type: string;
+          geometry: any;
+          geometrySource: {
+            viewsetId: string;
+            viewId: string;
+            fieldId: string;
+            type: string;
+          };
+        }[] = [];
+
+        viewFieldsMap[viewID].forEach(fieldInfo => {
+          if (Object.keys(data).includes(fieldInfo.name)) {
+            const fieldData = data[fieldInfo.name];
+
+            if (
+              fieldInfo.isSpatial &&
+              fieldData !== undefined &&
+              fieldData !== null &&
+              fieldData !== '' &&
+              !!fieldInfo
+            ) {
+              try {
+                let feature: any = {};
+                if (fieldData.type === 'FeatureCollection') {
+                  feature = fieldData['features'][0];
+                } else if (fieldData.type === 'Feature') {
+                  feature = fieldData;
+                }
+                if (
+                  feature &&
+                  feature.geometry &&
+                  feature.geometry.coordinates
+                ) {
+                  geometric.push({
+                    type: feature.type,
+                    geometry: feature.geometry,
+                    geometrySource: {
+                      fieldId: fieldInfo.name,
+                      viewsetId: fieldInfo.viewsetId,
+                      type: fieldInfo.type,
+                      viewId: fieldInfo.viewId,
+                    },
+                  });
+                }
+              } catch (e) {
+                console.error(`issue while converting geometry ${e}`);
+              }
+            }
+
+            const convertedData = convertDataForOutput(
+              viewFieldsMap[viewID],
+              data,
+              record!.annotations,
+              hrid,
+              filenames,
+              viewID
+            );
+
+            for (const kv of Object.entries(convertedData)) {
+              baseProperties[kv[0]] = kv[1];
+            }
+          }
+        });
+
+        for (const geom of geometric) {
+          const properties = {
+            ...baseProperties,
+            geometry_source_view_id: geom.geometrySource.viewId,
+            geometry_source_viewset_id: geom.geometrySource.viewsetId,
+            geometry_source_field_id: geom.geometrySource.fieldId,
+            geometry_source_type: geom.geometrySource.type,
+          };
+
+          try {
+            const name = escapeXml(hrid);
+            const geometryKML = convertGeometryToKML(geom.geometry);
+            const extendedData = buildExtendedData(properties);
+
+            res.write('<Placemark>');
+            res.write(`<name>${name}</name>`);
+            res.write(extendedData);
+            res.write(geometryKML);
+            res.write('</Placemark>');
+          } catch (e) {
+            console.error(
+              `Error converting geometry to KML for record ${record.record_id}: ${e}`
+            );
+          }
+        }
+      }
+
+      const next = await iterator.next();
+      record = next.record;
+      done = next.done;
+    }
+  }
+
+  res.write('</Document>');
+  res.write('</kml>');
+  res.end();
+};
+
+// ============================================================================
+// KML Helper Functions
+// ============================================================================
+
+/**
+ * Escape XML special characters
  */
 const escapeXml = (unsafe: string): string => {
   if (typeof unsafe !== 'string') return String(unsafe);
@@ -236,22 +740,21 @@ const escapeXml = (unsafe: string): string => {
 };
 
 /**
- * Helper function to convert GeoJSON geometry to KML geometry
+ * Convert GeoJSON geometry to KML geometry
  */
 const convertGeometryToKML = (geometry: any): string => {
   const type = geometry.type;
   const coords = geometry.coordinates;
-  // Helper to format coordinate pairs for KML (lon,lat,alt)
+
   const formatCoords = (coordArray: any): string => {
     if (typeof coordArray[0] === 'number') {
-      // Single coordinate pair
       return coordArray.length === 3
         ? `${coordArray[0]},${coordArray[1]},${coordArray[2]}`
         : `${coordArray[0]},${coordArray[1]},0`;
     }
-    // Array of coordinates
     return coordArray.map((coord: any) => formatCoords(coord)).join(' ');
   };
+
   switch (type) {
     case 'Point':
       return `<Point><coordinates>${formatCoords(coords)}</coordinates></Point>`;
@@ -302,18 +805,16 @@ const convertGeometryToKML = (geometry: any): string => {
 };
 
 /**
- * Helper function to build ExtendedData section with properties
+ * Build ExtendedData section with properties
  */
 const buildExtendedData = (properties: Record<string, any>): string => {
   const dataElements = Object.entries(properties)
     .map(([key, value]) => {
       const displayName = escapeXml(key);
-      // Handle different value types properly
       let displayValue: string;
       if (value === null || value === undefined) {
         displayValue = '';
       } else if (typeof value === 'object') {
-        // Serialize objects as JSON instead of [object Object]
         displayValue = escapeXml(JSON.stringify(value));
       } else {
         displayValue = escapeXml(String(value));
@@ -323,218 +824,4 @@ const buildExtendedData = (properties: Record<string, any>): string => {
     .join('');
 
   return `<ExtendedData>${dataElements}</ExtendedData>`;
-};
-
-/**
- * Stream the records in a notebook as a KML file
- *
- * @param projectId Project ID
- * @param res writeable stream
- */
-export const streamNotebookRecordsAsKML = async (
-  projectId: ProjectID,
-  res: NodeJS.WritableStream
-) => {
-  // Get the database
-  const dataDb = await getDataDb(projectId);
-
-  // get the UI spec
-  const uiSpecification = await getProjectUIModel(projectId);
-
-  // get a mapping of viewset ID -> field summaries
-  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
-
-  // First do validation to ensure spatial elements are present
-  if (
-    !Array.from(Object.keys(viewFieldsMap)).some(viewsetID =>
-      viewFieldsMap[viewsetID].some(fSummary => fSummary.isSpatial)
-    )
-  ) {
-    res.end();
-    throw new Error(
-      'No spatial fields in any view, cannot produce a KML export!'
-    );
-  }
-
-  // Everything appears to be in order, so we...
-
-  // a) track filenames
-  const filenames: string[] = [];
-
-  // b) write out the KML header
-  res.write('<?xml version="1.0" encoding="UTF-8"?>');
-  res.write('<kml xmlns="http://www.opengis.net/kml/2.2">');
-  res.write('<Document>');
-
-  // c) stream individual placemarks, one viewset at a time
-
-  for (const viewID of Object.keys(viewFieldsMap)) {
-    // This is a record iterator which returns an efficient iteration through the
-    // records each containing a data object with a hydrated {key, value} dataset
-    const iterator = await notebookRecordIterator({
-      dataDb,
-      projectId,
-      uiSpecification,
-      viewID,
-    });
-
-    let {record, done} = await iterator.next();
-    while (!done) {
-      // For each valid record (row)
-      if (record) {
-        // Get the HRID
-        const hrid = record.hrid || record.record_id;
-
-        // Setup the base properties data
-        const baseProperties: Record<string, any> = {
-          hrid,
-          record_id: record.record_id,
-          revision_id: record.revision_id,
-          type: record.type,
-          created_by: record.created_by,
-          created_time: record.created.toISOString(),
-          updated_by: record.updated_by,
-          updated_time: record.updated.toISOString(),
-        };
-
-        // extract data out
-        const data = record.data;
-
-        // As we go, track the encountered geometric entries
-        const geometric: {
-          // The geoJSON geometry type (feature,point,polygon etc)
-          type: string;
-          // The geometry object
-          geometry: any;
-          // We also want to track the geometry source in the properties
-          geometrySource: {
-            viewsetId: string;
-            viewId: string;
-            fieldId: string;
-            type: string;
-          };
-        }[] = [];
-
-        // Then iterate through the fields, and extract data if available
-        viewFieldsMap[viewID].forEach(fieldInfo => {
-          // Does the record contain a corresponding entry?
-          if (Object.keys(data).includes(fieldInfo.name)) {
-            // get it out
-            const fieldData = data[fieldInfo.name];
-
-            // Is this a geospatial field? If so - just mark our geometric
-            // objects to add and proceed
-            if (
-              // Is it spatial
-              fieldInfo.isSpatial &&
-              // Does it seem to be valid/defined?
-              fieldData !== undefined &&
-              fieldData !== null &&
-              // Empty string check
-              fieldData !== '' &&
-              // General truthy check
-              !!fieldInfo
-            ) {
-              // If the record is spatial its data is typically GeoJSON - let's
-              // try figure that out
-              try {
-                // get the first feature
-                let feature: any = {};
-                if (fieldData.type === 'FeatureCollection') {
-                  feature = fieldData['features'][0];
-                } else if (fieldData.type === 'Feature') {
-                  feature = fieldData;
-                }
-                if (
-                  feature &&
-                  feature.geometry &&
-                  feature.geometry.coordinates
-                ) {
-                  // We handle this specially by promoting above
-                  geometric.push({
-                    type: feature.type,
-                    geometry: feature.geometry,
-                    // where did this geometry come from?
-                    geometrySource: {
-                      fieldId: fieldInfo.name,
-                      viewsetId: fieldInfo.viewsetId,
-                      type: fieldInfo.type,
-                      viewId: fieldInfo.viewId,
-                    },
-                  });
-                } else {
-                  console.warn(
-                    `Encountered geometry which appeared on the surface to be valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}. Feature: ${JSON.stringify(feature)}.`
-                  );
-                }
-              } catch (e) {
-                // Just log this error - nothing specifically needs to happen -
-                // we should be able to proceed
-                console.error(
-                  `issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${record?.record_id}. Field info: ${JSON.stringify(fieldInfo)}.`
-                );
-              }
-            }
-
-            // Regardless we append typical data fields to retain consistency
-            // with existing encoding approaches
-            const convertedData = convertDataForOutput(
-              viewFieldsMap[viewID],
-              data,
-              record!.annotations,
-              hrid,
-              filenames,
-              viewID
-            );
-
-            // this is a possible set of things to append - append them
-            for (const kv of Object.entries(convertedData)) {
-              baseProperties[kv[0]] = kv[1];
-            }
-          }
-        });
-
-        // We've gone through all fields and either created properties or
-        // geometries, for each geometry, create a Placemark and add to KML
-        for (const geom of geometric) {
-          // Add geometry source information to properties
-          const properties = {
-            ...baseProperties,
-            geometry_source_view_id: geom.geometrySource.viewId,
-            geometry_source_viewset_id: geom.geometrySource.viewsetId,
-            geometry_source_field_id: geom.geometrySource.fieldId,
-            geometry_source_type: geom.geometrySource.type,
-          };
-
-          try {
-            // Build the Placemark
-            const name = escapeXml(hrid);
-            const geometryKML = convertGeometryToKML(geom.geometry);
-            const extendedData = buildExtendedData(properties);
-
-            // Write the Placemark
-            res.write('<Placemark>');
-            res.write(`<name>${name}</name>`);
-            res.write(extendedData);
-            res.write(geometryKML);
-            res.write('</Placemark>');
-          } catch (e) {
-            console.error(
-              `Error converting geometry to KML for record ${record.record_id}: ${e}`
-            );
-          }
-        }
-      }
-
-      // Go to next record (if available)
-      const next = await iterator.next();
-      record = next.record;
-      done = next.done;
-    }
-  }
-
-  // Close up shop
-  res.write('</Document>');
-  res.write('</kml>');
-  res.end();
 };

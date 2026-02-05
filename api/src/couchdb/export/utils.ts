@@ -144,7 +144,7 @@ export const convertDataForOutput = (
   viewsetId: string
 ) => {
   let result: {[key: string]: any} = {};
-  fields.map((field: any) => {
+  fields.forEach((field: any) => {
     if (field.name in data) {
       const formattedValue = csvFormatValue(
         field.name,
@@ -159,8 +159,6 @@ export const convertDataForOutput = (
         annotations[field.name] || {}
       );
       result = {...result, ...formattedValue, ...formattedAnnotation};
-    } else {
-      console.error('field missing in data', field.name, data);
     }
   });
   return result;
