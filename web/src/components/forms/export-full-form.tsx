@@ -1,3 +1,5 @@
+import {Checkbox} from '@/components/ui/checkbox';
+import {Label} from '@/components/ui/label';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
@@ -7,10 +9,6 @@ import {
   isValidForSpatialExport,
 } from '@faims3/data-model';
 import {useMemo, useState} from 'react';
-import {z} from 'zod';
-import {Field, Form} from '../form';
-import {Label} from '@/components/ui/label';
-import {Checkbox} from '@/components/ui/checkbox';
 
 interface ExportOptions {
   includeTabular: boolean;
