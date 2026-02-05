@@ -1,11 +1,18 @@
 import {
+  HydratedDataRecord,
   ProjectID,
   notebookRecordIterator,
-  HydratedDataRecord,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import {getNanoDataDb, getDataDb} from '..';
+import {getDataDb, getNanoDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
+import {
+  MAX_FIELD_ID_LENGTH,
+  MAX_HRID_LENGTH,
+  MAX_VIEW_ID_LENGTH,
+  slugify,
+  truncateWithHash,
+} from './utils';
 
 /**
  * Maximum number of file streams to process concurrently when building the ZIP archive.
@@ -381,6 +388,10 @@ function processRecordAttachments({
  * Filename structure: `{viewID}/{fieldId}/{hrid}.{extension}`
  * Example: `survey1/photo/REC001.jpg`
  *
+ * Each path component is truncated to a safe length if necessary, using a
+ * deterministic hash suffix to preserve uniqueness. This ensures the total
+ * path length stays within filesystem and ZIP limits.
+ *
  * If a filename collision is detected, a numeric suffix is appended:
  * `survey1/photo/REC001_1.jpg`, `survey1/photo/REC001_2.jpg`, etc.
  *
@@ -422,20 +433,27 @@ export const generateFilenameForAttachment = ({
   const type = file?.type || fileMimeType || undefined;
 
   // Look up extension, default to 'dat' for unknown types
-  const extension = type ? fileTypes[type] : 'dat';
+  const extension = type ? (fileTypes[type] ?? 'dat') : 'dat';
 
-  // Generate base filename with consistent structure
-  const baseFilename = `${viewID}/${fieldId}/${hrid}`;
+  // Slugify each component first (before length limiting)
+  // This ensures the hash is computed on the slugified version
+  const slugifiedViewID = slugify(viewID);
+  const slugifiedFieldId = slugify(fieldId);
+  const slugifiedHrid = slugify(hrid);
 
-  const slugify = (filename: string) => {
-    return filename.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9\][_/-]/g, '_');
-  };
+  // Apply length limits with deterministic truncation
+  const safeViewID = truncateWithHash(slugifiedViewID, MAX_VIEW_ID_LENGTH);
+  const safeFieldId = truncateWithHash(slugifiedFieldId, MAX_FIELD_ID_LENGTH);
+  const safeHrid = truncateWithHash(slugifiedHrid, MAX_HRID_LENGTH);
+
+  // Build the base filename with safe components
+  const baseFilename = `${safeViewID}/${safeFieldId}/${safeHrid}`;
 
   // Handle collisions by appending numeric suffix
   let postfix = 1;
-  let fullFilename = `${slugify(baseFilename)}.${extension}`;
+  let fullFilename = `${baseFilename}.${extension}`;
   while (filenames.includes(fullFilename)) {
-    fullFilename = `${slugify(baseFilename)}_${postfix}.${extension}`;
+    fullFilename = `${baseFilename}_${postfix}.${extension}`;
     postfix += 1;
   }
 

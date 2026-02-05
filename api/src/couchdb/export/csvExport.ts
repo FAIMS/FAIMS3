@@ -1,16 +1,21 @@
 import {
   FieldSummary,
-  HydratedDataRecord,
-  ProjectID,
   getNotebookFieldTypes,
+  HydratedDataRecord,
   notebookRecordIterator,
+  ProjectID,
+  slugify,
 } from '@faims3/data-model';
+import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
 import {PassThrough} from 'stream';
-import archiver from 'archiver';
 import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
-import {convertDataForOutput} from './utils';
+import {
+  convertDataForOutput,
+  MAX_CSV_FILENAME_LENGTH,
+  truncateWithHash,
+} from './utils';
 
 // The set of headers which come first in CSV exports, and are always present
 export const CSV_PREFIX_HEADERS = [
@@ -128,14 +133,15 @@ export function getHeaderInfoFromUiSpecification({
 }
 
 /**
- * Generate a safe filename from a label
+ * Generate a safe, deterministic filename from a label.
+ *
+ * Uses truncateWithHash to ensure that long labels produce unique filenames
+ * even if they share the same prefix.
  */
 function generateSafeFilename(label: string): string {
-  return label
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_-]/g, '')
-    .substring(0, 50);
+  const slugified = slugify(label);
+
+  return truncateWithHash(slugified, MAX_CSV_FILENAME_LENGTH);
 }
 
 /**

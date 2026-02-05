@@ -26,12 +26,12 @@ import {
   projectHasSpatialFields,
 } from './geospatialExport';
 import {
+  DEFAULT_FULL_EXPORT_CONFIG,
   FullExportConfig,
   FullExportMetadata,
-  DEFAULT_FULL_EXPORT_CONFIG,
   ROCrateMetadata,
-  slugifyLabel,
 } from './types';
+import {slugifyLabel} from './utils';
 
 /**
  * Streams a full notebook export as a ZIP archive.

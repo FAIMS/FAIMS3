@@ -126,33 +126,3 @@ export interface FullDownloadTokenPayload {
   userID: string;
   config: FullExportConfig;
 }
-
-/**
- * Helper to create a slugified filename from a label
- */
-export const slugifyLabel = (label: string): string => {
-  return label
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_-]/g, '')
-    .substring(0, 50); // Limit length
-};
-
-/**
- * Helper to ensure unique filenames in a list
- */
-export const ensureUniqueFilename = (
-  baseFilename: string,
-  extension: string,
-  existingFilenames: string[]
-): string => {
-  let filename = `${baseFilename}.${extension}`;
-  let counter = 1;
-
-  while (existingFilenames.includes(filename)) {
-    filename = `${baseFilename}_${counter}.${extension}`;
-    counter++;
-  }
-
-  return filename;
-};
