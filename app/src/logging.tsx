@@ -191,7 +191,9 @@ const createBugsnagFormLogger = (
         });
       },
       warn: (message, ...args) => {
-        console.warn('[FormLogger] Warning:', message, ...args);
+        if (DEBUG_APP) {
+          console.warn('[FormLogger] Warning:', message, ...args);
+        }
         bugsnagClient.leaveBreadcrumb(
           message,
           {...sessionContext, ...serializeArgs(args)},
@@ -199,7 +201,9 @@ const createBugsnagFormLogger = (
         );
       },
       info: (message, ...args) => {
-        console.info('[FormLogger] Info:', message, ...args);
+        if (DEBUG_APP) {
+          console.info('[FormLogger] Info:', message, ...args);
+        }
         bugsnagClient.leaveBreadcrumb(
           message,
           {...sessionContext, ...serializeArgs(args)},
