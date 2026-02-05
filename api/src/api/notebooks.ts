@@ -60,16 +60,16 @@ import {
   generateFilenameForAttachment,
   streamNotebookFilesAsZip,
 } from '../couchdb/export/attachmentExport';
-import {
-  generateComprehensiveExportFilename,
-  streamComprehensiveExport,
-} from '../couchdb/export/comprehensiveExport';
 import {streamNotebookRecordsAsCSV} from '../couchdb/export/csvExport';
+import {
+  generateFullExportFilename,
+  streamFullExport,
+} from '../couchdb/export/fullExport';
 import {
   streamNotebookRecordsAsGeoJSON,
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
-import {ComprehensiveExportConfigSchema} from '../couchdb/export/types';
+import {FullExportConfigSchema} from '../couchdb/export/types';
 import {
   changeNotebookStatus,
   changeNotebookTeam,
@@ -484,13 +484,7 @@ api.get(
 // Types for download format and token payloads
 // =============================================================================
 
-const DownloadFormatSchema = z.enum([
-  'csv',
-  'zip',
-  'geojson',
-  'kml',
-  'comprehensive',
-]);
+const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
 type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
 
 const DownloadTokenPayloadSchema = z.object({
@@ -498,8 +492,8 @@ const DownloadTokenPayloadSchema = z.object({
   format: DownloadFormatSchema,
   viewID: z.string().optional(),
   userID: z.string(),
-  // Comprehensive export config (only present when format === 'comprehensive')
-  comprehensiveConfig: ComprehensiveExportConfigSchema.optional(),
+  // Full export config (only present when format === 'full')
+  fullConfig: FullExportConfigSchema.optional(),
 });
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
@@ -563,9 +557,9 @@ const validateDownloadToken = async ({
  * - zip: Optional viewID, exports attachments (all views if no viewID)
  * - geojson: Exports all spatial data as GeoJSON
  * - kml: Exports all spatial data as KML
- * - comprehensive: Exports everything into a single ZIP archive
+ * - full: Exports everything into a single ZIP archive
  *
- * For comprehensive exports, additional query parameters control what's included:
+ * For full exports, additional query parameters control what's included:
  * - includeTabular (default: true)
  * - includeAttachments (default: true)
  * - includeGeoJSON (default: true)
@@ -585,7 +579,7 @@ api.get(
     query: z.object({
       viewID: z.string().optional(),
       format: DownloadFormatSchema,
-      // Comprehensive export options
+      // Full export options
       includeTabular: z.string().optional().default('true'),
       includeAttachments: z.string().optional().default('true'),
       includeGeoJSON: z.string().optional().default('true'),
@@ -607,10 +601,10 @@ api.get(
       userID: req.user.user_id,
     };
 
-    // Handle comprehensive export
-    if (req.query.format === 'comprehensive') {
-      // Build comprehensive config from query params (defaults to true if not specified)
-      payload.comprehensiveConfig = {
+    // Handle full export
+    if (req.query.format === 'full') {
+      // Build full config from query params (defaults to true if not specified)
+      payload.fullConfig = {
         includeTabular: req.query.includeTabular === 'true',
         includeAttachments: req.query.includeAttachments === 'true',
         includeGeoJSON: req.query.includeGeoJSON === 'true',
@@ -666,7 +660,7 @@ api.get(
     params: z.object({
       id: z.string(),
       viewID: z.string(),
-      // don't allow geoJSON or comprehensive here - must use new route
+      // don't allow geoJSON or full here - must use new route
       // @deprecated
       format: z.enum(['csv', 'zip']),
     }),
@@ -785,19 +779,17 @@ api.get(
         streamNotebookRecordsAsKML(payload.projectID, res);
         break;
 
-      case 'comprehensive':
-        const comprehensiveFilename = generateComprehensiveExportFilename(
-          payload.projectID
-        );
+      case 'full':
+        const fullFilename = generateFullExportFilename(payload.projectID);
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader(
           'Content-Disposition',
-          `attachment; filename="${comprehensiveFilename}"`
+          `attachment; filename="${fullFilename}"`
         );
-        await streamComprehensiveExport({
+        await streamFullExport({
           projectId: payload.projectID,
           userId: payload.userID,
-          config: payload.comprehensiveConfig,
+          config: payload.fullConfig,
           res,
         });
         break;

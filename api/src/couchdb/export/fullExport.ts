@@ -1,5 +1,5 @@
 /**
- * Comprehensive Export Module
+ * FullExport Module
  *
  * Orchestrates a complete notebook export into a single ZIP archive containing:
  * - CSV files for each view (tabular data)
@@ -26,15 +26,15 @@ import {
   projectHasSpatialFields,
 } from './geospatialExport';
 import {
-  ComprehensiveExportConfig,
-  ComprehensiveExportMetadata,
-  DEFAULT_COMPREHENSIVE_EXPORT_CONFIG,
+  FullExportConfig,
+  FullExportMetadata,
+  DEFAULT_FULL_EXPORT_CONFIG,
   ROCrateMetadata,
   slugifyLabel,
 } from './types';
 
 /**
- * Streams a comprehensive notebook export as a ZIP archive.
+ * Streams a full notebook export as a ZIP archive.
  *
  * This function orchestrates multiple export types into a single archive:
  * 1. CSV files for each view (if includeTabular)
@@ -55,24 +55,24 @@ import {
  * @param config - Export configuration (which components to include)
  * @param res - Writable stream (typically HTTP response) for the ZIP archive
  */
-export const streamComprehensiveExport = async ({
+export const streamFullExport = async ({
   projectId,
   userId,
-  config = DEFAULT_COMPREHENSIVE_EXPORT_CONFIG,
+  config = DEFAULT_FULL_EXPORT_CONFIG,
   res,
 }: {
   projectId: ProjectID;
   userId: string;
-  config?: ComprehensiveExportConfig;
+  config?: FullExportConfig;
   res: NodeJS.WritableStream;
 }): Promise<void> => {
   console.log(
-    `[COMPREHENSIVE] Starting export for project ${projectId} with config:`,
+    `[FULL] Starting export for project ${projectId} with config:`,
     config
   );
 
   // Initialize metadata structure
-  const metadata: ComprehensiveExportMetadata = {
+  const metadata: FullExportMetadata = {
     projectId,
     exportedAt: new Date().toISOString(),
     exportedBy: userId,
@@ -99,7 +99,7 @@ export const streamComprehensiveExport = async ({
     // 1. CSV Export (all views in single DB pass)
     // =========================================================================
     if (config.includeTabular) {
-      console.log('[COMPREHENSIVE] Exporting CSV files (single-pass)...');
+      console.log('[FULL] Exporting CSV files (single-pass)...');
 
       try {
         const csvStats = await appendAllCSVsToArchive({
@@ -131,17 +131,17 @@ export const streamComprehensiveExport = async ({
           metadata.includedFiles.push(viewStat.filename);
 
           console.log(
-            `[COMPREHENSIVE] CSV for ${viewStat.viewLabel}: ${viewStat.recordCount} records`
+            `[FULL] CSV for ${viewStat.viewLabel}: ${viewStat.recordCount} records`
           );
         }
 
         metadata.totals.records = csvStats.totalRecords;
         console.log(
-          `[COMPREHENSIVE] CSV export complete: ${csvStats.totalRecords} total records across ${csvStats.views.length} views`
+          `[FULL] CSV export complete: ${csvStats.totalRecords} total records across ${csvStats.views.length} views`
         );
       } catch (err) {
         const message = `Failed to export CSVs: ${err instanceof Error ? err.message : 'Unknown error'}`;
-        console.error(`[COMPREHENSIVE] ${message}`);
+        console.error(`[FULL] ${message}`);
         metadata.warnings.push(message);
       }
     }
@@ -150,7 +150,7 @@ export const streamComprehensiveExport = async ({
     // 2. Attachment Export
     // =========================================================================
     if (config.includeAttachments) {
-      console.log('[COMPREHENSIVE] Exporting attachments...');
+      console.log('[FULL] Exporting attachments...');
 
       try {
         const attachmentStats = await appendAttachmentsToArchive({
@@ -183,12 +183,10 @@ export const streamComprehensiveExport = async ({
 
         metadata.totals.attachments = attachmentStats.fileCount;
 
-        console.log(
-          `[COMPREHENSIVE] Attachments: ${attachmentStats.fileCount} files`
-        );
+        console.log(`[FULL] Attachments: ${attachmentStats.fileCount} files`);
       } catch (err) {
         const message = `Failed to export attachments: ${err instanceof Error ? err.message : 'Unknown error'}`;
-        console.error(`[COMPREHENSIVE] ${message}`);
+        console.error(`[FULL] ${message}`);
         metadata.warnings.push(message);
       }
     }
@@ -200,7 +198,7 @@ export const streamComprehensiveExport = async ({
     const wantsKML = config.includeKML;
 
     if (wantsGeoJSON || wantsKML) {
-      console.log('[COMPREHENSIVE] Exporting spatial data...');
+      console.log('[FULL] Exporting spatial data...');
 
       try {
         const hasSpatial = await projectHasSpatialFields(projectId);
@@ -216,14 +214,10 @@ export const streamComprehensiveExport = async ({
               'No spatial fields found in project - KML export skipped'
             );
           }
-          console.log(
-            '[COMPREHENSIVE] No spatial fields, skipping spatial exports'
-          );
+          console.log('[FULL] No spatial fields, skipping spatial exports');
         } else if (wantsGeoJSON && wantsKML) {
           // Both formats requested - use single-pass combined export
-          console.log(
-            '[COMPREHENSIVE] Exporting both GeoJSON and KML (single pass)...'
-          );
+          console.log('[FULL] Exporting both GeoJSON and KML (single pass)...');
 
           const spatialStats = await appendBothSpatialFormatsToArchive({
             projectId,
@@ -242,7 +236,7 @@ export const streamComprehensiveExport = async ({
           }
 
           console.log(
-            `[COMPREHENSIVE] Spatial export complete: ${spatialStats.geojson.featureCount} features`
+            `[FULL] Spatial export complete: ${spatialStats.geojson.featureCount} features`
           );
         } else if (wantsGeoJSON) {
           // Only GeoJSON requested
@@ -257,9 +251,7 @@ export const streamComprehensiveExport = async ({
             metadata.totals.spatialFeatures = geojsonStats.featureCount;
           }
 
-          console.log(
-            `[COMPREHENSIVE] GeoJSON: ${geojsonStats.featureCount} features`
-          );
+          console.log(`[FULL] GeoJSON: ${geojsonStats.featureCount} features`);
         } else if (wantsKML) {
           // Only KML requested
           const kmlStats = await appendKMLToArchive({
@@ -273,11 +265,11 @@ export const streamComprehensiveExport = async ({
             metadata.totals.spatialFeatures = kmlStats.featureCount;
           }
 
-          console.log(`[COMPREHENSIVE] KML: ${kmlStats.featureCount} features`);
+          console.log(`[FULL] KML: ${kmlStats.featureCount} features`);
         }
       } catch (err) {
         const message = `Failed to export spatial data: ${err instanceof Error ? err.message : 'Unknown error'}`;
-        console.error(`[COMPREHENSIVE] ${message}`);
+        console.error(`[FULL] ${message}`);
         metadata.warnings.push(message);
       }
     }
@@ -362,26 +354,24 @@ export const streamComprehensiveExport = async ({
     // =========================================================================
     // Finalize
     // =========================================================================
-    console.log('[COMPREHENSIVE] Finalizing archive...');
+    console.log('[FULL] Finalizing archive...');
     await archive.finalize();
 
     console.log(
-      `[COMPREHENSIVE] Export complete. Total: ${metadata.totals.records} records, ${metadata.totals.attachments} attachments, ${metadata.totals.spatialFeatures} spatial features`
+      `[FULL] Export complete. Total: ${metadata.totals.records} records, ${metadata.totals.attachments} attachments, ${metadata.totals.spatialFeatures} spatial features`
     );
   } catch (error) {
-    console.error('[COMPREHENSIVE] Fatal error during export:', error);
+    console.error('[FULL] Fatal error during export:', error);
     throw new Error(
-      `Failed to create comprehensive export: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Failed to create full export: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 };
 
 /**
- * Helper to generate a suggested filename for the comprehensive export
+ * Helper to generate a suggested filename for the full export
  */
-export const generateComprehensiveExportFilename = (
-  projectId: string
-): string => {
+export const generateFullExportFilename = (projectId: string): string => {
   const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const slug = slugifyLabel(projectId);
   return `${slug}-export-${timestamp}.zip`;

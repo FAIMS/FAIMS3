@@ -241,7 +241,7 @@ export const appendAllCSVsToArchive = async ({
     uiSpecification,
     // No viewID - iterate all records
     includeAttachments: false,
-    viewID: undefined
+    viewID: undefined,
   });
 
   let {record, done} = await iterator.next();
@@ -341,7 +341,7 @@ export const appendAllCSVsToArchive = async ({
  * Uses a PassThrough stream to pipe csv-stringify output directly
  * into the archiver without buffering the entire CSV in memory.
  *
- * NOTE: For comprehensive exports, prefer appendAllCSVsToArchive() which
+ * NOTE: For full exports, prefer appendAllCSVsToArchive() which
  * is much more efficient when exporting multiple views.
  *
  * @param projectId - Project ID

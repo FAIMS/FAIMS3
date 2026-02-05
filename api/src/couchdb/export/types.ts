@@ -1,7 +1,7 @@
 /**
- * Types and configuration for comprehensive notebook exports.
+ * Types and configuration for full notebook exports.
  *
- * The comprehensive export creates a single ZIP archive containing:
+ * The full export creates a single ZIP archive containing:
  * - CSV files for each view (tabular data)
  * - Attachment files organized by view/field
  * - GeoJSON spatial export
@@ -12,10 +12,10 @@
 import {z} from 'zod';
 
 /**
- * Configuration schema for comprehensive export options.
+ * Configuration schema for full export options.
  * All options default to true if not specified.
  */
-export const ComprehensiveExportConfigSchema = z.object({
+export const FullExportConfigSchema = z.object({
   includeTabular: z.boolean().default(true),
   includeAttachments: z.boolean().default(true),
   includeGeoJSON: z.boolean().default(true),
@@ -23,14 +23,12 @@ export const ComprehensiveExportConfigSchema = z.object({
   includeMetadata: z.boolean().default(true),
 });
 
-export type ComprehensiveExportConfig = z.infer<
-  typeof ComprehensiveExportConfigSchema
->;
+export type FullExportConfig = z.infer<typeof FullExportConfigSchema>;
 
 /**
  * Default configuration - include everything
  */
-export const DEFAULT_COMPREHENSIVE_EXPORT_CONFIG: ComprehensiveExportConfig = {
+export const DEFAULT_FULL_EXPORT_CONFIG: FullExportConfig = {
   includeTabular: true,
   includeAttachments: true,
   includeGeoJSON: true,
@@ -96,11 +94,11 @@ export interface ROCrateEntity {
  * Update the existing metadata interface to serve as our working state
  * before we finalize it into the RO-Crate graph.
  */
-export interface ComprehensiveExportMetadata {
+export interface FullExportMetadata {
   projectId: string;
   exportedAt: string;
   exportedBy: string;
-  config: ComprehensiveExportConfig;
+  config: FullExportConfig;
   views: {
     viewId: string;
     label: string;
@@ -120,13 +118,13 @@ export interface ComprehensiveExportMetadata {
 }
 
 /**
- * Extended download token payload for comprehensive exports
+ * Extended download token payload for full exports
  */
-export interface ComprehensiveDownloadTokenPayload {
+export interface FullDownloadTokenPayload {
   projectID: string;
-  format: 'comprehensive';
+  format: 'full';
   userID: string;
-  config: ComprehensiveExportConfig;
+  config: FullExportConfig;
 }
 
 /**

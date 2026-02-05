@@ -66,7 +66,7 @@ const ExportFullForm = () => {
     try {
       // Build query params from options
       const params = new URLSearchParams({
-        format: 'comprehensive',
+        format: 'full',
         includeTabular: options.includeTabular.toString(),
         includeAttachments: options.includeAttachments.toString(),
         includeGeoJSON: options.includeGeoJSON.toString(),
@@ -101,13 +101,6 @@ const ExportFullForm = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="text-sm text-muted-foreground">
-        <p>
-          Create a complete backup of your project data. The export will be
-          downloaded as a single ZIP file containing all selected components.
-        </p>
-      </div>
-
       <div className="flex flex-col gap-4">
         <div className="font-medium text-sm">Include in export:</div>
 
@@ -223,7 +216,15 @@ const ExportFullForm = () => {
                 Export Metadata
               </Label>
               <p className="text-xs text-muted-foreground">
-                JSON file with export statistics, record counts, and timestamps
+                <a
+                  href={'https://www.researchobject.org/ro-crate/'}
+                  target="_blank"
+                  referrerPolicy="no-referrer"
+                  className="underline"
+                >
+                  ROCrate
+                </a>{' '}
+                JSON file with export statistics, record counts, and metadata
               </p>
             </div>
           </div>

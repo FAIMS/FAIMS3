@@ -11,7 +11,7 @@ import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import ExportFullForm from '../forms/export-full-form';
 
 /**
- * FullExportDialog component renders a dialog for creating a comprehensive
+ * FullExportDialog component renders a dialog for creating a full
  * project export. It provides options to select which components to include
  * in the export (CSV data, photos, spatial data, metadata).
  *
@@ -27,9 +27,9 @@ export const FullExportDialog = () => {
         <DialogHeader>
           <DialogTitle>Full Export</DialogTitle>
           <DialogDescription>
-            Create a complete backup of this {NOTEBOOK_NAME_CAPITALIZED}{' '}
+            Download a complete export of this {NOTEBOOK_NAME_CAPITALIZED}{' '}
             including all data, photos, and spatial information in a single ZIP
-            file.
+            file. May take some time to download large datasets.
           </DialogDescription>
         </DialogHeader>
         <ExportFullForm />
