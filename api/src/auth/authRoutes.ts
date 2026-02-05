@@ -35,6 +35,7 @@ import {
 } from '@faims3/data-model';
 import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
+import {Strategy as SamlStrategy} from 'passport-saml';
 import {processRequest} from 'zod-express-middleware';
 import {WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
@@ -71,9 +72,9 @@ import {
   validateRedirect,
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
-import {verifyUserCredentials} from './strategies/localStrategy';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
-import {Strategy as SamlStrategy} from 'passport-saml';
+import {verifyUserCredentials} from './strategies/localStrategy';
+import {signSamlMetadata} from './strategies/samlStrategy';
 
 patch();
 
@@ -869,27 +870,25 @@ export function addAuthRoutes(
     const handlerDetails = socialProviders[provider].config;
     const handlerStrategy = socialProviders[provider].strategy;
 
+    // If SAML - we expose a metadata endpoint, optionally signed
     if (handlerDetails.type === 'saml') {
-      // Get the strategy instance from passport
       const strategy = handlerStrategy as SamlStrategy;
 
-      // Metadata endpoint
       app.get(`/auth/${provider}/metadata`, (req, res) => {
-        res.type('application/xml');
-        res.send(
-          strategy.generateServiceProviderMetadata(
-            // Decryption cert: IdP uses this to encrypt assertions sent to us
-            // Only include if we're set up to decrypt
-            handlerDetails.enableDecryptionPvk
-              ? (handlerDetails.publicKey ?? null)
-              : null,
-            // Signing cert: IdP uses this to verify requests we sign
-            // Only include if we have a private key for signing
-            handlerDetails.privateKey
-              ? (handlerDetails.publicKey ?? null)
-              : null
-          )
+        let metadata = strategy.generateServiceProviderMetadata(
+          handlerDetails.enableDecryptionPvk
+            ? (handlerDetails.publicKey ?? null)
+            : null,
+          handlerDetails.privateKey ? (handlerDetails.publicKey ?? null) : null
         );
+
+        // Sign metadata if configured and private key is available
+        if (handlerDetails.signMetadata && handlerDetails.privateKey) {
+          metadata = signSamlMetadata(metadata, handlerDetails.privateKey);
+        }
+
+        res.type('application/xml');
+        res.send(metadata);
       });
     }
 
