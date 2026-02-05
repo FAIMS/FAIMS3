@@ -204,7 +204,7 @@ api.post(
   requireAuthenticationAPI,
   processRequest({
     params: z.object({teamId: z.string()}),
-    body: PostCreateInviteInputSchema,
+    body: PostCreateResourceInviteInputSchema,
   }),
   async (
     {user, body, params: {teamId}},
