@@ -7,7 +7,7 @@ import {Action} from '@faims3/data-model';
 import {createFileRoute} from '@tanstack/react-router';
 import {useMemo, useState} from 'react';
 
-type TabLabel = 'Users' | 'Global Invites';
+type TabLabel = 'Users' | 'Invites';
 
 export const Route = createFileRoute('/_protected/_admin/users')({
   component: RouteComponent,
@@ -51,7 +51,7 @@ function RouteComponent() {
 
   // details?
   if (canSeeGlobalInvites) {
-    tabs.push({id: 'Global Invites', Component: GlobalInvites});
+    tabs.push({id: 'Invites', Component: GlobalInvites});
   }
 
   const [, setActiveTab] = useState<TabLabel>(tabs[0].id);
