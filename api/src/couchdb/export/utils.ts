@@ -263,7 +263,7 @@ export function slugify(v: string): string {
  * Uses deterministic hash-based truncation to ensure that long labels
  * produce unique filenames even if they share the same prefix.
  */
-export const slugifyLabel = (label: string, maxLength: number = 50): string => {
+export const slugifyLabel = (label: string, maxLength = 50): string => {
   const slugified = slugify(label);
 
   if (slugified.length <= maxLength) {
