@@ -56,17 +56,16 @@ const textFieldValueSchema = (props: BaseFieldProps) => {
  * Field specification for FAIMSTextField.
  * Single-line text input for free-form entries with optional speech-to-text.
  */
-export const textFieldSpec: FieldInfo<
-  TextFieldProps & FormFieldContextProps
-> = {
-  namespace: 'faims-custom',
-  name: 'FAIMSTextField',
-  returns: 'faims-core::String',
-  component: TextField,
-  fieldPropsSchema: TextFieldPropsSchema,
-  fieldDataSchemaFunction: textFieldValueSchema,
-  view: {component: DefaultRenderer, config: {}},
-};
+export const textFieldSpec: FieldInfo<TextFieldProps & FormFieldContextProps> =
+  {
+    namespace: 'faims-custom',
+    name: 'FAIMSTextField',
+    returns: 'faims-core::String',
+    component: TextField,
+    fieldPropsSchema: TextFieldPropsSchema,
+    fieldDataSchemaFunction: textFieldValueSchema,
+    view: {component: DefaultRenderer, config: {}},
+  };
 
 /**
  * Extended props schema for MultilineTextField.
@@ -170,14 +169,13 @@ const emailValueSchema = (props: BaseFieldProps) => {
  *
  * This replaces the legacy formik-material-ui::TextField with email type.
  */
-export const emailFieldSpec: FieldInfo<
-  TextFieldProps & FormFieldContextProps
-> = {
-  namespace: 'faims-custom',
-  name: 'Email',
-  returns: 'faims-core::String',
-  component: EmailField,
-  fieldPropsSchema: TextFieldPropsSchema,
-  fieldDataSchemaFunction: emailValueSchema,
-  view: {component: DefaultRenderer, config: {}},
-};
+export const emailFieldSpec: FieldInfo<TextFieldProps & FormFieldContextProps> =
+  {
+    namespace: 'faims-custom',
+    name: 'Email',
+    returns: 'faims-core::String',
+    component: EmailField,
+    fieldPropsSchema: TextFieldPropsSchema,
+    fieldDataSchemaFunction: emailValueSchema,
+    view: {component: DefaultRenderer, config: {}},
+  };

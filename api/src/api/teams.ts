@@ -49,7 +49,6 @@ import {
   getCouchUserFromEmailOrUserId,
   getUsersForTeam,
   saveCouchUser,
-  saveExpressUser,
 } from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {

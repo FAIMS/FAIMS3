@@ -20,7 +20,7 @@ import {
   APP_URL,
   SIGNIN_PATH,
 } from '@/constants';
-import {useAuth} from '@/context/auth-provider';
+import {getStoredUser, isUserExpired, useAuth} from '@/context/auth-provider';
 import {useRequestVerify} from '@/hooks/queries';
 import {
   PostExchangeTokenInput,
@@ -45,7 +45,10 @@ const upgradeExchangeTokenForRefresh = async ({
   errorCallback,
 }: {
   exchangeToken: string;
-  successCallback: (param: {access: string; refresh: string}) => Promise<void>;
+  successCallback: (param: {
+    access: string;
+    refresh: string;
+  }) => Promise<boolean>;
   errorCallback: (msg: string) => void;
 }) => {
   // We have the URL - do the exchange
@@ -87,8 +90,8 @@ export const Route = createFileRoute('/_protected')({
     search: {exchangeToken},
   }) => {
     if (exchangeToken) {
-      // Attempt to exchange the token and update things
-      await upgradeExchangeTokenForRefresh({
+      // Attempt to exchange the token and update the stored user
+      const success = await upgradeExchangeTokenForRefresh({
         exchangeToken,
         successCallback: async ({access, refresh}) => {
           const {status, message} = await getUserDetails(access, refresh);
@@ -97,32 +100,43 @@ export const Route = createFileRoute('/_protected')({
             // After consuming the token, clean up the URL. Remove the query
             // parameters from the URL without causing a navigation
             const currentPath = window.location.pathname;
-            // Just give a bit of time for changes to propagate before we strip
-            // token, otherwise we immediately see state with no token + no auth and
-            // get redirected!
-            setTimeout(() => {
-              window.history.replaceState(null, '', currentPath);
-            }, 500);
-            return;
+            // strip the token from the url
+            window.history.replaceState(null, '', currentPath);
+            // and return success
+            return true;
           } else {
             console.error(
               "Failed to get user details on presented 'new' token: ",
               message
             );
-            // redirect to login
-            window.location.href = SIGNIN_PATH;
+            // all is not good - we will redirect to login
+            return false;
           }
         },
         errorCallback: msg => {
           console.error('Token exchange failed: msg:' + msg);
-          // redirect to login
-          window.location.href = SIGNIN_PATH;
+          // all is not good - we will redirect to login
+          return false;
         },
       });
-    } else {
-      if (isAuthenticated) return;
+      // and if that worked, we're good to render this page
+      if (success) return;
 
-      // redirect to login
+      // otherwise we need to redirect to login
+      window.location.href = SIGNIN_PATH;
+      return;
+    }
+
+    // No exchange token so re-check authentication after potential token exchange
+    // This handles the case where we just set the user but haven't re-rendered yet
+    const parsedUser = getStoredUser();
+    if (!isUserExpired(parsedUser)) {
+      // Token is good we can render
+      return;
+    }
+
+    // No valid authentication found - redirect to login
+    if (!isAuthenticated) {
       window.location.href = SIGNIN_PATH;
     }
   },
