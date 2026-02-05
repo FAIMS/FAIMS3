@@ -403,23 +403,15 @@ api.post(
       throw new Exceptions.UnauthorizedException();
     }
 
-    try {
-      const invite = await createGlobalInvite({
-        role: body.role,
-        name: body.name,
-        createdBy: user.user_id,
-        expiry: body.expiry,
-        usesOriginal: body.uses,
-      });
+    const invite = await createGlobalInvite({
+      role: body.role,
+      name: body.name,
+      createdBy: user.user_id,
+      expiry: body.expiry,
+      usesOriginal: body.uses,
+    });
 
-      res.json(invite);
-    } catch (e) {
-      if (e instanceof Error) {
-        throw new Exceptions.ValidationException(e.message);
-      } else {
-        throw e;
-      }
-    }
+    res.json(invite);
   }
 );
 

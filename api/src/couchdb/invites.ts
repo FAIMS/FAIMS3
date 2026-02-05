@@ -74,7 +74,7 @@ export async function createResourceInvite({
   // Confirm that the role is a resource specific role
   const roleDetail = roleDetails[role];
   if (roleDetail.scope !== RoleScope.RESOURCE_SPECIFIC) {
-    throw new Error(
+    throw new Exceptions.InvalidRequestException(
       'Role must be a resource specific role to create a resource specific invite'
     );
   }
@@ -124,7 +124,9 @@ export async function createGlobalInvite({
   // Confirm that the role is a global role
   const roleDetail = roleDetails[role];
   if (roleDetail.scope !== RoleScope.GLOBAL) {
-    throw new Error('Role must be a global role to create a global invite');
+    throw new Exceptions.InvalidRequestException(
+      'Role must be a global role to create a global invite'
+    );
   }
 
   // Create a new invite
