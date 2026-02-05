@@ -23,10 +23,17 @@ export interface AttachmentAppendStats {
 }
 
 /**
- * Appends notebook attachments to an existing archiver instance.
+ * Appends notebook attachments to an existing archiver instance using a single database pass.
  *
  * This is the core reusable function that handles streaming attachments
  * into any archive. It uses bounded concurrency to manage memory efficiently.
+ *
+ * Architecture:
+ * 1. Single iteration through all records (no viewID filter)
+ * 2. For each record, processes attachment fields
+ * 3. Streams file data directly from database → archive
+ * 4. Maintains a pool of concurrent streams (bounded by MAX_CONCURRENT_STREAMS)
+ * 5. Routes attachment counts to appropriate view based on record.type
  *
  * @param projectId - The project ID
  * @param archive - An existing archiver instance to append files to
@@ -50,90 +57,95 @@ export const appendAttachmentsToArchive = async ({
     perViewCounts: new Map(),
   };
 
-  // Determine which views to process
-  let relevantViews: string[] = [];
-  if (!targetViewID) {
-    const uiSpec = await getProjectUIModel(projectId);
-    relevantViews = Array.from(Object.keys(uiSpec.viewsets));
-  } else {
-    relevantViews = [targetViewID];
+  // Get UI spec to know all valid view IDs
+  const uiSpec = await getProjectUIModel(projectId);
+  const allViewIds = Object.keys(uiSpec.viewsets);
+
+  // Initialize per-view counts
+  for (const viewId of allViewIds) {
+    stats.perViewCounts.set(viewId, 0);
   }
 
-  // Initialize database connection
+  // Initialize database connections
+  const dataDb = await getDataDb(projectId);
   const nanoDb = await getNanoDataDb(projectId);
+
+  // Track all filenames to prevent collisions in the archive
+  const filenames: string[] = [];
 
   // Pool of active file streaming promises for concurrency management
   const activeStreams = new Set<Promise<void>>();
 
-  for (const viewID of relevantViews) {
-    // Initialize per-view count
-    stats.perViewCounts.set(viewID, 0);
+  // Single iteration through ALL records (or filtered by targetViewID if specified)
+  const iterator = await notebookRecordIterator({
+    projectId,
+    filterDeleted: true,
+    dataDb,
+    uiSpecification: uiSpec,
+    viewID: targetViewID, // undefined = all records, otherwise filter by view
+    includeAttachments: false, // Critical: don't load attachment binary data
+  });
 
-    // Get an efficient iterator of all notebook records (attachments not DL'd)
-    const iterator = await createNotebookRecordIterator(
-      projectId,
-      viewID,
-      false // Critical: exclude attachment data to avoid memory bloat
-    );
+  let {record, done} = await iterator.next();
 
-    // Track all filenames to prevent collisions in the archive
-    const filenames: string[] = [];
+  /**
+   * Main processing loop with bounded concurrency.
+   *
+   * This loop continues until:
+   * 1. No more records to process (done === true), AND
+   * 2. All active streams have completed (activeStreams.size === 0)
+   */
+  while (!done || activeStreams.size > 0) {
+    // Fill the stream pool up to the concurrency limit
+    while (!done && activeStreams.size < MAX_CONCURRENT_STREAMS) {
+      if (record !== null) {
+        const viewID = record.type;
 
-    // Begin iteration
-    let {record, done} = await iterator.next();
+        // Start processing this record's attachments asynchronously
+        const streamPromises = processRecordAttachments({
+          viewID,
+          record,
+          nanoDb,
+          archive,
+          filenames,
+          pathPrefix,
+        });
+
+        // Add to active pool and set up cleanup handlers
+        for (const streamPromise of streamPromises) {
+          activeStreams.add(streamPromise);
+          streamPromise
+            .then(() => {
+              stats.fileCount++;
+              stats.perViewCounts.set(
+                viewID,
+                (stats.perViewCounts.get(viewID) || 0) + 1
+              );
+            })
+            .catch(err => {
+              console.error(
+                `[ZIP] Error processing record ${record?.record_id}:`,
+                err
+              );
+            })
+            .finally(() => {
+              activeStreams.delete(streamPromise);
+            });
+        }
+      }
+
+      // Advance to next record
+      const next = await iterator.next();
+      record = next.record;
+      done = next.done;
+    }
 
     /**
-     * Main processing loop with bounded concurrency.
+     * Wait for at least one stream to complete before continuing.
+     * This prevents the loop from spinning when at max concurrency.
      */
-    while (!done || activeStreams.size > 0) {
-      // Fill the stream pool up to the concurrency limit
-      while (!done && activeStreams.size < MAX_CONCURRENT_STREAMS) {
-        if (record !== null) {
-          // Start processing this record's attachments asynchronously
-          const streamPromises = processRecordAttachments({
-            viewID,
-            record,
-            nanoDb,
-            archive,
-            filenames,
-            pathPrefix,
-          });
-
-          // Add to active pool and set up cleanup handlers
-          for (const streamPromise of streamPromises) {
-            activeStreams.add(streamPromise);
-            streamPromise
-              .then(() => {
-                stats.fileCount++;
-                stats.perViewCounts.set(
-                  viewID,
-                  (stats.perViewCounts.get(viewID) || 0) + 1
-                );
-              })
-              .catch(err => {
-                console.error(
-                  `[ZIP] Error processing record ${record?.record_id}:`,
-                  err
-                );
-              })
-              .finally(() => {
-                activeStreams.delete(streamPromise);
-              });
-          }
-        }
-
-        // Advance to next record
-        const next = await iterator.next();
-        record = next.record;
-        done = next.done;
-      }
-
-      /**
-       * Wait for at least one stream to complete before continuing.
-       */
-      if (activeStreams.size > 0) {
-        await Promise.race(activeStreams);
-      }
+    if (activeStreams.size > 0) {
+      await Promise.race(activeStreams);
     }
   }
 
@@ -148,7 +160,7 @@ export const appendAttachmentsToArchive = async ({
  * notebook records that may contain hundreds or thousands of attachments.
  *
  * Architecture:
- * 1. Iterates through notebook records one at a time
+ * 1. Single iteration through notebook records
  * 2. For each record, processes attachment fields
  * 3. Streams file data directly from database → archive → output stream
  * 4. Maintains a pool of concurrent streams (bounded by MAX_CONCURRENT_STREAMS)
@@ -160,8 +172,7 @@ export const appendAttachmentsToArchive = async ({
  * - Attachment data is excluded from record hydration
  *
  * File Structure:
- * - Single view mode: `fieldId/hrid-fieldId.ext` (e.g., `photo/REC001-photo.jpg`)
- * - Multi view mode: `viewId/fieldId/hrid-fieldId.ext` (e.g., `survey1/photo/REC001-photo.jpg`)
+ * `viewId/fieldId/hrid.ext` (e.g., `survey1/photo/REC001.jpg`)
  *
  * @param projectId - The ID of the project containing the notebook
  * @param targetViewID - The ID of the view to export (if omitted, exports all views)
@@ -209,36 +220,6 @@ export const streamNotebookFilesAsZip = async ({
     );
   }
 };
-
-/**
- * Creates a notebook record iterator configured for efficient attachment streaming.
- *
- * IMPORTANT: Sets includeAttachments=false to avoid loading attachment binary data
- * into memory during iteration. We only need metadata (attachment_id, filename, type)
- * which is included in the record structure regardless of this flag.
- *
- * @param projectId - The project identifier
- * @param viewID - The view identifier for filtering
- * @param includeAttachments - Whether to load full attachment data (always false for streaming)
- * @returns An async iterator over hydrated records
- */
-async function createNotebookRecordIterator(
-  projectId: ProjectID,
-  viewID: string,
-  includeAttachments = false
-) {
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-
-  return notebookRecordIterator({
-    projectId,
-    filterDeleted: true, // Exclude deleted records from export
-    dataDb,
-    uiSpecification,
-    viewID,
-    includeAttachments, // False to prevent memory bloat from large attachments
-  });
-}
 
 /**
  * Creates and configures an archiver instance with proper error handling.
@@ -447,9 +428,7 @@ export const generateFilenameForAttachment = ({
   const baseFilename = `${viewID}/${fieldId}/${hrid}`;
 
   const slugify = (filename: string) => {
-    return filename
-      .replace(/\s+/g, '_')
-      .replace(/[^a-zA-Z0-9\][_/-]/g, '_');
+    return filename.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9\][_/-]/g, '_');
   };
 
   // Handle collisions by appending numeric suffix
