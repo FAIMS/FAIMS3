@@ -28,16 +28,45 @@ import {selectActiveServerId} from '../../context/slices/authSlice';
 import {selectActiveServerVersion} from '../../context/slices/projectSlice';
 
 /**
+ * Compares two semver versions at the minor level (major.minor).
+ * Returns true if versions differ at major or minor level.
+ * Patch differences (e.g., 1.2.1 vs 1.2.2) are ignored.
+ *
+ * @param version1 - First version string (e.g., "1.2.3")
+ * @param version2 - Second version string (e.g., "1.2.4")
+ * @returns true if major.minor differs, false otherwise
+ */
+const hasMinorOrGreaterDifference = (
+  version1: string,
+  version2: string
+): boolean => {
+  const parse = (v: string): {major: number; minor: number} => {
+    const parts = v.split('.').map(p => parseInt(p, 10));
+    return {
+      major: parts[0] || 0,
+      minor: parts[1] || 0,
+    };
+  };
+
+  const v1 = parse(version1);
+  const v2 = parse(version2);
+
+  return v1.major !== v2.major || v1.minor !== v2.minor;
+};
+
+/**
  * VersionWarning Component
  *
  * Displays a dismissable Snackbar alert when the app version doesn't match
- * the active server's version. Remembers dismissed warnings per server ID
- * in memory (resets on app restart).
+ * the active server's version at the major or minor level.
+ * Patch-level differences (e.g., 1.2.1 vs 1.2.2) are ignored.
+ *
+ * Remembers dismissed warnings per server ID in memory (resets on app restart).
  *
  * The warning is shown:
  * - When an active server is selected
  * - When the server has a version defined
- * - When app version !== server version
+ * - When app major.minor !== server major.minor
  * - When the user hasn't dismissed it for this server
  *
  * Provides platform-specific guidance for updating the app.
@@ -58,7 +87,6 @@ export const VersionWarning = () => {
   // Memoize platform-specific update message (only depends on platform)
   const updateMessage = useMemo((): string => {
     const platform = Capacitor.getPlatform();
-
     if (platform === 'ios') {
       return 'Ensure you have updated to the latest version in the App Store.';
     } else if (platform === 'android') {
@@ -87,12 +115,12 @@ export const VersionWarning = () => {
       return;
     }
 
-    // Check if versions match
-    if (APP_VERSION !== activeServerVersion) {
+    // Check if versions differ at major.minor level
+    if (hasMinorOrGreaterDifference(APP_VERSION, activeServerVersion)) {
       // Versions don't match - show warning
       setOpen(true);
     } else {
-      // Versions match - hide warning
+      // Versions match at major.minor - hide warning
       setOpen(false);
     }
   }, [activeServerId, activeServerVersion, dismissedServers]);
