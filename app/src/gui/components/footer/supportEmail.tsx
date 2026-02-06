@@ -3,7 +3,8 @@ import {useTheme} from '@mui/material/styles';
 import Obfuscate from 'react-obfuscate';
 import {
   APP_NAME,
-  COMMIT_VERSION,
+  APP_VERSION,
+  COMMIT_HASH,
   CONDUCTOR_URLS,
   SUPPORT_EMAIL,
 } from '../../../buildconfig';
@@ -17,7 +18,8 @@ export default function SupportEmail() {
 
   const bodyContent =
     `Server: ${CONDUCTOR_URLS.join(', ')} \r` +
-    `Commit Version: ${COMMIT_VERSION} \r` +
+    `App Versoin: ${APP_VERSION} \r` +
+    `Commit Version: ${COMMIT_HASH ?? 'Not provided.'} \r` +
     `Username: ${activeUser?.username ?? 'Unauthenticated'} \r` +
     `Global Roles: ${
       activeUser?.parsedToken.globalRoles
