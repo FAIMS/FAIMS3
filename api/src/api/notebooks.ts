@@ -24,6 +24,7 @@ import {
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
   EncodedProjectUIModel,
+  GetExportNotebookResponse,
   getIdsByFieldName,
   GetNotebookListResponse,
   GetNotebookResponse,
@@ -53,7 +54,11 @@ import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
-import {DEVELOPER_MODE, KEY_SERVICE} from '../buildconfig';
+import {
+  CONDUCTOR_PUBLIC_URL,
+  DEVELOPER_MODE,
+  KEY_SERVICE,
+} from '../buildconfig';
 import {getDataDb} from '../couchdb';
 import {createManyRandomRecords} from '../couchdb/devtools';
 import {
@@ -62,9 +67,14 @@ import {
 } from '../couchdb/export/attachmentExport';
 import {streamNotebookRecordsAsCSV} from '../couchdb/export/csvExport';
 import {
+  generateFullExportFilename,
+  streamFullExport,
+} from '../couchdb/export/fullExport';
+import {
   streamNotebookRecordsAsGeoJSON,
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
+import {FullExportConfigSchema} from '../couchdb/export/types';
 import {
   changeNotebookStatus,
   changeNotebookTeam,
@@ -475,21 +485,27 @@ api.get(
   }
 );
 
+// =============================================================================
 // Types for download format and token payloads
-const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml']);
+// =============================================================================
+
+const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
 type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
+
 const DownloadTokenPayloadSchema = z.object({
   projectID: z.string(),
   format: DownloadFormatSchema,
   viewID: z.string().optional(),
   userID: z.string(),
+  // Full export config (only present when format === 'full')
+  fullConfig: FullExportConfigSchema.optional(),
 });
 type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
 
 // Formats requiring a view ID
 const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
 
-// download tokens last this long
+// Download tokens last this long
 const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
 
 const generateDownloadToken = async ({
@@ -508,7 +524,6 @@ const generateDownloadToken = async ({
     .setSubject(user.user_id)
     .setIssuedAt()
     .setIssuer(signingKey.instanceName)
-    // Expiry in minutes
     .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
     .sign(signingKey.privateKey);
   return token;
@@ -523,7 +538,6 @@ const validateDownloadToken = async ({
   try {
     const result = await jwtVerify(token, signingKey.publicKey, {
       algorithms: [signingKey.alg],
-      // verify issuer
       issuer: signingKey.instanceName,
     });
     return DownloadTokenPayloadSchema.parse(result.payload);
@@ -533,11 +547,30 @@ const validateDownloadToken = async ({
   }
 };
 
-// Export record data.
-//
-// Export route redirects to a new URL containing a signed JWT containing
-// details of the download, that route is handled below to do the actual
-// download.
+// =============================================================================
+// Export Routes
+// =============================================================================
+
+/**
+ * Export record data.
+ *
+ * This route redirects to a new URL containing a signed JWT with download
+ * details. The JWT is then validated by the /download/:downloadToken route.
+ *
+ * Supported formats:
+ * - csv: Requires viewID, exports tabular data for a single view
+ * - zip: Optional viewID, exports attachments (all views if no viewID)
+ * - geojson: Exports all spatial data as GeoJSON
+ * - kml: Exports all spatial data as KML
+ * - full: Exports everything into a single ZIP archive
+ *
+ * For full exports, additional query parameters control what's included:
+ * - includeTabular (default: true)
+ * - includeAttachments (default: true)
+ * - includeGeoJSON (default: true)
+ * - includeKML (default: true)
+ * - includeMetadata (default: true)
+ */
 api.get(
   '/:id/records/export',
   requireAuthenticationAPI,
@@ -551,12 +584,18 @@ api.get(
     query: z.object({
       viewID: z.string().optional(),
       format: DownloadFormatSchema,
+      // Full export options
+      includeTabular: z.string().optional().default('true'),
+      includeAttachments: z.string().optional().default('true'),
+      includeGeoJSON: z.string().optional().default('true'),
+      includeKML: z.string().optional().default('true'),
+      includeMetadata: z.string().optional().default('true'),
     }),
     params: z.object({
       id: z.string(),
     }),
   }),
-  async (req, res) => {
+  async (req, res: Response<GetExportNotebookResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('Not authenticated.');
     }
@@ -567,38 +606,57 @@ api.get(
       userID: req.user.user_id,
     };
 
-    if (REQUIRES_VIEW_ID.includes(req.query.format) || req.query.viewID) {
+    // Handle full export
+    if (req.query.format === 'full') {
+      // Build full config from query params (defaults to true if not specified)
+      payload.fullConfig = {
+        includeTabular: req.query.includeTabular === 'true',
+        includeAttachments: req.query.includeAttachments === 'true',
+        includeGeoJSON: req.query.includeGeoJSON === 'true',
+        includeKML: req.query.includeKML === 'true',
+        includeMetadata: req.query.includeMetadata === 'true',
+      };
+    } else if (
+      REQUIRES_VIEW_ID.includes(req.query.format) ||
+      req.query.viewID
+    ) {
+      // Existing viewID handling for CSV
       if (!req.query.viewID) {
         throw new Exceptions.InvalidRequestException(
           `The specified format ${req.query.format} requires a viewID to be included.`
         );
       }
 
-      // get the label for this form for the filename header
+      // Validate the viewID exists
       const uiSpec = await getEncodedNotebookUISpec(req.params.id);
 
-      // check the view ID is valid
       if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
         throw new Exceptions.ItemNotFoundException(
           `Form with id ${req.query.viewID} not found in notebook`
         );
       }
 
-      // Update with viewID
       payload.viewID = req.query.viewID;
     }
 
-    // Build the download token payload
+    // Build the download token
     const jwt = await generateDownloadToken({
       user: req.user,
       payload: payload,
     });
-    return res.redirect(`/api/notebooks/download/${jwt}`);
+
+    // Return the url explicitly - rather than a redirect. Hard to carefully
+    // handle the auto redirect while triggering export only once
+    return res.json({
+      url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
+    });
   }
 );
 
-// Export record data (old route for CSV/ZIP with ViewID and Format in the param)
-// @deprecated - use the new /export style route above - this is here for backwards compat
+/**
+ * Export record data (old route for CSV/ZIP with ViewID and Format in the param)
+ * @deprecated - use the new /export style route above - this is here for backwards compat
+ */
 api.get(
   '/:id/records/:viewID.:format',
   requireAuthenticationAPI,
@@ -612,7 +670,7 @@ api.get(
     params: z.object({
       id: z.string(),
       viewID: z.string(),
-      // don't allow geoJSON here - must use new route
+      // don't allow geoJSON or full here - must use new route
       // @deprecated
       format: z.enum(['csv', 'zip']),
     }),
@@ -648,6 +706,12 @@ api.get(
   }
 );
 
+/**
+ * Download route - validates JWT and streams the appropriate export format.
+ *
+ * This route handles the actual file streaming for all export formats.
+ * The JWT contains all necessary information about what to export.
+ */
 api.get(
   '/download/:downloadToken',
   processRequest({params: z.object({downloadToken: z.string()})}),
@@ -660,7 +724,7 @@ api.get(
     // If invalid/issue - throw
     if (!payload) {
       throw new Exceptions.InvalidRequestException(
-        'Cannot download with a valid downloadToken.'
+        'Cannot download without a valid downloadToken.'
       );
     }
 
@@ -684,44 +748,55 @@ api.get(
       exportLabel = slugify(payload.projectID);
     }
 
-    switch (payload.format) {
-      case 'csv':
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${exportLabel}-export.csv"`
-        );
-        streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
-        break;
-      case 'zip':
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${exportLabel}-photos.zip"`
-        );
-        res.setHeader('Content-Type', 'application/zip');
-        streamNotebookFilesAsZip({
-          projectId: payload.projectID,
-          targetViewID: payload.viewID,
-          res,
-        });
-        break;
-      // Non view ID requiring formats
-      case 'geojson':
-        res.setHeader('Content-Type', 'application/geo+json');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
-        );
-        streamNotebookRecordsAsGeoJSON(payload.projectID, res);
-        break;
-      case 'kml':
-        res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="${slugify(payload.projectID)}-export.kml"`
-        );
-        streamNotebookRecordsAsKML(payload.projectID, res);
-        break;
+    if (payload.format === 'csv') {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${exportLabel}-export.csv"`
+      );
+      streamNotebookRecordsAsCSV(payload.projectID, payload.viewID!, res);
+    } else if (payload.format === 'zip') {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${exportLabel}-photos.zip"`
+      );
+      res.setHeader('Content-Type', 'application/zip');
+      streamNotebookFilesAsZip({
+        projectId: payload.projectID,
+        targetViewID: payload.viewID,
+        res,
+      });
+    } else if (payload.format === 'geojson') {
+      res.setHeader('Content-Type', 'application/geo+json');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.geojson"`
+      );
+      streamNotebookRecordsAsGeoJSON(payload.projectID, res);
+    } else if (payload.format === 'kml') {
+      res.setHeader('Content-Type', 'application/vnd.google-earth.kml+xml');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${slugify(payload.projectID)}-export.kml"`
+      );
+      streamNotebookRecordsAsKML(payload.projectID, res);
+    } else if (payload.format === 'full') {
+      const fullFilename = generateFullExportFilename(payload.projectID);
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${fullFilename}"`
+      );
+      await streamFullExport({
+        projectId: payload.projectID,
+        userId: payload.userID,
+        config: payload.fullConfig,
+        res,
+      });
+    } else {
+      throw new Exceptions.InvalidRequestException(
+        `Unknown export format: ${payload.format}`
+      );
     }
   }
 );

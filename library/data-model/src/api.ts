@@ -367,6 +367,12 @@ export type PostRandomRecordsResponse = z.infer<
   typeof PostRandomRecordsResponseSchema
 >;
 
+// Return type for exporting
+export const GetExportNotebookResponseSchema = z.object({url: z.string()});
+export type GetExportNotebookResponse = z.infer<
+  typeof GetExportNotebookResponseSchema
+>;
+
 // =================
 // TEMPLATES CRUD
 // =================

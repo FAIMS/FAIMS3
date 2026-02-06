@@ -671,32 +671,55 @@ describe('API tests', () => {
     await restoreFromBackup({filename: 'test/backup.jsonl'});
 
     // new method
-    const urls = [
+    const testCases = [
       // @deprecated
-      '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv',
+      {
+        type: 'redirect',
+        url: '/api/notebooks/1693291182736-campus-survey-demo/records/FORM2.csv',
+      },
       // new method
-      '/api/notebooks/1693291182736-campus-survey-demo/records/export?viewID=FORM2&format=csv',
+      {
+        type: 'url',
+        url: '/api/notebooks/1693291182736-campus-survey-demo/records/export?viewID=FORM2&format=csv',
+      },
     ];
-    for (const url of urls) {
+    for (const testCase of testCases) {
       const adminUser = await getExpressUserFromEmailOrUserId('admin');
       if (adminUser) {
         const notebooks = await getUserProjectsDetailed(adminUser);
         expect(notebooks).to.have.lengthOf(2);
 
         let redirectURL = '';
-        await request(app)
-          .get(url)
-          .set('Authorization', `Bearer ${adminToken}`)
-          .set('Content-Type', 'application/json')
-          .expect(302)
-          .expect(response => {
-            expect(response.headers.location).to.match(/\/download\/.*/);
-            redirectURL = response.headers.location;
-          });
 
-        if (redirectURL)
+        if (testCase.type === 'redirect') {
           await request(app)
-            .get(redirectURL)
+            .get(testCase.url)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Content-Type', 'application/json')
+            .expect(302)
+            .expect(response => {
+              expect(response.headers.location).to.match(/\/download\/.*/);
+              redirectURL = response.headers.location;
+            });
+        } else {
+          await request(app)
+            .get(testCase.url)
+            .set('Authorization', `Bearer ${adminToken}`)
+            .set('Content-Type', 'application/json')
+            .expect(200)
+            .expect(response => {
+              redirectURL = (response.body as {url: string}).url;
+            });
+        }
+
+        if (redirectURL) {
+          // Handle both relative paths and full URLs
+          const urlPath = redirectURL.startsWith('http')
+            ? new URL(redirectURL).pathname
+            : redirectURL;
+
+          await request(app)
+            .get(urlPath)
             .expect('Content-Type', 'text/csv')
             .expect(response => {
               // response body should be csv data
@@ -718,6 +741,7 @@ describe('API tests', () => {
               // one more newline than the number of records + header
               expect(lines).to.have.lengthOf(19);
             });
+        }
       }
     }
   });

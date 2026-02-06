@@ -1,17 +1,23 @@
 import {
   FieldSummary,
-  HydratedDataRecord,
-  ProjectID,
   getNotebookFieldTypes,
+  HydratedDataRecord,
   notebookRecordIterator,
+  ProjectID,
+  slugify,
 } from '@faims3/data-model';
+import archiver from 'archiver';
 import {Stringifier, stringify} from 'csv-stringify';
+import {PassThrough} from 'stream';
 import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
-import {convertDataForOutput} from './utils';
+import {
+  convertDataForOutput,
+  MAX_CSV_FILENAME_LENGTH,
+  truncateWithHash,
+} from './utils';
 
-// The set of headers which come first in CSV exports, and are always present -
-// the function below will map a record into these values
+// The set of headers which come first in CSV exports, and are always present
 export const CSV_PREFIX_HEADERS = [
   'identifier',
   'record_id',
@@ -24,28 +30,36 @@ export const CSV_PREFIX_HEADERS = [
 ] as const;
 
 /**
+ * Statistics returned from CSV export operations
+ */
+export interface CSVAppendStats {
+  viewId: string;
+  viewLabel: string;
+  recordCount: number;
+  filename: string;
+}
+
+/**
+ * Statistics for multi-view CSV export
+ */
+export interface MultiViewCSVAppendStats {
+  views: CSVAppendStats[];
+  totalRecords: number;
+}
+
+/**
  * Generate the prefix information for a record
- * @param record The record data to convert
- * @returns An array of values for the CSV prefix headers
  */
 function generateRecordPrefixInformation(record: HydratedDataRecord) {
   const hrid = record.hrid || record.record_id;
   return [
-    // identifier
     hrid,
-    // record_id
     record.record_id,
-    // revision_id
     record.revision_id,
-    // type
     record.type,
-    // created_by
     record.created_by,
-    // created
     record.created.toISOString(),
-    // updated_by
     record.updated_by,
-    // updated
     record.updated.toISOString(),
   ];
 }
@@ -88,9 +102,8 @@ function getHeaderGeneratorForFieldType(
 }
 
 /**
- * Generate CSV headers from UI specification fields
- * Uses the registered field type header generators to produce the
- * additional headers for each data type.
+ * Generate CSV headers from UI specification fields. Uses the registered field
+ * type header generators to produce the additional headers for each data type.
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -120,6 +133,353 @@ export function getHeaderInfoFromUiSpecification({
 }
 
 /**
+ * Generate a safe, deterministic filename from a label.
+ *
+ * Uses truncateWithHash to ensure that long labels produce unique filenames
+ * even if they share the same prefix.
+ */
+function generateSafeFilename(label: string): string {
+  const slugified = slugify(label);
+
+  return truncateWithHash(slugified, MAX_CSV_FILENAME_LENGTH);
+}
+
+/**
+ * Internal structure for tracking per-view CSV state during multi-view export
+ */
+interface ViewCSVState {
+  viewId: string;
+  viewLabel: string;
+  filename: string;
+  fields: FieldSummary[];
+  dataHeaderInfo: string[];
+  stringifier: Stringifier;
+  stream: PassThrough;
+  recordCount: number;
+  filenames: string[]; // For attachment filename generation
+}
+
+/**
+ * Appends CSV files for ALL views to an existing archive in a single database pass.
+ *
+ * This is significantly more efficient than calling appendCSVToArchive() for each
+ * view, as it only iterates through the database once. Records are routed to the
+ * appropriate CSV stringifier based on their type (viewId).
+ *
+ * Architecture:
+ * 1. Pre-initialize a CSV stringifier + PassThrough stream for each view
+ * 2. Attach all streams to the archive upfront
+ * 3. Single iteration through all records (no viewID filter)
+ * 4. Route each record to the appropriate view's stringifier
+ * 5. Close all stringifiers and wait for streams to finish
+ *
+ * @param projectId - Project ID
+ * @param archive - Archiver instance to append to
+ * @param pathPrefix - Path prefix in the archive (e.g., 'records/')
+ * @returns Statistics about all exported CSVs
+ */
+export const appendAllCSVsToArchive = async ({
+  projectId,
+  archive,
+  pathPrefix = '',
+}: {
+  projectId: ProjectID;
+  archive: archiver.Archiver;
+  pathPrefix?: string;
+}): Promise<MultiViewCSVAppendStats> => {
+  // Fetch DB and UI spec
+  const dataDb = await getDataDb(projectId);
+  const uiSpecification = await getProjectUIModel(projectId);
+
+  // Get all view IDs
+  const viewIds = Object.keys(uiSpecification.viewsets);
+
+  // Track used filenames to prevent collisions
+  const usedFilenames: string[] = [];
+
+  // Initialize state for each view
+  const viewStates: Map<string, ViewCSVState> = new Map();
+
+  for (const viewId of viewIds) {
+    const viewLabel = uiSpecification.viewsets[viewId].label ?? viewId;
+    const fields = getNotebookFieldTypes({uiSpecification, viewID: viewId});
+    const dataHeaderInfo = getHeaderInfoFromUiSpecification({fields});
+
+    // Generate unique filename
+    const baseFilename = generateSafeFilename(viewLabel);
+    let filename = `${pathPrefix}${baseFilename}.csv`;
+    let counter = 1;
+    while (usedFilenames.includes(filename)) {
+      filename = `${pathPrefix}${baseFilename}_${counter}.csv`;
+      counter++;
+    }
+    usedFilenames.push(filename);
+
+    // Create PassThrough stream for this view
+    const stream = new PassThrough();
+
+    // Create stringifier with headers
+    const stringifier: Stringifier = stringify({
+      columns: [...CSV_PREFIX_HEADERS, ...dataHeaderInfo],
+      header: true,
+      escape_formulas: true,
+    });
+
+    // Pipe stringifier to stream
+    stringifier.pipe(stream);
+
+    // Append stream to archive
+    archive.append(stream, {name: filename});
+
+    // Store state
+    viewStates.set(viewId, {
+      viewId,
+      viewLabel,
+      filename,
+      fields,
+      dataHeaderInfo,
+      stringifier,
+      stream,
+      recordCount: 0,
+      filenames: [],
+    });
+  }
+
+  // Single iteration through ALL records (no viewID filter)
+  const iterator = await notebookRecordIterator({
+    dataDb,
+    projectId,
+    uiSpecification,
+    // No viewID - iterate all records
+    includeAttachments: false,
+    viewID: undefined,
+  });
+
+  let {record, done} = await iterator.next();
+
+  while (!done) {
+    if (record) {
+      // Get the view state for this record's type
+      const viewState = viewStates.get(record.type);
+
+      if (viewState) {
+        const hrid = record.hrid || record.record_id;
+        const row = [...generateRecordPrefixInformation(record)];
+
+        const outputData = convertDataForOutput(
+          viewState.fields,
+          record.data,
+          record.annotations,
+          hrid,
+          viewState.filenames,
+          viewState.viewId
+        );
+
+        for (const header of viewState.dataHeaderInfo) {
+          if (header in outputData) {
+            row.push(outputData[header]);
+          } else {
+            row.push('');
+          }
+        }
+
+        // Sanity check
+        if (
+          row.length !==
+          CSV_PREFIX_HEADERS.length + viewState.dataHeaderInfo.length
+        ) {
+          console.error(
+            `CSV row length mismatch for view ${viewState.viewId}: expected ${
+              CSV_PREFIX_HEADERS.length + viewState.dataHeaderInfo.length
+            } but got ${row.length}`
+          );
+        } else {
+          viewState.stringifier.write(row);
+          viewState.recordCount++;
+        }
+      } else {
+        // Record type doesn't match any known view - log warning
+        console.warn(
+          `Record ${record.record_id} has unknown type: ${record.type}`
+        );
+      }
+    }
+
+    const next = await iterator.next();
+    record = next.record;
+    done = next.done;
+  }
+
+  // End all stringifiers and wait for streams to finish
+  const streamPromises: Promise<void>[] = [];
+
+  for (const viewState of viewStates.values()) {
+    viewState.stringifier.end();
+
+    streamPromises.push(
+      new Promise<void>((resolve, reject) => {
+        viewState.stream.on('finish', resolve);
+        viewState.stream.on('error', reject);
+      })
+    );
+  }
+
+  // Wait for all streams to complete
+  await Promise.all(streamPromises);
+
+  // Build stats
+  const stats: MultiViewCSVAppendStats = {
+    views: [],
+    totalRecords: 0,
+  };
+
+  for (const viewState of viewStates.values()) {
+    stats.views.push({
+      viewId: viewState.viewId,
+      viewLabel: viewState.viewLabel,
+      filename: viewState.filename,
+      recordCount: viewState.recordCount,
+    });
+    stats.totalRecords += viewState.recordCount;
+  }
+
+  return stats;
+};
+
+/**
+ * Appends a CSV file for a specific view to an existing archive.
+ *
+ * Uses a PassThrough stream to pipe csv-stringify output directly
+ * into the archiver without buffering the entire CSV in memory.
+ *
+ * NOTE: For full exports, prefer appendAllCSVsToArchive() which
+ * is much more efficient when exporting multiple views.
+ *
+ * @param projectId - Project ID
+ * @param viewID - View ID to export
+ * @param viewLabel - Human-readable label for the view (used in filename)
+ * @param archive - Archiver instance to append to
+ * @param pathPrefix - Path prefix in the archive (e.g., 'records/')
+ * @returns Statistics about the exported CSV
+ */
+export const appendCSVToArchive = async ({
+  projectId,
+  viewID,
+  viewLabel,
+  archive,
+  pathPrefix = '',
+}: {
+  projectId: ProjectID;
+  viewID: string;
+  viewLabel: string;
+  archive: archiver.Archiver;
+  pathPrefix?: string;
+}): Promise<CSVAppendStats> => {
+  const stats: CSVAppendStats = {
+    viewId: viewID,
+    viewLabel,
+    recordCount: 0,
+    filename: '',
+  };
+
+  // Fetch the data DB
+  const dataDb = await getDataDb(projectId);
+
+  // Grab the UI spec
+  const uiSpecification = await getProjectUIModel(projectId);
+
+  // Get field information
+  const fields = getNotebookFieldTypes({uiSpecification, viewID});
+  const dataHeaderInfo = getHeaderInfoFromUiSpecification({fields});
+
+  // Create a PassThrough stream that archiver will consume
+  const csvStream = new PassThrough();
+
+  // Generate a safe filename
+  const safeLabel = generateSafeFilename(viewLabel);
+  const filename = `${pathPrefix}${safeLabel}.csv`;
+  stats.filename = filename;
+
+  // Add the stream to the archive
+  archive.append(csvStream, {name: filename});
+
+  // Setup stringifier
+  const stringifier: Stringifier = stringify({
+    columns: [...CSV_PREFIX_HEADERS, ...dataHeaderInfo],
+    header: true,
+    escape_formulas: true,
+  });
+
+  // Pipe stringifier output to the PassThrough stream
+  stringifier.pipe(csvStream);
+
+  // Create record iterator
+  const iterator = await notebookRecordIterator({
+    dataDb,
+    projectId,
+    uiSpecification,
+    viewID,
+    includeAttachments: false,
+  });
+
+  // Track generated filenames (for attachment references in CSV)
+  const filenames: string[] = [];
+
+  // Iterate through records
+  let {record, done} = await iterator.next();
+
+  while (!done) {
+    if (record) {
+      const hrid = record.hrid || record.record_id;
+      const row = [...generateRecordPrefixInformation(record)];
+
+      const outputData = convertDataForOutput(
+        fields,
+        record.data,
+        record.annotations,
+        hrid,
+        filenames,
+        viewID
+      );
+
+      for (const header of dataHeaderInfo) {
+        if (header in outputData) {
+          row.push(outputData[header]);
+        } else {
+          row.push('');
+        }
+      }
+
+      if (row.length !== CSV_PREFIX_HEADERS.length + dataHeaderInfo.length) {
+        throw new Error(
+          `CSV row length mismatch: expected ${
+            CSV_PREFIX_HEADERS.length + dataHeaderInfo.length
+          } but got ${row.length}`
+        );
+      }
+
+      stringifier.write(row);
+      stats.recordCount++;
+    }
+
+    const next = await iterator.next();
+    record = next.record;
+    done = next.done;
+  }
+
+  // End the stringifier - this will flush and close the PassThrough stream
+  stringifier.end();
+
+  // Wait for the stream to finish
+  await new Promise<void>((resolve, reject) => {
+    csvStream.on('finish', resolve);
+    csvStream.on('error', reject);
+  });
+
+  return stats;
+};
+
+/**
  * Stream the records in a notebook as a CSV file
  *
  * @param projectId Project ID
@@ -137,8 +497,7 @@ export const streamNotebookRecordsAsCSV = async (
   // Grab the UI spec
   const uiSpecification = await getProjectUIModel(projectId);
 
-  // Loop through records in an efficient iterator - each dumping a hydrated
-  // record
+  // Loop through records in an efficient iterator
   const iterator = await notebookRecordIterator({
     dataDb,
     projectId,
@@ -149,33 +508,27 @@ export const streamNotebookRecordsAsCSV = async (
     includeAttachments: false,
   });
 
-  // Get information about the fields that are present - from the UI specification
+  // Get information about the fields
   const fields = getNotebookFieldTypes({uiSpecification, viewID});
 
   // Extrapolate from the fields, the final set of CSV column headings
   const dataHeaderInfo = getHeaderInfoFromUiSpecification({fields});
 
-  // setup stringifier (and write header row)
+  // setup stringifier
   const stringifier: Stringifier = stringify({
-    // We include the base headers + data headers
     columns: [...CSV_PREFIX_HEADERS, ...dataHeaderInfo],
     header: true,
     escape_formulas: true,
   });
 
-  // pipe output to the respose
+  // pipe output to the response
   stringifier.pipe(res);
 
-  // Await iterator
   let {record, done} = await iterator.next();
-
-  // Track generated filenames
   const filenames: string[] = [];
 
   while (!done) {
-    // record might be null if there was an invalid db entry
     if (record) {
-      // Determine the HRID, which helps with some export serialisations
       const hrid = record.hrid || record.record_id;
 
       // Start by generating the general record info
@@ -191,9 +544,7 @@ export const streamNotebookRecordsAsCSV = async (
         viewID
       );
 
-      // Iterate through the header info
       for (const header of dataHeaderInfo) {
-        // Dump the appropriate data value, or blank if not present
         if (header in outputData) {
           row.push(outputData[header]);
         } else {
@@ -211,7 +562,6 @@ export const streamNotebookRecordsAsCSV = async (
         );
       }
 
-      // Write this out
       stringifier.write(row);
     }
 
@@ -220,6 +570,5 @@ export const streamNotebookRecordsAsCSV = async (
     done = next.done;
   }
 
-  // Finished!
   stringifier.end();
 };

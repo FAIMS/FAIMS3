@@ -926,7 +926,7 @@ export const notebookRecordIterator = async ({
 }: {
   projectId: string;
   dataDb: DataDbType;
-  viewID: string;
+  viewID?: string;
   filterDeleted?: boolean;
   // Do not recommend including attachments since this incurs a lot of memory
   // overhead - these are buffered as File like objects straight into the
@@ -943,9 +943,11 @@ export const notebookRecordIterator = async ({
       filterDeleted
     );
     // select just those in this view
-    const result = records.filter((record: any) => {
-      return record.type === viewID;
-    });
+    const result = viewID
+      ? records.filter((record: any) => {
+          return record.type === viewID;
+        })
+      : records;
     if (records.length > 0 && result.length === 0) {
       // skip to next batch since none of these match our view
       const newBookmark = records[records.length - 1].record_id;
