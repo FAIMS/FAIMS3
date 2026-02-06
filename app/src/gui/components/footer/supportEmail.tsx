@@ -18,7 +18,7 @@ export default function SupportEmail() {
 
   const bodyContent =
     `Server: ${CONDUCTOR_URLS.join(', ')} \r` +
-    `App Versoin: ${APP_VERSION} \r` +
+    `App Version: ${APP_VERSION} \r` +
     `Commit Version: ${COMMIT_HASH ?? 'Not provided.'} \r` +
     `Username: ${activeUser?.username ?? 'Unauthenticated'} \r` +
     `Global Roles: ${
