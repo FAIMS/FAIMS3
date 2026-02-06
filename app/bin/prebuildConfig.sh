@@ -1,10 +1,18 @@
 #!/bin/bash
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 PROJECT_DIR="${SCRIPT_DIR}/../"
 
 APP_NAME_PLACEHOLDER=APPNAME
 APP_ID_PLACEHOLDER=org.fedarch.faims3
+
+# Check the npm package version is set
+if [ "$npm_package_version" == "" ]; then
+  echo "Error: npm_package_version is not set in package.json"
+  exit 1
+else
+  echo "Package version during build: '${npm_package_version}'"
+fi
 
 # replace occurrences of the app name 'Fieldmark' and id 'org.fedarch.faims3'
 # with configured values VITE_APP_NAME and VITE_APP_ID
@@ -13,19 +21,19 @@ echo "Configuring app name ${VITE_APP_NAME} and id ${VITE_APP_ID}"
 
 # app name and appId
 # capacitor.config.json
-sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g"  ./capacitor.config.dist.json |\
-  sed -e "s/${APP_ID_PLACEHOLDER}/${VITE_APP_ID}/g" > ./capacitor.config.json
+sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./capacitor.config.dist.json |
+  sed -e "s/${APP_ID_PLACEHOLDER}/${VITE_APP_ID}/g" >./capacitor.config.json
 
 # public/manifest.json
 
-sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./public/manifest.dist.json > ./public/manifest.json
+sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" ./public/manifest.dist.json >./public/manifest.json
 
 # Generate android/app/src/main/AndroidManifest.xml
-sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/AndroidManifest-dist.xml > ./android/app/src/main/AndroidManifest.xml
+sed -e "s/${APP_NAME_PLACEHOLDER}/${VITE_APP_NAME}/g" android/app/src/main/AndroidManifest-dist.xml >./android/app/src/main/AndroidManifest.xml
 
 # android/app/src/main/res/values/strings.xml
 
-cat << EOT > ./android/app/src/main/res/values/strings.xml
+cat <<EOT >./android/app/src/main/res/values/strings.xml
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">${VITE_APP_NAME}</string>
