@@ -20,8 +20,7 @@
  */
 
 import {slugify} from '@faims3/data-model';
-import {existsSync, readFileSync} from 'fs';
-import {join} from 'path';
+import {existsSync} from 'fs';
 import {v4 as uuidv4} from 'uuid';
 import {
   createEmailService,
@@ -31,6 +30,11 @@ import {
   SMTPEmailServiceConfig,
 } from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
+
+// Get the package version directly from package.json
+import {version as packageVersion} from '../package.json';
+console.log(`Using API version from package.json: ${packageVersion}`);
+export const API_VERSION = packageVersion;
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -697,23 +701,3 @@ function bugsnagApiKey(): string | undefined {
 
 export const BUGSNAG_API_KEY = bugsnagApiKey();
 
-/**
- * Gets the API version from environment variables.
- * Falls back to package.json version if not configured.
- * @returns The API version.
- */
-function apiVersion(): string {
-  try {
-    // In monorepo, api/package.json is at the correct path
-    const packagePath = join(__dirname, '../package.json');
-    const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
-    const pkgVersion = packageJson.version;
-    console.log(`Using package.json version: ${pkgVersion}`);
-    return pkgVersion;
-  } catch (error) {
-    console.error('Failed to read package.json:', error);
-    throw new Error('package.json not accessible');
-  }
-}
-
-export const API_VERSION = apiVersion();
