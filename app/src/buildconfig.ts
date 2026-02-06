@@ -527,9 +527,10 @@ export const IS_WEB_PLATFORM = CAPACITOR_PLATFORM === 'web';
  * @returns The application version.
  */
 function appVersion(): string {
-  if (typeof __APP_VERSION__ !== 'undefined') {
+  const version = __APP_VERSION__;
+  if (version) {
     console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
-    return __APP_VERSION__;
+    return version;
   }
 
   console.error('__APP_VERSION__ not defined in build. Using "unknown"');
