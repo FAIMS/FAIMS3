@@ -9,7 +9,6 @@ import {
   GetExportNotebookResponse,
   isValidForSpatialExport,
 } from '@faims3/data-model';
-import {responsiveFontSizes} from '@mui/material';
 import {useMemo, useState} from 'react';
 
 interface ExportOptions {
