@@ -3,12 +3,6 @@ import react from '@vitejs/plugin-react-swc';
 import {defineConfig} from 'vite';
 import {tanstackRouter} from '@tanstack/router-plugin/vite';
 
-// Read package.json version
-import {readFileSync} from 'fs';
-const packageJson = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8')
-);
-
 export default defineConfig({
   // Just a hack to get this to typecheck - works fine??
   plugins: [
@@ -42,6 +36,6 @@ export default defineConfig({
   define: {
     global: 'globalThis',
     // Replace __APP_VERSION__ with package.json version at build time
-    __APP_VERSION__: JSON.stringify(packageJson.version),
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
 });
