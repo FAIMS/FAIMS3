@@ -70,8 +70,6 @@ export interface FaimsFrontEndProps {
 
   /** Bugsnag key - enables app monitoring if desired */
   bugsnagKey?: string;
-  /** Bugsnag app version - tags the app version in bug snag */
-  appVersion?: string;
 }
 
 export class FaimsFrontEnd extends Construct {

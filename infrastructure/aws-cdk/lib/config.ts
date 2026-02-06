@@ -425,8 +425,6 @@ export const ConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
    * this will completely redeploy your application. */
   stackName: z.string(),
-  /** The version tag for this release of the app */
-  appVersion: z.string().optional(),
   /** Attributes of the hosted zone to use */
   hostedZone: z.object({
     id: z.string(),
