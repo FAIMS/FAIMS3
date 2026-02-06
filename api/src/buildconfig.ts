@@ -19,10 +19,10 @@
  *   which server to use and whether to include test data
  */
 
-import { slugify } from '@faims3/data-model';
-import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import {slugify} from '@faims3/data-model';
+import {existsSync, readFileSync} from 'fs';
+import {join} from 'path';
+import {v4 as uuidv4} from 'uuid';
 import {
   createEmailService,
   EmailConfig,
@@ -30,7 +30,7 @@ import {
   IEmailService,
   SMTPEmailServiceConfig,
 } from './services/emailService';
-import { getKeyService, IKeyService, KeySource } from './services/keyService';
+import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
@@ -703,29 +703,16 @@ export const BUGSNAG_API_KEY = bugsnagApiKey();
  * @returns The API version.
  */
 function apiVersion(): string {
-  const version = process.env.API_VERSION;
-
-  if (version && version !== '') {
-    console.info(`Using API_VERSION from environment: ${version}`);
-    return version;
-  }
-
   try {
     // In monorepo, api/package.json is at the correct path
     const packagePath = join(__dirname, '../package.json');
     const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
     const pkgVersion = packageJson.version;
-
-    console.warn(
-      `API_VERSION not set in environment. ` +
-        `Using package.json version: ${pkgVersion}`
-    );
+    console.log(`Using package.json version: ${pkgVersion}`);
     return pkgVersion;
   } catch (error) {
     console.error('Failed to read package.json:', error);
-    throw new Error(
-      'API_VERSION not set in environment and package.json not accessible'
-    );
+    throw new Error('package.json not accessible');
   }
 }
 

@@ -373,8 +373,6 @@ export class FaimsFrontEnd extends Construct {
         props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
-      // Prefer using the package.json version - but allow overriding
-      ...(props.appVersion ? {VITE_APP_VERSION: props.appVersion} : {}),
     };
 
     // Setup a deployment into this bucket with static files

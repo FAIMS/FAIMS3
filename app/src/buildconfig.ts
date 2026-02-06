@@ -532,7 +532,7 @@ function appVersion(): string {
     return __APP_VERSION__;
   }
 
-  console.warn('__APP_VERSION__ not defined in build. Using "unknown"');
+  console.error('__APP_VERSION__ not defined in build. Using "unknown"');
   return 'unknown';
 }
 

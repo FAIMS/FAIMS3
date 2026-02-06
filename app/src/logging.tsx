@@ -25,7 +25,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import {Button, Grid, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import React, {ErrorInfo, useEffect} from 'react';
-import {BUGSNAG_KEY, DEBUG_APP} from './buildconfig';
+import {APP_VERSION, BUGSNAG_KEY, DEBUG_APP} from './buildconfig';
 import * as ROUTES from './constants/routes';
 
 interface EBProps {
@@ -137,7 +137,7 @@ let bugsnag;
 if (BUGSNAG_KEY && BUGSNAG_KEY !== '<your bugsnag API key>') {
   Bugsnag.start({
     apiKey: BUGSNAG_KEY,
-    appVersion: __APP_VERSION__,
+    appVersion: APP_VERSION,
     plugins: [new BugsnagPluginReact()],
   });
 

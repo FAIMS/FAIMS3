@@ -218,13 +218,6 @@ function getVersion(): string {
     return __APP_VERSION__;
   }
 
-  // Fall back to environment variable
-  const version = import.meta.env.VITE_APP_VERSION as string | undefined;
-  if (version && version !== '') {
-    console.info(`Using APP_VERSION from environment: ${version}`);
-    return version;
-  }
-
   console.warn('APP_VERSION not set in build or environment. Using "unknown"');
   return 'unknown';
 }
