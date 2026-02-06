@@ -83,8 +83,9 @@ Sections within a form group fields together as part of a workflow or just to br
 a long form into pages.   A useful feature is to be able to show a section conditionally based
 on the value entered for a field in an earlier section.
 
-```{image} ../images/section-condition.png
+```{screenshot} designer/section-condition.png
 :alt: Editing the condition on a section of the form
+:width: 100%
 ```
 
 In this example we have chosen a 'Select' field for the condition and we can choose which value
@@ -94,8 +95,9 @@ to express the logic of your workflow.  For more details see the [page on Condit
 
 ### Fields
 
-```{image} ../images/editor-text-field.png
+```{screenshot} designer/editor-text-field.png
 :alt: Editing a text field
+:width: 100%
 ```
 
 Fields are the basic building block of a {{notebook}} form and there are many [field types](field-type-reference-table.md)
