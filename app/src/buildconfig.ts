@@ -527,7 +527,6 @@ export const IS_WEB_PLATFORM = CAPACITOR_PLATFORM === 'web';
  * @returns The application version.
  */
 function appVersion(): string {
-  return '1.2.3';
   if (typeof __APP_VERSION__ !== 'undefined') {
     console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
     return __APP_VERSION__;
@@ -543,18 +542,18 @@ function appVersion(): string {
  * @returns The commit hash, or undefined if not provided.
  */
 function commitHash(): string | undefined {
-  const hash = import.meta.env.VITE_COMMIT_HASH;
+  const hash = import.meta.env.VITE_COMMIT_VERSION;
 
   if (
     hash === '' ||
     hash === undefined ||
     FALSEY_STRINGS.includes(hash.toLowerCase())
   ) {
-    console.info('VITE_COMMIT_HASH not provided');
+    console.info('VITE_COMMIT_VERSION not provided');
     return undefined;
   }
 
-  console.info(`Using VITE_COMMIT_HASH: ${hash}`);
+  console.info(`Using VITE_COMMIT_VERSION: ${hash}`);
   return hash;
 }
 

@@ -19,10 +19,10 @@
  *   which server to use and whether to include test data
  */
 
-// Imported to get the version
-import {slugify} from '@faims3/data-model';
-import {existsSync, readFileSync} from 'fs';
-import {v4 as uuidv4} from 'uuid';
+import { slugify } from '@faims3/data-model';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import {
   createEmailService,
   EmailConfig,
@@ -30,8 +30,7 @@ import {
   IEmailService,
   SMTPEmailServiceConfig,
 } from './services/emailService';
-import {getKeyService, IKeyService, KeySource} from './services/keyService';
-import {join} from 'path';
+import { getKeyService, IKeyService, KeySource } from './services/keyService';
 
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 

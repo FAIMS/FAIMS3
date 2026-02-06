@@ -98,7 +98,7 @@ if (bugsnagEnabled) {
   Bugsnag.start({
     apiKey: BUGSNAG_API_KEY!,
     plugins: [BugsnagPluginExpress],
-    ...(API_VERSION ? {appVersion: API_VERSION} : {}),
+    appVersion: API_VERSION,
   });
   console.log('Bugsnag enabled');
 } else {
