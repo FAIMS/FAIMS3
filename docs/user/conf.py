@@ -19,10 +19,19 @@ release = "1.3.3"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['myst_parser', 'screenshot', 'sphinx_wagtail_theme']
+extensions = [
+    'myst_parser', 
+    'screenshot', 
+    'sphinx_wagtail_theme', 
+    'sphinxcontrib.mermaid',
+    ]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", ".venv"]
+
+
+# GitHub cross support for mermaid
+myst_fence_as_directive = ["mermaid"]
 
 
 # -- Options for HTML output -------------------------------------------------
