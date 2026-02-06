@@ -5,7 +5,7 @@ import BugsnagPluginReact from '@bugsnag/plugin-react';
 import {initialiseMaps} from '@faims3/forms';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RouterProvider, createRouter} from '@tanstack/react-router';
-import React, {StrictMode, useEffect} from 'react';
+import {StrictMode, useEffect} from 'react';
 import ReactDOM from 'react-dom/client';
 import {APP_VERSION, BUGSNAG_API_KEY, WEBSITE_TITLE} from './constants';
 import {AuthProvider, useAuth} from './context/auth-provider';

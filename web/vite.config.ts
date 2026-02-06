@@ -35,5 +35,7 @@ export default defineConfig({
   // Polyfill global in case of weird importing going on!
   define: {
     global: 'globalThis',
+    // Replace __APP_VERSION__ with package.json version at build time
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
 });

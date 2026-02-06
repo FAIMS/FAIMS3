@@ -70,8 +70,6 @@ export interface FaimsFrontEndProps {
 
   /** Bugsnag key - enables app monitoring if desired */
   bugsnagKey?: string;
-  /** Bugsnag app version - tags the app version in bug snag */
-  appVersion?: string;
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -184,7 +182,8 @@ export class FaimsFrontEnd extends Construct {
       platform: 'web',
       serverprefix: 'fieldmark',
       VITE_CLUSTER_ADMIN_GROUP_NAME: 'cluster-admin',
-      VITE_COMMIT_VERSION: 'unknown TBD',
+      // It's optional to provide this
+      // VITE_COMMIT_VERSION: 'unknown TBD',
 
       // Debugging has performance implications
       VITE_DEBUG_APP: this.debugMode ? 'true' : 'false',
@@ -372,7 +371,6 @@ export class FaimsFrontEnd extends Construct {
         props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
-      ...(props.appVersion ? {VITE_APP_VERSION: props.appVersion} : {}),
     };
 
     // Setup a deployment into this bucket with static files

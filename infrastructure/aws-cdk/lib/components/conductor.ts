@@ -261,7 +261,6 @@ export class FaimsConductor extends Construct {
 
         // Bugsnag (optional)
         ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),
-        ...(props.apiVersion ? {API_VERSION: props.apiVersion} : {}),
 
         // add any auth environment variables
         ...authEnvironment,

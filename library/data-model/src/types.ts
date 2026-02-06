@@ -492,6 +492,9 @@ export interface PublicServerInfo {
   conductor_url: string;
   description: string;
   prefix: string;
+  // The version of the server e.g. 1.3.2. Optional for backwards compat - new
+  // versions always report
+  serverVersion?: string;
 }
 
 export interface ProjectInformation {

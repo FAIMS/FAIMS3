@@ -152,6 +152,9 @@ export interface Server {
   // What is the URL for the server?
   serverUrl: string;
 
+  // What is the reported version of the server?
+  serverVersion?: string;
+
   // Server unique ID
   serverId: string;
 
@@ -218,6 +221,7 @@ const projectsSlice = createSlice({
       state,
       action: PayloadAction<{
         serverId: string;
+        serverVersion?: string;
         serverTitle: string;
         serverUrl: string;
         couchDbUrl?: string;
@@ -232,10 +236,12 @@ const projectsSlice = createSlice({
         serverTitle,
         serverUrl,
         couchDbUrl,
+        serverVersion,
       } = action.payload;
       // Create a new server with no projects
       state.servers[serverId] = {
         projects: {},
+        serverVersion,
         couchDbUrl,
         serverId,
         description,
@@ -252,14 +258,21 @@ const projectsSlice = createSlice({
       state,
       action: PayloadAction<{
         serverId: string;
+        serverVersion?: string;
         serverTitle: string;
         serverUrl: string;
         shortCodePrefix: string;
         description: string;
       }>
     ) => {
-      const {serverId, description, serverTitle, shortCodePrefix, serverUrl} =
-        action.payload;
+      const {
+        serverId,
+        serverVersion,
+        description,
+        serverTitle,
+        shortCodePrefix,
+        serverUrl,
+      } = action.payload;
       if (!state.servers[serverId]) {
         throw Error(`Could not find server with ID: ${serverId}`);
       }
@@ -275,6 +288,7 @@ const projectsSlice = createSlice({
 
         // Other details we overwrite
         serverId,
+        serverVersion,
         serverTitle,
         serverUrl,
         shortCodePrefix,
@@ -1100,6 +1114,22 @@ export const selectServers = createSelector(
 );
 
 /**
+ * Targeted selector that only returns the active server's version.
+ * This prevents re-renders when other servers or server properties change.
+ * Returns undefined if no active server or server has no version.
+ */
+export const selectActiveServerVersion = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (state: RootState) => selectActiveServerId(state),
+  ],
+  (servers, activeServerId): string | undefined => {
+    if (!activeServerId) return undefined;
+    return servers[activeServerId]?.serverVersion;
+  }
+);
+
+/**
  * Finds a project by its ID across all servers.
  * Memoized to prevent unnecessary re-renders.
  *
@@ -1476,6 +1506,7 @@ export const initialiseServers = createAsyncThunk<void>(
             serverUrl: apiServerInfo.conductor_url,
             shortCodePrefix: apiServerInfo.prefix,
             description: apiServerInfo.description,
+            serverVersion: apiServerInfo.serverVersion,
           })
         );
       } else {
@@ -1486,9 +1517,11 @@ export const initialiseServers = createAsyncThunk<void>(
             serverTitle: apiServerInfo.name,
             serverUrl: apiServerInfo.conductor_url,
             shortCodePrefix: apiServerInfo.prefix,
-            // We don't know this yet - it's considered sensitive so we need authentication.
+            // We don't know this yet - it's considered sensitive so we need
+            // authentication.
             couchDbUrl: undefined,
             description: apiServerInfo.description,
+            serverVersion: apiServerInfo.serverVersion,
           })
         );
       }

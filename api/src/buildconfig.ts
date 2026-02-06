@@ -31,6 +31,11 @@ import {
 } from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
+// Get the package version directly from package.json
+import {version as packageVersion} from '../package.json';
+console.log(`Using API version from package.json: ${packageVersion}`);
+export const API_VERSION = packageVersion;
+
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
 // If a URL for the conductor instance is not provided this will be used as a fall-through
@@ -696,17 +701,3 @@ function bugsnagApiKey(): string | undefined {
 
 export const BUGSNAG_API_KEY = bugsnagApiKey();
 
-/**
- * Gets the API version from environment variables.
- * @returns The API version, or undefined if not configured.
- */
-function apiVersion(): string | undefined {
-  const version = process.env.API_VERSION;
-  if (version === '' || version === undefined) {
-    console.log('API_VERSION not set');
-    return undefined;
-  }
-  return version;
-}
-
-export const API_VERSION = apiVersion();
