@@ -265,6 +265,14 @@ export class FaimsConductor extends Construct {
         // add any auth environment variables
         ...authEnvironment,
 
+        // disable local login if specified in config (for SSO only deployments)
+        // defaults to false if not provided in config
+        DISABLE_LOCAL_LOGIN: props.authProviders
+          ? props.authProviders.disableLocalLogin
+            ? 'true'
+            : 'false'
+          : 'false',
+
         // Security configurations
         MAXIMUM_LONG_LIVED_DURATION_DAYS: props.maximumLongLivedDurationDays
           ? props.maximumLongLivedDurationDays.toString()
