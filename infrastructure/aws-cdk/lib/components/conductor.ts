@@ -329,7 +329,11 @@ export class FaimsConductor extends Construct {
       vpc: props.vpc,
       // Enable enhanced metrics - this gives container/task level insights and
       // more metrics
-      containerInsightsV2: ecs.ContainerInsights.ENHANCED
+      ...(props.config.enhancedObservability
+        ? {
+            containerInsightsV2: ecs.ContainerInsights.ENHANCED,
+          }
+        : {}),
     });
 
     // Create Security Group for the Fargate service

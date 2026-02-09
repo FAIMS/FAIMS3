@@ -327,6 +327,8 @@ const DomainsConfigSchema = z.object({
 const ConductorConfigSchema = z.object({
   /** The title for this conductor instance, shown on listings page */
   name: z.string(),
+  /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
+  enhancedObservability: z.boolean().optional(),
   /** The description shown underneath as a sub heading */
   description: z.string(),
   /** Conductor docker image e.g. org/faims3-api */

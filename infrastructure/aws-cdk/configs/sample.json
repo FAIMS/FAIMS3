@@ -86,6 +86,7 @@
   },
   "conductor": {
     "name": "FAIMS Server",
+    "enhancedObservability": true,
     "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "ghcr.io/faims/faims3-api",
     "conductorDockerImageTag": "latest",
