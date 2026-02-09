@@ -1,0 +1,942 @@
+[
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Version bump - 1.3.2 for iOS release",
+    "mergedAt": "2026-01-20T05:24:19Z",
+    "number": 1883,
+    "title": "bump version to 1.3.2 for ios"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Adds help text for each geometry type explaining the action needed. \r\n\r\nGreys out the save option when the user a) had existing features and b) hasn't finished drawing a point (or selected using the new select current location).",
+    "mergedAt": "2026-01-20T05:16:48Z",
+    "number": 1881,
+    "title": "feat: map help text, grayed out save"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Addresses https://jira.csiro.au/browse/BSS-1079 \r\n\r\nSimple fix - also fixed bug with the on click logic.",
+    "mergedAt": "2026-01-20T01:06:24Z",
+    "number": 1879,
+    "title": "fix: offline record fetching"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjcwODMxMzU5",
+      "is_bot": false,
+      "login": "ranisa-gupta16",
+      "name": "Ranisa G."
+    },
+    "body": "]\r\n\r\n## Description\r\n\r\nRequired fields asterisk is \"red\" .\r\n\r\n## Checklist\r\n\r\n- [x] I have confirmed all commits have been signed.\r\n- [x] I have added JSDoc style comments to any new functions or classes.\r\n- [x] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2026-01-20T00:24:59Z",
+    "number": 1878,
+    "title": "asterisk to be red for required fields, all themes"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjcwODMxMzU5",
+      "is_bot": false,
+      "login": "ranisa-gupta16",
+      "name": "Ranisa G."
+    },
+    "body": "## Description\r\nUpdated content of Activate survey popup as discussed with Elana\r\n<img width=\"702\" height=\"541\" alt=\"image\" src=\"https://github.com/user-attachments/assets/32f8110d-6e08-45a3-b706-5c1e4f4ca2d1\" />\r\n\r\nNEW UPDATED ONE \r\n\r\n\r\n<img width=\"316\" height=\"371\" alt=\"image\" src=\"https://github.com/user-attachments/assets/eb670a70-b715-41dc-8901-4702cca865f3\" />\r\n\r\n\r\n## Checklist\r\n\r\n- [x] I have confirmed all commits have been signed.\r\n- [x] I have added JSDoc style comments to any new functions or classes.\r\n- [x] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2026-01-20T01:49:45Z",
+    "number": 1876,
+    "title": "Update Activate survey popup content"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Mobile stepper visibility was running on the unfiltered sections list, instead of visible sections.",
+    "mergedAt": "2026-01-20T01:07:25Z",
+    "number": 1875,
+    "title": "fix: improper mobile stepper visbility"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Removing excessive padding, and removing Field: prefix before the title.",
+    "mergedAt": "2026-01-20T01:43:30Z",
+    "number": 1874,
+    "title": "feat: advanced helper text display improvements"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Adds a pin icon in the top right - when the current location is available, it is enabled. When clicked, it places the Point pin on the center of the current location. ",
+    "mergedAt": "2026-01-20T03:51:56Z",
+    "number": 1873,
+    "title": "feat: map form field point select - use current location"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Fixes missing helper text passthrough, and improves preview component, for related record selector",
+    "mergedAt": "2026-01-19T22:21:34Z",
+    "number": 1871,
+    "title": "feat: related record selector help text and preview"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg2OTIxNTI=",
+      "is_bot": false,
+      "login": "saross",
+      "name": "Shawn A Ross"
+    },
+    "body": "## Summary\n\nComprehensive improvements to the user roles and permissions guide, addressing gaps, inconsistencies, and structural issues identified during review.\n\n**Target audience:** IT staff, change management teams, and project administrators at enterprise clients.\n\n## Changes\n\n### Content Additions\n- **Scope statement** — \"What This Guide Covers (and Doesn't)\" clarifies boundaries\n- **UI Patterns at a Glance** — Quick orientation table moved to Introduction\n- **How Users Are Created** — Explains SSO provisioning (no manual account creation)\n- **Creating a Team** — New procedure for GENERAL_ADMIN users\n- **Managing Team Invites** — Full subsection with invite mechanics (expiry, uses, codes, QR)\n- **Expanded notebook invite explanation** — Column descriptions for Invites tab\n\n### Content Modifications\n- Team creation note updated to mention GENERAL_ADMIN can create teams\n- Password reset clarified for SSO users (handled by identity provider)\n- \"Auto-grants on Notebooks\" → \"Virtual Notebook Role\" terminology\n- Fixed incorrect screenshot cross-reference\n\n### Content Removals\n- API tokens mention (out of scope for audience)\n- Template Roles section (out of scope without procedures)\n\n### Structural Improvements\n- \"See also\" cross-references linking procedures to troubleshooting\n- Placeholder for non-existent user invite behaviour (`[TO BE CONFIRMED]`)\n\n### Macro/Formatting (from original PR)\n- Complete `{{notebook}}` macro conversion (~30 instances)\n- Emoji removal for cleaner rendering\n\n## Test Plan\n\n- [ ] Verify MyST variables render correctly in Sphinx build\n- [ ] Check all screenshot directives resolve\n- [ ] Review cross-references link to correct troubleshooting sections\n- [ ] Confirm guide version updated to 1.3\n\n---\n\n🤖 Generated with [Claude Code](https://claude.ai/code)",
+    "mergedAt": "2026-01-19T01:42:07Z",
+    "number": 1869,
+    "title": "docs: Comprehensive improvements to user roles guide"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Adds a new \r\n\r\n- VITE_SATELLITE_SOURCE = 'esri' | 'maptiler'\r\n- VITE_SATELLITE_SOURCE_KEY = optional key (for maptiler - replaces ${key} in url)\r\n\r\nIf configured as above, adds a new XYZ image layer based on the tile store hardcoded url for each of the esri/maptiler satellite layers. Zoom levels are bounded in the code, but view is kept flexible, to allow 'over zooming' on the satellite image and to not disrupt notebook zoom preferences. \r\n\r\nResponds to online environment ,hiding and swapping back to offline vector layer when offline. \r\n\r\nAdds CDK code. \r\n\r\n@stevecassidy  do we need to expose in iOS and Android builds? See the keys above. For DASS we just need esri source - no key.\r\n",
+    "mergedAt": "2026-01-16T03:10:29Z",
+    "number": 1867,
+    "title": "feat: online only satellite "
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Fix IOS Build in CI\r\n\r\n## JIRA Ticket\r\n\r\nNone\r\n\r\n## Description\r\n\r\nIOS Build has broken on GitHub.\r\n\r\n## Proposed Changes\r\n\r\nUpdate XCode version to 16.4 - change in GitHub runner image made 16.3 not work.\r\n\r\n## How to Test\r\n\r\nConfirm IOS build workflow is working\r\n\r\n## Checklist\r\n\r\n- [ ] I have confirmed all commits have been signed.\r\n- [ ] I have added JSDoc style comments to any new functions or classes.\r\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2026-01-16T01:13:09Z",
+    "number": 1866,
+    "title": "Fix IOS Build in CI"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjcwODMxMzU5",
+      "is_bot": false,
+      "login": "ranisa-gupta16",
+      "name": "Ranisa G."
+    },
+    "body": "\r\n## JIRA Ticket\r\n\r\nhttps://jira.csiro.au/browse/BSS-1064\r\n\r\n## Description\r\n\r\nBump version to 1.3.1 for ios release\r\n\r\n## Checklist\r\n\r\n- [x] I have confirmed all commits have been signed.\r\n- [ ] I have added JSDoc style comments to any new functions or classes.\r\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2026-01-15T05:23:22Z",
+    "number": 1864,
+    "title": "bump up version to 1.3.1 for ios release"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjcwODMxMzU5",
+      "is_bot": false,
+      "login": "ranisa-gupta16",
+      "name": "Ranisa G."
+    },
+    "body": "## JIRA Ticket\r\nhttps://jira.csiro.au/browse/BSS-1037 including subtasks created for this.\r\n\r\n\r\n## Description\r\nAdd “Other” option support for Select + MultiSelect fields (Designer + App )\r\n\r\n\r\nBriefly describe the purpose of this pull request.\r\nThis PR introduces an “Other” option for Select and MultiSelect form fields, allowing end users to enter custom input when predefined options don’t match. It includes:\r\n\r\n - runtime support (dropdown + expanded checklist)\r\n\r\n - Designer support to enable/disable the feature via enableOtherOption\r\n\r\n - Inline text input UX (Microsoft Forms style)\r\n\r\nSee screenshots for reference: \r\n<img width=\"530\" height=\"243\" alt=\"image\" src=\"https://github.com/user-attachments/assets/0c6823a3-2f5d-49bf-abcd-dde9ebdf3d6d\" />\r\n<img width=\"555\" height=\"339\" alt=\"image\" src=\"https://github.com/user-attachments/assets/c21b8304-4fd5-47bd-979d-c16529d49461\" />\r\n\r\nWe now have a Add \"Other\" Option in Designer for Select and Multiselect fields.\r\nThis will allow the user to enter custom other text in Select or Multiselect fields in the form of either expanded checklist or dropdown menu.\r\n\r\nOpen a survey in control centre, Open in editor.\r\n\r\nAdd a new field  - for example Select Multiple \r\n\r\nYou should see a new button below Display Multi-select as an expanded checklist.\r\n: Add \"Other\" Option. \r\n\r\nOn click of this button, it will add a Other Option to that Multiselect list, either expanded or dropdown.\r\n\r\n<img width=\"963\" height=\"744\" alt=\"image\" src=\"https://github.com/user-attachments/assets/0d60a6ab-d92e-41d1-87f5-730939d20e99\" />\r\n\r\nThe button will be disabled after the click.\r\n\r\n<img width=\"925\" height=\"681\" alt=\"image\" src=\"https://github.com/user-attachments/assets/0bf94c7d-22fb-42c1-a71b-cd3d7668c25a\" />\r\n\r\nYou have option to delete the row which will remove the \"Other\" option form that list.\r\n<img width=\"875\" height=\"378\" alt=\"image\" src=\"https://github.com/user-attachments/assets/063c5c01-57d2-4802-bdb7-23ff14969e2b\" />\r\n\r\nSave changes and navigate to the app and open the survey you have saved changes into.\r\n\r\nNavigate to the step where you have added that multi-select list.\r\n\r\nSelect options as required in the multi-select list, choose other option and add custom option to it.\r\n\r\n<img width=\"777\" height=\"350\" alt=\"image\" src=\"https://github.com/user-attachments/assets/a8be87d8-119f-4114-a628-4ea1544d6b0c\" />\r\n\r\n<img width=\"770\" height=\"156\" alt=\"image\" src=\"https://github.com/user-attachments/assets/fc721d60-f86b-4da8-8829-9a33e7c83f8c\" />\r\n\r\nSimilarly, select options as needed in expanded multi-select list as well and add \"other\" option too.\r\n\r\n<img width=\"351\" height=\"286\" alt=\"image\" src=\"https://github.com/user-attachments/assets/828769ed-a14a-41dc-b826-84bebab18922\" />\r\n\r\nIf you click the checkbox for other option but don;t add anything in the textfield, you should see a error ; \r\n<img width=\"778\" height=\"358\" alt=\"image\" src=\"https://github.com/user-attachments/assets/d10b2f6d-345b-4742-b348-fe4db2606e32\" />\r\n\r\n<img width=\"363\" height=\"276\" alt=\"image\" src=\"https://github.com/user-attachments/assets/7450a465-048f-4bdf-ae76-eab2969ae46f\" />\r\n\r\n\r\nAs discussed with the team, for better data maintenance, \"Other:\" prefix has been added in front of other option in data,\r\nsee below\r\n\r\n<img width=\"372\" height=\"163\" alt=\"image\" src=\"https://github.com/user-attachments/assets/79015295-f93f-4dc3-9765-836daf373182\" />\r\n\r\nfor example to differentiate: \r\n\r\n<img width=\"692\" height=\"528\" alt=\"image\" src=\"https://github.com/user-attachments/assets/9de17bc5-d6b3-45eb-ae68-536ff9f1bad4\" />\r\n\r\nreview record and you should see the other option if it was added.\r\n\r\n\r\nOther fields are updated with \"other\" option are: \r\nSelect Field - Select one option dropdown \r\n\r\n<img width=\"1099\" height=\"216\" alt=\"image\" src=\"https://github.com/user-attachments/assets/b679b526-998d-4432-9f6f-f46bf6885897\" />\r\n\r\n<img width=\"1220\" height=\"593\" alt=\"image\" src=\"https://github.com/user-attachments/assets/b70e28ae-e201-483c-9b3a-fedf7b5455ff\" />\r\n\r\n\r\nRadio group \r\n<img width=\"1230\" height=\"750\" alt=\"image\" src=\"https://github.com/user-attachments/assets/7542e917-0286-4945-985d-b5db747f5b17\" />\r\n<img width=\"207\" height=\"212\" alt=\"image\" src=\"https://github.com/user-attachments/assets/5a7e4c68-5608-4a1a-8260-3fb23901b1a2\" />\r\n\r\n\r\n\r\n\r\n## Checklist\r\n\r\n- [ y ] I have confirmed all commits have been signed.\r\n- [ y ] I have added JSDoc style comments to any new functions or classes.\r\n- [ y ] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2026-01-20T04:49:24Z",
+    "number": 1863,
+    "title": "Other option in multiselect , radio group and select option list"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Previously, a stale error state on sync (possibly from old token on app reload - unsure) resulted in cloud having exclamation icon for sync status until clicked, upon which it would refresh and then resolve. \r\n\r\nThis PR makes the poll rate adaptive. If open - once per second. If closed - once per 10 seconds. This should resolve issue with stale exclamation. \r\n\r\nAlso takes opportunity to let AI do some tidy up and improve docs a bit.\r\n",
+    "mergedAt": "2026-01-15T04:42:38Z",
+    "number": 1862,
+    "title": "feat: adaptive poll rate sync status"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Disables all default filtering and sorting options. \r\n\r\nHydrates only those records which are visible by having controlled pagination model and hydrating only visible records. \r\n\r\nMakes the overview map asynchronously fetch only GIS fields on demand - rather than relying on pre-existing list of fully hydrated records.",
+    "mergedAt": "2026-01-15T00:57:34Z",
+    "number": 1859,
+    "title": "feat: record list performance"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "As discussed in #1853 - sync handlers were causing redux events - which were causing re-renders in many places in the app. \r\n\r\nThis removes the sync state from the main redux state, and instead sets up handlers which update a simple map in a singleton service. This is then polled by the simplified sync state cloud - only when the dialog is open. This means that we never have the risk of inadvertently re-rendering a component many times (causing CPU wastage) due to subscribing to too broad a section of state, not to mention all the redux listeners running constantly during sync.",
+    "mergedAt": "2026-01-12T01:21:05Z",
+    "number": 1858,
+    "title": "feat: improved sync handler performance"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Use correct date when showing created time\n\n## Ticket\n\nNone\n\n## Description\n\nRecord table was showing updated time in the created column.\n\n## Checklist\n\n- [ ] I have confirmed all commits have been signed.\n- [ ] I have added JSDoc style comments to any new functions or classes.\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\n",
+    "mergedAt": "2026-01-09T05:29:42Z",
+    "number": 1856,
+    "title": "Use correct date when showing created time"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Does more work to async parallelise the fetching and processing of the project details. This is to avoid \r\n\r\na) the 'one by one' trickle in rendering effect\r\nb) the slow performance",
+    "mergedAt": "2026-01-12T02:43:11Z",
+    "number": 1855,
+    "title": "feat: survey detail initialisation performance"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Fix conditions for showing fields to handle case where section is in visibility map but has no visible fields.",
+    "mergedAt": "2026-01-11T22:31:31Z",
+    "number": 1854,
+    "title": "fix: don't show sections with no visible fields"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "This was an easy fix, but was actually masking a bigger issue. When we create db syncs, we hook up event handlers which dispatch updates to the sync state on every event. This is part of the project redux payload. Naively using the whole selector object for selectProjectById results in a re-render on every sync change event. This was in editRecord and viewRecord - causing multiple-rerenders down the chain, which was re-rendering with the latest saved ref. \r\n\r\nThe fix here was to use a state instead of ref for isSaving (since we do want re-renders from this change in state). \r\n\r\nThe larger fix is targeted in BSS-1040 \r\n\r\n",
+    "mergedAt": "2026-01-11T22:31:46Z",
+    "number": 1853,
+    "title": "fix: saving... never resolves while sync disabled"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Makes some changes to hopefully make photos more stable on lower end devices, improve performance and UX. \r\n\r\n- tidy up the data path by storing directly as blob on native without ever converting to base 64\r\n- reduce the quality (higher JPEG compression) and cap resolution at full HD\r\n- implement optimistic photo loading so that it immediately displays the thumbnail upon capacitor capture, then does the storage in background, then shows the final loaded image",
+    "mergedAt": "2026-01-12T01:28:27Z",
+    "number": 1852,
+    "title": "feat: improved photo performance"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# More field migrations\r\n\r\n## JIRA Ticket\r\n\r\nNone\r\n\r\n## Description\r\n\r\nSome old notebooks were not working with new forms.\r\n\r\n## Proposed Changes\r\n\r\n- Add a migration for TextField to FAIMSTextField \r\n- Ensure that all TemplatedStringFields are required, this then allows them to be selected as HRID fields\r\n- Migrate any old TextField with type='number' to be a number field, catches a few very old notebooks\r\n\r\n## How to Test\r\n\r\nLoad an old notebook eg. [this one](https://github.com/FAIMS/FAIMS3-notebook-CSIRO-geochemistry) and note the field changes.\r\n\r\n## Checklist\r\n\r\n- [x] I have confirmed all commits have been signed.\r\n- [x] I have added JSDoc style comments to any new functions or classes.\r\n- [x] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2026-01-08T02:14:39Z",
+    "number": 1850,
+    "title": "More field migrations"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "\n# Disable interactions on map previews\n\n## Ticket\n\n#1840\n\n## Description\n\nCurrently the map preview used in the read-only form and in editable form will scroll if you touch it on mobile or use the scroll wheel on desktop, this is probably not useful and generally not what you want. \n\n\n## Proposed Changes\n\nDisable scrolling so that we only have a fixed map shown in the preview.\n\n## How to Test\n\nView a notebook record with maps.\n\n## Checklist\n\n- [ ] I have confirmed all commits have been signed.\n- [ ] I have added JSDoc style comments to any new functions or classes.\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\n",
+    "mergedAt": "2026-01-07T22:48:15Z",
+    "number": 1845,
+    "title": "Disable interactions on map previews"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Remove outdated safe-area plugin, fix appbar and tweak tabbed form scrolling\r\n\r\n## Ticket\r\n\r\n#1697\r\n\r\n## Description\r\n\r\nOn Android, the system status bar is transparent and app content appears below it when we scroll.\r\n\r\n\r\n## Proposed Changes\r\n\r\nThe standard approach to this seems to be to have a fixed app bar at the top of the screen that prevents content being shown below the status bar.   This PR:\r\n\r\n- fixes the app bar to the top of the screen and on mobile, adds a top margin to have it overlap under the system status bar\r\n- fixes the 'scroll to top' behaviour in tabbed forms by ensuring that the prev/next navigation is positioned just below the main app bar - some hairy stuff is needed to make this work\r\n- removes the old @capacitor/status-bar plugin that is now deprecated\r\n- tweaks some settings to update the HTML header and Android Java code to documented best practice\r\n\r\n## How to Test\r\n\r\nOn the web, you should just see that the app bar is fixed to the top of the page with content scrolling below it. \r\n\r\nOn Android and IOS, you should see the same but note that content does not scroll to be visible below the status bar on Android. \r\n\r\nOn all platforms, navigating through a multi-section form with the Prev/Next buttons should scroll the page so that the navigation bar is at the top of the screen, just below the main app bar.  Note that on IOS there seems to be an additional bit of space (maybe the size of the app bar) - I will investigate this but it seems workable as it is.\r\n\r\n\r\n## Checklist\r\n\r\n- [x] I have confirmed all commits have been signed.\r\n- [x] I have added JSDoc style comments to any new functions or classes.\r\n- [x] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2025-12-23T23:29:52Z",
+    "number": 1843,
+    "title": "remove outdated safe-area plugin, fix appbar and tweak tabbed form scrolling"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Lots of small changes, predominately around UI elements such as headings, ordering of buttons, icons, wording, sizing, colours etc. Fixes various bugs, misc improvements. Disables nested rendering on small displays. Etc.",
+    "mergedAt": "2026-01-08T00:09:20Z",
+    "number": 1842,
+    "title": "feat: post major-form-refactor UX review"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Fixes missing forms build in one of the package.json scripts. Also syncs up the github workflow which had some improvements in the nbic-bss fork.",
+    "mergedAt": "2025-12-22T22:25:57Z",
+    "number": 1839,
+    "title": "fix: build fixes/improvements - syncing with upstream and fixing post major-form-refactor cdk build issue"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Adds back/next at bottom of mobile stepper view. \r\n\r\nAdds a navigation hook when going forward/back sections in mobile view to scroll to top, as well as when clicking on other section error. \r\n\r\nRefactors headings in the view/edit pages to be more sensible. \r\n\r\nRemoves redundant headings introduced in form manager.",
+    "mergedAt": "2025-12-22T01:12:48Z",
+    "number": 1838,
+    "title": "feat: improved mobile experience, UX tidy up for viewing/editing"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Brings back progress bar. very easy in new implementation - just subscribe to state for live view, or use the engine to get data for static version. Reuses old presentation layer.",
+    "mergedAt": "2025-12-22T01:10:24Z",
+    "number": 1837,
+    "title": "feat: progress bar is back"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Fix IOS Build workflow for pnpm\n\n## JIRA Ticket\n\nNone\n\n## Description\n\nIOS Nightly build is broken following the change to pnpm.",
+    "mergedAt": "2025-12-22T00:52:48Z",
+    "number": 1836,
+    "title": "Fix IOS Build workflow for pnpm"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Map preview accepts either feature or featurecollection\n\n## Ticket\n\nNone\n\n## Description\n\nBug in map preview when viewing TakePoint fields that generate a Feature rather than a FeatureCollection.\n\n",
+    "mergedAt": "2025-12-21T22:45:26Z",
+    "number": 1835,
+    "title": "map preview accepts either feature or featurecollection"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "To address #1818 uses the themes stepper colors (noting the hack on the typing for now), and applies transparency to MUI default background color on the tab - rather than changing theme colors as in #1829 . For consideration. Rest of the app looks good in both themes.",
+    "mergedAt": "2025-12-19T04:45:56Z",
+    "number": 1831,
+    "title": "feat: transparency in background of tabs and using stepperColors"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Introduces knip and a helper script file-prune.sh which iterates through unused files and prompts remove/retain. \r\n\r\nDeletes many things. \r\n\r\n**Note** This completely removes conflicts - at least in the /app. This is because it was entangled with the field registry which we really want to remove - we will need to bring this back in and disentangle. \r\n\r\nThe data-model likely has more pruning that could be done. \r\n\r\n@stevecassidy  would recommend poking around the app to try and explore all routes/functions.",
+    "mergedAt": "2025-12-19T09:57:21Z",
+    "number": 1828,
+    "title": "chore: remove unused code after major refactor"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Addressing #1793 \r\n\r\ngoes through all new fields and checks their props + value schemas. We were pretty close, just some issues with optional fields not being respected, and some nicer ways of defining enums. Also possible crashes for empty option lists.",
+    "mergedAt": "2025-12-19T03:26:24Z",
+    "number": 1826,
+    "title": "feat: audit of value functions"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Brings back info tab with metadata and delete button - deleted all draft functions from the delete button logic.",
+    "mergedAt": "2025-12-19T04:06:10Z",
+    "number": 1825,
+    "title": "Improved view record page which brings back targeted info function"
+  },
+  {
+    "author": {"is_bot": true, "login": "app/dependabot"},
+    "body": "Bumps [aws-sdk-s3](https://github.com/aws/aws-sdk-ruby) from 1.183.0 to 1.208.0.\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/aws/aws-sdk-ruby/blob/version-3/gems/aws-sdk-s3/CHANGELOG.md\">aws-sdk-s3's changelog</a>.</em></p>\n<blockquote>\n<h2>1.208.0 (2025-12-16)</h2>\n<ul>\n<li>Feature - Updates to the S3 Encryption Client. The V3 S3 Encryption Client now requires key committing algorithm suites by default.</li>\n</ul>\n<h2>1.207.0 (2025-12-15)</h2>\n<ul>\n<li>Feature - This release adds support for the new optional field 'LifecycleExpirationDate' in S3 Inventory configurations.</li>\n</ul>\n<h2>1.206.0 (2025-12-02)</h2>\n<ul>\n<li>Feature - New S3 Storage Class FSX_ONTAP</li>\n</ul>\n<h2>1.205.0 (2025-11-20)</h2>\n<ul>\n<li>Feature - Enable / Disable ABAC on a general purpose bucket.</li>\n</ul>\n<h2>1.204.0 (2025-11-19)</h2>\n<ul>\n<li>Feature - Adds support for blocking SSE-C writes to general purpose buckets.</li>\n</ul>\n<h2>1.203.1 (2025-11-10)</h2>\n<ul>\n<li>Issue - Deprecated <code>:checksum_mode</code> parameter in <code>FileDownloader#download</code>. When set to &quot;DISABLED&quot;, a deprecation warning is issued and the parameter is ignored. Use <code>:response_checksum_validation</code> on the S3 client instead to control checksum validation behavior.</li>\n</ul>\n<h2>1.203.0 (2025-11-05)</h2>\n<ul>\n<li>Feature - Launch IPv6 dual-stack support for S3 Express</li>\n</ul>\n<h2>1.202.0 (2025-10-28)</h2>\n<ul>\n<li>Feature - Amazon Simple Storage Service / Features: Add conditional writes in CopyObject on destination key to prevent unintended object modifications.</li>\n</ul>\n<h2>1.201.0 (2025-10-21)</h2>\n<ul>\n<li>\n<p>Feature - Code Generated Changes, see <code>./build_tools</code> or <code>aws-sdk-core</code>'s CHANGELOG.md for details.</p>\n</li>\n<li>\n<p>Issue - Fix multipart upload to respect <code>request_checksum_calculation</code> <code>when_required</code> mode.</p>\n</li>\n</ul>\n<h2>1.200.0 (2025-10-15)</h2>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li>See full diff in <a href=\"https://github.com/aws/aws-sdk-ruby/commits\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=aws-sdk-s3&package-manager=bundler&previous-version=1.183.0&new-version=1.208.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after your CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge and block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating it. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\nYou can disable automated security fix PRs for this repo from the [Security Alerts page](https://github.com/FAIMS/FAIMS3/network/alerts).\n\n</details>",
+    "mergedAt": "2025-12-19T10:02:17Z",
+    "number": 1824,
+    "title": "Bump aws-sdk-s3 from 1.183.0 to 1.208.0 in /app/android"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Adds the finish and create new button logic. \r\n\r\nThis is pretty involved - we could refactor this to be in custom hooks which would make things cleaner. \r\n\r\nIt seems to work well, preserves navigation, and appears durable. I can't seem to break it spamming a bunch of actions in the form, and haven't seen any data loss. It also provides a nice message customised based on the context as much as possible.\r\n\r\n## Circular dependencies\r\n\r\nRecent changes introduced circular dependencies, added back checking painfully chased through all but one, which is more fundamental, but doesn't cause issues. \r\n\r\nSee #1820 ",
+    "mergedAt": "2025-12-18T07:18:55Z",
+    "number": 1821,
+    "title": "feat: finish and create new button"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Implements the remaining missing fields. \r\n\r\nFully deprecates old formik fields by not showing them in designer, and providing alternatives (where the old entry is not worth preserving).\r\n\r\nRemoves the validationSchema entirely from designer - json schema still accepts it.\r\n\r\nAdds migration to remove this property. \r\n\r\nTested all new fields with required and not required - will add notebook attachment. \r\n\r\n[1765937141151-new-fields.json](https://github.com/user-attachments/files/24203703/1765937141151-new-fields.json)\r\n\r\nAlso **note** - zod was at v4 in forms and v3 in other modules (my fault). I have downgraded it in forms. I attempted migrating all modules to v4, but it clashed with peer deps in api which broke the validation for the routes.\r\n",
+    "mergedAt": "2025-12-18T06:42:43Z",
+    "number": 1817,
+    "title": "feat: other less clear fields, number, text, designer, zod"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Implements DateTimeNow field alongside others. Needs a bit more control over things so doesn't use DateTimeBase but is similar. Adds some helper functions for display/conversion of date times.",
+    "mergedAt": "2025-12-18T01:06:09Z",
+    "number": 1816,
+    "title": "feat: DateTimeNow field"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Fall back to text field if we can't find a field spec\n\n## Ticket\n\n#1813\n\n## Description\n\nIf we can't find a field spec, insert a text field so that we can at least see and edit the value\n\n## How to Test\n\nOpen a notebook with fields that are not yet implemented (eg. Multiple Text Field).\n\n## Checklist\n\n- [ ] I have confirmed all commits have been signed.\n- [ ] I have added JSDoc style comments to any new functions or classes.\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\n",
+    "mergedAt": "2025-12-16T05:05:14Z",
+    "number": 1814,
+    "title": "Fall back to text field if we can't find a field spec"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "@stevecassidy will require testing with native build to ensure scanning works - uses similar approach to previous. Re-exports the QR code button component, removes from /app, and then uses from forms module. Has a separate overlay component to help with the whole screen portal effect (again needs testing on app). ",
+    "mergedAt": "2025-12-16T04:11:41Z",
+    "number": 1810,
+    "title": "feat: QR code form field"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Implements the date time fields (except the DateTimeNow which is a slightly odder one). \r\n\r\nUses a simple input field wrapper, similar approach to old app - maps to the new set field data. Made a notebook with each type, works well in view and edit modes, and validation appears enough for now (could actually validate isoDate format but not super necessary at the moment).",
+    "mergedAt": "2025-12-15T23:32:28Z",
+    "number": 1809,
+    "title": "feat: date time fields"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Adds custom view renderer for the FileUploader.",
+    "mergedAt": "2025-12-16T04:12:16Z",
+    "number": 1808,
+    "title": "feat: adding FileUploader rendering output"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "# docs: improved forms module documentation\r\n\r\nProvides a `/forms` sub-module to the developer docs. Has a landing page indexing into detailed docs of each aspect. \r\n\r\n@stevecassidy  I used AI to help co-write this based on it's view of the overall set of files and architecture, which are reasonably well documented internally. I have reviewed it, and believe it is quite good. Would appreciate a quick read-through for clarity, or omissions, as I have done. \r\n\r\nThanks.",
+    "mergedAt": "2025-12-16T22:09:53Z",
+    "number": 1807,
+    "title": "docs: improved forms module documentation"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Map Field in new forms\n\n## Ticket\n\n#1767\n\n## Description\n\nImplements the MapField in the new form module.\n\n## Proposed Changes\n\nAll map related components have been moved over to the @faims3/forms module.  The map field itself and the other map components used in the app are largely unchanged apart from adjustments of imports etc.  \n\nTo configure the map source there is a new call required from the app to `setMapConfig()` to pass the map source/key from the configured environment.\n\n\n## How to Test\n\nMaps should work in the test application in the forms module and in the form preview in designer as well as in the main app itself. \n\nTest a map field. Look at the overview map for a notebook.  Look at offline maps. All should work as before.\n\n## Additional Information\n\nNoted in passing that OSM maps no longer work due to the style files having maptiler links in them.  Can't see a simple fix so created a new ticket.\n\n## Checklist\n\n- [x] I have confirmed all commits have been signed.\n- [x] I have added JSDoc style comments to any new functions or classes.\n- [x] Relevant documentation such as READMEs, guides, and class comments are updated.\n",
+    "mergedAt": "2025-12-17T22:22:21Z",
+    "number": 1804,
+    "title": "Map Field in new forms"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Injects an incrementer service from the app -> the EditableFormManager through config. \r\n\r\nThe EditableFormManager runs an initialisation process on mount, once (tracked by ref), which attempts to set field values for all relevant fields. It does all it can. If it finds errors, it pushes these out through a callback. The callback fires a dialog in the parent. The parent marks back when it's 'resolved' - this triggers the ref to be updated to indicate that the initialisation should run again. This won't result in writing twice to the same field as it checks for an existing value first. This process repeats until the dialog resolves all missing incrementers. \r\n\r\nNOTE: currenlty the user could get 'stuck' if they somehow cannot resolve issue with incrementers.",
+    "mergedAt": "2025-12-16T04:26:14Z",
+    "number": 1800,
+    "title": "feat: auto incrementer integration into new forms"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Add deleted property for revision\r\n\r\n## JIRA Ticket\r\n\r\n#1795\r\n\r\n## Description\r\n\r\nThe 'deleted' property was not present in the schema for revision documents.\r\n\r\n## Proposed Changes\r\n\r\nAdds the 'deleted' property to the schema for revision documents so that they can be validated.\r\n\r\nAdds the optional 'deleted' property to the HydratedRecord type in both the 'record' and 'revision' properties based on the deleted status of the head revision (false if not present).   \r\n\r\nDoes not yet support setting this property via the new database engine - task for a later PR.\r\n\r\n## Checklist\r\n\r\n- [ ] I have confirmed all commits have been signed.\r\n- [ ] I have added JSDoc style comments to any new functions or classes.\r\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2025-12-10T04:03:28Z",
+    "number": 1797,
+    "title": "Add deleted property for revision"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "1) live reloading fix\r\n2) consistent use of mui typography instead of HTML elements\r\n3) stylesheet reset and mui theme reset\r\n\r\n**note** we could eventually inject the customised theme instead of a default one - but okay for now imo",
+    "mergedAt": "2025-12-10T04:04:30Z",
+    "number": 1796,
+    "title": "fix: preview improvements"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "General improvements to navigation, using 'implied' navigation information from the 'relationship' field where available, and explicit navigation (during edit interactions) is not available. Adds edit button to nested relationships, adds return to record list in more sensible places. Makes navigation buttons with a style template.\r\n\r\nAdds linked/parent as possible field values in the relationship field of records.\r\n\r\nThis is a bit cumbersome - the data model is just not that nice - but not too bad.",
+    "mergedAt": "2025-12-11T02:38:02Z",
+    "number": 1792,
+    "title": "feat: improved navigation, edit handles, parents from relationship? field"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "easy fix for [#1783](https://github.com/FAIMS/FAIMS3/issues/1783)",
+    "mergedAt": "2025-12-09T04:20:45Z",
+    "number": 1788,
+    "title": "feat: only have min text length on required"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "#1762 \r\nTanstack form debounce doesn't expose flush controls. \r\n\r\nImplements custom debounce wrapper and integrates into navigation button and browser navigation events. \r\n\r\nThe browser navigation requires the client context (e.g. react-router-dom). This means we have dynamically built events which are produced by a component which need to be called by the parent. The only way to do this is to pass information 'back' from child component to parent. React can do this with forward Refs, but I prefer the callback style. This is not an ideal pattern but is relatively simple in this case. \r\n\r\nThe useBlocked react-router-dom also requires the new react router data API - AI was competent at re-writing this App.tsx file with the new API, all features seem to be functional in testing, but if we see issues with routing or protected routes, we may wish to review this. We could fall back instead to browser events- but these are a bit more complex. We may also wish to utilise other modern react router features which this upgrade exposes us to.",
+    "mergedAt": "2025-12-09T05:57:36Z",
+    "number": 1787,
+    "title": "feat: flush debounced changes on all navigation events"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Remove  unused @fast-check/vitest\n\n## JIRA Ticket\n\nNone\n\n## Description\n\n@fast-check/vitest is not used\n\n",
+    "mergedAt": "2025-12-09T02:05:12Z",
+    "number": 1786,
+    "title": "remove  unused @fast-check/vitest"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Implements paginated related record existing link query + interface, and improves record navigation and AvpUpdateMode",
+    "mergedAt": "2025-12-09T00:21:17Z",
+    "number": 1785,
+    "title": "feat: implements paginated related record existing link query + interface, and improves record navigation and AvpUpdateMode"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Implements a full-featured navigation which allows for arbitrary serialised state into the location - this is the most ergonomic way to pass complex object through history/state. Using this, it allows us to backtrack nicely through the form. Also implements scroll to field when navigating back.",
+    "mergedAt": "2025-12-08T03:12:26Z",
+    "number": 1784,
+    "title": "feat: navigation buttons"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Integrates the view only page as a prelude to the edit page - click to edit record.\r\n\r\nStill lots of layout/features to re-integrate into this fresh page, but is a starting point for a more sensible existing record page experience with compact data layout. \r\n\r\nIntegrates the field registries between these two implementations.",
+    "mergedAt": "2025-12-07T22:59:13Z",
+    "number": 1782,
+    "title": "feat: basic integration of view only mode"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Takes a similar context/tools injection approach - to do in subsequent PRs\r\n\r\n- integrate the field registries \r\n- improve the error messages for missing attachments to include the app name etc",
+    "mergedAt": "2025-12-05T07:01:35Z",
+    "number": 1781,
+    "title": "feat: first pass integration of view only renderer into forms module"
+  },
+  {
+    "author": {"is_bot": true, "login": "app/dependabot"},
+    "body": "Bumps [nodemailer](https://github.com/nodemailer/nodemailer) from 7.0.10 to 7.0.11.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/nodemailer/nodemailer/releases\">nodemailer's releases</a>.</em></p>\n<blockquote>\n<h2>v7.0.11</h2>\n<h2><a href=\"https://github.com/nodemailer/nodemailer/compare/v7.0.10...v7.0.11\">7.0.11</a> (2025-11-26)</h2>\n<h3>Bug Fixes</h3>\n<ul>\n<li>prevent stack overflow DoS in addressparser with deeply nested groups (<a href=\"https://github.com/nodemailer/nodemailer/commit/b61b9c0cfd682b6f647754ca338373b68336a150\">b61b9c0</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/nodemailer/nodemailer/blob/master/CHANGELOG.md\">nodemailer's changelog</a>.</em></p>\n<blockquote>\n<h2><a href=\"https://github.com/nodemailer/nodemailer/compare/v7.0.10...v7.0.11\">7.0.11</a> (2025-11-26)</h2>\n<h3>Bug Fixes</h3>\n<ul>\n<li>prevent stack overflow DoS in addressparser with deeply nested groups (<a href=\"https://github.com/nodemailer/nodemailer/commit/b61b9c0cfd682b6f647754ca338373b68336a150\">b61b9c0</a>)</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/nodemailer/nodemailer/commit/3d17dbec49ab3e3f0e13e62871e5534be5b99994\"><code>3d17dbe</code></a> chore(master): release 7.0.11 (<a href=\"https://redirect.github.com/nodemailer/nodemailer/issues/1783\">#1783</a>)</li>\n<li><a href=\"https://github.com/nodemailer/nodemailer/commit/15879f8bd5a94fe608fd7cf1d3142de14527eadf\"><code>15879f8</code></a> Bumped dev dependencies</li>\n<li><a href=\"https://github.com/nodemailer/nodemailer/commit/b61b9c0cfd682b6f647754ca338373b68336a150\"><code>b61b9c0</code></a> fix: prevent stack overflow DoS in addressparser with deeply nested groups</li>\n<li>See full diff in <a href=\"https://github.com/nodemailer/nodemailer/compare/v7.0.10...v7.0.11\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=nodemailer&package-manager=npm_and_yarn&previous-version=7.0.10&new-version=7.0.11)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after your CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge and block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating it. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\nYou can disable automated security fix PRs for this repo from the [Security Alerts page](https://github.com/FAIMS/FAIMS3/network/alerts).\n\n</details>",
+    "mergedAt": "2025-12-08T21:08:47Z",
+    "number": 1778,
+    "title": "Bump nodemailer from 7.0.10 to 7.0.11"
+  },
+  {
+    "author": {"is_bot": true, "login": "app/dependabot"},
+    "body": "Bumps [express](https://github.com/expressjs/express) from 4.21.1 to 4.22.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/expressjs/express/releases\">express's releases</a>.</em></p>\n<blockquote>\n<h2>4.22.0</h2>\n<h2>Important: Security</h2>\n<ul>\n<li>Security fix for <a href=\"https://www.cve.org/CVERecord?id=CVE-2024-51999\">CVE-2024-51999</a> (<a href=\"https://github.com/expressjs/express/security/advisories/GHSA-pj86-cfqh-vqx6\">GHSA-pj86-cfqh-vqx6</a>)</li>\n</ul>\n<h2>What's Changed</h2>\n<ul>\n<li>Refactor: improve readability by <a href=\"https://github.com/sazk07\"><code>@​sazk07</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6190\">expressjs/express#6190</a></li>\n<li>ci: add support for Node.js@23.0 by <a href=\"https://github.com/UlisesGascon\"><code>@​UlisesGascon</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6080\">expressjs/express#6080</a></li>\n<li>Method functions with no path should error by <a href=\"https://github.com/wesleytodd\"><code>@​wesleytodd</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/5957\">expressjs/express#5957</a></li>\n<li>ci: updated github actions ci workflow by <a href=\"https://github.com/Phillip9587\"><code>@​Phillip9587</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6323\">expressjs/express#6323</a></li>\n<li>ci: reorder <code>npm i</code> steps to fix ci for older node versions by <a href=\"https://github.com/Phillip9587\"><code>@​Phillip9587</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6336\">expressjs/express#6336</a></li>\n<li>Backport: ci: add node.js 24 to test matrix by <a href=\"https://github.com/Phillip9587\"><code>@​Phillip9587</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6506\">expressjs/express#6506</a></li>\n<li>chore(4.x): wider range for query test skip by <a href=\"https://github.com/jonchurch\"><code>@​jonchurch</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6513\">expressjs/express#6513</a></li>\n<li>use tilde notation for certain dependencies by <a href=\"https://github.com/UlisesGascon\"><code>@​UlisesGascon</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6905\">expressjs/express#6905</a></li>\n<li>deps: qs@6.14.0 by <a href=\"https://github.com/UlisesGascon\"><code>@​UlisesGascon</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6909\">expressjs/express#6909</a></li>\n<li>deps: use tilde notation for <code>qs</code> by <a href=\"https://github.com/Phillip9587\"><code>@​Phillip9587</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6919\">expressjs/express#6919</a></li>\n<li>Release: 4.22.0 by <a href=\"https://github.com/UlisesGascon\"><code>@​UlisesGascon</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6921\">expressjs/express#6921</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a href=\"https://github.com/expressjs/express/compare/4.21.2...4.22.0\">https://github.com/expressjs/express/compare/4.21.2...4.22.0</a></p>\n<h2>4.21.2</h2>\n<h2>What's Changed</h2>\n<ul>\n<li>Add funding field (v4) by <a href=\"https://github.com/bjohansebas\"><code>@​bjohansebas</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6065\">expressjs/express#6065</a></li>\n<li>deps: path-to-regexp@0.1.11 by <a href=\"https://github.com/blakeembrey\"><code>@​blakeembrey</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/5956\">expressjs/express#5956</a></li>\n<li>deps: bump path-to-regexp@0.1.12 by <a href=\"https://github.com/jonchurch\"><code>@​jonchurch</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6209\">expressjs/express#6209</a></li>\n<li>Release: 4.21.2 by <a href=\"https://github.com/UlisesGascon\"><code>@​UlisesGascon</code></a> in <a href=\"https://redirect.github.com/expressjs/express/pull/6094\">expressjs/express#6094</a></li>\n</ul>\n<p><strong>Full Changelog</strong>: <a href=\"https://github.com/expressjs/express/compare/4.21.1...4.21.2\">https://github.com/expressjs/express/compare/4.21.1...4.21.2</a></p>\n</blockquote>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/expressjs/express/blob/4.22.0/History.md\">express's changelog</a>.</em></p>\n<blockquote>\n<h1>4.22.0 / 2025-12-01</h1>\n<ul>\n<li>Security fix for <a href=\"https://www.cve.org/CVERecord?id=CVE-2024-51999\">CVE-2024-51999</a> (<a href=\"https://github.com/expressjs/express/security/advisories/GHSA-pj86-cfqh-vqx6\">GHSA-pj86-cfqh-vqx6</a>)</li>\n<li>deps: use tilde notation for dependencies</li>\n<li>deps: qs@6.14.0</li>\n</ul>\n<h1>4.21.2 / 2024-11-06</h1>\n<ul>\n<li>deps: path-to-regexp@0.1.12\n<ul>\n<li>Fix backtracking protection</li>\n</ul>\n</li>\n<li>deps: path-to-regexp@0.1.11\n<ul>\n<li>Throws an error on invalid path values</li>\n</ul>\n</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/expressjs/express/commit/49744abd1120484fe64d7bde1cd3197c32523b6e\"><code>49744ab</code></a> 4.22.0 (<a href=\"https://redirect.github.com/expressjs/express/issues/6921\">#6921</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/6e97452f600a3b01719fbc5517d833c7646b0bb7\"><code>6e97452</code></a> sec: security patch for CVE-2024-51999</li>\n<li><a href=\"https://github.com/expressjs/express/commit/6a23d34d652b9e69a4486d2a2a0dea54b9685fa5\"><code>6a23d34</code></a> deps: use tilde notation for <code>qs</code> (<a href=\"https://redirect.github.com/expressjs/express/issues/6919\">#6919</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/8c12cdf93b89a4628b59179e3cc0722fc517d6b3\"><code>8c12cdf</code></a> deps: qs@6.14.0 (<a href=\"https://redirect.github.com/expressjs/express/issues/6909\">#6909</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/7fea74fcf02764580f38f2a7f1932dfa54cddd90\"><code>7fea74f</code></a> deps: use tilde notation for certain dependencies (<a href=\"https://redirect.github.com/expressjs/express/issues/6905\">#6905</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/dac7a0475a99e9dfc57b3b8e6d5bdf52813f1944\"><code>dac7a04</code></a> chore: wider range for query test skip (<a href=\"https://redirect.github.com/expressjs/express/issues/6513\">#6513</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/997919b48879bbd53171c3b4e5dd1b04ad139241\"><code>997919b</code></a> ci: add node.js 24 to test matrix (<a href=\"https://redirect.github.com/expressjs/express/issues/6506\">#6506</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/36fb59c6c7d9dfca0b08dfeafb5b6e4a249234a1\"><code>36fb59c</code></a> fix(ci): reorder <code>npm i</code> steps to fix ci for older node versions (<a href=\"https://redirect.github.com/expressjs/express/issues/6336\">#6336</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/3a5edfaff06f1a2c7079b08d0635108b371eddfd\"><code>3a5edfa</code></a> fix(ci): updated github actions ci workflow (<a href=\"https://redirect.github.com/expressjs/express/issues/6323\">#6323</a>)</li>\n<li><a href=\"https://github.com/expressjs/express/commit/52d978119a7af27667cce5d99ac0739dc269d818\"><code>52d9781</code></a> fix(test): add test for method routes without paths <a href=\"https://redirect.github.com/expressjs/express/issues/5955\">#5955</a></li>\n<li>Additional commits viewable in <a href=\"https://github.com/expressjs/express/compare/4.21.1...4.22.0\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=express&package-manager=npm_and_yarn&previous-version=4.21.1&new-version=4.22.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself. You can also trigger a rebase manually by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after your CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge and block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating it. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\nYou can disable automated security fix PRs for this repo from the [Security Alerts page](https://github.com/FAIMS/FAIMS3/network/alerts).\n\n</details>",
+    "mergedAt": "2025-12-08T21:09:31Z",
+    "number": 1777,
+    "title": "Bump express from 4.21.1 to 4.22.0"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Lock out after failed login attempts\n\n## Ticket\n\nNone\n\n## Description\n\nIn response to the issue flagged by the penetration testers, implements an increasing lockout on failed login attempts to mitigate brute force attacks.\n\n## Proposed Changes\n\nIntroduces a delay after a number of failed logins. The delay gets longer the more failed attempts there are.  \n\n## How to Test\n\nTry to login with bad credentials, after 5 attempts you should see a message about a delay.\n\n## Additional Information\n\nThis is the most basic implementation and can be improved upon, eg. introducing required CAPTCHA after failed logins, notifying users of failed login attempts, introducing MFA.  Some of these should be flagged for future implementation.\n\n## Checklist\n\n- [x] I have confirmed all commits have been signed.\n- [x] I have added JSDoc style comments to any new functions or classes.\n- [x] Relevant documentation such as READMEs, guides, and class comments are updated.\n",
+    "mergedAt": "2025-12-16T03:02:22Z",
+    "number": 1775,
+    "title": "Lock out after failed login attempts"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "\n# Fixes form preview in designer after updates\n\n## Ticket\n\nNone\n\n## Description\n\nPrevious updates broke the form preview in the designer.   Just needed more params passed to the form preview component.",
+    "mergedAt": "2025-11-29T10:19:38Z",
+    "number": 1774,
+    "title": "Fixes form preview in designer after updates"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Whole heap of work on validation. Pretty heady stuff. Getting close - discussions with Elana around UX. Ideas around validation 'modes' which will effect how we filter schemas. The core is here. \r\n\r\nNote @stevecassidy  the main contentious decision I made here was in pushing out attachment data into the data field in the photo and attachments - this is the simplest way to avoid attachments being in scope for validation. This would have complicated the schema a lot. We can revise if needed but happy with this for now.",
+    "mergedAt": "2025-12-05T03:19:17Z",
+    "number": 1773,
+    "title": "feat: form validation"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Bunch of migrations from old format -> new. Tested in sample notebooks. Except the advanced selector - I haven't tested that. ",
+    "mergedAt": "2025-11-27T00:33:11Z",
+    "number": 1771,
+    "title": "feat: implementing additional fields in new form"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Hooks into the onChange - prior to the other changes/updates (including pushing to DB). Tanstack is nice here - let's us inject updated values without triggering redundant handler, and its reflected immediately in the form.state so subsequent DB writes update this value. \r\n\r\n@stevecassidy  you mentioned putting this in the DataEngine - but in my view this is a better spot. The data engine's responsibility is managing IO to/from the DB. The form modules responsibility is managing form data, fields and field behaviour (conditionals, rendering, etc). In my view, templated values fits in the latter category. We would need to expose details such as the templated field name (TemplatedStringField), and maybe even the form, or in some way report back the updated data (which would then need to be updated in the form). \r\n\r\nHopefully you see this approach is quite clean.",
+    "mergedAt": "2025-11-26T06:02:12Z",
+    "number": 1770,
+    "title": "feat: templated string fields"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Complete conditional sections and fields implementation. \r\n\r\nUpdates on debounced value change. There is no other sensible trigger point. Works in preview and editable managers. I think the approach of not even rendering a field/section rather than returning null is much cleaner, as then you don't have to repeat this logic in all fields/sections to return null. ",
+    "mergedAt": "2025-11-25T01:15:31Z",
+    "number": 1769,
+    "title": "feat: conditional fields"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Happy with this - layout as part of config - in the app it reads from uiSpec, in the preview it has switch. \r\n\r\nThe mobile stepper works as expected, the desktop one is enhanced, having more intelligent scaling where it will swap based on density.",
+    "mergedAt": "2025-11-24T23:28:02Z",
+    "number": 1766,
+    "title": "feat: stepper (mobile and desktop)"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Implements a brand new, from scratch, related record selector. \r\n\r\n## Notes\r\n\r\n- doesn't implement 'select existing record' - lower priority for now - want to test this out more first\r\n- I tested nested forms, and worked very trivially - so **it would now be possible to have nested/collapsible children**",
+    "mergedAt": "2025-11-24T03:57:34Z",
+    "number": 1763,
+    "title": "feat: related records"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Attempt to implement take photo field. \r\n\r\nThere are some missing context/utilities which would allow this to be implemented with parity to old version. E.g. redirecting to settings. \r\n\r\nRefactored form structure a bit, moved some stuff around\r\n\r\nCloses #1747 ",
+    "mergedAt": "2025-11-21T05:35:30Z",
+    "number": 1761,
+    "title": "feat: take photo and file uploader fields"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Preview forms in Designer\n\n## Ticket\n\n#1744\n\n## Description\n\nAdds a preview of the current form to the designer using the new FormManager component.\n\n## How to Test\n\nEdit a notebook (the simple-notebook.json) in the dashboard and you will see a preview to the side of the editor (need a reasonably wide screen).\nNote this will only work for fields that we have in new forms (Text and Select) for now.\n\nUpdate the notebook (add a field, edit a field) and see the change reflected in the preview.\n\n## Checklist\n\n- [ ] I have confirmed all commits have been signed.\n- [ ] I have added JSDoc style comments to any new functions or classes.\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\n",
+    "mergedAt": "2025-11-24T19:07:33Z",
+    "number": 1759,
+    "title": "Preview forms in Designer"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "",
+    "mergedAt": "2025-11-14T03:07:23Z",
+    "number": 1743,
+    "title": "feat: improved validation error handling"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Implements our discussed API surface for forms. \r\n\r\n- createRecord - now only creates an 'empty' record  + revision - no data\r\n- createRevision - now creates only a new rev/fork of an existing revision, no data changes\r\n- updateRevision - the only place to apply data changes, very carefully diffs and applies AVP updates, context aware to existence of parent revision (in 'parent' mode) - NOTE: doesn't handle the 'two parent' case - open to ideas on what to do here if we have a merge conflict parent? But unsure under what conditions this occurs.\r\n- getExistingFormData - revised to return the exact data specification needed for updateRevision.\r\n",
+    "mergedAt": "2025-11-12T02:04:45Z",
+    "number": 1741,
+    "title": "feat: revised form level engine controls"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Integrate new forms into the app\r\n\r\n## Ticket\r\n\r\n#1736\r\n\r\n## Description\r\n\r\nInitial integration of new forms components into the app.\r\n\r\n\r\n## Proposed Changes\r\n\r\n- [x] Replaces RecordForm in the app with a new component that uses the new forms. \r\n- [x] Hook up to the new database engine to get current revision\r\n- [x] Add debounced onChange listener to save current form state to revision\r\n\r\n## How to Test\r\n\r\nThis will only work on the very simple notebook in the forms module.   In that notebook, create a record with the old forms before switching to this branch, then in this branch you should be able to edit it.\r\n\r\n\r\n\r\n## Checklist\r\n\r\n- [ ] I have confirmed all commits have been signed.\r\n- [ ] I have added JSDoc style comments to any new functions or classes.\r\n- [ ] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2025-11-14T02:59:09Z",
+    "number": 1740,
+    "title": "Integrate new forms into the ap"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Refactor of the data engine, addresses\r\n\r\n#1738  #1737 and makes a bunch of other misc improvements. \r\n\r\nAdds a set of unit tests. Passing.",
+    "mergedAt": "2025-11-10T06:00:49Z",
+    "number": 1739,
+    "title": "feat: data engine refactor"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Drills down a type discriminated form context.\r\n\r\nMode: 'full' | 'preview' \r\n\r\nFull = full power!\r\nPreview = for form previews - can still edit values etc but special stuff like attachments etc may not work. The field can use this to intelligently render different versions.",
+    "mergedAt": "2025-11-05T22:36:50Z",
+    "number": 1735,
+    "title": "feat: form context"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "A separate service injection pattern attachment engine. \r\n\r\nKeeping outside of main DB interface, as attachments should be interchangeable in the future. \r\n\r\nFields will need to be injected with context to allow attachment management.",
+    "mergedAt": "2025-11-05T05:23:29Z",
+    "number": 1734,
+    "title": "feat: attachment engine"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "- brings the prototype view only renderer in\r\n- **doesn't integrate it yet** as we need to design some way of injecting context into the new Form / view-only renderer so that components such as RelatedRecord, TakePhoto etc can do special things (e.g. redirect, write additional records/side effects)\r\n- does some tidy up including improved typing and code organisation for the formModule of the forms library\r\n- uses a static registry list rather than a register function - this is just easier for TS to reason about and allows us to be certain they are not being added/modified elsewhere, and eventually could be pathway to `{} as const` type workflow where TS actually knows about individual component entries\r\n- moves a bunch of helper functions into the data-model",
+    "mergedAt": "2025-11-05T00:03:55Z",
+    "number": 1733,
+    "title": "feat: view only renderer prototype integrated into form prototype"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "# TODO\r\n\r\n- [ ] refactor to pass in the equality fn stuff as part of main constructor rather than configure step\r\n- [ ] test out CRUD logic with some tests, particularly the creating new things e.g. upsert\r\n- [ ] (maybe) handle more fine-grained operations which the form needs such as linking documents?\r\n- [ ] handle attachment loading/dumping (in a less convoluted way)\r\n\r\n",
+    "mergedAt": "2025-11-05T01:25:55Z",
+    "number": 1730,
+    "title": "feat: db interface"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjg3MDU2NjM0",
+      "is_bot": false,
+      "login": "PeterBaker0",
+      "name": "Peter Baker"
+    },
+    "body": "Improved version in production use by DASS. Includes more logging, improved pnpm caching behaviour etc. Workflow is a template, and requires setup on fork side.",
+    "mergedAt": "2025-11-03T00:50:09Z",
+    "number": 1728,
+    "title": "fix: contributing improved workflow with pnpm fixes from downstream user"
+  },
+  {
+    "author": {"is_bot": true, "login": "app/dependabot"},
+    "body": "Bumps [esbuild](https://github.com/evanw/esbuild) from 0.21.5 to 0.25.0.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/evanw/esbuild/releases\">esbuild's releases</a>.</em></p>\n<blockquote>\n<h2>v0.25.0</h2>\n<p><strong>This release deliberately contains backwards-incompatible changes.</strong> To avoid automatically picking up releases like this, you should either be pinning the exact version of <code>esbuild</code> in your <code>package.json</code> file (recommended) or be using a version range syntax that only accepts patch upgrades such as <code>^0.24.0</code> or <code>~0.24.0</code>. See npm's documentation about <a href=\"https://docs.npmjs.com/cli/v6/using-npm/semver/\">semver</a> for more information.</p>\n<ul>\n<li>\n<p>Restrict access to esbuild's development server (<a href=\"https://github.com/evanw/esbuild/security/advisories/GHSA-67mh-4wv8-2f99\">GHSA-67mh-4wv8-2f99</a>)</p>\n<p>This change addresses esbuild's first security vulnerability report. Previously esbuild set the <code>Access-Control-Allow-Origin</code> header to <code>*</code> to allow esbuild's development server to be flexible in how it's used for development. However, this allows the websites you visit to make HTTP requests to esbuild's local development server, which gives read-only access to your source code if the website were to fetch your source code's specific URL. You can read more information in <a href=\"https://github.com/evanw/esbuild/security/advisories/GHSA-67mh-4wv8-2f99\">the report</a>.</p>\n<p>Starting with this release, <a href=\"https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS\">CORS</a> will now be disabled, and requests will now be denied if the host does not match the one provided to <code>--serve=</code>. The default host is <code>0.0.0.0</code>, which refers to all of the IP addresses that represent the local machine (e.g. both <code>127.0.0.1</code> and <code>192.168.0.1</code>). If you want to customize anything about esbuild's development server, you can <a href=\"https://esbuild.github.io/api/#serve-proxy\">put a proxy in front of esbuild</a> and modify the incoming and/or outgoing requests.</p>\n<p>In addition, the <code>serve()</code> API call has been changed to return an array of <code>hosts</code> instead of a single <code>host</code> string. This makes it possible to determine all of the hosts that esbuild's development server will accept.</p>\n<p>Thanks to <a href=\"https://github.com/sapphi-red\"><code>@​sapphi-red</code></a> for reporting this issue.</p>\n</li>\n<li>\n<p>Delete output files when a build fails in watch mode (<a href=\"https://redirect.github.com/evanw/esbuild/issues/3643\">#3643</a>)</p>\n<p>It has been requested for esbuild to delete files when a build fails in watch mode. Previously esbuild left the old files in place, which could cause people to not immediately realize that the most recent build failed. With this release, esbuild will now delete all output files if a rebuild fails. Fixing the build error and triggering another rebuild will restore all output files again.</p>\n</li>\n<li>\n<p>Fix correctness issues with the CSS nesting transform (<a href=\"https://redirect.github.com/evanw/esbuild/issues/3620\">#3620</a>, <a href=\"https://redirect.github.com/evanw/esbuild/issues/3877\">#3877</a>, <a href=\"https://redirect.github.com/evanw/esbuild/issues/3933\">#3933</a>, <a href=\"https://redirect.github.com/evanw/esbuild/issues/3997\">#3997</a>, <a href=\"https://redirect.github.com/evanw/esbuild/issues/4005\">#4005</a>, <a href=\"https://redirect.github.com/evanw/esbuild/pull/4037\">#4037</a>, <a href=\"https://redirect.github.com/evanw/esbuild/pull/4038\">#4038</a>)</p>\n<p>This release fixes the following problems:</p>\n<ul>\n<li>\n<p>Naive expansion of CSS nesting can result in an exponential blow-up of generated CSS if each nesting level has multiple selectors. Previously esbuild sometimes collapsed individual nesting levels using <code>:is()</code> to limit expansion. However, this collapsing wasn't correct in some cases, so it has been removed to fix correctness issues.</p>\n<pre lang=\"css\"><code>/* Original code */\n.parent {\n  &gt; .a,\n  &gt; .b1 &gt; .b2 {\n    color: red;\n  }\n}\n<p>/* Old output (with --supported:nesting=false) */<br />\n.parent &gt; :is(.a, .b1 &gt; .b2) {<br />\ncolor: red;<br />\n}</p>\n<p>/* New output (with --supported:nesting=false) */<br />\n.parent &gt; .a,<br />\n.parent &gt; .b1 &gt; .b2 {<br />\ncolor: red;<br />\n}<br />\n</code></pre></p>\n<p>Thanks to <a href=\"https://github.com/tim-we\"><code>@​tim-we</code></a> for working on a fix.</p>\n</li>\n<li>\n<p>The <code>&amp;</code> CSS nesting selector can be repeated multiple times to increase CSS specificity. Previously esbuild ignored this possibility and incorrectly considered <code>&amp;&amp;</code> to have the same specificity as <code>&amp;</code>. With this release, this should now work correctly:</p>\n<pre lang=\"css\"><code>/* Original code (color should be red) */\n</code></pre>\n</li>\n</ul>\n</li>\n</ul>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Changelog</summary>\n<p><em>Sourced from <a href=\"https://github.com/evanw/esbuild/blob/main/CHANGELOG-2024.md\">esbuild's changelog</a>.</em></p>\n<blockquote>\n<h1>Changelog: 2024</h1>\n<p>This changelog documents all esbuild versions published in the year 2024 (versions 0.19.12 through 0.24.2).</p>\n<h2>0.24.2</h2>\n<ul>\n<li>\n<p>Fix regression with <code>--define</code> and <code>import.meta</code> (<a href=\"https://redirect.github.com/evanw/esbuild/issues/4010\">#4010</a>, <a href=\"https://redirect.github.com/evanw/esbuild/issues/4012\">#4012</a>, <a href=\"https://redirect.github.com/evanw/esbuild/pull/4013\">#4013</a>)</p>\n<p>The previous change in version 0.24.1 to use a more expression-like parser for <code>define</code> values to allow quoted property names introduced a regression that removed the ability to use <code>--define:import.meta=...</code>. Even though <code>import</code> is normally a keyword that can't be used as an identifier, ES modules special-case the <code>import.meta</code> expression to behave like an identifier anyway. This change fixes the regression.</p>\n<p>This fix was contributed by <a href=\"https://github.com/sapphi-red\"><code>@​sapphi-red</code></a>.</p>\n</li>\n</ul>\n<h2>0.24.1</h2>\n<ul>\n<li>\n<p>Allow <code>es2024</code> as a target in <code>tsconfig.json</code> (<a href=\"https://redirect.github.com/evanw/esbuild/issues/4004\">#4004</a>)</p>\n<p>TypeScript recently <a href=\"https://devblogs.microsoft.com/typescript/announcing-typescript-5-7/#support-for---target-es2024-and---lib-es2024\">added <code>es2024</code></a> as a compilation target, so esbuild now supports this in the <code>target</code> field of <code>tsconfig.json</code> files, such as in the following configuration file:</p>\n<pre lang=\"json\"><code>{\n  &quot;compilerOptions&quot;: {\n    &quot;target&quot;: &quot;ES2024&quot;\n  }\n}\n</code></pre>\n<p>As a reminder, the only thing that esbuild uses this field for is determining whether or not to use legacy TypeScript behavior for class fields. You can read more in <a href=\"https://esbuild.github.io/content-types/#tsconfig-json\">the documentation</a>.</p>\n<p>This fix was contributed by <a href=\"https://github.com/billyjanitsch\"><code>@​billyjanitsch</code></a>.</p>\n</li>\n<li>\n<p>Allow automatic semicolon insertion after <code>get</code>/<code>set</code></p>\n<p>This change fixes a grammar bug in the parser that incorrectly treated the following code as a syntax error:</p>\n<pre lang=\"ts\"><code>class Foo {\n  get\n  *x() {}\n  set\n  *y() {}\n}\n</code></pre>\n<p>The above code will be considered valid starting with this release. This change to esbuild follows a <a href=\"https://redirect.github.com/microsoft/TypeScript/pull/60225\">similar change to TypeScript</a> which will allow this syntax starting with TypeScript 5.7.</p>\n</li>\n<li>\n<p>Allow quoted property names in <code>--define</code> and <code>--pure</code> (<a href=\"https://redirect.github.com/evanw/esbuild/issues/4008\">#4008</a>)</p>\n<p>The <code>define</code> and <code>pure</code> API options now accept identifier expressions containing quoted property names. Previously all identifiers in the identifier expression had to be bare identifiers. This change now makes <code>--define</code> and <code>--pure</code> consistent with <code>--global-name</code>, which already supported quoted property names. For example, the following is now possible:</p>\n<pre lang=\"js\"><code></code></pre>\n</li>\n</ul>\n<!-- raw HTML omitted -->\n</blockquote>\n<p>... (truncated)</p>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/evanw/esbuild/commit/e9174d671b1882758cd32ac5e146200f5bee3e45\"><code>e9174d6</code></a> publish 0.25.0 to npm</li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/c27dbebb9e7a55dd9a084dd151dddd840787490e\"><code>c27dbeb</code></a> fix <code>hosts</code> in <code>plugin-tests.js</code></li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/6794f602a453cf0255bcae245871de120a89a559\"><code>6794f60</code></a> fix <code>hosts</code> in <code>node-unref-tests.js</code></li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/de85afd65edec9ebc44a11e245fd9e9a2e99760d\"><code>de85afd</code></a> Merge commit from fork</li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/da1de1bf77a65f06654b49878d9ec4747ddaa21f\"><code>da1de1b</code></a> fix <a href=\"https://redirect.github.com/evanw/esbuild/issues/4065\">#4065</a>: bitwise operators can return bigints</li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/f4e9d19fb20095a98bf40634f0380f6a16be91e7\"><code>f4e9d19</code></a> switch case liveness: <code>default</code> is always last</li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/7aa47c3e778ea04849f97f18dd9959df88fa0886\"><code>7aa47c3</code></a> fix <a href=\"https://redirect.github.com/evanw/esbuild/issues/4028\">#4028</a>: minify live/dead <code>switch</code> cases better</li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/22ecd306190b8971ec4474b5485266c20350e266\"><code>22ecd30</code></a> minify: more constant folding for strict equality</li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/4cdf03c03697128044fa8fb76e5c478e9765b353\"><code>4cdf03c</code></a> fix <a href=\"https://redirect.github.com/evanw/esbuild/issues/4053\">#4053</a>: reordering of <code>.tsx</code> in <code>node_modules</code></li>\n<li><a href=\"https://github.com/evanw/esbuild/commit/dc719775b7140120916bd9e6777ca1cb8a1cdc0e\"><code>dc71977</code></a> fix <a href=\"https://redirect.github.com/evanw/esbuild/issues/3692\">#3692</a>: <code>0</code> now picks a random ephemeral port</li>\n<li>Additional commits viewable in <a href=\"https://github.com/evanw/esbuild/compare/v0.21.5...v0.25.0\">compare view</a></li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=esbuild&package-manager=npm_and_yarn&previous-version=0.21.5&new-version=0.25.0)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nYou can trigger a rebase of this PR by commenting `@dependabot rebase`.\n\n[//]: # (dependabot-automerge-start)\n[//]: # (dependabot-automerge-end)\n\n---\n\n<details>\n<summary>Dependabot commands and options</summary>\n<br />\n\nYou can trigger Dependabot actions by commenting on this PR:\n- `@dependabot rebase` will rebase this PR\n- `@dependabot recreate` will recreate this PR, overwriting any edits that have been made to it\n- `@dependabot merge` will merge this PR after your CI passes on it\n- `@dependabot squash and merge` will squash and merge this PR after your CI passes on it\n- `@dependabot cancel merge` will cancel a previously requested merge and block automerging\n- `@dependabot reopen` will reopen this PR if it is closed\n- `@dependabot close` will close this PR and stop Dependabot recreating it. You can achieve the same result by closing it manually\n- `@dependabot show <dependency name> ignore conditions` will show all of the ignore conditions of the specified dependency\n- `@dependabot ignore this major version` will close this PR and stop Dependabot creating any more for this major version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this minor version` will close this PR and stop Dependabot creating any more for this minor version (unless you reopen the PR or upgrade to it yourself)\n- `@dependabot ignore this dependency` will close this PR and stop Dependabot creating any more for this dependency (unless you reopen the PR or upgrade to it yourself)\nYou can disable automated security fix PRs for this repo from the [Security Alerts page](https://github.com/FAIMS/FAIMS3/network/alerts).\n\n</details>\n\n> **Note**\n> Automatic rebases have been disabled on this pull request as it has been open for over 30 days.\n",
+    "mergedAt": "2025-12-08T21:14:47Z",
+    "number": 1726,
+    "title": "Bump esbuild from 0.21.5 to 0.25.0"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Initial Form Manager\r\n\r\n## Ticket\r\n\r\n#1722\r\n\r\n## Description\r\n\r\nAn initial prototype of a new form rendering and management engine. \r\n\r\n## Proposed Changes\r\n\r\nAdds a new library module `forms` that contains the implementation of a FormManager component\r\nand a demo application for development.   \r\n\r\nFormManager is able to render a form based on a UISpec but currently only implements two fields (FAIMSTextField and RichText).   \r\n\r\nForm state is managed in a React context provider with a mechanism for each field to get/set the \r\nfield value without forcing re-renders of other fields in the form.   \r\n\r\nEach field is implemented as a module that exports a structure containing the field namespace/name,\r\nthe component itself and a validation function (unused so far).  This could also include the read-only render\r\nfunction.\r\n\r\nFieldWrapper has been copied over from the app and adds the same decorations. Need to work out how to\r\nintegrate with app theming (currently commented out). \r\n\r\n<img width=\"300\" alt=\"image\" src=\"https://github.com/user-attachments/assets/31391588-33b5-414a-a01c-ee997c8cb7ec\" />\r\n\r\n\r\n## How to Test\r\n\r\nRun `pnpm dev` in the `library/forms` directory to view the demo application containing the form. Currently logging messages on render of each component. Note that changing the value in one field does not force render of other fields.\r\n\r\n\r\n## Checklist\r\n\r\n- [x] I have confirmed all commits have been signed.\r\n- [x] I have added JSDoc style comments to any new functions or classes.\r\n- [x] Relevant documentation such as READMEs, guides, and class comments are updated.\r\n",
+    "mergedAt": "2025-11-04T02:40:50Z",
+    "number": 1723,
+    "title": "Initial Form Manager"
+  },
+  {
+    "author": {
+      "id": "MDQ6VXNlcjQ2ODU0NDc=",
+      "is_bot": false,
+      "login": "stevecassidy",
+      "name": "Steve Cassidy"
+    },
+    "body": "# Major form refactor\r\n\r\nThis is the major branch for the new form refactor.   All PRs for this work should target this branch.\r\n\r\nMajor components:\r\n\r\n- Database API for project databases\r\n- New form rendering engine\r\n- New form manager\r\n- New record validation module\r\n\r\n",
+    "mergedAt": "2025-12-22T01:27:35Z",
+    "number": 1717,
+    "title": "New Form Architecture"
+  }
+]

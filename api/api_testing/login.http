@@ -1,0 +1,7 @@
+@loginUrl = {{$dotenv BASE_URL}}/auth/local
+
+# Test login 
+POST {{loginUrl}}
+Content-Type: application/x-www-form-urlencoded
+
+redirect=http%3A%2F%2Flocalhost%3A3001&inviteId=&action=login&email=admin&password=wrong
