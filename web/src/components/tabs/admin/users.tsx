@@ -1,5 +1,5 @@
 import {useAuth} from '@/context/auth-provider';
-import {getColumns} from '@/components/tables/users';
+import {getColumns, useUsersColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {useGetUsers} from '@/hooks/queries';
 import {useState} from 'react';
@@ -22,12 +22,14 @@ export function UsersTab() {
     setResetDialog(true);
   };
 
+  const columns = useUsersColumns({onReset});
+
   if (!data) return <></>;
 
   return (
     <>
       <DataTable
-        columns={getColumns({onReset})}
+        columns={columns}
         data={
           isPending
             ? []

@@ -15,7 +15,7 @@ import {AddRolePopover} from '../popovers/add-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
 
-export const getColumns = ({
+export const useUsersColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
@@ -100,19 +100,31 @@ export const getColumns = ({
     },
     {
       id: 'reset',
-      cell: ({row}: any) => (
-        <div className="flex justify-center items-center -my-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              onReset(row.original._id);
-            }}
-          >
-            <KeyRound className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
+      cell: ({row}: any) => {
+        if (row.original.profiles.local) {
+          return (
+            <div className="flex justify-center items-center -my-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  onReset(row.original._id);
+                }}
+              >
+                <KeyRound className="h-4 w-4" />
+              </Button>
+            </div>
+          );
+        } else {
+          return (
+            <div className="flex justify-center items-center -my-2">
+              <span>
+                SSO<br></br>User
+              </span>
+            </div>
+          );
+        }
+      },
       header: () => (
         <div className="flex justify-center items-center">Reset Password</div>
       ),
