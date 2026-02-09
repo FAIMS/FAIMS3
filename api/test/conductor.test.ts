@@ -27,7 +27,7 @@ import {PostLoginInput} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
 import {getAuthProviderConfig} from '../src/auth/strategies/applyStrategies';
-import {LOCAL_COUCHDB_AUTH} from '../src/buildconfig';
+import {CONDUCTOR_INSTANCE_NAME, LOCAL_COUCHDB_AUTH, LOCAL_LOGIN_ENABLED} from '../src/buildconfig';
 import {app} from '../src/expressSetup';
 import {beforeApiTests} from './utils';
 
@@ -60,12 +60,14 @@ describe('Auth', () => {
       .expect(200)
       .expect('Content-Type', /text\/html/, done);
   });
-  it('shows local login form', done => {
+  it('shows login page', done => {
+    // not if we don't have local auth configured
     request(app)
       .get('/login')
       .expect(200)
       .then(response => {
-        expect(response.text).to.include('Welcome');
+        expect(response.text).to.include(CONDUCTOR_INSTANCE_NAME);
+        expect(response.text).to.include('Sign in');
         done();
       });
   });
@@ -84,21 +86,25 @@ describe('Auth', () => {
   });
 
   it('redirects with a token on login', done => {
-    const redirect = 'http://localhost:8080/';
-    request(app)
-      .post('/auth/local')
-      .send({
-        email: 'admin',
-        password: adminPassword,
-        action: 'login',
-        redirect,
-      } satisfies PostLoginInput)
-      .expect(302)
-      .then(response => {
-        const location = new URL(response.header.location);
-        expect(location.hostname).to.equal('localhost');
-        expect(location.search).to.match(/exchangeToken/);
-        done();
-      });
+    if (LOCAL_LOGIN_ENABLED) {
+      const redirect = 'http://localhost:8080/';
+      request(app)
+        .post('/auth/local')
+        .send({
+          email: 'admin',
+          password: adminPassword,
+          action: 'login',
+          redirect,
+        } satisfies PostLoginInput)
+        .expect(302)
+        .then(response => {
+          const location = new URL(response.header.location);
+          expect(location.hostname).to.equal('localhost');
+          expect(location.search).to.match(/exchangeToken/);
+          done();
+        });
+    } else {
+      done();
+    }
   });
 });

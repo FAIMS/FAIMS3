@@ -427,9 +427,9 @@ describe('API tests', () => {
         // there are a couple of users
         expect(res.length).to.eq(3);
 
-        // ensure they don't have profile info!!
+        // ensure that profiles.local info is boolean only
         for (const user of res) {
-          expect((user as any).profiles).to.be.undefined;
+          expect((user as any).profiles.local).to.be.a('boolean');
 
           // but other properties should be valid
           expect(user.name).to.not.be.undefined;
