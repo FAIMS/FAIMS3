@@ -578,7 +578,8 @@ export const appendGeoJSONToArchive = async ({
 
   writeGeoJSONFooter(geojsonStream);
   geojsonStream.end();
-  await waitForStream(geojsonStream);
+  // Note: Do NOT await waitForStream here - let the archiver drain the stream
+  // The archiver will consume the PassThrough stream when finalize() is called
 
   return stats;
 };
@@ -650,7 +651,7 @@ export const appendKMLToArchive = async ({
 
   writeKMLFooter(kmlStream);
   kmlStream.end();
-  await waitForStream(kmlStream);
+  // Note: Do NOT await waitForStream here - let the archiver drain the stream
 
   return stats;
 };
@@ -704,6 +705,7 @@ export const appendBothSpatialFormatsToArchive = async ({
 
   while (!done) {
     if (record) {
+      console.log("Working on ", record.record_id)
       const {hrid, baseProperties, geometries} = processRecordForSpatial(
         record,
         context.viewFieldsMap,
@@ -752,7 +754,8 @@ export const appendBothSpatialFormatsToArchive = async ({
   writeKMLFooter(kmlStream);
   kmlStream.end();
 
-  await Promise.all([waitForStream(geojsonStream), waitForStream(kmlStream)]);
+  // Note: Do NOT await waitForStream - let the archiver drain both streams
+  // when finalize() is called
 
   return {geojson: geojsonStats, kml: kmlStats};
 };
