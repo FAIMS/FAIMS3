@@ -403,12 +403,14 @@ function newConductorUrl(): string {
   }
 }
 
-function local_login_enabled(): boolean {
-  const localLogin = process.env.LOCAL_LOGIN_ENABLED;
-  if (localLogin === undefined) {
+// Config variable is DISABLE_LOCAL_LOGIN for ease of use,
+// but we will export LOCAL_LOGIN_ENABLED for clarity in the rest of the codebase
+function enable_local_login(): boolean {
+  const disableLocalLogin = process.env.DISABLE_LOCAL_LOGIN;
+  if (disableLocalLogin === undefined) {
     return true;
   } else {
-    return localLogin.toLowerCase() === 'true';
+    return disableLocalLogin.toLowerCase() !== 'true';
   }
 }
 
@@ -435,7 +437,7 @@ export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
 export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
 export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
 export const NEW_CONDUCTOR_URL = newConductorUrl();
-export const LOCAL_LOGIN_ENABLED = local_login_enabled();
+export const LOCAL_LOGIN_ENABLED = enable_local_login();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
