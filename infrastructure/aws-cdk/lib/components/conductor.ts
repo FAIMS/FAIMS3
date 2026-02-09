@@ -327,6 +327,9 @@ export class FaimsConductor extends Construct {
     // Create the ECS Cluster
     const cluster = new ecs.Cluster(this, 'ConductorCluster', {
       vpc: props.vpc,
+      // Enable enhanced metrics - this gives container/task level insights and
+      // more metrics
+      containerInsightsV2: ecs.ContainerInsights.ENHANCED
     });
 
     // Create Security Group for the Fargate service
