@@ -5,8 +5,7 @@
   <div class='alert alert-success'>{{messages.success}}</div>
 {{/if}}
 <div class='auth-header'>
-  <h2>{{title}}</h2>
-  <h3>{{subtitle}}</h3>
+  <h2>Welcome</h2>
   <p>Sign in to continue</p>
 </div>
 {{#if localAuth}}
@@ -58,10 +57,10 @@
       </div>
     </div>
     <button type='submit' class='auth-button'>Sign in</button>
+    {{#if messages.error.loginError}}
+      <div class='alert alert-danger'>{{messages.error.loginError.msg}}</div>
+    {{/if}}
   </form>
-{{/if}}
-{{#if messages.error.loginError}}
-  <div class='alert alert-danger'>{{messages.error.loginError.msg}}</div>
 {{/if}}
 {{#if (and localAuth providers)}}
   <div class='divider'>
@@ -82,8 +81,3 @@
     {{/each}}
   </div>
 {{/if}}
-
-<hr>
-<p class="auth-helper-text">You must have an existing account to sign in to this server. If not,
-  please contact your adminstrator to ask about registration.
-</p>

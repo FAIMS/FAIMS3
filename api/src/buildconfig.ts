@@ -403,15 +403,6 @@ function newConductorUrl(): string {
   }
 }
 
-function local_login_enabled(): boolean {
-  const localLogin = process.env.LOCAL_LOGIN_ENABLED;
-  if (localLogin === undefined) {
-    return true;
-  } else {
-    return localLogin.toLowerCase() === 'true';
-  }
-}
-
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -435,7 +426,6 @@ export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
 export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
 export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
 export const NEW_CONDUCTOR_URL = newConductorUrl();
-export const LOCAL_LOGIN_ENABLED = local_login_enabled();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
