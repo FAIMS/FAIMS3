@@ -341,6 +341,8 @@ const ConductorConfigSchema = z.object({
   memory: z.number().int().positive(),
   /** Auto scaling configuration for the Conductor service */
   autoScaling: z.object({
+    /** The desired number of tasks to run (general stable target) */
+    desiredCapacity: z.number().int().positive(),
     /** The minimum number of tasks to run */
     minCapacity: z.number().int().positive(),
     /** The maximum number of tasks that can be run */

@@ -93,6 +93,7 @@
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
+      "desiredCapacity": 2,
       "minCapacity": 1,
       "maxCapacity": 10,
       "targetCpuUtilization": 70,

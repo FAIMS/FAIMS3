@@ -344,7 +344,8 @@ export class FaimsConductor extends Construct {
     this.fargateService = new ecs.FargateService(this, 'conductor-service', {
       cluster: cluster,
       taskDefinition: conductorTaskDfn,
-      desiredCount: 1,
+      // Target number of tasks to run
+      desiredCount: props.config.autoScaling.desiredCapacity,
       securityGroups: [serviceSecurityGroup],
       assignPublicIp: true, // TODO Change this if using private subnets with NAT
     });
