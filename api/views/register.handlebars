@@ -1,6 +1,5 @@
 <div class="auth-header">
-    <h2>{{title}} Registration</h2>
-    <h3>{{subtitle}}</h3>
+    <h2>Create account</h2>
     <p>Already have an account? <a href="{{loginURL}}" class="auth-link">Sign in</a></p>
 </div>
 
@@ -70,11 +69,10 @@
     </div>
 
     <button type="submit" class="auth-button">Create account</button>
+    {{#if messages.error.registrationError}}
+      <div class='alert alert-danger'>{{messages.error.registrationError.msg}}</div>
+    {{/if}}
 </form>
-{{/if}}
-
-{{#if messages.error.registrationError}}
-    <div class='alert alert-danger'>{{messages.error.registrationError.msg}}</div>
 {{/if}}
 
 {{#if (and localAuth providers)}}

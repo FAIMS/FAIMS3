@@ -168,14 +168,12 @@ export function addAuthPages(
           },
         })}`,
         providers: providers.length > 0 ? providers : undefined,
-        title: CONDUCTOR_INSTANCE_NAME,
-        subtitle: CONDUCTOR_DESCRIPTION,
         localRegisterPostPayload: {
           redirect,
           inviteId,
           action: 'register',
         } satisfies AuthContext,
-        localAuth: LOCAL_LOGIN_ENABLED,
+        localAuth: true,
         messages: req.flash(),
       });
     }
