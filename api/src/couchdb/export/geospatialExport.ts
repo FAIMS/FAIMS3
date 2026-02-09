@@ -6,15 +6,16 @@
  */
 
 import {
+  DatabaseInterface,
+  FieldSummary,
+  HydratedDataRecord,
+  ProjectDataObject,
   ProjectID,
   buildViewsetFieldSummaries,
   notebookRecordIterator,
-  FieldSummary,
-  DatabaseInterface,
-  ProjectDataObject,
 } from '@faims3/data-model';
-import {PassThrough} from 'stream';
 import archiver from 'archiver';
+import {PassThrough} from 'stream';
 import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
 import {convertDataForOutput} from './utils';
@@ -130,7 +131,7 @@ export const projectHasSpatialFields = async (
  * @returns Processed record with hrid, base properties, and extracted geometries
  */
 function processRecordForSpatial(
-  record: any,
+  record: HydratedDataRecord,
   viewFieldsMap: Record<string, FieldSummary[]>,
   filenames: string[]
 ): ProcessedRecord {
@@ -156,6 +157,17 @@ function processRecordForSpatial(
     return {hrid, baseProperties, geometries};
   }
 
+  // Always add converted data to properties - do this once as it's constant for
+  // all spatial entries
+  const convertedData = convertDataForOutput(
+    fieldInfos,
+    data,
+    record.annotations,
+    hrid,
+    filenames,
+    viewID
+  );
+
   fieldInfos.forEach(fieldInfo => {
     if (!Object.keys(data).includes(fieldInfo.name)) {
       return;
@@ -169,16 +181,6 @@ function processRecordForSpatial(
         geometries.push(geometry);
       }
     }
-
-    // Always add converted data to properties
-    const convertedData = convertDataForOutput(
-      fieldInfos,
-      data,
-      record.annotations,
-      hrid,
-      filenames,
-      viewID
-    );
 
     Object.assign(baseProperties, convertedData);
   });
