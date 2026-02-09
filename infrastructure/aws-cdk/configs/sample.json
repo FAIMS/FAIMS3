@@ -86,6 +86,7 @@
   },
   "conductor": {
     "name": "FAIMS Server",
+    "enhancedObservability": true,
     "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "ghcr.io/faims/faims3-api",
     "conductorDockerImageTag": "latest",
@@ -93,6 +94,7 @@
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
+      "desiredCapacity": 2,
       "minCapacity": 1,
       "maxCapacity": 10,
       "targetCpuUtilization": 70,
