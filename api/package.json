@@ -71,9 +71,11 @@
     "uuid": "9.0.1",
     "xml-crypto": "^6.1.2",
     "zod": "^3.24.1",
-    "zod-express-middleware": "^1.4.0"
+    "zod-express-middleware": "^1.4.0",
+    "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
+    "@types/zxcvbn": "^4.4.5",
     "@types/archiver": "^6.0.2",
     "@types/body-parser": "^1.19.6",
     "@types/chai": "^4.3.9",
