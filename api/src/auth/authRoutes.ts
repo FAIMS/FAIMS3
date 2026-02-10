@@ -453,7 +453,11 @@ export function addAuthRoutes(
             // do not use session (JWT only - no persistence)
             {session: false},
             // custom success function which signs JWT and redirects
-            async (err: string | Error | null, user: Express.User, info: any) => {
+            async (
+              err: string | Error | null,
+              user: Express.User,
+              info: any
+            ) => {
               if (err) {
                 req.flash('error', {registrationError: {msg: err.toString()}});
                 return res.redirect(errorRedirect);
@@ -527,109 +531,111 @@ export function addAuthRoutes(
         });
       }
     });
+  }
 
-    /**
-     * Handle password change for local users
-     */
-    app.post('/auth/changePassword', async (req, res) => {
-      // Parse the body of the payload - we do this here so we can flash err messages
-      let payload: PostChangePasswordInput = req.body;
-      const errRedirect = `/change-password${buildQueryString({values: {username: payload.username, redirect: payload.redirect}})}`;
+  /**
+   * Handle password change for local users
+   * Enabled even if local login is disabled as it might be used for a previously created
+   * local account (eg. admin)
+   */
+  app.post('/auth/changePassword', async (req, res) => {
+    // Parse the body of the payload - we do this here so we can flash err messages
+    let payload: PostChangePasswordInput = req.body;
+    const errRedirect = `/change-password${buildQueryString({values: {username: payload.username, redirect: payload.redirect}})}`;
 
-      // If anything goes wrong - flash back to form fields
-      try {
-        payload = PostChangePasswordInputSchema.parse(req.body);
-      } catch (validationError) {
-        const handled = handleZodErrors({
-          error: validationError,
-          // type hacking here due to override not being picked up
-          req: req as unknown as Request,
-          res,
-          formData: {},
-          redirect: errRedirect,
+    // If anything goes wrong - flash back to form fields
+    try {
+      payload = PostChangePasswordInputSchema.parse(req.body);
+    } catch (validationError) {
+      const handled = handleZodErrors({
+        error: validationError,
+        // type hacking here due to override not being picked up
+        req: req as unknown as Request,
+        res,
+        formData: {},
+        redirect: errRedirect,
+      });
+      if (!handled) {
+        req.flash('error', {
+          changePasswordError: {msg: 'An unexpected error occurred'},
         });
-        if (!handled) {
-          req.flash('error', {
-            changePasswordError: {msg: 'An unexpected error occurred'},
-          });
-          res.status(500).redirect(errRedirect);
-          return;
-        }
+        res.status(500).redirect(errRedirect);
         return;
       }
+      return;
+    }
 
-      // We now have a validated payload
-      const {username, currentPassword, newPassword, confirmPassword, redirect} =
-        payload;
+    // We now have a validated payload
+    const {username, currentPassword, newPassword, confirmPassword, redirect} =
+      payload;
 
-      // Validate the redirect URL
-      const {valid, redirect: validatedRedirect} = validateRedirect(
-        redirect || DEFAULT_REDIRECT_URL
-      );
+    // Validate the redirect URL
+    const {valid, redirect: validatedRedirect} = validateRedirect(
+      redirect || DEFAULT_REDIRECT_URL
+    );
 
-      if (!valid) {
-        return res.render('redirect-error', {redirect: validatedRedirect});
-      }
+    if (!valid) {
+      return res.render('redirect-error', {redirect: validatedRedirect});
+    }
 
-      // Check if passwords match
-      if (newPassword !== confirmPassword) {
+    // Check if passwords match
+    if (newPassword !== confirmPassword) {
+      req.flash('error', {
+        changePasswordError: {msg: 'New passwords do not match'},
+      });
+      return res.redirect(errRedirect);
+    }
+
+    try {
+      // Verify current password using our standalone verification function
+      const verificationResult = await verifyUserCredentials({
+        username,
+        password: currentPassword,
+      });
+
+      if (!verificationResult.success) {
         req.flash('error', {
-          changePasswordError: {msg: 'New passwords do not match'},
-        });
-        return res.redirect(errRedirect);
-      }
-
-      try {
-        // Verify current password using our standalone verification function
-        const verificationResult = await verifyUserCredentials({
-          username,
-          password: currentPassword,
-        });
-
-        if (!verificationResult.success) {
-          req.flash('error', {
-            currentPassword: {
-              msg: verificationResult.error || 'Password incorrect.',
-            },
-          });
-          return res.redirect(errRedirect);
-        }
-
-        const dbUser = verificationResult.user;
-        if (!dbUser) {
-          req.flash('error', {
-            changePasswordError: {msg: 'Failed to change password.'},
-          });
-          return res.redirect(errRedirect);
-        }
-
-        // Check the db user has a local profile
-        if (!dbUser.profiles.local) {
-          req.flash('error', {
-            changePasswordError: {
-              msg: 'You are trying to change the password of a social provider account!',
-            },
-          });
-          return res.redirect(errRedirect);
-        }
-
-        // Apply change (this also saves)
-        await updateUserPassword(username, newPassword);
-
-        // Flash success message and redirect
-        req.flash('success', 'Password changed successfully');
-        return res.redirect(validatedRedirect);
-      } catch (error) {
-        console.error('Password change error:', error);
-        req.flash('error', {
-          changePasswordError: {
-            msg: 'An error occurred while changing password. Contact a system administrator.',
+          currentPassword: {
+            msg: verificationResult.error || 'Password incorrect.',
           },
         });
         return res.redirect(errRedirect);
       }
-    });
-  }
+
+      const dbUser = verificationResult.user;
+      if (!dbUser) {
+        req.flash('error', {
+          changePasswordError: {msg: 'Failed to change password.'},
+        });
+        return res.redirect(errRedirect);
+      }
+
+      // Check the db user has a local profile
+      if (!dbUser.profiles.local) {
+        req.flash('error', {
+          changePasswordError: {
+            msg: 'You are trying to change the password of a social provider account!',
+          },
+        });
+        return res.redirect(errRedirect);
+      }
+
+      // Apply change (this also saves)
+      await updateUserPassword(username, newPassword);
+
+      // Flash success message and redirect
+      req.flash('success', 'Password changed successfully');
+      return res.redirect(validatedRedirect);
+    } catch (error) {
+      console.error('Password change error:', error);
+      req.flash('error', {
+        changePasswordError: {
+          msg: 'An error occurred while changing password. Contact a system administrator.',
+        },
+      });
+      return res.redirect(errRedirect);
+    }
+  });
 
   /**
    * PUT Logout - logging out is an optional client 'good will' process in which
