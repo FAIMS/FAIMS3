@@ -69,6 +69,7 @@ import {
   redirectWithToken,
   registerLocalUser,
   validateAndApplyInviteToUser,
+  validatePasswordOrThrow,
   validateRedirect,
 } from './helpers';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
@@ -406,6 +407,20 @@ export function addAuthRoutes(
           return;
         }
 
+        // Validate password strength
+        try {
+          validatePasswordOrThrow(password, [email, name]);
+        } catch (error: any) {
+          req.flash('error', {
+            password: {msg: error.message},
+          });
+          req.flash('email', email);
+          req.flash('name', name);
+          res.status(400);
+          res.redirect(errorRedirect);
+          return;
+        }
+
         // Build the user creation hook which will run once the invite is
         // accepted and consumed
         const createUser = async () => {
@@ -582,6 +597,16 @@ export function addAuthRoutes(
     if (newPassword !== confirmPassword) {
       req.flash('error', {
         changePasswordError: {msg: 'New passwords do not match'},
+      });
+      return res.redirect(errRedirect);
+    }
+
+    // Validate new password strength
+    try {
+      validatePasswordOrThrow(newPassword, [username]);
+    } catch (error: any) {
+      req.flash('error', {
+        newPassword: {msg: error.message},
       });
       return res.redirect(errRedirect);
     }
@@ -837,6 +862,18 @@ export function addAuthRoutes(
           resetPasswordError: {
             msg: validationResult.validationError || 'Invalid reset code.',
           },
+        });
+        return res.redirect(errRedirect);
+      }
+
+      // Validate new password strength
+      try {
+        validatePasswordOrThrow(payload.newPassword, [
+          validationResult.user.user_id,
+        ]);
+      } catch (error: any) {
+        req.flash('error', {
+          newPassword: {msg: error.message},
         });
         return res.redirect(errRedirect);
       }

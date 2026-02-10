@@ -12,6 +12,11 @@ import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {createUser, saveCouchUser} from '../couchdb/users';
 import {AuthAction, CustomRequest} from '../types';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
+import {
+  validatePasswordStrength,
+  getPasswordErrorMessage,
+} from './passwordStrength';
+
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -376,3 +381,21 @@ export const addLocalPasswordForUser = async (
     throw Error('Error hashing password');
   }
 };
+
+/**
+ * Validates a password and throws an error with helpful feedback if invalid
+ *
+ * @param password - The password to validate
+ * @param userInputs - Array of user-specific inputs (email, name) to check against
+ * @throws Error with detailed feedback if password is too weak
+ */
+export function validatePasswordOrThrow(
+  password: string,
+  userInputs: string[] = []
+): void {
+  const result = validatePasswordStrength(password, userInputs);
+
+  if (!result.isValid) {
+    throw new Error(getPasswordErrorMessage(result));
+  }
+}

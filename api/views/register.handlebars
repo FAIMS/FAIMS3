@@ -1,3 +1,16 @@
+<script>
+  // Async load zxcvbn
+  (function() {
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/4.4.2/zxcvbn.js';
+    script.async = true;
+    document.head.appendChild(script);
+  })();
+</script>
+
+<!-- Include password strength CSS -->
+<link rel="stylesheet" href="/password-strength.css">
+
 <div class="auth-header">
     <h2>Create Account</h2>
     <p>Already have an account? <a href="{{loginURL}}" class="auth-link">Sign in</a></p>
@@ -66,6 +79,7 @@
         {{#if messages.error.repeat}}
         <div class="alert alert-danger">{{messages.error.repeat.msg}}</div>
         {{/if}}
+        <div class='password-match-feedback' id='passwordMatchFeedback'></div>
     </div>
 
     <button type="submit" class="auth-button">Create account</button>
@@ -91,3 +105,6 @@
     </a>
     {{/each}}
 </div>
+
+<!-- Include password strength JavaScript -->
+<script src="/password-strength-client.js"></script>
