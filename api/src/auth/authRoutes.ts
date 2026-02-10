@@ -37,7 +37,7 @@ import {NextFunction, RequestHandler, Router} from 'express';
 import passport from 'passport';
 import {Strategy as SamlStrategy} from 'passport-saml';
 import {processRequest} from 'zod-express-middleware';
-import {WEBAPP_PUBLIC_URL} from '../buildconfig';
+import {LOCAL_LOGIN_ENABLED, WEBAPP_PUBLIC_URL} from '../buildconfig';
 import {
   createNewEmailCode,
   markCodeAsUsed,
@@ -215,260 +215,98 @@ export function addAuthRoutes(
     });
   });
 
-  /**
-   * Handle local login OR register request with username and password
-   */
-  app.post('/auth/local', async (req, res, next: NextFunction) => {
-    // determine the action first
-    const action = req.body.action as AuthAction;
+  if (LOCAL_LOGIN_ENABLED) {
+    /**
+     * Handle local login OR register request with username and password
+     */
+    app.post('/auth/local', async (req, res, next: NextFunction) => {
+      // determine the action first
+      const action = req.body.action as AuthAction;
 
-    if (action === 'login') {
-      // LOGIN
-      // ========
+      if (action === 'login') {
+        // LOGIN
+        // ========
 
-      // parse the body as the login schema
-      let loginPayload: PostLoginInput;
+        // parse the body as the login schema
+        let loginPayload: PostLoginInput;
 
-      const errorRedirect = `/login${buildQueryString({
-        values: {
-          inviteId: req.body.inviteId,
-          redirect: req.body.redirect,
-        },
-      })}`;
+        const errorRedirect = `/login${buildQueryString({
+          values: {
+            inviteId: req.body.inviteId,
+            redirect: req.body.redirect,
+          },
+        })}`;
 
-      // If anything goes wrong - flash back to form fields
-      try {
-        loginPayload = PostLoginInputSchema.parse(req.body);
-      } catch (validationError) {
-        const handled = handleZodErrors({
-          error: validationError,
-          // type hacking here due to override not being picked up
-          req: req as unknown as Request,
-          res,
-          formData: {email: req.body.email, name: req.body.name},
-          redirect: errorRedirect,
-        });
-        if (!handled) {
-          console.error('Auth error:', validationError);
-          req.flash('error', 'An unexpected error occurred');
-          res.status(500).redirect(errorRedirect);
-          return;
-        }
-        return;
-      }
-
-      // Now we have a validated login payload - proceed
-
-      // first check for lockout
-      if (userIsLockedOut(loginPayload.email, req.flash)) {
-        // we log this as a failed attempt to keep track of the most recent attempt
-        await logFailedLoginAttempt(loginPayload.email);
-        return res.redirect(errorRedirect);
-      }
-
-      // Are we redirecting?
-      const {valid, redirect} = validateRedirect(
-        loginPayload.redirect || DEFAULT_REDIRECT_URL
-      );
-
-      if (!valid) {
-        return res.render('redirect-error', {redirect});
-      }
-
-      // Is there an invite present?
-      const inviteId = loginPayload.inviteId;
-
-      // Login with local passport strategy - catching the on success to apply
-      // invite (if present) and redirect with token back to client
-      // application (at redirect URL requested)
-      return passport.authenticate(
-        // local strategy (user/pass)
-        'local',
-        // do not use session (JWT only - no persistence)
-        {session: false},
-        // custom success function which signs JWT and redirects
-        async (err: Error | null, user: Express.User, info: any) => {
-          if (err) {
-            req.flash('error', {
-              loginError: {msg: err.message || 'Login failed'},
-            });
-            await logFailedLoginAttempt(req.body.email);
-            return res.redirect(errorRedirect);
-          }
-          if (!user) {
-            // if user is false, info might have something useful
-            // the type of info is unconstrained (object | string | Array<string | undefined>)
-            console.warn('User is false after local auth:', info);
-            req.flash('error', {
-              loginError: {msg: info?.message || 'Login failed'},
-            });
-            return res.redirect(errorRedirect);
-          }
-          // reset any failed login attempts
-          resetFailedLoginAttempts(req.body.email);
-          // We have logged in - do we also want to consume an invite?
-          if (inviteId) {
-            // We have an invite to consume - go ahead and use it
-            await validateAndApplyInviteToUser({
-              inviteCode: inviteId,
-              dbUser: user,
-            });
-            // avoid saving unwanted details here
-            await saveExpressUser(user);
-          }
-          // Always upgrade prior to returning token to ensure we have latest!
-
-          // token
-          return redirectWithToken({
+        // If anything goes wrong - flash back to form fields
+        try {
+          loginPayload = PostLoginInputSchema.parse(req.body);
+        } catch (validationError) {
+          const handled = handleZodErrors({
+            error: validationError,
+            // type hacking here due to override not being picked up
+            req: req as unknown as Request,
             res,
-            user: await upgradeCouchUserToExpressUser({dbUser: user}),
-            redirect,
+            formData: {email: req.body.email, name: req.body.name},
+            redirect: errorRedirect,
           });
-        }
-      )(req, res, next);
-    } else if (action === 'register') {
-      // REGISTER
-      // ========
-
-      // parse the body as the login schema
-      let registerPayload: PostRegisterInput;
-
-      const errorRedirect = `/register${buildQueryString({
-        values: {
-          inviteId: req.body.inviteId,
-          redirect: req.body.redirect,
-        },
-      })}`;
-
-      // If anything goes wrong - flash back to form fields
-      try {
-        registerPayload = PostRegisterInputSchema.parse(req.body);
-      } catch (validationError) {
-        const handled = handleZodErrors({
-          error: validationError,
-          // type hacking here due to override not being picked up
-          req: req as unknown as Request,
-          res,
-          formData: {email: req.body.email, name: req.body.name},
-          redirect: errorRedirect,
-        });
-        if (!handled) {
-          req.flash('error', 'An unexpected error occurred');
-          res.status(500).redirect(errorRedirect);
+          if (!handled) {
+            console.error('Auth error:', validationError);
+            req.flash('error', 'An unexpected error occurred');
+            res.status(500).redirect(errorRedirect);
+            return;
+          }
           return;
         }
-        return;
-      }
 
-      // Now we have a validated register payload - proceed
+        // Now we have a validated login payload - proceed
 
-      // Are we redirecting?
-      const {valid, redirect} = validateRedirect(
-        registerPayload.redirect || DEFAULT_REDIRECT_URL
-      );
+        // first check for lockout
+        if (userIsLockedOut(loginPayload.email, req.flash)) {
+          // we log this as a failed attempt to keep track of the most recent attempt
+          await logFailedLoginAttempt(loginPayload.email);
+          return res.redirect(errorRedirect);
+        }
 
-      if (!valid) {
-        return res.render('redirect-error', {redirect});
-      }
-
-      // Is there an invite present?
-      const inviteId = registerPayload.inviteId;
-
-      if (!inviteId) {
-        // 400 error as this is an invalid request
-        res.status(400);
-        req.flash('error', {
-          registrationError: {msg: 'No invite provided for registration.'},
-        });
-        // go back to auth homepage
-        res.redirect('/auth');
-        return;
-      }
-
-      // Check our payload for required fields
-      const password = registerPayload.password;
-      const repeat = registerPayload.repeat;
-      const name = registerPayload.name;
-      const email = registerPayload.email;
-
-      if (password !== repeat) {
-        req.flash('error', {
-          repeat: {msg: "Password and repeat don't match."},
-        });
-        req.flash('email', email);
-        req.flash('name', name);
-        res.status(400);
-
-        // This is the registration page - let's go back with full auth
-        // context
-        res.redirect(errorRedirect);
-        return;
-      }
-
-      // Build the user creation hook which will run once the invite is
-      // accepted and consumed
-      const createUser = async () => {
-        // this will throw if the user already exists
-        const [user, error] = await registerLocalUser(
-          // Email is used as username
-          {username: email, email, name, password}
+        // Are we redirecting?
+        const {valid, redirect} = validateRedirect(
+          loginPayload.redirect || DEFAULT_REDIRECT_URL
         );
-        if (!user) {
-          req.flash('error', {registrationError: {msg: error}});
-          req.flash('email', email);
-          req.flash('name', name);
-          res.status(400);
-          res.redirect(errorRedirect);
-          throw Error(
-            'User could not be created due to an issue writing to the database!'
-          );
+
+        if (!valid) {
+          return res.render('redirect-error', {redirect});
         }
 
-        // Here we send a verification challenge email(s)
-        for (const emailDetails of user.emails) {
-          if (!emailDetails.verified) {
-            createVerificationChallenge({
-              userId: user._id,
-              email: emailDetails.email,
-            }).then(challenge => {
-              return sendEmailVerificationChallenge({
-                recipientEmail: emailDetails.email,
-                username: user._id,
-                verificationCode: challenge.code,
-                expiryTimestampMs: challenge.record.expiryTimestampMs,
-              });
-            });
-          }
-        }
-        return user;
-      };
+        // Is there an invite present?
+        const inviteId = loginPayload.inviteId;
 
-      // Do we have an existing user if so - reuse our login behaviour instead!
-      // (This checks the password is correct)
-      if (await getCouchUserFromEmailOrUserId(email)) {
+        // Login with local passport strategy - catching the on success to apply
+        // invite (if present) and redirect with token back to client
+        // application (at redirect URL requested)
         return passport.authenticate(
           // local strategy (user/pass)
           'local',
           // do not use session (JWT only - no persistence)
           {session: false},
           // custom success function which signs JWT and redirects
-          async (err: string | Error | null, user: Express.User, info: any) => {
+          async (err: Error | null, user: Express.User, info: any) => {
             if (err) {
-              req.flash('error', {registrationError: {msg: err.toString()}});
+              req.flash('error', {
+                loginError: {msg: err.message || 'Login failed'},
+              });
+              await logFailedLoginAttempt(req.body.email);
               return res.redirect(errorRedirect);
             }
             if (!user) {
               // if user is false, info might have something useful
-              // the type of info is unconstrained (object | string | Array<string | undefined>) but
-              // from OIDC we get {message: '...'} with an error message on failure
-              // I think they don't use err here because this is a post-auth failure
-              // (the case I saw was mis-configuration of the endpoint)
-              console.warn('User is false after social auth:', info);
+              // the type of info is unconstrained (object | string | Array<string | undefined>)
+              console.warn('User is false after local auth:', info);
               req.flash('error', {
-                registrationError: {msg: info?.message || 'Login failed'},
+                loginError: {msg: info?.message || 'Login failed'},
               });
               return res.redirect(errorRedirect);
             }
+            // reset any failed login attempts
+            resetFailedLoginAttempts(req.body.email);
             // We have logged in - do we also want to consume an invite?
             if (inviteId) {
               // We have an invite to consume - go ahead and use it
@@ -479,7 +317,8 @@ export function addAuthRoutes(
               // avoid saving unwanted details here
               await saveExpressUser(user);
             }
-            // No longer login user with session - now redirect straight back with
+            // Always upgrade prior to returning token to ensure we have latest!
+
             // token
             return redirectWithToken({
               res,
@@ -488,47 +327,216 @@ export function addAuthRoutes(
             });
           }
         )(req, res, next);
-      }
+      } else if (action === 'register') {
+        // REGISTER
+        // ========
 
-      let createdDbUser: PeopleDBDocument;
-      try {
-        createdDbUser = await validateAndApplyInviteToUser({
-          // We don't have this yet
-          dbUser: undefined,
-          // instead we generate it once invite is OK
-          createUser,
-          // Pass in the invite - it's all validated
-          inviteCode: inviteId,
-        });
-        await saveCouchUser(createdDbUser);
-      } catch (e) {
-        res.status(400);
-        req.flash('error', {
-          registrationError: {
-            msg: 'Invite is not valid for registration! Is it expired, or has been used too many times?',
+        // parse the body as the login schema
+        let registerPayload: PostRegisterInput;
+
+        const errorRedirect = `/register${buildQueryString({
+          values: {
+            inviteId: req.body.inviteId,
+            redirect: req.body.redirect,
           },
+        })}`;
+
+        // If anything goes wrong - flash back to form fields
+        try {
+          registerPayload = PostRegisterInputSchema.parse(req.body);
+        } catch (validationError) {
+          const handled = handleZodErrors({
+            error: validationError,
+            // type hacking here due to override not being picked up
+            req: req as unknown as Request,
+            res,
+            formData: {email: req.body.email, name: req.body.name},
+            redirect: errorRedirect,
+          });
+          if (!handled) {
+            req.flash('error', 'An unexpected error occurred');
+            res.status(500).redirect(errorRedirect);
+            return;
+          }
+          return;
+        }
+
+        // Now we have a validated register payload - proceed
+
+        // Are we redirecting?
+        const {valid, redirect} = validateRedirect(
+          registerPayload.redirect || DEFAULT_REDIRECT_URL
+        );
+
+        if (!valid) {
+          return res.render('redirect-error', {redirect});
+        }
+
+        // Is there an invite present?
+        const inviteId = registerPayload.inviteId;
+
+        if (!inviteId) {
+          // 400 error as this is an invalid request
+          res.status(400);
+          req.flash('error', {
+            registrationError: {msg: 'No invite provided for registration.'},
+          });
+          // go back to auth homepage
+          res.redirect('/auth');
+          return;
+        }
+
+        // Check our payload for required fields
+        const password = registerPayload.password;
+        const repeat = registerPayload.repeat;
+        const name = registerPayload.name;
+        const email = registerPayload.email;
+
+        if (password !== repeat) {
+          req.flash('error', {
+            repeat: {msg: "Password and repeat don't match."},
+          });
+          req.flash('email', email);
+          req.flash('name', name);
+          res.status(400);
+
+          // This is the registration page - let's go back with full auth
+          // context
+          res.redirect(errorRedirect);
+          return;
+        }
+
+        // Build the user creation hook which will run once the invite is
+        // accepted and consumed
+        const createUser = async () => {
+          // this will throw if the user already exists
+          const [user, error] = await registerLocalUser(
+            // Email is used as username
+            {username: email, email, name, password}
+          );
+          if (!user) {
+            req.flash('error', {registrationError: {msg: error}});
+            req.flash('email', email);
+            req.flash('name', name);
+            res.status(400);
+            res.redirect(errorRedirect);
+            throw Error(
+              'User could not be created due to an issue writing to the database!'
+            );
+          }
+
+          // Here we send a verification challenge email(s)
+          for (const emailDetails of user.emails) {
+            if (!emailDetails.verified) {
+              createVerificationChallenge({
+                userId: user._id,
+                email: emailDetails.email,
+              }).then(challenge => {
+                return sendEmailVerificationChallenge({
+                  recipientEmail: emailDetails.email,
+                  username: user._id,
+                  verificationCode: challenge.code,
+                  expiryTimestampMs: challenge.record.expiryTimestampMs,
+                });
+              });
+            }
+          }
+          return user;
+        };
+
+        // Do we have an existing user if so - reuse our login behaviour instead!
+        // (This checks the password is correct)
+        if (await getCouchUserFromEmailOrUserId(email)) {
+          return passport.authenticate(
+            // local strategy (user/pass)
+            'local',
+            // do not use session (JWT only - no persistence)
+            {session: false},
+            // custom success function which signs JWT and redirects
+            async (
+              err: string | Error | null,
+              user: Express.User,
+              info: any
+            ) => {
+              if (err) {
+                req.flash('error', {registrationError: {msg: err.toString()}});
+                return res.redirect(errorRedirect);
+              }
+              if (!user) {
+                // if user is false, info might have something useful
+                // the type of info is unconstrained (object | string | Array<string | undefined>) but
+                // from OIDC we get {message: '...'} with an error message on failure
+                // I think they don't use err here because this is a post-auth failure
+                // (the case I saw was mis-configuration of the endpoint)
+                console.warn('User is false after social auth:', info);
+                req.flash('error', {
+                  registrationError: {msg: info?.message || 'Login failed'},
+                });
+                return res.redirect(errorRedirect);
+              }
+              // We have logged in - do we also want to consume an invite?
+              if (inviteId) {
+                // We have an invite to consume - go ahead and use it
+                await validateAndApplyInviteToUser({
+                  inviteCode: inviteId,
+                  dbUser: user,
+                });
+                // avoid saving unwanted details here
+                await saveExpressUser(user);
+              }
+              // No longer login user with session - now redirect straight back with
+              // token
+              return redirectWithToken({
+                res,
+                user: await upgradeCouchUserToExpressUser({dbUser: user}),
+                redirect,
+              });
+            }
+          )(req, res, next);
+        }
+
+        let createdDbUser: PeopleDBDocument;
+        try {
+          createdDbUser = await validateAndApplyInviteToUser({
+            // We don't have this yet
+            dbUser: undefined,
+            // instead we generate it once invite is OK
+            createUser,
+            // Pass in the invite - it's all validated
+            inviteCode: inviteId,
+          });
+          await saveCouchUser(createdDbUser);
+        } catch (e) {
+          res.status(400);
+          req.flash('error', {
+            registrationError: {
+              msg: 'Invite is not valid for registration! Is it expired, or has been used too many times?',
+            },
+          });
+          res.redirect(errorRedirect);
+          return;
+        }
+
+        req.flash('message', 'Registration successful');
+
+        // Upgrade to express.User by drilling permissions/associations
+        const expressUser = await upgradeCouchUserToExpressUser({
+          dbUser: createdDbUser,
         });
-        res.redirect(errorRedirect);
-        return;
+
+        return redirectWithToken({
+          res,
+          user: expressUser,
+          redirect,
+        });
       }
-
-      req.flash('message', 'Registration successful');
-
-      // Upgrade to express.User by drilling permissions/associations
-      const expressUser = await upgradeCouchUserToExpressUser({
-        dbUser: createdDbUser,
-      });
-
-      return redirectWithToken({
-        res,
-        user: expressUser,
-        redirect,
-      });
-    }
-  });
+    });
+  }
 
   /**
    * Handle password change for local users
+   * Enabled even if local login is disabled as it might be used for a previously created
+   * local account (eg. admin)
    */
   app.post('/auth/changePassword', async (req, res) => {
     // Parse the body of the payload - we do this here so we can flash err messages

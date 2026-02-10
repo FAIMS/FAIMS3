@@ -37,7 +37,7 @@ import {
 } from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
-import {WEBAPP_PUBLIC_URL} from '../src/buildconfig';
+import {LOCAL_LOGIN_ENABLED, WEBAPP_PUBLIC_URL} from '../src/buildconfig';
 import {
   consumeInvite,
   createGlobalInvite,
@@ -824,6 +824,10 @@ describe('Registration', () => {
   });
 
   it('redirects with a token on registration', async () => {
+    if (!LOCAL_LOGIN_ENABLED) {
+      return;
+    }
+
     const payload: PostRegisterInput = {
       email: 'bob@here.com',
       password: 'bobbyTables',

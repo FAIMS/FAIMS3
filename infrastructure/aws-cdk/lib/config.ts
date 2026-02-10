@@ -182,6 +182,7 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
 
 const AuthProvidersConfigSchema = z
   .object({
+    disableLocalLogin: z.boolean().optional().default(false),
     providers: z.array(z.string()),
     secretArn: z.string(),
     config: z.record(

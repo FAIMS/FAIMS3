@@ -110,6 +110,7 @@
     }
   },
   "authProviders": {
+    "disableLocalLogin": false,
     "providers": [
       "google",
       "someOidcProvider",
