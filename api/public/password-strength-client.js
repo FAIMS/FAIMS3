@@ -196,4 +196,48 @@
   } else {
     setTimeout(init, 100);
   }
+
+  // Also check password match across different pages
+  var matchConfigs = [
+    // Register page
+    {password: 'InputPassword', confirm: 'RepeatPassword'},
+    // Reset password page
+    {password: 'NewPassword', confirm: 'ConfirmPassword'},
+    // Change password page
+    {password: 'newPassword', confirm: 'confirmPassword'},
+  ];
+
+  matchConfigs.forEach(function (cfg) {
+    var password = document.getElementById(cfg.password);
+    var confirm = document.getElementById(cfg.confirm);
+    if (!password || !confirm) return;
+
+    // Create feedback element if it doesn't exist
+    var feedback = document.getElementById('passwordMatchFeedback');
+    if (!feedback) {
+      feedback = document.createElement('div');
+      feedback.id = 'passwordMatchFeedback';
+      feedback.className = 'password-match-feedback';
+      confirm.parentNode.insertBefore(feedback, confirm.nextSibling);
+    }
+
+    function checkMatch() {
+      var pw = password.value;
+      var cp = confirm.value;
+      if (!pw || !cp) {
+        feedback.textContent = '';
+        feedback.className = 'password-match-feedback';
+        return;
+      }
+      if (pw === cp) {
+        feedback.textContent = '\u2713 Passwords match';
+        feedback.className = 'password-match-feedback text-success';
+      } else {
+        feedback.textContent = '\u2717 Passwords do not match';
+        feedback.className = 'password-match-feedback text-danger';
+      }
+    }
+    password.addEventListener('input', checkMatch);
+    confirm.addEventListener('input', checkMatch);
+  });
 })();
