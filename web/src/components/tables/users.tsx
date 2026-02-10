@@ -14,6 +14,12 @@ import {RemoveUserDialog} from '../dialogs/remove-user';
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 export const useUsersColumns = ({
   onReset,
@@ -104,23 +110,43 @@ export const useUsersColumns = ({
         if (row.original.profiles.local) {
           return (
             <div className="flex justify-center items-center -my-2">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => {
-                  onReset(row.original._id);
-                }}
-              >
-                <KeyRound className="h-4 w-4" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        onReset(row.original._id);
+                      }}
+                    >
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reset password for local user</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           );
         } else {
           return (
             <div className="flex justify-center items-center -my-2">
-              <span>
-                SSO<br></br>User
-              </span>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button variant="outline" size="icon" disabled>
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>SSO only user, can't reset password</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           );
         }
