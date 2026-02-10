@@ -830,8 +830,8 @@ describe('Registration', () => {
 
     const payload: PostRegisterInput = {
       email: 'bob@here.com',
-      password: 'bobbyTables',
-      repeat: 'bobbyTables',
+      password: 'bobbyTables110010101010101',
+      repeat: 'bobbyTables110010101010101',
       name: 'Bob Bobalooba',
       // Need to be careful to use a valid whitelisted URL here - this one
       // should be!
