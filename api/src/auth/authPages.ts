@@ -35,7 +35,7 @@ import {verifyEmailWithCode} from '../api/verificationChallenges';
 import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
-import {CONDUCTOR_DESCRIPTION, CONDUCTOR_INSTANCE_NAME, LOCAL_LOGIN_ENABLED} from '../buildconfig';
+import {LOCAL_LOGIN_ENABLED} from '../buildconfig';
 import {userHasLocalProfile} from '../couchdb/users';
 
 // This must occur before express app is used

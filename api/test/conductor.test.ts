@@ -66,7 +66,6 @@ describe('Auth', () => {
       .get('/login')
       .expect(200)
       .then(response => {
-        expect(response.text).to.include(CONDUCTOR_INSTANCE_NAME);
         expect(response.text).to.include('Sign in');
         done();
       });
@@ -86,6 +85,8 @@ describe('Auth', () => {
   });
 
   it('redirects with a token on login', done => {
+    // TODO: would like to test with this both enabled and disabled
+    // but the way config works just now makes this difficult.
     if (LOCAL_LOGIN_ENABLED) {
       const redirect = 'http://localhost:8080/';
       request(app)
