@@ -94,8 +94,6 @@ export function addAuthPages(
         providers: providers.length > 0 ? providers : undefined,
         // Where should the POST endpoint be for the local login form?
         postUrl: '/auth/local',
-        title: CONDUCTOR_INSTANCE_NAME,
-        subtitle: CONDUCTOR_DESCRIPTION,
         localLoginPostPayload: {
           action: 'login',
           inviteId: inviteId,
@@ -169,8 +167,6 @@ export function addAuthPages(
           },
         })}`,
         providers: providers.length > 0 ? providers : undefined,
-        title: CONDUCTOR_INSTANCE_NAME,
-        subtitle: CONDUCTOR_DESCRIPTION,
         localRegisterPostPayload: {
           redirect,
           inviteId,
