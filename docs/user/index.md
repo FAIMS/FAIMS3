@@ -55,6 +55,16 @@ authoring/field-type-reference-table.md
 
 ```{toctree}
 ---
+caption: Field Types
+maxdepth: 1
+---
+
+field-types/field-type-index.md
+
+```
+
+```{toctree}
+---
 caption: Administration
 maxdepth: 1
 ---
