@@ -102,7 +102,7 @@
     "jsonpointer": "5.0.1",
     "levelup": "^5.1.1",
     "lodash": "4.17.23",
-    "markdown-it": "^14.1.0",
+    "markdown-it": "^14.1.1",
     "moment": "2.29.4",
     "ol": "^10.3.1",
     "ol-mapbox-style": "^12.5.0",
