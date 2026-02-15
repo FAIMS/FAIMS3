@@ -54,7 +54,7 @@ show or hide this field based on the values of other fields. Conditions
 use a builder interface with logic operators and field references.
 
 For a detailed walkthrough of the conditions builder, see
-[Conditions](../authoring/conditions.md).
+[Conditions](conditions.md).
 
 ### Copy value to new records
 
