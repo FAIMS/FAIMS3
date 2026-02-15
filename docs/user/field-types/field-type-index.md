@@ -115,7 +115,6 @@ from simple checkboxes to hierarchical selection lists.
   nested vocabulary tree to select a value. Beta feature.
 - **[Select one option](radio-group.md)** — Displays all options as a
   visible list for single selection; suited to short lists of 2–10 items.
-  Deprecated — use Select Field instead.
 
 ## Relationship Fields
 
