@@ -1,6 +1,6 @@
-# Rich Text
+# RichText
 
-*How to add and configure a Rich Text field in the Notebook Editor.*
+*How to add and configure a RichText field in the Notebook Editor.*
 
 ---
 

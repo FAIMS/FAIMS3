@@ -1,6 +1,6 @@
-# Multiline Text Field
+# Multi-line Text Field
 
-*How to add and configure a Multiline Text Field in the Notebook Editor.*
+*How to add and configure a Multi-line Text Field in the Notebook Editor.*
 
 ---
 

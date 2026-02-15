@@ -1,6 +1,6 @@
-# Date Time Picker
+# Date time picker
 
-*How to add and configure a Date Time Picker field in the {{Notebook}}
+*How to add and configure a Date time picker field in the {{Notebook}}
 Editor.*
 
 ---
@@ -17,8 +17,7 @@ when teams span multiple timezones.
 > (e.g., "14:30") represents different times in different
 > locations. Use [Date/Time with Now](date-time-now.md) instead for
 > timezone-safe dates. Date/Time with Now accepts arbitrary dates in
-> addition to "now" timestamps. Pending user feedback, this field may
-> be deprecated in future.
+> addition to "now" timestamps.
 
 ## Adding the Field
 

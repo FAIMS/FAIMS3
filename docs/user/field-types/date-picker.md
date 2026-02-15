@@ -1,6 +1,6 @@
-# Date Picker
+# Date picker
 
-*How to add and configure a Date Picker field in the Notebook Editor.*
+*How to add and configure a Date picker field in the Notebook Editor.*
 
 ---
 

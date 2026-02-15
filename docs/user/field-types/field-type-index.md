@@ -39,7 +39,7 @@ short codes and labels to multi-line descriptions and email addresses.
   brief, unconstrained text such as codes, identifiers, and short labels.
 - **[Email](email-field.md)** — A single-line text input with built-in email
   format validation that opens the email keyboard on mobile devices.
-- **[Multiline Text Field](multiline-text-field.md)** — Extended text entry
+- **[Multi-line Text Field](multiline-text-field.md)** — Extended text entry
   for narrative content and detailed observations, with internal scrolling
   for longer passages.
 - **[Templated String](templated-string.md)** — Auto-generates text from
@@ -85,7 +85,7 @@ uploading files.
 
 - **[Take Photo](take-photo.md)** — Captures photographs using the device
   camera or gallery, with GPS tagging on native platforms.
-- **[Upload a File](attach-file.md)** — Attaches files of any type from
+- **[Upload a file](attach-file.md)** — Attaches files of any type from
   the device, queued for synchronisation.
 
 ## Location Fields
@@ -95,7 +95,7 @@ map-based spatial data.
 
 - **[Take point](take-gps-point.md)** — Single-tap GPS coordinate capture,
   returning a GeoJSON point with accuracy metadata.
-- **[Map Field](map-input.md)** — Interactive map for drawing points, lines,
+- **[Map field](map-input.md)** — Interactive map for drawing points, lines,
   and polygons on base map tiles.
 
 ## Choice Fields

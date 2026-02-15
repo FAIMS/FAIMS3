@@ -1,6 +1,6 @@
-# Attach File
+# Upload a file
 
-*How to add and configure an Attach File field in the Notebook Editor.*
+*How to add and configure an Upload a file field in the Notebook Editor.*
 
 ---
 

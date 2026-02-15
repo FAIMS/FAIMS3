@@ -1,6 +1,6 @@
-# Take GPS Point
+# Take point
 
-*How to add and configure a Take GPS Point field in the Notebook Editor.*
+*How to add and configure a Take point field in the Notebook Editor.*
 
 ---
 

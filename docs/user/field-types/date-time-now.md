@@ -1,6 +1,6 @@
-# Date/Time with Now
+# Date and Time with Now button
 
-*How to add and configure a Date/Time with Now field in the {{Notebook}}
+*How to add and configure a Date and Time with Now button field in the {{Notebook}}
 Editor.*
 
 ---

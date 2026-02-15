@@ -1,6 +1,6 @@
-# Map Input
+# Map field
 
-*How to add and configure a Map Input field in the Notebook Editor.*
+*How to add and configure a Map field in the Notebook Editor.*
 
 ---
 

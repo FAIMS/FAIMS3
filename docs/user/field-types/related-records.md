@@ -1,6 +1,6 @@
-# Related Records
+# Add Related Record
 
-*How to add and configure a Related Records field in the {{Notebook}}
+*How to add and configure an Add Related Record field in the {{Notebook}}
 Editor.*
 
 ---
