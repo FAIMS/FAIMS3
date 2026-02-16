@@ -29,6 +29,7 @@ tab, and click the **Select Multiple** card. Then click the
 ```{screenshot} field-types-design/multi-select-01-add-field.png
 :alt: Adding a Select Multiple — the CHOICE tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -45,6 +46,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/multi-select-02-configured.png
 :alt: Select Multiple configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Select Multiple-Specific Settings
@@ -68,6 +70,7 @@ or formatting to individual options.
 ```{screenshot} field-types-design/multi-select-03-options.png
 :alt: Select Multiple options and shared field options — completing the field zone
 :align: right
+:width: 100%
 ```
 
 **Managing options:**

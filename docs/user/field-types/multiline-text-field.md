@@ -23,6 +23,7 @@ tab, and click the **Multiline Text Field** card. Then click the
 ```{screenshot} field-types-design/multiline-text-field-01-add-field.png
 :alt: Adding a Multiline Text Field — the TEXT tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -39,6 +40,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/multiline-text-field-02-configured.png
 :alt: Multiline Text Field configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Multiline Text Field-Specific Settings

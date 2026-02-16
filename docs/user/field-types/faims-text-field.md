@@ -20,6 +20,7 @@ button in the lower right.
 ```{screenshot} field-types-design/faims-text-field-01-add-field.png
 :alt: Adding a FAIMS Text Field — the TEXT tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -36,6 +37,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/faims-text-field-02-configured.png
 :alt: FAIMS Text Field configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Shared Field Options

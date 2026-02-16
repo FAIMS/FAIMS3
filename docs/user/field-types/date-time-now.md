@@ -24,6 +24,7 @@ card. Then click the **ADD FIELD** button in the lower right.
 ```{screenshot} field-types-design/date-time-now-01-add-field.png
 :alt: Adding a Date/Time with Now — the DATE & TIME tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -40,6 +41,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/date-time-now-02-configured.png
 :alt: Date/Time with Now configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Date/Time with Now-Specific Settings

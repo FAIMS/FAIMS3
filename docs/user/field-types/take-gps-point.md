@@ -26,6 +26,7 @@ To add this field, open the
 ```{screenshot} field-types-design/take-gps-point-01-add-field.png
 :alt: Adding a Take GPS Point — the LOCATION tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -42,6 +43,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/take-gps-point-02-configured.png
 :alt: Take GPS Point configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Take GPS Point-Specific Settings

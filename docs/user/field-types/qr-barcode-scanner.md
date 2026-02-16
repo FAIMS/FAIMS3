@@ -29,6 +29,7 @@ tab, and click the **QR / Barcode Scanner** card. Then click the
 ```{screenshot} field-types-design/qr-barcode-scanner-01-add-field.png
 :alt: Adding a QR / Barcode Scanner — the TEXT tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -45,6 +46,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/qr-barcode-scanner-02-configured.png
 :alt: QR / Barcode Scanner configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Shared Field Options

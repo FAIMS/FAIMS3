@@ -24,6 +24,7 @@ the **ADD FIELD** button in the lower right.
 ```{screenshot} field-types-design/controlled-number-01-add-field.png
 :alt: Adding a Controlled Number — the NUMBERS tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -40,6 +41,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/controlled-number-02-configured.png
 :alt: Controlled Number configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Controlled Number-Specific Settings

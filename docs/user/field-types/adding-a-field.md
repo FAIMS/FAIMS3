@@ -13,6 +13,7 @@ the section editing controls and above its **Visible Fields** list.
 ```{screenshot} field-types-design/shared-00-add-field-button.png
 :alt: The ADD A FIELD button shown between the section editing controls above and the Visible Fields list below
 :align: right
+:width: 100%
 ```
 
 ## The Add a Field Dialog
@@ -35,6 +36,7 @@ The dialog has four main areas:
 ```{screenshot} field-types-design/shared-01-add-field-modal.png
 :alt: The Add a field dialog showing the ALL tab with field type cards, the Field name input, tab bar, search input, and ADD FIELD button
 :align: right
+:width: 100%
 ```
 
 ## Tabs

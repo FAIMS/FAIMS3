@@ -26,6 +26,7 @@ tab, and click the **Select Field** card. Then click the
 ```{screenshot} field-types-design/select-01-add-field.png
 :alt: Adding a Select Field — the CHOICE tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -42,6 +43,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/select-02-configured.png
 :alt: Select Field configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Select-Specific Settings
@@ -63,6 +65,7 @@ or formatting to individual options.
 ```{screenshot} field-types-design/select-03-options.png
 :alt: Select Field options list — Add Option input, options table with drag handles and action buttons
 :align: right
+:width: 100%
 ```
 
 **Managing options:**

@@ -28,6 +28,7 @@ tab, and click the **Select one option** card. Then click the
 ```{screenshot} field-types-design/radio-group-01-add-field.png
 :alt: Adding a Select one option — the CHOICE tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -44,6 +45,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/radio-group-02-configured.png
 :alt: Select one option configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Select one option-Specific Settings
@@ -71,6 +73,7 @@ options.
 ```{screenshot} field-types-design/radio-group-03-options.png
 :alt: Select one option options list
 :align: right
+:width: 100%
 ```
 
 ### Shared Field Options

@@ -27,6 +27,7 @@ To add this field, open the
 ```{screenshot} field-types-design/map-input-01-add-field.png
 :alt: Adding a Map Input — the LOCATION tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -43,6 +44,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/map-input-02-configured.png
 :alt: Map Input configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Map Input-Specific Settings
@@ -55,6 +57,7 @@ drawing mode:
 | **Zoom Level** | The initial zoom level of the map when the field is opened. Higher values show more detail. |
 | **Select Feature** | The type of geometry the collector can draw: Point, LineString, or Polygon. Each field supports only one geometry type. |
 | **Button Label Text** | Custom text for the location button. If left empty, the field label will be used. |
+| **Display set to current point button** | Includes a button in the map input screen to select the current point if the map is configured for point input |
 
 ### Shared Field Options
 

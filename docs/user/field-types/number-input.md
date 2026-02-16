@@ -21,6 +21,7 @@ button in the lower right.
 ```{screenshot} field-types-design/number-input-01-add-field.png
 :alt: Adding a Number Input — the NUMBERS tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field

@@ -24,6 +24,7 @@ button in the lower right.
 ```{screenshot} field-types-design/templated-string-01-add-field.png
 :alt: Adding a Templated String — the TEXT tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -40,6 +41,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/templated-string-02-configured.png
 :alt: Templated String configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Templated String-Specific Settings
@@ -77,7 +79,7 @@ and Display in child records — see
 
 ## Tips
 
-- **Every {{notebook}} needs at least one Templated String** configured
+- **Every form needs at least one Templated String** configured
   as the Human-Readable Identifier (HRID). Without it, records get
   opaque identifiers like "rec-5f8a9b3c" that are impossible to
   reference in conversation or field notes.

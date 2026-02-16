@@ -33,6 +33,7 @@ tab, and click the **Select Field (Hierarchical)** card. Then click the
 ```{screenshot} field-types-design/hierarchical-select-01-add-field.png
 :alt: Adding a Select Field (Hierarchical) — the CHOICE tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field

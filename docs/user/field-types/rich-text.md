@@ -27,6 +27,7 @@ To add this field, open the
 ```{screenshot} field-types-design/rich-text-01-add-field.png
 :alt: Adding a Rich Text — the DISPLAY tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -43,6 +44,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/rich-text-02-configured.png
 :alt: Rich Text configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Rich Text-Specific Settings

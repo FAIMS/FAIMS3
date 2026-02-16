@@ -16,6 +16,15 @@ available, and notes where guides are still to come.
 
 ## Shared Settings and Controls
 
+```{toctree}
+  :hidden:
+adding-a-field.md
+field-identity.md
+field-toolbar.md
+field-options.md
+conditions.md
+```
+
 Five guides cover settings and controls that apply to every field type:
 
 - **[Adding a Field](adding-a-field.md)** — How to open the Add a
@@ -31,6 +40,16 @@ Five guides cover settings and controls that apply to every field type:
   to show or hide fields based on other fields' values.
 
 ## Text Fields
+
+```{toctree}
+  :hidden:
+faims-text-field.md
+email-field.md
+multiline-text-field.md
+templated-string.md
+qr-barcode-scanner.md
+address.md
+```
 
 The **TEXT** tab contains field types for capturing text-based data, from
 short codes and labels to multi-line descriptions and email addresses.
@@ -52,6 +71,14 @@ short codes and labels to multi-line descriptions and email addresses.
 
 ## Number Fields
 
+```{toctree}
+  :hidden:
+
+number-input.md
+controlled-number.md
+auto-incrementing-field.md
+```
+
 The **NUMBERS** tab contains field types for numeric and sequential data.
 
 - **[Number Input](number-input.md)** — Accepts numeric data including
@@ -63,6 +90,14 @@ The **NUMBERS** tab contains field types for numeric and sequential data.
   identifiers such as specimen numbers and catalogue IDs.
 
 ## Date and Time Fields
+
+```{toctree}
+  :hidden:
+date-time-picker.md
+date-picker.md
+month-picker.md
+date-time-now.md
+```
 
 The **DATE & TIME** tab contains field types for recording dates, times, and
 timestamps.
@@ -80,6 +115,12 @@ timestamps.
 
 ## Media Fields
 
+```{toctree}
+  :hidden:
+take-photo.md
+attach-file.md
+```
+
 The **MEDIA** tab contains field types for capturing photographs and
 uploading files.
 
@@ -90,6 +131,12 @@ uploading files.
 
 ## Location Fields
 
+```{toctree}
+  :hidden:
+take-gps-point.md
+map-input.md
+```
+
 The **LOCATION** tab contains field types for recording GPS coordinates and
 map-based spatial data.
 
@@ -99,6 +146,15 @@ map-based spatial data.
   and polygons on base map tiles.
 
 ## Choice Fields
+
+```{toctree}
+  :hidden:
+select.md
+checkbox.md
+multi-select.md
+hierarchical-select.md
+radio-group.md
+```
 
 The **CHOICE** tab contains field types for controlled vocabulary input,
 from simple checkboxes to hierarchical selection lists.
@@ -118,6 +174,11 @@ from simple checkboxes to hierarchical selection lists.
 
 ## Relationship Fields
 
+```{toctree}
+  :hidden:
+related-records.md
+```
+
 The **RELATIONSHIP** tab contains the field type for connecting records with
 bidirectional relationships.
 
@@ -126,6 +187,11 @@ bidirectional relationships.
 
 ## Display Fields
 
+```{toctree}
+  :hidden:
+rich-text.md
+```
+
 The **DISPLAY** tab contains the field type for presenting static formatted
 content and instructions within a form.
 
@@ -133,6 +199,12 @@ content and instructions within a form.
   and headings within a form; does not capture data.
 
 ## Designing Forms for Fieldwork
+
+```{toctree}
+  :hidden:
+field-selection-guide.md
+form-design-patterns.md
+```
 
 - **[Choosing a Field Type](field-selection-guide.md)** — A guide to
   selecting the right field type for your data, with design principles,

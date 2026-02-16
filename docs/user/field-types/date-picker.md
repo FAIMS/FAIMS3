@@ -22,6 +22,7 @@ To add this field, open the
 ```{screenshot} field-types-design/date-picker-01-add-field.png
 :alt: Adding a Date Picker — the DATE & TIME tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -38,6 +39,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/date-picker-02-configured.png
 :alt: Date Picker configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Shared Field Options

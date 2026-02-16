@@ -15,6 +15,7 @@ actions for managing the field without opening additional menus.
 ```{screenshot} field-types-design/shared-02-field-toolbar.png
 :alt: Field toolbar icons in the header bar of the Feature description field
 :align: right
+:width: 100%
 ```
 
 ## Toolbar Icons

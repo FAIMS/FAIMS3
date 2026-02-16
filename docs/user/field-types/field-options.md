@@ -14,6 +14,7 @@ persistence.
 ```{screenshot} field-types-design/shared-04-field-options.png
 :alt: Shared field options panel showing Required, Annotation, Uncertainty, ADD CONDITION, and persistence options in their default (unchecked) state
 :align: right
+:width: 100%
 ```
 
 ## Options

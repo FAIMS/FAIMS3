@@ -23,6 +23,7 @@ To add this field, open the
 ```{screenshot} field-types-design/unique-id-01-add-field.png
 :alt: Adding an Auto Incrementing Field — the NUMBERS tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -39,6 +40,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/unique-id-02-configured.png
 :alt: Auto Incrementing Field configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Auto Incrementing Field-Specific Settings

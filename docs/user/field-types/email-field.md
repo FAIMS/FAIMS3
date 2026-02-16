@@ -21,6 +21,7 @@ the lower right.
 ```{screenshot} field-types-design/email-field-01-add-field.png
 :alt: Adding an Email field — the TEXT tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -37,6 +38,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/email-field-02-configured.png
 :alt: Email field configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Shared Field Options

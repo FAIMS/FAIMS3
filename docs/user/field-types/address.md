@@ -26,6 +26,7 @@ button in the lower right.
 ```{screenshot} field-types-design/address-01-add-field.png
 :alt: Adding an Address field — the TEXT tab in the ADD A FIELD dialog
 :align: right
+:width: 100%
 ```
 
 ## Configuring the Field
@@ -42,6 +43,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/address-02-configured.png
 :alt: Address field configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Shared Field Options

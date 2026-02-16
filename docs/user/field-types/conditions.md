@@ -38,6 +38,7 @@ Editor and evaluated dynamically during data collection.
 ```{screenshot} field-types-design/shared-06-conditions-editor.png
 :alt: The condition editor showing the Field, Operator, and Value dropdowns
 :align: right
+:width: 100%
 ```
 
 To remove a condition, click the **red minus** icon next to it.

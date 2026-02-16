@@ -17,6 +17,7 @@ allows you to provide guidance to data collectors using the {{notebook}}.
 ```{screenshot} field-types-design/shared-03-field-identity.png
 :alt: Field identity panel showing Label, Helper Text, and Field ID for the Feature description field
 :align: right
+:width: 100%
 ```
 
 ## Label

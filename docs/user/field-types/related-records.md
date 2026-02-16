@@ -45,6 +45,7 @@ Field ID, and add any desired Helper Text.
 ```{screenshot} field-types-design/related-records-02-configured.png
 :alt: Related Records configuration in the {{Notebook}} Editor
 :align: right
+:width: 100%
 ```
 
 ### Related Records-Specific Settings
