@@ -48,6 +48,28 @@ _does-not-contain-all-of_.   Also here you will be able to select multiple value
 So, for example, you could check whether the target field _Pet Type_ contains
 one of _Dog_ or _Cat_, or that it does not contain any of _Hamster_, _Gerbil_ or _Rat_.
 
+### Operator Reference
+
+The condition builder offers operators organised into three groups.
+
+#### Comparison Operators
+
+For comparing a field's value against a single value.
+
+| Operator | What It Checks |
+| -------- | -------------- |
+| **equal** | Field value matches the specified value exactly. |
+| **not-equal** | Field value does not match the specified value. |
+| **greater** | Field value is greater than the specified number. |
+| **less** | Field value is less than the specified number. |
+| **contains** | Field value contains the specified substring. |
+| **regex** | Field value matches a regex pattern (advanced). |
+| **contains** | The selected list includes the specified value. |
+| **contains-one-of** | The field value includes at least one of the specified values. |
+| **does-not-contain-any-of** | The field value includes none of the specified values. |
+| **contains-all-of** | The field value includes every one of the specified values. |
+| **does-not-contain-all-of** | The field value does not contain all of the specified values. |
+
 ## Complex Conditions
 
 The condition editor allows you to combine simple conditions into more complex tests using boolean

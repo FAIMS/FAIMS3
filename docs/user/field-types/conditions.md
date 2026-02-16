@@ -20,69 +20,8 @@ Editor and evaluated dynamically during data collection.
 :width: 100%
 ```
 
-## Adding a Condition
-
-1. Expand the field you want to conditionally show or hide.
-2. Scroll down to the shared options panel and click the
-   **ADD CONDITION** button.
-3. A condition row appears with three elements:
-   - **Field** — a dropdown listing all other fields in the same
-     form. Select the field whose value should control visibility.
-   - **Operator** — a dropdown of comparison operators (see
-     [Operators](#operators) below).
-   - **Value** — the value to compare against. For choice fields,
-     this is a dropdown of the available options; for other field
-     types, a text input.
-4. Click the **save** icon (floppy disk) to confirm the condition.
-5. Click **SAVE CHANGES** at the bottom of the field to apply.
-
-```{screenshot} field-types-design/shared-06-conditions-editor.png
-:alt: The condition editor showing the Field, Operator, and Value dropdowns
-:align: right
-:width: 100%
-```
-
-To remove a condition, click the **red minus** icon next to it.
-
-## Operators
-
-The condition builder offers operators organised into three groups.
-
-### Comparison Operators
-
-For comparing a field's value against a single value.
-
-| Operator | What It Checks |
-| -------- | -------------- |
-| **Equal to** | Field value matches the specified value exactly. |
-| **Not equal to** | Field value does not match the specified value. |
-| **Greater than** | Field value is greater than the specified number. |
-| **Greater than or equal** | Field value is greater than or equal to the specified number. |
-| **Less than** | Field value is less than the specified number. |
-| **Less than or equal** | Field value is less than or equal to the specified number. |
-| **Matches regular expression** | Field value matches a regex pattern (advanced). |
-
-### List Operators
-
-For comparing against fields that accept multiple selections (e.g.,
-Select Multiple).
-
-| Operator | What It Checks |
-| -------- | -------------- |
-| **List contains this value** | The selected list includes the specified value. |
-| **List does not contain this value** | The selected list excludes the specified value. |
-| **List contains one of these values** | The selected list includes at least one of the specified values. |
-| **List does not contain any of these values** | The selected list includes none of the specified values. |
-| **List contains all of these values** | The selected list includes every one of the specified values. |
-
-### Compound Operators
-
-For combining multiple conditions on the same field.
-
-| Operator | What It Checks |
-| -------- | -------------- |
-| **AND** | All nested conditions must be true for the field to appear. |
-| **OR** | Any one nested condition must be true for the field to appear. |
+See [Conditions on Sections and Fields](../authoring/conditions.md) for
+details of creating and editing conditions.
 
 ## How Conditions Behave
 
