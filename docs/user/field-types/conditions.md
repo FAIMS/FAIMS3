@@ -17,6 +17,7 @@ Editor and evaluated dynamically during data collection.
 ```{screenshot} field-types-design/shared-05-conditions.png
 :alt: An expanded field showing a configured condition banner
 :align: right
+:width: 100%
 ```
 
 ## Adding a Condition
