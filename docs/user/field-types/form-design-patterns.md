@@ -48,14 +48,17 @@ When recording an identification that may be provisional, combine:
   **Select Field (Hierarchical)** for the identification (e.g.,
   species, soil type, artefact class) drawn from a controlled
   vocabulary.
-- A **Select one option** for confidence level (e.g., Certain,
-  Probable, Possible).
+- Use of "Uncertainty" if a simple "certain" vs. "uncertain"
+  flag is all that is needed, **OR**
+- A **Select one option** for more nuanced confidence level (e.g., Certain,
+  Probable, Possible, Unlikely).
 - A **[Checkbox](checkbox.md)** labelled "Requires verification",
-  conditionally revealed when confidence is not Certain.
+  conditionally revealed when confidence (selected through
+  Select one option) is not Certain.
 - A **Multi-line Text Field** for detailed notes, conditionally
   revealed alongside the verification flag.
 
-### The Observation Pattern
+### The Complex Observation Pattern
 
 When structuring complex observations with multiple possible outcomes,
 combine:
@@ -74,9 +77,9 @@ combine:
 When a form needs to support both rapid and detailed recording,
 combine:
 
+- Basic fields that are always visible for quick recording.
 - A **[Checkbox](checkbox.md)** as a gateway question (e.g., "Record
   detailed measurements?").
-- Basic fields that are always visible for quick recording.
 - Detailed fields conditionally revealed when the checkbox is ticked.
 
 This pattern keeps the form simple for routine records while still
@@ -106,16 +109,17 @@ and human-readable identifier (HRID) structures.
 Archaeological forms typically need to capture stratigraphic
 relationships, contextual inheritance, and structured identifiers:
 
-- **Stratigraphic relationships** — Use **Related Records** with
+- **Stratigraphic relationships** — Use **Add Related Record** with
   defined vocabulary pairs (e.g., "cuts / cut by", "fills / filled by",
   "above / below") to record temporal and physical relationships between
-  contexts.
+  contexts (temporal and physical relationships can be
+  captured independently using multiple relationships).
 - **Contextual inheritance** — Finds inherit context properties,
   samples inherit environmental conditions, and photos inherit spatial
   coordinates through parent–child record relationships.
 - **HRID structure** — A typical archaeological identifier combines
-  site, trench, type, and number:
-  `SITE-TRENCH-TYPE-NUMBER` (e.g., "MP24-T5-C023").
+  site, trench, entity type, and number:
+  `SITE-TRENCH-FEATURETYPE-NUMBER` (e.g., "Perachora-T5-Hearth-023").
 
 ### Ecological Survey
 
@@ -123,7 +127,7 @@ Ecological survey forms often centre on transect-based observation and
 abundance estimation:
 
 - **Transect observations** — Use an **Auto Incrementing Field** for
-  sequential observation points, combined with **Take GPS Point** for
+  sequential observation points, combined with **Take point** for
   each location along a transect.
 - **Abundance estimation** — Use **Controlled Number** fields for
   percentage cover or species counts, or a **Select one option** field
@@ -138,11 +142,15 @@ abundance estimation:
 Geological forms often involve deep sample hierarchies and orientation
 data:
 
-- **Sample hierarchies** — Use **Related Records** to maintain
+- **Sample hierarchies** — Use **Add Related Record** to maintain
   provenance through processing stages: Outcrop → Sample → Subsample →
   Analysis.
-- **Orientation data** — Use grouped **Controlled Number** fields for
-  strike and dip measurements or plunge and trend for linear features.
+- **Orientation data** — Use grouped **Controlled Number**
+  fields for strike and dip measurements or plunge and trend
+  for linear features.
+- **Sample identifiers** — Use QR / Barcode Scanner to scan
+  a sample label in the field to avoid transcription errors
+  (consider implementing IGSNs).
 - **HRID structure** — A typical geological identifier combines
   project, location, and sample:
   `PROJECT-LOCATION-SAMPLE` (e.g., "GEO2024-OUT3-S045").
