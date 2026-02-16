@@ -109,7 +109,7 @@ and human-readable identifier (HRID) structures.
 Archaeological forms typically need to capture stratigraphic
 relationships, contextual inheritance, and structured identifiers:
 
-- **Stratigraphic relationships** — Use **Related Records** with
+- **Stratigraphic relationships** — Use **Add Related Record** with
   defined vocabulary pairs (e.g., "cuts / cut by", "fills / filled by",
   "above / below") to record temporal and physical relationships between
   contexts (temporal and physical relationships can be
@@ -127,7 +127,7 @@ Ecological survey forms often centre on transect-based observation and
 abundance estimation:
 
 - **Transect observations** — Use an **Auto Incrementing Field** for
-  sequential observation points, combined with **Take GPS Point** for
+  sequential observation points, combined with **Take point** for
   each location along a transect.
 - **Abundance estimation** — Use **Controlled Number** fields for
   percentage cover or species counts, or a **Select one option** field
@@ -142,7 +142,7 @@ abundance estimation:
 Geological forms often involve deep sample hierarchies and orientation
 data:
 
-- **Sample hierarchies** — Use **Related Records** to maintain
+- **Sample hierarchies** — Use **Add Related Record** to maintain
   provenance through processing stages: Outcrop → Sample → Subsample →
   Analysis.
 - **Orientation data** — Use grouped **Controlled Number**

@@ -92,8 +92,8 @@ tabs in the ADD A FIELD dialog.
 
 | Field Type | Purpose | Good For |
 | ---------- | ------- | -------- |
-| **[Take GPS Point](take-gps-point.md)** | Single coordinate capture | Find spots, sample locations |
-| **[Map Field](map-input.md)** | Interactive map drawing | Site boundaries, transects, polygons |
+| **[Take point](take-gps-point.md)** | Single coordinate capture | Find spots, sample locations |
+| **[Map field](map-input.md)** | Interactive map drawing | Site boundaries, transects, polygons |
 
 ### Choice
 
@@ -109,13 +109,13 @@ tabs in the ADD A FIELD dialog.
 
 | Field Type | Purpose | Good For |
 | ---------- | ------- | -------- |
-| **[Related Records](related-records.md)** | Bidirectional record links | Parent–child and peer relationships |
+| **[Add Related Record](related-records.md)** | Bidirectional record links | Parent–child and peer relationships |
 
 ### Display
 
 | Field Type | Purpose | Good For |
 | ---------- | ------- | -------- |
-| **[Rich Text](rich-text.md)** | Formatted instructions | Procedures, warnings, headings |
+| **[RichText](rich-text.md)** | Formatted instructions | Procedures, warnings, headings |
 
 ## Which Field Type Do I Need?
 
@@ -232,10 +232,10 @@ document and media types.
 ### Location and Spatial Data
 
 - **A single GPS coordinate** →
-  **[Take GPS Point](take-gps-point.md)** — one-tap capture with
+  **[Take point](take-gps-point.md)** — one-tap capture with
   accuracy metadata.
 - **Boundaries, transects, or areas** →
-  **[Map Field](map-input.md)** — draw points,
+  **[Map field](map-input.md)** — draw points,
   lines, and polygons on a base map. Requires an internet connection
   for initial tile loading (offline maps are experimental).
 - **Both point and area data** → combine both field types in the same
@@ -247,7 +247,7 @@ document and media types.
 ### Record Relationships
 
 - **Parent–child or peer connections** between records →
-  **[Related Records](related-records.md)** — creates
+  **[Add Related Record](related-records.md)** — creates
   bidirectional links with defined relationship types.
 
 ## Common Mistakes
@@ -260,7 +260,7 @@ document and media types.
   are too tight — match precision to your actual research
   needs.
 - **Ignoring platform constraints.** QR / Barcode Scanner is
-  mobile only; Map Field requires an internet connection;
+  mobile only; Map field requires an internet connection;
   location accuracy in the web app on desktop may be poor.
   Design for your actual deployment platform.
 - **Over-using required fields.** Marking fields as required
@@ -287,7 +287,7 @@ document and media types.
   "rec-5f8a9b3c"). A dedicated HRID guide is planned.
 - **[QR / Barcode Scanner](qr-barcode-scanner.md) is mobile only.**
   It will not function on desktop browsers.
-- **[Map Field](map-input.md) requires an internet
+- **[Map field](map-input.md) requires an internet
   connection** for initial tile loading. Offline map support
   is experimental.
 - **Plan your vocabularies before building.** The display label and
