@@ -46,14 +46,14 @@ The tab bar organises field types into nine categories:
 | Tab | Field Types |
 | --- | ----------- |
 | **ALL** | Shows every available field type (default view) |
-| **TEXT** | FAIMS Text Field, Multi-line Text Field, Email, Templated String, QR / Barcode Scanner, Address |
-| **NUMBERS** | Number Input, Controlled Number, Auto Incrementing Field |
-| **DATE & TIME** | Date time picker, Date picker, Month picker, Date and Time with Now button |
-| **MEDIA** | Take Photo, Upload a File |
-| **LOCATION** | Take GPS Point, Map Field |
-| **CHOICE** | Select Field, Select Multiple, Checkbox, Select Field (Hierarchical), Select one option |
-| **RELATIONSHIP** | Related Records |
-| **DISPLAY** | Rich Text |
+| **TEXT** | [FAIMS Text Field](faims-text-field.md), [Multi-line Text Field](multiline-text-field.md), [Email](email-field.md), [Templated String](templated-string.md), [QR / Barcode Scanner](qr-barcode-scanner.md), [Address](address.md) |
+| **NUMBERS** | [Number Input](number-input.md), [Controlled Number](controlled-number.md), [Auto Incrementing Field](auto-incrementing-field.md) |
+| **DATE & TIME** | [Date time picker](date-time-picker.md), [Date picker](date-picker.md), [Month picker](month-picker.md), [Date and Time with Now button](date-time-now.md) |
+| **MEDIA** | [Take Photo](take-photo.md), [Upload a file](attach-file.md) |
+| **LOCATION** | [Take point](take-gps-point.md), [Map field](map-input.md) |
+| **CHOICE** | [Select Field](select.md), [Select Multiple](multi-select.md), [Checkbox](checkbox.md), [Select Field (Hierarchical)](hierarchical-select.md), [Select one option](radio-group.md) |
+| **RELATIONSHIP** | [Add Related Record](related-records.md) |
+| **DISPLAY** | [RichText](rich-text.md) |
 
 > **Note:** Not all tabs may be visible at once. If you see a **›**
 > arrow button on the right side of the tab bar, **click** it to scroll

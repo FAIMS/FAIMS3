@@ -8,15 +8,16 @@ Editor.*
 ## What This Field Does
 
 A Date Time Picker captures a date and time as a local datetime string
-without timezone information. It is functionally similar to Date/Time
-with Now but lacks timezone preservation, making timestamps ambiguous
-when teams span multiple timezones.
+without timezone information. It is functionally similar to
+[Date and Time with Now button](date-time-now.md) but lacks timezone
+preservation, making timestamps ambiguous when teams span multiple
+timezones.
 
 > **Warning:** This field is **discouraged for new {{notebooks}}.** Because
 > it stores timestamps without timezone information, the same time value
 > (e.g., "14:30") represents different times in different
-> locations. Use [Date/Time with Now](date-time-now.md) instead for
-> timezone-safe dates. Date/Time with Now accepts arbitrary dates in
+> locations. Use [Date and Time with Now button](date-time-now.md) instead for
+> timezone-safe dates. Date and Time with Now button accepts arbitrary dates in
 > addition to "now" timestamps.
 
 ## Adding the Field
@@ -60,9 +61,9 @@ and Display in child records — see
 
 ## Tips
 
-- **Use Date/Time with Now instead** unless your project operates
-  entirely within a single timezone with no device travel. Date/Time
-  with Now stores UTC timestamps that survive timezone changes and
+- **Use [Date and Time with Now button](date-time-now.md) instead** unless your project operates
+  entirely within a single timezone with no device travel. Date and Time
+  with Now button stores UTC timestamps that survive timezone changes and
   enable accurate cross-site synchronisation.
 - **If you must use this field**, add Helper Text documenting the
   assumed timezone (e.g., "All times are AEST") so the assumption is

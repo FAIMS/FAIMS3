@@ -54,7 +54,7 @@ and Display in child records — see
 
 ## Tips
 
-- **More flexible than Take Photo but less streamlined for camera
+- **More flexible than [Take Photo](take-photo.md) but less streamlined for camera
   workflows.** Use Attach File when you need to upload documents,
   data files, or media from external sources (e.g., photos from an
   external camera). Use Take Photo when attached media will include

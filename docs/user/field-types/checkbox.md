@@ -10,7 +10,7 @@ A Checkbox Field provides a toggle that stores a boolean
 value — checked (true) or unchecked (false). Use it for
 presence/absence indicators, consent acknowledgements, procedural
 confirmations, or data quality flags. Unlike other choice fields
-(e.g., Select Field, Select Multiple), a Checkbox captures a
+(e.g., [Select Field](select.md), [Select Multiple](multi-select.md)), a Checkbox captures a
 single yes/no state rather than a selection from a list.
 
 ## Adding the Field
@@ -63,7 +63,7 @@ and Display in child records — see
   to leave it unchecked (false). If you need to force a checked state (e.g.,
   for consent forms), this must be configured via JSON validation rules.
 - **For questions with more than two states** (e.g., "yes / no / unknown"),
-  use a Select Field or a 'Select one option' field instead of a Checkbox.
+  use a [Select Field](select.md) or a '[Select one option](radio-group.md)' field instead of a Checkbox.
 - **Checkbox is ideal for quick binary flags** during rapid data collection —
   presence/absence of charcoal, bioturbation observed, safety check completed.
 - **Enable Annotation and Uncertainty** if collectors might need to qualify

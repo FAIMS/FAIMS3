@@ -97,10 +97,10 @@ and Display in child records — see
 
 - **Choose the right selection field for your list size.** Select
   Field is ideal for lists of 8–20 options. For shorter lists
-  (2–7 items), consider 'Select one option' for more rapid entry,
+  (2–7 items), consider '[Select one option](radio-group.md)' for more rapid entry,
   at the cost of more screen real estate.
   For very long (>20 items) or intrinsically hierarchical lists,
-  consider Select Field (Hierarchical).
+  consider [Select Field (Hierarchical)](hierarchical-select.md).
 - **Include a "-- None --" option** if collectors need to clear a
   selection — there is no built-in deselect button. Without a blank option,
   once a choice is made it cannot be undone.

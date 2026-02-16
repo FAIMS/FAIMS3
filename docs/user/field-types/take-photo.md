@@ -55,7 +55,7 @@ and Display in child records — see
 
 ## Tips
 
-- **Preferred over Attach File for camera-first workflows.** Take Photo
+- **Preferred over [Upload a file](attach-file.md) for camera-first workflows.** Take Photo
   opens the device camera directly for immediate capture, making it
   faster when photos are the primary media type. Upload of photos
   from the device's gallery or captured using an external camera

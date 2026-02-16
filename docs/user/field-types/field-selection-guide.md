@@ -259,8 +259,8 @@ document and media types.
   measurements when estimates suffice, or impose ranges that
   are too tight — match precision to your actual research
   needs.
-- **Ignoring platform constraints.** QR / Barcode Scanner is
-  mobile only; Map field requires an internet connection;
+- **Ignoring platform constraints.** [QR / Barcode Scanner](qr-barcode-scanner.md) is
+  mobile only; [Map field](map-input.md) requires an internet connection;
   location accuracy in the web app on desktop may be poor.
   Design for your actual deployment platform.
 - **Over-using required fields.** Marking fields as required

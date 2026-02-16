@@ -53,7 +53,7 @@ and Display in child records — see
 
 ## Tips
 
-- **Better than Date/Time with Now for historical or future dates**
+- **Better than [Date and Time with Now button](date-time-now.md) for historical or future dates**
   (e.g., "Scheduled revisit date", "Date of last disturbance") where
   the time component is meaningless. The calendar picker interface
   helps users navigate to the correct date visually.
@@ -61,6 +61,6 @@ and Display in child records — see
   (YYYY-MM-DD), there is no risk of timezone-related data corruption.
   This makes Date Picker safe for any project regardless of how many
   timezones the team spans.
-- **If you also need the time, use Date/Time with Now instead.** Do
+- **If you also need the time, use Date and Time with Now button instead.** Do
   not pair a Date Picker with a separate time field — use a single
-  Date/Time with Now field for combined date-and-time capture.
+  Date and Time with Now button field for combined date-and-time capture.

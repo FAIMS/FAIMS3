@@ -103,7 +103,7 @@ The **DATE & TIME** tab contains field types for recording dates, times, and
 timestamps.
 
 - **[Date time picker](date-time-picker.md)** — Captures date and time
-  values. Consider **Date and Time with Now button** instead for timezone
+  values. Consider **[Date and Time with Now button](date-time-now.md)** instead for timezone
   support.
 - **[Date picker](date-picker.md)** — Date-only selection for administrative
   records, permits, and excavation dates.

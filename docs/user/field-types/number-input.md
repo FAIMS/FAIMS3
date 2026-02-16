@@ -69,7 +69,7 @@ and Display in child records — see
   data where missing values have different analytical implications.
 - **On iOS devices, the number keyboard lacks a minus key.** If collectors
   need to enter negative values (e.g., below-datum elevations), consider
-  using a FAIMS Text Field with format guidance instead, or instruct
+  using a [FAIMS Text Field](faims-text-field.md) with format guidance instead, or instruct
   collectors to copy-paste the minus character.
 - **Enable Annotation and Uncertainty** for measurement fields
   where collectors might need to note instrument type, recording
