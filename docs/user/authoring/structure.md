@@ -9,7 +9,7 @@ All of this section also applies to [templates](./templates.md) which share the 
 ## Metadata
 
 Every {{notebook}} has associated metadata that records properties of the {{notebook}} as a
-while.  There are a number of fixed fields in the metadata but you can also add your own
+whole.  There are a number of fixed fields in the metadata but you can also add your own
 field.  The fixed fields are:
 
 - __Title__: the published name of the {{notebook}} as it will appear in the app
@@ -56,7 +56,7 @@ the screenshot from the {{notebook}} editor.
 __Finish Button Behaviour__ Changes the behaviour of the 'Finish' buttons in the form. These can be
 shown at the end of every section, only shown once all sections have been visited, or
 only shown when there are no errors in the form.  Note that, if the buttons are not shown,
-then users cannot cleanly exit the record.
+then users cannot cleanly exit the record.  __Note: this option is deprecated and currently has no effect.__
 
 __Layout Style__ allows you to choose to show section within the form on different pages  (tabs)
 or in a single page (inline). The

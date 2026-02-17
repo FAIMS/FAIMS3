@@ -6,23 +6,24 @@
 * Notebook Administrators
 * Server Administrators
 
-### Users
+## Users
+
 :::{index} user-role; user
 :::
 
-
 The default type of Fieldmark user (Role=User). They can:
 
-- see and activate any Notebooks that have been made available to them by an administrator
-- create and edit their own records in those Notebooks
-- create local Notebooks but not share them with other users
+* see and activate any Notebooks that have been made available to them by an administrator
+* create and edit their own records in those Notebooks
+* create local Notebooks but not share them with other users
 
 A User cannot:
 
 - see or edit the records of other Users
 - see Notebooks unless granted permission by an administrator
 
-### Administrators
+## Administrators
+
 :::{index} user-role; administrator
 :::
 

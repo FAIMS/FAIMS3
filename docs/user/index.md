@@ -22,7 +22,7 @@ caption: Quick Start
 maxdepth: 1
 ---
 
-getting-started/about.md 
+getting-started/about.md
 data-collection/getting-started-data-collection.md
 authoring/quick-start-researchers.md
 admin/intro-admin.md
@@ -44,8 +44,17 @@ data-collection/login.md
 data-collection/understanding-notebooks.md
 data-collection/using-notebooks.md
 data-collection/entering-data.md
+data-collection/user-roles.md
+data-collection/activating-notebooks.md
+data-collection/field-types-overview.md
+data-collection/hardware.md
+data-collection/invitations.md
+data-collection/marginal-data.md
+data-collection/related-records.md
 core/synchronisation.md
-data-collection/export.md
+data-export/export.md
+data-export/api-tokens.md
+data-export/integrations.md
 
 ```
 
@@ -84,7 +93,9 @@ maxdepth: 1
 admin/intro-admin.md
 admin/web.md
 admin/notebook-admin.md
-intro-notebook-user/user-roles-and-permissions-guide.md
-intro-notebook-user/user-roles-task-organised.md
+admin/user-roles-and-permissions-guide.md
+admin/user-roles-task-organised.md
+core/permissions.md
+
 
 ```

@@ -24,8 +24,7 @@ If your account is recognised, you will be successfully signed in and see your l
 
 ![sign in screen](/common-images/userscreen.png)
 
-
-````{Note} 
+````{Note}
 > Your login details will be recorded against all new records and any changes made to records while you are logged in. Always check you are correctly signed in.
 ````
 
@@ -35,7 +34,7 @@ If you don't already have an account on the {{FAIMS}} server, you will be able t
 
 ## Logging in with Multiple Accounts
 
-You can login to **{{FAIMS}}** with multiple accounts and switch between users. This can be useful when in the field sharing devices between different members of a team, with different credentials.   
+You can login to **{{FAIMS}}** with multiple accounts and switch between users. This can be useful when in the field sharing devices between different members of a team, with different credentials.
 
 ## Troubleshooting
 
