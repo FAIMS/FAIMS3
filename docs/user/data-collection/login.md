@@ -2,12 +2,9 @@
 
 ## Supported Authentication services
 
-**{{FAIMS}}** supports the following authentication systems:
+**{{FAIMS}}** can be configured to support either local (username/password) login or a federated login such as Google, AAF or an institutional single sign-on provider.
 
-1. Google accounts (Android devices only)
-2. AppleID (iOS devices only)
-3. Australian Access Federation (AAF)
-4. Select institutional accounts (SSO)  
+
 
 ## Login
 
@@ -22,7 +19,7 @@ Check in with your **Team Manager** if you're not sure which authentication serv
 
 If your account is recognised, you will be successfully signed in and see your login name and role:
 
-![sign in screen](/common-images/userscreen.png)
+<!-- ![sign in screen](/common-images/userscreen.png) -->
 
 ````{Note}
 > Your login details will be recorded against all new records and any changes made to records while you are logged in. Always check you are correctly signed in.

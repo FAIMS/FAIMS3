@@ -22,13 +22,11 @@ caption: Quick Start
 maxdepth: 1
 ---
 
-getting-started/about.md
+core/about.md
 data-collection/getting-started-data-collection.md
 authoring/quick-start-researchers.md
 admin/intro-admin.md
 core/support.md
-
-
 
 ```
 
@@ -44,7 +42,6 @@ data-collection/login.md
 data-collection/understanding-notebooks.md
 data-collection/using-notebooks.md
 data-collection/entering-data.md
-data-collection/user-roles.md
 data-collection/activating-notebooks.md
 data-collection/field-types-overview.md
 data-collection/hardware.md
@@ -97,5 +94,14 @@ admin/user-roles-and-permissions-guide.md
 admin/user-roles-task-organised.md
 core/permissions.md
 
+
+```
+
+```{toctree}
+:hidden:
+
+core/demo-notebooks.md
+core/demo-notebooks-demo.md
+core/demo-notebooks-campus-survey.md
 
 ```
