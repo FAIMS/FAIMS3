@@ -61,7 +61,7 @@ and Display in child records — see
   consistent data with fewer errors. Fields with pre-populated
   options are also faster to complete in the field.
 - **Best for entries under about 50 characters.** For longer text
-  (descriptions, narratives), use Multi-line Text Field instead.
+  (descriptions, narratives), use [Multi-line Text Field](multiline-text-field.md) instead.
 - **Enable Speech-to-Text** for fields where collectors may be working
   hands-free or in wet/dirty conditions.
 - **Review the Field ID before saving** — it is auto-generated from the

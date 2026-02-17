@@ -65,7 +65,7 @@ and Display in child records — see
 - **The identifier is a padded string, not a number.** A 5-digit
   counter generates "00042", not 42. This preserves leading zeros in
   exports and avoids numeric sorting issues in spreadsheets.
-- **Wrap in a Templated String** to build meaningful composite
+- **Wrap in a [Templated String](templated-string.md)** to build meaningful composite
   identifiers — for example, "SAMPLE-00042-2026" combines the auto-
   incremented number with a prefix and year.
 - **Ranges are configured per-device in the data collector.**

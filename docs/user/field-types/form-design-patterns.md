@@ -30,9 +30,9 @@ need to go beyond single-field recording.
 
 When recording a measurement, combine:
 
-- A **Select one option** or **[Select Field](select.md)** for the
+- A **[Select one option](radio-group.md)** or **[Select Field](select.md)** for the
   measurement type (e.g., length, width, depth).
-- A **Controlled Number** for the numeric value, with minimum and
+- A **[Controlled Number](controlled-number.md)** for the numeric value, with minimum and
   maximum bounds set to catch entry errors.
 - A unit indicator — either included in the field label (e.g.,
   "Depth (cm)") or as a separate **Select one option** field if
@@ -45,7 +45,7 @@ When recording a measurement, combine:
 When recording an identification that may be provisional, combine:
 
 - A **[Select Field](select.md)** or
-  **Select Field (Hierarchical)** for the identification (e.g.,
+  **[Select Field (Hierarchical)](hierarchical-select.md)** for the identification (e.g.,
   species, soil type, artefact class) drawn from a controlled
   vocabulary.
 - Use of "Uncertainty" if a simple "certain" vs. "uncertain"
@@ -55,7 +55,7 @@ When recording an identification that may be provisional, combine:
 - A **[Checkbox](checkbox.md)** labelled "Requires verification",
   conditionally revealed when confidence (selected through
   Select one option) is not Certain.
-- A **Multi-line Text Field** for detailed notes, conditionally
+- A **[Multi-line Text Field](multiline-text-field.md)** for detailed notes, conditionally
   revealed alongside the verification flag.
 
 ### The Complex Observation Pattern
@@ -69,7 +69,7 @@ combine:
   selection.
 - Standard metadata captured automatically by the platform (recorder,
   timestamp, location).
-- A **Take Photo** field with Annotation enabled for visual
+- A **[Take Photo](take-photo.md)** field with Annotation enabled for visual
   documentation.
 
 ### The Progressive Detail Pattern
@@ -109,7 +109,7 @@ and human-readable identifier (HRID) structures.
 Archaeological forms typically need to capture stratigraphic
 relationships, contextual inheritance, and structured identifiers:
 
-- **Stratigraphic relationships** — Use **Add Related Record** with
+- **Stratigraphic relationships** — Use **[Add Related Record](related-records.md)** with
   defined vocabulary pairs (e.g., "cuts / cut by", "fills / filled by",
   "above / below") to record temporal and physical relationships between
   contexts (temporal and physical relationships can be
@@ -126,11 +126,11 @@ relationships, contextual inheritance, and structured identifiers:
 Ecological survey forms often centre on transect-based observation and
 abundance estimation:
 
-- **Transect observations** — Use an **Auto Incrementing Field** for
-  sequential observation points, combined with **Take point** for
+- **Transect observations** — Use an **[Auto Incrementing Field](auto-incrementing-field.md)** for
+  sequential observation points, combined with **[Take point](take-gps-point.md)** for
   each location along a transect.
-- **Abundance estimation** — Use **Controlled Number** fields for
-  percentage cover or species counts, or a **Select one option** field
+- **Abundance estimation** — Use **[Controlled Number](controlled-number.md)** fields for
+  percentage cover or species counts, or a **[Select one option](radio-group.md)** field
   for categorical scales (e.g., DAFOR: Dominant, Abundant, Frequent,
   Occasional, Rare).
 - **HRID structure** — A typical ecological identifier combines
@@ -148,7 +148,7 @@ data:
 - **Orientation data** — Use grouped **Controlled Number**
   fields for strike and dip measurements or plunge and trend
   for linear features.
-- **Sample identifiers** — Use QR / Barcode Scanner to scan
+- **Sample identifiers** — Use **[QR / Barcode Scanner](qr-barcode-scanner.md)** to scan
   a sample label in the field to avoid transcription errors
   (consider implementing IGSNs).
 - **HRID structure** — A typical geological identifier combines

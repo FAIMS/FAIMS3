@@ -11,7 +11,7 @@ A Controlled Number field accepts bounded numeric values, enforcing
 minimum and maximum constraints at the point of entry. Use it for
 ratings, scores, percentages, and measurements with known valid
 ranges — such as pH (0–14), condition ratings (1–5), or percentage
-cover (0–100). Unlike Number Input, it catches out-of-range entries
+cover (0–100). Unlike [Number Input](number-input.md), it catches out-of-range entries
 immediately rather than during post-processing.
 
 ## Adding the Field

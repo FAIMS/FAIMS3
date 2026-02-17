@@ -83,7 +83,7 @@ and Display in child records — see
   geological classifications, vegetation communities. The tree
   navigation feels natural for inherently hierarchical data.
 - **Performance degrades above ~100 tree nodes.** For very large
-  taxonomies, consider splitting into cascading Select Field dropdowns
+  taxonomies, consider splitting into cascading [Select Field](select.md) dropdowns
   instead (e.g., one for material, one for technique, one for form).
 - **Once a selection is made, it cannot be cleared** — there is no
   deselect mechanism. If users might need to undo a selection,

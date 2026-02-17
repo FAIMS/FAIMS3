@@ -16,7 +16,7 @@ equipment, storage location) to digital records via pre-printed labels.
 > **Note:** This field is **mobile only**. It is
 > non-functional on the desktop web app, where the interface is
 > disabled. If your {{notebook}} will be used on both mobile and desktop
-> platforms, pair this field with a FAIMS Text Field so desktop users
+> platforms, pair this field with a [FAIMS Text Field](faims-text-field.md) so desktop users
 > can enter the code manually.
 
 ## Adding the Field

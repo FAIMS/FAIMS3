@@ -8,7 +8,7 @@
 
 A Multiline Text Field provides an extended text area for narrative
 content, detailed observations, and descriptive passages. Unlike the
-single-line FAIMS Text Field, it supports multiple lines with internal
+single-line [FAIMS Text Field](faims-text-field.md), it supports multiple lines with internal
 scrolling, making it suitable for entries that commonly exceed a
 sentence or two — such as context descriptions, condition assessments,
 and interpretative notes.
