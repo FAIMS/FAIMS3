@@ -2,8 +2,9 @@
 
 While working online, or within range of an offline server, records will be continuously synchronised. If working offline and without a standalone server, records will be stored on the local device until the next opportunity to synchronise.
 
-> [!WARNING]
+````{warning} 
 > Note that the **{{FAIMS}} App** must be open for synchronisation to work. If you exit the App, synchronisation will be paused and restart when you return to the App.
+````
 
 ## Configuring Synchronisation
 
@@ -21,12 +22,14 @@ By default, notebooks are set to not download files and attachments created by o
 
 While online, or connected to the offline server, the App will continuously synchronise new and updated records on the device and the server. When on the project page, you will need to tap or click **Refresh** to reset the _Record List_ and show recently synced records. 
 
-> [!NOTE] 
-> Large datasets with numerous images may take several minutes to fully synchronise (particularly if teams have been offline for several days), but the majority of records and edits will appear instantaneously.   
+````{note}
+Large datasets with numerous images may take several minutes to fully synchronise (particularly if teams have been offline for several days), but the majority of records and edits will appear instantaneously. 
+````
 
 An icon in the App header will provide a notification if you are offline or sync has been disrupted.    
 
 To verify your records have synced, check them on a different computer.
 
-> [!CAUTION]
-> Unsynchronized data will be lost if the App is uninstalled from a device or the browser cache is wiped.
+````{warning} 
+Unsynchronized data will be lost if the App is uninstalled from a device or the browser cache is wiped.
+````
