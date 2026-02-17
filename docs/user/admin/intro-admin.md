@@ -1,4 +1,4 @@
-# Getting Started as an Administrator
+# Managing {{FAIMS}}
 
 This document provides an overview of {{FAIMS}} from the perspective of
 the IT team managing a deployment within an enterprise.
@@ -93,5 +93,5 @@ more fully before implementation.
 
 ## Managing Users
 
-Existing users can be managed through the [{{dashboard}}](../core/web.md) interface. From here
+Existing users can be managed through the [{{dashboard}}](web.md) interface. From here
 you can grant or remove roles and generate a password-reset link (for non-SSO users).

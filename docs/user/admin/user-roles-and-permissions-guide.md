@@ -14,7 +14,7 @@ This guide is designed for:
 - **Project administrators** setting up teams and {{notebooks}}
 - **IT staff** supporting {{FAIMS}} deployments
 
-If you're looking to create {{notebooks}} or collect data, see the [Quickstart Guide](./quickstart-creation-and-collection.md) instead.
+If you're looking to create {{notebooks}} or collect data, see the [Quickstart Guide](../authoring/quick-start-researchers.md) instead.
 
 ### What This Guide Covers (and Doesn't)
 
@@ -27,7 +27,7 @@ This guide covers:
 This guide does **not** cover:
 
 - Template creation or management
-- {{Notebook}} design and form building (see [Quickstart Guide](./quickstart-creation-and-collection.md))
+- {{Notebook}} design and form building (see [Quickstart Guide](../authoring/quick-start-researchers.md))
 - Data collection and record management
 - API access and tokens
 - System configuration and Single Sign-On (SSO) setup
@@ -641,7 +641,7 @@ Remove from both locations if needed.
 
 ## Further Resources
 
-- [Quickstart Guide](./quickstart-creation-and-collection.md) — Creating {{notebooks}} and collecting data
+- [Quickstart Guide](../authoring/quick-start-researchers.md) — Creating {{notebooks}} and collecting data
 
 ---
 
