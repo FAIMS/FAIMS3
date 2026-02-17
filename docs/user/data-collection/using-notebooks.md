@@ -1,4 +1,4 @@
-# 4) Using your {{Notebook}}
+# Using your {{Notebook}}
 
 Once your {{notebook}} is [activated](./activating-notebooks.md), you can begin to create records and these will be automatically saved to the server.  You may also be able to see records from other users, depending on your role with respect to this {{notebook}}.
 

@@ -14,7 +14,7 @@ Synchronisation is on by default. It does not need to be activated and if you ar
 
 Users can choose whether or not to synchronise files and attachments created by other users.
 
-If enabled, the Fieldmark will automatically download and show images and attachments created on other devices. As this may be resource intensive and affect your mobile data plan, this setting can be disabled to minimise network usage. Attachments are always uploaded to the server regardless of this setting.
+If enabled, the {{FAIMS}} will automatically download and show images and attachments created on other devices. As this may be resource intensive and affect your mobile data plan, this setting can be disabled to minimise network usage. Attachments are always uploaded to the server regardless of this setting.
 
 By default, notebooks are set to not download files and attachments created by other users. To activate, go to the Notebook Settings and slide the 'Get attachments from other devices' toggle to 'On'.
 

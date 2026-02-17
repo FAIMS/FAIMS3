@@ -11,9 +11,9 @@ On export, a .csv or spreadsheet will be created for each _Form_.
 
 Within {{FAIMS}} you will be able to add a _Record_ for each _Form_ you create in the App.
 
-In the [Demo Notebook](./core/demonotebook.md), _Thing 1_ and _Thing 2_ are _Forms_:      
+In the [Demo Notebook](./core/demo-notebooks-demo.md), _Thing 1_ and _Thing 2_ are _Forms_:      
 
-```{screenshot} field-record-images/demonotebook_forms.jpg
+```{screenshot} demo/demo-notebook-forms.png
 :alt: Forms in the Demo Notebook
 :align: right
 ```
@@ -23,20 +23,18 @@ _Sections_ are defined parts of a _Forms_.
 
 They do not affect the output of data for that _Form_ but allow the {{Notebook}} Creator to break up the different _Fields_ and _Components_ into discreet views that allow researchers to capture data in the most efficient way.
 
-In the [Demo Notebook](./core/demonotebook.md), there are six _Sections_ within the _Form_ for Thing 1 that appears as tabs across the top of the screen:
+In the [Demo Notebook](./core/demo-notebooks-demo.md), there are six _Sections_ within the _Form_ for Thing 1 that appears as tabs across the top of the screen:
 
-```{screenshot} field-record-images/demonotebook_sections.jpg
+```{screenshot} demo/demo-notebook-sections.png
 :alt: Sections in the Demo Notebook
 :align: right
 ```
-
-![Sections in the Demo Notebook](field-record-images/demonotebook_sections.jpg)
 
 ## Records
 _Records_ are the primary organising unit for observations made in {{FAIMS}}. A _Record_ is created for each _Form_ and together they will be exported into a single table or .csv. A record will include one or more _Fields_.
 
 ````{note}
-Records can be *related* to each other using the [Relationships](.\.\field-types\related-records.md) field type. See [Child and Related Records](related-records.md) for more information.
+Records can be *related* to each other using the [Relationships](../field-types/related-records.md) field type. See [Child and Related Records](related-records.md) for more information.
 ````
 
 See [Record and field types](./field-record-types.md) for an overview of Field Types.
