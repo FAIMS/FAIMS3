@@ -27,7 +27,8 @@ administrative users.
 The *General Administrator* role has permission to do anything in the system
 and should only be used for emergency interventions. Every deployment has a
 default user `admin` with this role configured for local login.  Other users
-can be given this role if necessary.
+can be given this role if necessary but since it has access to user data,
+it should be used with caution.
 
 The *Operations Administrator* role is intended for IT staff managing a deployment.
 It has permissions to manage teams and users but will not be able to
