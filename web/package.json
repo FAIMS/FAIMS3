@@ -58,7 +58,7 @@
     "@tanstack/react-table": "^8.20.6",
     "@tanstack/router-devtools": "^1.87.9",
     "@tanstack/zod-adapter": "^1.106.0",
-    "ajv": "^8.16.0",
+    "ajv": "^8.18.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "esbuild": "^0.25.0",
