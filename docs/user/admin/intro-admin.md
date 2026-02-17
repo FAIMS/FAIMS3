@@ -1,4 +1,4 @@
-# Getting Started as an Administrator with {{FAIMS}}
+# Getting Started as an Administrator
 
 This document provides an overview of {{FAIMS}} from the perspective of
 the IT team managing a deployment within an enterprise.

@@ -35,7 +35,8 @@ In the [Demo Notebook](./core/demonotebook.md), there are six _Sections_ within 
 ## Records
 _Records_ are the primary organising unit for observations made in {{FAIMS}}. A _Record_ is created for each _Form_ and together they will be exported into a single table or .csv. A record will include one or more _Fields_.
 
-> [!TIP]
-> Records can be *related* to each other using the [Relationships](.\.\field-types\related-records.md) field type. See [Child and Related Records](related-records.md) for more information.
+````{note}
+Records can be *related* to each other using the [Relationships](.\.\field-types\related-records.md) field type. See [Child and Related Records](related-records.md) for more information.
+````
 
 See [Record and field types](./field-record-types.md) for an overview of Field Types.

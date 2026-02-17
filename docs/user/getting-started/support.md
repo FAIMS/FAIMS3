@@ -4,7 +4,7 @@
 
 See [Troubleshooting](./troubleshooting.md) for detailed steps to assist with common issues.
 
-## Enterprise clients
+## Enterprise users
 
 If you are using {{FAIMS}} through an Enterprise license, contact the nominated support team at your institution.
 

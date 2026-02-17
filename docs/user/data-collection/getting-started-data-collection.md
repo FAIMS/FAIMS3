@@ -1,27 +1,27 @@
-# Getting Started
+# Getting Started as a Data Collector
 
 
 This quick start guide is for new users working in a small team with an existing **{{FAIMS}} {{Notebook}}**. You will need:
 
-- a mobile device or computer (see [Hardware](./hardware.md) for compatibility and recommendations)
+- a mobile device or computer (see [Hardware](hardware.md) for compatibility and recommendations)
 - an internet connection, or be connected to the {{FAIMS}} Server (for the initial installation)
 - an invitation to join a {{FAIMS}} {{Notebook}}
 
-> [!NOTE]
-> - If you are an Administrator setting up your **{{FAIMS}}** environment for the first time, see [Getting Started as an Admin](./admin/getting-started-as-an-admin.md).
-- If you are using an **Enterprise {{Notebook}}**, speak to your organisation’s Enterprise Administrator.
-
+```{note}
+If you are an Administrator setting up your **{{FAIMS}}** environment for the first time, see [Getting Started as an Admin](../admin/intro-admin.md).
+If you are using an **Enterprise {{Notebook}}**, speak to your organisation’s Enterprise Administrator.
+```
 
 ## 1) Install the {{FAIMS}} App
 
 While you still have an internet connection, download the **{{FAIMS}} app** from the Google Play or the Apple App stores:
 
-- [Google Play](https://play.google.com/store/apps/details?id=au.edu.faims.fieldmark&hl=en&gl=US)
-- [Apple App store](https://apps.apple.com/au/app/fieldmark/id1592632372)
+- Google Play: {{ANDROID_APP_LINK}}
+- Apple App store: {{IOS_APP_LINK}}
 
 Or open the **{{FAIMS}} app** on a web browser on your desktop, or on a mobile device, at one of the following addresses:
 
-- [Fieldmark Demonstration Server](https://fieldmark.app/)
+- {{FAIMS}} web app: {{APP_URL}}
 - the server nominated by your organisation (see your Administrator for details)
 - your organisation's server (for Enterprise users, see your Administrator for details)
 
@@ -41,8 +41,9 @@ From here you can login if you already have an account, or refer to your {{Noteb
 
 to **register** an account and get access to that {{Notebook}}.
 
-> [!NOTE]
-> If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](./core/login.md).
+````{note} 
+If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](./core/login.md).
+````
 
 ### a) Invitation Codes
 
@@ -67,8 +68,9 @@ If you don't already have an account on the {{FAIMS}} server, you will be able t
 
 At this point, registration just gives you access to this one {{notebook}} but you may be given access to others in the future.
 
-> [!NOTE]
-> You need an account on {{FAIMS}} to collect data so that the records that you create can be associated with you. The {{FAIMS}} server keeps minimal information about you: your name and email address. These are only used within the projects that you collect data for and will never be used for marketing or other purposes.
+````{note} 
+You need an account on {{FAIMS}} to collect data so that the records that you create can be associated with you. The {{FAIMS}} server keeps minimal information about you: your name and email address. These are only used within the projects that you collect data for and will never be used for marketing or other purposes.
+````
 
 ## 3) Activating your {{Notebook}}
 
@@ -96,8 +98,9 @@ To activate a {{notebook}} on your device:
 
 The sync process will now begin, linking your device to the server. You may able to see records from other users, depending on your role with respect to this {{notebook}}.
 
-> [!NOTE]
-> For more information see [Activating {{Notebook}}s](./core/activating-notebooks.md).
+````{note}
+For more information see [Activating {{Notebook}}s](./core/activating-notebooks.md).
+````
 
 ## 4) Using your {{Notebook}}
 
