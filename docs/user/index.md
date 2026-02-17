@@ -16,22 +16,28 @@ sd_hide_title: true
 
 ```{toctree}
 ---
-caption: Introductory Content
+caption: Quick Start
 maxdepth: 1
 ---
 
-intro-notebook-user/getting-started.md
-intro-notebook-user/user-roles-and-permissions-guide.md
-intro-notebook-user/user-roles-task-organised.md
+intro-notebook-user/about.md
+intro-notebook-user/getting-started-data-collection.md
+admin/intro-admin.md
+authoring/quick-start-researchers.md
+intro-notebook-user/support.md
+
+
 
 ```
 
 ```{toctree}
 ---
-caption: Core Documentation
+caption: Data Collection
 maxdepth: 1
 ---
 
+core/hardware.md
+core/authentication.md
 core/web.md
 core/authentication.md
 core/permissions.md
@@ -44,12 +50,13 @@ caption: Authoring
 maxdepth: 1
 ---
 
-authoring/quick-start-researchers.md
+
 authoring/structure.md
 authoring/conditions.md
 authoring/templates.md
-authoring/field-selection-best-practices.md
 authoring/field-type-reference-table.md
+authoring/field-selection-best-practices.md
+
 
 ```
 
@@ -70,5 +77,7 @@ maxdepth: 1
 ---
 
 admin/intro-admin.md
+intro-notebook-user/user-roles-and-permissions-guide.md
+intro-notebook-user/user-roles-task-organised.md
 
 ```

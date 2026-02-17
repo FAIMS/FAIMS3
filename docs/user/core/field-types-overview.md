@@ -2,8 +2,8 @@
 
 {{FAIMS}} offers a range of data formats and metadata within a {{Notebook}}, to suit different data collection needs. Each field type is described in brief below. Click on the links to discover more.
 
-> [!NOTE]
-> For information on how to configure different fields types in the _Notebook Editor_, see [Field Types Reference Table](.\.\authoring\field-type-reference-table.md) and [A Guide to Best Practice Field Selection](.\.\authoring\field-selection-best-practices.md).
+> **Note**
+> For information on how to configure different fields types in the _Notebook Editor_, see [Field Types Reference Table](../authoring/field-type-reference-table.md) and [A Guide to Best Practice Field Selection](../authoring/field-selection-best-practices.md).
 
 ## Text Fields
 
@@ -17,9 +17,9 @@ email-field.md
 
 **TEXT** field types are for capturing text-based data, from short codes and labels to multi-line descriptions and email addresses.
 
-- **[FAIMS Text Field](.\.\field-types\faims-text-field.md)** — A single-line input for   brief, unconstrained text such as codes, identifiers, and short labels.
-- **[Multi-line Text Field](./fields/multiline-text-field.md)** — Extended text entry   for narrative content and detailed observations, with internal scrolling   for longer passages.
-- **[Email](./fields/email-field.md)** — A single-line text input with built-in email format validation that opens the email keyboard on mobile devices.
+- **[FAIMS Text Field](../field-types/faims-text-field.md)** — A single-line input for   brief, unconstrained text such as codes, identifiers, and short labels.
+- **[Multi-line Text Field](../field-types/multiline-text-field.md)** — Extended text entry for narrative content and detailed observations, with internal scrolling   for longer passages.
+- **[Email](../field-types/email-field.md)** — A single-line text input with built-in email format validation that opens the email keyboard on mobile devices.
 
 ## Choice Fields
 
