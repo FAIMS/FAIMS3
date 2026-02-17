@@ -8,14 +8,14 @@ the IT team managing a deployment within an enterprise.
 {{FAIMS}} is a system for collecting data in the field using a mobile application.
 The mobile app is backed by a central API server and a CouchDB database.  There is
 also a web based version of the data collection app and a web based dashboard
-application that supports management tasks.
+application that supports management tasks.  The relevant URLs for this deployment are
+as follows:
 
-The URL of a particular deployment will depend on configuration but will usually be
-something like <https://dashboard.XXX.fieldmark.app> for the dashboard application,
-<https://app.XXX.fieldmark.app> for
-the data collection app, <https://api.XXX.fieldmark.app> for the API,
-and <https://db.XXX.fieldmark.app> for the database.  Only the dashboard and data collection
-apps provide any user accessible services.
+- {{Dashboard}} ({{WEB_URL}}) provides a management interface for users and data
+- Web App ({{APP_URL}}) provides a web based version of the data collection app
+- API server ({{API_URL}}) provides core authentication and data services to the apps
+
+Your main entry point for administration is the {{Dashboard}} application. 
 
 ## Users, Teams and {{Notebooks}}
 
@@ -35,7 +35,8 @@ associated with roles relate to either the system as a whole,
 teams or {{notebooks}}.
 
 The details of the different roles are outlined in [Roles and Permissions](../core/permissions.md).
-As an administrator, one of your roles should be *Operations Administrator*; this grants you full control over users and teams in the system.
+As an administrator, one of your roles should be *Operations Administrator*; this grants you 
+full control over users and teams in the system.
 
 Note that there is also an elevated *General Administrator* role that has all permissions
 over both users and their notebooks and data.  This is not a generally used role
@@ -56,7 +57,15 @@ The invitation is associated with a given role, so, for example, you can create
 an invitation to be *Team Administrator* or a *{{Notebook}} Contributor*.  In turn
 a *Team Administrator* can create invites to lesser roles within that team.
 
-### Suggested Workflow
+### Inviting Admin Users
+
+A user with the *Operations Administrator* role can create new invitations for global
+roles to allow adding new administrators.  This can be done via the *Users* tab in
+the {{Dashboard}}. Click on *Invites* to add a new invite for a global role.  The invite
+should have a short validity period and be valid for only the target number of users.
+Copy the *Invitation URL* and send this to the target admin users.
+
+### Suggested Onboarding Workflow
 
 In an enterprise, we suggest that central administration should provision new teams
 for groups of users working on well defined projects.  The *Team Administrator* can
