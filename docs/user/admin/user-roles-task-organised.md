@@ -10,15 +10,15 @@
 
 | I want to... | See |
 |--------------|-----|
-| Add someone to my team | [Onboarding a New Staff Member](#21-onboarding-a-new-staff-member) |
-| Remove someone's access entirely | [Off-boarding: Removing All Access](#22-off-boarding-removing-all-access) |
-| Give someone admin access to a {{notebook}} | [Changing Someone's Role](#26-changing-someones-role) |
-| Let an external collaborator into one {{notebook}} | [Granting External Collaborator Access](#25-granting-external-collaborator-access) |
-| Hand off a project to a colleague | [Handing Off a Project](#27-handing-off-a-project) |
-| Start a new project with {{notebooks}} and team members | [Starting a New Project](#23-starting-a-new-project) |
-| Create a new team | [Creating a Team](#24-creating-a-team) |
-| Figure out why someone can't see a {{notebook}} | [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-{{notebook}}) |
-| Understand what roles exist | [Reference: Role Definitions](#51-role-definitions) |
+| Add someone to my team | [Onboarding a New Staff Member](#onboarding-a-new-staff-member) |
+| Remove someone's access entirely | [Off-boarding: Removing All Access](#off-boarding-removing-all-access) |
+| Give someone admin access to a {{notebook}} | [Changing Someone's Role](#changing-someones-role) |
+| Let an external collaborator into one {{notebook}} | [Granting External Collaborator Access](#granting-external-collaborator-access) |
+| Hand off a project to a colleague | [Handing Off a Project](#handing-off-a-project) |
+| Start a new project with {{notebooks}} and team members | [Starting a New Project](#starting-a-new-project) |
+| Create a new team | [Creating a Team](#creating-a-team) |
+| Figure out why someone can't see a {{notebook}} | [Troubleshooting: Can't See a {{Notebook}}](#cant-see-a-notebook) |
+| Understand what roles exist | [Reference: Role Definitions](#role-definitions) |
 
 ### 1.2 Role Hierarchy Diagram
 
@@ -84,11 +84,11 @@ This means they can immediately create {{notebooks}}, but they won't have access
    - **Team Administrator** — for team leaders (requires GENERAL_ADMIN to assign)
 7. Click **Add** (in the dialog)
 
-The new team member will immediately have virtual access to all team {{notebooks}} based on their role (see [Virtual vs. Direct Access](#13-key-concept-virtual-vs-direct-access)).
+The new team member will immediately have virtual access to all team {{notebooks}} based on their role (see [Virtual vs. Direct Access](#key-concept-virtual-vs-direct-access)).
 
 > **Note:** If you need to assign the Team Administrator role, you must have GENERAL_ADMIN permissions. Regular Team Administrators cannot elevate others to their level.
 
-**See also:** [Troubleshooting: Can't See a {{Notebook}}](#61-cant-see-a-{{notebook}})
+**See also:** [Troubleshooting: Can't see a {{Notebook}}](#cant-see-a-notebook)
 
 ---
 
@@ -117,7 +117,7 @@ The new team member will immediately have virtual access to all team {{notebooks
 
 > **Warning**: Removing someone from a team removes their virtual access to all team {{notebooks}}. However, if they have direct roles on any {{notebooks}}, those must be removed separately.
 
-**See also:** [Troubleshooting: User Has Access But Shouldn't](#65-user-has-access-but-shouldnt)
+**See also:** [Troubleshooting: User Has Access But Shouldn't](#user-has-access-but-shouldnt)
 
 ---
 
@@ -125,7 +125,7 @@ The new team member will immediately have virtual access to all team {{notebooks
 
 **When to use**: Starting a new research project that needs dedicated {{notebooks}} and team members.
 
-**Prerequisites**: You need an existing team (see [Creating a Team](#24-creating-a-team) if you need one).
+**Prerequisites**: You need an existing team (see [Creating a Team](#creating-a-team) if you need one).
 
 **Steps:**
 
@@ -155,7 +155,7 @@ The new team member will immediately have virtual access to all team {{notebooks
 4. **Verify access:**
    - Ask team members to log in and confirm they can see the project {{notebooks}}
 
-**See also:** [Creating a Team](#24-creating-a-team)
+**See also:** [Creating a Team](#creating-a-team)
 
 ---
 
@@ -245,7 +245,7 @@ Alternatively, navigate via **{{Notebooks}}** in the left sidebar if you're not 
 - Use **{{notebook}} invite** when you want to limit what they can see
 - Use **{{notebook}} invite with Guest role** for external reviewers who should only see their own records
 
-**See also:** [Managing Invites](#28-managing-invites)
+**See also:** [Managing Invites](#managing-invites)
 
 ---
 
@@ -275,7 +275,7 @@ Alternatively, navigate via **{{Notebooks}}** in the left sidebar if you're not 
 
 > **Note:** If the user has virtual access from team membership, removing their direct role doesn't remove their access — they'll fall back to their virtual role.
 
-**See also:** [Troubleshooting: Can't Change a User's {{Notebook}} Role](#66-cant-change-a-users-{{notebook}}-role)
+**See also:** [Troubleshooting: Can't Change a User's {{Notebook}} Role](#cant-change-a-users-role)
 
 ---
 
@@ -470,8 +470,8 @@ In an enterprise deployment, users are automatically created when they first sig
 This guide focuses on user, team, and {{notebook}} management. It does **not** cover:
 
 - **Template creation/management** — see technical documentation
-- **{{Notebook}} design and form building** — see [Quickstart Guide](./quickstart-creation-and-collection.md)
-- **Data collection and record management** — see [Quickstart Guide](./quickstart-creation-and-collection.md)
+- **{{Notebook}} design and form building** — see [Quickstart Guide](../authoring/quick-start-researchers.md)
+- **Data collection and record management** — see [Quickstart Guide](../authoring/quick-start-researchers.md)
 - **System configuration and SSO setup** — contact your system administrator
 - **API tokens** — see technical documentation
 
@@ -757,6 +757,7 @@ To transfer a {{notebook}} to a new owner:
 
 ## 6. Troubleshooting
 
+(cant-see-a-notebook)=
 ### 6.1 Can't See a {{Notebook}}
 
 **Possible causes:**
@@ -770,12 +771,12 @@ To transfer a {{notebook}} to a new owner:
 1. Check if the user is a member of the {{notebook}}'s owning team
 2. If in team, check their team role — Team Member (Creator) doesn't grant automatic access
 3. If not in team, invite them directly to the {{notebook}} via the Invites tab
-4. If they should have access through team membership, verify their team role grants virtual access (see [Virtual vs. Direct Access](#13-key-concept-virtual-vs-direct-access))
+4. If they should have access through team membership, verify their team role grants virtual access (see [Virtual vs. Direct Access](#key-concept-virtual-vs-direct-access))
 
-**See also:** [Virtual vs. Direct Access](#13-key-concept-virtual-vs-direct-access)
+**See also:** [Virtual vs. Direct Access](#key-concept-virtual-vs-direct-access)
 
 ---
-
+(cant-edit-notebook-structure)=
 ### 6.2 Can't Edit {{Notebook}} Structure
 
 **Possible causes:**

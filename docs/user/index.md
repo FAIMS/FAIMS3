@@ -32,68 +32,14 @@ core/support.md
 
 ```{toctree}
 ---
-caption: Data Collection
 maxdepth: 1
 ---
 
-data-collection/getting-started-data-collection.md
-data-collection/authentication.md
-data-collection/login.md
-data-collection/understanding-notebooks.md
-data-collection/using-notebooks.md
-data-collection/entering-data.md
-data-collection/activating-notebooks.md
-data-collection/field-types-overview.md
-data-collection/hardware.md
-data-collection/invitations.md
-data-collection/marginal-data.md
-data-collection/related-records.md
-core/synchronisation.md
-data-export/export.md
-data-export/api-tokens.md
-data-export/integrations.md
-
-```
-
-```{toctree}
----
-caption: Notebook Design
-maxdepth: 1
----
-
-authoring/quick-start-researchers.md
-authoring/structure.md
-authoring/templates.md
-authoring/field-type-reference-table.md
-authoring/field-selection-best-practices.md
-authoring/conditions.md
-
-
-```
-
-```{toctree}
----
-caption: Field Types
-maxdepth: 1
----
-
-field-types/field-type-index.md
-
-```
-
-```{toctree}
----
-caption: Administration
-maxdepth: 1
----
-
-admin/intro-admin.md
-admin/web.md
-admin/notebook-admin.md
-admin/user-roles-and-permissions-guide.md
-admin/user-roles-task-organised.md
-core/permissions.md
-
+data-collection/index
+authoring/index
+field-types/index
+data-export/index
+admin/index
 
 ```
 

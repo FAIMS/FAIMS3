@@ -6,7 +6,7 @@ Once the mobile app has been installed, you can get access to a {{notebook}} by 
 :alt: Access Code Screen
 ```
 
-Only **Team Managers** and **Team Administrators** can generate invitation codes. See [User roles and permissions](./intro-notebook-user/user-roles-and-permissions-guide.html) for more information.
+Only **Team Managers** and **Team Administrators** can generate invitation codes. See [User roles and permissions](../admin/user-roles-and-permissions-guide.md) for more information.
 
 ## Access Codes
 
