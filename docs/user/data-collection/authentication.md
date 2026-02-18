@@ -20,4 +20,4 @@ If you are offline for longer than two days, you won't be able to refresh your l
 
 ## Integrations
 
-To learn more about authentication for API Access, see [API Access Tokens](./api-tokens.md).
+To learn more about authentication for API Access, see [API Access Tokens](../data-export/api-tokens.md).

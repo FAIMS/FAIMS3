@@ -2,7 +2,7 @@
 
 ## Troubleshooting
 
-See [Troubleshooting](./troubleshooting.md) for detailed steps to assist with common issues.
+See [Troubleshooting](../todo.md) for detailed steps to assist with common issues.
 
 ## Enterprise users
 

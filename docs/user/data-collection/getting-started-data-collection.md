@@ -36,7 +36,7 @@ From here you can login if you already have an account, or refer to your {{Noteb
 to **register** an account and get access to that {{Notebook}}.
 
 ````{note} 
-If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](./core/login.md).
+If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](login.md).
 ````
 
 ### a) Invitation Codes
@@ -51,7 +51,7 @@ Once you enter the code, you will see the **Registration** screen.
 
 If you have a **QR code**, click the QR Code button and scan the QR code with your device to get to the registration screen.
 
-For more information see [Invitations](../core/invitations.md).
+For more information see [Invitations](invitations.md).
 
 ### b) Registering with {{FAIMS}}
 
@@ -84,7 +84,6 @@ To activate a {{notebook}} on your device:
 - click on the _Activate_ button next to the {{notebook}}, and
 - wait for it to appear in the _Active_ list:
 
-
 ```{screenshot} getting-started/notebook-list-mobile.png
 :alt: Main workspace of the app
 :align: left
@@ -92,18 +91,18 @@ To activate a {{notebook}} on your device:
 
 The sync process will now begin, linking your device to the server. You may able to see records from other users, depending on your role with respect to this {{notebook}}.
 
-For more information see [Activating {{Notebook}}s](./core/activating-notebooks.md).
+For more information see [Activating {{Notebook}}s](activating-notebooks.md).
 
 ## 4) Using your {{Notebook}}
 
 Once your {{notebook}} is activated, you can begin to create records and these will be automatically saved to the server.  You may also be able to see records from other users, depending on your role with respect to this {{notebook}}.  
 
-As each {{notebook}} is a customised data collection tool, intructions for entering data will differ for each user. 
+As each {{notebook}} is a customised data collection tool, instructions for entering data will differ for each user.
 
-See [Using your {{notebook}}](../data-collection/getting-started-data-collection.md) for more information.
+See [Using your {{notebook}}](../todo.md) for more information.
 
 ## 5) Get more help
 
 Explore the {{FAIMS}} User Guide
 
-See [Troubleshooting](advanced/troubleshooting) for more information or contact us at support@fieldmark.au.
+See [Troubleshooting](../todo.md) for more information.

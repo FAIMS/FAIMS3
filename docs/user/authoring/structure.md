@@ -91,7 +91,7 @@ on the value entered for a field in an earlier section.
 In this example we have chosen a 'Select' field for the condition and we can choose which value
 must be selected to have this section displayed.   Alternately we could have a condition
 that asked for one of a number of values. Conditions can be complex and nested as required
-to express the logic of your workflow.  For more details see the [page on Conditions](./conditions.md).
+to express the logic of your workflow.  For more details see the [page on Conditions](../field-types/shared-settings/conditions.md).
 
 ### Fields
 
@@ -130,7 +130,7 @@ have no special meaning to the system, they are purely a way to include extra da
 alongside any data you are capturing in the form.
 
 There is also the option here to add a condition to the field.  This will mean that the
-field would only be shown if the condition is met. See the [page on conditions](./conditions.md)
+field would only be shown if the condition is met. See the [page on conditions](../field-types/shared-settings/conditions.md)
 for details.
 
 The final two checkboxes relate to the behaviour of the system in relation to other records.

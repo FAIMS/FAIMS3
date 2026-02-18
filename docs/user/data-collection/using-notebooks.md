@@ -13,7 +13,7 @@ Enter a {{notebook}} by touching or clicking on the name of the {{notebook}} in 
 The page will look different depending on the design of the {{notebook}} you are using.
 ````
 
-### a) The Record List
+## a) The Record List
 
 The first page you see when you enter a notebook is the **Record List** screen.
 
@@ -36,6 +36,7 @@ Below these buttons is the area where existing records are displayed along with 
 - The **MAP** tab will show an overview map of the records that have been collected if those records include GPS locations.
 
 The main tab shows the records you have access to on your device:
+
 - **MY RECORDS** if there is more than one form, or
 - **MY _XXXX_** where _XXXX_ is the name of the form, if you only have one form in your {{notebook}}    
 
@@ -43,7 +44,7 @@ If you are collaborating with others and have access to their records, you will 
 
 The list of records shows a few pieces of information about each record; this can be different in some {{notebooks}} depending on the configuration. You should at least see an identifier for the record, when it was created and by whom and the _Sync Status_; this last item will show a green cloud with a tick if the record is known to be saved on the server and an amber circle if upload is still pending.
 
-### Creating a Record
+## Creating a Record
 
 To create a new record from the **Record List**, tap or click the **+ ADD NEW MAIN** button.
 
@@ -56,16 +57,16 @@ When you create a new record or edit an existing one, you will see a form simila
 :align: left
 ```
 
-````{note} 
+````{note}
 The details of the form will depend on the configuration of the {{notebook}} you are using.
 ````
 
 There are usually two tabs in a record form:
 
 - **DATA** is where you will enter data, and
-- **INFO** provides some information about the record such as the name of the person who created it and the creation time.   
+- **INFO** provides some information about the record such as the name of the person who created it and the creation time.
 
-There is a third tab that can appear if there are conflicts between versions of this record (see [Conflict Resolutions](./core/conflicts.md)).
+There is a third tab that can appear if there are conflicts between versions of this record (see [Conflict Resolutions](../todo.md)).
 
 How you fill our the form will vary will depend on the configuration of the {{notebook}} you are using.
 
@@ -73,7 +74,8 @@ How you fill our the form will vary will depend on the configuration of the {{no
 
 There will usually be a short help text along with each field and in some cases, longer help is available via an icon next to the field label.
 
-### Parts of a Form
+## Parts of a Form
+
 The form you are filling may have more than one _section_, as shown in the screenshot here where it is showing section 1 of 2 sections.  You can navigate between sections using the 'Next' and 'Back' links.
 
 ```{screenshot} getting-started/record-form-finish-buttons-mobile.png
@@ -91,13 +93,13 @@ If the form has errors, you are still able to finish your edits, all of the data
 
 The three buttons at the bottom of the form allow you to finalise the record you are creating or the edits you've made.
 
-The 'Finish and Close ...' button will finalise all of your changes and update the saved record. It will then return you to either the main record list or the parent record if this is a child record (see [Related Records](../data-collection/related-records.md)).
+The 'Finish and Close ...' button will finalise all of your changes and update the saved record. It will then return you to either the main record list or the parent record if this is a child record (see [Related Records](../field-types/relationship-fields/related-records.md)).
 
 The 'Finish and New ...' button will finalise the current record and start a new one of the same type. This is useful if you are entering a series of observations.
 
 The 'Cancel' button will cancel the current changes and return you to the record list or the parent record.  It will first check that you are sure that you want to lose the changes you have made.
 
-### Annotations and Uncertainty
+## Annotations and Uncertainty
 
 In the screenshots above you might notice the small blue icon below some fields.  This indicates that the {{notebook}} field has been configured to allow annotations.
 

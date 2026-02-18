@@ -13,15 +13,16 @@ When you create a new record or edit an existing one, you will see a form simila
 :align: left
 ```
 
-````{note}
+```{note}
 The details of the form will depend on the configuration of the {{notebook}} you are using.
-````
+```
+
 There are usually two tabs in a record form:
 
 - **DATA** is where you will enter data, and
-- **INFO** provides some information about the record such as the name of the person who created it and the creation time.   
+- **INFO** provides some information about the record such as the name of the person who created it and the creation time.
 
-There is a third tab that can appear if there are conflicts between versions of this record (see [Conflict Resolutions](./core/conflicts.md)).
+There is a third tab that can appear if there are conflicts between versions of this record (see [Conflict Resolutions](../todo.md)).
 
 How you fill our the form will vary will depend on the configuration of the {{notebook}} you are using.
 
@@ -61,8 +62,8 @@ the changes you have made.
 
 In the screenshots above you might notice the small blue icon below some fields. This indicates that the {{notebook}} field has been configured to allow annotations.
 
-If you click on this icon you will be able to enter either a textual annotation or note, or check a box that might be labelled 'Uncertain' or something similar.  These annotations are in addition to the data you enter in the field and can be used to make a note about the data - for example that you were unable to take a measurement properly or that you are uncertain about the exact value. 
+If you click on this icon you will be able to enter either a textual annotation or note, or check a box that might be labelled 'Uncertain' or something similar.  These annotations are in addition to the data you enter in the field and can be used to make a note about the data - for example that you were unable to take a measurement properly or that you are uncertain about the exact value.
 
 These annotations are then available alongside the actual data when it is exported from {{FAIMS}}.
 
-For more on information on annotation and uncertainty see [Marginal data](docs\user\core\marginal-data). 
+For more on information on annotation and uncertainty see [Marginal data](marginal-data.md).

@@ -1,4 +1,4 @@
-## Activating your {{Notebook}}
+# Activating your {{Notebook}}
 
 After registering or logging in, you will see the main workspace screen in
 the app that shows the {{notebooks}} that you have access to and those that you
@@ -13,9 +13,9 @@ A {{notebook}} needs to be _activated_ on your device in order for you to be abl
 
 To activate a {{notebook}} click on the _Activate_ button next to the {{notebook}}.
 
-Activating the {{notebook}} will create the required databases on your device and begin the [synchronisation](./synchronisation.md) process that links your device to the server to save your data.  
+Activating the {{notebook}} will create the required databases on your device and begin the [synchronisation](../core/synchronisation.md) process that links your device to the server to save your data.  
 
-```{note} 
+```{note}
 Large {{notebook}}s with numerous records and attachments may take some time to synchronise.
 ```  
 
