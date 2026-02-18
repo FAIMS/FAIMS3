@@ -6,7 +6,7 @@ bidirectional relationships.
 ```{toctree}
 ---
 caption: Relationship Fields
-maxdepth: 1
+hidden: true
 ---
 
 related-records.md

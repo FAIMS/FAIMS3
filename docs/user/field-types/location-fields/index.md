@@ -6,7 +6,7 @@ map-based spatial data.
 ```{toctree}
 ---
 caption: Location Fields
-maxdepth: 1
+hidden: true
 ---
 
 take-gps-point.md

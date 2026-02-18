@@ -6,7 +6,7 @@ timestamps.
 ```{toctree}
 ---
 caption: Date and Time Fields
-maxdepth: 1
+hidden: true
 ---
 
 date-time-picker.md

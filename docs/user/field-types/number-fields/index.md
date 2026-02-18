@@ -5,7 +5,7 @@ The **NUMBERS** tab contains field types for numeric and sequential data.
 ```{toctree}
 ---
 caption: Number Fields
-maxdepth: 1
+hidden: true
 ---
 
 number-input.md

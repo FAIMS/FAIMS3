@@ -6,7 +6,7 @@ uploading files.
 ```{toctree}
 ---
 caption: Media Fields
-maxdepth: 1
+hidden: true
 ---
 
 take-photo.md

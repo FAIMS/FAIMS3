@@ -5,7 +5,7 @@ Five guides cover settings and controls that apply to every field type:
 ```{toctree}
 ---
 caption: Shared Settings and Controls
-maxdepth: 1
+hidden: true
 ---
 
 adding-a-field.md

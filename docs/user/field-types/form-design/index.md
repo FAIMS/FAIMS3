@@ -5,7 +5,7 @@ Guides to help you select the right field types and design effective data collec
 ```{toctree}
 ---
 caption: Designing Forms for Fieldwork
-maxdepth: 1
+hidden: true
 ---
 
 field-selection-guide.md

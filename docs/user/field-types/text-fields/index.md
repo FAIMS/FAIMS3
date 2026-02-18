@@ -6,7 +6,7 @@ short codes and labels to multi-line descriptions and email addresses.
 ```{toctree}
 ---
 caption: Text Fields
-maxdepth: 1
+hidden: true
 ---
 
 faims-text-field.md

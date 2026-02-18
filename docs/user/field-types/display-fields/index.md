@@ -6,7 +6,7 @@ content and instructions within a form.
 ```{toctree}
 ---
 caption: Display Fields
-maxdepth: 1
+hidden: true
 ---
 
 rich-text.md

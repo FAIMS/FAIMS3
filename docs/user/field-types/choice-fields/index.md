@@ -6,7 +6,7 @@ from simple checkboxes to hierarchical selection lists.
 ```{toctree}
 ---
 caption: Choice Fields
-maxdepth: 1
+hidden: true
 ---
 
 select.md
