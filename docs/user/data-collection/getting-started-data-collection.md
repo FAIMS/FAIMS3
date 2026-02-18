@@ -1,16 +1,10 @@
 # Getting Started as a Data Collector
 
-
 This quick start guide is for new users working in a small team with an existing **{{FAIMS}} {{Notebook}}**. You will need:
 
 - a mobile device or computer (see [Hardware](hardware.md) for compatibility and recommendations)
 - an internet connection, or be connected to the {{FAIMS}} Server (for the initial installation)
 - an invitation to join a {{FAIMS}} {{Notebook}}
-
-```{note}
-If you are an Administrator setting up your **{{FAIMS}}** environment for the first time, see [Getting Started as an Admin](../admin/intro-admin.md).
-If you are using an **Enterprise {{Notebook}}**, speak to your organisation’s Enterprise Administrator.
-```
 
 ## 1) Install the {{FAIMS}} App
 
