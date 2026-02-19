@@ -1597,9 +1597,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
     // Try and find the best possible user to fetch with
     const token = findValidToken(authState, serverId, server);
     if (!token) {
-      throw new Error(
-        `Could not find a suitable active token for the server ${serverId}.`
-      );
+      // This is not really an error, just a server we're not authenticated
+      // to yet
+      // throw new Error(
+      //   `Could not find a suitable active token for the server ${serverId}.`
+      // );
+      return;
     }
 
     // Fetch the directory (which lists projects)
