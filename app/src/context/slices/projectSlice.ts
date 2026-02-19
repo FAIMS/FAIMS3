@@ -187,6 +187,7 @@ export type ServerIdToServerMap = {[serverId: string]: Server};
 export interface ProjectsState {
   servers: ServerIdToServerMap;
   isInitialised: boolean;
+  selectedServerId?: string;
 }
 
 // UTILITY FUNCTIONS
@@ -211,6 +212,20 @@ const projectsSlice = createSlice({
      */
     markInitialised: state => {
       state.isInitialised = true;
+    },
+
+    /**
+     * Sets the selected server ID if there are multiple servers
+     */
+    selectServer: (state, action: PayloadAction<string>) => {
+      const serverId = action.payload;
+      if (!state.servers[serverId]) {
+        throw new Error(
+          `Cannot select server with ID ${serverId} since it does not exist.`
+        );
+      }
+      console.log(`Selecting server with ID ${serverId}`);
+      state.selectedServerId = serverId;
     },
 
     /**
@@ -249,6 +264,10 @@ const projectsSlice = createSlice({
         serverUrl,
         shortCodePrefix,
       };
+      // If this was the first server added, select it by default
+      if (Object.keys(state.servers).length === 1) {
+        state.selectedServerId = serverId;
+      }
     },
 
     /**
@@ -1098,6 +1117,21 @@ export const selectAllProjects = createSelector(
       allProjects = allProjects.concat(Object.values(server.projects));
     }
     return allProjects;
+  }
+);
+
+/**
+ * Returns the selected server if there is one selected and it is present in the state
+ * @param state The projects state
+ * @returns The selected server or undefined
+ */
+export const getSelectedServer = createSelector(
+  (state: RootState) => state.projects,
+  state => {
+    if (!state.selectedServerId) {
+      return undefined;
+    }
+    return state.servers[state.selectedServerId] ?? undefined;
   }
 );
 
@@ -2113,6 +2147,7 @@ const {
 export const {
   addProject,
   addServer,
+  selectServer,
   startSyncingAttachments,
   stopSyncingAttachments,
   removeProject,

@@ -21,55 +21,27 @@
 import React from 'react';
 import {useTheme} from '@mui/material/styles';
 import {Card, CardContent, CardHeader, Divider} from '@mui/material';
-
 interface MainCardProps {
-  border?: boolean;
-  boxShadow?: boolean;
-  contentSX?: object;
-
-  divider?: boolean;
-  elevation?: number;
-  secondary?: React.ReactNode;
-  shadow?: string;
-  sx?: object;
   title?: string | React.ReactNode;
   content?: boolean;
   children: React.ReactNode;
 }
+
 // ==============================|| CUSTOM - MAIN CARD ||============================== //
-export default function MainCard(props: MainCardProps) {
+export default function xMainCard(props: MainCardProps) {
   const theme = useTheme();
-  const {
-    border,
-    boxShadow,
-    contentSX,
-    divider,
-    elevation,
-    secondary,
-    shadow,
-    sx,
-    title,
-    content,
-    children,
-  } = props;
+  const {title, content, children} = props;
   return (
     <Card
-      elevation={elevation || 0}
+      elevation={0}
       sx={{
-        ...sx,
-        border: border ? '1px solid' : 'none',
+        border: '1px solid',
         borderRadius: 2,
         borderColor:
           theme.palette.mode === 'dark'
             ? theme.palette.divider
             : theme.palette.grey['200'],
-        boxShadow:
-          boxShadow && (!border || theme.palette.mode === 'dark')
-            ? shadow
-            : 'inherit',
-        ':hover': {
-          boxShadow: boxShadow ? shadow : 'inherit',
-        },
+        boxShadow: 'inherit',
         '& pre': {
           m: 0,
           p: '16px !important',
@@ -89,24 +61,16 @@ export default function MainCard(props: MainCardProps) {
           }}
           titleTypographyProps={{variant: 'subtitle1'}}
           title={title}
-          action={secondary}
         />
       )}
 
       {/* content & header divider */}
-      {title && divider && <Divider />}
+      {title && <Divider />}
 
       {/* card content */}
-      {content && <CardContent sx={contentSX}>{children}</CardContent>}
+      {content && <CardContent>{children}</CardContent>}
       {!content && children}
     </Card>
   );
 }
 
-MainCard.defaultProps = {
-  border: true,
-  boxShadow: true,
-  darkTitle: true,
-  contentSX: {},
-  divider: true,
-};
