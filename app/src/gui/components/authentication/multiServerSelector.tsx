@@ -14,6 +14,11 @@ import {
 import {useIsOnline} from '../../../utils/customHooks';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 
+/**
+ * Renders a dropdown selector for choosing between multiple configured servers.
+ * When the application is offline, it displays the `fallback` content instead.
+ * Selecting a server updates the currently selected server in the project store.
+ */
 export const MultiServerSelector = () => {
   const {isOnline, fallback} = useIsOnline();
   const servers = useAppSelector(selectServers);

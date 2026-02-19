@@ -28,7 +28,7 @@ interface MainCardProps {
 }
 
 // ==============================|| CUSTOM - MAIN CARD ||============================== //
-export default function xMainCard(props: MainCardProps) {
+export default function MainCard(props: MainCardProps) {
   const theme = useTheme();
   const {title, content, children} = props;
   return (
@@ -73,4 +73,3 @@ export default function xMainCard(props: MainCardProps) {
     </Card>
   );
 }
-
