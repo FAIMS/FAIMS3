@@ -51,6 +51,8 @@ export function SignIn() {
             servers={servers}
           ></OnboardingComponent>
         )}
+        {/* Should not happen but just in case we misconfigure... */}
+        {!selectedServer && <Box>No Servers Configured</Box>}
       </>
     );
   } else {
@@ -59,7 +61,7 @@ export function SignIn() {
         <Breadcrumbs data={breadcrumbs} />
         <Grid container spacing={4}>
           {selectedServer && (
-            <Grid item lg={4} md={6} sm={8} xs={12} key="short-code">
+            <Grid item lg={4} md={6} sm={8} xs={12} key="selected-server">
               <ClusterCard
                 key={selectedServer.serverId}
                 serverId={selectedServer.serverId}
