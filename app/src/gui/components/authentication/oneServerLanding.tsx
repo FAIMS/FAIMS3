@@ -47,23 +47,24 @@ const OnboardingComponent = ({
       }}
     >
       <Stack direction="column" spacing={4} alignItems="center" width="100%">
-        <Paper
-          elevation={2}
-          sx={{
-            width: '100%',
-            maxWidth: 420,
-            padding: '32px 24px',
-            borderRadius: '28px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 3,
-            backgroundColor: '#ffffff',
-          }}
-        >
-          {' '}
-          {/* If we have more than one server, show the multi-server selector */}
-          {servers.length > 1 && <MultiServerSelector />}
-        </Paper>
+        {servers.length > 1 && (
+          <Paper
+            elevation={2}
+            sx={{
+              width: '100%',
+              maxWidth: 420,
+              padding: '32px 24px',
+              borderRadius: '28px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 3,
+              backgroundColor: '#ffffff',
+            }}
+          >
+            {/* If we have more than one server, show the multi-server selector */}
+            <MultiServerSelector />
+          </Paper>
+        )}
 
         <Paper
           elevation={2}
