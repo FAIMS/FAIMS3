@@ -1,7 +1,8 @@
-/*
-This is a special login landing page for the most common use case i.e. one
-listing, user not logged in.
-*/
+/**
+ * Onboarding component presents the login options for the 
+ * selected server and if multiple servers are configured,
+ * allows the user to select which server they want to authenticate with.
+ */
 
 import {Browser} from '@capacitor/browser';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
