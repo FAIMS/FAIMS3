@@ -22,8 +22,34 @@ different configurations can be replaced appropriately.  We use markdown variabl
 to achieve this with variables in {{double-braces}}.  Please use the following in your writing:
 
 - {{FAIMS}} for the name of the product (Fieldmark or Bushfire Surveyor)
-- {{notebook}} for the name of a project (notebook or survey), similarly  {{notebooks}}, {{Notebook}}, {{Notebooks}}
-- {{dashboard}} for the name of the management web application (dashboard, manager or control centre)
+- {{notebook}} (or {{Notebook}} or {{notebooks}}) for the name of a project (notebook or survey), similarly  {{notebooks}}, {{Notebook}}, {{Notebooks}}
+- {{dashboard}} (or {{Dashboard}}) for the name of the management web application (dashboard, manager or control centre)
+
+## Directory Structure
+
+To facilitate navigation we use a main index.md file that references sub-directories
+that contain their own index.md.  Each of these should contain a `{toctree}` block
+that references the files in the sub-directory.   See the existing sub-directories
+for examples of this and follow the same pattern.   This will make it easier to
+manage the overall index and ensure that every page is findable.
+
+## Missing Pages
+
+There is a placeholder file `todo.md` which you can link to for a page that is not yet
+written.  Please do this rather than linking to a non-existing file.  We can then
+search for these links and fill them in at a later time.
+
+## Links
+
+You can include links to the different websites with the following macros:
+
+```markdown
+- {{FAIMS}} {{dashboard}} - {{WEB_URL}}
+- Data collection app (web version) - {{APP_URL}}
+- API URL (for programmatic access) - {{API_URL}}
+- {{IOS_APP_LINK}}
+- {{ANDROID_APP_LINK}}
+```
 
 ## Screenshots
 
@@ -43,6 +69,9 @@ To insert a screenshot image in a page use the {screenshot} directive:
 :align: right
 ```
 ~~~
+
+For desktop screenshots you can add `:width: 100%` to show the full width image (default is
+optimised for a portrait mobile screenshot).
 
 The `theme` part of the name is derived from the configured VITE_THEME
 setting.

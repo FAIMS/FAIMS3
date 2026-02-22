@@ -1,4 +1,4 @@
-# Quick Start for {{Notebook}} Authors
+# Getting Started as a {{Notebook}} Author
 
 This guide helps researchers design effective digital data collection notebooks using the {{notebook}} designer. We focus on practical patterns and field-tested approaches to streamline your transition from paper to digital recording.
 
