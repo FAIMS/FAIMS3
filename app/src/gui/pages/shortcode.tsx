@@ -145,16 +145,20 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
   const showPrefixSelector = props.servers.length > 1;
 
   return (
-    <MainCard>
+    <MainCard
+      title={
+        <>
+          <Typography variant="h6" gutterBottom>
+            Register for {NOTEBOOK_NAME_CAPITALIZED}s
+          </Typography>
+          <Typography variant="body1" gutterBottom>
+            Enter the short code which was shared with you to get access to a{' '}
+            {NOTEBOOK_NAME_CAPITALIZED}.
+          </Typography>
+        </>
+      }
+    >
       <Stack spacing={2} sx={{p: 2}}>
-        <Typography variant="h6" gutterBottom>
-          Register for {NOTEBOOK_NAME_CAPITALIZED}s
-        </Typography>
-        <Typography variant="body1" gutterBottom>
-          Enter the short code which was shared with you to get access to a{' '}
-          {NOTEBOOK_NAME_CAPITALIZED}.
-        </Typography>
-
         <Stack direction="row" spacing={1} alignItems="center">
           {
             // Only show selector if condition is true i.e. more than one listing
