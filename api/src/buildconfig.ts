@@ -414,6 +414,16 @@ function enable_local_login(): boolean {
   }
 }
 
+// Configure migration of notebooks on startup
+function migrateNotebooks(): boolean {
+  const migrate = process.env.MIGRATE_NOTEBOOKS_ON_STARTUP;
+  if (migrate === undefined) {
+    return false;
+  } else {
+    return migrate.toLowerCase() === 'true';
+  }
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -438,6 +448,7 @@ export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
 export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
 export const NEW_CONDUCTOR_URL = newConductorUrl();
 export const LOCAL_LOGIN_ENABLED = enable_local_login();
+export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to

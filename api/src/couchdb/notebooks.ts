@@ -53,6 +53,7 @@ import {
   slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
+import {migrateNotebook} from '@faims3/forms';
 import {
   getMetadataDb,
   initialiseDataDb,
@@ -60,7 +61,7 @@ import {
   localGetProjectsDb,
   verifyCouchDBConnection,
 } from '.';
-import {COUCHDB_PUBLIC_URL} from '../buildconfig';
+import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
 
@@ -267,6 +268,21 @@ export const validateDatabases = async () => {
           'No metadata DB setup for project with ID ' + projectId
         );
       }
+      if (MIGRATE_NOTEBOOKS_ON_STARTUP) {
+        // Get uiSpec for migration
+        const uiSpec = await getEncodedNotebookUISpec(projectId);
+        if (!uiSpec) {
+          throw new Exceptions.InternalSystemError(
+            'Cannot find UI specification for project with ID ' + projectId
+          );
+        }
+        doNotebookMigration({
+          projectId,
+          metadata,
+          uiSpec: uiSpec,
+        });
+      }
+      // Initialise data db if required
       await initialiseDataDb({
         projectId,
         force: true,
@@ -276,6 +292,32 @@ export const validateDatabases = async () => {
   } catch (e) {
     return {valid: false};
   }
+};
+
+/**
+ * Perform notebook migration and save updated notebook
+ * if required.
+ */
+export const doNotebookMigration = async ({
+  projectId,
+  metadata,
+  uiSpec,
+}: {
+  projectId: string;
+  metadata: any;
+  uiSpec: EncodedProjectUIModel;
+}) => {
+  const {changed, migrated} = migrateNotebook({
+    metadata,
+    'ui-specification': uiSpec,
+  });
+  // update the notebook if it was changed by migration
+  if (changed)
+    await updateNotebook(
+      projectId,
+      migrated['ui-specification'],
+      migrated.metadata
+    );
 };
 
 /**
