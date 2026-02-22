@@ -121,8 +121,8 @@ importers:
         specifier: ^4.15.5
         version: 4.15.9
       markdown-it:
-        specifier: ^14.0.0
-        version: 14.1.0
+        specifier: ^14.1.1
+        version: 14.1.1
       morgan:
         specifier: ^1.10.1
         version: 1.10.1
@@ -482,8 +482,8 @@ importers:
         specifier: 4.17.23
         version: 4.17.23
       markdown-it:
-        specifier: ^14.1.0
-        version: 14.1.0
+        specifier: ^14.1.1
+        version: 14.1.1
       moment:
         specifier: 2.29.4
         version: 2.29.4
@@ -785,8 +785,8 @@ importers:
         specifier: ^4.17.23
         version: 4.17.23
       markdown-it:
-        specifier: ^14.1.0
-        version: 14.1.0
+        specifier: ^14.1.1
+        version: 14.1.1
       mustache:
         specifier: ^4.2.0
         version: 4.2.0
@@ -9487,8 +9487,8 @@ packages:
       '@types/markdown-it': '*'
       markdown-it: '*'
 
-  markdown-it@14.1.0:
-    resolution: {integrity: sha512-a54IwgWPaeBCAAsv13YgmALOF1elABB08FxO9i+r4VFk5Vl4pKokRPeX8u5TCgSsPi6ec1otfLjdOpVcgbpshg==}
+  markdown-it@14.1.1:
+    resolution: {integrity: sha512-BuU2qnTti9YKgK5N+IeMubp14ZUKUUw7yeJbkjtosvHiP0AZ5c8IAgEMk79D0eC8F23r4Ac/q8cAIFdm2FtyoA==}
     hasBin: true
 
   markdown-table@3.0.4:
@@ -23680,8 +23680,8 @@ snapshots:
       escape-string-regexp: 2.0.0
       js2xmlparser: 4.0.2
       klaw: 3.0.0
-      markdown-it: 14.1.0
-      markdown-it-anchor: 8.6.7(@types/markdown-it@14.1.2)(markdown-it@14.1.0)
+      markdown-it: 14.1.1
+      markdown-it-anchor: 8.6.7(@types/markdown-it@14.1.2)(markdown-it@14.1.1)
       marked: 4.3.0
       mkdirp: 1.0.4
       requizzle: 0.2.4
@@ -24256,12 +24256,12 @@ snapshots:
 
   mapbox-to-css-font@3.2.0: {}
 
-  markdown-it-anchor@8.6.7(@types/markdown-it@14.1.2)(markdown-it@14.1.0):
+  markdown-it-anchor@8.6.7(@types/markdown-it@14.1.2)(markdown-it@14.1.1):
     dependencies:
       '@types/markdown-it': 14.1.2
-      markdown-it: 14.1.0
+      markdown-it: 14.1.1
 
-  markdown-it@14.1.0:
+  markdown-it@14.1.1:
     dependencies:
       argparse: 2.0.1
       entities: 4.5.0
