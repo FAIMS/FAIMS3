@@ -417,11 +417,12 @@ const migrateTextFields = (notebook: NotebookV1) => {
     const field = fields[fieldName];
 
     // Detect old TextField pattern
+    // at this point all more specialised text fields will have
+    // been converted so we convert any remaining TextField to FAIMSTextField
+    // because TextField is no longer supported
     if (
       field['component-namespace'] === 'formik-material-ui' &&
-      field['component-name'] === 'TextField' &&
-      field['type-returned'] === 'faims-core::String' &&
-      field['component-parameters']?.InputProps?.type === 'text'
+      field['component-name'] === 'TextField'
     ) {
       const p = field['component-parameters'];
       const params = {

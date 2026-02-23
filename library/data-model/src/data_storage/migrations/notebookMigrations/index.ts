@@ -1,4 +1,4 @@
-import {EncodedNotebook} from '@faims3/data-model';
+import {EncodedNotebook} from '../../../types';
 import {migrateToV2} from './migrateV2';
 
 /**
@@ -16,6 +16,7 @@ export const migrateNotebook = (notebook: any) => {
     result = migrateToV2(notebook);
     changed = true;
   }
+
   // TODO: we can validate this against a
   // schema generated from current field types
   // but as yet we don't make use of the fieldPropsSchema

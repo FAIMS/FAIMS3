@@ -52,8 +52,8 @@ import {
   setAttachmentLoaderForType,
   slugify,
   userHasProjectRole,
+  migrateNotebook,
 } from '@faims3/data-model';
-import {migrateNotebook} from '@faims3/forms';
 import {
   getMetadataDb,
   initialiseDataDb,
