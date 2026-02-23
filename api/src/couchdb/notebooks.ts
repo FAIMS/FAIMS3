@@ -276,7 +276,7 @@ export const validateDatabases = async () => {
             'Cannot find UI specification for project with ID ' + projectId
           );
         }
-        doNotebookMigration({
+        await doNotebookMigration({
           projectId,
           metadata,
           uiSpec: uiSpec,
@@ -312,12 +312,13 @@ export const doNotebookMigration = async ({
     'ui-specification': uiSpec,
   });
   // update the notebook if it was changed by migration
-  if (changed)
+  if (changed) {
     await updateNotebook(
       projectId,
       migrated['ui-specification'],
       migrated.metadata
     );
+  }
 };
 
 /**

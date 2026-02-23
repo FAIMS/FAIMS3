@@ -30,7 +30,7 @@ export type NotebookV1 = {
 };
 
 /**
- * Migrate a notebook to the V1 schema format.
+ * Migrate a notebook to the V2.0 schema format.
  *
  * This is a special migration in that it is written to apply to any
  * V1 or pre-V1 notebook and bring it up to the V2 schema format
@@ -250,7 +250,7 @@ const updateHelperText = (notebook: NotebookV1) => {
 
     const params = field['component-parameters'];
     const originalValue = params?.helperText;
-    // TakePhoto used to use this]
+    // TakePhoto used to use this
     if (params?.helpertext) {
       params.helperText = originalValue || params.helpertext;
       delete params.helpertext;

@@ -69,9 +69,6 @@ importers:
       '@faims3/data-model':
         specifier: workspace:*
         version: link:../library/data-model
-      '@faims3/forms':
-        specifier: workspace:*
-        version: link:../library/forms
       '@types/passport-openidconnect':
         specifier: ^0.1.3
         version: 0.1.3
