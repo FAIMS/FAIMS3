@@ -17,7 +17,6 @@ import {
   getPasswordErrorMessage,
 } from './passwordStrength';
 
-
 /**
  * Handles Zod validation errors and flashes them back to the user
  *

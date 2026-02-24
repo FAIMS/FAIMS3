@@ -12,7 +12,7 @@ import {
   ValidationSettings,
 } from './types';
 import {getFieldInfo} from '../fieldRegistry';
-import { logWarn } from '../logging';
+import {logWarn} from '../logging';
 
 /**
  * Default validation settings.

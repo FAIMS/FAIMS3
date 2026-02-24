@@ -170,12 +170,9 @@ export const initialState: AppState = {
   notebook: {
     metadata: {
       notebook_version: '1.0',
-      schema_version: '1.0',
+      schema_version: '2.0',
       name: '',
-      accesses: ['admin', 'moderator', 'team'],
       filenames: [],
-      ispublic: false,
-      isrequest: false,
       lead_institution: '',
       showQRCodeButton: false,
       pre_description: '',
