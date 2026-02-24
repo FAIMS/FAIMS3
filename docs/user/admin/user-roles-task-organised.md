@@ -537,8 +537,8 @@ You cannot manually create user accounts through the {{Dashboard}} — users mus
 This guide focuses on user, team, and {{notebook}} management. It does **not** cover:
 
 - **Template creation/management** — see technical documentation
-- **{{Notebook}} design and form building** — see [Quickstart Guide](./quickstart-creation-and-collection.md)
-- **Data collection and record management** — see [Quickstart Guide](./quickstart-creation-and-collection.md)
+- **{{Notebook}} design and form building** — see [Quickstart Guide](../authoring/quick-start-researchers.md)
+- **Data collection and record management** — see [Quickstart Guide](../authoring/quick-start-researchers.md)
 - **System configuration and SSO setup** — contact your system administrator
 - **API tokens** — see technical documentation
 
