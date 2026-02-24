@@ -36,7 +36,6 @@ import patch from '../utils/patchExpressAsync';
 import {validateEmailCode} from '../couchdb/emailReset';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {LOCAL_LOGIN_ENABLED} from '../buildconfig';
-import {userHasLocalProfile} from '../couchdb/users';
 
 // This must occur before express app is used
 patch();
@@ -297,7 +296,6 @@ export function addAuthPages(
 
       return res.render('forgot-password', {
         postUrl: '/auth/forgotPassword',
-        hasLocalProfile: await userHasLocalProfile(req.user),
         forgotPasswordPostPayload: {
           redirect,
         },
