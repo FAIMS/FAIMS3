@@ -57,23 +57,23 @@ Roles are assigned at three levels:
 The nearby diagram shows roles at each level and how team roles automatically grant corresponding {{notebook}} access (virtual roles).
 
 ```{image} ../images/permissions-hierarchy.png
-:alt: Permissions Hierarchy Diagram showing System Level (Super User, Operations Administrator, Content Creator, General User), Team Level (Team Administrator, Team Manager, Team Member Contributor, Team Member Creator), and {{Notebook}} Level (Administrator, Manager, Contributor, Guest) with arrows indicating virtual role inheritance from team to {{notebook}} roles. Sidebar shows virtual role inheritance and access sources. Warning callouts highlight that Operations Admin has no data access and Team Member Creator has no automatic access to existing team {{notebooks}}.
+:alt: Permissions Hierarchy Diagram showing System Level (General Admin, Operations Admin, General Creator, General User), Team Level (Team Admin, Team Manager, Team Member, Team Member Creator), and {{Notebook}} Level (Administrator, Manager, Contributor, Guest) with arrows indicating virtual role inheritance from team to {{notebook}} roles. Sidebar shows virtual role inheritance and access sources. Warning callouts highlight that Operations Admin has no data access and Team Member Creator has no automatic access to existing team {{notebooks}}.
 ```
 
 ### What You Can Do As An Enterprise Administrator
 
 As IT or change management staff, you have been provisioned with:
 
-- **GENERAL_ADMIN (Super User)** system role — full system control, with inherited Administrator access to all teams and {{notebooks}}
+- **General Admin** system role — full system control, with inherited Administrator access to all teams and {{notebooks}}
 
-> ⚠️ **Recommendation**: For routine operations (user management, team creation), use the **OPERATIONS_ADMIN** role instead. GENERAL_ADMIN (Super User) is an emergency break-glass role that also grants full access to all research data.
+> ⚠️ **Recommendation**: For routine operations (user management, team creation), use the **Operations Admin** role instead. General Admin is an emergency break-glass role that also grants full access to all research data.
 
 This means you can:
 
 **User management:**
 
 - View all system users and their roles
-- Add or remove system roles (GENERAL_USER, GENERAL_CREATOR, OPERATIONS_ADMIN, GENERAL_ADMIN)
+- Add or remove system roles (General User, General Creator, Operations Admin, General Admin)
 - Reset user passwords (for non-SSO configurations)
 - Remove user accounts
 
@@ -81,7 +81,7 @@ This means you can:
 
 - Create new teams
 - Access and manage all teams
-- Assign Team Administrator roles to others (only OPERATIONS_ADMIN or GENERAL_ADMIN can do this)
+- Assign Team Admin roles to others (only Operations Admin or General Admin can do this)
 
 **{{Notebook}} management:**
 
@@ -90,48 +90,48 @@ This means you can:
 
 > **Note:** If you cannot perform an action described in this guide, contact your system administrator to verify your role assignments.
 
-### What Operations Administrators Can Do
+### What Operations Admins Can Do
 
-The **OPERATIONS_ADMIN** (Operations Administrator) role handles routine system management without access to research data:
+The **Operations Admin** role handles routine system management without access to research data:
 
 **User and team management:**
 
 - View all system users and their roles
 - Add or remove system roles
 - Create new teams
-- Assign Team Administrator roles
+- Assign Team Admin roles
 
 **Cannot do (by design):**
 
 - Access {{notebooks}}, templates, or research data
 - The {{Notebooks}} and Templates sidebar items are hidden from this role
 
-> **Note:** If you need both administrative control and {{notebook}} access, you need the GENERAL_ADMIN (Super User) role.
+> **Note:** If you need both administrative control and {{notebook}} access, you need the General Admin role.
 
 ### What Typical Enterprise Users Can Do By Default
 
 During onboarding, enterprise users are typically assigned:
 
-- **GENERAL_CREATOR** system role — they can create {{notebooks}} and templates
-- **Team Administrator** of their assigned team — they have full control over their team
+- **General Creator** system role — they can create {{notebooks}} and templates
+- **Team Admin** of their assigned team — they have full control over their team
 
-These roles are granted through invites created by an Operations Administrator or Super User (see "How Users Are Created" below). Once onboarded, a typical user can immediately:
+These roles are granted through invites created by an Operations Admin or General Admin (see "How Users Are Created" below). Once onboarded, a typical user can immediately:
 
 - Create {{notebooks}} (stand-alone or within their team)
 - Invite users to their team and assign team roles
 - Invite users to {{notebooks}} they administer and assign {{notebook}} roles
 - Manage and update roles for their team members
 
-> **Note:** Users do not have the necessary privileges to create their own teams. Teams are typically created by a GENERAL_ADMIN or OPERATIONS_ADMIN during onboarding, and users are assigned as Team Administrator of their team via an invite.
+> **Note:** Users do not have the necessary privileges to create their own teams. Teams are typically created by a General Admin or Operations Admin during onboarding, and users are assigned as Team Admin of their team via an invite.
 
 ### What 'General users' Can Do
 
-The most restricted access level is GENERAL_USER, which can:
+The most restricted access level is General User, which can:
 
 - List {{notebooks}} they have access to
 - List templates they have access to
 
-GENERAL_USERs have to be granted access to a {{notebook}} directly (via {{notebook}} invite) or through relevant team membership to view or use it.
+General Users have to be granted access to a {{notebook}} directly (via {{notebook}} invite) or through relevant team membership to view or use it.
 
 ---
 
@@ -150,7 +150,7 @@ When you log in to the {{FAIMS}} {{Dashboard}}, you'll see a left sidebar with t
 - **Teams** — View and manage teams
 
 ```{screenshot} user-roles/01-dashboard-sidebar.png
-:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles columns with role badges such as General User and Super User
+:alt: {{FAIMS}} {{Dashboard}} showing left sidebar with Content section ({{Notebooks}}, Templates) and Management section (Users, Teams), plus the Users page with Users and Invites tabs, displaying Name, Email, Roles columns with role badges such as General User and General Admin
 :align: right
 :width: 100%
 ```
@@ -167,7 +167,7 @@ The **Users** section shows all users in the system with their email addresses a
 
 In an enterprise deployment, users are created through an invite-based workflow:
 
-1. An Operations Administrator (or Super User) creates an invite — either a global invite for system roles (Users → Invites tab), or a team invite for team roles (Team → Invites tab)
+1. An Operations Admin (or General Admin) creates an invite — either a global invite for system roles (Users → Invites tab), or a team invite for team roles (Team → Invites tab)
 2. The invite is shared with the user via a code, link, or QR code
 3. The user accepts the invite and completes sign-in via Single Sign-On (SSO) — this creates their account
 4. The user's roles are determined by the invite(s) they accepted, not auto-provisioned
@@ -190,7 +190,7 @@ The screenshot above shows this view, with the sidebar navigation on the left an
 
 ### Understanding System Roles
 
-There are four system roles: **General User** (basic access), **Content Creator** (can create {{notebooks}} and templates), **Operations Administrator** (manage users and teams without data access), and **Super User** (full system control — emergency use). For detailed permissions, see **Roles Reference → System-Wide Roles** below.
+There are four system roles: **General User** (basic access), **General Creator** (can create {{notebooks}} and templates), **Operations Admin** (manage users and teams without data access), and **General Admin** (full system control — emergency use). For detailed permissions, see **Roles Reference → System-Wide Roles** below.
 
 ### Adding a Role to a User
 
@@ -200,7 +200,7 @@ There are four system roles: **General User** (basic access), **Content Creator*
 4. The new role badge appears next to any existing roles
 
 ```{screenshot} user-roles/03-add-user-role.png
-:alt: Roles column in Users list showing the add button clicked, revealing a dropdown menu with four role options: General User, Super User, Content Creator, and Operations Administrator
+:alt: Roles column in Users list showing the add button clicked, revealing a dropdown menu with four role options: General User, General Admin, General Creator, and Operations Admin
 :align: right
 :width: 100%
 ```
@@ -214,21 +214,21 @@ There are four system roles: **General User** (basic access), **Content Creator*
 
 Each role badge (visible in the {{Dashboard}} screenshot earlier) has a small **×** in the upper-right corner — click this to remove the role.
 
-> ⚠️ **Warning**: Be careful when removing roles. If you remove GENERAL_CREATOR from a user, they will no longer be able to create {{notebooks}} globally. However, they can still create {{notebooks}} within teams where they have the Team Member (Creator), Team Manager, or Team Administrator role.
+> ⚠️ **Warning**: Be careful when removing roles. If you remove General Creator from a user, they will no longer be able to create {{notebooks}} globally. However, they can still create {{notebooks}} within teams where they have the Team Member Creator, Team Manager, or Team Admin role.
 
-**See also:** Troubleshooting → Can't Assign Team Administrator Role
+**See also:** Troubleshooting → Can't Assign Team Admin Role
 
 ---
 
 ## Managing Global Invites
 
-The **Users** page has two tabs: **Users** (described above) and **Invites**. The Invites tab lets you create invitation links that grant system-level roles to new or existing users — for example, inviting someone to become an Operations Administrator.
+The **Users** page has two tabs: **Users** (described above) and **Invites**. The Invites tab lets you create invitation links that grant system-level roles to new or existing users — for example, inviting someone to become an Operations Admin.
 
 > 💡 **Note**: Global invites are for **system-level roles** only. To invite users to a specific team or {{notebook}}, use team invites or {{notebook}} invites instead (see below).
 
 ### Who Can Manage Global Invites
 
-Only users with the **OPERATIONS_ADMIN** or **GENERAL_ADMIN** system role can view and manage global invites.
+Only users with the **Operations Admin** or **General Admin** system role can view and manage global invites.
 
 ### Viewing Global Invites
 
@@ -256,7 +256,7 @@ Only users with the **OPERATIONS_ADMIN** or **GENERAL_ADMIN** system role can vi
 2. Click **+ Create Global Invite**
 3. Configure the invitation:
    - **Invite title** — A descriptive name (e.g., "Operations team onboarding Q1")
-   - **Role** — The system role invitees will receive (General User, Content Creator, or Operations Administrator)
+   - **Role** — The system role invitees will receive (General User, General Creator, or Operations Admin)
    - **Maximum uses** — How many times the invite can be used (leave empty for unlimited)
    - **Invite Duration** — Choose a preset duration (Quick Select) or a specific date (Custom Date); maximum 365 days
 4. Click **Create Invite**
@@ -267,7 +267,7 @@ Only users with the **OPERATIONS_ADMIN** or **GENERAL_ADMIN** system role can vi
 :width: 100%
 ```
 
-> 💡 **Note**: The **Super User** (GENERAL_ADMIN) role is deliberately excluded from the role dropdown. Super User access must be granted manually through the Users tab to prevent accidental distribution of full system privileges.
+> 💡 **Note**: The **General Admin** role is deliberately excluded from the role dropdown. General Admin access must be granted manually through the Users tab to prevent accidental distribution of full system privileges.
 
 ### Removing a Global Invite
 
@@ -286,7 +286,7 @@ Teams group users together and provide shared access to {{notebooks}}. When you 
 
 ### Creating a Team
 
-Only users with the **GENERAL_ADMIN** or **OPERATIONS_ADMIN** system role can create new teams.
+Only users with the **General Admin** or **Operations Admin** system role can create new teams.
 
 1. Click **Teams** in the left sidebar
 2. Click the **+ Create Team** button
@@ -302,7 +302,7 @@ Only users with the **GENERAL_ADMIN** or **OPERATIONS_ADMIN** system role can cr
 :width: 100%
 ```
 
-After creating a team, you'll typically want to add members and assign a Team Administrator (see "Adding a User to Your Team" below).
+After creating a team, you'll typically want to add members and assign a Team Admin (see "Adding a User to Your Team" below).
 
 > **Note:** Most teams are created during initial provisioning. You'll usually be managing existing teams rather than creating new ones.
 
@@ -339,16 +339,16 @@ After creating a team, you'll typically want to add members and assign a Team Ad
    - **Remove** — Red trash icon to remove member
 
 ```{screenshot} user-roles/06-teams-users.png
-:alt: Team Users tab showing member list with columns for Name, Email, Roles (displaying Team Administrator badges with × for removal and + to add roles), and Remove column with red trash icons
+:alt: Team Users tab showing member list with columns for Name, Email, Roles (displaying Team Admin badges with × for removal and + to add roles), and Remove column with red trash icons
 :align: right
 :width: 100%
 ```
 
 ### Understanding Team Roles
 
-There are four team roles: **Team Administrator** (full control), **Team Manager** (manage members, create {{notebooks}}), **Team Member (Contributor)** (access team resources), and **Team Member (Creator)** (create {{notebooks}} only). Team roles automatically grant corresponding {{notebook}} access — see the permissions diagram in the Introduction or **Roles Reference → Team Roles** below for details.
+There are four team roles: **Team Admin** (full control), **Team Manager** (manage members, create {{notebooks}}), **Team Member** (access team resources), and **Team Member Creator** (create {{notebooks}} only). Team roles automatically grant corresponding {{notebook}} access — see the permissions diagram in the Introduction or **Roles Reference → Team Roles** below for details.
 
-> ⚠️ **Important**: Team Member (Creator) can create {{notebooks}} but does NOT get automatic access to existing team {{notebooks}}. This role is often used for student or citizen science projects, where it is undesirable for the user to have access to other peoples' {{notebooks}}.
+> ⚠️ **Important**: Team Member Creator can create {{notebooks}} but does NOT get automatic access to existing team {{notebooks}}. This role is often used for student or citizen science projects, where it is undesirable for the user to have access to other peoples' {{notebooks}}.
 
 ### Adding a User to Your Team
 
@@ -359,7 +359,7 @@ There are four team roles: **Team Administrator** (full control), **Team Manager
 5. Click **Add User**
 
 ```{screenshot} user-roles/07-teams-add-user.png
-:alt: Add user to team dialog with User Email text field and Role dropdown showing options: Team Member (Contributor), Team Member (Creator), Team Manager, and Team Administrator
+:alt: Add user to team dialog with User Email text field and Role dropdown showing options: Team Member, Team Member Creator, Team Manager, and Team Admin
 :align: right
 :width: 100%
 ```
@@ -493,7 +493,7 @@ Users can have {{notebook}} access from two sources:
 1. **Virtual roles** — Automatic access from team membership (see the permissions diagram in the Introduction for the mapping)
 2. **Direct roles** — Explicitly assigned to this {{notebook}} via invitation
 
-> **Note:** Direct roles override virtual roles. If a Team Member (Contributor) is directly assigned as Guest on a specific {{notebook}}, they have Guest access to that {{notebook}}.
+> **Note:** Direct roles override virtual roles. If a Team Member is directly assigned as Guest on a specific {{notebook}}, they have Guest access to that {{notebook}}.
 
 ### Inviting Users to a {{Notebook}}
 
@@ -570,11 +570,11 @@ To hand off a {{notebook}} to someone else:
 
 | Scenario | Recommended Role |
 |----------|------------------|
-| Project lead who manages everything | Team Administrator + {{notebook}} Administrator |
+| Project lead who manages everything | Team Admin + {{notebook}} Administrator |
 | Researcher who designs forms | Team Manager or {{notebook}} Manager |
-| Field worker collecting data | Team Member (Contributor) or {{notebook}} Contributor |
+| Field worker collecting data | Team Member or {{notebook}} Contributor |
 | External reviewer (limited access) | {{Notebook}} Guest |
-| Someone who creates {{notebooks}} but shouldn't see others' data | Team Member (Creator) |
+| Someone who creates {{notebooks}} but shouldn't see others' data | Team Member Creator |
 
 ---
 
@@ -582,16 +582,16 @@ To hand off a {{notebook}} to someone else:
 
 ### Onboarding a New Researcher (Typical Pathway)
 
-1. An Operations Administrator creates a new team for the researcher (Teams → **+ Create Team**)
-2. Create a Team Administrator invite for the new team (Team → **Invites** tab → **+ Create Team Invite**, selecting **Team Administrator** role)
+1. An Operations Admin creates a new team for the researcher (Teams → **+ Create Team**)
+2. Create a Team Admin invite for the new team (Team → **Invites** tab → **+ Create Team Invite**, selecting **Team Admin** role)
 3. Send the invite link (or code/QR code) to the researcher
-4. The researcher accepts the invite and signs in via SSO — this creates their account with the Team Administrator role
-5. Optionally, add the **GENERAL_CREATOR** system role (Users → find user → **add** button in Roles column) so they can create {{notebooks}} outside their team
+4. The researcher accepts the invite and signs in via SSO — this creates their account with the Team Admin role
+5. Optionally, add the **General Creator** system role (Users → find user → **add** button in Roles column) so they can create {{notebooks}} outside their team
 
 ### Adding an Existing User to Your Team
 
 1. Navigate to your team → **Users** tab → **+ Add user**
-2. Enter their email and select the appropriate team role (e.g., **Team Member (Contributor)**)
+2. Enter their email and select the appropriate team role (e.g., **Team Member**)
 3. They now have the corresponding virtual access to all your team's {{notebooks}}
 
 Alternatively, create a team invite (Team → **Invites** tab → **+ Create Team Invite**) and share it with the user.
@@ -601,15 +601,15 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 1. Create {{notebook}}(s) for the project ({{Notebooks}} → Create {{Notebook}})
 2. Ensure {{notebooks}} are associated with your team
 3. Add team members with appropriate roles:
-   - Project lead: Team Manager or Team Administrator
-   - Researchers: Team Member (Contributor)
+   - Project lead: Team Manager or Team Admin
+   - Researchers: Team Member
    - External collaborators: Invite directly to specific {{notebooks}}
 
 ### Granting External Collaborator Access
 
 **Option A — Add to team** (ongoing access):
 
-1. Add them to your team as Team Member (Contributor)
+1. Add them to your team as Team Member
 2. They get virtual access to all team {{notebooks}}
 
 **Option B — {{Notebook}} only** (limited scope):
@@ -630,7 +630,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
    - Navigate to each {{notebook}} → Users tab → trash icon
 2. **Remove from team**:
    - Navigate to team → Users tab → red trash icon
-3. **Note**: You cannot revoke system roles — contact a system administrator (GENERAL_ADMIN or OPERATIONS_ADMIN)
+3. **Note**: You cannot revoke system roles — contact a system administrator (General Admin or Operations Admin)
 
 ---
 
@@ -638,32 +638,32 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 ### System-Wide Roles
 
-| Role | Display Name | Description | Typical User |
-|------|--------------|-------------|--------------|
-| GENERAL_USER | General User | View assigned resources, manage own tokens | Rarely used alone |
-| GENERAL_CREATOR | Content Creator | Create {{notebooks}} and templates globally | Researchers, project managers |
-| OPERATIONS_ADMIN | Operations Administrator | Manage users, teams, and system operations (no data access) | IT operations staff |
-| GENERAL_ADMIN | Super User | Full system control, all data access (emergency use) | IT administrators |
+| Role | Description | Typical User |
+|------|-------------|--------------|
+| General User | View assigned resources, manage own tokens | Rarely used alone |
+| General Creator | Create {{notebooks}} and templates globally | Researchers, project managers |
+| Operations Admin | Manage users, teams, and system operations (no data access) | IT operations staff |
+| General Admin | Full system control, all data access (emergency use) | IT administrators |
 
 ### Team Roles
 
-| Role | Display Name | Permissions | Virtual {{Notebook}} Role |
-|------|--------------|-------------|----------------------|
-| TEAM_ADMIN | Team Administrator | Full team control | Administrator |
-| TEAM_MANAGER | Team Manager | Manage members, create {{notebooks}} | Manager |
-| TEAM_MEMBER | Team Member (Contributor) | Access team resources | Contributor |
-| TEAM_MEMBER_CREATOR | Team Member (Creator) | Create {{notebooks}} only | **None** (no access to other team {{notebooks}}) |
+| Role | Permissions | Virtual {{Notebook}} Role |
+|------|-------------|----------------------|
+| Team Admin | Full team control | Administrator |
+| Team Manager | Manage members, create {{notebooks}} | Manager |
+| Team Member | Access team resources | Contributor |
+| Team Member Creator | Create {{notebooks}} only | **None** (no access to other team {{notebooks}}) |
 
-> ⚠️ **Key restriction**: Only OPERATIONS_ADMIN or GENERAL_ADMIN can assign Team Administrator role. Team Member (Creator) cannot see other team {{notebooks}} — they must be explicitly invited.
+> ⚠️ **Key restriction**: Only Operations Admin or General Admin can assign Team Admin role. Team Member Creator cannot see other team {{notebooks}} — they must be explicitly invited.
 
 ### {{Notebook}} Roles
 
-| Role | Display Name | Permissions |
-|------|--------------|-------------|
-| PROJECT_ADMIN | Administrator | Full control, manage administrators |
-| PROJECT_MANAGER | Manager | Edit design, close {{notebook}}, export, manage invites/access |
-| PROJECT_CONTRIBUTOR | Contributor | Edit others' records (plus all Guest permissions) |
-| PROJECT_GUEST | Guest | Activate {{notebook}}, create records, view/edit/delete own records |
+| Role | Permissions |
+|------|-------------|
+| Project Admin | Full control, manage administrators |
+| Project Manager | Edit design, close {{notebook}}, export, manage invites/access |
+| Project Contributor | Edit others' records (plus all Guest permissions) |
+| Project Guest | Activate {{notebook}}, create records, view/edit/delete own records |
 
 ### Permission Matrix — {{Notebooks}}
 
@@ -683,7 +683,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 ### Permission Matrix — Teams
 
-| Action | Member (Contributor) | Member (Creator) | Manager | Administrator |
+| Action | Member | Member Creator | Manager | Admin |
 |--------|:--------------------:|:----------------:|:-------:|:-------------:|
 | View team details and members | ✅ | ✅ | ✅ | ✅ |
 | View team templates | ✅ | ❌ | ✅ | ✅ |
@@ -694,12 +694,12 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 | Add/remove team members | ❌ | ❌ | ✅ | ✅ |
 | Manage team invites | ❌ | ❌ | ✅ | ✅ |
 | Add/remove team managers | ❌ | ❌ | ❌ | ✅ |
-| Add team administrators | ❌ | ❌ | ❌ | OPERATIONS_ADMIN or GENERAL_ADMIN only |
+| Add team admins | ❌ | ❌ | ❌ | Operations Admin or General Admin only |
 | Delete team | ❌ | ❌ | ❌ | ✅ |
 
-> ⚠️ **Note**: Team Member (Creator) can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
+> ⚠️ **Note**: Team Member Creator can create {{notebooks}} but does NOT automatically get access to existing team {{notebooks}}. This is by design for teaching environments where students create isolated {{notebooks}}.
 >
-> Virtual roles: Team Member (Contributor) automatically receives **Contributor** access to team {{notebooks}}. Team Manager automatically receives **Manager** access. Team Administrator inherits Manager's virtual role. Team Member (Creator) receives **no** virtual {{notebook}} access.
+> Virtual roles: Team Member automatically receives **Contributor** access to team {{notebooks}}. Team Manager automatically receives **Manager** access. Team Admin inherits Manager's virtual role. Team Member Creator receives **no** virtual {{notebook}} access.
 
 ---
 
@@ -710,7 +710,7 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 **Possible causes**:
 
 - Not a member of the team that owns the {{notebook}}
-- Team role is Team Member (Creator) — doesn't grant automatic access
+- Team role is Team Member Creator — doesn't grant automatic access
 - Not directly invited to the {{notebook}}
 
 **Solution**: Check team membership and role. Add direct {{notebook}} access via Invites tab if needed.
@@ -723,15 +723,15 @@ Alternatively, create a team invite (Team → **Invites** tab → **+ Create Tea
 
 ### Can't Add Users to Team
 
-**Cause**: Missing Team Manager or Team Administrator role.
+**Cause**: Missing Team Manager or Team Admin role.
 
-**Solution**: Have a Team Administrator elevate your team role.
+**Solution**: Have a Team Admin elevate your team role.
 
-### Can't Assign Team Administrator Role
+### Can't Assign Team Admin Role
 
-**Cause**: Only OPERATIONS_ADMIN or GENERAL_ADMIN can assign Team Administrator roles.
+**Cause**: Only Operations Admin or General Admin can assign Team Admin roles.
 
-**Solution**: Contact an OPERATIONS_ADMIN or GENERAL_ADMIN to assign the Team Administrator role.
+**Solution**: Contact an Operations Admin or General Admin to assign the Team Admin role.
 
 ### User Has Access But Shouldn't
 
@@ -758,5 +758,5 @@ Remove from both locations if needed.
 
 ---
 
-*Guide Version: 1.7*
+*Guide Version: 1.8*
 *Last Updated: 2026-02-24*
