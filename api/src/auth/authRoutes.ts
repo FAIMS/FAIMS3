@@ -277,9 +277,6 @@ export function addAuthRoutes(
           return res.render('redirect-error', {redirect});
         }
 
-        // Is there an invite present?
-        const inviteId = loginPayload.inviteId;
-
         // Login with local passport strategy - catching the on success to apply
         // invite (if present) and redirect with token back to client
         // application (at redirect URL requested)
@@ -308,18 +305,7 @@ export function addAuthRoutes(
             }
             // reset any failed login attempts
             resetFailedLoginAttempts(req.body.email);
-            // We have logged in - do we also want to consume an invite?
-            if (inviteId) {
-              // We have an invite to consume - go ahead and use it
-              await validateAndApplyInviteToUser({
-                inviteCode: inviteId,
-                dbUser: user,
-              });
-              // avoid saving unwanted details here
-              await saveExpressUser(user);
-            }
-            // Always upgrade prior to returning token to ensure we have latest!
-
+            // Always upgrade prior to returning token to ensure we have latest
             // token
             return redirectWithToken({
               res,
