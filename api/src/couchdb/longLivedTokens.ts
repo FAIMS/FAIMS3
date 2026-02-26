@@ -22,7 +22,7 @@ import {
   ItemNotFoundException,
   InvalidRequestException,
 } from '../exceptions';
-import {generateVerificationCode, hashChallengeCode} from '../utils';
+import {generateVerificationCode, hashChallengeCode, logError} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Convert days to milliseconds
@@ -243,29 +243,17 @@ export const validateLongLivedToken = async (
     // Update last used timestamp if requested
     if (updateLastUsed) {
       tokenDoc.lastUsedTimestampMs = Date.now();
-      try {
-        await safeWriteDocument({
-          db: getAuthDB(),
-          data: tokenDoc,
-          writeOnClash: true,
-        });
-      } catch (e) {
-        console.error(
-          'Error updating last used timestamp for long-lived token:',
-          e
-        );
-        throw e;
-      }
+      await safeWriteDocument({
+        db: getAuthDB(),
+        data: tokenDoc,
+        writeOnClash: true,
+      });
     }
 
     return {valid: true, user, token: tokenDoc};
   } catch (error) {
-    console.error(
-      'Unhandled error validating long-lived token. Token hash: ',
-      tokenHash,
-      ' Error: ',
-      error,
-      console.trace()
+    logError(
+      `Unhandled error validating long-lived token. Token hash: ${tokenHash}. Error: ${error}`
     );
     return {valid: false, validationError: 'Internal server error'};
   }

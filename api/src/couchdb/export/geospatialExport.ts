@@ -19,6 +19,7 @@ import {PassThrough} from 'stream';
 import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
 import {convertDataForOutput} from './utils';
+import {logError} from '../../utils';
 
 /**
  * Statistics returned from spatial export operations.
@@ -241,12 +242,12 @@ function extractGeometry(
       };
     }
 
-    console.warn(
+    logError(
       `Encountered geometry which appeared valid but had no geometry or coordinates fields. Field data: ${JSON.stringify(fieldData)}.`
     );
     return null;
   } catch (e) {
-    console.error(
+    logError(
       `Issue while converting geometry ${e}. Field data: ${JSON.stringify(fieldData)}. Record: ${recordId}.`
     );
     return null;
@@ -371,9 +372,7 @@ function writeKMLPlacemark(
     stream.write('</Placemark>');
     return true;
   } catch (e) {
-    console.error(
-      `Error converting geometry to KML for record ${recordId}: ${e}`
-    );
+    logError(`Error converting geometry to KML for record ${recordId}: ${e}`);
     return false;
   }
 }

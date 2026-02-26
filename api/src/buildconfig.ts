@@ -723,4 +723,4 @@ function bugsnagApiKey(): string | undefined {
 }
 
 export const BUGSNAG_API_KEY = bugsnagApiKey();
-
+export const BUGSNAG_ENABLED = !!BUGSNAG_API_KEY;

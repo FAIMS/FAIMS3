@@ -16,6 +16,7 @@ import {
   validatePasswordStrength,
   getPasswordErrorMessage,
 } from './passwordStrength';
+import {logError} from '../utils';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -121,7 +122,7 @@ export function validateRedirect(
         }
       } catch (error) {
         // Skip invalid whitelist entries
-        console.error(`Invalid whitelist entry: ${whitelistedDomain}`, error);
+        logError(`Invalid whitelist entry: ${whitelistedDomain}`);
         continue;
       }
     }
@@ -130,7 +131,7 @@ export function validateRedirect(
     return fail();
   } catch (error) {
     // Any parsing errors or other issues, return the default redirect
-    console.error('Error validating redirect URL:', error);
+    logError(error);
     return fail();
   }
 }

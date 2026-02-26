@@ -43,6 +43,7 @@ import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 
 import patch from '../utils/patchExpressAsync';
+import {logError} from '../utils';
 
 // This must occur before express api is used
 patch();
@@ -122,7 +123,7 @@ api.get(
         isVerified: emails[0]?.verified ?? false,
       });
     } catch (e) {
-      console.error(e);
+      logError(e);
       throw e;
     }
   }

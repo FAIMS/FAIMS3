@@ -13,6 +13,7 @@ import {
   slugify,
   truncateWithHash,
 } from './utils';
+import {logError} from '../../utils';
 
 /**
  * Maximum number of file streams to process concurrently when building the ZIP archive.
@@ -130,9 +131,8 @@ export const appendAttachmentsToArchive = async ({
               );
             })
             .catch(err => {
-              console.error(
-                `[ZIP] Error processing record ${record?.record_id}:`,
-                err
+              logError(
+                `[ZIP] Error processing record ${record?.record_id}: ${err}`
               );
             })
             .finally(() => {

@@ -24,6 +24,7 @@ import {updateUserEmailVerificationStatus} from '../couchdb/users';
 import * as Exceptions from '../exceptions';
 import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
 import {sendEmailVerificationChallenge} from '../utils/emailHelpers';
+import {logError} from '../utils';
 
 export const api: express.Router = express.Router();
 
@@ -149,7 +150,7 @@ export async function verifyEmailWithCode({code}: {code: string}): Promise<{
       email: verifiedEmail,
     };
   } catch (error) {
-    console.error('Error verifying email:', error);
+    logError(error);
     return {
       success: false,
       error: 'An error occurred while verifying your email.',

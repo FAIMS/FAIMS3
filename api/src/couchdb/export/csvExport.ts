@@ -16,6 +16,7 @@ import {
   MAX_CSV_FILENAME_LENGTH,
   truncateWithHash,
 } from './utils';
+import {logError} from '../../utils';
 
 // The set of headers which come first in CSV exports, and are always present
 export const CSV_PREFIX_HEADERS = [
@@ -288,7 +289,7 @@ export const appendAllCSVsToArchive = async ({
           row.length !==
           CSV_PREFIX_HEADERS.length + viewState.dataHeaderInfo.length
         ) {
-          console.error(
+          logError(
             `CSV row length mismatch for view ${viewState.viewId}: expected ${
               CSV_PREFIX_HEADERS.length + viewState.dataHeaderInfo.length
             } but got ${row.length}`
@@ -299,9 +300,7 @@ export const appendAllCSVsToArchive = async ({
         }
       } else {
         // Record type doesn't match any known view - log warning
-        console.warn(
-          `Record ${record.record_id} has unknown type: ${record.type}`
-        );
+        logError(`Record ${record.record_id} has unknown type: ${record.type}`);
       }
     }
 
