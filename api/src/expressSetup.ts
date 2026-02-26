@@ -108,7 +108,7 @@ export const app: express.Express = express();
 
 // Bugsnag comes first - passes through
 let bugsnagMiddleware = undefined;
-if (bugsnagEnabled) {
+if (BUGSNAG_ENABLED) {
   bugsnagMiddleware = Bugsnag.getPlugin('express');
   if (!bugsnagMiddleware) {
     throw new Error(
