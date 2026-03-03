@@ -35,6 +35,7 @@ import {LOCAL_COUCHDB_AUTH} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {getRolesForNotebook} from './notebooks';
 import {registerLocalUser, addLocalPasswordForUser} from '../auth/helpers';
+import {logError} from '../utils';
 
 /**
  * Builds a minimum spec user object - need to add profiles
@@ -91,7 +92,7 @@ export const registerAdminUser = async () => {
       addGlobalRole({user, role: Role.GENERAL_ADMIN});
       await saveCouchUser(user);
     } else {
-      console.error(error);
+      logError(error);
     }
   }
 };

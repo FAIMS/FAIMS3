@@ -1,6 +1,15 @@
 import {slugify, TokenContents} from '@faims3/data-model';
 import crypto from 'crypto';
-import {CONDUCTOR_INSTANCE_NAME} from './buildconfig';
+import {BUGSNAG_ENABLED, CONDUCTOR_INSTANCE_NAME} from './buildconfig';
+import Bugsnag from '@bugsnag/js';
+
+export const logError = (error: any) => {
+  if (BUGSNAG_ENABLED) {
+    Bugsnag.notify(error);
+  } else {
+    console.error('LogError:', error);
+  }
+};
 
 /**
  * Generate a TokenContents object for use in API code

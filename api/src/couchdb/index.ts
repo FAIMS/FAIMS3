@@ -64,6 +64,7 @@ import {
 import * as Exceptions from '../exceptions';
 import {getAllProjectsDirectory} from './notebooks';
 import {registerAdminUser} from './users';
+import {logError} from '../utils';
 
 const DIRECTORY_DB_NAME = 'directory';
 const PROJECTS_DB_NAME = 'projects';
@@ -121,7 +122,6 @@ export const verifyCouchDBConnection = async () => {
       'Content-Type': 'application/json',
     },
   }).catch(() => {
-    console.log('Catching error');
     return null;
   });
 
@@ -734,7 +734,7 @@ const getNanoInstance = async (): Promise<Nano.ServerScope> => {
       LOCAL_COUCHDB_AUTH.password
     );
   } else {
-    console.error("No local CouchDB auth configured - can't talk to CouchDB!");
+    logError("No local CouchDB auth configured - can't talk to CouchDB!");
   }
 
   return _nanoInstance;

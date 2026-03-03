@@ -18,7 +18,7 @@ import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {REFRESH_TOKEN_EXPIRY_MINUTES} from '../buildconfig';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
-import {generateVerificationCode, hashChallengeCode} from '../utils';
+import {generateVerificationCode, hashChallengeCode, logError} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in hours
@@ -177,13 +177,7 @@ export const consumeExchangeTokenForRefreshToken = async ({
 
     return {valid: true, user, refreshDocument: tokenDoc};
   } catch (error) {
-    console.error(
-      'Unhandled error validating refresh token. Token hash: ',
-      exchangeTokenHash,
-      ' Error: ',
-      error,
-      console.trace()
-    );
+    logError(error);
     return {valid: false, validationError: 'Internal server error'};
   }
 };
@@ -244,13 +238,7 @@ export const validateRefreshToken = async (
 
     return {valid: true, user};
   } catch (error) {
-    console.error(
-      'Unhandled error validating refresh token. Token: ',
-      refreshToken,
-      ' Error: ',
-      error,
-      console.trace()
-    );
+    logError(error);
     return {valid: false, validationError: 'Internal server error'};
   }
 };

@@ -141,38 +141,34 @@ export async function generateJwtFromUser({
 }) {
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
-  try {
-    const permissionsComponent = expressUserToTokenPermissions({
-      user,
-    });
 
-    // We then augment this with extra details to help identify the origin of the
-    // token + user details
-    const completePayload: TokenPayload = {
-      ...permissionsComponent,
-      name: user.name,
-      server: CONDUCTOR_PUBLIC_URL,
-      username: user.user_id,
-    };
+  const permissionsComponent = expressUserToTokenPermissions({
+    user,
+  });
 
-    // Then there are other parts we wish to include
-    const jwt = await new SignJWT(completePayload)
-      .setProtectedHeader({
-        alg: signingKey.alg,
-        kid: signingKey.kid,
-      })
-      .setSubject(user.user_id)
-      .setIssuedAt()
-      .setIssuer(signingKey.instanceName)
-      // Expiry in minutes
-      .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
-      .sign(signingKey.privateKey);
+  // We then augment this with extra details to help identify the origin of the
+  // token + user details
+  const completePayload: TokenPayload = {
+    ...permissionsComponent,
+    name: user.name,
+    server: CONDUCTOR_PUBLIC_URL,
+    username: user.user_id,
+  };
 
-    return jwt;
-  } catch (e) {
-    console.error('ERROR: ' + e);
-    throw e;
-  }
+  // Then there are other parts we wish to include
+  const jwt = await new SignJWT(completePayload)
+    .setProtectedHeader({
+      alg: signingKey.alg,
+      kid: signingKey.kid,
+    })
+    .setSubject(user.user_id)
+    .setIssuedAt()
+    .setIssuer(signingKey.instanceName)
+    // Expiry in minutes
+    .setExpirationTime(ACCESS_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .sign(signingKey.privateKey);
+
+  return jwt;
 }
 
 /**

@@ -36,7 +36,6 @@ import {
   file_data_to_attachments,
   getDataDB,
   GetNotebookListResponse,
-  logError,
   PROJECT_METADATA_PREFIX,
   ProjectDBFields,
   ProjectDocument,
@@ -64,6 +63,7 @@ import {
 import {COUCHDB_PUBLIC_URL, MIGRATE_NOTEBOOKS_ON_STARTUP} from '../buildconfig';
 import * as Exceptions from '../exceptions';
 import {userCanDo} from '../middleware';
+import {logError} from '../utils';
 
 /**
  * Gets project IDs by teamID (who owns it)
@@ -226,7 +226,6 @@ export const getUserProjectsDetailed = async (
           status: project!.status,
         } satisfies GetNotebookListResponse[number];
       } catch (e) {
-        console.error('Error occurred during detailed notebook listing');
         logError(e);
         return undefined;
       }
@@ -360,7 +359,7 @@ export const createNotebook = async (
     const projectsDB = localGetProjectsDb();
     await projectsDB.put(projectDoc);
   } catch (error) {
-    console.log('Error creating project entry in projects database:', error);
+    logError(error);
     return undefined;
   }
 
@@ -590,13 +589,13 @@ export const getNotebookMetadata = async (
         result.project_id = project_id;
         return result;
       } else {
-        console.error('no metadata database found for', project_id);
+        logError(`no metadata database found for ${project_id}`);
       }
     } catch (error) {
-      console.error('error reading project metadata', project_id, error);
+      logError(error);
     }
   } else {
-    console.log('unknown project', project_id);
+    logError(`unknown project ${project_id}`);
   }
   return null;
 };
@@ -618,15 +617,15 @@ export const getEncodedNotebookUISpec = async (
       delete uiSpec._rev;
       return uiSpec;
     } else {
-      console.error('no metadata database found for', projectId);
+      logError(`no metadata database found for ${projectId}`);
     }
   } catch (error) {
-    console.error('error reading metadata db for project', projectId, error);
+    logError(error);
   }
   return null;
 };
 
-/**
+/**`
  * Gets the ready to use representation of the UI spec for a given project.
  *
  * Does this by fetching from the metadata DB and decoding.
@@ -685,7 +684,7 @@ export async function countRecordsInNotebook(
     }
     return res.rows[0].value;
   } catch (error) {
-    console.log(error);
+    logError(error);
     return 0;
   }
 }
