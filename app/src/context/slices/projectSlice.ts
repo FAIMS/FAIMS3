@@ -1129,6 +1129,11 @@ export const getSelectedServer = createSelector(
   (state: RootState) => state.projects,
   state => {
     if (!state.selectedServerId) {
+      // in the case where we don't have a selected server ID,
+      // we return the first server if there is one, otherwise undefined
+      if (Object.keys(state.servers).length > 0) {
+        return Object.values(state.servers)[0];
+      }
       return undefined;
     }
     return state.servers[state.selectedServerId] ?? undefined;
