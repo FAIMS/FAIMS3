@@ -9,7 +9,6 @@ export default makeStyles({
   root: {
     display: 'flex',
     boxShadow: 'none',
-    padding: 12,
   },
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
@@ -26,10 +25,10 @@ export default makeStyles({
       duration: theme.transitions.duration.enteringScreen,
     }),
   },
-  menuButton: {},
-  menuIcon: {
-    fontSize: 32,
+  menuButton: {
+    marginRight: theme.spacing(2),
   },
+  menuIcon: {},
   hide: {
     display: 'none',
   },
