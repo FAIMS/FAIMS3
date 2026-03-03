@@ -14,10 +14,7 @@
  * limitations under the License.
  *
  * Filename: typography.tsx
- * Description:
- *   TODO
  */
-
 export default {
   fontFamily: "'Open Sans', sans-serif",
   h1: {
