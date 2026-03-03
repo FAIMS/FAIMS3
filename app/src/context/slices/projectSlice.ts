@@ -224,8 +224,12 @@ const projectsSlice = createSlice({
           `Cannot select server with ID ${serverId} since it does not exist.`
         );
       }
-      console.log(`Selecting server with ID ${serverId}`);
       state.selectedServerId = serverId;
+    },
+
+    // Clear all servers - do this before re-initialisation
+    clearServers: state => {
+      state.servers = {};
     },
 
     /**
@@ -1514,9 +1518,6 @@ export const initialiseServers = createAsyncThunk<void>(
   'projects/initialiseServers',
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async (_, {dispatch, getState}) => {
-    // cast and get state
-    const state = getState() as RootState;
-    const projectState = state.projects;
     const appDispatch = dispatch as AppDispatch;
 
     // for each URL in the conductor URLs - fetch directory
@@ -1530,40 +1531,27 @@ export const initialiseServers = createAsyncThunk<void>(
         });
     }
 
+    // clear existing servers
+    appDispatch(clearServers());
+    // Add all the discovered servers to the state
     for (const apiServerInfo of discoveredServers) {
       // pull out the server ID
       const serverId = apiServerInfo.id;
 
-      // see if we already have that server
-      const existingServer = serverById(projectState, serverId);
-      if (existingServer) {
-        // Update
-        appDispatch(
-          updateServerDetails({
-            serverId,
-            serverTitle: apiServerInfo.name,
-            serverUrl: apiServerInfo.conductor_url,
-            shortCodePrefix: apiServerInfo.prefix,
-            description: apiServerInfo.description,
-            serverVersion: apiServerInfo.serverVersion,
-          })
-        );
-      } else {
-        // Create
-        appDispatch(
-          addServer({
-            serverId,
-            serverTitle: apiServerInfo.name,
-            serverUrl: apiServerInfo.conductor_url,
-            shortCodePrefix: apiServerInfo.prefix,
-            // We don't know this yet - it's considered sensitive so we need
-            // authentication.
-            couchDbUrl: undefined,
-            description: apiServerInfo.description,
-            serverVersion: apiServerInfo.serverVersion,
-          })
-        );
-      }
+      // Create
+      appDispatch(
+        addServer({
+          serverId,
+          serverTitle: apiServerInfo.name,
+          serverUrl: apiServerInfo.conductor_url,
+          shortCodePrefix: apiServerInfo.prefix,
+          // We don't know this yet - it's considered sensitive so we need
+          // authentication.
+          couchDbUrl: undefined,
+          description: apiServerInfo.description,
+          serverVersion: apiServerInfo.serverVersion,
+        })
+      );
     }
   }
 );
@@ -2154,6 +2142,7 @@ const {
 // Public reducers
 export const {
   addProject,
+  clearServers,
   addServer,
   selectServer,
   startSyncingAttachments,
