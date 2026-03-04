@@ -1,7 +1,9 @@
 import {
+  addEmails,
   AuthContext,
   ExistingPeopleDBDocument,
   PeopleDBDocument,
+  VerifiableEmail,
 } from '@faims3/data-model';
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
@@ -9,13 +11,18 @@ import {ZodError} from 'zod';
 import {CONDUCTOR_SERVER_ID, REDIRECT_WHITELIST} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
-import {createUser, saveCouchUser} from '../couchdb/users';
-import {AuthAction, CustomRequest} from '../types';
+import {
+  createUser,
+  getCouchUserFromEmailOrUserId,
+  saveCouchUser,
+} from '../couchdb/users';
+import {AuthAction, CustomRequest, CustomSessionData} from '../types';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {
   validatePasswordStrength,
   getPasswordErrorMessage,
 } from './passwordStrength';
+import {upgradeCouchUserToExpressUser} from './keySigning/create';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -396,5 +403,242 @@ export function validatePasswordOrThrow(
 
   if (!result.isValid) {
     throw new Error(getPasswordErrorMessage(result));
+  }
+}
+
+/**
+ * Identify an existing user from a list of email addresses from an SSO user profile
+ *
+ * @param userEmails - A list of verified email addresses associated with a user's profile
+ * @throws Error if there are no verified email addresses, or if multiple accounts match the provided emails
+ * @returns The matching user account, or undefined if no match is found
+ */
+export async function identifyUser(
+  userEmails: string[],
+  displayName: string
+): Promise<ExistingPeopleDBDocument | undefined> {
+  if (userEmails.length === 0) {
+    // indicate error since there are no valid email addresses!
+    throw new Error(
+      `The ${displayName} user does not have any verified email addresses, and therefore cannot be logged in.`
+    );
+  }
+
+  // so they have at least one valid email address - let's see if we can find
+  // precisely ONE profile that matches
+  const userLookups: {[email: string]: ExistingPeopleDBDocument | null} = {};
+
+  for (const targetEmail of userEmails) {
+    // Try to get the user based on the target email
+    userLookups[targetEmail] = await getCouchUserFromEmailOrUserId(targetEmail);
+  }
+
+  const matchingEmails = Object.entries(userLookups)
+    .filter(([, potentialUser]) => !!potentialUser)
+    .map(([email]) => email);
+
+  // create a list of unique matched accounts - this way if you match on
+  // multiple email addresses, but already merged into a single account, this is
+  // managed properly
+  const matchingAccounts: ExistingPeopleDBDocument[] = [];
+  for (const email of matchingEmails) {
+    const user = userLookups[email]!;
+    if (!matchingAccounts.map(acc => acc._id).includes(user._id)) {
+      matchingAccounts.push(user);
+    }
+  }
+
+  // So they have some existing match - is it more than one, this is an error
+  // state - we shouldn't have a google profile linking to multiple accounts!
+  // Confusing situation let's not allow this.
+  if (matchingAccounts.length > 1) {
+    throw new Error(
+      `The ${displayName} user's profile included more than one email address, of which more than one match existing accounts. Unsure how to proceed.`
+    );
+  }
+  // return either the matching account or undefined if there were no matches
+  if (matchingAccounts.length === 0) {
+    return undefined;
+  } else {
+    return matchingAccounts[0];
+  }
+}
+
+// A type describing the things we expect to see in a generic
+// SSO profile for the purposes of our authentication helpers
+type GenericProfile = {
+  id: string;
+  displayName: string;
+  emails?: any;
+  [key: string]: any;
+};
+
+export async function ssoVerify({
+  req,
+  strategyId,
+  displayName,
+  profile,
+  emails,
+  done,
+}: {
+  req: Express.Request;
+  strategyId: string;
+  displayName: string;
+  profile: GenericProfile; // a profile
+  emails: string[]; // a list of verified emails we have pulled out of the profile
+  done: (error: any, user?: any, info?: any) => void;
+}): Promise<void> {
+  // pull out session info (and type it - this route really doesn't want to
+  // accept our typing overrides in types.ts)
+  const {action, inviteId} = req.session as CustomSessionData;
+
+  // Action should always be defined
+  if (!action) {
+    return done(
+      new Error(
+        'No action provided during identity provider redirection - cannot proceed. Contact system administrator.'
+      ),
+      undefined
+    );
+  }
+
+  // Registration requires an invite ID - but handling of the invite is not the
+  // responsibility of this module - see the success callback in authRoutes
+  if (action === 'register' && !inviteId) {
+    return done(
+      new Error(
+        'Trying to register a new account without an invitation - this is not authorised.'
+      ),
+      undefined
+    );
+  }
+
+  let matchedSingleUser: ExistingPeopleDBDocument | undefined;
+  try {
+    matchedSingleUser = await identifyUser(emails, displayName);
+  } catch (e) {
+    return done(e as Error, undefined);
+  }
+
+  if (action === 'login') {
+    // LOGIN
+    // =====
+
+    // This is a situation where they do have a verified email address but none
+    // match
+    if (matchedSingleUser === undefined) {
+      // We abort here - this is an error
+      return done(
+        new Error(
+          `This ${displayName} user account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.`
+        ),
+        undefined
+      );
+    }
+
+    // We have precisely one matching email address, let's ensure that this
+    // account has the linked google profile, then return it (We can safely assert
+    // non-null here due to our previous filtering)
+    // const matchedSingleUser = matchingAccounts[0];
+
+    // Firstly - ensure they have the right profile linked
+    if (!(strategyId in matchedSingleUser.profiles)) {
+      matchedSingleUser.profiles[strategyId] = profile;
+      await saveCouchUser(matchedSingleUser);
+    }
+
+    // upgrade user and return login success - invite to be processed later if
+    // at all
+    return done(
+      null,
+      await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
+    );
+  } else {
+    // REGISTER
+    // ========
+
+    // Validate invite - always needed
+    try {
+      await lookupAndValidateInvite({inviteCode: inviteId!});
+    } catch (e) {
+      return done(
+        new Error('Invalid invite provided. Cannot register an account.'),
+        undefined
+      );
+    }
+
+    // This is scenario where this user does not yet exist - so let's create
+    // them (checking invite is okay)
+    if (matchedSingleUser === undefined) {
+      // So the invite is valid we should now start to setup the user
+      const [newDbUser] = await createUser({
+        // Use the first email (assumed okay to be primary lookup email)
+        email: emails[0],
+        username: emails[0],
+        name: profile.displayName,
+        verified: true,
+      });
+
+      // something went wrong here
+      if (!newDbUser) {
+        throw Error(
+          'Internal system error: unable to create new user! Contact a system administrator.'
+        );
+      }
+
+      // add the google profile info
+      newDbUser.profiles[strategyId] = profile;
+
+      // add the other emails to the user emails array if necessary
+      addEmails({
+        user: newDbUser,
+        emails: emails.map(vEmail => {
+          // Mark as verified!
+          return {email: vEmail, verified: true} satisfies VerifiableEmail;
+        }),
+      });
+
+      // save the user
+      await saveCouchUser(newDbUser);
+
+      // return express user
+      return done(
+        null,
+        await upgradeCouchUserToExpressUser({dbUser: newDbUser})
+      );
+    }
+
+    // NOTE: This is the situation where you are trying to 'register' a new
+    // account but one already exists with google with matching email - we
+    // decide here to instead log them in - upgrading the potentially
+    // unconnected account
+
+    // We have precisely one matching email address, let's ensure that this
+    // account has the linked google profile, then return it (We can safely assert
+    // non-null here due to our previous filtering)
+    //const matchedSingleUser = matchingAccounts[0];
+
+    // Firstly - ensure they have the google profile linked
+    if (!(strategyId in matchedSingleUser.profiles)) {
+      matchedSingleUser.profiles[strategyId] = profile;
+    }
+
+    // add the other emails to the user emails array if necessary
+    addEmails({
+      user: matchedSingleUser,
+      emails: emails.map(vEmail => {
+        // Mark as verified!
+        return {email: vEmail, verified: true} satisfies VerifiableEmail;
+      }),
+    });
+
+    await saveCouchUser(matchedSingleUser);
+
+    // upgrade user and return login success - invite to be processed later if
+    // at all
+    return done(
+      null,
+      await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
+    );
   }
 }
