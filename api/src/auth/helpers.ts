@@ -467,9 +467,6 @@ export async function identifyUser(
 // A type describing the things we expect to see in a generic
 // SSO profile for the purposes of our authentication helpers
 type GenericProfile = {
-  id: string;
-  displayName: string;
-  emails?: any;
   [key: string]: any;
 };
 
@@ -479,6 +476,7 @@ export async function ssoVerify({
   displayName,
   profile,
   emails,
+  userDisplayName,
   done,
 }: {
   req: Express.Request;
@@ -486,6 +484,7 @@ export async function ssoVerify({
   displayName: string;
   profile: GenericProfile; // a profile
   emails: string[]; // a list of verified emails we have pulled out of the profile
+  userDisplayName: (profile: GenericProfile) => string; // an optional function to pull a display name out of the profile
   done: (error: any, user?: any, info?: any) => void;
 }): Promise<void> {
   // pull out session info (and type it - this route really doesn't want to
@@ -537,7 +536,7 @@ export async function ssoVerify({
     }
 
     // We have precisely one matching email address, let's ensure that this
-    // account has the linked google profile, then return it (We can safely assert
+    // account has the linked SSO profile, then return it (We can safely assert
     // non-null here due to our previous filtering)
     // const matchedSingleUser = matchingAccounts[0];
 
@@ -575,7 +574,7 @@ export async function ssoVerify({
         // Use the first email (assumed okay to be primary lookup email)
         email: emails[0],
         username: emails[0],
-        name: profile.displayName,
+        name: userDisplayName(profile),
         verified: true,
       });
 

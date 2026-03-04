@@ -77,6 +77,7 @@ const generateOIDCVerifyFunction = ({
       displayName,
       profile,
       emails: profileEmails,
+      userDisplayName: profile => profile.displayName,
       done,
     });
   };

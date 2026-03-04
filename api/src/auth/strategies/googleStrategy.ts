@@ -84,6 +84,7 @@ async function oauthVerify(
     displayName: 'Google',
     profile,
     emails: verifiedEmails,
+    userDisplayName: profile => profile.displayName,
     done,
   });
 }

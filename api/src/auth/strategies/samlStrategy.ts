@@ -33,7 +33,7 @@ import {
 } from '../../couchdb/users';
 import {CustomSessionData} from '../../types';
 import {providerAuthReturnUrl} from '../authRoutes';
-import {lookupAndValidateInvite} from '../helpers';
+import {lookupAndValidateInvite, ssoVerify} from '../helpers';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
 import {SAMLAuthProviderConfig} from './strategyTypes';
 
@@ -112,31 +112,6 @@ const generateSamlVerifyFunction = ({
     profile: Profile | null | undefined,
     done: (error: any, user?: any, info?: any) => void
   ): Promise<void> => {
-    // pull out session info (and type it - this route really doesn't want to
-    // accept our typing overrides in types.ts)
-    const {action, inviteId} = req.session as CustomSessionData;
-
-    // Action should always be defined
-    if (!action) {
-      return done(
-        new Error(
-          'No action provided during identity provider redirection - cannot proceed. Contact system administrator.'
-        ),
-        undefined
-      );
-    }
-
-    // Registration requires an invite ID - but handling of the invite is not the
-    // responsibility of this module - see the success callback in authRoutes
-    if (action === 'register' && !inviteId) {
-      return done(
-        new Error(
-          'Trying to register a new account without an invitation - this is not authorised.'
-        ),
-        undefined
-      );
-    }
-
     // Ensure we have a profile
     if (!profile) {
       return done(
@@ -147,8 +122,9 @@ const generateSamlVerifyFunction = ({
       );
     }
 
-    // Extract email from SAML assertion - SAML typically provides a single email
     const email = extractEmailFromSamlProfile(profile);
+
+    // Extract email from SAML assertion - SAML typically provides a single email
 
     if (!email) {
       return done(
@@ -159,137 +135,16 @@ const generateSamlVerifyFunction = ({
       );
     }
 
-    // SAML typically provides a single email, but we'll use an array for consistency
-    const profileEmails = [email];
+    return ssoVerify({
+      req,
+      strategyId,
+      displayName,
+      profile,
+      emails: [email],
+      userDisplayName: extractNameFromSamlProfile,
+      done,
+    });
 
-    // Look up existing user by email
-    const userLookups: {[email: string]: ExistingPeopleDBDocument | null} = {};
-
-    for (const targetEmail of profileEmails) {
-      userLookups[targetEmail] =
-        await getCouchUserFromEmailOrUserId(targetEmail);
-    }
-
-    const matchingEmails = Object.entries(userLookups)
-      .filter(([, potentialUser]) => !!potentialUser)
-      .map(([email]) => email);
-
-    // create a list of unique matched accounts
-    const matchingAccounts: ExistingPeopleDBDocument[] = [];
-    for (const matchedEmail of matchingEmails) {
-      const user = userLookups[matchedEmail]!;
-      if (!matchingAccounts.map(acc => acc._id).includes(user._id)) {
-        matchingAccounts.push(user);
-      }
-    }
-
-    // Multiple matching accounts is an error state
-    if (matchingAccounts.length > 1) {
-      return done(
-        new Error(
-          `The ${displayName} profile matched more than one existing account. Unsure how to proceed.`
-        ),
-        undefined
-      );
-    }
-
-    if (action === 'login') {
-      // LOGIN
-      // =====
-
-      if (matchingAccounts.length === 0) {
-        return done(
-          new Error(
-            `This ${displayName} user account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.`
-          ),
-          undefined
-        );
-      }
-
-      const matchedSingleUser = matchingAccounts[0];
-
-      // Ensure they have the SAML profile linked
-      if (!(strategyId in matchedSingleUser.profiles)) {
-        matchedSingleUser.profiles[strategyId] = profile;
-        await saveCouchUser(matchedSingleUser);
-      }
-
-      // upgrade user and return login success
-      return done(
-        null,
-        await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
-      );
-    } else {
-      // REGISTER
-      // ========
-
-      // Validate invite - always needed
-      try {
-        await lookupAndValidateInvite({inviteCode: inviteId!});
-      } catch (e) {
-        return done(
-          new Error('Invalid invite provided. Cannot register an account.'),
-          undefined
-        );
-      }
-
-      if (matchingAccounts.length === 0) {
-        // Create new user
-        const displayNameFromProfile = extractNameFromSamlProfile(profile);
-
-        const [newDbUser] = await createUser({
-          email: profileEmails[0],
-          username: profileEmails[0],
-          name: displayNameFromProfile,
-          verified: true,
-        });
-
-        if (!newDbUser) {
-          throw Error(
-            'Internal system error: unable to create new user! Contact a system administrator.'
-          );
-        }
-
-        // add the SAML profile info
-        newDbUser.profiles[strategyId] = profile;
-
-        // add emails
-        addEmails({
-          user: newDbUser,
-          emails: profileEmails.map(vEmail => {
-            return {email: vEmail, verified: true} satisfies VerifiableEmail;
-          }),
-        });
-
-        await saveCouchUser(newDbUser);
-
-        return done(
-          null,
-          await upgradeCouchUserToExpressUser({dbUser: newDbUser})
-        );
-      }
-
-      // User exists - log them in and link the profile
-      const matchedSingleUser = matchingAccounts[0];
-
-      if (!(strategyId in matchedSingleUser.profiles)) {
-        matchedSingleUser.profiles[strategyId] = profile;
-      }
-
-      addEmails({
-        user: matchedSingleUser,
-        emails: profileEmails.map(vEmail => {
-          return {email: vEmail, verified: true} satisfies VerifiableEmail;
-        }),
-      });
-
-      await saveCouchUser(matchedSingleUser);
-
-      return done(
-        null,
-        await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
-      );
-    }
   };
 };
 
