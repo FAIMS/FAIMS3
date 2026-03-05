@@ -81,7 +81,7 @@ async function oauthVerify(
   return ssoVerify({
     req,
     strategyId: 'google',
-    displayName: 'Google',
+    strategyName: 'Google',
     profile,
     emails: verifiedEmails,
     userDisplayName: profile => profile.displayName,

@@ -74,7 +74,7 @@ const generateOIDCVerifyFunction = ({
     return ssoVerify({
       req,
       strategyId,
-      displayName,
+      strategyName: displayName,
       profile,
       emails: profileEmails,
       userDisplayName: profile => profile.displayName,

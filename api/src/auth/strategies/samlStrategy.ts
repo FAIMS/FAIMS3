@@ -138,13 +138,12 @@ const generateSamlVerifyFunction = ({
     return ssoVerify({
       req,
       strategyId,
-      displayName,
+      strategyName: displayName,
       profile,
       emails: [email],
       userDisplayName: extractNameFromSamlProfile,
       done,
     });
-
   };
 };
 

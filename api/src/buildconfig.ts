@@ -257,6 +257,28 @@ function developer_mode(): any {
   }
 }
 
+// Policies for provisioning users who login via SSO but don't yet
+// have an account.
+// team - creates a team for the user and assigns them as admin of that team
+// general-user - creates a general user account for them
+// reject - rejects the login attempt
+export type ProvisionSSOUsersPolicy = 'own-team' | 'general-user' | 'reject';
+
+function provision_sso_users_policy(): ProvisionSSOUsersPolicy {
+  const policy = process.env.PROVISION_SSO_USERS_POLICY;
+  if (policy) {
+    if (
+      policy === 'own-team' ||
+      policy === 'general-user' ||
+      policy === 'reject'
+    ) {
+      return policy;
+    }
+  }
+  // default policy is 'reject' which rejects unknown users via SSO
+  return 'reject';
+}
+
 // 5 minute access token expiry by default
 const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
 
@@ -449,6 +471,7 @@ export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
 export const NEW_CONDUCTOR_URL = newConductorUrl();
 export const LOCAL_LOGIN_ENABLED = enable_local_login();
 export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
+export const PROVISION_SSO_USERS_POLICY = provision_sso_users_policy();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to

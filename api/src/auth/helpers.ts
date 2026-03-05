@@ -1,14 +1,22 @@
 import {
   addEmails,
+  addGlobalRole,
+  addTeamRole,
   AuthContext,
   ExistingPeopleDBDocument,
   PeopleDBDocument,
+  Role,
+  TeamsDBFields,
   VerifiableEmail,
 } from '@faims3/data-model';
 import {pbkdf2Sync, randomBytes} from 'crypto';
 import {Response} from 'express';
 import {ZodError} from 'zod';
-import {CONDUCTOR_SERVER_ID, REDIRECT_WHITELIST} from '../buildconfig';
+import {
+  CONDUCTOR_SERVER_ID,
+  PROVISION_SSO_USERS_POLICY,
+  REDIRECT_WHITELIST,
+} from '../buildconfig';
 import {consumeInvite, getInvite, isInviteValid} from '../couchdb/invites';
 import {createNewRefreshToken} from '../couchdb/refreshTokens';
 import {
@@ -23,6 +31,8 @@ import {
   getPasswordErrorMessage,
 } from './passwordStrength';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
+import {create} from 'domain';
+import {createTeamDocument} from '../couchdb/teams';
 
 /**
  * Handles Zod validation errors and flashes them back to the user
@@ -415,12 +425,12 @@ export function validatePasswordOrThrow(
  */
 export async function identifyUser(
   userEmails: string[],
-  displayName: string
+  strategyName: string
 ): Promise<ExistingPeopleDBDocument | undefined> {
   if (userEmails.length === 0) {
     // indicate error since there are no valid email addresses!
     throw new Error(
-      `The ${displayName} user does not have any verified email addresses, and therefore cannot be logged in.`
+      `The ${strategyName} user does not have any verified email addresses, and therefore cannot be logged in.`
     );
   }
 
@@ -453,7 +463,7 @@ export async function identifyUser(
   // Confusing situation let's not allow this.
   if (matchingAccounts.length > 1) {
     throw new Error(
-      `The ${displayName} user's profile included more than one email address, of which more than one match existing accounts. Unsure how to proceed.`
+      `The ${strategyName} user's profile included more than one email address, of which more than one match existing accounts. Unsure how to proceed.`
     );
   }
   // return either the matching account or undefined if there were no matches
@@ -470,10 +480,23 @@ type GenericProfile = {
   [key: string]: any;
 };
 
+/**
+ * A generic SSO verify function that handles both login and registration
+ * flows. Used in OIDC/Google/SAML strategies.
+ *
+ * @param param0 req - The Express request object containing session information
+ * @param param0 strategyId - The identifier for the authentication strategy (e.g., 'google', 'saml')
+ * @param param0 strategyName - The display name for the authentication strategy (used in error messages)
+ * @param param0 profile - The user profile information returned from the SSO provider
+ * @param param0 emails - A list of verified email addresses extracted from the SSO profile
+ * @param param0 userDisplayName - A function to extract the display name from the profile for user creation
+ * @param param0 done - Callback function to signal authentication success/failure
+ * @returns A promise that resolves when the verification process is complete
+ */
 export async function ssoVerify({
   req,
   strategyId,
-  displayName,
+  strategyName,
   profile,
   emails,
   userDisplayName,
@@ -481,7 +504,7 @@ export async function ssoVerify({
 }: {
   req: Express.Request;
   strategyId: string;
-  displayName: string;
+  strategyName: string;
   profile: GenericProfile; // a profile
   emails: string[]; // a list of verified emails we have pulled out of the profile
   userDisplayName: (profile: GenericProfile) => string; // an optional function to pull a display name out of the profile
@@ -514,7 +537,7 @@ export async function ssoVerify({
 
   let matchedSingleUser: ExistingPeopleDBDocument | undefined;
   try {
-    matchedSingleUser = await identifyUser(emails, displayName);
+    matchedSingleUser = await identifyUser(emails, strategyName);
   } catch (e) {
     return done(e as Error, undefined);
   }
@@ -526,13 +549,24 @@ export async function ssoVerify({
     // This is a situation where they do have a verified email address but none
     // match
     if (matchedSingleUser === undefined) {
-      // We abort here - this is an error
-      return done(
-        new Error(
-          `This ${displayName} user account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.`
-        ),
-        undefined
-      );
+      // We apply the policy for unknown SSO users which may result in a
+      // new user or a rejection depending on the configuration
+
+      try {
+        const newDbUser = await applyProvisionPolicy({
+          emails,
+          profile,
+          strategyId,
+          userDisplayName,
+        });
+        // return express user
+        return done(
+          null,
+          await upgradeCouchUserToExpressUser({dbUser: newDbUser})
+        );
+      } catch (e) {
+        return done(e as Error, undefined);
+      }
     }
 
     // We have precisely one matching email address, let's ensure that this
@@ -570,35 +604,13 @@ export async function ssoVerify({
     // them (checking invite is okay)
     if (matchedSingleUser === undefined) {
       // So the invite is valid we should now start to setup the user
-      const [newDbUser] = await createUser({
-        // Use the first email (assumed okay to be primary lookup email)
-        email: emails[0],
-        username: emails[0],
-        name: userDisplayName(profile),
-        verified: true,
+
+      const newDbUser = await createAndAddNewUser({
+        emails,
+        profile,
+        strategyId,
+        userDisplayName,
       });
-
-      // something went wrong here
-      if (!newDbUser) {
-        throw Error(
-          'Internal system error: unable to create new user! Contact a system administrator.'
-        );
-      }
-
-      // add the google profile info
-      newDbUser.profiles[strategyId] = profile;
-
-      // add the other emails to the user emails array if necessary
-      addEmails({
-        user: newDbUser,
-        emails: emails.map(vEmail => {
-          // Mark as verified!
-          return {email: vEmail, verified: true} satisfies VerifiableEmail;
-        }),
-      });
-
-      // save the user
-      await saveCouchUser(newDbUser);
 
       // return express user
       return done(
@@ -608,16 +620,15 @@ export async function ssoVerify({
     }
 
     // NOTE: This is the situation where you are trying to 'register' a new
-    // account but one already exists with google with matching email - we
+    // account but one already exists with SSO with matching email - we
     // decide here to instead log them in - upgrading the potentially
     // unconnected account
 
     // We have precisely one matching email address, let's ensure that this
-    // account has the linked google profile, then return it (We can safely assert
+    // account has the linked SSO profile, then return it (We can safely assert
     // non-null here due to our previous filtering)
-    //const matchedSingleUser = matchingAccounts[0];
 
-    // Firstly - ensure they have the google profile linked
+    // Firstly - ensure they have the SSO profile linked
     if (!(strategyId in matchedSingleUser.profiles)) {
       matchedSingleUser.profiles[strategyId] = profile;
     }
@@ -640,4 +651,116 @@ export async function ssoVerify({
       await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
     );
   }
+}
+
+/**
+ * Create a new user from a profile that has come back from an SSO provider,
+ * and add the relevant profile
+ *
+ * @param emails - A list of verified email addresses associated with the user's profile
+ * @param profile - The full profile object returned from the SSO provider
+ * @param strategyId - The identifier for the authentication strategy (e.g., 'google', 'saml')
+ * @param userDisplayName - A function to extract the display name from the profile
+ * @returns The newly created user document
+ */
+async function createAndAddNewUser({
+  emails,
+  profile,
+  strategyId,
+  userDisplayName,
+}: {
+  emails: string[];
+  profile: any;
+  strategyId: string;
+  userDisplayName: (profile: any) => string;
+}) {
+  const [newDbUser] = await createUser({
+    // Use the first email (assumed okay to be primary lookup email)
+    email: emails[0],
+    username: emails[0],
+    name: userDisplayName(profile),
+    verified: true,
+  });
+
+  // something went wrong here
+  if (!newDbUser) {
+    throw Error(
+      'Internal system error: unable to create new user! Contact a system administrator.'
+    );
+  }
+
+  // add the profile info
+  newDbUser.profiles[strategyId] = profile;
+
+  // add the other emails to the user emails array if necessary
+  addEmails({
+    user: newDbUser,
+    emails: emails.map(vEmail => {
+      // Mark as verified!
+      return {email: vEmail, verified: true} satisfies VerifiableEmail;
+    }),
+  });
+
+  // save the user
+  await saveCouchUser(newDbUser);
+
+  return newDbUser;
+}
+
+export async function applyProvisionPolicy({
+  emails,
+  profile,
+  strategyId,
+  userDisplayName,
+}: {
+  emails: string[];
+  profile: any;
+  strategyId: string;
+  userDisplayName: (profile: any) => string;
+}) {
+  if (PROVISION_SSO_USERS_POLICY === 'reject') {
+    throw new Error(
+      'This account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.'
+    );
+  }
+
+  const newDbUser = await createAndAddNewUser({
+    emails,
+    profile,
+    strategyId,
+    userDisplayName,
+  });
+
+  if (PROVISION_SSO_USERS_POLICY === 'own-team') {
+    // Create a new team
+    // Give the user the team manager role on the team
+
+    // Prepare the team document with timestamps and creator information
+    const teamData: TeamsDBFields = {
+      name: `Personal: ${newDbUser.name}`,
+      description: `Personal team for ${newDbUser.name}.`,
+      createdBy: newDbUser._id,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+
+    const newTeam = await createTeamDocument(teamData);
+
+    // Add the team manager role for this user
+    addTeamRole({
+      user: newDbUser,
+      teamId: newTeam._id,
+      role: Role.TEAM_MANAGER,
+    });
+  }
+
+  if (PROVISION_SSO_USERS_POLICY === 'general-user') {
+    // Give the user a general user role
+    addGlobalRole({
+      user: newDbUser,
+      role: Role.GENERAL_USER,
+    });
+  }
+
+  return newDbUser;
 }
