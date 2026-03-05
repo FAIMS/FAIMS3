@@ -276,7 +276,7 @@ sequenceDiagram
     CouchDB-->>Passport: Return matching user(s) or null
 
     alt No matching emails
-        Passport-->>Server: Return error (no account exists)
+        Passport-->>Server: Return error (no account exists) unless SSO provisioning is configured
         Server->>Browser: Flash error, redirect to login page
     else One matching email
         Passport->>CouchDB: Ensure Google profile is linked to user

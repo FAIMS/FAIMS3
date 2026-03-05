@@ -33,6 +33,7 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
+import {ProvisionSSOUsersPolicy, ProvisionSSOUsersPolicySchema} from './auth/types';
 console.log(`Using API version from package.json: ${packageVersion}`);
 export const API_VERSION = packageVersion;
 
@@ -257,6 +258,21 @@ function developer_mode(): any {
   }
 }
 
+function provision_sso_users_policy(): ProvisionSSOUsersPolicy {
+  const policy = process.env.PROVISION_SSO_USERS_POLICY;
+  if (policy) {
+    try {
+      return ProvisionSSOUsersPolicySchema.parse(policy); // validate the value and throw if it's invalid
+    } catch (err) {
+      console.error(
+        `Invalid PROVISION_SSO_USERS_POLICY value: ${policy}, defaulting to 'reject'`
+      );
+    }
+  }
+  // default policy is 'reject' which rejects unknown users via SSO
+  return 'reject';
+}
+
 // 5 minute access token expiry by default
 const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
 
@@ -449,6 +465,7 @@ export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
 export const NEW_CONDUCTOR_URL = newConductorUrl();
 export const LOCAL_LOGIN_ENABLED = enable_local_login();
 export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
+export const PROVISION_SSO_USERS_POLICY = provision_sso_users_policy();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
