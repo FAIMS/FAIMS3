@@ -260,12 +260,7 @@ export class FaimsConductor extends Construct {
         KEY_SOURCE: 'AWS_SM',
         AWS_SECRET_KEY_ARN: props.privateKeySecretArn,
         NEW_CONDUCTOR_URL: props.webUrl,
-
-        ...(props.provisionSSOUsersPolicy
-          ? {
-              PROVISION_SSO_USERS_POLICY: props.provisionSSOUsersPolicy,
-            }
-          : {}),
+        PROVISION_SSO_USERS_POLICY: props.config.provisionSSOUsersPolicy,
 
         // Bugsnag (optional)
         ...(props.bugsnagApiKey ? {BUGSNAG_API_KEY: props.bugsnagApiKey} : {}),

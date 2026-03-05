@@ -338,6 +338,10 @@ const ConductorConfigSchema = z.object({
   conductorDockerImageTag: z.string().default('latest'),
   /** The prefix to use for the short codes in the app */
   shortCodePrefix: z.string().default('FAIMS'),
+  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
+  provisionSSOUsersPolicy: z
+    .enum(['own-team', 'general-user', 'reject'])
+    .default('reject'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
