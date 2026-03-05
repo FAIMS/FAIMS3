@@ -33,7 +33,7 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
-import {ProvisionSSOUsersPolicy} from './auth/types';
+import {ProvisionSSOUsersPolicy, ProvisionSSOUsersPolicySchema} from './auth/types';
 console.log(`Using API version from package.json: ${packageVersion}`);
 export const API_VERSION = packageVersion;
 
@@ -261,12 +261,12 @@ function developer_mode(): any {
 function provision_sso_users_policy(): ProvisionSSOUsersPolicy {
   const policy = process.env.PROVISION_SSO_USERS_POLICY;
   if (policy) {
-    if (
-      policy === 'own-team' ||
-      policy === 'general-user' ||
-      policy === 'reject'
-    ) {
-      return policy;
+    try {
+      return ProvisionSSOUsersPolicySchema.parse(policy); // validate the value and throw if it's invalid
+    } catch (err) {
+      console.error(
+        `Invalid PROVISION_SSO_USERS_POLICY value: ${policy}, defaulting to 'reject'`
+      );
     }
   }
   // default policy is 'reject' which rejects unknown users via SSO

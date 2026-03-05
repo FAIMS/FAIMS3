@@ -8,7 +8,7 @@ import z from 'zod';
 // general-user - creates a general user account for them
 // reject - rejects the login attempt
 
-const ProvisionSSOUsersPolicySchema = z.enum([
+export const ProvisionSSOUsersPolicySchema = z.enum([
   'own-team',
   'general-user',
   'reject',
