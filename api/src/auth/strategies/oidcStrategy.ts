@@ -19,21 +19,9 @@
 
 import {Profile, Strategy, VerifyCallback} from 'passport-openidconnect';
 
-import {
-  addEmails,
-  ExistingPeopleDBDocument,
-  VerifiableEmail,
-} from '@faims3/data-model';
-import {
-  createUser,
-  getCouchUserFromEmailOrUserId,
-  saveCouchUser,
-} from '../../couchdb/users';
-import {CustomSessionData} from '../../types';
-import {lookupAndValidateInvite, ssoVerify} from '../helpers';
-import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {providerAuthReturnUrl} from '../authRoutes';
 import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
+import {providerAuthReturnUrl} from '../authRoutes';
+import {ssoVerify} from '../helpers';
 import {OIDCAuthProviderConfig} from './strategyTypes';
 
 /**

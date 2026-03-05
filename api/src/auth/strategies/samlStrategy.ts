@@ -18,23 +18,11 @@
  *   (e.g., myGovID/FAS, ADFS, etc.)
  */
 
-import {
-  addEmails,
-  ExistingPeopleDBDocument,
-  VerifiableEmail,
-} from '@faims3/data-model';
 import {Profile, Strategy, VerifyWithRequest} from 'passport-saml';
 import {SignedXml} from 'xml-crypto';
 import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
-import {
-  createUser,
-  getCouchUserFromEmailOrUserId,
-  saveCouchUser,
-} from '../../couchdb/users';
-import {CustomSessionData} from '../../types';
 import {providerAuthReturnUrl} from '../authRoutes';
-import {lookupAndValidateInvite, ssoVerify} from '../helpers';
-import {upgradeCouchUserToExpressUser} from '../keySigning/create';
+import {ssoVerify} from '../helpers';
 import {SAMLAuthProviderConfig} from './strategyTypes';
 
 /**

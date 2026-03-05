@@ -25,21 +25,9 @@ import {
   VerifyCallback,
 } from 'passport-google-oauth20';
 
-import {
-  addEmails,
-  ExistingPeopleDBDocument,
-  VerifiableEmail,
-} from '@faims3/data-model';
 import {CONDUCTOR_PUBLIC_URL} from '../../buildconfig';
-import {
-  createUser,
-  getCouchUserFromEmailOrUserId,
-  saveCouchUser,
-} from '../../couchdb/users';
-import {CustomSessionData} from '../../types';
-import {identifyUser, lookupAndValidateInvite, ssoVerify} from '../helpers';
-import {upgradeCouchUserToExpressUser} from '../keySigning/create';
 import {providerAuthReturnUrl} from '../authRoutes';
+import {ssoVerify} from '../helpers';
 
 /**
  * The verify function receives the verified profile information from an IdP

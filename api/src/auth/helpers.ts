@@ -31,7 +31,6 @@ import {
   getPasswordErrorMessage,
 } from './passwordStrength';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
-import {create} from 'domain';
 import {createTeamDocument} from '../couchdb/teams';
 
 /**
