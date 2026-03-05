@@ -558,12 +558,17 @@ export async function ssoVerify({
           strategyId,
           userDisplayName,
         });
+
+        // persist the new user
+        saveCouchUser(newDbUser);
+
         // return express user
         return done(
           null,
           await upgradeCouchUserToExpressUser({dbUser: newDbUser})
         );
       } catch (e) {
+        // generally here because the policy is 'reject' but catch other errors too
         return done(e as Error, undefined);
       }
     }
@@ -610,6 +615,8 @@ export async function ssoVerify({
         strategyId,
         userDisplayName,
       });
+
+      saveCouchUser(newDbUser);
 
       // return express user
       return done(
@@ -660,7 +667,7 @@ export async function ssoVerify({
  * @param profile - The full profile object returned from the SSO provider
  * @param strategyId - The identifier for the authentication strategy (e.g., 'google', 'saml')
  * @param userDisplayName - A function to extract the display name from the profile
- * @returns The newly created user document
+ * @returns The newly created user document - need to call saveCouchUser() to persist
  */
 async function createAndAddNewUser({
   emails,
@@ -700,12 +707,19 @@ async function createAndAddNewUser({
     }),
   });
 
-  // save the user
-  await saveCouchUser(newDbUser);
-
   return newDbUser;
 }
 
+/**
+ * Apply the configured provisioning policy for this unknown user
+ * Either reject the login (throws an error) or create a new user and add the configured roles
+ *
+ * @param emails - array of valid emails for this user
+ * @param profile - SSO profile
+ * @param strategyId - the strategy the user was authenticated with
+ * @param userDisplayName - function to generate a display name for the user from the profile
+ * @returns a new database user document - need to call saveDbUser to persist
+ */
 export async function applyProvisionPolicy({
   emails,
   profile,
@@ -717,6 +731,7 @@ export async function applyProvisionPolicy({
   strategyId: string;
   userDisplayName: (profile: any) => string;
 }) {
+  // default option is to reject the login, throw an error to indicate this
   if (PROVISION_SSO_USERS_POLICY === 'reject') {
     throw new Error(
       'This account does not exist in our system. Instead, you should register for a new account by using an invite code shared with you.'
@@ -734,7 +749,6 @@ export async function applyProvisionPolicy({
     // Create a new team
     // Give the user the team manager role on the team
 
-    // Prepare the team document with timestamps and creator information
     const teamData: TeamsDBFields = {
       name: `Personal: ${newDbUser.name}`,
       description: `Personal team for ${newDbUser.name}.`,
@@ -751,15 +765,12 @@ export async function applyProvisionPolicy({
       teamId: newTeam._id,
       role: Role.TEAM_MANAGER,
     });
-  }
-
-  if (PROVISION_SSO_USERS_POLICY === 'general-user') {
+  } else if (PROVISION_SSO_USERS_POLICY === 'general-user') {
     // Give the user a general user role
     addGlobalRole({
       user: newDbUser,
       role: Role.GENERAL_USER,
     });
   }
-
   return newDbUser;
 }

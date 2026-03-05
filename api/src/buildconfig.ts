@@ -33,6 +33,7 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
+import {ProvisionSSOUsersPolicy} from './auth/types';
 console.log(`Using API version from package.json: ${packageVersion}`);
 export const API_VERSION = packageVersion;
 
@@ -256,13 +257,6 @@ function developer_mode(): any {
     return false;
   }
 }
-
-// Policies for provisioning users who login via SSO but don't yet
-// have an account.
-// team - creates a team for the user and assigns them as admin of that team
-// general-user - creates a general user account for them
-// reject - rejects the login attempt
-export type ProvisionSSOUsersPolicy = 'own-team' | 'general-user' | 'reject';
 
 function provision_sso_users_policy(): ProvisionSSOUsersPolicy {
   const policy = process.env.PROVISION_SSO_USERS_POLICY;
