@@ -17,6 +17,7 @@ export const APP_SHORT_NAME = import.meta.env.VITE_APP_SHORT_NAME || APP_NAME;
 export const WEB_URL = getConfigValue('VITE_WEB_URL');
 export const API_URL = getConfigValue('VITE_API_URL');
 export const APP_URL = getConfigValue('VITE_APP_URL');
+export const DOCS_URL = import.meta.env.VITE_DOCS_URL || '';
 export const APP_THEME = import.meta.env.VITE_APP_THEME || 'default';
 
 export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
