@@ -13,6 +13,7 @@ import {onChangeTemplatedFields} from './templatedFields';
 import {PreviewFormConfig} from './types';
 import {MapConfig} from '../../components/maps/types';
 import {FormManager} from './FormManager';
+import { logInfo } from '../../logging';
 const queryClient = new QueryClient();
 
 /**
@@ -59,11 +60,11 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
   const form = useForm({
     defaultValues: formValues,
     onSubmit: ({value}) => {
-      console.log('Form submitted:', value);
+      logInfo('Form submitted:', value);
     },
     listeners: {
       onChange: () => {
-        console.log('Form values changed:', form.state.values);
+        logInfo('Form values changed:', form.state.values);
         // First, lets fire any updates to the templated fields
         onChangeTemplatedFields({
           form,

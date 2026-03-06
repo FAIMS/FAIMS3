@@ -1,11 +1,11 @@
 import {useAuth} from '@/context/auth-provider';
 import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
-import {ProjectUIViewsets} from '@faims3/data-model';
+import {GetExportNotebookResponse, ProjectUIViewsets} from '@faims3/data-model';
+import {ChevronRight} from 'lucide-react';
 import {useState} from 'react';
 import {z} from 'zod';
 import {Field, Form} from '../form';
-import {ChevronRight} from 'lucide-react';
 
 type ExportScope = 'all' | 'single';
 
@@ -46,14 +46,17 @@ const ExportPhotosForm = () => {
    */
   const handleSingleFormSubmit = async ({form}: {form: string}) => {
     if (user) {
-      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=zip&viewID=${form}`;
-      const response = await fetch(downloadURL, {
+      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=zip&viewID=${form}`;
+      const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
       });
-      if (response.redirected) window.open(response.url, '_self');
+      const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
+        .url;
+
+      window.open(downloadUrl, '_self');
     }
     return undefined;
   };
@@ -63,14 +66,18 @@ const ExportPhotosForm = () => {
    */
   const handleAllFormsSubmit = async () => {
     if (user) {
-      const downloadURL = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=zip`;
-      const response = await fetch(downloadURL, {
+      const exportUrl = `${import.meta.env.VITE_API_URL}/api/notebooks/${projectId}/records/export?format=zip`;
+      const response = await fetch(exportUrl, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user.token}`,
         },
       });
-      if (response.redirected) window.open(response.url, '_self');
+
+      const downloadUrl = ((await response.json()) as GetExportNotebookResponse)
+        .url;
+
+      window.open(downloadUrl, '_self');
     }
     return undefined;
   };

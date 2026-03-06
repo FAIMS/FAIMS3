@@ -12,6 +12,7 @@ import {
   GeoJSONFeatureOrCollectionSchema,
   MapConfig,
 } from './types';
+import {logError, logWarn} from '../../logging';
 
 /**
  * Extracts and validates GeoJSON geometry from the field value
@@ -30,7 +31,7 @@ const extractGeoJSON = (value: any): GeoJSONFeatureOrCollection | undefined => {
     }
     return undefined;
   } catch (e) {
-    console.error('Failed to parse GeoJSON:', e);
+    logError(new Error('Failed to parse GeoJSON:'), {error: e});
     return undefined;
   }
 };
@@ -88,7 +89,7 @@ export const MapPreview: React.FC<MapPreviewProps> = props => {
     // Extract GeoJSON from the value
     const geoJSON = extractGeoJSON(props.value);
     if (!geoJSON) {
-      console.warn('No valid GeoJSON found in MapFormField value');
+      logWarn('No valid GeoJSON found in MapFormField value');
       return;
     }
 

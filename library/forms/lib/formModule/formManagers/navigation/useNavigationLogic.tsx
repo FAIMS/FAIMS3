@@ -9,6 +9,7 @@ import {
   UseNavigationLogicParams,
   UseNavigationLogicResult,
 } from './types';
+import {logError} from '../../../logging';
 
 /**
  * useNavigationLogic - Computes navigation button configurations and handlers.
@@ -55,9 +56,11 @@ export function useNavigationLogic({
         try {
           await flushSave();
         } catch (error) {
-          console.error(
-            '[useNavigationLogic] Failed to flush save before navigation:',
-            error
+          logError(
+            new Error(
+              '[useNavigationLogic] Failed to flush save before navigation:'
+            ),
+            {error}
           );
           // Continue with navigation - data is likely saved or will sync later
         } finally {

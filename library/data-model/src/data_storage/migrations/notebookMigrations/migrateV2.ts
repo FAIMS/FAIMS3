@@ -12,26 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {Ajv} from 'ajv';
-import {schema} from '../notebook-schema';
-import {FieldType, Notebook} from './initial';
+// Minimal types for notebook structure
+export type NotebookMetadata = {
+  [key: string]: unknown;
+};
+
+export type NotebookUISpec = {
+  fields: {[key: string]: any};
+  fviews: {[key: string]: any};
+  viewsets: {[key: string]: any};
+  visible_types: string[];
+};
+
+export type NotebookV1 = {
+  metadata: NotebookMetadata;
+  'ui-specification': NotebookUISpec;
+};
 
 /**
- * Migrate a notebook to the most recent notebook format
+ * Migrate a notebook to the V2.0 schema format.
+ *
+ * This is a special migration in that it is written to apply to any
+ * V1 or pre-V1 notebook and bring it up to the V2 schema format
+ * V2 is the first version that enters the formal migration versioning
+ * scheme so this has to cope with various earlier format changes and inconsistencies.
+ *
  * @param notebook - a notebook object that may be out of date or not even a notebook
  * @returns an updated version of the same notebook
  * @throws an Error if the notebook is not valid
  */
-export const migrateNotebook = (notebook: Notebook) => {
-  // error will be thrown by validateNotebook if invalid, let it go through
-  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as Notebook;
+export const migrateToV2 = (notebook: any) => {
+  // copy the notebook to avoid mutating the original, assert a type
+  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as NotebookV1;
 
-  // Remove null conditions before validating
+  // Remove null conditions
   removeNullFieldConditions(notebookCopy);
   removeNullFviewConditions(notebookCopy);
-
-  // we should maybe in future have validation against alternate notebook schema versions...
-  validateNotebook(notebookCopy);
 
   // move field labels from old locations to .label
   updateFieldLabels(notebookCopy);
@@ -77,23 +93,17 @@ export const migrateNotebook = (notebook: Notebook) => {
   // migrate deprecated RandomStyle fields to RichText
   migrateRandomStyleFields(notebookCopy);
 
+  // once we are here, we have a v2 notebook so update the version in metadata
+  notebookCopy.metadata.schema_version = '2.0';
+
   return notebookCopy;
 };
-
-export class ValidationError extends Error {
-  messages: string[];
-
-  constructor(messages: string[]) {
-    super();
-    this.messages = messages;
-  }
-}
 
 /**
  * Remove any fview-level condition properties
  * that are explicitly set to null.
  */
-function removeNullFviewConditions(notebook: Notebook) {
+function removeNullFviewConditions(notebook: NotebookV1) {
   const fviews = notebook['ui-specification']?.fviews;
   if (!fviews) return;
 
@@ -109,11 +119,11 @@ function removeNullFviewConditions(notebook: Notebook) {
  * Remove any fields that are set to null,
  * and remove null .condition properties.
  */
-function removeNullFieldConditions(notebook: Notebook) {
+function removeNullFieldConditions(notebook: NotebookV1) {
   const fields = notebook['ui-specification']?.fields;
   if (!fields) return;
 
-  const cleanedFields: {[key: string]: FieldType} = {};
+  const cleanedFields: {[key: string]: any} = {};
 
   for (const [fieldName, field] of Object.entries(fields)) {
     if (field === null) {
@@ -131,36 +141,13 @@ function removeNullFieldConditions(notebook: Notebook) {
 }
 
 /**
- *
- * @param n - an object that might be a notebook
- * @returns a validated Notebook object
- * @throws ValidationError if there is one, `messages` property contains error messages for presentation
- */
-export const validateNotebook = (n: unknown) => {
-  const ajv = new Ajv();
-  const validate = ajv.compile<Notebook>(schema);
-
-  const valid = validate(n);
-  if (!valid) {
-    if (validate.errors) {
-      console.log('Validation Errors:', validate.errors);
-      const errorTexts = validate.errors.map(
-        e => `${e.instancePath} ${e.message}`
-      );
-      throw new ValidationError(errorTexts);
-    }
-  }
-  return valid;
-};
-
-/**
  * Make sure all TemplatedStringField are marked as required
  *   - this makes them eligible to be HRID fields
  *
  * @param notebook A notebook that might be out of date, modified
  */
-export const requireTemplatedStringFields = (notebook: Notebook) => {
-  const fields: {[key: string]: FieldType} = {};
+export const requireTemplatedStringFields = (notebook: NotebookV1) => {
+  const fields: {[key: string]: any} = {};
 
   for (const fieldName in notebook['ui-specification'].fields) {
     const field = notebook['ui-specification'].fields[fieldName];
@@ -178,8 +165,8 @@ export const requireTemplatedStringFields = (notebook: Notebook) => {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const updateFieldLabels = (notebook: Notebook) => {
-  const fields: {[key: string]: FieldType} = {};
+const updateFieldLabels = (notebook: NotebookV1) => {
+  const fields: {[key: string]: any} = {};
 
   for (const fieldName in notebook['ui-specification'].fields) {
     const field = notebook['ui-specification'].fields[fieldName];
@@ -226,8 +213,8 @@ type OldMetaType = {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const updateAnnotationFormat = (notebook: Notebook) => {
-  const fields: {[key: string]: FieldType} = {};
+const updateAnnotationFormat = (notebook: NotebookV1) => {
+  const fields: {[key: string]: any} = {};
 
   for (const fieldName in notebook['ui-specification'].fields) {
     const field = notebook['ui-specification'].fields[fieldName];
@@ -255,15 +242,15 @@ const updateAnnotationFormat = (notebook: Notebook) => {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const updateHelperText = (notebook: Notebook) => {
-  const fields: {[key: string]: FieldType} = {};
+const updateHelperText = (notebook: NotebookV1) => {
+  const fields: {[key: string]: any} = {};
 
   for (const fieldName in notebook['ui-specification'].fields) {
     const field = notebook['ui-specification'].fields[fieldName];
 
     const params = field['component-parameters'];
     const originalValue = params?.helperText;
-    // TakePhoto used to use this]
+    // TakePhoto used to use this
     if (params?.helpertext) {
       params.helperText = originalValue || params.helpertext;
       delete params.helpertext;
@@ -294,7 +281,7 @@ type SectionType = {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const updateFormSectionMeta = (notebook: Notebook) => {
+const updateFormSectionMeta = (notebook: NotebookV1) => {
   const sections = notebook.metadata?.sections as SectionType;
   const fviews = notebook['ui-specification'].fviews;
   const prefix = 'sectiondescription';
@@ -318,8 +305,8 @@ const updateFormSectionMeta = (notebook: Notebook) => {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
-  const fields: {[key: string]: FieldType} = {};
+const fixAutoIncrementerInitialValue = (notebook: NotebookV1) => {
+  const fields: {[key: string]: any} = {};
 
   for (const fieldName in notebook['ui-specification'].fields) {
     const field = notebook['ui-specification'].fields[fieldName];
@@ -338,7 +325,7 @@ const fixAutoIncrementerInitialValue = (notebook: Notebook) => {
  * Move any hrid prefix fields to hridField in the viewset settings.
  * @param notebook A notebook that might be out of date, modified
  */
-const fixOldHridPrefix = (notebook: Notebook) => {
+const fixOldHridPrefix = (notebook: NotebookV1) => {
   const fieldToViewset: {[key: string]: string} = {};
 
   // Build map of fields to their containing viewsets
@@ -379,7 +366,7 @@ const fixOldHridPrefix = (notebook: Notebook) => {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const updateVisibleTypes = (notebook: Notebook) => {
+const updateVisibleTypes = (notebook: NotebookV1) => {
   if (!notebook['ui-specification'].visible_types) {
     notebook['ui-specification'].visible_types =
       Object.keys(notebook['ui-specification'].viewsets) || [];
@@ -390,7 +377,7 @@ const updateVisibleTypes = (notebook: Notebook) => {
  * Removes all validationSchema properties from notebook
  * @param notebook A notebook that might be out of date, modified
  */
-const removeValidationSchema = (notebook: Notebook) => {
+const removeValidationSchema = (notebook: NotebookV1) => {
   const fields = notebook['ui-specification']?.fields;
   if (!fields) return;
 
@@ -422,7 +409,7 @@ const removeValidationSchema = (notebook: Notebook) => {
  *},
  * @param notebook A notebook that might be out of date, modified
  */
-const migrateTextFields = (notebook: Notebook) => {
+const migrateTextFields = (notebook: NotebookV1) => {
   const fields = notebook['ui-specification']?.fields;
   if (!fields) return;
 
@@ -430,11 +417,12 @@ const migrateTextFields = (notebook: Notebook) => {
     const field = fields[fieldName];
 
     // Detect old TextField pattern
+    // at this point all more specialised text fields will have
+    // been converted so we convert any remaining TextField to FAIMSTextField
+    // because TextField is no longer supported
     if (
       field['component-namespace'] === 'formik-material-ui' &&
-      field['component-name'] === 'TextField' &&
-      field['type-returned'] === 'faims-core::String' &&
-      field['component-parameters']?.InputProps?.type === 'text'
+      field['component-name'] === 'TextField'
     ) {
       const p = field['component-parameters'];
       const params = {
@@ -456,7 +444,7 @@ const migrateTextFields = (notebook: Notebook) => {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const migrateEmailFields = (notebook: Notebook) => {
+const migrateEmailFields = (notebook: NotebookV1) => {
   const fields = notebook['ui-specification']?.fields;
   if (!fields) return;
 
@@ -493,7 +481,7 @@ const migrateEmailFields = (notebook: Notebook) => {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const migrateNumberFields = (notebook: Notebook) => {
+const migrateNumberFields = (notebook: NotebookV1) => {
   const fields = notebook['ui-specification']?.fields;
   if (!fields) return;
 
@@ -561,7 +549,7 @@ const migrateNumberFields = (notebook: Notebook) => {
  *
  * @param notebook A notebook that might be out of date, modified
  */
-const migrateRandomStyleFields = (notebook: Notebook) => {
+const migrateRandomStyleFields = (notebook: NotebookV1) => {
   const fields = notebook['ui-specification']?.fields;
   if (!fields) return;
 

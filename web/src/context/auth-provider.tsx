@@ -15,6 +15,7 @@ export interface User {
     name: string;
     email: string;
     isVerified: boolean;
+    profiles: Map<string, boolean>;
   };
   token: string;
   refreshToken: string;

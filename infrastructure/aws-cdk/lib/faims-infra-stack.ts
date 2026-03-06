@@ -145,8 +145,6 @@ export class FaimsInfraStack extends cdk.Stack {
       },
       authProviders: config.authProviders,
       localhostWhitelist: config.conductor.localhostWhitelist,
-      // Bugsnag
-      apiVersion: config.appVersion,
       bugsnagApiKey: config.bugMonitoring.bugsnagKey,
     });
 
@@ -177,7 +175,6 @@ export class FaimsInfraStack extends cdk.Stack {
         config.security.maximumLongLivedTokenDurationDays,
       // Pass in bugsnag config
       bugsnagKey: config.bugMonitoring.bugsnagKey,
-      appVersion: config.appVersion,
     });
 
     // Backup setup

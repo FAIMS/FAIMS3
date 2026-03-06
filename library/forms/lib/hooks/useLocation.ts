@@ -19,6 +19,7 @@
 
 import {Geolocation, Position} from '@capacitor/geolocation';
 import {useQuery, useQueryClient, UseQueryResult} from '@tanstack/react-query';
+import {logInfo, logWarn} from '../logging';
 
 export interface LocationOptions {
   /**
@@ -104,16 +105,14 @@ export function useCurrentLocation(
             }
           })
           .catch(error => {
-            console.warn('Failed to get accurate position:', error);
+            logWarn('Failed to get accurate position:', error);
           });
 
         // Return the cached position immediately
         return cachedPosition;
       } catch (error) {
         // If cached position fails, fall back to accurate position
-        console.log(
-          'No cached position available, getting accurate position...'
-        );
+        logInfo('No cached position available, getting accurate position...');
         const position = await Geolocation.getCurrentPosition({
           enableHighAccuracy: enableHighAccuracy,
           timeout: 15000,

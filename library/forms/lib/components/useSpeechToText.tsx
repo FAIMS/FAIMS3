@@ -1,6 +1,7 @@
 import {useState, useCallback, useEffect, useRef} from 'react';
 import {SpeechRecognition} from '@capgo/capacitor-speech-recognition';
 import type {PluginListenerHandle} from '@capacitor/core';
+import { logInfo, logWarn } from '../logging';
 
 /**
  * Speech recognition status states
@@ -155,9 +156,9 @@ export function useSpeechToText(
         const timestamp = new Date().toISOString().substr(11, 12);
         const prefix = `[SpeechToText:${instanceId.current} ${timestamp}]`;
         if (data !== undefined) {
-          console.log(`${prefix} ${message}`, data);
+          logInfo(`${prefix} ${message}`, data);
         } else {
-          console.log(`${prefix} ${message}`);
+          logInfo(`${prefix} ${message}`);
         }
       }
     },
@@ -244,7 +245,7 @@ export function useSpeechToText(
       return available;
     } catch (err) {
       debug('Availability check failed', err);
-      console.warn('Failed to check speech recognition availability:', err);
+      logWarn('Failed to check speech recognition availability:', err);
       setIsAvailable(false);
       return false;
     }
@@ -263,7 +264,7 @@ export function useSpeechToText(
       return granted;
     } catch (err) {
       debug('Permission check failed', err);
-      console.warn('Failed to check permissions:', err);
+      logWarn('Failed to check permissions:', err);
       return false;
     }
   }, [debug]);
@@ -361,7 +362,7 @@ export function useSpeechToText(
 
     if (isListeningRef.current) {
       debug('Already listening - ignoring startListening call');
-      console.warn('Already listening');
+      logWarn('Already listening');
       return;
     }
 
@@ -629,7 +630,7 @@ export function useSpeechToText(
       return languages;
     } catch (err) {
       debug('Failed to get supported languages', err);
-      console.warn('Failed to get supported languages:', err);
+      logWarn('Failed to get supported languages:', err);
       return [];
     }
   }, [debug]);
@@ -651,15 +652,15 @@ export function useSpeechToText(
       debug('Hook unmounting - cleaning up');
       clearFinalizeTimeout();
       if (isListeningRef.current) {
-        SpeechRecognition.stop().catch(console.warn);
+        SpeechRecognition.stop().catch(logWarn);
       }
       // Note: cleanupListeners is async but we can't await in cleanup
       // The listeners will be garbage collected anyway
       if (partialListenerRef.current) {
-        partialListenerRef.current.remove().catch(console.warn);
+        partialListenerRef.current.remove().catch(logWarn);
       }
       if (stateListenerRef.current) {
-        stateListenerRef.current.remove().catch(console.warn);
+        stateListenerRef.current.remove().catch(logWarn);
       }
     };
   }, []);

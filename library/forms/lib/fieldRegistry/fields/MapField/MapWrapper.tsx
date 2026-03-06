@@ -50,6 +50,7 @@ import proj4 from 'proj4';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {MapComponent} from '../../../components/maps/MapComponent';
 import {MapConfig} from '../../../components/maps/types';
+import {logError, logWarn} from '../../../logging';
 
 export type MapAction = 'save' | 'close';
 
@@ -150,7 +151,7 @@ function MapWrapper(props: MapProps) {
 
       // This should not happen
       if (!source) {
-        console.error('No source found for features layer');
+        logError(new Error('No source found for features layer'));
         return;
       }
 
@@ -252,7 +253,7 @@ function MapWrapper(props: MapProps) {
               typeof layer.getZIndex === 'function' ? layer.getZIndex() : -1;
             if (zIndex === 998) map.removeLayer(layer); // 999 is used by live cursor in mapcomponent.
           } catch (err) {
-            console.warn('Error while checking/removing layer:', err);
+            logWarn('Error while checking/removing layer:', err);
           }
         });
 

@@ -56,6 +56,7 @@ import {ViewRecordPage} from './gui/pages/viewRecord';
 import Workspace from './gui/pages/workspace';
 import {theme} from './gui/themes';
 import {AppUrlListener} from './native_hooks';
+import {VersionWarning} from './gui/components/VersionWarning';
 
 // =============================================================================
 // REACT QUERY CONFIGURATION
@@ -119,6 +120,9 @@ const RootLayout = () => {
     <>
       {/* Handle deep links and app URL schemes */}
       <AppUrlListener />
+
+      {/** Display app version warning if mismatched */}
+      <VersionWarning />
 
       {/* Main application chrome (header, sidebar, etc.) */}
       <MainLayout>

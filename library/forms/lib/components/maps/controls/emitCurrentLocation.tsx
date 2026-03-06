@@ -1,6 +1,7 @@
 import {Control} from 'ol/control';
 import src from '../icons/pin.svg';
 import {CreateDomIcon} from '../dom-icon';
+import { logWarn } from '../../../logging';
 
 /**
  * Configuration options for the UseCurrentLocation control
@@ -56,7 +57,7 @@ export const createSetPointToCurrentLocationControl = ({
    */
   const handleClick = (): void => {
     if (!locationAvailable) {
-      console.warn('Current location is not available');
+      logWarn('Current location is not available');
       return;
     }
     setPoint();

@@ -7,6 +7,7 @@ import {
 import Mustache from 'mustache';
 import {formDataExtractor} from '../../utils';
 import {FaimsForm} from '../types';
+import { logWarn } from '../../logging';
 
 /*
 Patch mustache to not escape values.
@@ -49,7 +50,7 @@ export function getRecordContextFromRecord({
   try {
     time = new Date(record.created).getTime();
   } catch (e) {
-    console.warn(
+    logWarn(
       'Failed to parse time from record. Falling back to current time. Err: ',
       e
     );
@@ -248,14 +249,12 @@ export function recomputeDerivedFields({
       // check we have a template prop
       const template = fieldDetails['component-parameters']?.template;
       if (!template) {
-        console.warn(
-          'TemplatedStringField missing template prop - cannot render.'
-        );
+        logWarn('TemplatedStringField missing template prop - cannot render.');
         continue;
       }
 
       if (typeof template !== 'string') {
-        console.warn('TemplatedStringField template prop is not a string.');
+        logWarn('TemplatedStringField template prop is not a string.');
         continue;
       }
       fieldsToBeUpdated.push({fieldName, template});

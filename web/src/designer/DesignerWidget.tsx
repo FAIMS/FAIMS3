@@ -36,11 +36,11 @@ import {
   RouteObject,
   Navigate,
 } from 'react-router-dom';
+import {migrateNotebook} from '@faims3/data-model';
 
 import {createDesignerStore} from './createDesignerStore';
 import globalTheme from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
-import {migrateNotebook} from './state/migrateNotebook';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
@@ -90,7 +90,7 @@ export function DesignerWidget({
       'ui-specification': notebook['ui-specification'].present,
     };
     // migrate the notebook - update any out of date fields or structures
-    const migrated: Notebook = migrateNotebook(flat);
+    const {migrated} = migrateNotebook(flat);
 
     // Inject in-memory designerIdentifier if missing
     Object.values(migrated['ui-specification'].fields).forEach(field => {

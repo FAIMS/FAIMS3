@@ -269,7 +269,7 @@
     "/notebooks/{id}/records/export": {
       "get": {
         "summary": "Generate download token for notebook records export",
-        "description": "Generates a signed JWT token and redirects to download endpoint for exporting notebook records in specified format. Supports CSV, ZIP, GeoJSON, and KML formats.",
+        "description": "Generates a signed JWT token and redirects to download endpoint for exporting notebook records in specified format. Supports CSV, ZIP, GeoJSON, and KML formats and a FULL export containing all formats.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -288,7 +288,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Form/view identifier (required for CSV format, optional for ZIP and GeoJSON/KML.)"
+            "description": "Form/view identifier (required for CSV format, optional for other formats.)"
           },
           {
             "name": "format",
@@ -296,7 +296,7 @@
             "required": true,
             "schema": {
               "type": "string",
-              "enum": ["csv", "zip", "geojson", "kml"]
+              "enum": ["csv", "zip", "geojson", "kml", "full"]
             },
             "description": "Export format. CSV requires viewID parameter."
           }

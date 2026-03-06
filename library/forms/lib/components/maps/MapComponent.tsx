@@ -43,6 +43,7 @@ import {createLayerToggle} from './controls/layer-toggle';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
 import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
+import { logWarn } from '../../logging';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;
@@ -245,7 +246,7 @@ export const MapComponent = (props: MapComponentProps) => {
       {enableHighAccuracy: true, timeout: 10000, maximumAge: 0},
       (position, err) => {
         if (err) {
-          console.warn('Geolocation error:', err.message || err);
+          logWarn('Geolocation error:', err.message || err);
           // Emit location unavailable on error
           window.dispatchEvent(
             new CustomEvent('map-location-availability-change', {
@@ -281,7 +282,7 @@ export const MapComponent = (props: MapComponentProps) => {
       // Clean up location watcher when component unmounts
       if (watchIdRef.current !== null) {
         Geolocation.clearWatch({id: watchIdRef.current}).catch(error =>
-          console.warn('Failed to clear GPS watch on unmount:', error)
+          logWarn('Failed to clear GPS watch on unmount:', error)
         );
         watchIdRef.current = null;
       }

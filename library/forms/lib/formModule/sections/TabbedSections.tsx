@@ -24,6 +24,7 @@ import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';
 import {getFieldId} from '../utils';
 import {FormSection} from './FormSection';
+import {logError} from '../../logging';
 
 // ============================================================================
 // Constants
@@ -88,10 +89,9 @@ const scrollToElement = (element: HTMLElement | null): void => {
         getComputedStyle(document.documentElement).getPropertyValue('--sat')
       );
     } catch (e) {
-      console.error(
-        'Failed to get safe area inset top:',
-        e,
-        'Defaulting to 100.'
+      logError(
+        new Error('Failed to get safe area inset top. Defaulting to 100.'),
+        {error: e}
       );
     }
 

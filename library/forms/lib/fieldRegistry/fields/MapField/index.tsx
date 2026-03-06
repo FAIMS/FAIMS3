@@ -33,6 +33,7 @@ import {MapRenderer} from '../../../rendering/fields/view/specialised/Mapping';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 import MapWrapper, {MapAction} from './MapWrapper';
+import {logError} from '../../../logging';
 
 const MapFieldPropsSchema = z.object({
   label: z.string().optional(),
@@ -178,7 +179,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
         props.setFieldData(pointFeature);
       })
       .catch(error => {
-        console.error('Failed to get current location:', error);
+        logError(new Error('Failed to get current location:'), {error});
         setNoPermission(true);
       });
   };

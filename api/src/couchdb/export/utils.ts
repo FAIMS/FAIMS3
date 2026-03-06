@@ -6,6 +6,29 @@ import {
 import {generateFilenameForAttachment} from './attachmentExport';
 
 /**
+ * Path component length limits.
+ *
+ * ZIP files support paths up to 65535 bytes, but many tools have issues with
+ * paths > 255 chars. We use conservative limits per component:
+ * - viewID: 30 chars (directory name)
+ * - fieldId: 30 chars (subdirectory name)
+ * - hrid (filename base): 40 chars
+ * - csv filename: 40
+ *
+ * With slashes, extension, and collision suffix, max path is ~175 chars.
+ * This leaves room for pathPrefix in full exports.
+ */
+export const MAX_VIEW_ID_LENGTH = 30;
+export const MAX_FIELD_ID_LENGTH = 30;
+export const MAX_HRID_LENGTH = 40;
+export const MAX_CSV_FILENAME_LENGTH = 40;
+
+/**
+ * Length of the hash suffix used when truncating long identifiers.
+ */
+export const HASH_SUFFIX_LENGTH = 6;
+
+/**
  * TODO it would be better to merge the header generation and value formatting
  * logic together - currently some parts are encoded twice in two different
  * ways.
@@ -144,7 +167,7 @@ export const convertDataForOutput = (
   viewsetId: string
 ) => {
   let result: {[key: string]: any} = {};
-  fields.map((field: any) => {
+  fields.forEach((field: any) => {
     if (field.name in data) {
       const formattedValue = csvFormatValue(
         field.name,
@@ -159,9 +182,117 @@ export const convertDataForOutput = (
         annotations[field.name] || {}
       );
       result = {...result, ...formattedValue, ...formattedAnnotation};
-    } else {
-      console.error('field missing in data', field.name, data);
     }
   });
   return result;
+};
+
+/**
+ * Simple deterministic hash function for strings.
+ * Returns a hex string of the specified length.
+ *
+ * Uses a variant of djb2 hash algorithm which is fast and has good distribution.
+ * This is NOT cryptographic - it's just for generating unique suffixes.
+ */
+export function simpleHash(str: string, length: number): string {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    // hash * 33 + char
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+    // Keep it as a 32-bit integer
+    hash = hash >>> 0;
+  }
+  // Convert to hex and pad/truncate to desired length
+  return hash.toString(16).padStart(length, '0').slice(0, length);
+}
+
+/**
+ * Truncates a string to a maximum length while preserving uniqueness.
+ *
+ * If the string is within the limit, returns it unchanged.
+ * If truncation is needed, keeps the start of the string and appends a
+ * deterministic hash of the full string, separated by underscore.
+ *
+ * Example:
+ *   truncateWithHash("short", 40) => "short"
+ *   truncateWithHash("very_long_identifier_that_exceeds_limit", 20)
+ *     => "very_long_i_a1b2c3d4"
+ *
+ * The hash ensures that different long strings produce different results,
+ * even if they share the same prefix.
+ *
+ * @param str - The string to potentially truncate
+ * @param maxLength - Maximum allowed length for the result
+ * @returns A string guaranteed to be <= maxLength, preserving uniqueness
+ */
+export function truncateWithHash(str: string, maxLength: number): string {
+  if (str.length <= maxLength) {
+    return str;
+  }
+
+  // Reserve space for: underscore + hash suffix
+  const prefixLength = maxLength - 1 - HASH_SUFFIX_LENGTH;
+
+  if (prefixLength < 1) {
+    // Edge case: maxLength is too small to fit prefix + hash
+    // Just return the hash (this shouldn't happen with our constants)
+    return simpleHash(str, maxLength);
+  }
+
+  const prefix = str.slice(0, prefixLength);
+  const hash = simpleHash(str, HASH_SUFFIX_LENGTH);
+
+  return `${prefix}_${hash}`;
+}
+
+/**
+ * Slugify base function - takes string and returns filename safe version
+ * @param v The input string to slugify
+ * @returns Cleaned / filename safe
+ */
+export function slugify(v: string): string {
+  return v
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_-]/g, '');
+}
+
+/**
+ * Helper to create a slugified filename from a label.
+ *
+ * Uses deterministic hash-based truncation to ensure that long labels
+ * produce unique filenames even if they share the same prefix.
+ */
+export const slugifyLabel = (label: string, maxLength = 50): string => {
+  const slugified = slugify(label);
+
+  if (slugified.length <= maxLength) {
+    return slugified;
+  }
+
+  // Reserve space for: underscore + hash suffix
+  const prefixLength = maxLength - 1 - HASH_SUFFIX_LENGTH;
+  const prefix = slugified.slice(0, prefixLength);
+  const hash = simpleHash(slugified, HASH_SUFFIX_LENGTH);
+
+  return `${prefix}_${hash}`;
+};
+
+/**
+ * Helper to ensure unique filenames in a list
+ */
+export const ensureUniqueFilename = (
+  baseFilename: string,
+  extension: string,
+  existingFilenames: string[]
+): string => {
+  let filename = `${baseFilename}.${extension}`;
+  let counter = 1;
+
+  while (existingFilenames.includes(filename)) {
+    filename = `${baseFilename}_${counter}.${extension}`;
+    counter++;
+  }
+
+  return filename;
 };

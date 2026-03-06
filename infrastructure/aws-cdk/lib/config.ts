@@ -182,6 +182,7 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
 
 const AuthProvidersConfigSchema = z
   .object({
+    disableLocalLogin: z.boolean().optional().default(false),
     providers: z.array(z.string()),
     secretArn: z.string(),
     config: z.record(
@@ -327,6 +328,8 @@ const DomainsConfigSchema = z.object({
 const ConductorConfigSchema = z.object({
   /** The title for this conductor instance, shown on listings page */
   name: z.string(),
+  /** Enable enhanced cluster observability? See https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-account-settings.html#container-insights-setting-enhanced */
+  enhancedObservability: z.boolean().optional(),
   /** The description shown underneath as a sub heading */
   description: z.string(),
   /** Conductor docker image e.g. org/faims3-api */
@@ -335,12 +338,18 @@ const ConductorConfigSchema = z.object({
   conductorDockerImageTag: z.string().default('latest'),
   /** The prefix to use for the short codes in the app */
   shortCodePrefix: z.string().default('FAIMS'),
+  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
+  provisionSSOUsersPolicy: z
+    .enum(['own-team', 'general-user', 'reject'])
+    .default('reject'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
   memory: z.number().int().positive(),
   /** Auto scaling configuration for the Conductor service */
   autoScaling: z.object({
+    /** The desired number of tasks to run (general stable target) */
+    desiredCapacity: z.number().int().positive(),
     /** The minimum number of tasks to run */
     minCapacity: z.number().int().positive(),
     /** The maximum number of tasks that can be run */
@@ -425,8 +434,6 @@ export const ConfigSchema = z.object({
   /** The name of the stack to deploy to cloudformation. Note that changing
    * this will completely redeploy your application. */
   stackName: z.string(),
-  /** The version tag for this release of the app */
-  appVersion: z.string().optional(),
   /** Attributes of the hosted zone to use */
   hostedZone: z.object({
     id: z.string(),

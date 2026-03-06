@@ -1,16 +1,163 @@
 import {
+  HydratedDataRecord,
   ProjectID,
   notebookRecordIterator,
-  HydratedDataRecord,
 } from '@faims3/data-model';
 import archiver from 'archiver';
-import {getNanoDataDb, getDataDb} from '..';
+import {getDataDb, getNanoDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
+import {
+  MAX_FIELD_ID_LENGTH,
+  MAX_HRID_LENGTH,
+  MAX_VIEW_ID_LENGTH,
+  slugify,
+  truncateWithHash,
+} from './utils';
 
 /**
  * Maximum number of file streams to process concurrently when building the ZIP archive.
  */
 const MAX_CONCURRENT_STREAMS = 15;
+
+/**
+ * Statistics returned from attachment export operations
+ */
+export interface AttachmentAppendStats {
+  /** Total number of files added to the archive */
+  fileCount: number;
+  /** Per-view breakdown of attachment counts */
+  perViewCounts: Map<string, number>;
+}
+
+/**
+ * Appends notebook attachments to an existing archiver instance using a single database pass.
+ *
+ * This is the core reusable function that handles streaming attachments
+ * into any archive. It uses bounded concurrency to manage memory efficiently.
+ *
+ * Architecture:
+ * 1. Single iteration through all records (no viewID filter)
+ * 2. For each record, processes attachment fields
+ * 3. Streams file data directly from database → archive
+ * 4. Maintains a pool of concurrent streams (bounded by MAX_CONCURRENT_STREAMS)
+ * 5. Routes attachment counts to appropriate view based on record.type
+ *
+ * @param projectId - The project ID
+ * @param archive - An existing archiver instance to append files to
+ * @param targetViewID - Optional specific view to export (exports all views if omitted)
+ * @param pathPrefix - Path prefix for files in the archive (e.g., 'attachments/')
+ * @returns Statistics about the exported attachments
+ */
+export const appendAttachmentsToArchive = async ({
+  projectId,
+  archive,
+  targetViewID,
+  pathPrefix = '',
+}: {
+  projectId: ProjectID;
+  archive: archiver.Archiver;
+  targetViewID?: string;
+  pathPrefix?: string;
+}): Promise<AttachmentAppendStats> => {
+  const stats: AttachmentAppendStats = {
+    fileCount: 0,
+    perViewCounts: new Map(),
+  };
+
+  // Get UI spec to know all valid view IDs
+  const uiSpec = await getProjectUIModel(projectId);
+  const allViewIds = Object.keys(uiSpec.viewsets);
+
+  // Initialize per-view counts
+  for (const viewId of allViewIds) {
+    stats.perViewCounts.set(viewId, 0);
+  }
+
+  // Initialize database connections
+  const dataDb = await getDataDb(projectId);
+  const nanoDb = await getNanoDataDb(projectId);
+
+  // Track all filenames to prevent collisions in the archive
+  const filenames: string[] = [];
+
+  // Pool of active file streaming promises for concurrency management
+  const activeStreams = new Set<Promise<void>>();
+
+  // Single iteration through ALL records (or filtered by targetViewID if specified)
+  const iterator = await notebookRecordIterator({
+    projectId,
+    filterDeleted: true,
+    dataDb,
+    uiSpecification: uiSpec,
+    viewID: targetViewID, // undefined = all records, otherwise filter by view
+    includeAttachments: false, // Critical: don't load attachment binary data
+  });
+
+  let {record, done} = await iterator.next();
+
+  /**
+   * Main processing loop with bounded concurrency.
+   *
+   * This loop continues until:
+   * 1. No more records to process (done === true), AND
+   * 2. All active streams have completed (activeStreams.size === 0)
+   */
+  while (!done || activeStreams.size > 0) {
+    // Fill the stream pool up to the concurrency limit
+    while (!done && activeStreams.size < MAX_CONCURRENT_STREAMS) {
+      if (record !== null) {
+        const viewID = record.type;
+
+        // Start processing this record's attachments asynchronously
+        const streamPromises = processRecordAttachments({
+          viewID,
+          record,
+          nanoDb,
+          archive,
+          filenames,
+          pathPrefix,
+        });
+
+        // Add to active pool and set up cleanup handlers
+        for (const streamPromise of streamPromises) {
+          activeStreams.add(streamPromise);
+          streamPromise
+            .then(() => {
+              stats.fileCount++;
+              stats.perViewCounts.set(
+                viewID,
+                (stats.perViewCounts.get(viewID) || 0) + 1
+              );
+            })
+            .catch(err => {
+              console.error(
+                `[ZIP] Error processing record ${record?.record_id}:`,
+                err
+              );
+            })
+            .finally(() => {
+              activeStreams.delete(streamPromise);
+            });
+        }
+      }
+
+      // Advance to next record
+      const next = await iterator.next();
+      record = next.record;
+      done = next.done;
+    }
+
+    /**
+     * Wait for at least one stream to complete before continuing.
+     * This prevents the loop from spinning when at max concurrency.
+     */
+    if (activeStreams.size > 0) {
+      await Promise.race(activeStreams);
+    }
+  }
+
+  return stats;
+};
 
 /**
  * Streams notebook files as a ZIP archive directly to a writable stream.
@@ -20,7 +167,7 @@ const MAX_CONCURRENT_STREAMS = 15;
  * notebook records that may contain hundreds or thousands of attachments.
  *
  * Architecture:
- * 1. Iterates through notebook records one at a time
+ * 1. Single iteration through notebook records
  * 2. For each record, processes attachment fields
  * 3. Streams file data directly from database → archive → output stream
  * 4. Maintains a pool of concurrent streams (bounded by MAX_CONCURRENT_STREAMS)
@@ -32,8 +179,7 @@ const MAX_CONCURRENT_STREAMS = 15;
  * - Attachment data is excluded from record hydration
  *
  * File Structure:
- * - Single view mode: `fieldId/hrid-fieldId.ext` (e.g., `photo/REC001-photo.jpg`)
- * - Multi view mode: `viewId/fieldId/hrid-fieldId.ext` (e.g., `survey1/photo/REC001-photo.jpg`)
+ * `viewId/fieldId/hrid.ext` (e.g., `survey1/photo/REC001.jpg`)
  *
  * @param projectId - The ID of the project containing the notebook
  * @param targetViewID - The ID of the view to export (if omitted, exports all views)
@@ -50,103 +196,20 @@ export const streamNotebookFilesAsZip = async ({
   targetViewID?: string;
   res: NodeJS.WritableStream;
 }): Promise<void> => {
-  // Statistics tracking for logging and debugging
-  let fileCount = 0;
-
   try {
-    // If we have a view ID specified, then use only that iterator - otherwise
-    // go through all of them
-    let relevantViews: string[] = [];
-    if (!targetViewID) {
-      // Get the ui spec
-      const uiSpec = await getProjectUIModel(projectId);
-
-      // Find the relevant viewset IDs
-      relevantViews = Array.from(Object.keys(uiSpec.viewsets));
-    } else {
-      relevantViews = [targetViewID];
-    }
-
-    // Create ZIP archive with maximum compression
+    // Create ZIP archive with minimum compression (images are already compressed)
     const archive = createConfiguredArchive(res);
 
-    // Initialize database connection and create record iterator
-    const nanoDb = await getNanoDataDb(projectId);
-
-    // Pool of active file streaming promises for concurrency management
-    const activeStreams = new Set<Promise<void>>();
-
-    for (const viewID of relevantViews) {
-      // Get an efficient iterator of all notebook records (attachments not DL'd)
-      const iterator = await createNotebookRecordIterator(
-        projectId,
-        viewID,
-        false // Critical: exclude attachment data to avoid memory bloat
-      );
-
-      // Track all filenames to prevent collisions in the archive
-      const filenames: string[] = [];
-
-      // Begin iteration
-      let {record, done} = await iterator.next();
-
-      /**
-       * Main processing loop with bounded concurrency.
-       *
-       * This loop continues until:
-       * 1. No more records to process (done === true), AND
-       * 2. All active streams have completed (activeStreams.size === 0)
-       */
-      while (!done || activeStreams.size > 0) {
-        // Fill the stream pool up to the concurrency limit
-        while (!done && activeStreams.size < MAX_CONCURRENT_STREAMS) {
-          if (record !== null) {
-            // Start processing this record's attachments asynchronously
-            const streamPromises = processRecord({
-              viewID,
-              record,
-              nanoDb,
-              archive,
-              filenames,
-            });
-
-            // Add to active pool and set up cleanup handlers
-            for (const streamPromise of streamPromises) {
-              activeStreams.add(streamPromise);
-              streamPromise
-                .then(() => {
-                  fileCount++;
-                })
-                .catch(err => {
-                  console.error(
-                    `[ZIP] Error processing record ${record?.record_id}:`,
-                    err
-                  );
-                })
-                .finally(() => {
-                  activeStreams.delete(streamPromise);
-                });
-            }
-          }
-
-          // Advance to next record
-          const next = await iterator.next();
-          record = next.record;
-          done = next.done;
-        }
-
-        /**
-         * Wait for at least one stream to complete before continuing.
-         * This prevents the loop from spinning when at max concurrency.
-         */
-        if (activeStreams.size > 0) {
-          await Promise.race(activeStreams);
-        }
-      }
-    }
+    // Use the shared append function
+    const stats = await appendAttachmentsToArchive({
+      projectId,
+      archive,
+      targetViewID,
+      pathPrefix: '', // No prefix for standalone ZIP export
+    });
 
     // Handle edge case: no attachments found in any records
-    if (fileCount === 0) {
+    if (stats.fileCount === 0) {
       console.log('[ZIP] No attachments found, aborting archive creation');
       archive.abort();
       return;
@@ -166,47 +229,17 @@ export const streamNotebookFilesAsZip = async ({
 };
 
 /**
- * Creates a notebook record iterator configured for efficient attachment streaming.
- *
- * IMPORTANT: Sets includeAttachments=false to avoid loading attachment binary data
- * into memory during iteration. We only need metadata (attachment_id, filename, type)
- * which is included in the record structure regardless of this flag.
- *
- * @param projectId - The project identifier
- * @param viewID - The view identifier for filtering
- * @param includeAttachments - Whether to load full attachment data (always false for streaming)
- * @returns An async iterator over hydrated records
- */
-async function createNotebookRecordIterator(
-  projectId: ProjectID,
-  viewID: string,
-  includeAttachments = false
-) {
-  const dataDb = await getDataDb(projectId);
-  const uiSpecification = await getProjectUIModel(projectId);
-
-  return notebookRecordIterator({
-    projectId,
-    filterDeleted: true, // Exclude deleted records from export
-    dataDb,
-    uiSpecification,
-    viewID,
-    includeAttachments, // False to prevent memory bloat from large attachments
-  });
-}
-
-/**
  * Creates and configures an archiver instance with proper error handling.
  *
  * Configuration:
  * - Format: ZIP
- * - Compression level: 9 (maximum compression)
+ * - Compression level: 1 (minimum - PNGs/JPEGs are already compressed)
  * - Error handling: Warnings logged, errors thrown
  *
  * @param outputStream - The destination stream for the ZIP archive
  * @returns Configured archiver instance ready to accept files
  */
-function createConfiguredArchive(
+export function createConfiguredArchive(
   outputStream: NodeJS.WritableStream
 ): archiver.Archiver {
   const archive = archiver('zip', {
@@ -245,31 +278,28 @@ function createConfiguredArchive(
  * 4. Streams the file data from database directly into the archive
  * 5. Returns promises for all streams initiated
  *
- * The returned promises allow the caller to manage concurrency across multiple
- * records while still processing attachments within a single record in parallel.
- *
  * @param record - The hydrated data record containing field metadata
  * @param nanoDb - Database instance for streaming attachment data
  * @param archive - The archiver instance to append files to
  * @param filenames - Array tracking all filenames to prevent duplicates
- * @param recordCount - Current record number (for logging)
- * @param fileCount - Current file number (for logging)
- * @param viewID - The view identifier (used in multi-view mode for folder structure)
- * @param includeViewIDPrefix - Whether to include viewID in the file path
+ * @param viewID - The view identifier (used in folder structure)
+ * @param pathPrefix - Prefix for file paths in the archive
  * @returns Array of promises, one for each attachment stream initiated
  */
-function processRecord({
+function processRecordAttachments({
   record,
   nanoDb,
   archive,
   filenames,
   viewID,
+  pathPrefix,
 }: {
   record: HydratedDataRecord;
   nanoDb: any;
   archive: archiver.Archiver;
   filenames: string[];
   viewID: string;
+  pathPrefix: string;
 }): Promise<void>[] {
   const promises: Promise<void>[] = [];
 
@@ -304,7 +334,7 @@ function processRecord({
     // Process each attachment in the field
     for (const {attachment_id, file_type} of attachmentList) {
       // Generate a unique, collision-free filename for the archive
-      const fullFileName = generateFilenameForAttachment({
+      const baseFilename = generateFilenameForAttachment({
         filenames,
         fileMimeType: file_type,
         hrid: record.hrid ?? record.record_id,
@@ -312,14 +342,17 @@ function processRecord({
         viewID,
       });
 
+      // Apply path prefix if provided
+      const fullFileName = pathPrefix
+        ? `${pathPrefix}${baseFilename}`
+        : baseFilename;
+
       // Track this filename to prevent duplicates
-      filenames.push(fullFileName);
+      filenames.push(baseFilename);
 
       /**
        * Stream the attachment directly from database into the archive.
        * This avoids loading the entire file into memory.
-       *
-       * The database returns a readable stream that we pipe into the archiver.
        */
       const fileReadStream = nanoDb.attachment.getAsStream(
         attachment_id,
@@ -331,7 +364,6 @@ function processRecord({
 
       /**
        * Create a promise that resolves when the stream completes.
-       * These promises are returned to the caller for concurrency management.
        */
       const streamPromise = new Promise<void>((resolve, reject) => {
         fileReadStream.on('end', () => {
@@ -353,26 +385,21 @@ function processRecord({
 /**
  * Generates a unique filename for an attachment within the ZIP archive.
  *
- * Filename structure:
- * - Single view mode: `{fieldId}/{hrid}-{fieldId}.{extension}`
- *   Example: `photo/REC001-photo.jpg`
- * - Multi view mode: `{viewID}/{fieldId}/{hrid}-{fieldId}.{extension}`
- *   Example: `survey1/photo/REC001-photo.jpg`
+ * Filename structure: `{viewID}/{fieldId}/{hrid}.{extension}`
+ * Example: `survey1/photo/REC001.jpg`
+ *
+ * Each path component is truncated to a safe length if necessary, using a
+ * deterministic hash suffix to preserve uniqueness. This ensures the total
+ * path length stays within filesystem and ZIP limits.
  *
  * If a filename collision is detected, a numeric suffix is appended:
- * `photo/REC001-photo_1.jpg`, `photo/REC001-photo_2.jpg`, etc.
- *
- * This structure:
- * - Groups files by field type in subdirectories
- * - In multi-view mode, adds an additional layer grouping by view
- * - Makes filenames human-readable and sortable
- * - Preserves information about the source record and field
+ * `survey1/photo/REC001_1.jpg`, `survey1/photo/REC001_2.jpg`, etc.
  *
  * @param file - Optional File object (for browser contexts)
  * @param fileMimeType - MIME type of the file
  * @param fieldId - Field identifier (used in filename and directory)
  * @param hrid - Human-readable record ID
- * @param viewID - Optional view identifier (used in multi-view mode)
+ * @param viewID - View identifier (used in folder structure)
  * @param filenames - Array of existing filenames to check for collisions
  * @returns A unique filename safe for use in the ZIP archive
  */
@@ -406,28 +433,27 @@ export const generateFilenameForAttachment = ({
   const type = file?.type || fileMimeType || undefined;
 
   // Look up extension, default to 'dat' for unknown types
-  const extension = type ? fileTypes[type] : 'dat';
+  const extension = type ? (fileTypes[type] ?? 'dat') : 'dat';
 
-  // Generate base filename with consistent structure
-  // Multi-view mode: viewID/fieldId/hrid-fieldId.ext
-  // Single-view mode: fieldId/hrid-fieldId.ext
-  const baseFilename = `${viewID}/${fieldId}/${hrid}`;
+  // Slugify each component first (before length limiting)
+  // This ensures the hash is computed on the slugified version
+  const slugifiedViewID = slugify(viewID);
+  const slugifiedFieldId = slugify(fieldId);
+  const slugifiedHrid = slugify(hrid);
 
-  const slugify = (filename: string) => {
-    return (
-      filename
-        // replace spaces with underscores
-        .replace(/\s+/g, '_')
-        // remove any unsafe characters
-        .replace(/[^a-zA-Z0-9\][_/-]/g, '_')
-    );
-  };
+  // Apply length limits with deterministic truncation
+  const safeViewID = truncateWithHash(slugifiedViewID, MAX_VIEW_ID_LENGTH);
+  const safeFieldId = truncateWithHash(slugifiedFieldId, MAX_FIELD_ID_LENGTH);
+  const safeHrid = truncateWithHash(slugifiedHrid, MAX_HRID_LENGTH);
+
+  // Build the base filename with safe components
+  const baseFilename = `${safeViewID}/${safeFieldId}/${safeHrid}`;
 
   // Handle collisions by appending numeric suffix
   let postfix = 1;
-  let fullFilename = `${slugify(baseFilename)}.${extension}`;
+  let fullFilename = `${baseFilename}.${extension}`;
   while (filenames.includes(fullFilename)) {
-    fullFilename = `${slugify(baseFilename)}_${postfix}.${extension}`;
+    fullFilename = `${baseFilename}_${postfix}.${extension}`;
     postfix += 1;
   }
 

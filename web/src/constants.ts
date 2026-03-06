@@ -207,16 +207,20 @@ function getBugsnagApiKey(): string | undefined {
 export const BUGSNAG_API_KEY = getBugsnagApiKey();
 
 /**
- * Gets the API version from environment variables.
- * @returns The API version, or undefined if not configured.
+ * Gets the app version from Vite's __APP_VERSION__ replacement or environment variables.
+ * Falls back to 'unknown' if not configured.
+ * @returns The app version.
  */
-function getVersion(): string | undefined {
-  const version = import.meta.env.VITE_APP_VERSION as string | undefined;
-  if (version === '' || version === undefined) {
-    console.log('VITE_APP_VERSION not set');
-    return undefined;
+function getVersion(): string {
+  // First try the Vite define replacement (set at build time)
+  const version = __APP_VERSION__;
+  if (version) {
+    console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
+    return version;
   }
-  return version;
+
+  console.warn('__APP_VERSION__ not set in build. Using "unknown"');
+  return 'unknown';
 }
 
 export const APP_VERSION = getVersion();

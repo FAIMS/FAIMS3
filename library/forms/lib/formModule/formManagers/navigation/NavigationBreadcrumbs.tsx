@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {FormNavigationContext, FullFormConfig, RedirectInfo} from '../types';
+import {logError} from '../../../logging';
 
 export interface BreadcrumbItem {
   label: string; // HRID
@@ -90,9 +91,11 @@ export const FormBreadcrumbs = ({
             lineageIndex: i,
           });
         } catch (error) {
-          console.error(
-            `Failed to hydrate record ${entry.recordId} for breadcrumb:`,
-            error
+          logError(
+            new Error(
+              `Failed to hydrate record ${entry.recordId} for breadcrumb:`
+            ),
+            {error}
           );
           // Still add entry with fallback label
           items.push({

@@ -74,8 +74,6 @@ export const GeneratePasswordReset = ({
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const {user} = useAuth();
-  if (!user) return null;
-  if (!userId) return null;
 
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const {data, isPending, mutate, error, isError, reset} = useMutation({
@@ -85,7 +83,7 @@ export const GeneratePasswordReset = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${user!.token}`,
         },
         body: JSON.stringify({
           email: id,
@@ -114,8 +112,12 @@ export const GeneratePasswordReset = ({
 
   const handleRetry = () => {
     reset();
-    mutate({id: userId});
+    mutate({id: userId!});
   };
+
+  // early returns are here because we need the hooks above to always run in the same order.
+  if (!user) return null;
+  if (!userId) return null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

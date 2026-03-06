@@ -30,8 +30,8 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {useCallback, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import CloseIcon from '@mui/icons-material/Close';
-import {ValidationError, migrateNotebook} from '../state/migrateNotebook';
 import {downloadNotebook} from '../state/localStorage';
+import {migrateNotebook} from '@faims3/data-model';
 
 const VisuallyHiddenInput = styled('input')({
   clip: 'rect(0 0 0 0)',
@@ -111,11 +111,11 @@ export const NotebookLoader = () => {
   const loadFn = useCallback(
     (notebook: Notebook) => {
       try {
-        const updatedNotebook = migrateNotebook(notebook);
-        dispatch({type: 'metadata/loaded', payload: updatedNotebook.metadata});
+        const {migrated} = migrateNotebook(notebook);
+        dispatch({type: 'metadata/loaded', payload: migrated.metadata});
         dispatch({
           type: 'ui-specification/loaded',
-          payload: updatedNotebook['ui-specification'],
+          payload: migrated['ui-specification'],
         });
         dispatch({type: 'CLEAR_HISTORY'});
         dispatch({type: 'modifiedStatus/resetFlag', payload: false});

@@ -152,6 +152,9 @@ export interface Server {
   // What is the URL for the server?
   serverUrl: string;
 
+  // What is the reported version of the server?
+  serverVersion?: string;
+
   // Server unique ID
   serverId: string;
 
@@ -184,6 +187,7 @@ export type ServerIdToServerMap = {[serverId: string]: Server};
 export interface ProjectsState {
   servers: ServerIdToServerMap;
   isInitialised: boolean;
+  selectedServerId?: string;
 }
 
 // UTILITY FUNCTIONS
@@ -211,6 +215,20 @@ const projectsSlice = createSlice({
     },
 
     /**
+     * Sets the selected server ID if there are multiple servers
+     */
+    selectServer: (state, action: PayloadAction<string>) => {
+      const serverId = action.payload;
+      if (!state.servers[serverId]) {
+        throw new Error(
+          `Cannot select server with ID ${serverId} since it does not exist.`
+        );
+      }
+      console.log(`Selecting server with ID ${serverId}`);
+      state.selectedServerId = serverId;
+    },
+
+    /**
      * Adds a new server - currently this is used only during initialisation but
      * could eventually form a dynamic server management system
      */
@@ -218,6 +236,7 @@ const projectsSlice = createSlice({
       state,
       action: PayloadAction<{
         serverId: string;
+        serverVersion?: string;
         serverTitle: string;
         serverUrl: string;
         couchDbUrl?: string;
@@ -232,10 +251,12 @@ const projectsSlice = createSlice({
         serverTitle,
         serverUrl,
         couchDbUrl,
+        serverVersion,
       } = action.payload;
       // Create a new server with no projects
       state.servers[serverId] = {
         projects: {},
+        serverVersion,
         couchDbUrl,
         serverId,
         description,
@@ -243,6 +264,10 @@ const projectsSlice = createSlice({
         serverUrl,
         shortCodePrefix,
       };
+      // If this was the first server added, select it by default
+      if (Object.keys(state.servers).length === 1) {
+        state.selectedServerId = serverId;
+      }
     },
 
     /**
@@ -252,14 +277,21 @@ const projectsSlice = createSlice({
       state,
       action: PayloadAction<{
         serverId: string;
+        serverVersion?: string;
         serverTitle: string;
         serverUrl: string;
         shortCodePrefix: string;
         description: string;
       }>
     ) => {
-      const {serverId, description, serverTitle, shortCodePrefix, serverUrl} =
-        action.payload;
+      const {
+        serverId,
+        serverVersion,
+        description,
+        serverTitle,
+        shortCodePrefix,
+        serverUrl,
+      } = action.payload;
       if (!state.servers[serverId]) {
         throw Error(`Could not find server with ID: ${serverId}`);
       }
@@ -275,6 +307,7 @@ const projectsSlice = createSlice({
 
         // Other details we overwrite
         serverId,
+        serverVersion,
         serverTitle,
         serverUrl,
         shortCodePrefix,
@@ -1088,6 +1121,26 @@ export const selectAllProjects = createSelector(
 );
 
 /**
+ * Returns the selected server if there is one selected and it is present in the state
+ * @param state The projects state
+ * @returns The selected server or undefined
+ */
+export const getSelectedServer = createSelector(
+  (state: RootState) => state.projects,
+  state => {
+    if (!state.selectedServerId) {
+      // in the case where we don't have a selected server ID,
+      // we return the first server if there is one, otherwise undefined
+      if (Object.keys(state.servers).length > 0) {
+        return Object.values(state.servers)[0];
+      }
+      return undefined;
+    }
+    return state.servers[state.selectedServerId] ?? undefined;
+  }
+);
+
+/**
  * Returns all servers as an array.
  * Memoized to prevent unnecessary re-renders.
  *
@@ -1097,6 +1150,22 @@ export const selectAllProjects = createSelector(
 export const selectServers = createSelector(
   (state: RootState) => state.projects.servers,
   servers => Object.values(servers)
+);
+
+/**
+ * Targeted selector that only returns the active server's version.
+ * This prevents re-renders when other servers or server properties change.
+ * Returns undefined if no active server or server has no version.
+ */
+export const selectActiveServerVersion = createSelector(
+  [
+    (state: RootState) => state.projects.servers,
+    (state: RootState) => selectActiveServerId(state),
+  ],
+  (servers, activeServerId): string | undefined => {
+    if (!activeServerId) return undefined;
+    return servers[activeServerId]?.serverVersion;
+  }
 );
 
 /**
@@ -1476,6 +1545,7 @@ export const initialiseServers = createAsyncThunk<void>(
             serverUrl: apiServerInfo.conductor_url,
             shortCodePrefix: apiServerInfo.prefix,
             description: apiServerInfo.description,
+            serverVersion: apiServerInfo.serverVersion,
           })
         );
       } else {
@@ -1486,9 +1556,11 @@ export const initialiseServers = createAsyncThunk<void>(
             serverTitle: apiServerInfo.name,
             serverUrl: apiServerInfo.conductor_url,
             shortCodePrefix: apiServerInfo.prefix,
-            // We don't know this yet - it's considered sensitive so we need authentication.
+            // We don't know this yet - it's considered sensitive so we need
+            // authentication.
             couchDbUrl: undefined,
             description: apiServerInfo.description,
+            serverVersion: apiServerInfo.serverVersion,
           })
         );
       }
@@ -1530,9 +1602,12 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
     // Try and find the best possible user to fetch with
     const token = findValidToken(authState, serverId, server);
     if (!token) {
-      throw new Error(
-        `Could not find a suitable active token for the server ${serverId}.`
-      );
+      // This is not really an error, just a server we're not authenticated
+      // to yet
+      // throw new Error(
+      //   `Could not find a suitable active token for the server ${serverId}.`
+      // );
+      return;
     }
 
     // Fetch the directory (which lists projects)
@@ -2080,6 +2155,7 @@ const {
 export const {
   addProject,
   addServer,
+  selectServer,
   startSyncingAttachments,
   stopSyncingAttachments,
   removeProject,

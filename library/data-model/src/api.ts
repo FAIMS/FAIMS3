@@ -89,9 +89,20 @@ export const GetListAllUsersResponseSchema = z.array(
     templateRoles: true,
     name: true,
     user_id: true,
+    profiles: true,
   })
     // configure to strip not fail for extra fields
     .strip()
+    // turn profiles properties into booleans
+    .transform(user => ({
+      ...user,
+      profiles: Object.fromEntries(
+        Object.entries(user.profiles ?? {}).map(([key, value]) => [
+          key,
+          !!value,
+        ])
+      ),
+    }))
 );
 export type GetListAllUsersResponse = z.infer<
   typeof GetListAllUsersResponseSchema
@@ -365,6 +376,12 @@ export const PostRandomRecordsResponseSchema = z.object({
 });
 export type PostRandomRecordsResponse = z.infer<
   typeof PostRandomRecordsResponseSchema
+>;
+
+// Return type for exporting
+export const GetExportNotebookResponseSchema = z.object({url: z.string()});
+export type GetExportNotebookResponse = z.infer<
+  typeof GetExportNotebookResponseSchema
 >;
 
 // =================
@@ -722,7 +739,9 @@ export const PostUseInviteResponseSchema = z.object({
 });
 
 // inferred types
-export type PostCreateInviteInput = z.infer<typeof PostCreateResourceInviteInputSchema>;
+export type PostCreateInviteInput = z.infer<
+  typeof PostCreateResourceInviteInputSchema
+>;
 export type InviteInfoResponse = z.infer<typeof InviteInfoResponseSchema>;
 export type InviteDocument = z.infer<typeof InviteDocumentSchema>;
 export type GetInviteByIdResponse = z.infer<typeof GetInviteByIdResponseSchema>;

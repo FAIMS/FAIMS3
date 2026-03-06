@@ -29,7 +29,6 @@ import {
   addGlobalRole,
   addProjectRole,
   addTeamRole,
-  roleDetails,
   safeWriteDocument,
   writeNewDocument,
 } from '@faims3/data-model';

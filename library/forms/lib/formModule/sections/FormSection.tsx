@@ -3,6 +3,7 @@ import {FORCE_IGNORED_FIELDS} from '../../fieldRegistry';
 import {Field} from '../Field';
 import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';
+import { logWarn } from '../../logging';
 
 interface FormSectionProps {
   uiSpec: ProjectUIModel;
@@ -57,7 +58,7 @@ export const FormSection = ({
     }
     // provided - but section missing - not visible - but this should not happen
     if (!fieldVisibilityMap[section]) {
-      console.warn(
+      logWarn(
         'Section was asked to render, but should not be visible - no fields will render.'
       );
       return false;

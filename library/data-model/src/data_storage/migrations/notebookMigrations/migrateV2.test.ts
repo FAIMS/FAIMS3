@@ -12,28 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {describe, expect, test} from 'vitest';
-import {migrateNotebook, validateNotebook} from './migrateNotebook';
-import {sampleNotebook} from '../test-notebook';
-import campusDemo from '../../../notebooks/Campus-Survey-Demo.json';
-import f3Demo from '../../../notebooks/FAIMS3-Beta-Demo-Notebook.json';
-import sampleNB from '../../../notebooks/sample_notebook.json';
-import {Notebook} from './initial';
+import {migrateToV2} from './migrateV2';
+import {sampleNotebook} from './test-notebook-V1';
 
 describe('Migrate Notebook Tests', () => {
-  test('validate notebook', () => {
-    const valid = validateNotebook(sampleNotebook);
-    expect(valid).toBeTruthy();
-
-    const invalidNotebook = {
-      metadata: {},
-      foo: {},
-    };
-    expect(() => validateNotebook(invalidNotebook)).toThrowError(''); // message is empty but errors in .messages
-  });
-
   test('update labels', () => {
-    const migrated = migrateNotebook(sampleNotebook);
+    const migrated = migrateToV2(sampleNotebook);
     const fields = migrated['ui-specification'].fields;
     expect(fields['Type']['component-parameters'].label).toBe('Type');
     expect(fields['Type']['component-parameters'].InputLabelProps).toBe(
@@ -63,7 +47,7 @@ describe('Migrate Notebook Tests', () => {
   });
 
   test('update annotation format', () => {
-    const migrated = migrateNotebook(sampleNotebook);
+    const migrated = migrateToV2(sampleNotebook);
     const fields = migrated['ui-specification'].fields;
     expect(fields['Type']?.meta?.annotation).toHaveProperty('label');
     expect(fields['Type']?.meta?.annotation).toHaveProperty('include');
@@ -71,7 +55,7 @@ describe('Migrate Notebook Tests', () => {
   });
 
   test('update helperText', () => {
-    const migrated = migrateNotebook(sampleNotebook);
+    const migrated = migrateToV2(sampleNotebook);
     const fields = migrated['ui-specification'].fields;
 
     expect(fields['Sample-Photograph']['component-parameters'].helperText).toBe(
@@ -87,14 +71,14 @@ describe('Migrate Notebook Tests', () => {
   });
 
   test('fix auto incrementer initial value', () => {
-    const migrated = migrateNotebook(sampleNotebook);
+    const migrated = migrateToV2(sampleNotebook);
     const fields = migrated['ui-specification'].fields;
     const targetField = fields['Field-ID'];
     expect(targetField.initialValue).toBe('');
   });
 
   test('update form descriptions', () => {
-    const migrated = migrateNotebook(sampleNotebook);
+    const migrated = migrateToV2(sampleNotebook);
     const fviews = migrated['ui-specification'].fviews;
 
     expect(fviews['Primary-New-Section'].description).toBe('This description.');
@@ -106,22 +90,10 @@ describe('Migrate Notebook Tests', () => {
   });
 
   test('not losing properties', () => {
-    const migrated = migrateNotebook(sampleNotebook);
+    const migrated = migrateToV2(sampleNotebook);
     const fields = migrated['ui-specification'].fields;
     Object.getOwnPropertyNames(fields).forEach((fieldName: string) => {
       expect(Object.getOwnPropertyNames(fields)).toContain(fieldName);
     });
-  });
-
-  test('validate sample notebooks', () => {
-    const migratedF3 = migrateNotebook(f3Demo as unknown as Notebook);
-    // should not throw an exception
-    expect(migratedF3.metadata.name).toBe('Faims3 Beta Demo Notebook');
-
-    const migratedCD = migrateNotebook(campusDemo as unknown as Notebook);
-    expect(migratedCD.metadata.name).toBe('Campus Survey Demo');
-
-    const migratedS = migrateNotebook(sampleNB as unknown as Notebook);
-    expect(migratedS.metadata.name).toBe('Blue Mountains Survey');
   });
 });

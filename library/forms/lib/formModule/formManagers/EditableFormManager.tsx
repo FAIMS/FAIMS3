@@ -36,6 +36,7 @@ import {
   FullFormManagerConfig,
 } from './types';
 import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
+import {logError} from '../../logging';
 
 // Navigation module imports
 import {
@@ -43,6 +44,7 @@ import {
   useNavigationDataPreparation,
   useNavigationLogic,
 } from './navigation';
+import {logInfo, logWarn} from '../../logging';
 
 // ============================================================================
 // Constants
@@ -175,7 +177,7 @@ export const EditableFormManager: React.FC<
         setWorkingRevisionId(newRevision._id);
         relevantRevisionId = newRevision._id;
       } catch (error) {
-        console.error('Failed to create revision:', error);
+        logError(new Error('Failed to create revision:'), {error});
         throw error;
       }
     }
@@ -221,7 +223,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const performSave = useCallback(async () => {
     if (debugMode) {
-      console.log('[EditableFormManager] performSave called');
+      logInfo('[EditableFormManager] performSave called');
     }
 
     isSavingRef.current = true;
@@ -248,7 +250,7 @@ export const EditableFormManager: React.FC<
 
       pendingValuesRef.current = false;
     } catch (error) {
-      console.error('Failed to update revision:', error);
+      logError(new Error('Failed to update revision:'), {error});
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
@@ -307,7 +309,7 @@ export const EditableFormManager: React.FC<
   // ---------------------------------------------------------------------------
   const flushSave = useCallback(async (): Promise<void> => {
     if (debugMode) {
-      console.log('[EditableFormManager] flushSave called');
+      logInfo('[EditableFormManager] flushSave called');
     }
 
     debouncedSave.cancel();
@@ -487,7 +489,7 @@ export const EditableFormManager: React.FC<
 
       const state = form.state.values[fieldId];
       if (!state?.attachments) {
-        console.warn('No attachments found in field');
+        logWarn('No attachments found in field');
         return;
       }
 
