@@ -28,14 +28,20 @@ When you open up the app for the first time you will see the **login** screen as
 :align: right
 ```
 
-From here you can login if you already have an account, or refer to your {{Notebook}} invitation and:
+Depending on the version of {{FAIMS}} that you are using, you may see the server selection option
+at the top of the screen or your server might be pre-configured.
+Server selection is used to connect the app to one of a number of {{FAIMS}} servers; you might see
+the main server and one or more enterprise servers.  Select the server for your organisation if
+that is configured.
+
+From here you can login if you already have an account, or refer to your {{notebook}} invitation and:
 
 - enter an **access code**, or
 - scan a **QR code**
 
 to **register** an account and get access to that {{Notebook}}.
 
-````{note} 
+````{note}
 If you already have an account on the {{FAIMS}} server, use the button to login instead of registering a new account.  Once you are logged in you will be given access to the {{Notebook}}. For more information, see [Login](login.md).
 ````
 
@@ -58,11 +64,11 @@ For more information see [Invitations](invitations.md).
 If you don't already have an account on the {{FAIMS}} server, you will be able to **register** for an account at this point with either:
 
 - your email and a password, or
-- a supported authentication provider (eg your Google account)
+- a supported authentication provider (eg. your Google account)
 
 At this point, registration just gives you access to this one {{notebook}} but you may be given access to others in the future.
 
-````{note} 
+````{note}
 You need an account on {{FAIMS}} to collect data so that the records that you create can be associated with you. The {{FAIMS}} server keeps minimal information about you: your name and email address. These are only used within the projects that you collect data for and will never be used for marketing or other purposes.
 ````
 
@@ -99,7 +105,7 @@ Once your {{notebook}} is activated, you can begin to create records and these w
 
 As each {{notebook}} is a customised data collection tool, instructions for entering data will differ for each user.
 
-See [Using your {{notebook}}](../todo.md) for more information.
+See [Using your {{notebook}}](using-notebooks.md) for more information.
 
 ## 5) Get more help
 
