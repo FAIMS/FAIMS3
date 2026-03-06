@@ -9,7 +9,7 @@ All of this section also applies to [templates](./templates.md) which share the 
 ## Metadata
 
 Every {{notebook}} has associated metadata that records properties of the {{notebook}} as a
-while.  There are a number of fixed fields in the metadata but you can also add your own
+whole.  There are a number of fixed fields in the metadata but you can also add your own
 field.  The fixed fields are:
 
 - __Title__: the published name of the {{notebook}} as it will appear in the app
@@ -56,7 +56,7 @@ the screenshot from the {{notebook}} editor.
 __Finish Button Behaviour__ Changes the behaviour of the 'Finish' buttons in the form. These can be
 shown at the end of every section, only shown once all sections have been visited, or
 only shown when there are no errors in the form.  Note that, if the buttons are not shown,
-then users cannot cleanly exit the record.
+then users cannot cleanly exit the record.  __Note: this option is deprecated and currently has no effect.__
 
 __Layout Style__ allows you to choose to show section within the form on different pages  (tabs)
 or in a single page (inline). The
@@ -83,19 +83,21 @@ Sections within a form group fields together as part of a workflow or just to br
 a long form into pages.   A useful feature is to be able to show a section conditionally based
 on the value entered for a field in an earlier section.
 
-```{image} ../images/section-condition.png
+```{screenshot} designer/section-condition.png
 :alt: Editing the condition on a section of the form
+:width: 100%
 ```
 
 In this example we have chosen a 'Select' field for the condition and we can choose which value
 must be selected to have this section displayed.   Alternately we could have a condition
 that asked for one of a number of values. Conditions can be complex and nested as required
-to express the logic of your workflow.  For more details see the [page on Conditions](./conditions.md).
+to express the logic of your workflow.  For more details see the [page on Conditions](../field-types/shared-settings/conditions.md).
 
 ### Fields
 
-```{image} ../images/editor-text-field.png
+```{screenshot} designer/editor-text-field.png
 :alt: Editing a text field
+:width: 100%
 ```
 
 Fields are the basic building block of a {{notebook}} form and there are many [field types](field-type-reference-table.md)
@@ -128,7 +130,7 @@ have no special meaning to the system, they are purely a way to include extra da
 alongside any data you are capturing in the form.
 
 There is also the option here to add a condition to the field.  This will mean that the
-field would only be shown if the condition is met. See the [page on conditions](./conditions.md)
+field would only be shown if the condition is met. See the [page on conditions](../field-types/shared-settings/conditions.md)
 for details.
 
 The final two checkboxes relate to the behaviour of the system in relation to other records.

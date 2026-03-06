@@ -171,6 +171,7 @@ export class FaimsInfraStack extends cdk.Stack {
       supportEmail: config.supportLinks.supportEmail,
       privacyPolicyUrl: config.supportLinks.privacyPolicyUrl,
       contactUrl: config.supportLinks.contactUrl,
+      docsUrl: config.supportLinks.docsUrl,
       maximumLongLivedDurationDays:
         config.security.maximumLongLivedTokenDurationDays,
       // Pass in bugsnag config

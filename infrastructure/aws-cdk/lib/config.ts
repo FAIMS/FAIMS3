@@ -405,6 +405,8 @@ const AppSupportLinksSchema = z.object({
   privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
   /** The URL for the contact page */
   contactUrl: z.string().url().default(''),
+  /** Documentation website URL */
+  docsUrl: z.string().url().optional(),
 });
 
 export const UiConfiguration = z.object({

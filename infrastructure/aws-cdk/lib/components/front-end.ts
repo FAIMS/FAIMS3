@@ -47,6 +47,7 @@ export interface FaimsFrontEndProps {
   supportEmail: string;
   privacyPolicyUrl: string;
   contactUrl: string;
+  docsUrl?: string;
 
   // e.g. db.domain.com
   couchDbDomainOnly: string;
@@ -358,6 +359,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_NOTEBOOK_NAME: props.notebookName,
       VITE_THEME: props.uiTheme,
       VITE_WEBSITE_TITLE: 'Control Centre',
+      VITE_DOCS_URL: props.docsUrl || '',
       // Maps setup for web
       VITE_MAP_SOURCE: props.offlineMaps.mapSource,
       VITE_MAP_STYLE: props.offlineMaps.mapStyle,

@@ -19,7 +19,7 @@ class ScreenshotDirective(SphinxDirective):
       screenshot_path = self.arguments[0]
 
       # Build the full path to the screenshot
-      image_path = f'../screenshots/{THEME}/{screenshot_path}'
+      image_path = f'/screenshots/{THEME}/{screenshot_path}'
       
       # Create image node
       image_node = nodes.image()

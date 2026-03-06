@@ -33,7 +33,8 @@
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
-    "contactUrl": "https://your-domain.com/contact"
+    "contactUrl": "https://your-domain.com/contact",
+    "docsUrl": "https://docs.your-domain.com"
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
