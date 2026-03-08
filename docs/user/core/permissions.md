@@ -24,7 +24,7 @@ All users in the system are able to:
 Global roles apply to the system as a whole and are reserved for
 administrative users.
 
-The *General Administrator* role has permission to do anything in the system
+The *Super User* role has permission to do anything in the system
 and should only be used for emergency interventions. Every deployment has a
 default user `admin` with this role configured for local login.  Other users
 can be given this role if necessary but since it has access to user data,
