@@ -2,6 +2,7 @@ packages:
   - api
   - app
   - web
+  - dashboard
   - designer
   - library/data-model
   - library/forms

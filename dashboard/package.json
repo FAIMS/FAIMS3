@@ -1,0 +1,48 @@
+{
+  "name": "@faims3/dashboard",
+  "version": "1.4.2",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dev": "vite --port=3002",
+    "build": "vite build",
+    "serve": "vite preview",
+    "start": "vite",
+    "clean": "gts clean",
+    "lint": "gts lint",
+    "compile": "tsc",
+    "fix": "gts fix",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.14.1",
+    "@faims3/data-model": "workspace:*",
+    "@faims3/forms": "workspace:*",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.18.0",
+    "@tanstack/react-query": "^5.62.16",
+    "jwt-decode": "^4.0.0",
+    "ol": "^10.6.1",
+    "pouchdb-browser": "^9.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.14",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react-swc": "^4.0.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.11",
+    "vitest": "^3.2.4"
+  }
+}
