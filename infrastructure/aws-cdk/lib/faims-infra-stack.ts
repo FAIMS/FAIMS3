@@ -42,6 +42,7 @@ export class FaimsInfraStack extends cdk.Stack {
       conductor: `${config.domains.conductor}.${config.domains.baseDomain}`,
       faims: `${config.domains.faims}.${config.domains.baseDomain}`,
       web: `${config.domains.web}.${config.domains.baseDomain}`,
+      docs: `${config.domains.docs}.${config.domains.baseDomain}`,
     };
 
     // BACKUPS SETUP
@@ -151,7 +152,7 @@ export class FaimsInfraStack extends cdk.Stack {
     // FRONT-END
     // =========
 
-    // Deploy the FAIMS 3 web front-end as a S3 CloudFront static website
+    // Deploy the FAIMS 3 web front-end (app, web, docs) as S3 + CloudFront static websites
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _frontEnd = new FaimsFrontEnd(this, 'frontend', {
       couchDbDomainOnly: domains.couch,
@@ -167,6 +168,10 @@ export class FaimsInfraStack extends cdk.Stack {
       appId: config.uiConfiguration.appId,
       headingAppName: config.uiConfiguration.headingAppName,
       webDomainName: domains.web,
+      docsDomainName: domains.docs,
+      docsManagementWebsiteTitle: 'Control Centre',
+      androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
+      iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       offlineMaps: config.uiConfiguration.offlineMaps,
       supportEmail: config.supportLinks.supportEmail,
       privacyPolicyUrl: config.supportLinks.privacyPolicyUrl,
@@ -174,7 +179,6 @@ export class FaimsInfraStack extends cdk.Stack {
       docsUrl: config.supportLinks.docsUrl,
       maximumLongLivedDurationDays:
         config.security.maximumLongLivedTokenDurationDays,
-      // Pass in bugsnag config
       bugsnagKey: config.bugMonitoring.bugsnagKey,
     });
 

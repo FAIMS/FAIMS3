@@ -323,6 +323,8 @@ const DomainsConfigSchema = z.object({
   faims: z.string().default('faims'),
   /** New conductor/web deployment subdomain */
   web: z.string().default('web'),
+  /** The subdomain prefix for the documentation site (user docs, built with Sphinx) */
+  docs: z.string().default('docs'),
 });
 
 const ConductorConfigSchema = z.object({
@@ -369,6 +371,9 @@ const ConductorConfigSchema = z.object({
 });
 
 const WebConfigSchema = z.object({});
+
+/** Documentation site (Sphinx user docs) configuration */
+const DocsConfigSchema = z.object({});
 
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
@@ -480,6 +485,8 @@ export const ConfigSchema = z.object({
   }),
   /** The new-conductor / web config */
   web: WebConfigSchema,
+  /** Documentation site config (Sphinx user docs) */
+  docs: DocsConfigSchema.optional().default({}),
   /** Email service configuration */
   smtp: SMTPConfigSchema,
   /** Social sign in providers */
