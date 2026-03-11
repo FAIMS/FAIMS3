@@ -247,9 +247,6 @@ export class FaimsFrontEnd extends Construct {
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'deploy', {
       destinationBucket: this.faimsBucket,
-      // increase memory limit to 2GB for the lambda s3 sync - increases
-      // performance
-      memoryLimit: 2048,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.faimsDistribution,
@@ -399,9 +396,6 @@ export class FaimsFrontEnd extends Construct {
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'web-deploy', {
       destinationBucket: this.webBucket,
-      // increase memory limit to 2GB for the lambda s3 sync - increases
-      // performance
-      memoryLimit: 2048,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.webDistribution,
@@ -563,11 +557,18 @@ export class FaimsFrontEnd extends Construct {
               'bash',
               '-c',
               [
+                'set -e',
+                "echo '[docs build] Starting...'",
+                "echo '[docs build] Source in /asset-input/user:' && find /asset-input/user -type f | wc -l && ls -la /asset-input/user",
                 'mkdir -p /tmp/sphinx-build',
                 'cp -r /asset-input/user/. /tmp/sphinx-build/',
+                "echo '[docs build] Copied to /tmp/sphinx-build:' && find /tmp/sphinx-build -type f | wc -l",
                 'cd /tmp/sphinx-build',
+                "echo '[docs build] Running sphinx-build...'",
                 'sphinx-build -b html . _build/html',
+                "echo '[docs build] Sphinx done. HTML files:' && find _build/html -type f | wc -l && ls _build/html",
                 'cp -r _build/html/* /asset-output/',
+                "echo '[docs build] Asset output:' && find /asset-output -type f | wc -l && ls -la /asset-output",
               ].join(' && '),
             ],
           },
