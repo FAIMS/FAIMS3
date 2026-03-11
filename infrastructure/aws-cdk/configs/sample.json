@@ -157,13 +157,15 @@
     "conductor": "conductor",
     "couch": "couchdb",
     "faims": "faims",
-    "web": "web"
+    "web": "web",
+    "docs": "docs"
   },
   "mobileApps": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
   },
   "web": {},
+  "docs": {},
   "smtp": {
     "emailServiceType": "SMTP",
     "fromEmail": "notifications@your-domain.com",

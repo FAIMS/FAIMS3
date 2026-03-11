@@ -6,6 +6,7 @@ import {BackupConstruct} from './components/backups';
 import {Construct} from 'constructs';
 import {FaimsConductor} from './components/conductor';
 import {FaimsFrontEnd} from './components/front-end';
+import {FaimsDocs} from './components/docs';
 import {FaimsNetworking} from './components/networking';
 import {EC2CouchDB} from './components/couch-db';
 import {Config} from './config';
@@ -42,6 +43,7 @@ export class FaimsInfraStack extends cdk.Stack {
       conductor: `${config.domains.conductor}.${config.domains.baseDomain}`,
       faims: `${config.domains.faims}.${config.domains.baseDomain}`,
       web: `${config.domains.web}.${config.domains.baseDomain}`,
+      docs: `${config.domains.docs}.${config.domains.baseDomain}`,
     };
 
     // BACKUPS SETUP
@@ -176,6 +178,22 @@ export class FaimsInfraStack extends cdk.Stack {
         config.security.maximumLongLivedTokenDurationDays,
       // Pass in bugsnag config
       bugsnagKey: config.bugMonitoring.bugsnagKey,
+    });
+
+    // Documentation site (Sphinx user docs)
+    new FaimsDocs(this, 'docs', {
+      hostedZone: hz,
+      certificate: cfnCert,
+      domainName: domains.docs,
+      appName: config.uiConfiguration.appName,
+      notebookName: config.uiConfiguration.notebookName,
+      managementWebsiteTitle: 'Control Centre',
+      theme: config.uiConfiguration.uiTheme,
+      apiUrl: conductor.conductorEndpoint,
+      appUrl: `https://${domains.faims}`,
+      webUrl: `https://${domains.web}`,
+      androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
+      iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
     });
 
     // Backup setup
