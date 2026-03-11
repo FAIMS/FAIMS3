@@ -4,6 +4,7 @@ import {
   AssetHashType,
   CfnOutput,
   Duration,
+  DockerImage,
   RemovalPolicy,
   aws_lambda,
   aws_s3,
@@ -13,6 +14,7 @@ import {Source} from 'aws-cdk-lib/aws-s3-deployment';
 import {IDistribution} from 'aws-cdk-lib/aws-cloudfront';
 import {IHostedZone} from 'aws-cdk-lib/aws-route53';
 import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
+import * as path from 'path';
 import {getPathHash, getPathToRoot} from '../util/mono';
 import {OfflineMapsConfig} from '../config';
 
@@ -60,6 +62,14 @@ export interface FaimsFrontEndProps {
   // web config
   webDomainName: string;
 
+  // docs config (Sphinx user docs site)
+  docsDomainName: string;
+  /** Management website title for docs variable substitution (default: Control Centre) */
+  docsManagementWebsiteTitle?: string;
+  /** Mobile app store URLs for docs variable substitution */
+  androidAppPublicUrl: string;
+  iosAppPublicUrl: string;
+
   // Enable debugging settings @default false
   debugMode?: boolean;
 
@@ -84,6 +94,11 @@ export class FaimsFrontEnd extends Construct {
   webBucketArnCfnOutput: CfnOutput;
   webBucketNameCfnOutput: CfnOutput;
 
+  docsBucket: aws_s3.IBucket;
+  docsDistribution: IDistribution;
+  docsBucketArnCfnOutput: CfnOutput;
+  docsBucketNameCfnOutput: CfnOutput;
+
   private debugMode: boolean;
 
   // derived property
@@ -103,6 +118,9 @@ export class FaimsFrontEnd extends Construct {
 
     // Web deployment
     this.deployWeb(props);
+
+    // Documentation site (Sphinx user docs)
+    this.deployDocs(props);
   }
 
   deployFaims(props: FaimsFrontEndProps) {
@@ -432,6 +450,117 @@ export class FaimsFrontEnd extends Construct {
                 return true;
               },
             },
+          },
+        }),
+      ],
+    });
+  }
+
+  deployDocs(props: FaimsFrontEndProps) {
+    this.setupDocsDistribution(props);
+    this.setupDocsBundling(props);
+
+    this.docsBucketArnCfnOutput = new CfnOutput(this, 'DocsBucketArn', {
+      value: this.docsBucket.bucketArn,
+      description:
+        'The ARN of S3 bucket used to deploy the documentation site.',
+    });
+
+    this.docsBucketNameCfnOutput = new CfnOutput(this, 'DocsBucketName', {
+      value: this.docsBucket.bucketName,
+      description:
+        'The name of S3 bucket used to deploy the documentation site.',
+    });
+  }
+
+  setupDocsDistribution(props: FaimsFrontEndProps) {
+    const csp =
+      "default-src 'self'; font-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:";
+
+    const website = new StaticWebsite(this, 'docs-website', {
+      hostedZone: props.faimsHz,
+      domainNames: [props.docsDomainName],
+      removalPolicy: RemovalPolicy.DESTROY,
+      errorResponses: [
+        {
+          httpStatus: 404,
+          responseHttpStatus: 200,
+          ttl: Duration.seconds(300),
+          responsePagePath: '/index.html',
+        },
+        {
+          httpStatus: 403,
+          responseHttpStatus: 200,
+          ttl: Duration.seconds(300),
+          responsePagePath: '/index.html',
+        },
+      ],
+      certificate: props.faimsUsEast1Certificate,
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          contentSecurityPolicy: csp,
+          override: true,
+        },
+      },
+    });
+
+    this.docsBucket = website.bucket;
+    this.docsDistribution = website.distribution;
+  }
+
+  setupDocsBundling(props: FaimsFrontEndProps) {
+    const rootPath = path.resolve(process.cwd(), getPathToRoot());
+    const docsPath = path.join(rootPath, 'docs');
+
+    const docsEnv: {[key: string]: string} = {
+      VITE_APP_NAME: props.appName,
+      VITE_NOTEBOOK_NAME: props.notebookName,
+      VITE_WEBSITE_TITLE: props.docsManagementWebsiteTitle ?? 'Control Centre',
+      // Uses default for now, as other themes are not implemented properly
+      VITE_THEME: 'default',
+      VITE_API_URL: props.conductorUrl,
+      VITE_APP_URL: this.faimsAppUrl,
+      VITE_WEB_URL: `https://${props.webDomainName}`,
+      ANDROID_APP_PUBLIC_URL: props.androidAppPublicUrl,
+      IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
+    };
+
+    const sphinxImage = DockerImage.fromBuild(docsPath, {
+      file: 'Dockerfile',
+    });
+
+    new aws_s3_deployment.BucketDeployment(this, 'docs-deploy', {
+      destinationBucket: this.docsBucket,
+      distribution: this.docsDistribution,
+      distributionPaths: ['/*'],
+      sources: [
+        Source.asset(docsPath, {
+          exclude: [
+            'user/_build',
+            'user/build',
+            'developer/docs/build',
+            '.env',
+          ],
+          assetHash: getPathHash(path.join(rootPath, 'docs'), [
+            'user/_build',
+            'user/build',
+            'developer/docs/build',
+          ]),
+          assetHashType: AssetHashType.CUSTOM,
+          bundling: {
+            image: sphinxImage,
+            environment: docsEnv,
+            command: [
+              'bash',
+              '-c',
+              [
+                'mkdir -p /tmp/sphinx-build',
+                'cp -r /asset-input/user/. /tmp/sphinx-build/',
+                'cd /tmp/sphinx-build',
+                'sphinx-build -b html . _build/html',
+                'cp -r _build/html/* /asset-output/',
+              ].join(' && '),
+            ],
           },
         }),
       ],

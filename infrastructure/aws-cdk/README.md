@@ -56,9 +56,10 @@ The `FaimsFrontEnd` construct manages the web applications:
 
 #### Documentation site
 
+- **Part of FaimsFrontEnd**: Built and deployed by the same construct as the app and web frontends.
 - **S3 Bucket + CloudFront**: Static documentation site built from the `/docs` Sphinx user docs.
 - **Build**: Uses CDK Docker bundling with the image built from `docs/Dockerfile` (Sphinx + themes). The `docs/user` tree is built with `sphinx-build -b html` and deployed to the bucket.
-- **Domain**: Served at the `docs` subdomain (e.g. `docs.your-domain.com`). Configure via `domains.docs` in config.
+- **Domain**: Served at the `docs` subdomain (e.g. `docs.your-domain.com`). Configure via `domains.docs`; pass `docsDomainName` and mobile app URLs in the frontend props.
 
 ### Auxiliary Components
 
