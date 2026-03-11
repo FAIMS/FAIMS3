@@ -247,6 +247,9 @@ export class FaimsFrontEnd extends Construct {
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'deploy', {
       destinationBucket: this.faimsBucket,
+      // increase memory limit to 2GB for the lambda s3 sync - increases
+      // performance
+      memoryLimit: 2048,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.faimsDistribution,
@@ -396,6 +399,9 @@ export class FaimsFrontEnd extends Construct {
     // Setup a deployment into this bucket with static files
     new aws_s3_deployment.BucketDeployment(this, 'web-deploy', {
       destinationBucket: this.webBucket,
+      // increase memory limit to 2GB for the lambda s3 sync - increases
+      // performance
+      memoryLimit: 2048,
       // Setup with distribution so that the deployment will invalidate
       // distribution cache when the files are redeployed
       distribution: this.webDistribution,
@@ -531,6 +537,9 @@ export class FaimsFrontEnd extends Construct {
 
     new aws_s3_deployment.BucketDeployment(this, 'docs-deploy', {
       destinationBucket: this.docsBucket,
+      // increase memory limit to 2GB for the lambda s3 sync - increases
+      // performance
+      memoryLimit: 2048,
       distribution: this.docsDistribution,
       distributionPaths: ['/*'],
       sources: [
