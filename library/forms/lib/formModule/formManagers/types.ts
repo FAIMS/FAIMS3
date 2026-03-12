@@ -102,6 +102,18 @@ export interface FormManagerAdditions {
       fieldId: string;
       attachmentId: string;
     }) => Promise<void>;
+    /**
+     * Report that this field is saving an attachment (in memory → PouchDB).
+     * Blocks section navigation until the attachment is stored to prevent data loss.
+     */
+    setAttachmentSaving?: (fieldId: string, saving: boolean) => void;
+  };
+  /**
+   * When in full mode, indicates whether any field is currently saving an attachment.
+   * Section navigation should be blocked while this is true.
+   */
+  attachmentSaving?: {
+    isSaving: () => boolean;
   };
   /** Special behavior triggers */
   trigger: {
