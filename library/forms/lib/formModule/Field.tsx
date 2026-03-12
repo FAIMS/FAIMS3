@@ -98,6 +98,15 @@ export const Field = React.memo((props: FieldProps) => {
             : async () => {
                 logInfo('Mock removeAttachment');
               };
+        const setAttachmentSavingHandler =
+          props.config.mode === 'full' &&
+          (props.config as FullFormManagerConfig).attachmentHandlers
+            .setAttachmentSaving
+            ? (saving: boolean) =>
+                (
+                  props.config as FullFormManagerConfig
+                ).attachmentHandlers.setAttachmentSaving!(props.fieldId, saving)
+            : undefined;
         const triggers =
           props.config.mode === 'full'
             ? props.config.trigger
@@ -125,6 +134,7 @@ export const Field = React.memo((props: FieldProps) => {
               setFieldAttachment={setFieldAttachment}
               addAttachment={addAttachmentHandler}
               removeAttachment={removeAttachmentHandler}
+              setAttachmentSaving={setAttachmentSavingHandler}
               handleBlur={field.handleBlur}
               fieldId={props.fieldId}
               trigger={triggers}

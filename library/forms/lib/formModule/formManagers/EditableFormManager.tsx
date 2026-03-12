@@ -394,6 +394,21 @@ export const EditableFormManager: React.FC<
   });
 
   // ---------------------------------------------------------------------------
+  // Attachment saving state (blocks section navigation until photo/file is in PouchDB)
+  // ---------------------------------------------------------------------------
+  const [attachmentSavingFieldIds, setAttachmentSavingFieldIds] =
+    useState<Set<string>>(new Set());
+
+  const setAttachmentSaving = useCallback((fieldId: string, saving: boolean) => {
+    setAttachmentSavingFieldIds(prev => {
+      const next = new Set(prev);
+      if (saving) next.add(fieldId);
+      else next.delete(fieldId);
+      return next;
+    });
+  }, []);
+
+  // ---------------------------------------------------------------------------
   // Attachment Handlers
   // ---------------------------------------------------------------------------
   const handleAddAttachment = useCallback(
@@ -555,6 +570,10 @@ export const EditableFormManager: React.FC<
       attachmentHandlers: {
         addAttachment: handleAddAttachment,
         removeAttachment: handleRemoveAttachment,
+        setAttachmentSaving,
+      },
+      attachmentSaving: {
+        isSaving: () => attachmentSavingFieldIds.size > 0,
       },
       trigger: {
         commit: flushSave,
@@ -566,6 +585,8 @@ export const EditableFormManager: React.FC<
       props.navigationContext,
       handleAddAttachment,
       handleRemoveAttachment,
+      setAttachmentSaving,
+      attachmentSavingFieldIds.size,
       flushSave,
     ]
   );

@@ -78,6 +78,11 @@ export type FormFieldContextProps = {
   }) => Promise<string>;
   // Delete an attachment with given ID
   removeAttachment: (params: {attachmentId: string}) => Promise<void>;
+  /**
+   * Report that this field is saving an attachment (blocks section navigation).
+   * Only present in full form mode.
+   */
+  setAttachmentSaving?: (saving: boolean) => void;
   handleBlur: () => void;
   config: FormConfig;
   /** Special behavior triggers */
