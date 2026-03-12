@@ -366,6 +366,26 @@ function tokenRefreshWindowMs(): number {
   }
 }
 
+// Grace period before showing the logged-out banner after app initialisation
+const DEFAULT_LOGIN_BANNER_GRACE_MS = 10000;
+
+/**
+ * @returns The grace period in milliseconds before showing the login banner
+ * after the app has initialised.
+ */
+function loginBannerGraceMs(): number {
+  const loginBannerGraceMs = import.meta.env.VITE_LOGIN_BANNER_GRACE_MS;
+  if (loginBannerGraceMs === '' || loginBannerGraceMs === undefined) {
+    return DEFAULT_LOGIN_BANNER_GRACE_MS;
+  }
+  try {
+    return parseInt(loginBannerGraceMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_LOGIN_BANNER_GRACE_MS;
+  }
+}
+
 // Ignore the expiry from the JWT - use 1 year expiry instead - disables token
 // refreshing - debug/compat usage only!
 const DEFAULT_IGNORE_TOKEN_EXP = false;
@@ -500,6 +520,7 @@ export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
 export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
 export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
+export const LOGIN_BANNER_GRACE_MS = loginBannerGraceMs();
 export const IGNORE_TOKEN_EXP = ignoreTokenExp();
 export const OFFLINE_MAPS = offline_maps();
 export const NAVIGATION_STYLE = navigation_style();
