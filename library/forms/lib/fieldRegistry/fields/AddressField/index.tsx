@@ -41,7 +41,16 @@ const AddressValueNullableSchema = AddressValueSchema.nullable();
 /**
  * Props schema for AddressField - uses base field props only.
  */
-const AddressFieldPropsSchema = BaseFieldPropsSchema.extend({});
+const AddressFieldPropsSchema = BaseFieldPropsSchema.extend({
+  /** Enables online autosuggest UI when a service is injected. Defaults to true. */
+  enableAutoSuggestion: z.boolean().optional(),
+  /**
+   * When offline or autosuggest is disabled/unavailable, allow structured entry
+   * via address component fields instead of a single free-text input.
+   * Defaults to false.
+   */
+  allowFullAddressManualEntry: z.boolean().optional(),
+});
 
 type AddressFieldProps = z.infer<typeof AddressFieldPropsSchema>;
 type AddressFieldFullProps = AddressFieldProps & FormFieldContextProps;
@@ -86,7 +95,12 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
 
   const fullConfig = config.mode === 'full' ? (config as FullFormConfig) : null;
   const isOnline = fullConfig?.getIsOnline?.() ?? true;
-  const autosuggestService = fullConfig?.addressAutosuggestService?.();
+  const enableAutoSuggestion = props.enableAutoSuggestion ?? true;
+  const allowFullAddressManualEntry =
+    props.allowFullAddressManualEntry ?? false;
+  const autosuggestService = enableAutoSuggestion
+    ? fullConfig?.addressAutosuggestService?.()
+    : undefined;
 
   const currentValue = state.value?.data as AddressValue | null;
   const displayName = currentValue?.display_name ?? '';
@@ -258,19 +272,77 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
     >
       <Box>
 
-        {/* Offline or no service: single free-text field */}
-        {showManualOnly && (
-          <TextField
-            label={label}
-            value={hasValue ? (manualText || displayName) : ''}
-            placeholder="Enter address"
-            fullWidth
-            variant="outlined"
-            disabled={disabled}
-            onBlur={handleBlur}
-            onChange={e => setManualOnly(e.target.value)}
-          />
-        )}
+        {/* Offline or no service: either free-text or structured component entry */}
+        {showManualOnly &&
+          (allowFullAddressManualEntry ? (
+            <Stack spacing={2}>
+              <TextField
+                label="House Number"
+                value={address.house_number ?? ''}
+                fullWidth
+                variant="outlined"
+                onChange={updateAddressPart('house_number')}
+                onBlur={handleBlur}
+                disabled={disabled}
+              />
+              <TextField
+                label="Street Name"
+                value={address.road ?? ''}
+                fullWidth
+                variant="outlined"
+                onChange={updateAddressPart('road')}
+                onBlur={handleBlur}
+                disabled={disabled}
+              />
+              <TextField
+                label="Suburb"
+                value={address.suburb ?? ''}
+                fullWidth
+                variant="outlined"
+                onChange={updateAddressPart('suburb')}
+                onBlur={handleBlur}
+                disabled={disabled}
+              />
+              <TextField
+                label="State"
+                value={address.state ?? ''}
+                fullWidth
+                variant="outlined"
+                onChange={updateAddressPart('state')}
+                onBlur={handleBlur}
+                disabled={disabled}
+              />
+              <TextField
+                label="Postcode"
+                value={address.postcode ?? ''}
+                fullWidth
+                variant="outlined"
+                onChange={updateAddressPart('postcode')}
+                onBlur={handleBlur}
+                disabled={disabled}
+              />
+              {!disabled && (
+                <Button
+                  size="small"
+                  startIcon={<ClearIcon />}
+                  onClick={clearAddress}
+                >
+                  Clear
+                </Button>
+              )}
+            </Stack>
+          ) : (
+            <TextField
+              label={label}
+              value={hasValue ? manualText || displayName : ''}
+              placeholder="Enter address"
+              fullWidth
+              variant="outlined"
+              disabled={disabled}
+              onBlur={handleBlur}
+              onChange={e => setManualOnly(e.target.value)}
+            />
+          ))}
 
         {/* Online with service, empty: search input + suggestions */}
         {showSearchMode && (

@@ -427,6 +427,9 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       name: 'Address',
       label: 'Address',
+      // Optional config, defaults handled in forms for backwards compatibility
+      enableAutoSuggestion: true,
+      allowFullAddressManualEntry: false,
     },
     humanReadableName: 'Address',
     humanReadableDescription: 'Structured street address input',

@@ -94,6 +94,53 @@ export const csvFormatValue = (
   }
 
   if (fieldType === 'faims-core::JSON') {
+    // AddressField (faims-custom::AddressField) stores a GeocodeJSON-like object:
+    // { display_name: string, address?: {..parts..}, manuallyEnteredAddress?: string }
+    // Older records may contain only display_name + address, or may be null.
+    if (value instanceof Object && 'display_name' in value) {
+      const display =
+        (typeof value.display_name === 'string' && value.display_name) ||
+        (typeof value.manuallyEnteredAddress === 'string' &&
+          value.manuallyEnteredAddress) ||
+        '';
+
+      // Primary column: a human-readable string
+      result[fieldName] = display;
+
+      // Optional expansion: address components, if present
+      const addr = (value as any).address;
+      if (addr && typeof addr === 'object') {
+        if ('house_number' in addr) result[fieldName + '_house_number'] = addr.house_number ?? '';
+        if ('road' in addr) result[fieldName + '_road'] = addr.road ?? '';
+        if ('suburb' in addr) result[fieldName + '_suburb'] = addr.suburb ?? '';
+        if ('town' in addr) result[fieldName + '_town'] = addr.town ?? '';
+        if ('municipality' in addr) result[fieldName + '_municipality'] = addr.municipality ?? '';
+        if ('state' in addr) result[fieldName + '_state'] = addr.state ?? '';
+        if ('postcode' in addr) result[fieldName + '_postcode'] = addr.postcode ?? '';
+        if ('country' in addr) result[fieldName + '_country'] = addr.country ?? '';
+        if ('country_code' in addr) result[fieldName + '_country_code'] = addr.country_code ?? '';
+      } else {
+        // Keep columns consistent when no structured address exists
+        result[fieldName + '_house_number'] = '';
+        result[fieldName + '_road'] = '';
+        result[fieldName + '_suburb'] = '';
+        result[fieldName + '_town'] = '';
+        result[fieldName + '_municipality'] = '';
+        result[fieldName + '_state'] = '';
+        result[fieldName + '_postcode'] = '';
+        result[fieldName + '_country'] = '';
+        result[fieldName + '_country_code'] = '';
+      }
+
+      // Preserve manual raw (if present) for downstream processing
+      result[fieldName + '_manual'] =
+        typeof value.manuallyEnteredAddress === 'string'
+          ? value.manuallyEnteredAddress
+          : '';
+
+      return result;
+    }
+
     // map location, if it's a point we can pull out lat/long
     if (
       value instanceof Object &&
