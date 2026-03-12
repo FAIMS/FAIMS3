@@ -59,7 +59,9 @@ const Component = fieldInfo?.component;
 interface FormFieldContextProps {
   fieldId: string;
   state: FaimsFormFieldState;           // TanStack field state
-  setFieldData: (value: any) => void;   // Update data portion
+  setFieldData:
+    | ((value: any) => void)            // Replace data
+    | ((updater: (prev: any) => any) => void); // Update based on previous value
   setFieldAnnotation: (value) => void;  // Update annotation
   addAttachment: (params) => Promise<string>;
   removeAttachment: (params) => Promise<void>;

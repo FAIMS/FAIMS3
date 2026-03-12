@@ -19,12 +19,13 @@ import {
 import {useForm} from '@tanstack/react-form';
 import {debounce, DebouncedFunc} from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {logError} from '../../logging';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
-import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
 import {FormManager} from './FormManager';
+import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
 import {
   getRecordContextFromRecord,
   onChangeTemplatedFields,
@@ -36,15 +37,14 @@ import {
   FullFormManagerConfig,
 } from './types';
 import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
-import {logError} from '../../logging';
 
 // Navigation module imports
+import {logInfo, logWarn} from '../../logging';
 import {
   NavigationButtonsDisplay,
   useNavigationDataPreparation,
   useNavigationLogic,
 } from './navigation';
-import {logInfo, logWarn} from '../../logging';
 
 // ============================================================================
 // Constants
@@ -95,6 +95,8 @@ export interface EditableFormManagerProps {
 export interface EditableFormManagerHandle {
   flushSave: () => Promise<void>;
   hasPendingChanges: () => boolean;
+  /** True while any attachment is in-memory and being stored to PouchDB */
+  isAttachmentSaving: () => boolean;
 }
 
 // ============================================================================
@@ -375,11 +377,42 @@ export const EditableFormManager: React.FC<
   );
 
   // ---------------------------------------------------------------------------
+  // Attachment saving state (blocks section navigation until photo/file is in PouchDB)
+  // Tracks counts per fieldId so multiple parallel saves are handled correctly.
+  // ---------------------------------------------------------------------------
+  const [attachmentSavingCounts, setAttachmentSavingCounts] = useState<
+    Map<string, number>
+  >(new Map());
+
+  const setAttachmentSaving = useCallback(
+    (fieldId: string, saving: boolean) => {
+      setAttachmentSavingCounts(prev => {
+        const next = new Map(prev);
+        const current = next.get(fieldId) ?? 0;
+        const updated = saving ? current + 1 : Math.max(0, current - 1);
+
+        if (updated > 0) {
+          next.set(fieldId, updated);
+        } else {
+          next.delete(fieldId);
+        }
+
+        return next;
+      });
+    },
+    []
+  );
+
+  // ---------------------------------------------------------------------------
   // Expose Handle to Parent
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    onReady?.({flushSave, hasPendingChanges});
-  }, [onReady, flushSave, hasPendingChanges]);
+    onReady?.({
+      flushSave,
+      hasPendingChanges,
+      isAttachmentSaving: () => attachmentSavingCounts.size > 0,
+    });
+  }, [onReady, flushSave, hasPendingChanges, attachmentSavingCounts.size]);
 
   // ---------------------------------------------------------------------------
   // Form Instance
@@ -392,21 +425,6 @@ export const EditableFormManager: React.FC<
       onChange: ({value}) => validationFunction(value),
     },
   });
-
-  // ---------------------------------------------------------------------------
-  // Attachment saving state (blocks section navigation until photo/file is in PouchDB)
-  // ---------------------------------------------------------------------------
-  const [attachmentSavingFieldIds, setAttachmentSavingFieldIds] =
-    useState<Set<string>>(new Set());
-
-  const setAttachmentSaving = useCallback((fieldId: string, saving: boolean) => {
-    setAttachmentSavingFieldIds(prev => {
-      const next = new Set(prev);
-      if (saving) next.add(fieldId);
-      else next.delete(fieldId);
-      return next;
-    });
-  }, []);
 
   // ---------------------------------------------------------------------------
   // Attachment Handlers
@@ -560,12 +578,39 @@ export const EditableFormManager: React.FC<
   });
 
   // ---------------------------------------------------------------------------
+  // Attachment saving lock (prevent navigation until attachment in PouchDB)
+  // ---------------------------------------------------------------------------
+  const isAttachmentSaving = attachmentSavingCounts.size > 0;
+
+  // Disable top/bottom navigation buttons (Finish, etc) while attachments save,
+  // so users can't bypass section navigation blocking.
+  const navigationButtonsWithAttachmentLock = useMemo(() => {
+    if (!isAttachmentSaving) return navigationButtons;
+    return navigationButtons.map(b => ({
+      ...b,
+      disabled: true,
+      loading: true,
+      statusText: 'saving attachment…',
+    }));
+  }, [navigationButtons, isAttachmentSaving]);
+
+  const onCompleteHandlerWithAttachmentLock = useMemo(() => {
+    if (!isAttachmentSaving) return onCompleteHandler;
+    return {
+      ...onCompleteHandler,
+      onClick: async () => {
+        // no-op: completion is blocked until attachment stored
+      },
+    };
+  }, [onCompleteHandler, isAttachmentSaving]);
+
+  // ---------------------------------------------------------------------------
   // Form Manager Config
   // ---------------------------------------------------------------------------
   const formManagerConfig: FullFormManagerConfig = useMemo(
     () => ({
       ...props.config,
-      onCompleteHandler,
+      onCompleteHandler: onCompleteHandlerWithAttachmentLock,
       navigationContext: props.navigationContext,
       attachmentHandlers: {
         addAttachment: handleAddAttachment,
@@ -573,20 +618,20 @@ export const EditableFormManager: React.FC<
         setAttachmentSaving,
       },
       attachmentSaving: {
-        isSaving: () => attachmentSavingFieldIds.size > 0,
+        isSaving: () => attachmentSavingCounts.size > 0,
       },
       trigger: {
         commit: flushSave,
       },
     }),
     [
-      onCompleteHandler,
+      onCompleteHandlerWithAttachmentLock,
       props.config,
       props.navigationContext,
       handleAddAttachment,
       handleRemoveAttachment,
       setAttachmentSaving,
-      attachmentSavingFieldIds.size,
+      attachmentSavingCounts.size,
       flushSave,
     ]
   );
@@ -695,7 +740,7 @@ export const EditableFormManager: React.FC<
       {props.headingSlot}
 
       {/* Navigation Buttons (Top) */}
-      <NavigationButtonsDisplay buttons={navigationButtons} />
+      <NavigationButtonsDisplay buttons={navigationButtonsWithAttachmentLock} />
 
       {/* Form Progress */}
       <LiveFormProgress
@@ -718,7 +763,7 @@ export const EditableFormManager: React.FC<
       />
 
       {/* Navigation Buttons (Bottom) */}
-      <NavigationButtonsDisplay buttons={navigationButtons} />
+      <NavigationButtonsDisplay buttons={navigationButtonsWithAttachmentLock} />
     </Stack>
   );
 };

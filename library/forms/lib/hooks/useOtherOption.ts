@@ -4,7 +4,8 @@
  */
 
 import {SxProps, Theme} from '@mui/material';
-import {useState, useEffect} from 'react';
+import {useEffect, useState} from 'react';
+import {SetFieldDataFn} from '../formModule/types';
 
 // UI marker for "Other" selection (not stored in data)
 export const OTHER_MARKER = '__other__';
@@ -46,7 +47,7 @@ interface UseOtherOptionProps {
   enableOtherOption: boolean;
   rawValue: string | string[];
   predefinedValues: string[];
-  setFieldData: (value: any) => void;
+  setFieldData: SetFieldDataFn;
 }
 
 interface UseOtherOptionReturn {

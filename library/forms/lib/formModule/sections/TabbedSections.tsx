@@ -564,6 +564,16 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
   navigationBlocked = false,
 }) => {
   const isLastStep = activeStep === totalSteps - 1;
+  const blockedSx = navigationBlocked
+    ? {
+        '@keyframes blockedPulse': {
+          '0%': {opacity: 1},
+          '50%': {opacity: 0.35},
+          '100%': {opacity: 1},
+        },
+        animation: 'blockedPulse 0.9s ease-in-out infinite',
+      }
+    : undefined;
 
   return (
     <MobileStepper
@@ -577,7 +587,7 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
             size="small"
             onClick={onCompleteHandler.onClick}
             disabled={navigationBlocked}
-            sx={{fontWeight: 'bold', color: 'success'}}
+            sx={{fontWeight: 'bold', color: 'success', ...(blockedSx as any)}}
           >
             {onCompleteHandler.label}
           </Button>
@@ -586,7 +596,7 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
             size="small"
             onClick={() => onStep('next')}
             disabled={isLastStep || navigationBlocked}
-            sx={{fontWeight: 'bold'}}
+            sx={{fontWeight: 'bold', ...(blockedSx as any)}}
           >
             Next
           </Button>
@@ -597,7 +607,7 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
           size="small"
           onClick={() => onStep('back')}
           disabled={activeStep === 0 || navigationBlocked}
-          sx={{fontWeight: 'bold'}}
+          sx={{fontWeight: 'bold', ...(blockedSx as any)}}
         >
           Back
         </Button>
@@ -904,35 +914,6 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
 
   return (
     <Box ref={containerRef} sx={{width: '100%'}}>
-      {/* Blocking banner while photo/file is saving to PouchDB */}
-      {isNavigationBlocked && (
-        <Paper
-          elevation={0}
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            p: 1.5,
-            mb: 1,
-            bgcolor: 'action.hover',
-            borderRadius: 1,
-          }}
-        >
-          <SyncIcon
-            sx={{
-              color: 'primary.main',
-              '@keyframes spin': {
-                to: {transform: 'rotate(360deg)'},
-              },
-              animation: 'spin 1s linear infinite',
-            }}
-          />
-          <Typography variant="body2" color="text.secondary">
-            Saving photo… Please wait before changing section.
-          </Typography>
-        </Paper>
-      )}
-
       {/* Navigation: Desktop tabs or Mobile stepper */}
       {!showMobileView ? (
         // ================================================================
@@ -955,6 +936,8 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
               allowScrollButtonsMobile
               sx={{
                 overflowY: 'hidden',
+                pointerEvents: isNavigationBlocked ? 'none' : 'auto',
+                opacity: isNavigationBlocked ? 0.6 : 1,
                 '& .MuiTabs-flexContainer': {
                   alignItems: 'flex-start',
                 },

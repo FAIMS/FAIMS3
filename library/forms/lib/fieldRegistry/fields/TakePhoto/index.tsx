@@ -31,10 +31,10 @@ import {
   useAttachments,
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
+import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {logWarn, logError} from '../../../logging';
 
 // Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
@@ -797,6 +797,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
 
       // Block section navigation until photo is stored in PouchDB (prevents data loss)
       setAttachmentSaving?.(true);
+
       try {
         // Now do the async storage
         const newId = await addAttachment({
@@ -818,9 +819,11 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
           return updated;
         });
 
-        // Update field value
-        const currentData = props.state.value?.data as string[] | undefined;
-        props.setFieldData([...(currentData ?? []), newId]);
+        // Update field value using a functional updater to avoid races
+        props.setFieldData((prev: string[] | undefined) => [
+          ...(prev ?? []),
+          newId,
+        ]);
       } finally {
         setAttachmentSaving?.(false);
       }

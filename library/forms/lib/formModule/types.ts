@@ -58,11 +58,23 @@ export const BaseFieldPropsSchema = z.object({
 export type BaseFieldProps = z.infer<typeof BaseFieldPropsSchema>;
 
 // These are the additional FaimsForm props passed
+export interface SetFieldDataFn {
+  (value: any): void;
+  (updater: (prev: any) => any): void;
+}
+
 export type FormFieldContextProps = {
   // Which field is being rendered?
   fieldId: string;
   state: FaimsFormFieldState;
-  setFieldData: (value: any) => void;
+  /**
+   * Update the field's data value.
+   *
+   * You can either:
+   * - pass a new value directly, or
+   * - pass an updater function `(prev: any) => any` for race-safe concurrent updates.
+   */
+  setFieldData: SetFieldDataFn;
   setFieldAnnotation: (value: FormAnnotation) => void;
   // Add new attachment (at start of attachment list)
   addAttachment: (params: {
