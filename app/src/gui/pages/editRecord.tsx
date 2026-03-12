@@ -16,7 +16,13 @@ import {
   FullFormConfig,
   RedirectInfo,
 } from '@faims3/forms';
-import {Alert, CircularProgress, Snackbar, Stack, Typography} from '@mui/material';
+import {
+  Alert,
+  CircularProgress,
+  Snackbar,
+  Stack,
+  Typography,
+} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
