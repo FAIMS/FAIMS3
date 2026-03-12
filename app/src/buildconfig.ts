@@ -20,8 +20,12 @@
  */
 
 import {Capacitor} from '@capacitor/core';
-import {MapStylesheetNameType} from '@faims3/forms';
-import {MapConfig} from '@faims3/forms';
+import {
+  type IAutosuggestAddressService,
+  MapboxAutosuggestAddressService,
+  MapStylesheetNameType,
+  MapConfig,
+} from '@faims3/forms';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -477,8 +481,117 @@ function getAttachmentDocumentIdPrefix(): string | undefined {
   return prefix || undefined;
 }
 
+// Address autosuggest configuration (KEY_SOURCE-style dispatch)
+
+/**
+ * Source for address autosuggest service. NONE disables autocomplete;
+ * MAPBOX uses Mapbox Search Box API (requires VITE_MAPBOX_ACCESS_TOKEN).
+ */
+export enum AutosuggestSource {
+  /** No address autosuggest; AddressField uses manual entry only. */
+  NONE = 'NONE',
+  /** Mapbox Search Box API (suggest + retrieve). */
+  MAPBOX = 'MAPBOX',
+}
+
+/**
+ * Resolves VITE_AUTOSUGGEST_SOURCE to AutosuggestSource. Invalid or unset
+ * defaults to NONE.
+ */
+function getAutosuggestSourceConfig(): AutosuggestSource {
+  const raw = import.meta.env.VITE_AUTOSUGGEST_SOURCE as string | undefined;
+  if (raw === undefined || raw === '') {
+    return AutosuggestSource.NONE;
+  }
+  const upper = raw.toUpperCase();
+  if (upper in AutosuggestSource) {
+    return AutosuggestSource[upper as keyof typeof AutosuggestSource];
+  }
+  logError(
+    `VITE_AUTOSUGGEST_SOURCE invalid (${raw}), using NONE. Valid: NONE, MAPBOX.`
+  );
+  return AutosuggestSource.NONE;
+}
+
+/**
+ * Returns Mapbox access token when AUTOSUGGEST_SOURCE is MAPBOX.
+ * Required for MAPBOX; if missing, address autosuggest is effectively disabled.
+ */
+function getMapboxAccessToken(): string | undefined {
+  const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
+  if (token === undefined || token.trim() === '') {
+    return undefined;
+  }
+  return token.trim();
+}
+
+const DEFAULT_MAPBOX_ADDRESS_COUNTRY = ['AU'];
+
+/**
+ * Returns Mapbox address search country filter (ISO 3166-1 alpha-2).
+ * Optional env VITE_MAPBOX_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
+ * Defaults to Australia when unset.
+ */
+function getMapboxAddressCountry(): string[] {
+  const raw = import.meta.env.VITE_MAPBOX_ADDRESS_COUNTRY as string | undefined;
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
+  }
+  return raw
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+let addressAutosuggestServiceInstance: IAutosuggestAddressService | null = null;
+
+function createAddressAutosuggestServiceInstance():
+  | IAutosuggestAddressService
+  | null {
+  if (addressAutosuggestServiceInstance !== null) {
+    return addressAutosuggestServiceInstance;
+  }
+  const source = getAutosuggestSourceConfig();
+  if (source === AutosuggestSource.NONE) {
+    return null;
+  }
+  if (source === AutosuggestSource.MAPBOX) {
+    const apiKey = getMapboxAccessToken();
+    if (!apiKey) {
+      logError(
+        'VITE_AUTOSUGGEST_SOURCE is MAPBOX but VITE_MAPBOX_ACCESS_TOKEN is not set; address autosuggest disabled.'
+      );
+      return null;
+    }
+    addressAutosuggestServiceInstance = new MapboxAutosuggestAddressService({
+      apiKey,
+      language: 'en',
+      limit: 10,
+      types: 'address',
+      country: getMapboxAddressCountry(),
+    });
+    return addressAutosuggestServiceInstance;
+  }
+  return null;
+}
+
+/**
+ * Returns a factory for the address autosuggest service based on
+ * VITE_AUTOSUGGEST_SOURCE and provider-specific env (e.g. VITE_MAPBOX_ACCESS_TOKEN).
+ * Use as FullFormConfig.addressAutosuggestService. When NONE or config missing,
+ * the factory returns undefined so AddressField skips autocomplete.
+ */
+export function getAddressAutosuggestService(): (() => IAutosuggestAddressService) | undefined {
+  const instance = createAddressAutosuggestServiceInstance();
+  if (instance === null) {
+    return undefined;
+  }
+  return () => instance;
+}
+
 export const ATTACHMENT_SERVICE_TYPE = getAttachmentServiceType();
 export const ATTACHMENT_DOCUMENT_ID_PREFIX = getAttachmentDocumentIdPrefix();
+export const AUTOSUGGEST_SOURCE = getAutosuggestSourceConfig();
 export const AUTOACTIVATE_LISTINGS = true;
 export const CONDUCTOR_URLS = get_conductor_urls();
 export const DEBUG_POUCHDB = include_pouchdb_debugging();
