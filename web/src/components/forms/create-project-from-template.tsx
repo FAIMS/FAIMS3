@@ -77,7 +77,13 @@ export function CreateProjectFromTemplateForm({
     if (!response.ok)
       return {type: 'submit', message: `Error creating ${NOTEBOOK_NAME}.`};
 
-    QueryClient.invalidateQueries({queryKey: ['projects', undefined]});
+    // Invalidate projects list so template's survey list and sidebar refresh
+    await QueryClient.invalidateQueries({queryKey: ['projects']});
+    if (team) {
+      await QueryClient.invalidateQueries({
+        queryKey: ['projectsbyteam', user.token, team],
+      });
+    }
 
     setDialogOpen(false);
   };
