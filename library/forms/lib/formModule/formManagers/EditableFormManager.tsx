@@ -19,12 +19,17 @@ import {
 import {useForm} from '@tanstack/react-form';
 import {debounce, DebouncedFunc} from 'lodash';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {logError} from '../../logging';
+import {logError, logInfo, logWarn} from '../../logging';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
 import {FaimsForm, FaimsFormData} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
 import {FormManager} from './FormManager';
+import {
+  NavigationButtonsDisplay,
+  useNavigationDataPreparation,
+  useNavigationLogic,
+} from './navigation';
 import {FormBreadcrumbs} from './navigation/NavigationBreadcrumbs';
 import {
   getRecordContextFromRecord,
@@ -37,14 +42,6 @@ import {
   FullFormManagerConfig,
 } from './types';
 import {initializeAutoIncrementFields} from './utils/autoIncrementInitializer';
-
-// Navigation module imports
-import {logInfo, logWarn} from '../../logging';
-import {
-  NavigationButtonsDisplay,
-  useNavigationDataPreparation,
-  useNavigationLogic,
-} from './navigation';
 
 // ============================================================================
 // Constants
