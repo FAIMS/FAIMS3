@@ -401,6 +401,11 @@ export const updateNotebook = async (
   uispec: EncodedProjectUIModel,
   metadata: any
 ) => {
+  // Preserve the existing project name (from notebook editor "info") when
+  // replacing UI spec/metadata from an uploaded JSON file.
+  const project = await getProjectById(projectId);
+  const metadataWithExistingName = {...metadata, name: project.name};
+
   // Re-initialise metadata/data dbs (includes security update)
   const metaDB = await initialiseMetadataDb({
     projectId,
@@ -422,10 +427,10 @@ export const updateNotebook = async (
   };
   // now store it to update the spec
   await safeWriteDocument({db: metaDB, data: payload});
-  await writeProjectMetadata(metaDB, metadata);
+  await writeProjectMetadata(metaDB, metadataWithExistingName);
 
-  // update the name if required
-  await changeNotebookName({projectId, name: metadata.name});
+  // Name is already the existing project name; no change needed
+  // (changeNotebookName would be a no-op here)
 
   // no need to write design docs for existing projects
   return projectId;
