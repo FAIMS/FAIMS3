@@ -51,6 +51,7 @@ export function createOneWaySync({
     {
       live: true,
       retry: true,
+      attachments: true,
     }
   );
 

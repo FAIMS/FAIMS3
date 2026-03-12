@@ -15,6 +15,7 @@ import {useAuth} from '../auth-context';
 import {getDashboardProjectContextValue} from '../context/dashboard-project-context';
 import {createHydratedRecordCache} from '../utils/hydrated-cache';
 import {getSpatialFieldNames, parseGeoJSONFromFieldData} from '../utils/spatial-fields';
+import {AttachmentServiceType, createAttachmentService} from '@faims3/data-model';
 import type {FormUpdateData, HydratedRecord, IAttachmentService, UISpecification} from '@faims3/data-model';
 import {DataView} from '@faims3/forms';
 
@@ -38,6 +39,7 @@ export function ProjectDetailView({projectId, onBack}: ProjectDetailViewProps) {
   const vectorSourceRef = useRef<VectorSource<Feature<Geometry>> | null>(null);
   const overlayElRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<Overlay | null>(null);
+  const hasFittedToExtentRef = useRef(false);
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'details'>('overview');
@@ -156,6 +158,15 @@ export function ProjectDetailView({projectId, onBack}: ProjectDetailViewProps) {
         setSelectedRecordId(recordId);
         setSelectedField(fieldId ?? null);
         overlay.setPosition(e.coordinate);
+
+        const view = map.getView();
+        const size = map.getSize();
+        if (size) {
+          // Place the point slightly below the vertical center so the popup is fully visible
+          view.centerOn(e.coordinate, size, [size[0] / 2, size[1] * 0.6]);
+        } else {
+          view.animate({center: e.coordinate, duration: 250});
+        }
       }
     };
     map.on('singleclick', onSingleClick as any);
@@ -169,6 +180,16 @@ export function ProjectDetailView({projectId, onBack}: ProjectDetailViewProps) {
     };
   }, [runtime]);
 
+  const fitMapToPoints = useCallback(() => {
+    const map = mapInstanceRef.current;
+    const source = vectorSourceRef.current;
+    if (!map || !source) return;
+    const extent = source.getExtent();
+    if (!extent.every(Number.isFinite)) return;
+    const view = map.getView();
+    view.fit(extent, {padding: [48, 48, 48, 48], maxZoom: 16, duration: 300});
+  }, []);
+
   // Update vector source when map features change
   useEffect(() => {
     const source = vectorSourceRef.current;
@@ -179,6 +200,18 @@ export function ProjectDetailView({projectId, onBack}: ProjectDetailViewProps) {
     const olFeatures = geoJson.readFeatures(fc, {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
     source.clear();
     source.addFeatures(olFeatures);
+
+    // On first load, zoom to include all points
+    if (olFeatures.length > 0 && !hasFittedToExtentRef.current) {
+      hasFittedToExtentRef.current = true;
+      const map = mapInstanceRef.current;
+      if (map) {
+        const extent = source.getExtent();
+        if (extent.every(Number.isFinite)) {
+          map.getView().fit(extent, {padding: [48, 48, 48, 48], maxZoom: 16, duration: 300});
+        }
+      }
+    }
   }, [mapFeatures]);
 
   const selectedRecord = useMemo(() => {
@@ -199,19 +232,17 @@ export function ProjectDetailView({projectId, onBack}: ProjectDetailViewProps) {
     return out as unknown as FormUpdateData;
   }, [selectedRecord]);
 
-  const attachmentService: IAttachmentService = useMemo(() => {
-    const fail = async () => {
-      throw new Error('Attachment service not configured in dashboard view');
-    };
-    return {
-      storeAttachmentFromFile: fail as any,
-      storeAttachmentFromBlob: fail as any,
-      storeAttachmentFromBase64: fail as any,
-      loadAttachmentAsBlob: fail as any,
-      loadAttachmentAsFile: fail as any,
-      loadAttachmentAsBase64: fail as any,
-    };
-  }, []);
+  const attachmentService: IAttachmentService | null = useMemo(() => {
+    if (!runtime?.localDb) return null;
+    // Use the shared Couch/Pouch attachment service implementation against the dashboard local PouchDB.
+    return createAttachmentService({
+      serviceType: AttachmentServiceType.COUCH,
+      serviceConfig: {
+        dataDb: runtime.localDb as any,
+        documentIdPrefix: 'att-',
+      },
+    });
+  }, [runtime?.localDb]);
 
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(records.length / PAGE_SIZE));
@@ -245,10 +276,18 @@ export function ProjectDetailView({projectId, onBack}: ProjectDetailViewProps) {
       </div>
 
       <div
-        ref={mapRef}
-        className="h-[520px] w-full rounded-md border border-border bg-muted"
+        className="relative h-[520px] w-full rounded-md border border-border bg-muted"
         style={{minHeight: 520}}
       >
+        <div ref={mapRef} className="absolute inset-0 rounded-md" />
+        <button
+          type="button"
+          className="absolute top-2 right-2 z-10 rounded border border-border bg-background px-2 py-1.5 text-xs font-medium shadow hover:bg-accent"
+          onClick={fitMapToPoints}
+          title="Fit map to all points"
+        >
+          Fit to points
+        </button>
         <div ref={overlayElRef} className="pointer-events-auto">
           {selectedRecord && (
             <div className="w-[560px] max-w-[90vw] rounded-md border border-border bg-background shadow-lg">
@@ -335,7 +374,12 @@ export function ProjectDetailView({projectId, onBack}: ProjectDetailViewProps) {
                         navigateToRecord: () => {},
                         getRecordRoute: () => '#',
                         getDataEngine: () => runtime.engine,
-                        getAttachmentService: () => attachmentService,
+                        getAttachmentService: () => {
+                          if (!attachmentService) {
+                            throw new Error('Attachment service not ready');
+                          }
+                          return attachmentService;
+                        },
                         getMapConfig: () => ({mapSource: 'osm', mapSourceKey: '', mapStyle: 'basic'}),
                         editRecordButtonComponent: () => null,
                       }}
