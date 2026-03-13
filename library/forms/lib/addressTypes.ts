@@ -50,7 +50,8 @@ export const AddressValueSchema = z
   })
   .refine(
     val => {
-      const hasAddress = val.address && Object.values(val.address).some(Boolean);
+      const hasAddress =
+        val.address && Object.values(val.address).some(Boolean);
       const hasManual = val.manuallyEnteredAddress?.trim();
       if (hasAddress && hasManual) return false;
       return true;

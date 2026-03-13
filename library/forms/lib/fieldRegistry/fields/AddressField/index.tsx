@@ -322,9 +322,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
         {/* Online with service, empty: search input + suggestions + fallbacks */}
         {showSearchMode && (
           <Stack spacing={1}>
-            <Autocomplete<
-              AutosuggestSuggestion | UseAsEnteredOption
-            >
+            <Autocomplete<AutosuggestSuggestion | UseAsEnteredOption>
               value={null}
               inputValue={searchQuery}
               onInputChange={(_, value) => setSearchQuery(value)}
@@ -387,10 +385,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
                         {option.displayText}
                       </Typography>
                       {option.secondaryText && (
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                        >
+                        <Typography variant="caption" color="text.secondary">
                           {option.secondaryText}
                         </Typography>
                       )}

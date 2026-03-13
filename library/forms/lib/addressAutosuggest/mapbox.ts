@@ -116,7 +116,13 @@ function mapboxSuggestionToAddressValue(
   const address = buildAddressFromContext(ctx);
   const displayName =
     fullAddress?.trim() ||
-    [address.house_number, address.road, address.suburb, address.state, address.postcode]
+    [
+      address.house_number,
+      address.road,
+      address.suburb,
+      address.state,
+      address.postcode,
+    ]
       .filter(Boolean)
       .join(', ') ||
     placeFormatted ||
@@ -133,7 +139,9 @@ export class MapboxAutosuggestAddressService implements IAutosuggestAddressServi
 
   constructor(config: MapboxAutosuggestConfig) {
     if (!config.apiKey?.trim()) {
-      throw new Error('MapboxAutosuggestAddressService requires a non-empty apiKey');
+      throw new Error(
+        'MapboxAutosuggestAddressService requires a non-empty apiKey'
+      );
     }
     this.config = {
       limit: 10,
@@ -151,7 +159,7 @@ export class MapboxAutosuggestAddressService implements IAutosuggestAddressServi
       session_token: options.sessionToken,
     });
     if (this.config.language ?? options.language) {
-      params.set('language', (options.language ?? this.config.language) ?? 'en');
+      params.set('language', options.language ?? this.config.language ?? 'en');
     }
     if (this.config.limit ?? options.limit) {
       params.set('limit', String(options.limit ?? this.config.limit ?? 10));
@@ -170,16 +178,20 @@ export class MapboxAutosuggestAddressService implements IAutosuggestAddressServi
     const res = await fetch(url, {signal: options.signal});
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`Mapbox suggest failed: ${res.status} ${res.statusText} - ${text}`);
+      throw new Error(
+        `Mapbox suggest failed: ${res.status} ${res.statusText} - ${text}`
+      );
     }
     const data = (await res.json()) as MapboxSuggestResponse;
     const suggestions = data.suggestions ?? [];
 
-    return suggestions.map((s): AutosuggestSuggestion => ({
-      id: s.mapbox_id,
-      displayText: s.address ?? s.name ?? '',
-      secondaryText: s.place_formatted,
-    }));
+    return suggestions.map(
+      (s): AutosuggestSuggestion => ({
+        id: s.mapbox_id,
+        displayText: s.address ?? s.name ?? '',
+        secondaryText: s.place_formatted,
+      })
+    );
   }
 
   async getAddressFromSuggestion(
@@ -202,7 +214,9 @@ export class MapboxAutosuggestAddressService implements IAutosuggestAddressServi
         return null;
       }
       const text = await res.text();
-      throw new Error(`Mapbox retrieve failed: ${res.status} ${res.statusText} - ${text}`);
+      throw new Error(
+        `Mapbox retrieve failed: ${res.status} ${res.statusText} - ${text}`
+      );
     }
     const data = (await res.json()) as MapboxRetrieveResponse;
     const feature = data.features?.[0];
