@@ -55,9 +55,7 @@ function saveLastLocation(coords: [number, number]) {
   try {
     localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords));
   } catch {
-    // Silently ignore — localStorage can be unavailable in private browsing
-    // or when storage quota is exceeded. Losing the cached location is
-    // acceptable; the map will fall back to Sydney on next open.
+
   }
 }
 
@@ -147,9 +145,10 @@ export const MapComponent = (props: MapComponentProps) => {
   const positionLayerRef = useRef<VectorLayer>();
   const watchIdRef = useRef<string | null>(null);
   const liveLocationRef = useRef<Position | null>(null);
+  const centerControlAddedRef = useRef(false);
 
-  // Determine map center based on props or current location
-  // if we really can't work it out, use Sydney
+  // Determine map center based on props or current location.
+  // Priority: explicit center > extent > live GPS > cached position > last saved location > Sydney
   const mapCenter = useMemo(() => {
     if (props.center) {
       return props.center;
@@ -161,17 +160,18 @@ export const MapComponent = (props: MapComponentProps) => {
     }
     // otherwise rely on current location
     if (liveLocationRef.current) {
-      return getCoordinates(liveLocationRef?.current ?? undefined);
+      return getCoordinates(liveLocationRef.current ?? undefined);
+    } else if (!loadingLocation && currentPosition) {
+      return getCoordinates(currentPosition);
     } else {
-      // try to get current location
-      if (!loadingLocation && currentPosition) {
-        return getCoordinates(currentPosition);
-      } else {
-        // default to Sydney
-        return [151.2093, -33.8688];
-      }
+      // use the last location the user had the map open at, so it feels
+      // consistent even when GPS is slow or unavailable
+      const cached = loadLastLocation();
+      if (cached) return cached;
+      // final fallback to Sydney
+      return [151.2093, -33.8688];
     }
-  }, [props.center, props.extent]);
+  }, [props.center, props.extent, currentPosition, loadingLocation]);
 
   /**
    * Initializes the map instance with base tile layers and zoom controls.
@@ -291,6 +291,11 @@ export const MapComponent = (props: MapComponentProps) => {
           const wasUnavailable = liveLocationRef.current === null;
           liveLocationRef.current = position;
           liveCursor.updateCursorLocation(position);
+          // Persist so the next map open uses this location instead of Sydney
+          saveLastLocation([
+            position.coords.longitude,
+            position.coords.latitude,
+          ]);
 
           // Emit location available when we first get a position
           if (wasUnavailable) {
@@ -438,7 +443,10 @@ export const MapComponent = (props: MapComponentProps) => {
       // move the map to the center and fit the extent
       if (mapCenter) {
         const center = transform(mapCenter, 'EPSG:4326', defaultMapProjection);
-        map.addControl(createCenterControl(map.getView(), centerMap));
+        if (!centerControlAddedRef.current) {
+          map.addControl(createCenterControl(map.getView(), centerMap));
+          centerControlAddedRef.current = true;
+        }
 
         // we set the map extent if we were given one or if not,
         // set the map center which will either have been passed
