@@ -55,7 +55,9 @@ function saveLastLocation(coords: [number, number]) {
   try {
     localStorage.setItem(LAST_LOCATION_KEY, JSON.stringify(coords));
   } catch {
-
+    // Silently ignore — localStorage can be unavailable in private browsing
+    // or when storage quota is exceeded. Losing the cached location is
+    // acceptable; the map will fall back to Sydney on next open.
   }
 }
 
