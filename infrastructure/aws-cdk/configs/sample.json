@@ -33,7 +33,8 @@
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
-    "contactUrl": "https://your-domain.com/contact"
+    "contactUrl": "https://your-domain.com/contact",
+    "docsUrl": "https://docs.your-domain.com"
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
@@ -86,13 +87,16 @@
   },
   "conductor": {
     "name": "FAIMS Server",
+    "enhancedObservability": true,
     "description": "FAIMS Conductor instance deployment.",
     "conductorDockerImage": "ghcr.io/faims/faims3-api",
     "conductorDockerImageTag": "latest",
     "shortCodePrefix": "FAIMS",
+    "provisionSSOUsersPolicy": "reject",
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
+      "desiredCapacity": 2,
       "minCapacity": 1,
       "maxCapacity": 10,
       "targetCpuUtilization": 70,
@@ -108,6 +112,7 @@
     }
   },
   "authProviders": {
+    "disableLocalLogin": false,
     "providers": [
       "google",
       "someOidcProvider",
@@ -152,13 +157,15 @@
     "conductor": "conductor",
     "couch": "couchdb",
     "faims": "faims",
-    "web": "web"
+    "web": "web",
+    "docs": "docs"
   },
   "mobileApps": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
   },
   "web": {},
+  "docs": {},
   "smtp": {
     "emailServiceType": "SMTP",
     "fromEmail": "notifications@your-domain.com",

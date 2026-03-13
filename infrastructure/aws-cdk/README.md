@@ -54,6 +54,13 @@ The `FaimsFrontEnd` construct manages the web applications:
 
 - Similar setup to the main frontend, but with a separate S3 bucket and CloudFront distribution.
 
+#### Documentation site
+
+- **Part of FaimsFrontEnd**: Built and deployed by the same construct as the app and web frontends.
+- **S3 Bucket + CloudFront**: Static documentation site built from the `/docs` Sphinx user docs.
+- **Build**: Uses CDK Docker bundling with the image built from `docs/Dockerfile` (Sphinx + themes). The `docs/user` tree is built with `sphinx-build -b html` and deployed to the bucket.
+- **Domain**: Served at the `docs` subdomain (e.g. `docs.your-domain.com`). Configure via `domains.docs`; pass `docsDomainName` and mobile app URLs in the frontend props.
+
 ### Auxiliary Components
 
 - **Lambda Function**: A Node.js function to deregister EC2 instances from CloudMap during termination.
@@ -350,10 +357,12 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `couch`: The subdomain prefix for the CouchDB service
   - `faims`: The subdomain prefix for the main FAIMS web application
   - `web`: The subdomain prefix for the new-conductor web application
+  - `docs`: The subdomain prefix for the documentation site (default: `docs`)
 - `mobileApps`: Configuration for mobile app URLs.
   - `androidAppPublicUrl`: The public URL for the Android application in the Google Play Store
   - `iosAppPublicUrl`: The public URL for the iOS application in the Apple App Store
 - `web`: Placeholder configuration for further web/new-conductor config - currently use {}
+- `docs`: Placeholder configuration for the documentation site - currently use `{}`
 
 ## Using Your Configuration
 

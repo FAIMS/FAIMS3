@@ -35,6 +35,7 @@ import {
   upgradeCouchUserToExpressUser,
 } from '../auth/keySigning/create';
 import {
+  API_VERSION,
   CONDUCTOR_DESCRIPTION,
   CONDUCTOR_INSTANCE_NAME,
   CONDUCTOR_PUBLIC_URL,
@@ -111,6 +112,8 @@ api.get('/info', async (req, res) => {
     conductor_url: CONDUCTOR_PUBLIC_URL,
     description: CONDUCTOR_DESCRIPTION,
     prefix: CONDUCTOR_SHORT_CODE_PREFIX,
+    // Report the server version e.g. 1.3.1
+    serverVersion: API_VERSION,
   };
   res.json(response);
 });

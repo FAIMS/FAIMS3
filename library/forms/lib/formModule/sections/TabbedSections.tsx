@@ -774,15 +774,29 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
   }, [visibleSections, activeSection]);
 
   /**
-   * Marks all fields in the current section as touched and triggers validation.
+   * Optionally marks all fields in the current section as touched and triggers validation.
    *
-   * This is called when navigating away from a section to ensure users see
-   * any validation errors for fields they may have skipped.
+   * This is called when navigating away from a section. However, to allow users to
+   * quickly skim through sections without being confronted with validation errors,
+   * we only treat a section as "viewed" (and thus mark its fields as touched) if at
+   * least one field in that section has already been interacted with (touched/changed).
    */
   const handleSectionExit = useCallback(() => {
     const sectionFields = getFieldsForView(spec, activeSection);
 
-    // Mark all fields in the section as touched
+    // Determine if the user has changed at least one field value in this section
+    const hasDirtyField = sectionFields.some(fieldName => {
+      const meta = fieldMeta[fieldName] as {isDirty?: boolean} | undefined;
+      return meta?.isDirty === true;
+    });
+
+    // If no field value has been changed in this section, skip marking it as
+    // viewed so that users can preview sections without triggering validation.
+    if (!hasDirtyField) {
+      return;
+    }
+
+    // Otherwise, mark all fields in the section as touched
     for (const fieldName of sectionFields) {
       form.setFieldMeta(fieldName, meta => ({
         ...meta,
@@ -792,7 +806,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
 
     // Trigger form-wide validation
     form.validate('change');
-  }, [form, spec, activeSection]);
+  }, [form, spec, activeSection, fieldMeta]);
 
   /**
    * Handles navigation to a specific field, potentially in another section.

@@ -34,28 +34,6 @@ export const DEFAULT_CONDUCTOR_URL = 'http://localhost:8154';
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 const FALSEY_STRINGS = ['false', '0', 'off', 'no'];
 
-/*
- * This is designed to get useful commit information data from
- * environment variables for the testing server. While more sophisticated
- * iterations of this can use extra node modules to get git data directly,
- * passing environment variables seems like the safest first path.
- */
-
-function commit_version(): string {
-  if (process.env.__APP_VERSION__) return __APP_VERSION__;
-  // otherwise look in the environment
-  const commitVersion = import.meta.env.VITE_COMMIT_VERSION;
-  if (
-    commitVersion === '' ||
-    commitVersion === undefined ||
-    FALSEY_STRINGS.includes(commitVersion.toLowerCase())
-  ) {
-    return 'unknown dev';
-  } else {
-    return commitVersion;
-  }
-}
-
 function include_pouchdb_debugging(): boolean {
   const debug_pouch = import.meta.env.VITE_DEBUG_POUCHDB;
   if (debug_pouch === '' || debug_pouch === undefined) {
@@ -388,6 +366,26 @@ function tokenRefreshWindowMs(): number {
   }
 }
 
+// Grace period before showing the logged-out banner after app initialisation
+const DEFAULT_LOGIN_BANNER_GRACE_MS = 10000;
+
+/**
+ * @returns The grace period in milliseconds before showing the login banner
+ * after the app has initialised.
+ */
+function loginBannerGraceMs(): number {
+  const loginBannerGraceMs = import.meta.env.VITE_LOGIN_BANNER_GRACE_MS;
+  if (loginBannerGraceMs === '' || loginBannerGraceMs === undefined) {
+    return DEFAULT_LOGIN_BANNER_GRACE_MS;
+  }
+  try {
+    return parseInt(loginBannerGraceMs);
+  } catch (err) {
+    logError(err);
+    return DEFAULT_LOGIN_BANNER_GRACE_MS;
+  }
+}
+
 // Ignore the expiry from the JWT - use 1 year expiry instead - disables token
 // refreshing - debug/compat usage only!
 const DEFAULT_IGNORE_TOKEN_EXP = false;
@@ -507,7 +505,6 @@ export const DEBUG_POUCHDB = include_pouchdb_debugging();
 export const DEBUG_APP = include_app_debugging();
 export const DIRECTORY_AUTH = directory_auth();
 export const RUNNING_UNDER_TEST = is_testing();
-export const COMMIT_VERSION = commit_version();
 export const POUCH_BATCH_SIZE = pouch_batch_size();
 export const POUCH_BATCHES_LIMIT = pouch_batches_limit();
 export const CLUSTER_ADMIN_GROUP_NAME = cluster_admin_group_name();
@@ -523,6 +520,7 @@ export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();
 export const TOKEN_REFRESH_INTERVAL_MS = tokenRefreshIntervalMs();
 export const TOKEN_REFRESH_WINDOW_MS = tokenRefreshWindowMs();
+export const LOGIN_BANNER_GRACE_MS = loginBannerGraceMs();
 export const IGNORE_TOKEN_EXP = ignoreTokenExp();
 export const OFFLINE_MAPS = offline_maps();
 export const NAVIGATION_STYLE = navigation_style();
@@ -538,3 +536,48 @@ export const CAPACITOR_PLATFORM = Capacitor.getPlatform() as
 export const IS_MOBILE_PLATFORM =
   CAPACITOR_PLATFORM === 'ios' || CAPACITOR_PLATFORM === 'android';
 export const IS_WEB_PLATFORM = CAPACITOR_PLATFORM === 'web';
+
+// ==================
+// Version management
+// ==================
+/*
+
+/**
+ * Gets the application version from Vite's __APP_VERSION__ replacement.
+ * This should be defined in vite.config and filled at build time.
+ * @returns The application version.
+ */
+function appVersion(): string {
+  const version = __APP_VERSION__;
+  if (version) {
+    console.info(`Using APP_VERSION from build: ${__APP_VERSION__}`);
+    return version;
+  }
+
+  console.error('__APP_VERSION__ not defined in build. Using "unknown"');
+  return 'unknown';
+}
+
+/**
+ * Gets the commit hash from environment variables if available.
+ * This is optional and may not be provided in all environments.
+ * @returns The commit hash, or undefined if not provided.
+ */
+function commitHash(): string | undefined {
+  const hash = import.meta.env.VITE_COMMIT_VERSION;
+
+  if (
+    hash === '' ||
+    hash === undefined ||
+    FALSEY_STRINGS.includes(hash.toLowerCase())
+  ) {
+    console.info('VITE_COMMIT_VERSION not provided');
+    return undefined;
+  }
+
+  console.info(`Using VITE_COMMIT_VERSION: ${hash}`);
+  return hash;
+}
+
+export const APP_VERSION = appVersion();
+export const COMMIT_HASH = commitHash();

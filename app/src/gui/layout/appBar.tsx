@@ -101,6 +101,10 @@ type MenuItemProps = {
 function getNestedProjects(pouchProjectList: Project[]) {
   const projectListItems: ProjectListItemProps[] = [];
   pouchProjectList.map(project_info => {
+    // Only show activated projects in the side bar
+    if (!project_info.isActivated) {
+      return;
+    }
     projectListItems.push({
       title: project_info.name ?? project_info.metadata.name,
       icon: <DescriptionIcon />,
@@ -128,13 +132,8 @@ function getNestedProjects(pouchProjectList: Project[]) {
  */
 export default function MainAppBar() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const activeServerId = useAppSelector(selectActiveServerId);
-  const projectList = useAppSelector(state =>
-    activeServerId
-      ? // Only show active projects in the side bar
-        selectActiveServerProjects(state).filter(p => p.isActivated)
-      : []
-  );
+  //const activeServerId = useAppSelector(selectActiveServerId);
+  const projectList = useAppSelector(selectActiveServerProjects);
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const toggle = () => setIsOpen(!isOpen);

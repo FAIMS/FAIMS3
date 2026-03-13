@@ -46,11 +46,12 @@ import {unregister as unregisterServiceWorker} from '../../serviceWorkerRegistra
 import {progressiveSaveFiles} from '../../sync/data-dump';
 import {
   RUNNING_UNDER_TEST,
-  COMMIT_VERSION,
   SHOW_POUCHDB_BROWSER,
   SHOW_WIPE,
   NOTEBOOK_NAME,
   CONDUCTOR_URLS,
+  APP_VERSION,
+  COMMIT_HASH,
 } from '../../buildconfig';
 import Breadcrumbs from '../components/ui/breadcrumbs';
 import BoxTab from '../components/ui/boxTab';
@@ -141,8 +142,12 @@ export default function AboutBuild() {
                 <td>{CONDUCTOR_URLS.join(', ')}</td>
               </tr>
               <tr>
+                <td>Release version:</td>
+                <td>{APP_VERSION}</td>
+              </tr>
+              <tr>
                 <td>Version:</td>
-                <td>{COMMIT_VERSION}</td>
+                <td>{COMMIT_HASH ?? 'Not provided.'}</td>
               </tr>
               <tr>
                 <td>{RUNNING_UNDER_TEST ? 'Running under test' : ''}</td>

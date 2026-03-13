@@ -18,6 +18,7 @@ import {
   APP_NAME,
   APP_SHORT_NAME,
   APP_URL,
+  DOCS_URL,
   SIGNIN_PATH,
 } from '@/constants';
 import {getStoredUser, isUserExpired, useAuth} from '@/context/auth-provider';
@@ -27,7 +28,7 @@ import {
   PostExchangeTokenResponseSchema,
 } from '@faims3/data-model';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
-import {ExternalLinkIcon} from 'lucide-react';
+import {ExternalLinkIcon, Info} from 'lucide-react';
 import {toast} from 'sonner';
 
 interface TokenParams {
@@ -168,6 +169,16 @@ function RouteComponent() {
                 <Breadcrumbs />
               </div>
               <div className="flex">
+                {DOCS_URL && (
+                  <Button variant="outline" className="mr-2 p-2">
+                    <a href={DOCS_URL} target="_blank">
+                      <span className="align-middle font-semibold">
+                        Documentation{' '}
+                      </span>
+                      <ExternalLinkIcon className="inline-block" />
+                    </a>
+                  </Button>
+                )}
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>

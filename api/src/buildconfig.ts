@@ -31,6 +31,12 @@ import {
 } from './services/emailService';
 import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
+// Get the package version directly from package.json
+import {version as packageVersion} from '../package.json';
+import {ProvisionSSOUsersPolicy, ProvisionSSOUsersPolicySchema} from './auth/types';
+console.log(`Using API version from package.json: ${packageVersion}`);
+export const API_VERSION = packageVersion;
+
 const TRUTHY_STRINGS = ['true', '1', 'on', 'yes'];
 
 // If a URL for the conductor instance is not provided this will be used as a fall-through
@@ -252,6 +258,21 @@ function developer_mode(): any {
   }
 }
 
+function provision_sso_users_policy(): ProvisionSSOUsersPolicy {
+  const policy = process.env.PROVISION_SSO_USERS_POLICY;
+  if (policy) {
+    try {
+      return ProvisionSSOUsersPolicySchema.parse(policy); // validate the value and throw if it's invalid
+    } catch (err) {
+      console.error(
+        `Invalid PROVISION_SSO_USERS_POLICY value: ${policy}, defaulting to 'reject'`
+      );
+    }
+  }
+  // default policy is 'reject' which rejects unknown users via SSO
+  return 'reject';
+}
+
 // 5 minute access token expiry by default
 const DEFAULT_ACCESS_TOKEN_EXPIRY_MINUTES = 5;
 
@@ -398,6 +419,27 @@ function newConductorUrl(): string {
   }
 }
 
+// Config variable is DISABLE_LOCAL_LOGIN for ease of use,
+// but we will export LOCAL_LOGIN_ENABLED for clarity in the rest of the codebase
+function enable_local_login(): boolean {
+  const disableLocalLogin = process.env.DISABLE_LOCAL_LOGIN;
+  if (disableLocalLogin === undefined) {
+    return true;
+  } else {
+    return disableLocalLogin.toLowerCase() !== 'true';
+  }
+}
+
+// Configure migration of notebooks on startup
+function migrateNotebooks(): boolean {
+  const migrate = process.env.MIGRATE_NOTEBOOKS_ON_STARTUP;
+  if (migrate === undefined) {
+    return false;
+  } else {
+    return migrate.toLowerCase() === 'true';
+  }
+}
+
 export const DEVELOPER_MODE = developer_mode();
 export const COUCHDB_INTERNAL_URL = couchdb_internal_url();
 export const COUCHDB_PUBLIC_URL = couchdb_public_url();
@@ -421,6 +463,9 @@ export const RATE_LIMITER_PER_WINDOW = rateLimiterPerWindow();
 export const RATE_LIMITER_ENABLED = rateLimiterEnabled();
 export const EMAIL_CODE_EXPIRY_MINUTES = emailCodeExpiryMinutes();
 export const NEW_CONDUCTOR_URL = newConductorUrl();
+export const LOCAL_LOGIN_ENABLED = enable_local_login();
+export const MIGRATE_NOTEBOOKS_ON_STARTUP = migrateNotebooks();
+export const PROVISION_SSO_USERS_POLICY = provision_sso_users_policy();
 
 /**
  * Checks the KEY_SOURCE env variable to ensure its a KEY_SOURCE or defaults to
@@ -696,17 +741,3 @@ function bugsnagApiKey(): string | undefined {
 
 export const BUGSNAG_API_KEY = bugsnagApiKey();
 
-/**
- * Gets the API version from environment variables.
- * @returns The API version, or undefined if not configured.
- */
-function apiVersion(): string | undefined {
-  const version = process.env.API_VERSION;
-  if (version === '' || version === undefined) {
-    console.log('API_VERSION not set');
-    return undefined;
-  }
-  return version;
-}
-
-export const API_VERSION = apiVersion();

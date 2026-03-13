@@ -441,3 +441,15 @@ export async function updateUserEmailVerificationStatus({
   // Save the updated user to the database
   await saveCouchUser(user);
 }
+
+/**
+ * userHasLocalProfile - checks if a user has local auth configured (i.e. a password)
+ * @param user - the user object to check, possibly undefined
+ * @returns true if the user has local auth configured, false otherwise
+ */
+export async function userHasLocalProfile(
+  user: Express.User | undefined
+): Promise<boolean> {
+  // Local if they have a local profile in their user document
+  return !!user?.profiles?.local;
+}
