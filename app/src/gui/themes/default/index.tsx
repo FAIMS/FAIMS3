@@ -16,7 +16,7 @@
  * Filename: index.tsx
  * Description:
  *   Default FAIMS open-source theme. Primary colour derived from the FAIMS
- *   logo blue (#223883), secondary from the logo orange (#E89830).
+ *   logo blue (#223883).
  */
 import {colors, createTheme} from '@mui/material';
 import typography from './typography';
@@ -41,18 +41,18 @@ const theme = createTheme({
       dark: '#141E4A',
     },
     stepper: {
-      current: '#E89830',
+      current: '#b5d3d5',
       visited: '#223883',
       error: '#D50C0CFF',
       notVisited: '#A8B0C8',
     },
     highlightColor: {
-      main: '#E89830',
+      main: '#b5d3d5',
       contrastText: '#141E4A',
     },
     secondary: {
-      main: '#E89830',
-      contrastText: '#E89830',
+      main: '#b5d3d5',
+      contrastText: '#b5d3d5',
     },
     text: {
       primary: colors.blueGrey[900],
@@ -67,7 +67,7 @@ const theme = createTheme({
       successBackground: '#223883',
     },
     dialogButton: {
-      cancel: '#E89830',
+      cancel: '#b5d3d5',
       confirm: '#223883',
       dialogText: '#FFFFFF',
       hoverBackground: '#1A2C68',
@@ -77,7 +77,7 @@ const theme = createTheme({
       complete: '#223883',
     },
     icon: {
-      main: '#E89830',
+      main: '#b5d3d5',
       light: '#E8EAF0',
       required: '#890808FF',
       highlight: '#B10000',
@@ -122,7 +122,7 @@ const theme = createTheme({
           '&.Mui-selected': {
             fontWeight: '700 !important',
             color: 'white',
-            backgroundColor: '#E89830',
+            backgroundColor: '#b5d3d5',
           },
         },
       },
