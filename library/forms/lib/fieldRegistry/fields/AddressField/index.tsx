@@ -85,7 +85,7 @@ function buildDisplayName(address: AddressType): string {
 function hasStructuredAddress(value: AddressValue | null): boolean {
   if (!value?.address) return false;
   return Object.values(value.address).some(
-    v => v != null && String(v).trim() !== ''
+    v => v !== null && String(v).trim() !== ''
   );
 }
 
@@ -133,7 +133,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
     const fullCfg = config.mode === 'full' ? (config as FullFormConfig) : null;
     const isOn = fullCfg?.getIsOnline?.() ?? true;
     const service =
-      (props.enableAutoSuggestion ?? true)
+      props.enableAutoSuggestion ?? true
         ? fullCfg?.addressAutosuggestService?.()
         : undefined;
     const manualOnly = !isOn || !service;
@@ -144,6 +144,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
   const [suggestions, setSuggestions] = useState<AutosuggestSuggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const sessionTokenRef = useRef<string | null>(null);
+  const sessionTokenCounterRef = useRef(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suggestAbortControllerRef = useRef<AbortController | null>(null);
   const suggestRequestIdRef = useRef(0);
@@ -162,10 +163,13 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
 
   const ensureSessionToken = useCallback(() => {
     if (!sessionTokenRef.current) {
-      sessionTokenRef.current =
-        typeof crypto !== 'undefined' && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `session-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      // Intentionally avoid `crypto` (Node experimental in our supported range).
+      // This token only needs to be unique enough to group autosuggest requests
+      // into a "session" for the provider; it is not a security primitive.
+      const ts = Date.now().toString(36);
+      const rnd = Math.random().toString(36).slice(2);
+      const n = (++sessionTokenCounterRef.current).toString(36);
+      sessionTokenRef.current = `session-${ts}-${n}-${rnd}`;
     }
     return sessionTokenRef.current;
   }, []);

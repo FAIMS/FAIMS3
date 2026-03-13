@@ -124,4 +124,3 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
     </BaseFieldEditor>
   );
 };
-

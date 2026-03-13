@@ -40,7 +40,7 @@ export const TeamCellComponent = ({teamId}: TeamCellComponentProps) => {
             : ''
         }
       >
-        {isError ? teamId : isLoading ? 'Loading...' : (team?.name ?? teamId)}
+        {isError ? teamId : isLoading ? 'Loading...' : team?.name ?? teamId}
       </Link>
     </div>
   );

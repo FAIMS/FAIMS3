@@ -109,27 +109,27 @@ export const csvFormatValue = (
 
       // Optional expansion: address components, if present
       const addr = (value as any).address;
+      // Always emit a consistent set of address component columns.
+      result[fieldName + '_house_number'] = '';
+      result[fieldName + '_road'] = '';
+      result[fieldName + '_suburb'] = '';
+      result[fieldName + '_town'] = '';
+      result[fieldName + '_municipality'] = '';
+      result[fieldName + '_state'] = '';
+      result[fieldName + '_postcode'] = '';
+      result[fieldName + '_country'] = '';
+      result[fieldName + '_country_code'] = '';
+
       if (addr && typeof addr === 'object') {
-        if ('house_number' in addr) result[fieldName + '_house_number'] = addr.house_number ?? '';
-        if ('road' in addr) result[fieldName + '_road'] = addr.road ?? '';
-        if ('suburb' in addr) result[fieldName + '_suburb'] = addr.suburb ?? '';
-        if ('town' in addr) result[fieldName + '_town'] = addr.town ?? '';
-        if ('municipality' in addr) result[fieldName + '_municipality'] = addr.municipality ?? '';
-        if ('state' in addr) result[fieldName + '_state'] = addr.state ?? '';
-        if ('postcode' in addr) result[fieldName + '_postcode'] = addr.postcode ?? '';
-        if ('country' in addr) result[fieldName + '_country'] = addr.country ?? '';
-        if ('country_code' in addr) result[fieldName + '_country_code'] = addr.country_code ?? '';
-      } else {
-        // Keep columns consistent when no structured address exists
-        result[fieldName + '_house_number'] = '';
-        result[fieldName + '_road'] = '';
-        result[fieldName + '_suburb'] = '';
-        result[fieldName + '_town'] = '';
-        result[fieldName + '_municipality'] = '';
-        result[fieldName + '_state'] = '';
-        result[fieldName + '_postcode'] = '';
-        result[fieldName + '_country'] = '';
-        result[fieldName + '_country_code'] = '';
+        result[fieldName + '_house_number'] = (addr as any).house_number ?? '';
+        result[fieldName + '_road'] = (addr as any).road ?? '';
+        result[fieldName + '_suburb'] = (addr as any).suburb ?? '';
+        result[fieldName + '_town'] = (addr as any).town ?? '';
+        result[fieldName + '_municipality'] = (addr as any).municipality ?? '';
+        result[fieldName + '_state'] = (addr as any).state ?? '';
+        result[fieldName + '_postcode'] = (addr as any).postcode ?? '';
+        result[fieldName + '_country'] = (addr as any).country ?? '';
+        result[fieldName + '_country_code'] = (addr as any).country_code ?? '';
       }
 
       // Preserve manual raw (if present) for downstream processing

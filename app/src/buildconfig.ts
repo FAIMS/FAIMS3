@@ -545,9 +545,7 @@ function getMapboxAddressCountry(): string[] {
 
 let addressAutosuggestServiceInstance: IAutosuggestAddressService | null = null;
 
-function createAddressAutosuggestServiceInstance():
-  | IAutosuggestAddressService
-  | null {
+function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService | null {
   if (addressAutosuggestServiceInstance !== null) {
     return addressAutosuggestServiceInstance;
   }
@@ -581,7 +579,9 @@ function createAddressAutosuggestServiceInstance():
  * Use as FullFormConfig.addressAutosuggestService. When NONE or config missing,
  * the factory returns undefined so AddressField skips autocomplete.
  */
-export function getAddressAutosuggestService(): (() => IAutosuggestAddressService) | undefined {
+export function getAddressAutosuggestService():
+  | (() => IAutosuggestAddressService)
+  | undefined {
   const instance = createAddressAutosuggestServiceInstance();
   if (instance === null) {
     return undefined;
