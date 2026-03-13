@@ -52,6 +52,22 @@ type AddressFieldFullProps = AddressFieldProps & FormFieldContextProps;
 
 const SUGGEST_DEBOUNCE_MS = 300;
 
+/** Synthetic option id for "use search text as address" (unstructured fallback). */
+const USE_AS_ENTERED_OPTION_ID = '__use_as_entered__';
+
+/** Option shown in dropdown when user can use their typed text as the address. */
+interface UseAsEnteredOption {
+  id: typeof USE_AS_ENTERED_OPTION_ID;
+  displayText: string;
+  secondaryText?: string;
+}
+
+function isUseAsEnteredOption(
+  opt: AutosuggestSuggestion | UseAsEnteredOption
+): opt is UseAsEnteredOption {
+  return opt.id === USE_AS_ENTERED_OPTION_ID;
+}
+
 /**
  * Build a display name from address parts.
  */
@@ -303,52 +319,116 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
           />
         )}
 
-        {/* Online with service, empty: search input + suggestions */}
+        {/* Online with service, empty: search input + suggestions + fallbacks */}
         {showSearchMode && (
-          <Autocomplete<AutosuggestSuggestion>
-            value={null}
-            inputValue={searchQuery}
-            onInputChange={(_, value) => setSearchQuery(value)}
-            onChange={(_, option) => {
-              if (option) handleSelectSuggestion(option);
-            }}
-            options={suggestions}
-            getOptionLabel={opt => opt.displayText}
-            loading={suggestLoading}
-            disabled={disabled}
-            filterOptions={x => x}
-            renderOption={(props, option) => (
-              <li {...props} key={option.id}>
-                <Stack>
-                  <Typography variant="body2">{option.displayText}</Typography>
-                  {option.secondaryText && (
-                    <Typography variant="caption" color="text.secondary">
-                      {option.secondaryText}
-                    </Typography>
-                  )}
-                </Stack>
-              </li>
+          <Stack spacing={1}>
+            <Autocomplete<
+              AutosuggestSuggestion | UseAsEnteredOption
+            >
+              value={null}
+              inputValue={searchQuery}
+              onInputChange={(_, value) => setSearchQuery(value)}
+              onChange={(_, option) => {
+                if (!option) return;
+                if (isUseAsEnteredOption(option)) {
+                  const text = searchQuery.trim();
+                  if (text) {
+                    setFieldData({
+                      display_name: text,
+                      manuallyEnteredAddress: text,
+                      address: undefined,
+                    });
+                    setSearchQuery('');
+                    setSuggestions([]);
+                    sessionTokenRef.current = null;
+                  }
+                  return;
+                }
+                handleSelectSuggestion(option);
+              }}
+              options={[
+                ...suggestions,
+                ...(searchQuery.trim() && !allowFullAddressManualEntry
+                  ? [
+                      {
+                        id: USE_AS_ENTERED_OPTION_ID,
+                        displayText: 'Use this address as entered',
+                        secondaryText: searchQuery.trim(),
+                      } as UseAsEnteredOption,
+                    ]
+                  : []),
+              ]}
+              getOptionLabel={opt => opt.displayText}
+              loading={suggestLoading}
+              disabled={disabled}
+              filterOptions={x => x}
+              renderOption={(props, option) => {
+                if (isUseAsEnteredOption(option)) {
+                  return (
+                    <li {...props} key={option.id}>
+                      <Stack>
+                        <Typography
+                          variant="body2"
+                          sx={{fontStyle: 'italic', color: 'text.secondary'}}
+                        >
+                          {option.displayText}
+                          {option.secondaryText
+                            ? ` — "${option.secondaryText}"`
+                            : ''}
+                        </Typography>
+                      </Stack>
+                    </li>
+                  );
+                }
+                return (
+                  <li {...props} key={option.id}>
+                    <Stack>
+                      <Typography variant="body2">
+                        {option.displayText}
+                      </Typography>
+                      {option.secondaryText && (
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {option.secondaryText}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </li>
+                );
+              }}
+              renderInput={params => (
+                <TextField
+                  {...params}
+                  label="Search for an address"
+                  placeholder="Start typing an address..."
+                  onBlur={handleBlur}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {suggestLoading ? (
+                          <CircularProgress color="inherit" size={20} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }}
+                />
+              )}
+            />
+            {allowFullAddressManualEntry && !disabled && (
+              <Button
+                size="small"
+                startIcon={<EditIcon />}
+                onClick={() => setEditPanelOpen(true)}
+                sx={{alignSelf: 'flex-start'}}
+              >
+                Can&apos;t find your address? Enter manually
+              </Button>
             )}
-            renderInput={params => (
-              <TextField
-                {...params}
-                label="Search for an address"
-                placeholder="Start typing an address..."
-                onBlur={handleBlur}
-                InputProps={{
-                  ...params.InputProps,
-                  endAdornment: (
-                    <>
-                      {suggestLoading ? (
-                        <CircularProgress color="inherit" size={20} />
-                      ) : null}
-                      {params.InputProps.endAdornment}
-                    </>
-                  ),
-                }}
-              />
-            )}
-          />
+          </Stack>
         )}
 
         {/* Summary row + edit/expand icon (left): display mode (after autocomplete) or manual-only structured */}
