@@ -1,39 +1,34 @@
-import React, {
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  useMemo,
-} from 'react';
+import ClearIcon from '@mui/icons-material/Clear';
+import EditIcon from '@mui/icons-material/Edit';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import {
+  Autocomplete,
+  Box,
+  Button,
+  CircularProgress,
   Collapse,
   IconButton,
   Stack,
   TextField,
   Typography,
-  Box,
-  Autocomplete,
-  Button,
-  CircularProgress,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import ClearIcon from '@mui/icons-material/Clear';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import z from 'zod';
+import type {AutosuggestSuggestion} from '../../../addressAutosuggest/types';
 import {
   AddressType,
   AddressValue,
   AddressValueSchema,
 } from '../../../addressTypes';
-import type {AutosuggestSuggestion} from '../../../addressAutosuggest/types';
+import type {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
   BaseFieldPropsSchema,
   FormFieldContextProps,
 } from '../../../formModule/types';
-import type {FullFormConfig} from '../../../formModule/formManagers/types';
+import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
+import {DataViewFieldRender} from '../../../rendering/types';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {DataViewFieldRender} from '../../../rendering/types';
-import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 
 /** Nullable schema for field value (empty when no address entered). */
 const AddressValueNullableSchema = AddressValueSchema.nullable();
@@ -73,7 +68,9 @@ function buildDisplayName(address: AddressType): string {
 
 function hasStructuredAddress(value: AddressValue | null): boolean {
   if (!value?.address) return false;
-  return Object.values(value.address).some(v => v != null && String(v).trim() !== '');
+  return Object.values(value.address).some(
+    v => v != null && String(v).trim() !== ''
+  );
 }
 
 /**
@@ -109,7 +106,24 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
   const hasValue = !!(displayName?.trim() || manualText?.trim());
   const hasStructured = hasStructuredAddress(currentValue);
 
-  const [editPanelOpen, setEditPanelOpen] = useState(false);
+  const [editPanelOpen, setEditPanelOpen] = useState(() => {
+    const val = state.value?.data as AddressValue | null;
+    const hasVal = !!(
+      val?.display_name?.trim() ||
+      (val?.manuallyEnteredAddress?.trim() ?? '')
+    );
+    if (hasVal) return false;
+    // No response: expand structural form by default when in manual-only structured mode
+    const fullCfg = config.mode === 'full' ? (config as FullFormConfig) : null;
+    const isOn = fullCfg?.getIsOnline?.() ?? true;
+    const service =
+      (props.enableAutoSuggestion ?? true)
+        ? fullCfg?.addressAutosuggestService?.()
+        : undefined;
+    const manualOnly = !isOn || !service;
+    const allowStructured = props.allowFullAddressManualEntry ?? false;
+    return manualOnly && allowStructured;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<AutosuggestSuggestion[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
@@ -119,8 +133,16 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
   const suggestRequestIdRef = useRef(0);
 
   const showManualOnly = !isOnline || !autosuggestService;
-  const showSearchMode = isOnline && !!autosuggestService && !hasValue && !editPanelOpen;
-  const showDisplayMode = hasValue && !editPanelOpen;
+  const showSearchMode =
+    isOnline && !!autosuggestService && !hasValue && !editPanelOpen;
+  /** Summary row + edit icon: only when we have structured data or are in structured-only mode; not for free-text-only values. */
+  const showSummaryRow =
+    (hasValue && !editPanelOpen && hasStructured) ||
+    (showManualOnly && allowFullAddressManualEntry && !editPanelOpen);
+  /** Single text box: free-text-only mode or value is free-text only (no pencil/summary). */
+  const showFreeTextOnly =
+    (showManualOnly && !allowFullAddressManualEntry) ||
+    (hasValue && !hasStructured);
 
   const ensureSessionToken = useCallback(() => {
     if (!sessionTokenRef.current) {
@@ -222,17 +244,6 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
     [autosuggestService, setFieldData]
   );
 
-  const setManualOnly = useCallback(
-    (text: string) => {
-      setFieldData({
-        display_name: text,
-        manuallyEnteredAddress: text,
-        address: undefined,
-      });
-    },
-    [setFieldData]
-  );
-
   const setStructuredOnly = useCallback(
     (newAddress: AddressType, newDisplayName?: string) => {
       setFieldData({
@@ -254,7 +265,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
 
   const updateAddressPart = useCallback(
     (key: keyof AddressType) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = { ...address, [key]: e.target.value };
+      const next = {...address, [key]: e.target.value};
       setStructuredOnly(next);
     },
     [address, setStructuredOnly]
@@ -271,78 +282,26 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
       errors={errors}
     >
       <Box>
-
-        {/* Offline or no service: either free-text or structured component entry */}
-        {showManualOnly &&
-          (allowFullAddressManualEntry ? (
-            <Stack spacing={2}>
-              <TextField
-                label="House Number"
-                value={address.house_number ?? ''}
-                fullWidth
-                variant="outlined"
-                onChange={updateAddressPart('house_number')}
-                onBlur={handleBlur}
-                disabled={disabled}
-              />
-              <TextField
-                label="Street Name"
-                value={address.road ?? ''}
-                fullWidth
-                variant="outlined"
-                onChange={updateAddressPart('road')}
-                onBlur={handleBlur}
-                disabled={disabled}
-              />
-              <TextField
-                label="Suburb"
-                value={address.suburb ?? ''}
-                fullWidth
-                variant="outlined"
-                onChange={updateAddressPart('suburb')}
-                onBlur={handleBlur}
-                disabled={disabled}
-              />
-              <TextField
-                label="State"
-                value={address.state ?? ''}
-                fullWidth
-                variant="outlined"
-                onChange={updateAddressPart('state')}
-                onBlur={handleBlur}
-                disabled={disabled}
-              />
-              <TextField
-                label="Postcode"
-                value={address.postcode ?? ''}
-                fullWidth
-                variant="outlined"
-                onChange={updateAddressPart('postcode')}
-                onBlur={handleBlur}
-                disabled={disabled}
-              />
-              {!disabled && (
-                <Button
-                  size="small"
-                  startIcon={<ClearIcon />}
-                  onClick={clearAddress}
-                >
-                  Clear
-                </Button>
-              )}
-            </Stack>
-          ) : (
-            <TextField
-              label={label}
-              value={hasValue ? manualText || displayName : ''}
-              placeholder="Enter address"
-              fullWidth
-              variant="outlined"
-              disabled={disabled}
-              onBlur={handleBlur}
-              onChange={e => setManualOnly(e.target.value)}
-            />
-          ))}
+        {/* Free-text-only: single text box (no pencil/summary when value is non-structured) */}
+        {showFreeTextOnly && (
+          <TextField
+            label={label}
+            value={String(manualText ?? displayName ?? '')}
+            placeholder="Enter address"
+            fullWidth
+            variant="outlined"
+            disabled={disabled}
+            onBlur={handleBlur}
+            onChange={e => {
+              const v = e.target.value;
+              setFieldData({
+                display_name: v,
+                manuallyEnteredAddress: v,
+                address: undefined,
+              });
+            }}
+          />
+        )}
 
         {/* Online with service, empty: search input + suggestions */}
         {showSearchMode && (
@@ -392,9 +351,20 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
           />
         )}
 
-        {/* Has value: show display name + pencil */}
-        {showDisplayMode && !showManualOnly && (
+        {/* Summary row + edit/expand icon (left): display mode (after autocomplete) or manual-only structured */}
+        {showSummaryRow && (
           <Stack direction="row" alignItems="center" spacing={0.5}>
+            {!disabled && (
+              <IconButton
+                size="small"
+                onClick={() => setEditPanelOpen(!editPanelOpen)}
+                aria-label={
+                  editPanelOpen ? 'Collapse address form' : 'Edit address'
+                }
+              >
+                {editPanelOpen ? <ExpandLessIcon /> : <EditIcon />}
+              </IconButton>
+            )}
             <Typography
               variant="body1"
               sx={{
@@ -405,22 +375,35 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
             >
               {displayName || 'No address entered'}
             </Typography>
-            {!disabled && (
-              <IconButton
-                size="small"
-                onClick={() => setEditPanelOpen(true)}
-                aria-label="Edit address"
-              >
-                <EditIcon />
-              </IconButton>
-            )}
           </Stack>
         )}
 
-        {/* Pencil expanded: manual parts (if structured) or single text (if manual) + Clear */}
-        <Collapse in={editPanelOpen}>
-          <Stack spacing={2} sx={{ mt: 2 }}>
-            {hasStructured ? (
+        {/* Edit panel: only when structured (not for free-text-only value) */}
+        <Collapse
+          in={editPanelOpen && (hasStructured || allowFullAddressManualEntry)}
+        >
+          <Stack spacing={2} sx={{mt: 2}}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Button
+                size="small"
+                startIcon={<ClearIcon />}
+                onClick={clearAddress}
+                disabled={disabled}
+              >
+                {autosuggestService && isOnline
+                  ? 'Clear and search again'
+                  : 'Clear'}
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setEditPanelOpen(false)}
+                disabled={disabled}
+              >
+                Done
+              </Button>
+            </Stack>
+            {hasStructured || allowFullAddressManualEntry ? (
               <>
                 <TextField
                   label="House Number"
@@ -471,32 +454,21 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
             ) : (
               <TextField
                 label="Address (free text)"
-                value={manualText || displayName}
+                value={String(manualText ?? displayName ?? '')}
                 fullWidth
                 variant="outlined"
-                onChange={e => setManualOnly(e.target.value)}
                 onBlur={handleBlur}
+                onChange={e => {
+                  const v = e.target.value;
+                  setFieldData({
+                    display_name: v,
+                    manuallyEnteredAddress: v,
+                    address: undefined,
+                  });
+                }}
                 disabled={disabled}
               />
             )}
-            <Stack direction="row" spacing={1}>
-              <Button
-                size="small"
-                startIcon={<ClearIcon />}
-                onClick={clearAddress}
-                disabled={disabled}
-              >
-                {autosuggestService && isOnline ? 'Clear and search again' : 'Clear'}
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => setEditPanelOpen(false)}
-                disabled={disabled}
-              >
-                Done
-              </Button>
-            </Stack>
           </Stack>
         </Collapse>
       </Box>
@@ -509,7 +481,8 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
  */
 const AddressFieldRenderer: DataViewFieldRender = props => {
   const value = props.value as AddressValue | null;
-  const text = value?.display_name?.trim() || value?.manuallyEnteredAddress?.trim();
+  const text =
+    value?.display_name?.trim() || value?.manuallyEnteredAddress?.trim();
 
   if (!text) {
     return <EmptyResponsePlaceholder />;
@@ -526,11 +499,9 @@ const valueSchema = (props: AddressFieldProps) => {
     return AddressValueNullableSchema.refine(
       val =>
         val !== null &&
-        !!(
-          (val.display_name?.trim() || val.manuallyEnteredAddress?.trim() || '')
-            .length
-        ),
-      { message: 'Address is required' }
+        !!(val.display_name?.trim() || val.manuallyEnteredAddress?.trim() || '')
+          .length,
+      {message: 'Address is required'}
     );
   }
   return AddressValueNullableSchema;
