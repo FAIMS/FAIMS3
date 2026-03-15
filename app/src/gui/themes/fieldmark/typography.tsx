@@ -19,7 +19,7 @@
  */
 
 export default {
-  fontFamily: "'Inter', sans-serif",
+  fontFamily: "'Open Sans', sans-serif",
   h1: {
     fontFamily: "'Lato', sans-serif",
     fontWeight: 900,

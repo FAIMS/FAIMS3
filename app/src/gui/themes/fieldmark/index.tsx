@@ -15,15 +15,16 @@
  *
  * Filename: index.tsx
  * Description:
- *   Default FAIMS open-source theme. Primary colour derived from the FAIMS
- *   logo blue (#223883).
+ *   TODO
  */
+
 import {colors, createTheme} from '@mui/material';
 import typography from './typography';
+
 const theme = createTheme({
   stepperColors: {
     current: '#000000',
-    visited: '#223883',
+    visited: '#07a907',
     error: '#EE1616FF',
     notVisited: '#BDBDBD',
   },
@@ -32,27 +33,28 @@ const theme = createTheme({
       default: '#FAFAFB',
       paper: '#FFFFFF',
       draftBackground: '#FFFFFFFF',
-      lightBackground: '#E8EAF0',
-      tabsBackground: '#E8EAF0',
+      lightBackground: '#edeeeb',
+      tabsBackground: '#edeeeb',
     },
     primary: {
-      main: '#223883',
-      light: '#4A6BC5',
-      dark: '#141E4A',
+      main: '#669911',
+      light: '#a7e938',
+      dark: '#141E03',
     },
+
     stepper: {
-      current: '#b5d3d5',
-      visited: '#223883',
+      current: '#E18200',
+      visited: '#669911',
       error: '#D50C0CFF',
-      notVisited: '#A8B0C8',
+      notVisited: '#B7C1A6F1',
     },
     highlightColor: {
-      main: '#b5d3d5',
-      contrastText: '#141E4A',
+      main: '#E18200',
+      contrastText: '#141E03',
     },
     secondary: {
-      main: '#b5d3d5',
-      contrastText: '#b5d3d5',
+      main: '#E18200',
+      contrastText: '#E18200',
     },
     text: {
       primary: colors.blueGrey[900],
@@ -64,21 +66,22 @@ const theme = createTheme({
       warningText: '#9C5711FF',
       infoBackground: '#E5F6FD',
       infoText: '#084C61',
-      successBackground: '#223883',
+      successBackground: '#669911',
     },
     dialogButton: {
-      cancel: '#b5d3d5',
-      confirm: '#223883',
+      cancel: '#E18200',
+      confirm: '#669911',
       dialogText: '#FFFFFF',
-      hoverBackground: '#1A2C68',
+      hoverBackground: '#50790DFF',
     },
     progressBar: {
-      background: '#E8EAF0',
-      complete: '#223883',
+      background: '#edeeeb',
+      complete: '#669911',
     },
     icon: {
-      main: '#b5d3d5',
-      light: '#E8EAF0',
+      main: '#E18200',
+
+      light: '#edeeeb',
       required: '#890808FF',
       highlight: '#B10000',
     },
@@ -87,6 +90,7 @@ const theme = createTheme({
       rowBorder: '#D3D1D1FF',
       columnSeparator: '#828789FF',
     },
+    // stepperGradient: generateStepperColors(10, 'default'),
   },
   typography,
   components: {
@@ -98,8 +102,8 @@ const theme = createTheme({
           },
         },
         colorPrimary: {
-          backgroundColor: '#E8EAF0',
-          color: '#141E4A',
+          backgroundColor: '#edeeeb',
+          color: '#324C08', //tab text color
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
@@ -122,7 +126,7 @@ const theme = createTheme({
           '&.Mui-selected': {
             fontWeight: '700 !important',
             color: 'white',
-            backgroundColor: '#b5d3d5',
+            backgroundColor: '#DA9449',
           },
         },
       },
@@ -138,4 +142,5 @@ const theme = createTheme({
     },
   },
 });
+
 export default theme;
