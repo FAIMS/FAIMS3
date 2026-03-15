@@ -94,6 +94,53 @@ export const csvFormatValue = (
   }
 
   if (fieldType === 'faims-core::JSON') {
+    // AddressField (faims-custom::AddressField) stores a GeocodeJSON-like object:
+    // { display_name: string, address?: {..parts..}, manuallyEnteredAddress?: string }
+    // Older records may contain only display_name + address, or may be null.
+    if (value instanceof Object && 'display_name' in value) {
+      const display =
+        (typeof value.display_name === 'string' && value.display_name) ||
+        (typeof value.manuallyEnteredAddress === 'string' &&
+          value.manuallyEnteredAddress) ||
+        '';
+
+      // Primary column: a human-readable string
+      result[fieldName] = display;
+
+      // Optional expansion: address components, if present
+      const addr = (value as any).address;
+      // Always emit a consistent set of address component columns.
+      result[fieldName + '_house_number'] = '';
+      result[fieldName + '_road'] = '';
+      result[fieldName + '_suburb'] = '';
+      result[fieldName + '_town'] = '';
+      result[fieldName + '_municipality'] = '';
+      result[fieldName + '_state'] = '';
+      result[fieldName + '_postcode'] = '';
+      result[fieldName + '_country'] = '';
+      result[fieldName + '_country_code'] = '';
+
+      if (addr && typeof addr === 'object') {
+        result[fieldName + '_house_number'] = (addr as any).house_number ?? '';
+        result[fieldName + '_road'] = (addr as any).road ?? '';
+        result[fieldName + '_suburb'] = (addr as any).suburb ?? '';
+        result[fieldName + '_town'] = (addr as any).town ?? '';
+        result[fieldName + '_municipality'] = (addr as any).municipality ?? '';
+        result[fieldName + '_state'] = (addr as any).state ?? '';
+        result[fieldName + '_postcode'] = (addr as any).postcode ?? '';
+        result[fieldName + '_country'] = (addr as any).country ?? '';
+        result[fieldName + '_country_code'] = (addr as any).country_code ?? '';
+      }
+
+      // Preserve manual raw (if present) for downstream processing
+      result[fieldName + '_manual'] =
+        typeof value.manuallyEnteredAddress === 'string'
+          ? value.manuallyEnteredAddress
+          : '';
+
+      return result;
+    }
+
     // map location, if it's a point we can pull out lat/long
     if (
       value instanceof Object &&

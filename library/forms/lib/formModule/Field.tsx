@@ -15,7 +15,7 @@ import {
 } from './types';
 import {getFieldId} from './utils';
 import {Alert} from '@mui/material';
-import { logInfo } from '../logging';
+import {logInfo} from '../logging';
 
 interface FieldProps {
   fieldId: string;

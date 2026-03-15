@@ -38,12 +38,12 @@ import {Fill, RegularShape, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {getCoordinates, useCurrentLocation} from '../../hooks/useLocation';
+import {logWarn} from '../../logging';
 import {createCenterControl} from './controls/center-control';
+import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
 import {createLayerToggle} from './controls/layer-toggle';
 import {createTileStore} from './TileStore';
 import {MapConfig} from './types';
-import {createSetPointToCurrentLocationControl} from './controls/emitCurrentLocation';
-import { logWarn } from '../../logging';
 
 export const defaultMapProjection = 'EPSG:3857';
 const MAX_ZOOM = 20;

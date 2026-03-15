@@ -7,7 +7,7 @@ import {
 import Mustache from 'mustache';
 import {formDataExtractor} from '../../utils';
 import {FaimsForm} from '../types';
-import { logWarn } from '../../logging';
+import {logWarn} from '../../logging';
 
 /*
 Patch mustache to not escape values.

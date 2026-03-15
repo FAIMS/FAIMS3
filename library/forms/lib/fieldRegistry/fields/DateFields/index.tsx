@@ -24,7 +24,7 @@ import {
 } from '../../../rendering/fields';
 import {FieldInfo, FieldReturnType} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import { logError } from '../../../logging';
+import {logError} from '../../../logging';
 
 // =============================================================================
 // Props Schema
