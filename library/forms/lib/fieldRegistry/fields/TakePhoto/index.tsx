@@ -31,10 +31,10 @@ import {
   useAttachments,
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
+import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {logWarn, logError} from '../../../logging';
 
 // Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
@@ -636,6 +636,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     state,
     addAttachment,
     removeAttachment,
+    setAttachmentSaving,
     config: context,
   } = props;
 
@@ -794,33 +795,42 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         }
       }
 
-      // Now do the async storage
-      const newId = await addAttachment({
-        // Blob attachments are faster - especially on native
-        blob: photoBlob,
-        contentType: `image/${photoResult.format}`,
-        type: 'photo',
-        fileFormat: photoResult.format,
-      });
+      // Block section navigation until photo is stored in PouchDB (prevents data loss)
+      setAttachmentSaving?.(true);
 
-      // Update pending photo with the real attachment ID
-      // This allows the cleanup effect to know when to remove it
-      setPendingPhotos(current => {
-        const updated = new Map(current);
-        const pending = updated.get(tempId);
-        if (pending) {
-          updated.set(tempId, {...pending, attachmentId: newId});
-        }
-        return updated;
-      });
+      try {
+        // Now do the async storage
+        const newId = await addAttachment({
+          // Blob attachments are faster - especially on native
+          blob: photoBlob,
+          contentType: `image/${photoResult.format}`,
+          type: 'photo',
+          fileFormat: photoResult.format,
+        });
 
-      // Update field value
-      const currentData = props.state.value?.data as string[] | undefined;
-      props.setFieldData([...(currentData ?? []), newId]);
+        // Update pending photo with the real attachment ID
+        // This allows the cleanup effect to know when to remove it
+        setPendingPhotos(current => {
+          const updated = new Map(current);
+          const pending = updated.get(tempId);
+          if (pending) {
+            updated.set(tempId, {...pending, attachmentId: newId});
+          }
+          return updated;
+        });
+
+        // Update field value using a functional updater to avoid races
+        props.setFieldData((prev: string[] | undefined) => [
+          ...(prev ?? []),
+          newId,
+        ]);
+      } finally {
+        setAttachmentSaving?.(false);
+      }
     } catch (err: any) {
       logError(new Error('Failed to capture photo:'), {error: err});
     }
-  }, [state.value, addAttachment, context]);
+  }, [state.value, addAttachment, setAttachmentSaving, context]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.

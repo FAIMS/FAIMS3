@@ -528,6 +528,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
     state,
     addAttachment,
     removeAttachment,
+    setAttachmentSaving,
     config: context,
   } = props;
 
@@ -567,30 +568,36 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
           return;
         }
 
-        // Upload each file
-        const newAttachments = [];
-        for (const file of acceptedFiles) {
-          newAttachments.push(
-            await addAttachment({
-              blob: file,
-              contentType: file.type || 'application/octet-stream',
-              // Split on the file name
-              fileFormat: file.name.split('.').pop() || 'txt',
-              // File type - this helps inform naming scheme
-              type: 'file',
-            })
-          );
-        }
+        // Block section navigation until all files are stored in PouchDB
+        setAttachmentSaving?.(true);
+        try {
+          // Upload each file
+          const newAttachments = [];
+          for (const file of acceptedFiles) {
+            newAttachments.push(
+              await addAttachment({
+                blob: file,
+                contentType: file.type || 'application/octet-stream',
+                // Split on the file name
+                fileFormat: file.name.split('.').pop() || 'txt',
+                // File type - this helps inform naming scheme
+                type: 'file',
+              })
+            );
+          }
 
-        // Update field value
-        const currentData = props.state.value?.data as string[] | undefined;
-        props.setFieldData([...(currentData ?? []), ...newAttachments]);
+          // Update field value
+          const currentData = props.state.value?.data as string[] | undefined;
+          props.setFieldData([...(currentData ?? []), ...newAttachments]);
+        } finally {
+          setAttachmentSaving?.(false);
+        }
       } catch (err: any) {
         logError(err);
         setError('Failed to upload file(s). Please try again.');
       }
     },
-    [state.value, addAttachment, maximumNumberOfFiles]
+    [state.value, addAttachment, setAttachmentSaving, maximumNumberOfFiles]
   );
 
   /**

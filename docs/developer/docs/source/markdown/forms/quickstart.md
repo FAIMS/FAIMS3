@@ -104,8 +104,16 @@ export type FormFieldContextProps = {
   fieldId: string;
   // The current value of this field (data, annotations, attachments)
   state: FaimsFormFieldState;
-  // This fields data setting function
-  setFieldData: (value: any) => void;
+  /**
+   * Update the field's data value.
+   *
+   * You can either:
+   * - pass a new value directly, or
+   * - pass an updater function `(prev: any) => any` for race‑safe concurrent updates.
+   */
+  setFieldData:
+    | ((value: any) => void)
+    | ((updater: (prev: any) => any) => void);
   // This fields annotation setting function
   setFieldAnnotation: (value: FormAnnotation) => void;
   // Add new attachment (at start of attachment list)

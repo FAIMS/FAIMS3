@@ -16,7 +16,13 @@ import {
   FullFormConfig,
   RedirectInfo,
 } from '@faims3/forms';
-import {CircularProgress, Stack, Typography} from '@mui/material';
+import {
+  Alert,
+  CircularProgress,
+  Snackbar,
+  Stack,
+  Typography,
+} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
@@ -118,6 +124,9 @@ export const EditRecordPage = () => {
   const [formHandle, setFormHandle] =
     useState<EditableFormManagerHandle | null>(null);
 
+  // Snackbar to explain when navigation is blocked due to pending saves
+  const [navBlockedOpen, setNavBlockedOpen] = useState(false);
+
   // Are we resolving auto incrementer issues?
   const [resolvingAutoIncrementer, setResolvingAutoIncrementer] = useState<{
     ref: AutoIncrementFieldRef;
@@ -125,21 +134,38 @@ export const EditRecordPage = () => {
   } | null>(null);
 
   // Establish the blocker function (this is how we check if we need to block
-  // nav events and flush)
-  const blocker = useBlocker(
-    ({currentLocation, nextLocation}) =>
-      formHandle?.hasPendingChanges() === true &&
+  // nav events while anything is still pending)
+  const blocker = useBlocker(({currentLocation, nextLocation}) => {
+    return (
+      (formHandle?.hasPendingChanges() === true ||
+        formHandle?.isAttachmentSaving() === true) &&
       currentLocation.pathname !== nextLocation.pathname
-  );
+    );
+  });
 
-  // When the blocker state changes - we only proceed after forcing a flush
+  // When navigation is blocked, briefly show a snackbar so the user knows why
   useEffect(() => {
     if (blocker.state === 'blocked') {
-      formHandle?.flushSave().finally(() => {
-        blocker.proceed();
-      });
+      setNavBlockedOpen(true);
     }
-  }, [blocker, formHandle]);
+  }, [blocker.state]);
+
+  // Also show the snackbar on every browser back/forward attempt that would be blocked
+  useEffect(() => {
+    const handlePopState = () => {
+      const shouldBlock =
+        formHandle?.hasPendingChanges() === true ||
+        formHandle?.isAttachmentSaving() === true;
+      if (shouldBlock) {
+        setNavBlockedOpen(true);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [formHandle]);
 
   const dataDb = localGetDataDb(projectId);
   const dataEngine = () => {
@@ -333,54 +359,74 @@ export const EditRecordPage = () => {
   }, [!!formData]);
 
   return (
-    <div>
-      {isPending || isRefetching ? (
-        <div>
-          <CircularProgress />
-        </div>
-      ) : isError ? (
-        <div>
-          <p>
-            An error occurred while fetching record data. Error:{' '}
-            {error?.message ?? 'unknown'}.
-          </p>
-        </div>
-      ) : (
-        <>
-          {resolvingAutoIncrementer !== null && (
-            <AutoIncrementEditForm
-              project_id={projectId}
-              form_id={resolvingAutoIncrementer.ref.formId}
-              // TODO how do we know this?
-              field_id={resolvingAutoIncrementer.ref.fieldId}
-              label={resolvingAutoIncrementer.ref.fieldLabel}
-              open={!!resolvingAutoIncrementer}
-              handleClose={async () => {
-                setResolvingAutoIncrementer(null);
-                // Notify child we are done - prompting a refresh
-                resolvingAutoIncrementer.onResolved();
-              }}
+    <>
+      <div>
+        {isPending || isRefetching ? (
+          <div>
+            <CircularProgress />
+          </div>
+        ) : isError ? (
+          <div>
+            <p>
+              An error occurred while fetching record data. Error:{' '}
+              {error?.message ?? 'unknown'}.
+            </p>
+          </div>
+        ) : (
+          <>
+            {resolvingAutoIncrementer !== null && (
+              <AutoIncrementEditForm
+                project_id={projectId}
+                form_id={resolvingAutoIncrementer.ref.formId}
+                // TODO how do we know this?
+                field_id={resolvingAutoIncrementer.ref.fieldId}
+                label={resolvingAutoIncrementer.ref.fieldLabel}
+                open={!!resolvingAutoIncrementer}
+                handleClose={async () => {
+                  setResolvingAutoIncrementer(null);
+                  // Notify child we are done - prompting a refresh
+                  resolvingAutoIncrementer.onResolved();
+                }}
+              />
+            )}
+            <EditableFormManager
+              // Force remount if record ID or FormID changes
+              key={`${recordId}-${formData.formId}`}
+              headingSlot={headingSlot}
+              mode={mode}
+              initialData={formData.data}
+              revisionId={formData.revisionId}
+              existingRecord={formData.context.record}
+              formId={formData.formId}
+              activeUser={userId}
+              recordId={recordId}
+              config={formConfig}
+              navigationContext={navigationContext}
+              debugMode={DEBUG_APP}
+              // This is a callback to set parent state from the component
+              onReady={setFormHandle}
             />
-          )}
-          <EditableFormManager
-            // Force remount if record ID or FormID changes
-            key={`${recordId}-${formData.formId}`}
-            headingSlot={headingSlot}
-            mode={mode}
-            initialData={formData.data}
-            revisionId={formData.revisionId}
-            existingRecord={formData.context.record}
-            formId={formData.formId}
-            activeUser={userId}
-            recordId={recordId}
-            config={formConfig}
-            navigationContext={navigationContext}
-            debugMode={DEBUG_APP}
-            // This is a callback to set parent state from the component
-            onReady={setFormHandle}
-          />
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+
+      <Snackbar
+        open={navBlockedOpen}
+        autoHideDuration={2500}
+        onClose={(_, reason) => {
+          if (reason === 'clickaway') return;
+          setNavBlockedOpen(false);
+        }}
+        anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
+      >
+        <Alert
+          severity="info"
+          variant="filled"
+          onClose={() => setNavBlockedOpen(false)}
+        >
+          Saving form data and photos. Please wait...
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
