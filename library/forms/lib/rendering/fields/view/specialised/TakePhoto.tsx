@@ -1,12 +1,14 @@
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import {Box, Paper, Typography} from '@mui/material';
-import {useMemo} from 'react';
+import {Box, Dialog, DialogContent, Paper, Typography} from '@mui/material';
+import {useMemo, useState} from 'react';
 import {useAttachments} from '../../../../hooks/useAttachment';
 import {IMAGE_TYPES} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
 export const TakePhotoRender: DataViewFieldRender = props => {
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
+
   // Generate attachment service
   const attachmentService = useMemo(() => {
     return props.renderContext.tools.getAttachmentService();
@@ -42,10 +44,17 @@ export const TakePhotoRender: DataViewFieldRender = props => {
               key={idx}
               src={img.url}
               alt={`Attachment ${idx + 1}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => setZoomUrl(img.url)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') setZoomUrl(img.url);
+              }}
               style={{
                 maxWidth: '300px',
                 maxHeight: '300px',
                 objectFit: 'contain',
+                cursor: 'zoom-in',
               }}
             />
           ))}
@@ -93,6 +102,46 @@ export const TakePhotoRender: DataViewFieldRender = props => {
             </Paper>
           ))}
         </Box>
+      )}
+      {zoomUrl && (
+        <Dialog
+          open={true}
+          onClose={() => setZoomUrl(null)}
+          maxWidth={false}
+          fullScreen
+          sx={{
+            '& .MuiDialog-paper': {
+              backgroundColor: 'rgba(0,0,0,0.92)',
+            },
+          }}
+        >
+          <DialogContent
+            onClick={() => setZoomUrl(null)}
+            sx={{
+              p: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'auto',
+              //browser webView will handle native pinch to zoom.
+              touchAction: 'manipulation',
+            }}
+          >
+            <Box
+              component="img"
+              src={zoomUrl}
+              alt="Full size preview"
+              onClick={e => e.stopPropagation()}
+              sx={{
+                // native pinch-zoom can magnify beyond the viewport
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
