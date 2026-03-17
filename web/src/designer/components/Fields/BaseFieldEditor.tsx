@@ -330,7 +330,7 @@ export const BaseFieldEditor = ({
                         </Box>
 
                         <Collapse in={expanded}>
-                          <Box mt={2} sx={{maxHeight: 300, overflowY: 'auto'}}>
+                          <Box mt={2}>
                             <MdxEditor
                               initialMarkdown={state.advancedHelperText}
                               handleChange={debounce(
