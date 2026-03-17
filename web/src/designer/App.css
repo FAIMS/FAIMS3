@@ -12,7 +12,18 @@
   font-family: 'Open Sans', sans-serif;
 }
 
-/* Image dialog overlay - appended as a direct child of the editor root element.
+/*
+ * MDXEditor creates a popup container <div> at document.body (not inside the
+ * editor card). It applies className="image-dialog" to that container. ALL
+ * portals — image dialog, block-type select dropdown — render inside it.
+ * The container has z-index:1 by default, which puts it behind MUI components
+ * (AppBar z-index:1100, Modal z-index:1300, etc.). Boost it here.
+ */
+body > .image-dialog {
+  z-index: 1300 !important;
+}
+
+/* Image dialog: overlay and content are direct children of the popup container */
 .image-dialog > div[aria-hidden="true"] {
   z-index: 9998 !important;
   opacity: 1 !important;
@@ -21,7 +32,9 @@
 
 .image-dialog > [role="dialog"] {
   z-index: 9999 !important;
-  box-shadow: 0px 11px 15px -7px rgba(0, 0, 0, 0.2), 0px 24px 38px 3px rgba(0, 0, 0, 0.14), 0px 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0px 11px 15px -7px rgba(0,0,0,0.2),
+              0px 24px 38px 3px rgba(0,0,0,0.14),
+              0px 9px 46px 8px rgba(0,0,0,0.12) !important;
 }
 
 .image-dialog > [role="dialog"] form {
@@ -41,7 +54,7 @@
   cursor: pointer;
   user-select: none;
   color: #669911;
-  font-family: 'Open Sans',sans-serif;
+  font-family: 'Open Sans', sans-serif;
   font-weight: 500;
   font-size: 0.875rem;
   line-height: 1.75;
@@ -56,28 +69,31 @@
   background-color: rgba(102, 153, 17, 0.04);
 }
 
-/* Restore list styles inside the editor content area.
-   MUI CssBaseline resets all ul/ol to list-style:none which removes bullets. */
+/*
+ * Restore list styles inside the MDXEditor content area.
+ * MUI CssBaseline / ScopedCssBaseline resets ul/ol to list-style:none.
+ * Use !important to win the specificity battle against Emotion's injected CSS.
+ */
 .mdxEditor ul {
-  list-style-type: disc;
-  padding-left: 1.5em;
-  margin: 0.25em 0;
+  list-style-type: disc !important;
+  padding-left: 1.5em !important;
+  margin: 0.25em 0 !important;
 }
 
 .mdxEditor ol {
-  list-style-type: decimal;
-  padding-left: 1.5em;
-  margin: 0.25em 0;
+  list-style-type: decimal !important;
+  padding-left: 1.5em !important;
+  margin: 0.25em 0 !important;
 }
 
 .mdxEditor ul ul {
-  list-style-type: circle;
+  list-style-type: circle !important;
 }
 
 .mdxEditor ul ul ul {
-  list-style-type: square;
+  list-style-type: square !important;
 }
 
 .mdxEditor li {
-  list-style-type: inherit;
+  list-style-type: inherit !important;
 }
