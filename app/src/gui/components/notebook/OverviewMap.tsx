@@ -308,6 +308,15 @@ export const OverviewMap = (props: OverviewMapProps) => {
   } | null>(null);
   const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
 
+  // Keep ref in sync so vector layer style can highlight selected feature
+  useEffect(() => {
+    selectedFeatureRef.current = selectedFeature;
+    const layer = vectorLayerRef.current;
+    if (layer) {
+      layer.changed();
+    }
+  }, [selectedFeature]);
+
   // Debug: log when selectedFeature or map changes (Popover open/anchor state)
   useEffect(() => {
     if (!DEBUG_MAP_CLICK) return;
@@ -336,6 +345,8 @@ export const OverviewMap = (props: OverviewMapProps) => {
   // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
   const popoverOpenedAtRef = useRef<number>(0);
   const resetNorthControlRef = useRef<Control | null>(null);
+  // Ref so the vector layer style function can read current selection and highlight it
+  const selectedFeatureRef = useRef<FeatureProps | null>(null);
 
   const mapConfig = getMapConfig();
 
@@ -523,6 +534,29 @@ export const OverviewMap = (props: OverviewMapProps) => {
         style: (olFeature: FeatureLike) => {
           const formId = (olFeature.get('form_id') as string) ?? '';
           const color = formIdToColor[formId] ?? FORM_TYPE_COLORS[0];
+          const recordId = olFeature.get('record_id') as string | undefined;
+          const revisionId = olFeature.get('revision_id') as string | undefined;
+          const selected = selectedFeatureRef.current;
+          const isSelected =
+            selected &&
+            recordId === selected.record_id &&
+            revisionId === selected.revision_id;
+
+          if (isSelected) {
+            return new Style({
+              stroke: new Stroke({
+                color: '#ffffff',
+                width: 5,
+              }),
+              fill: new Fill({color: color + 'cc'}),
+              image: new CircleStyle({
+                radius: 10,
+                fill: new Fill({color}),
+                stroke: new Stroke({color: '#ffffff', width: 4}),
+              }),
+            });
+          }
+
           return new Style({
             stroke: new Stroke({
               color,
