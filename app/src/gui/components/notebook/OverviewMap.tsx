@@ -27,7 +27,17 @@ import {
   ProjectUIModel,
 } from '@faims3/data-model';
 import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
-import {Alert, Box, CircularProgress, Grid, Popover} from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Grid,
+  Popover,
+  Typography,
+} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {Control} from 'ol/control';
 import {Extent} from 'ol/extent';
@@ -40,10 +50,11 @@ import VectorSource from 'ol/source/Vector';
 import {Fill, Stroke, Style} from 'ol/style';
 import CircleStyle from 'ol/style/Circle';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {Link} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import {getMapConfig} from '../../../buildconfig';
 import * as ROUTES from '../../../constants/routes';
 import {localGetDataDb} from '../../../utils/database';
+import {formatTimestamp} from '../../../utils/formUtilities';
 
 interface OverviewMapProps {
   uiSpec: ProjectUIModel;
@@ -98,6 +109,136 @@ const getGISFields = (uiSpec: ProjectUIModel): string[] => {
 
 const DEBUG_MAP_CLICK = true; // set false to disable OverviewMap tap/popover debug logs
 
+/** Query key prefix for overview map record hydration (data engine) */
+const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
+
+/**
+ * Popover content for the currently selected map feature. Hydrates the record
+ * via the data engine's hydration module (React Query) and shows key metadata.
+ */
+interface SelectedRecordPopoverContentProps {
+  feature: FeatureProps;
+  project_id: ProjectID;
+  serverId: string;
+  uiSpec: ProjectUIModel;
+  dataEngine: DataEngine;
+}
+
+const SelectedRecordPopoverContent = ({
+  feature,
+  project_id,
+  serverId,
+  uiSpec,
+  dataEngine,
+}: SelectedRecordPopoverContentProps) => {
+  const {
+    data: hydrated,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: [
+      OVERVIEW_MAP_RECORD_KEY_PREFIX,
+      project_id,
+      feature.record_id,
+      feature.revision_id,
+    ],
+    queryFn: () =>
+      dataEngine.hydrated.getHydratedRecord({
+        recordId: feature.record_id,
+        revisionId: feature.revision_id,
+      }),
+    enabled: !!feature.record_id,
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{p: 2, minWidth: 220, display: 'flex', justifyContent: 'center'}}
+      >
+        <CircularProgress size={24} />
+      </Box>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Box sx={{p: 2, minWidth: 220}}>
+        <Alert severity="error" sx={{mb: 1}}>
+          {error instanceof Error ? error.message : 'Failed to load record'}
+        </Alert>
+        <Button
+          component={RouterLink}
+          to={ROUTES.getViewRecordRoute({
+            serverId,
+            projectId: project_id,
+            recordId: feature.record_id,
+          })}
+          size="small"
+          variant="outlined"
+        >
+          Open record
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!hydrated) {
+    return null;
+  }
+
+  const formLabel =
+    uiSpec.viewsets?.[hydrated.record.formId]?.label ?? hydrated.record.formId;
+  const createdDate =
+    formatTimestamp(new Date(hydrated.record.created).getTime()) ||
+    hydrated.record.created;
+
+  const viewUrl = ROUTES.getViewRecordRoute({
+    serverId,
+    projectId: project_id,
+    recordId: feature.record_id,
+    revisionId: feature.revision_id,
+  });
+
+  return (
+    <Card variant="outlined" sx={{minWidth: 260, maxWidth: 320}}>
+      <CardContent sx={{'&:last-child': {pb: 2}}}>
+        <Typography
+          variant="subtitle1"
+          fontWeight="600"
+          gutterBottom
+          title={hydrated.hrid}
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {hydrated.hrid}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{mb: 0.5}}>
+          {formLabel}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" display="block">
+          Created {createdDate}
+          {hydrated.record.createdBy ? ` by ${hydrated.record.createdBy}` : ''}
+        </Typography>
+        <Button
+          component={RouterLink}
+          to={viewUrl}
+          variant="contained"
+          size="small"
+          sx={{mt: 1.5}}
+        >
+          View record
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
+
 /** Inline SVG: north-facing arrow (prominent) and subtle south-facing arrow, Google Maps style */
 const COMPASS_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="white" d="M12 4 L8 14 L16 14 Z"/><path fill="white" fill-opacity="0.4" d="M12 20 L10 16 L14 16 Z"/></svg>';
@@ -146,7 +287,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const anchorDoc = anchorEl?.ownerDocument;
     console.log('[OverviewMap] state', {
       selectedFeature: selectedFeature
-        ? { record_id: selectedFeature.record_id, name: selectedFeature.name }
+        ? {record_id: selectedFeature.record_id, name: selectedFeature.name}
         : null,
       popoverOpen: !!selectedFeature,
       hasMap: !!map,
@@ -451,7 +592,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     const TAP_MAX_MS = 400;
     const TAP_MAX_MOVEMENT_PX = 15;
 
-    let pointerDown: { pixel: number[]; time: number; id: number } | null = null;
+    let pointerDown: {pixel: number[]; time: number; id: number} | null = null;
 
     const handlePointerDown = (evt: PointerEvent) => {
       const pixel = map.getEventPixel(evt).slice();
@@ -489,7 +630,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         withinTime,
         withinMove,
         isTap,
-        limits: { TAP_MAX_MS, TAP_MAX_MOVEMENT_PX },
+        limits: {TAP_MAX_MS, TAP_MAX_MOVEMENT_PX},
       });
       pointerDown = null;
       if (isTap) {
@@ -598,18 +739,21 @@ export const OverviewMap = (props: OverviewMapProps) => {
           vertical: 'bottom',
           horizontal: 'left',
         }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        slotProps={{paper: {sx: {mt: 1.5}}}}
       >
         {selectedFeature && (
-          <Box sx={{padding: '50px'}}>
-            <Link
-              to={ROUTES.getViewRecordRoute({
-                serverId: serverId,
-                projectId: project_id,
-                recordId: selectedFeature.record_id,
-              })}
-            >
-              {selectedFeature.name}
-            </Link>
+          <Box sx={{p: 1.5}}>
+            <SelectedRecordPopoverContent
+              feature={selectedFeature}
+              project_id={project_id}
+              serverId={serverId}
+              uiSpec={uiSpec}
+              dataEngine={dataEngine}
+            />
           </Box>
         )}
       </Popover>
