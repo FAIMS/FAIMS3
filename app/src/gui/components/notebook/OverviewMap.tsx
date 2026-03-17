@@ -30,6 +30,7 @@ import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
 import {Alert, Box, CircularProgress, Grid, Popover} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {Extent} from 'ol/extent';
+import {FeatureLike} from 'ol/Feature';
 import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
 import Map from 'ol/Map';
@@ -54,7 +55,22 @@ interface FeatureProps {
   name: string;
   record_id: string;
   revision_id: string;
+  form_id: string;
 }
+
+/** Distinct colors for form types on the map (colorblind-friendly and map-readable) */
+const FORM_TYPE_COLORS = [
+  '#2171b5', // blue
+  '#cb181d', // red
+  '#238b45', // green
+  '#6a51a3', // purple
+  '#d94801', // orange
+  '#0c2c84', // dark blue
+  '#e7298a', // magenta
+  '#006d2c', // dark green
+  '#8856a7', // violet
+  '#dd3497', // pink
+];
 
 interface GeoJSONFeature {
   type: string;
@@ -79,6 +95,8 @@ const getGISFields = (uiSpec: ProjectUIModel): string[] => {
   );
 };
 
+const DEBUG_MAP_CLICK = true; // set false to disable OverviewMap tap/popover debug logs
+
 /**
  * Create an overview map of the records in the notebook.
  */
@@ -91,9 +109,33 @@ export const OverviewMap = (props: OverviewMapProps) => {
   );
   const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
 
+  // Debug: log when selectedFeature or map changes (Popover open/anchor state)
+  useEffect(() => {
+    if (!DEBUG_MAP_CLICK) return;
+    const anchorEl = map?.getTargetElement();
+    const anchorDoc = anchorEl?.ownerDocument;
+    console.log('[OverviewMap] state', {
+      selectedFeature: selectedFeature
+        ? { record_id: selectedFeature.record_id, name: selectedFeature.name }
+        : null,
+      popoverOpen: !!selectedFeature,
+      hasMap: !!map,
+      anchorEl: anchorEl
+        ? {
+            nodeName: anchorEl.nodeName,
+            inDocument: anchorEl.isConnected,
+            id: anchorEl.id || '(no id)',
+            sameDocAsBody: anchorDoc === document.body?.ownerDocument,
+          }
+        : null,
+    });
+  }, [selectedFeature, map]);
+
   // Track if we've added the layer to prevent duplicates
   const layerAddedRef = useRef(false);
   const vectorLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
+  // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
+  const popoverOpenedAtRef = useRef<number>(0);
 
   const mapConfig = getMapConfig();
 
@@ -144,6 +186,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
               name: record.recordId,
               record_id: record.recordId,
               revision_id: record.revisionId,
+              form_id: record.type,
             };
 
             if (geoJson.type === 'FeatureCollection') {
@@ -226,6 +269,27 @@ export const OverviewMap = (props: OverviewMapProps) => {
   });
 
   /**
+   * Build a map from form_id to color for styling features by form type.
+   */
+  const getFormIdToColor = useCallback(
+    (features: FeatureCollection): Record<string, string> => {
+      const formIds = [
+        ...new Set(
+          features.features
+            .map(f => (f.properties?.form_id as string) ?? '')
+            .filter(Boolean)
+        ),
+      ].sort();
+      const map: Record<string, string> = {};
+      formIds.forEach((id, i) => {
+        map[id] = FORM_TYPE_COLORS[i % FORM_TYPE_COLORS.length];
+      });
+      return map;
+    },
+    []
+  );
+
+  /**
    * Add the features to the map and set the map view to encompass the features.
    */
   const addFeaturesToMap = useCallback(
@@ -238,19 +302,26 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
       const source = new VectorSource();
       const geoJson = new GeoJSON();
+      const formIdToColor = getFormIdToColor(features);
 
       const layer = new VectorLayer({
         source: source,
-        style: new Style({
-          stroke: new Stroke({
-            color: '#FF0000',
-            width: 4,
-          }),
-          image: new CircleStyle({
-            radius: 7,
-            fill: new Fill({color: '#FF0000'}),
-          }),
-        }),
+        style: (olFeature: FeatureLike) => {
+          const formId = (olFeature.get('form_id') as string) ?? '';
+          const color = formIdToColor[formId] ?? FORM_TYPE_COLORS[0];
+          return new Style({
+            stroke: new Stroke({
+              color,
+              width: 4,
+            }),
+            fill: new Fill({color: color + '80'}), // 50% opacity for polygons
+            image: new CircleStyle({
+              radius: 7,
+              fill: new Fill({color}),
+              stroke: new Stroke({color: '#fff', width: 2}),
+            }),
+          });
+        },
       });
 
       if (features.features.length > 0) {
@@ -282,7 +353,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       vectorLayerRef.current = layer;
       layerAddedRef.current = true;
     },
-    []
+    [getFormIdToColor]
   );
 
   // Effect to add features to map when both are ready
@@ -293,10 +364,16 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
     addFeaturesToMap(map, featureCollection);
 
-    // Click handler for map features
-    const handleClick = (evt: {pixel: number[]}) => {
+    const log = (msg: string, ...args: unknown[]) => {
+      if (DEBUG_MAP_CLICK) {
+        console.log(`[OverviewMap] ${msg}`, ...args);
+      }
+    };
+
+    // Resolve feature at pixel and open popover if found
+    const selectFeatureAtPixel = (pixel: number[]) => {
       const feature = map.forEachFeatureAtPixel(
-        evt.pixel,
+        pixel,
         olFeature => {
           const props = olFeature.getProperties();
           if (props.record_id) {
@@ -306,17 +383,83 @@ export const OverviewMap = (props: OverviewMapProps) => {
         },
         {hitTolerance: 10}
       );
-
+      log('selectFeatureAtPixel', {
+        pixel,
+        found: !!feature,
+        record_id: feature?.record_id,
+        name: feature?.name,
+      });
       if (feature) {
+        log('calling setSelectedFeature', feature);
+        popoverOpenedAtRef.current = Date.now();
         setSelectedFeature(feature);
+      } else {
+        log('no feature at pixel – not opening popover');
       }
     };
 
-    map.on('click', handleClick);
+    // Use pointerdown/pointerup on the map element for tap detection so taps
+    // work on touch devices (Android). Relying only on map 'click' fails on many
+    // Android browsers because the map's pan interaction consumes the gesture, so
+    // click often doesn't fire or only fires on long-press. A quick
+    // pointerdown→pointerup with little movement is treated as a tap.
+    const TAP_MAX_MS = 400;
+    const TAP_MAX_MOVEMENT_PX = 15;
+
+    let pointerDown: { pixel: number[]; time: number; id: number } | null = null;
+
+    const handlePointerDown = (evt: PointerEvent) => {
+      const pixel = map.getEventPixel(evt).slice();
+      pointerDown = {
+        pixel,
+        time: Date.now(),
+        id: evt.pointerId,
+      };
+      log('pointerdown', {
+        pixel,
+        pointerId: evt.pointerId,
+        pointerType: evt.pointerType,
+      });
+    };
+
+    const handlePointerUp = (evt: PointerEvent) => {
+      const upPixel = map.getEventPixel(evt);
+      if (!pointerDown || pointerDown.id !== evt.pointerId) {
+        log('pointerup (ignored)', {
+          reason: !pointerDown ? 'no pointerdown' : 'pointerId mismatch',
+          pointerId: evt.pointerId,
+        });
+        return;
+      }
+      const dt = Date.now() - pointerDown.time;
+      const dx = Math.abs(upPixel[0] - pointerDown.pixel[0]);
+      const dy = Math.abs(upPixel[1] - pointerDown.pixel[1]);
+      const withinTime = dt <= TAP_MAX_MS;
+      const withinMove = dx <= TAP_MAX_MOVEMENT_PX && dy <= TAP_MAX_MOVEMENT_PX;
+      const isTap = withinTime && withinMove;
+      log('pointerup', {
+        dt,
+        dx,
+        dy,
+        withinTime,
+        withinMove,
+        isTap,
+        limits: { TAP_MAX_MS, TAP_MAX_MOVEMENT_PX },
+      });
+      pointerDown = null;
+      if (isTap) {
+        selectFeatureAtPixel(upPixel);
+      }
+    };
+
+    const mapEl = map.getTargetElement();
+    mapEl.addEventListener('pointerdown', handlePointerDown);
+    mapEl.addEventListener('pointerup', handlePointerUp);
 
     // Cleanup
     return () => {
-      map.un('click', handleClick);
+      mapEl.removeEventListener('pointerdown', handlePointerDown);
+      mapEl.removeEventListener('pointerup', handlePointerUp);
       if (vectorLayerRef.current) {
         map.removeLayer(vectorLayerRef.current);
         vectorLayerRef.current = null;
@@ -325,7 +468,17 @@ export const OverviewMap = (props: OverviewMapProps) => {
     };
   }, [map, featureCollection, addFeaturesToMap]);
 
-  const handlePopoverClose = () => {
+  const handlePopoverClose = (
+    _event: object,
+    reason: 'backdropClick' | 'escapeKeyDown'
+  ) => {
+    // On touch, the same tap that opens the popover is often reported as a
+    // backdropClick, closing it immediately. Ignore backdropClick for a short
+    // window after opening so the popover stays open.
+    if (reason === 'backdropClick') {
+      const elapsed = Date.now() - popoverOpenedAtRef.current;
+      if (elapsed < 400) return;
+    }
     setSelectedFeature(null);
   };
 
@@ -404,7 +557,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         {selectedFeature && (
           <Box sx={{padding: '50px'}}>
             <Link
-              to={ROUTES.getEditRecordRoute({
+              to={ROUTES.getViewRecordRoute({
                 serverId: serverId,
                 projectId: project_id,
                 recordId: selectedFeature.record_id,
