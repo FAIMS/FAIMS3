@@ -70,7 +70,7 @@ interface FeatureProps {
   form_id: string;
 }
 
-/** Distinct colors for form types on the map (colorblind-friendly and map-readable) */
+/** Distinct colors for form types on the map */
 const FORM_TYPE_COLORS = [
   '#2171b5', // blue
   '#cb181d', // red
