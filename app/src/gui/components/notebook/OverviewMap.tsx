@@ -29,6 +29,7 @@ import {
 import {GeoJSONFeatureOrCollectionSchema, MapComponent} from '@faims3/forms';
 import {Alert, Box, CircularProgress, Grid, Popover} from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
+import {Control} from 'ol/control';
 import {Extent} from 'ol/extent';
 import {FeatureLike} from 'ol/Feature';
 import GeoJSON from 'ol/format/GeoJSON';
@@ -97,6 +98,35 @@ const getGISFields = (uiSpec: ProjectUIModel): string[] => {
 
 const DEBUG_MAP_CLICK = true; // set false to disable OverviewMap tap/popover debug logs
 
+/** Inline SVG: north-facing arrow (prominent) and subtle south-facing arrow, Google Maps style */
+const COMPASS_ICON_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="white" d="M12 4 L8 14 L16 14 Z"/><path fill="white" fill-opacity="0.4" d="M12 20 L10 16 L14 16 Z"/></svg>';
+
+/**
+ * Creates a control button that resets the map rotation to north (rotation 0).
+ */
+const createResetNorthControl = (map: Map): Control => {
+  const button = document.createElement('button');
+  button.className = 'ol-custom-control-button';
+  button.type = 'button';
+  button.title = 'Reset map to north';
+  button.innerHTML = COMPASS_ICON_SVG;
+
+  button.addEventListener('click', () => {
+    const view = map.getView();
+    const currentRotation = view.getRotation();
+    if (currentRotation !== undefined && currentRotation !== 0) {
+      view.animate({rotation: 0, duration: 200});
+    }
+  });
+
+  const element = document.createElement('div');
+  element.className = 'ol-custom-control ol-compass-box';
+  element.appendChild(button);
+
+  return new Control({element});
+};
+
 /**
  * Create an overview map of the records in the notebook.
  */
@@ -136,8 +166,23 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const vectorLayerRef = useRef<VectorLayer<VectorSource> | null>(null);
   // When the popover was opened (timestamp). Used to ignore immediate backdropClick from the same touch.
   const popoverOpenedAtRef = useRef<number>(0);
+  const resetNorthControlRef = useRef<Control | null>(null);
 
   const mapConfig = getMapConfig();
+
+  // Add compass (reset to north) control when map is ready
+  useEffect(() => {
+    if (!map) return;
+    const control = createResetNorthControl(map);
+    map.addControl(control);
+    resetNorthControlRef.current = control;
+    return () => {
+      if (resetNorthControlRef.current) {
+        map.removeControl(resetNorthControlRef.current);
+        resetNorthControlRef.current = null;
+      }
+    };
+  }, [map]);
 
   // Memoize the data engine to prevent recreation on every render
   const dataEngine = useMemo(() => {

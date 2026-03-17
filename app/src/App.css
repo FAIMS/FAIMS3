@@ -73,6 +73,11 @@ body {
   bottom: 128px;
 }
 
+.ol-compass-box {
+  right: 76px;
+  bottom: 10px;
+}
+
 .ol-layer-toggle-box {
   bottom: 195px;
 }
