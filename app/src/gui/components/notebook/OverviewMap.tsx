@@ -124,6 +124,9 @@ interface SelectedRecordPopoverContentProps {
   dataEngine: DataEngine;
 }
 
+/** Ignore clicks on the view/open record button for this long after popover opens (ms). */
+const POPOVER_BUTTON_GUARD_MS = 400;
+
 const SelectedRecordPopoverContent = ({
   feature,
   project_id,
@@ -131,6 +134,14 @@ const SelectedRecordPopoverContent = ({
   uiSpec,
   dataEngine,
 }: SelectedRecordPopoverContentProps) => {
+  // Prevent the same tap that opened the popover from immediately activating the
+  // view record button (which would navigate away).
+  const [buttonInteractionAllowed, setButtonInteractionAllowed] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setButtonInteractionAllowed(true), POPOVER_BUTTON_GUARD_MS);
+    return () => clearTimeout(id);
+  }, []);
+
   const {
     data: hydrated,
     isLoading,
@@ -178,6 +189,12 @@ const SelectedRecordPopoverContent = ({
           })}
           size="small"
           variant="outlined"
+          onClick={e => {
+            if (!buttonInteractionAllowed) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
         >
           Open record
         </Button>
@@ -231,6 +248,12 @@ const SelectedRecordPopoverContent = ({
           variant="contained"
           size="small"
           sx={{mt: 1.5}}
+          onClick={e => {
+            if (!buttonInteractionAllowed) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
         >
           View record
         </Button>
@@ -278,6 +301,11 @@ export const OverviewMap = (props: OverviewMapProps) => {
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
   );
+  /** Popover anchor in viewport coordinates (set when opening so position is reliable on first open) */
+  const [popoverAnchorPosition, setPopoverAnchorPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const [featuresExtent, setFeaturesExtent] = useState<Extent | undefined>();
 
   // Debug: log when selectedFeature or map changes (Popover open/anchor state)
@@ -578,6 +606,14 @@ export const OverviewMap = (props: OverviewMapProps) => {
       if (feature) {
         log('calling setSelectedFeature', feature);
         popoverOpenedAtRef.current = Date.now();
+        // Anchor popover to click position so it's reliable on first open (map container
+        // rect can be wrong before layout has settled)
+        const mapEl = map.getTargetElement();
+        const rect = mapEl.getBoundingClientRect();
+        setPopoverAnchorPosition({
+          left: rect.left + pixel[0],
+          top: rect.top + pixel[1],
+        });
         setSelectedFeature(feature);
       } else {
         log('no feature at pixel – not opening popover');
@@ -666,6 +702,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       if (elapsed < 400) return;
     }
     setSelectedFeature(null);
+    setPopoverAnchorPosition(null);
   };
 
   // Render states
@@ -732,16 +769,19 @@ export const OverviewMap = (props: OverviewMapProps) => {
         config={mapConfig}
       />
       <Popover
-        open={!!selectedFeature}
+        open={!!selectedFeature && !!popoverAnchorPosition}
         onClose={handlePopoverClose}
-        anchorEl={map?.getTargetElement()}
+        anchorReference="anchorPosition"
+        anchorPosition={
+          popoverAnchorPosition ?? { left: 0, top: 0 }
+        }
         anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left',
+          vertical: 'top',
+          horizontal: 'center',
         }}
         transformOrigin={{
           vertical: 'top',
-          horizontal: 'left',
+          horizontal: 'center',
         }}
         slotProps={{paper: {sx: {mt: 1.5}}}}
       >
