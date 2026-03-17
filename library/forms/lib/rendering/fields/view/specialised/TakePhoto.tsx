@@ -1,7 +1,7 @@
-import CloseIcon from '@mui/icons-material/Close';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import {Box, Dialog, DialogContent, IconButton, Paper, Typography} from '@mui/material';
+import {Box, Paper, Typography} from '@mui/material';
 import {useMemo, useState} from 'react';
+import {PhotoLightbox} from '../../../../components/PhotoLightbox';
 import {useAttachments} from '../../../../hooks/useAttachment';
 import {IMAGE_TYPES} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
@@ -105,72 +105,7 @@ export const TakePhotoRender: DataViewFieldRender = props => {
         </Box>
       )}
       {zoomUrl && (
-        <Dialog
-          open={true}
-          onClose={() => setZoomUrl(null)}
-          maxWidth={false}
-          fullScreen
-          sx={{
-            '& .MuiDialog-paper': {
-              backgroundColor: 'rgba(0,0,0,0.92)',
-            },
-          }}
-        >
-          <DialogContent
-            onClick={() => setZoomUrl(null)}
-            sx={{
-              p: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'auto',
-              //browser webView will handle native pinch to zoom.
-              touchAction: 'manipulation',
-              position: 'relative',
-            }}
-          >
-            <IconButton
-              aria-label="Close preview"
-              size="large"
-              onClick={e => {
-                e.stopPropagation();
-                setZoomUrl(null);
-              }}
-              sx={{
-                position: 'absolute',
-                top: 'max(56px, env(safe-area-inset-top, 0px) + 48px)',
-                left: 16,
-                zIndex: 1,
-                color: 'white',
-                bgcolor: 'rgba(255, 255, 255, 0.22)',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
-                padding: 2,
-                '& .MuiSvgIcon-root': {
-                  fontSize: 32,
-                },
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.32)',
-                  boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)',
-                },
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-            <Box
-              component="img"
-              src={zoomUrl}
-              alt="Full size preview"
-              onClick={e => e.stopPropagation()}
-              sx={{
-                // native pinch-zoom can magnify beyond the viewport
-                maxWidth: '100%',
-                maxHeight: '100%',
-                objectFit: 'contain',
-                display: 'block',
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <PhotoLightbox url={zoomUrl} onClose={() => setZoomUrl(null)} />
       )}
     </div>
   );
