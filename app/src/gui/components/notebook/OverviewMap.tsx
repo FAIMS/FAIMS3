@@ -107,8 +107,6 @@ const getGISFields = (uiSpec: ProjectUIModel): string[] => {
   );
 };
 
-const DEBUG_MAP_CLICK = true; // set false to disable OverviewMap tap/popover debug logs
-
 /** Query key prefix for overview map record hydration (data engine) */
 const OVERVIEW_MAP_RECORD_KEY_PREFIX = 'overview-map-record';
 
@@ -136,9 +134,13 @@ const SelectedRecordPopoverContent = ({
 }: SelectedRecordPopoverContentProps) => {
   // Prevent the same tap that opened the popover from immediately activating the
   // view record button (which would navigate away).
-  const [buttonInteractionAllowed, setButtonInteractionAllowed] = useState(false);
+  const [buttonInteractionAllowed, setButtonInteractionAllowed] =
+    useState(false);
   useEffect(() => {
-    const id = setTimeout(() => setButtonInteractionAllowed(true), POPOVER_BUTTON_GUARD_MS);
+    const id = setTimeout(
+      () => setButtonInteractionAllowed(true),
+      POPOVER_BUTTON_GUARD_MS
+    );
     return () => clearTimeout(id);
   }, []);
 
@@ -296,7 +298,6 @@ const createResetNorthControl = (map: Map): Control => {
  */
 export const OverviewMap = (props: OverviewMapProps) => {
   const {uiSpec, project_id, serverId, records} = props;
-
   const [map, setMap] = useState<Map | undefined>(undefined);
   const [selectedFeature, setSelectedFeature] = useState<FeatureProps | null>(
     null
@@ -316,28 +317,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
       layer.changed();
     }
   }, [selectedFeature]);
-
-  // Debug: log when selectedFeature or map changes (Popover open/anchor state)
-  useEffect(() => {
-    if (!DEBUG_MAP_CLICK) return;
-    const anchorEl = map?.getTargetElement();
-    const anchorDoc = anchorEl?.ownerDocument;
-    console.log('[OverviewMap] state', {
-      selectedFeature: selectedFeature
-        ? {record_id: selectedFeature.record_id, name: selectedFeature.name}
-        : null,
-      popoverOpen: !!selectedFeature,
-      hasMap: !!map,
-      anchorEl: anchorEl
-        ? {
-            nodeName: anchorEl.nodeName,
-            inDocument: anchorEl.isConnected,
-            id: anchorEl.id || '(no id)',
-            sameDocAsBody: anchorDoc === document.body?.ownerDocument,
-          }
-        : null,
-    });
-  }, [selectedFeature, map]);
 
   // Track if we've added the layer to prevent duplicates
   const layerAddedRef = useRef(false);
@@ -612,12 +591,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
     addFeaturesToMap(map, featureCollection);
 
-    const log = (msg: string, ...args: unknown[]) => {
-      if (DEBUG_MAP_CLICK) {
-        console.log(`[OverviewMap] ${msg}`, ...args);
-      }
-    };
-
     // Resolve feature at pixel and open popover if found
     const selectFeatureAtPixel = (pixel: number[]) => {
       const feature = map.forEachFeatureAtPixel(
@@ -631,14 +604,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         },
         {hitTolerance: 10}
       );
-      log('selectFeatureAtPixel', {
-        pixel,
-        found: !!feature,
-        record_id: feature?.record_id,
-        name: feature?.name,
-      });
       if (feature) {
-        log('calling setSelectedFeature', feature);
         popoverOpenedAtRef.current = Date.now();
         // Anchor popover to click position so it's reliable on first open (map container
         // rect can be wrong before layout has settled)
@@ -649,8 +615,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
           top: rect.top + pixel[1],
         });
         setSelectedFeature(feature);
-      } else {
-        log('no feature at pixel – not opening popover');
       }
     };
 
@@ -671,20 +635,11 @@ export const OverviewMap = (props: OverviewMapProps) => {
         time: Date.now(),
         id: evt.pointerId,
       };
-      log('pointerdown', {
-        pixel,
-        pointerId: evt.pointerId,
-        pointerType: evt.pointerType,
-      });
     };
 
     const handlePointerUp = (evt: PointerEvent) => {
       const upPixel = map.getEventPixel(evt);
       if (!pointerDown || pointerDown.id !== evt.pointerId) {
-        log('pointerup (ignored)', {
-          reason: !pointerDown ? 'no pointerdown' : 'pointerId mismatch',
-          pointerId: evt.pointerId,
-        });
         return;
       }
       const dt = Date.now() - pointerDown.time;
@@ -693,15 +648,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
       const withinTime = dt <= TAP_MAX_MS;
       const withinMove = dx <= TAP_MAX_MOVEMENT_PX && dy <= TAP_MAX_MOVEMENT_PX;
       const isTap = withinTime && withinMove;
-      log('pointerup', {
-        dt,
-        dx,
-        dy,
-        withinTime,
-        withinMove,
-        isTap,
-        limits: {TAP_MAX_MS, TAP_MAX_MOVEMENT_PX},
-      });
       pointerDown = null;
       if (isTap) {
         selectFeatureAtPixel(upPixel);
@@ -806,9 +752,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
         open={!!selectedFeature && !!popoverAnchorPosition}
         onClose={handlePopoverClose}
         anchorReference="anchorPosition"
-        anchorPosition={
-          popoverAnchorPosition ?? { left: 0, top: 0 }
-        }
+        anchorPosition={popoverAnchorPosition ?? {left: 0, top: 0}}
         anchorOrigin={{
           vertical: 'top',
           horizontal: 'center',
