@@ -64,12 +64,47 @@ export const MdxEditor = ({
        https://github.com/mdx-editor/editor/issues/202#issuecomment-1827182167 &
        https://github.com/mdx-editor/editor/issues/95#issuecomment-1755320066
     */
+
+  const supportedNodeTypes = new Set([
+    'root',
+    'paragraph',
+    'text',
+    'strong',
+    'emphasis',
+    'underline',
+    'inlineCode',
+    'code',
+    'break',
+    'delete',
+    'html',
+    // headingsPlugin
+    'heading',
+    // listsPlugin
+    'list',
+    'listItem',
+    // quotePlugin
+    'blockquote',
+    // thematicBreakPlugin
+    'thematicBreak',
+    // tablePlugin
+    'table',
+    'tableRow',
+    'tableCell',
+    // linkPlugin
+    'link',
+    'linkReference',
+    'definition',
+    // imagePlugin
+    'image',
+    'imageReference',
+  ]);
+
   const catchAllVisitor: MdastImportVisitor<any> = {
-    testNode: () => true,
+    testNode: (node: {type: string}) => !supportedNodeTypes.has(node.type),
     visitNode: ({mdastNode}) => {
       // deviating from the example shown in the second link,
       // for now, I'm simply showing an error message
-      setErrorMessage(`Sorry, we currently do not support the markdown ${mdastNode?.type} option. 
+      setErrorMessage(`Sorry, we currently do not support the markdown ${mdastNode?.type} option.
                     What you have just written was automatically removed. Please continue carefully.`);
     },
   };
