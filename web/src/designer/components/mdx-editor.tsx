@@ -16,6 +16,7 @@ import {Suspense, useState} from 'react';
 
 import {Alert, Card} from '@mui/material';
 import '@mdxeditor/editor/style.css';
+import '../mdx-editor.css';
 
 // importing the editor and the plugin from their full paths
 import {MDXEditor} from '@mdxeditor/editor/MDXEditor';
