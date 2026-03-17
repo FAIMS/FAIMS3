@@ -1,5 +1,6 @@
+import CloseIcon from '@mui/icons-material/Close';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
-import {Box, Dialog, DialogContent, Paper, Typography} from '@mui/material';
+import {Box, Dialog, DialogContent, IconButton, Paper, Typography} from '@mui/material';
 import {useMemo, useState} from 'react';
 import {useAttachments} from '../../../../hooks/useAttachment';
 import {IMAGE_TYPES} from '../../../../utils';
@@ -125,8 +126,36 @@ export const TakePhotoRender: DataViewFieldRender = props => {
               overflow: 'auto',
               //browser webView will handle native pinch to zoom.
               touchAction: 'manipulation',
+              position: 'relative',
             }}
           >
+            <IconButton
+              aria-label="Close preview"
+              size="large"
+              onClick={e => {
+                e.stopPropagation();
+                setZoomUrl(null);
+              }}
+              sx={{
+                position: 'absolute',
+                top: 'max(56px, env(safe-area-inset-top, 0px) + 48px)',
+                left: 16,
+                zIndex: 1,
+                color: 'white',
+                bgcolor: 'rgba(255, 255, 255, 0.22)',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+                padding: 2,
+                '& .MuiSvgIcon-root': {
+                  fontSize: 32,
+                },
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.32)',
+                  boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)',
+                },
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
             <Box
               component="img"
               src={zoomUrl}
