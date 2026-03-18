@@ -124,8 +124,10 @@ export const MdxEditor = ({
       testNode: (node: {type: string}) => !SUPPORTED_NODE_TYPES.has(node.type),
       visitNode: ({mdastNode}) => {
         setErrorMessage(
-          `Sorry, we currently do not support the markdown ${mdastNode?.type} option. ` +
-            `What you have just written was automatically removed. Please continue carefully.`
+          'Sorry, we currently do not support the markdown ' +
+            mdastNode?.type +
+            ' option. ' +
+            'What you have just written was automatically removed. Please continue carefully.'
         );
       },
     };
@@ -173,7 +175,6 @@ export const MdxEditor = ({
       }),
       catchAllPlugin(),
     ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // intentionally empty — plugins must never be recreated after mount
 
   return (
