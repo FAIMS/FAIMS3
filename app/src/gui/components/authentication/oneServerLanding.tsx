@@ -1,5 +1,5 @@
 /**
- * Onboarding component presents the login options for the 
+ * Onboarding component presents the login options for the
  * selected server and if multiple servers are configured,
  * allows the user to select which server they want to authenticate with.
  */

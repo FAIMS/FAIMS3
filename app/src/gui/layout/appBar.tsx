@@ -53,7 +53,6 @@ import {
 } from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
 import {
-  selectActiveServerId,
   selectIsAuthenticated,
 } from '../../context/slices/authSlice';
 import {
