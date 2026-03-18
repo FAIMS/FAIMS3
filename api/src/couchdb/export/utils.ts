@@ -28,38 +28,87 @@ export const MAX_CSV_FILENAME_LENGTH = 40;
  */
 export const HASH_SUFFIX_LENGTH = 6;
 
+/** Build the full component key used for serialization lookup (namespace::name). */
+function getComponentKey(namespace: string, name: string): string {
+  return namespace ? `${namespace}::${name}` : name;
+}
+
+/** Component keys that produce attachment/file serialization (array of filenames). */
+const ATTACHMENT_COMPONENTS = new Set([
+  'faims-custom::TakePhoto',
+  'faims-custom::FileUploader',
+]);
+
+/** Component key for single-point GPS location (lat/long/accuracy). */
+const LOCATION_COMPONENT = 'faims-custom::TakePoint';
+
+/** Component key for structured address (display_name, address pieces, manual). */
+const ADDRESS_COMPONENT = 'faims-custom::AddressField';
+
+/** Component key for map/GeoJSON FeatureCollection (lat/long from first point). */
+const MAP_COMPONENT = 'mapping-plugin::MapFormField';
+
+/** Component key for relationship list (type/id joined with ;). */
+const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
+
 /**
+ * generate a suitable value for the CSV export from a field value.  Serialise
+ * filenames, gps coordinates, etc.
+ *
+ * Serialization is determined by the field's component (namespace + name), not
+ * by the return type.
+ *
  * TODO it would be better to merge the header generation and value formatting
  * logic together - currently some parts are encoded twice in two different
  * ways.
  *
+ * @param params
+ *   - componentNamespace: The component namespace from the UI spec.
+ *   - componentName: The component name from the UI spec.
+ *   - fieldName: The column/field name.
+ *   - value: The raw value to serialize.
+ *   - hrid: Human-readable ID (for attachment filenames, etc).
+ *   - filenames: List to which CSV attachment filenames are appended.
+ *   - viewsetId: The current view set ID for this export context.
  *
- * generate a suitable value for the CSV export from a field value.  Serialise
- * filenames, gps coordinates, etc.
+ * @returns Object mapping column names to their serialized values.
  */
-export const csvFormatValue = (
-  fieldName: string,
-  fieldType: string,
-  value: any,
-  hrid: string,
-  filenames: string[],
-  viewsetId: string
-) => {
+export const csvFormatValue = ({
+  componentNamespace,
+  componentName,
+  fieldName,
+  value,
+  hrid,
+  filenames,
+  viewsetId,
+}: {
+  componentNamespace: string;
+  componentName: string;
+  fieldName: string;
+  value: any;
+  hrid: string;
+  filenames: string[];
+  viewsetId: string;
+}) => {
   const result: {[key: string]: any} = {};
-  if (fieldType === 'faims-attachment::Files') {
-    if (value instanceof Array) {
+  const componentKey = getComponentKey(componentNamespace, componentName);
+
+  // Handle attachment/file field serialization.
+  if (ATTACHMENT_COMPONENTS.has(componentKey)) {
+    if (Array.isArray(value)) {
       if (value.length === 0) {
         result[fieldName] = '';
         return result;
       }
-      const valueList = (value as FAIMSAttachmentReference[])
-        .filter(f => !!f.file_type)
+      // Only serialize valid files with a file_type.
+      const valueList = value
+        .filter((f: FAIMSAttachmentReference) => !!f.file_type)
         .map((fInfo: FAIMSAttachmentReference) => {
+          // Generate a CSV-safe filename for this attachment and track it.
           const filename = generateFilenameForAttachment({
             fieldId: fieldName,
             hrid,
             viewID: viewsetId,
-            // Pass in the file type
             fileMimeType: fInfo.file_type,
             filenames,
           });
@@ -68,58 +117,102 @@ export const csvFormatValue = (
         });
       result[fieldName] = valueList.join(';');
     } else {
+      // If somehow not an array, just emit whatever is there.
       result[fieldName] = value;
     }
     return result;
   }
 
-  // gps locations
-  if (fieldType === 'faims-pos::Location') {
+  // Handle GPS/location fields.
+  if (componentKey === LOCATION_COMPONENT) {
     if (
       value instanceof Object &&
-      'geometry' in value &&
+      value.geometry &&
+      Array.isArray(value.geometry.coordinates) &&
       value.geometry.coordinates.length === 2
     ) {
+      // Emit lat/long (GeoJSON is lng,lat order).
       result[fieldName] = value;
-      result[fieldName + '_latitude'] = value.geometry.coordinates[1];
-      result[fieldName + '_longitude'] = value.geometry.coordinates[0];
-      result[fieldName + '_accuracy'] = value.properties.accuracy || '';
+      result[`${fieldName}_latitude`] = value.geometry.coordinates[1];
+      result[`${fieldName}_longitude`] = value.geometry.coordinates[0];
+      // Accuracy, if available.
+      result[`${fieldName}_accuracy`] =
+        value.properties && value.properties.accuracy
+          ? value.properties.accuracy
+          : '';
     } else {
+      // Default to blank on error/malformed shape.
       result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
-      result[fieldName + '_accuracy'] = '';
+      result[`${fieldName}_latitude`] = '';
+      result[`${fieldName}_longitude`] = '';
+      result[`${fieldName}_accuracy`] = '';
     }
     return result;
   }
 
-  if (fieldType === 'faims-core::JSON') {
-    // map location, if it's a point we can pull out lat/long
+  // Handle address field (structured address with display_name, address pieces).
+  if (componentKey === ADDRESS_COMPONENT) {
+    if (value instanceof Object && 'display_name' in value) {
+      // Prefer display_name, fallback to manuallyEnteredAddress, else blank.
+      const display =
+        (typeof value.display_name === 'string' && value.display_name) ||
+        (typeof value.manuallyEnteredAddress === 'string' &&
+          value.manuallyEnteredAddress) ||
+        '';
+
+      result[fieldName] = display;
+
+      // Always emit every address piece, even if empty.
+      const addr = value.address || {};
+      result[`${fieldName}_house_number`] = addr.house_number ?? '';
+      result[`${fieldName}_road`] = addr.road ?? '';
+      result[`${fieldName}_suburb`] = addr.suburb ?? '';
+      result[`${fieldName}_town`] = addr.town ?? '';
+      result[`${fieldName}_state`] = addr.state ?? '';
+      result[`${fieldName}_postcode`] = addr.postcode ?? '';
+      result[`${fieldName}_country`] = addr.country ?? '';
+      result[`${fieldName}_country_code`] = addr.country_code ?? '';
+
+      // Emit the manually entered address verbatim if present.
+      result[`${fieldName}_manual`] =
+        typeof value.manuallyEnteredAddress === 'string'
+          ? value.manuallyEnteredAddress
+          : '';
+
+      return result;
+    }
+  }
+
+  // Handle map/GeoJSON field (FeatureCollection, emit lat/long from first Point).
+  if (componentKey === MAP_COMPONENT) {
     if (
       value instanceof Object &&
-      'features' in value &&
+      Array.isArray(value.features) &&
       value.features.length > 0 &&
       value.features[0]?.geometry?.type === 'Point' &&
+      Array.isArray(value.features[0].geometry.coordinates) &&
       value.features[0].geometry.coordinates.length === 2
     ) {
       result[fieldName] = value;
-      result[fieldName + '_latitude'] =
+      result[`${fieldName}_latitude`] =
         value.features[0].geometry.coordinates[1];
-      result[fieldName + '_longitude'] =
+      result[`${fieldName}_longitude`] =
         value.features[0].geometry.coordinates[0];
       return result;
     } else {
       result[fieldName] = value;
-      result[fieldName + '_latitude'] = '';
-      result[fieldName + '_longitude'] = '';
+      result[`${fieldName}_latitude`] = '';
+      result[`${fieldName}_longitude`] = '';
     }
+    return result;
   }
 
-  if (fieldType === 'faims-core::Relationship') {
-    if (value instanceof Array) {
+  // Handle relationship fields (array of relations, as "type/id" joined with ;)
+  if (componentKey === RELATIONSHIP_COMPONENT) {
+    if (Array.isArray(value)) {
       result[fieldName] = value
         .map((v: any) => {
-          const relation_name = v.relation_type_vocabPair
+          const relation_name = Array.isArray(v.relation_type_vocabPair)
             ? v.relation_type_vocabPair[0]
             : 'unknown relation';
           return `${relation_name}/${v.record_id}`;
@@ -131,7 +224,7 @@ export const csvFormatValue = (
     return result;
   }
 
-  // default to just the value
+  // Default: emit value verbatim.
   result[fieldName] = value;
   return result;
 };
@@ -169,14 +262,15 @@ export const convertDataForOutput = (
   let result: {[key: string]: any} = {};
   fields.forEach((field: any) => {
     if (field.name in data) {
-      const formattedValue = csvFormatValue(
-        field.name,
-        field.type,
-        data[field.name],
+      const formattedValue = csvFormatValue({
+        componentNamespace: field.componentNamespace,
+        componentName: field.componentName,
+        fieldName: field.name,
+        value: data[field.name],
         hrid,
         filenames,
-        viewsetId
-      );
+        viewsetId,
+      });
       const formattedAnnotation = csvFormatAnnotation(
         field,
         annotations[field.name] || {}

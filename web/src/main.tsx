@@ -65,7 +65,7 @@ function App() {
     document.documentElement.className = getThemeClass();
   }, []);
 
-  /** 
+  /**
    * NOTE - this is disabled until we have a proper user._id which is not PII
      useEffect(() => { if (bugsnagEnabled && auth.user?.user.id) {
      Bugsnag.setUser(auth.user.user.id); } else if (bugsnagEnabled) {

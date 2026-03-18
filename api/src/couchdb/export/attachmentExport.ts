@@ -433,7 +433,7 @@ export const generateFilenameForAttachment = ({
   const type = file?.type || fileMimeType || undefined;
 
   // Look up extension, default to 'dat' for unknown types
-  const extension = type ? (fileTypes[type] ?? 'dat') : 'dat';
+  const extension = type ? fileTypes[type] ?? 'dat' : 'dat';
 
   // Slugify each component first (before length limiting)
   // This ensures the hash is computed on the slugified version

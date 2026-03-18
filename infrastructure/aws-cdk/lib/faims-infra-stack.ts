@@ -173,6 +173,7 @@ export class FaimsInfraStack extends cdk.Stack {
       androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       offlineMaps: config.uiConfiguration.offlineMaps,
+      addressAutosuggest: config.uiConfiguration.addressAutosuggest,
       supportEmail: config.supportLinks.supportEmail,
       privacyPolicyUrl: config.supportLinks.privacyPolicyUrl,
       contactUrl: config.supportLinks.contactUrl,

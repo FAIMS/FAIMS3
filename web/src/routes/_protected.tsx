@@ -28,7 +28,7 @@ import {
   PostExchangeTokenResponseSchema,
 } from '@faims3/data-model';
 import {createFileRoute, Outlet} from '@tanstack/react-router';
-import {ExternalLinkIcon, Info} from 'lucide-react';
+import {ExternalLinkIcon} from 'lucide-react';
 import {toast} from 'sonner';
 
 interface TokenParams {

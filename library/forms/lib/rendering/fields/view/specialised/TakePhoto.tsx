@@ -1,12 +1,15 @@
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import {Box, Paper, Typography} from '@mui/material';
-import {useMemo} from 'react';
+import {useMemo, useState} from 'react';
+import {PhotoLightbox} from '../../../../components/PhotoLightbox';
 import {useAttachments} from '../../../../hooks/useAttachment';
 import {IMAGE_TYPES} from '../../../../utils';
 import {DataViewFieldRender} from '../../../types';
 import {TextWrapper} from '../wrappers';
 
 export const TakePhotoRender: DataViewFieldRender = props => {
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null);
+
   // Generate attachment service
   const attachmentService = useMemo(() => {
     return props.renderContext.tools.getAttachmentService();
@@ -42,10 +45,17 @@ export const TakePhotoRender: DataViewFieldRender = props => {
               key={idx}
               src={img.url}
               alt={`Attachment ${idx + 1}`}
+              role="button"
+              tabIndex={0}
+              onClick={() => setZoomUrl(img.url)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') setZoomUrl(img.url);
+              }}
               style={{
                 maxWidth: '300px',
                 maxHeight: '300px',
                 objectFit: 'contain',
+                cursor: 'zoom-in',
               }}
             />
           ))}
@@ -93,6 +103,9 @@ export const TakePhotoRender: DataViewFieldRender = props => {
             </Paper>
           ))}
         </Box>
+      )}
+      {zoomUrl && (
+        <PhotoLightbox url={zoomUrl} onClose={() => setZoomUrl(null)} />
       )}
     </div>
   );
