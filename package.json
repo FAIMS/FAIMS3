@@ -22,6 +22,7 @@
     "force-start-app": "pnpm --filter=app force-start",
     "watch-api": "pnpm --filter=api run local",
     "web-dev": "pnpm --filter=web run dev",
+    "survey-utils-dev": "pnpm --filter=@faims3/survey-utils run dev",
     "migrate": "pnpm --filter=api run migrate",
     "migrate-with-keys": "pnpm --filter=api run migrate-with-keys",
     "load-projects": "pnpm --filter=api run load-projects",

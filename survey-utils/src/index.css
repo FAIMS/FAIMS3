@@ -1,0 +1,251 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.home-page .header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0 0 0.35em;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header p {
+  margin: 0;
+  color: #555;
+}
+
+.header-with-nav .header-top {
+  margin-bottom: 0.25rem;
+}
+
+.back-link {
+  display: inline-block;
+  font-size: 0.875rem;
+  color: #1976d2;
+  text-decoration: none;
+  margin-bottom: 0.25rem;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* Tool index (landing) */
+.tool-index h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+
+.tool-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tool-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.tool-link {
+  display: inline-block;
+  font-weight: 600;
+  color: #1976d2;
+  text-decoration: none;
+  margin-bottom: 0.35rem;
+}
+
+.tool-link:hover {
+  text-decoration: underline;
+}
+
+.tool-name {
+  font-size: 1rem;
+}
+
+.tool-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #444;
+  line-height: 1.5;
+}
+
+/* Upload panel */
+.upload-panel {
+  margin-bottom: 1.5rem;
+}
+
+.drop-zone {
+  border: 2px dashed #bbb;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drop-zone.drag-over {
+  border-color: #1976d2;
+  background: #e3f2fd;
+}
+
+.file-input {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.drop-label {
+  display: inline-block;
+  cursor: pointer;
+  color: #333;
+}
+
+.drop-label .browse {
+  color: #1976d2;
+  text-decoration: underline;
+}
+
+.drop-label .browse:hover {
+  color: #1565c0;
+}
+
+.drop-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.upload-error {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.75rem;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+/* Export bar */
+.export-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.export-label {
+  font-size: 0.875rem;
+  color: #555;
+}
+
+.export-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  color: #333;
+}
+
+.export-btn:hover {
+  background: #f5f5f5;
+  border-color: #999;
+}
+
+/* Summary table — column widths: name small, content largest */
+.summary-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  table-layout: fixed;
+}
+
+.summary-table .col-field { width: 10%; }
+.summary-table .col-form { width: 10%; }
+.summary-table .col-section { width: 10%; }
+.summary-table .col-type { width: 14%; }
+.summary-table .col-content { width: 42%; }
+.summary-table .col-notes { width: 14%; }
+
+.summary-table th,
+.summary-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+  vertical-align: top;
+}
+
+.summary-table thead th {
+  font-weight: 600;
+  color: #333;
+  background: #fafafa;
+  white-space: nowrap;
+}
+
+.summary-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.cell-field {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8rem;
+}
+
+.cell-content .content-pre {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cell-notes {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.table-meta {
+  margin: 0.75rem 0 0;
+  font-size: 0.8rem;
+  color: #666;
+}

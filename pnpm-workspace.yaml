@@ -3,6 +3,7 @@ packages:
   - app
   - web
   - designer
+  - survey-utils
   - library/data-model
   - library/forms
   - tests
