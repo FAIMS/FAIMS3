@@ -40,7 +40,9 @@ import {
 } from '@mui/material';
 import {useQuery} from '@tanstack/react-query';
 import {Control} from 'ol/control';
+import type {EventsKey} from 'ol/events';
 import {Extent} from 'ol/extent';
+import {unByKey} from 'ol/Observable';
 import {FeatureLike} from 'ol/Feature';
 import GeoJSON from 'ol/format/GeoJSON';
 import VectorLayer from 'ol/layer/Vector';
@@ -223,7 +225,13 @@ const SelectedRecordPopoverContent = ({
   });
 
   return (
-    <Card variant="outlined" sx={{minWidth: 260, maxWidth: 320}}>
+    <Card
+      variant="outlined"
+      sx={{
+        minWidth: 'min(260px, 100%)',
+        maxWidth: 'min(320px, 100%)',
+      }}
+    >
       <CardContent sx={{'&:last-child': {pb: 2}}}>
         <Typography
           variant="subtitle1"
@@ -269,8 +277,12 @@ const SelectedRecordPopoverContent = ({
 const COMPASS_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="white" d="M12 4 L8 14 L16 14 Z"/><path fill="white" fill-opacity="0.4" d="M12 20 L10 16 L14 16 Z"/></svg>';
 
+/** Rotation below this (radians) is treated as north-up; compass hidden at 0° (Google Maps style). */
+const ROTATION_NEAR_ZERO_THRESHOLD = 1e-6;
+
 /**
  * Creates a control button that resets the map rotation to north (rotation 0).
+ * The compass is hidden when rotation is 0° (Google Maps style) and shown when the map is rotated.
  */
 const createResetNorthControl = (map: Map): Control => {
   const button = document.createElement('button');
@@ -282,7 +294,7 @@ const createResetNorthControl = (map: Map): Control => {
   button.addEventListener('click', () => {
     const view = map.getView();
     const currentRotation = view.getRotation();
-    if (currentRotation !== undefined && currentRotation !== 0) {
+    if (currentRotation !== undefined && Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD) {
       view.animate({rotation: 0, duration: 200});
     }
   });
@@ -291,7 +303,33 @@ const createResetNorthControl = (map: Map): Control => {
   element.className = 'ol-custom-control ol-compass-box';
   element.appendChild(button);
 
-  return new Control({element});
+  const control = new Control({element});
+  let rotationKey: EventsKey | undefined;
+
+  const updateVisibility = (rotation: number) => {
+    const nearZero =
+      rotation === undefined ||
+      Math.abs(rotation) < ROTATION_NEAR_ZERO_THRESHOLD;
+    element.style.display = nearZero ? 'none' : '';
+  };
+
+  const originalSetMap = control.setMap.bind(control);
+  control.setMap = (targetMap: Map | null) => {
+    if (rotationKey !== undefined) {
+      unByKey(rotationKey);
+      rotationKey = undefined;
+    }
+    originalSetMap(targetMap);
+    if (targetMap) {
+      const view = targetMap.getView();
+      updateVisibility(view.getRotation() ?? 0);
+      rotationKey = view.on('change:rotation', () => {
+        updateVisibility(view.getRotation() ?? 0);
+      });
+    }
+  };
+
+  return control;
 };
 
 /**
@@ -761,10 +799,18 @@ export const OverviewMap = (props: OverviewMapProps) => {
           vertical: 'top',
           horizontal: 'center',
         }}
-        slotProps={{paper: {sx: {mt: 1.5}}}}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 1.5,
+              mx: 1.5,
+              maxWidth: 'calc(100vw - 24px)',
+            },
+          },
+        }}
       >
         {selectedFeature && (
-          <Box sx={{p: 1.5}}>
+          <Box sx={{p: 1.5, maxWidth: '100%', minWidth: 0}}>
             <SelectedRecordPopoverContent
               feature={selectedFeature}
               project_id={project_id}
