@@ -122,8 +122,9 @@ interface SelectedRecordPopoverContentProps {
   dataEngine: DataEngine;
 }
 
-/** Ignore clicks on the view/open record button for this long after popover opens (ms). */
-const POPOVER_BUTTON_GUARD_MS = 400;
+/** Short time which is used for various checks in the file, including guarding
+ * the popover button, and for tap detection. */
+const SHORT_WAIT_CONSTANT = 400;
 
 const SelectedRecordPopoverContent = ({
   feature,
@@ -139,7 +140,7 @@ const SelectedRecordPopoverContent = ({
   useEffect(() => {
     const id = setTimeout(
       () => setButtonInteractionAllowed(true),
-      POPOVER_BUTTON_GUARD_MS
+      SHORT_WAIT_CONSTANT
     );
     return () => clearTimeout(id);
   }, []);
@@ -623,7 +624,6 @@ export const OverviewMap = (props: OverviewMapProps) => {
     // Android browsers because the map's pan interaction consumes the gesture, so
     // click often doesn't fire or only fires on long-press. A quick
     // pointerdown→pointerup with little movement is treated as a tap.
-    const TAP_MAX_MS = 400;
     const TAP_MAX_MOVEMENT_PX = 15;
 
     let pointerDown: {pixel: number[]; time: number; id: number} | null = null;
@@ -645,7 +645,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       const dt = Date.now() - pointerDown.time;
       const dx = Math.abs(upPixel[0] - pointerDown.pixel[0]);
       const dy = Math.abs(upPixel[1] - pointerDown.pixel[1]);
-      const withinTime = dt <= TAP_MAX_MS;
+      const withinTime = dt <= SHORT_WAIT_CONSTANT;
       const withinMove = dx <= TAP_MAX_MOVEMENT_PX && dy <= TAP_MAX_MOVEMENT_PX;
       const isTap = withinTime && withinMove;
       pointerDown = null;
@@ -679,7 +679,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
     // window after opening so the popover stays open.
     if (reason === 'backdropClick') {
       const elapsed = Date.now() - popoverOpenedAtRef.current;
-      if (elapsed < 400) return;
+      if (elapsed < SHORT_WAIT_CONSTANT) return;
     }
     setSelectedFeature(null);
     setPopoverAnchorPosition(null);
