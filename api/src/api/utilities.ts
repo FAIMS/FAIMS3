@@ -19,6 +19,7 @@
 
 import {
   Action,
+  ErrorResponse,
   PostExchangeTokenInputSchema,
   PostExchangeTokenResponse,
   PostLongLivedTokenExchangeInputSchema,
@@ -186,7 +187,7 @@ api.post(
   '/auth/refresh',
   optionalAuthenticationJWT,
   processRequest({body: PostRefreshTokenInputSchema}),
-  async (req, res: Response<PostRefreshTokenResponse>) => {
+  async (req, res: Response<PostRefreshTokenResponse | ErrorResponse>) => {
     // If the user is logged in - then record the user ID as an additional
     // security measure - don't allow a user who currently has a JWT of user
     // A, to use a refresh token for user B, but if the user is not logged in
@@ -202,9 +203,14 @@ api.post(
 
     // If the refresh token is not valid, let user know
     if (!valid) {
-      throw new Exceptions.InvalidRequestException(
-        `Validation of refresh token failed. Validation error: ${validationError}.`
-      );
+      // Explicitly return a response here so that we're not reporting an error eg. to BugSnag
+      res.status(400).json({
+        error: {
+          message: `Validation of refresh token failed. Validation error: ${validationError}.`,
+          status: 400,
+        },
+      });
+      return;
     }
 
     // We know the refresh is valid, generate a JWT (no refresh) for this
