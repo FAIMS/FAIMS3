@@ -50,13 +50,13 @@ export function exportJson(data: SpecExportData) {
 
 /** Export table as CSV (with Notes column) */
 export function exportCsv(data: SpecExportData) {
-  const headers = ['Field name', 'Form', 'Section', 'Type of question', 'Question content', 'Notes'];
+  const headers = ['Question', 'Form', 'Section', 'Type of question', 'Question content', 'Notes'];
   const escape = (s: string) => {
     const t = String(s ?? '').replace(/"/g, '""');
     return t.includes(',') || t.includes('"') || t.includes('\n') ? `"${t}"` : t;
   };
   const rows = data.rows.map(r =>
-    [r.fieldName, r.form, r.section, r.questionType, r.questionContent, r.notes ?? ''].map(escape).join(',')
+    [r.questionTitle, r.form, r.section, r.questionType, r.questionContent, r.notes ?? ''].map(escape).join(',')
   );
   const csv = [headers.join(','), ...rows].join('\r\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -224,7 +224,7 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
     new TableRow({
       tableHeader: true,
       children: [
-        'Field name',
+        'Question',
         'Form',
         'Section',
         'Type of question',
@@ -242,7 +242,7 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
       r =>
         new TableRow({
           children: [
-            r.fieldName,
+            r.questionTitle,
             r.form,
             r.section,
             r.questionType,
