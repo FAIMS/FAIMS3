@@ -131,8 +131,10 @@ export function deriveReviewTable(spec: UiSpecification): SpecReviewRow[] {
       for (const fieldName of view.fields) {
         const field = spec.fields[fieldName];
         if (!field) continue;
+        const params = field['component-parameters'];
+        const questionTitle = params ? getLabel(params) || fieldName : fieldName;
         rows.push({
-          fieldName,
+          questionTitle,
           form: formLabel,
           section: sectionLabel,
           questionType: getQuestionType(field),

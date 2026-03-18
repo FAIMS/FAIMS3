@@ -85,7 +85,8 @@ export interface NotebookJson {
 
 /** One row in the review table */
 export interface SpecReviewRow {
-  fieldName: string;
+  /** Display name / title of the question (from field label) */
+  questionTitle: string;
   form: string;
   section: string;
   questionType: string;

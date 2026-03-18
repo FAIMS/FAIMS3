@@ -22,7 +22,7 @@ export function SummaryTable({ rows }: Props) {
           </colgroup>
           <thead>
             <tr>
-              <th scope="col">Field name</th>
+              <th scope="col">Question</th>
               <th scope="col">Form</th>
               <th scope="col">Section</th>
               <th scope="col">Type of question</th>
@@ -32,8 +32,8 @@ export function SummaryTable({ rows }: Props) {
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={`${row.fieldName}-${i}`}>
-                <td className="cell-field">{row.fieldName}</td>
+              <tr key={`${row.questionTitle}-${i}`}>
+                <td className="cell-field">{row.questionTitle}</td>
                 <td className="cell-form">{row.form}</td>
                 <td className="cell-section">{row.section}</td>
                 <td className="cell-type">{row.questionType}</td>
