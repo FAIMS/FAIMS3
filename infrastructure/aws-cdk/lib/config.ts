@@ -26,6 +26,35 @@ const OfflineMapsConfigSchema = z.object({
     .default('basic'),
 });
 
+/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER require the corresponding API key. */
+const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
+
+/** Configuration for address autosuggest in the app (KEY_SOURCE-style dispatch). */
+const AddressAutosuggestConfigSchema = z
+  .object({
+    /** Source for address autosuggest. NONE disables; MAPBOX requires mapboxKey; MAPTILER requires maptilerKey. */
+    source: AddressAutosuggestSourceSchema.default('NONE'),
+    /** Mapbox access token (required when source is MAPBOX). */
+    mapboxKey: z.string().min(1).optional(),
+    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2 (e.g. AU or AU,NZ). Defaults to AU. */
+    mapboxAddressCountry: z.string().optional(),
+    /** MapTiler API key (required when source is MAPTILER). */
+    maptilerKey: z.string().min(1).optional(),
+    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2 (e.g. AU or AU,NZ). Defaults to AU. */
+    maptilerAddressCountry: z.string().optional(),
+  })
+  .refine(
+    data => {
+      if (data.source === 'MAPBOX') return !!data.mapboxKey;
+      if (data.source === 'MAPTILER') return !!data.maptilerKey;
+      return true;
+    },
+    {
+      message:
+        'When source is MAPBOX, mapboxKey is required; when source is MAPTILER, maptilerKey is required.',
+    }
+  );
+
 // For each provider we should have these secrets in the secrets manager
 // const AuthProviderSecretSchema = z.object({
 //   clientID: z.string(),
@@ -429,6 +458,10 @@ export const UiConfiguration = z.object({
   headingAppName: z.string().optional(),
   /** Offline maps settings */
   offlineMaps: OfflineMapsConfigSchema,
+  /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
+  addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
+    source: 'NONE',
+  }),
 });
 
 export const SecurityConfigSchema = z.object({
@@ -511,6 +544,9 @@ export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
+export type AddressAutosuggestConfig = z.infer<
+  typeof AddressAutosuggestConfigSchema
+>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config

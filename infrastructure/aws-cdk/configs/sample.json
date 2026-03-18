@@ -28,6 +28,9 @@
       "satelliteSource": "esri",
       "offlineMaps": true,
       "mapStyle": "basic"
+    },
+    "addressAutosuggest": {
+      "source": "NONE"
     }
   },
   "supportLinks": {
@@ -104,12 +107,7 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": false,
-    "smtp": {
-      "host": "host-url",
-      "port": "2525",
-      "secure": "false"
-    }
+    "localhostWhitelist": false
   },
   "authProviders": {
     "disableLocalLogin": false,

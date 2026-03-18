@@ -23,6 +23,7 @@ import {Capacitor} from '@capacitor/core';
 import {
   type IAutosuggestAddressService,
   MapboxAutosuggestAddressService,
+  MapTilerAutosuggestAddressService,
   MapStylesheetNameType,
   MapConfig,
 } from '@faims3/forms';
@@ -505,13 +506,16 @@ function getAttachmentDocumentIdPrefix(): string | undefined {
 
 /**
  * Source for address autosuggest service. NONE disables autocomplete;
- * MAPBOX uses Mapbox Search Box API (requires VITE_MAPBOX_ACCESS_TOKEN).
+ * MAPBOX uses Mapbox Search Box API (requires VITE_AUTOSUGGEST_MAPBOX_KEY);
+ * MAPTILER uses MapTiler Search and Geocoding API (requires VITE_AUTOSUGGEST_MAPTILER_KEY).
  */
 export enum AutosuggestSource {
   /** No address autosuggest; AddressField uses manual entry only. */
   NONE = 'NONE',
   /** Mapbox Search Box API (suggest + retrieve). */
   MAPBOX = 'MAPBOX',
+  /** MapTiler Search and Geocoding API (forward + by-id). */
+  MAPTILER = 'MAPTILER',
 }
 
 /**
@@ -528,7 +532,7 @@ function getAutosuggestSourceConfig(): AutosuggestSource {
     return AutosuggestSource[upper as keyof typeof AutosuggestSource];
   }
   logError(
-    `VITE_AUTOSUGGEST_SOURCE invalid (${raw}), using NONE. Valid: NONE, MAPBOX.`
+    `VITE_AUTOSUGGEST_SOURCE invalid (${raw}), using NONE. Valid: NONE, MAPBOX, MAPTILER.`
   );
   return AutosuggestSource.NONE;
 }
@@ -538,7 +542,9 @@ function getAutosuggestSourceConfig(): AutosuggestSource {
  * Required for MAPBOX; if missing, address autosuggest is effectively disabled.
  */
 function getMapboxAccessToken(): string | undefined {
-  const token = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined;
+  const token = import.meta.env.VITE_AUTOSUGGEST_MAPBOX_KEY as
+    | string
+    | undefined;
   if (token === undefined || token.trim() === '') {
     return undefined;
   }
@@ -563,6 +569,38 @@ function getMapboxAddressCountry(): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Returns MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER.
+ * Required for MAPTILER; if missing, address autosuggest is effectively disabled.
+ */
+function getMapTilerApiKey(): string | undefined {
+  const key = import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY as
+    | string
+    | undefined;
+  if (key === undefined || key.trim() === '') {
+    return undefined;
+  }
+  return key.trim();
+}
+
+/**
+ * Returns MapTiler address search country filter (ISO 3166-1 alpha-2).
+ * Optional env VITE_MAPTILER_ADDRESS_COUNTRY: comma-separated codes (e.g. "AU" or "AU,NZ").
+ * Defaults to Australia when unset.
+ */
+function getMapTilerAddressCountry(): string[] {
+  const raw = import.meta.env.VITE_MAPTILER_ADDRESS_COUNTRY as
+    | string
+    | undefined;
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_MAPBOX_ADDRESS_COUNTRY;
+  }
+  return raw
+    .split(',')
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
 let addressAutosuggestServiceInstance: IAutosuggestAddressService | null = null;
 
 function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService | null {
@@ -577,7 +615,7 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
     const apiKey = getMapboxAccessToken();
     if (!apiKey) {
       logError(
-        'VITE_AUTOSUGGEST_SOURCE is MAPBOX but VITE_MAPBOX_ACCESS_TOKEN is not set; address autosuggest disabled.'
+        'VITE_AUTOSUGGEST_SOURCE is MAPBOX but VITE_AUTOSUGGEST_MAPBOX_KEY is not set; address autosuggest disabled.'
       );
       return null;
     }
@@ -590,12 +628,29 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
     });
     return addressAutosuggestServiceInstance;
   }
+  if (source === AutosuggestSource.MAPTILER) {
+    const apiKey = getMapTilerApiKey();
+    if (!apiKey) {
+      logError(
+        'VITE_AUTOSUGGEST_SOURCE is MAPTILER but VITE_AUTOSUGGEST_MAPTILER_KEY is not set; address autosuggest disabled.'
+      );
+      return null;
+    }
+    addressAutosuggestServiceInstance = new MapTilerAutosuggestAddressService({
+      apiKey,
+      language: 'en',
+      limit: 10,
+      types: ['address'],
+      country: getMapTilerAddressCountry(),
+    });
+    return addressAutosuggestServiceInstance;
+  }
   return null;
 }
 
 /**
  * Returns a factory for the address autosuggest service based on
- * VITE_AUTOSUGGEST_SOURCE and provider-specific env (e.g. VITE_MAPBOX_ACCESS_TOKEN).
+ * VITE_AUTOSUGGEST_SOURCE and provider-specific env (VITE_AUTOSUGGEST_MAPBOX_KEY or VITE_AUTOSUGGEST_MAPTILER_KEY).
  * Use as FullFormConfig.addressAutosuggestService. When NONE or config missing,
  * the factory returns undefined so AddressField skips autocomplete.
  */

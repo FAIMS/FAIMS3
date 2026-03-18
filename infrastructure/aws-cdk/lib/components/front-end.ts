@@ -16,11 +16,12 @@ import {IHostedZone} from 'aws-cdk-lib/aws-route53';
 import {ICertificate} from 'aws-cdk-lib/aws-certificatemanager';
 import * as path from 'path';
 import {getPathHash, getPathToRoot} from '../util/mono';
-import {OfflineMapsConfig} from '../config';
+import {OfflineMapsConfig, AddressAutosuggestConfig} from '../config';
 
 const MAP_ORIGINS_SHARED = [
   'openmaptiles.github.io',
   'api.maptiler.com',
+  'api.mapbox.com',
   '*.openstreetmap.org',
 ];
 
@@ -75,6 +76,9 @@ export interface FaimsFrontEndProps {
 
   // Offline maps settings -> env variables in faims
   offlineMaps: OfflineMapsConfig;
+
+  /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; when omitted or source NONE, autosuggest is disabled. */
+  addressAutosuggest?: AddressAutosuggestConfig;
 
   /** Maximum long-lived token duration in days (undefined = infinite) */
   maximumLongLivedDurationDays?: number;
@@ -238,6 +242,34 @@ export class FaimsFrontEnd extends Construct {
         : {}),
       ...(props.offlineMaps.satelliteSource
         ? {VITE_SATELLITE_SOURCE: props.offlineMaps.satelliteSource}
+        : {}),
+
+      // Address autosuggest configuration
+      ...(props.addressAutosuggest?.source && props.addressAutosuggest.source !== 'NONE'
+        ? {
+            VITE_AUTOSUGGEST_SOURCE: props.addressAutosuggest.source,
+            ...(props.addressAutosuggest.mapboxKey
+              ? {VITE_AUTOSUGGEST_MAPBOX_KEY: props.addressAutosuggest.mapboxKey}
+              : {}),
+            ...(props.addressAutosuggest.mapboxAddressCountry
+              ? {
+                  VITE_MAPBOX_ADDRESS_COUNTRY:
+                    props.addressAutosuggest.mapboxAddressCountry,
+                }
+              : {}),
+            ...(props.addressAutosuggest.maptilerKey
+              ? {
+                  VITE_AUTOSUGGEST_MAPTILER_KEY:
+                    props.addressAutosuggest.maptilerKey,
+                }
+              : {}),
+            ...(props.addressAutosuggest.maptilerAddressCountry
+              ? {
+                  VITE_MAPTILER_ADDRESS_COUNTRY:
+                    props.addressAutosuggest.maptilerAddressCountry,
+                }
+              : {}),
+          }
         : {}),
 
       // Monitoring
