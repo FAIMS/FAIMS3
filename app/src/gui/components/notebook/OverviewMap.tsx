@@ -225,13 +225,7 @@ const SelectedRecordPopoverContent = ({
   });
 
   return (
-    <Card
-      variant="outlined"
-      sx={{
-        minWidth: 'min(260px, 100%)',
-        maxWidth: 'min(320px, 100%)',
-      }}
-    >
+    <Card variant="outlined" sx={{minWidth: 260, maxWidth: 320}}>
       <CardContent sx={{'&:last-child': {pb: 2}}}>
         <Typography
           variant="subtitle1"
@@ -791,26 +785,22 @@ export const OverviewMap = (props: OverviewMapProps) => {
         onClose={handlePopoverClose}
         anchorReference="anchorPosition"
         anchorPosition={popoverAnchorPosition ?? {left: 0, top: 0}}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
         transformOrigin={{
-          vertical: 'top',
+          vertical: 'bottom',
           horizontal: 'center',
         }}
+        marginThreshold={24}
         slotProps={{
           paper: {
             sx: {
-              mt: 1.5,
-              mx: 1.5,
-              maxWidth: 'calc(100vw - 24px)',
+              maxWidth: 'min(320px, calc(100vw - 48px))',
+              minWidth: 0,
             },
           },
         }}
       >
         {selectedFeature && (
-          <Box sx={{p: 1.5, maxWidth: '100%', minWidth: 0}}>
+          <Box sx={{p: 1.5}}>
             <SelectedRecordPopoverContent
               feature={selectedFeature}
               project_id={project_id}
