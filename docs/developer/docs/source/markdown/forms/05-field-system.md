@@ -299,7 +299,9 @@ write data, and perform other operations.
 interface FormFieldContextProps {
   fieldId: string;
   state: FaimsFormFieldState;
-  setFieldData: (value: any) => void;
+  setFieldData:
+    | ((value: any) => void)
+    | ((updater: (prev: any) => any) => void);
   setFieldAnnotation: (value: FormAnnotation) => void;
   addAttachment: (params) => Promise<string>;
   removeAttachment: (params) => Promise<void>;

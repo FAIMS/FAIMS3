@@ -3,8 +3,10 @@ import {
   FormAnnotation,
   FormDataEntry,
 } from '@faims3/data-model';
+import {Alert} from '@mui/material';
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
+import {logInfo} from '../logging';
 import {FieldAnnotation} from './Annotation';
 import {FormManagerConfig, FullFormManagerConfig} from './formManagers/types';
 import {
@@ -14,8 +16,6 @@ import {
   FaimsFormFieldState,
 } from './types';
 import {getFieldId} from './utils';
-import {Alert} from '@mui/material';
-import {logInfo} from '../logging';
 
 interface FieldProps {
   fieldId: string;
@@ -43,9 +43,18 @@ export const Field = React.memo((props: FieldProps) => {
       name={props.fieldSpec['component-parameters'].name}
       children={field => {
         const setFieldData = (value: any) => {
+          // Allow functional updates for race-safe concurrent writes
+          const current = (field.state.value || {}) as
+            | FormDataEntry
+            | undefined;
+          const nextData =
+            typeof value === 'function'
+              ? value((current?.data ?? undefined) as any)
+              : value;
+
           const newValue: FormDataEntry = {
-            ...(field.state.value || {}),
-            data: value,
+            ...(current || {}),
+            data: nextData,
           };
           field.handleChange(newValue as any);
         };
@@ -98,6 +107,14 @@ export const Field = React.memo((props: FieldProps) => {
             : async () => {
                 logInfo('Mock removeAttachment');
               };
+        const setAttachmentSavingHandler =
+          props.config.mode === 'full' &&
+          (props.config as FullFormManagerConfig).attachmentHandlers
+            .setAttachmentSaving
+            ? (saving: boolean) =>
+                (props.config as FullFormManagerConfig).attachmentHandlers
+                  .setAttachmentSaving!(props.fieldId, saving)
+            : undefined;
         const triggers =
           props.config.mode === 'full'
             ? props.config.trigger
@@ -125,6 +142,7 @@ export const Field = React.memo((props: FieldProps) => {
               setFieldAttachment={setFieldAttachment}
               addAttachment={addAttachmentHandler}
               removeAttachment={removeAttachmentHandler}
+              setAttachmentSaving={setAttachmentSavingHandler}
               handleBlur={field.handleBlur}
               fieldId={props.fieldId}
               trigger={triggers}

@@ -136,7 +136,7 @@ import {configureStore} from '@reduxjs/toolkit';
 import {Provider} from 'react-redux';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider} from '@mui/material/styles';
-import testTheme from './themes/default';
+import testTheme from './themes/fieldmark';
 import {ActiveUser} from '../context/slices/authSlice';
 import {Router} from 'react-router-dom';
 import {FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER} from 'redux-persist';

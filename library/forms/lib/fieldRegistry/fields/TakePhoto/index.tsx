@@ -21,6 +21,7 @@ import {Buffer} from 'buffer';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
+import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
   BaseFieldPropsSchema,
@@ -31,10 +32,10 @@ import {
   useAttachments,
   useAttachmentsResult,
 } from '../../../hooks/useAttachment';
+import {logError, logWarn} from '../../../logging';
 import {TakePhotoRender} from '../../../rendering/fields/view/specialised/TakePhoto';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
-import {logWarn, logError} from '../../../logging';
 
 // Reduce image size by scaling down capacitor quality
 const IMAGE_QUALITY_0_100 = 60;
@@ -374,42 +375,6 @@ const PendingPhotoItem: React.FC<{
 };
 
 /**
- * Full-screen lightbox dialog for viewing photos at full size.
- * Opens when a user clicks on a photo thumbnail.
- */
-const Lightbox: React.FC<{
-  url: string;
-  onClose: () => void;
-}> = ({url, onClose}) => {
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      sx={{
-        '& .MuiDialog-paper': {
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        },
-      }}
-    >
-      <DialogContent sx={{p: 0, display: 'flex', justifyContent: 'center'}}>
-        <Box
-          component="img"
-          src={url}
-          alt="Full size preview"
-          sx={{
-            maxWidth: '100%',
-            maxHeight: '90vh',
-            objectFit: 'contain',
-          }}
-        />
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-/**
  * Unified photo entry for the gallery - can be either a loaded photo or a pending one.
  */
 type GalleryPhoto =
@@ -608,7 +573,7 @@ const PhotoGallery: React.FC<{
 
       {/* Lightbox */}
       {lightboxUrl && (
-        <Lightbox url={lightboxUrl} onClose={handleLightboxClose} />
+        <PhotoLightbox url={lightboxUrl} onClose={handleLightboxClose} />
       )}
     </>
   );
@@ -636,6 +601,7 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
     state,
     addAttachment,
     removeAttachment,
+    setAttachmentSaving,
     config: context,
   } = props;
 
@@ -794,33 +760,42 @@ const TakePhotoFull: React.FC<FullTakePhotoFieldProps> = props => {
         }
       }
 
-      // Now do the async storage
-      const newId = await addAttachment({
-        // Blob attachments are faster - especially on native
-        blob: photoBlob,
-        contentType: `image/${photoResult.format}`,
-        type: 'photo',
-        fileFormat: photoResult.format,
-      });
+      // Block section navigation until photo is stored in PouchDB (prevents data loss)
+      setAttachmentSaving?.(true);
 
-      // Update pending photo with the real attachment ID
-      // This allows the cleanup effect to know when to remove it
-      setPendingPhotos(current => {
-        const updated = new Map(current);
-        const pending = updated.get(tempId);
-        if (pending) {
-          updated.set(tempId, {...pending, attachmentId: newId});
-        }
-        return updated;
-      });
+      try {
+        // Now do the async storage
+        const newId = await addAttachment({
+          // Blob attachments are faster - especially on native
+          blob: photoBlob,
+          contentType: `image/${photoResult.format}`,
+          type: 'photo',
+          fileFormat: photoResult.format,
+        });
 
-      // Update field value
-      const currentData = props.state.value?.data as string[] | undefined;
-      props.setFieldData([...(currentData ?? []), newId]);
+        // Update pending photo with the real attachment ID
+        // This allows the cleanup effect to know when to remove it
+        setPendingPhotos(current => {
+          const updated = new Map(current);
+          const pending = updated.get(tempId);
+          if (pending) {
+            updated.set(tempId, {...pending, attachmentId: newId});
+          }
+          return updated;
+        });
+
+        // Update field value using a functional updater to avoid races
+        props.setFieldData((prev: string[] | undefined) => [
+          ...(prev ?? []),
+          newId,
+        ]);
+      } finally {
+        setAttachmentSaving?.(false);
+      }
     } catch (err: any) {
       logError(new Error('Failed to capture photo:'), {error: err});
     }
-  }, [state.value, addAttachment, context]);
+  }, [state.value, addAttachment, setAttachmentSaving, context]);
 
   /**
    * Deletes a photo at the specified index from the field's attachments.
