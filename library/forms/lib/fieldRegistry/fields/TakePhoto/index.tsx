@@ -21,6 +21,7 @@ import {Buffer} from 'buffer';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {z} from 'zod';
 import {CameraPermissionIssue} from '../../../components/PermissionAlerts';
+import {PhotoLightbox} from '../../../components/PhotoLightbox';
 import {FullFormConfig} from '../../../formModule/formManagers/types';
 import {
   BaseFieldPropsSchema,
@@ -374,42 +375,6 @@ const PendingPhotoItem: React.FC<{
 };
 
 /**
- * Full-screen lightbox dialog for viewing photos at full size.
- * Opens when a user clicks on a photo thumbnail.
- */
-const Lightbox: React.FC<{
-  url: string;
-  onClose: () => void;
-}> = ({url, onClose}) => {
-  return (
-    <Dialog
-      open={true}
-      onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      sx={{
-        '& .MuiDialog-paper': {
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        },
-      }}
-    >
-      <DialogContent sx={{p: 0, display: 'flex', justifyContent: 'center'}}>
-        <Box
-          component="img"
-          src={url}
-          alt="Full size preview"
-          sx={{
-            maxWidth: '100%',
-            maxHeight: '90vh',
-            objectFit: 'contain',
-          }}
-        />
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-/**
  * Unified photo entry for the gallery - can be either a loaded photo or a pending one.
  */
 type GalleryPhoto =
@@ -608,7 +573,7 @@ const PhotoGallery: React.FC<{
 
       {/* Lightbox */}
       {lightboxUrl && (
-        <Lightbox url={lightboxUrl} onClose={handleLightboxClose} />
+        <PhotoLightbox url={lightboxUrl} onClose={handleLightboxClose} />
       )}
     </>
   );
