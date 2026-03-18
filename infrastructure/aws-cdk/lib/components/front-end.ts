@@ -257,10 +257,16 @@ export class FaimsFrontEnd extends Construct {
                     props.addressAutosuggest.mapboxAddressCountry,
                 }
               : {}),
-            ...(props.addressAutosuggest.maptilerKey
+            // MapTiler: use maptilerKey if set, else fall back to map source
+            // key when mapSource is maptiler
+            ...(props.addressAutosuggest.source === 'MAPTILER'
               ? {
                   VITE_AUTOSUGGEST_MAPTILER_KEY:
-                    props.addressAutosuggest.maptilerKey,
+                    props.addressAutosuggest.maptilerKey?.trim() ||
+                    (props.offlineMaps.mapSource === 'maptiler' &&
+                    props.offlineMaps.mapSourceKey?.trim()
+                      ? props.offlineMaps.mapSourceKey
+                      : ''),
                 }
               : {}),
             ...(props.addressAutosuggest.maptilerAddressCountry

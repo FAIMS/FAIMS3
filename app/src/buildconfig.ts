@@ -505,9 +505,10 @@ function getAttachmentDocumentIdPrefix(): string | undefined {
 // Address autosuggest configuration (KEY_SOURCE-style dispatch)
 
 /**
- * Source for address autosuggest service. NONE disables autocomplete;
- * MAPBOX uses Mapbox Search Box API (requires VITE_AUTOSUGGEST_MAPBOX_KEY);
- * MAPTILER uses MapTiler Search and Geocoding API (requires VITE_AUTOSUGGEST_MAPTILER_KEY).
+ * Source for address autosuggest service. NONE disables autocomplete; MAPBOX
+ * uses Mapbox Search Box API (requires VITE_AUTOSUGGEST_MAPBOX_KEY); MAPTILER
+ * uses MapTiler Search and Geocoding API (VITE_AUTOSUGGEST_MAPTILER_KEY, or
+ * VITE_MAP_SOURCE_KEY when map source is maptiler).
  */
 export enum AutosuggestSource {
   /** No address autosuggest; AddressField uses manual entry only. */
@@ -570,17 +571,28 @@ function getMapboxAddressCountry(): string[] {
 }
 
 /**
- * Returns MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER.
- * Required for MAPTILER; if missing, address autosuggest is effectively disabled.
+ * Returns MapTiler API key when AUTOSUGGEST_SOURCE is MAPTILER. Uses
+ * VITE_AUTOSUGGEST_MAPTILER_KEY if set; otherwise when map source is maptiler
+ * uses VITE_MAP_SOURCE_KEY so a single key can serve both tiles and geocoding.
+ * If neither is set, returns undefined and autosuggest is disabled.
  */
 function getMapTilerApiKey(): string | undefined {
-  const key = import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY as
+  const dedicated = import.meta.env.VITE_AUTOSUGGEST_MAPTILER_KEY as
     | string
     | undefined;
-  if (key === undefined || key.trim() === '') {
-    return undefined;
+  if (dedicated !== undefined && dedicated.trim() !== '') {
+    return dedicated.trim();
   }
-  return key.trim();
+  const mapSource = import.meta.env.VITE_MAP_SOURCE as string | undefined;
+  const mapKey = import.meta.env.VITE_MAP_SOURCE_KEY as string | undefined;
+  if (
+    mapSource === 'maptiler' &&
+    mapKey !== undefined &&
+    mapKey.trim() !== ''
+  ) {
+    return mapKey.trim();
+  }
+  return undefined;
 }
 
 /**
@@ -632,7 +644,7 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
     const apiKey = getMapTilerApiKey();
     if (!apiKey) {
       logError(
-        'VITE_AUTOSUGGEST_SOURCE is MAPTILER but VITE_AUTOSUGGEST_MAPTILER_KEY is not set; address autosuggest disabled.'
+        'VITE_AUTOSUGGEST_SOURCE is MAPTILER but no MapTiler API key available (set VITE_AUTOSUGGEST_MAPTILER_KEY or, when using MapTiler for maps, VITE_MAP_SOURCE_KEY); address autosuggest disabled.'
       );
       return null;
     }
@@ -650,7 +662,7 @@ function createAddressAutosuggestServiceInstance(): IAutosuggestAddressService |
 
 /**
  * Returns a factory for the address autosuggest service based on
- * VITE_AUTOSUGGEST_SOURCE and provider-specific env (VITE_AUTOSUGGEST_MAPBOX_KEY or VITE_AUTOSUGGEST_MAPTILER_KEY).
+ * VITE_AUTOSUGGEST_SOURCE and provider-specific env (VITE_AUTOSUGGEST_MAPBOX_KEY or VITE_AUTOSUGGEST_MAPTILER_KEY / VITE_MAP_SOURCE_KEY for MapTiler).
  * Use as FullFormConfig.addressAutosuggestService. When NONE or config missing,
  * the factory returns undefined so AddressField skips autocomplete.
  */

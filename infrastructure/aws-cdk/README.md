@@ -332,9 +332,9 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `source`: `NONE` (disable), `MAPBOX`, or `MAPTILER`
     - `mapboxKey`: (Required when `source` is `MAPBOX`) Mapbox access token for Search Box API
     - `mapboxAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for Mapbox (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
-    - `maptilerKey`: (Required when `source` is `MAPTILER`) MapTiler API key for Geocoding API (see https://cloud.maptiler.com/)
+    - `maptilerKey`: (Optional when `source` is `MAPTILER`) MapTiler API key for the Geocoding API (see https://cloud.maptiler.com/). If omitted and your map tiles use MapTiler (`mapSource` is `maptiler` and `mapSourceKey` is set), that key is used for address autosuggest as well. Provide `maptilerKey` only when you want a *separate* key for autosuggest (e.g. different quotas or restrictions) than for map tiles.
     - `maptilerAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for MapTiler (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
-  - Example with MapTiler autosuggest: `"addressAutosuggest": { "source": "MAPTILER", "maptilerKey": "your-maptiler-api-key", "maptilerAddressCountry": "AU" }`
+  - Example with MapTiler autosuggest (shared key): `"addressAutosuggest": { "source": "MAPTILER", "maptilerAddressCountry": "AU" }` when `offlineMaps.mapSource` is `maptiler` and `mapSourceKey` is set. Example with a dedicated autosuggest key: `"addressAutosuggest": { "source": "MAPTILER", "maptilerKey": "your-geocoding-key", "maptilerAddressCountry": "AU" }`
 
   **API keys and public exposure:** Any API keys you put in `uiConfiguration` (e.g. `mapSourceKey`, `mapboxKey`, `maptilerKey`) are baked into the front-end app at build time and can therefore be exposed in the client—for example in bundled source or network requests. You should only use keys that are suitable for public consumption. Both Mapbox and MapTiler support public/client keys for front-end use; this is a standard pattern and is generally safe. Be aware that if someone obtains and abuses these keys, there can be cost implications (e.g. usage beyond your quotas). Use provider dashboards to set usage limits and monitor usage where possible.
 

@@ -26,32 +26,39 @@ const OfflineMapsConfigSchema = z.object({
     .default('basic'),
 });
 
-/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER require the corresponding API key. */
+/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER
+ * require the corresponding API key. */
 const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
 
-/** Configuration for address autosuggest in the app (KEY_SOURCE-style dispatch). */
+/** Configuration for address autosuggest in the app (KEY_SOURCE-style
+ * dispatch). */
 const AddressAutosuggestConfigSchema = z
   .object({
-    /** Source for address autosuggest. NONE disables; MAPBOX requires mapboxKey; MAPTILER requires maptilerKey. */
+    /** Source for address autosuggest. NONE disables; MAPBOX requires
+     * mapboxKey; MAPTILER requires maptilerKey or map source key (when
+     * mapSource is maptiler). */
     source: AddressAutosuggestSourceSchema.default('NONE'),
     /** Mapbox access token (required when source is MAPBOX). */
     mapboxKey: z.string().min(1).optional(),
-    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2 (e.g. AU or AU,NZ). Defaults to AU. */
+    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
     mapboxAddressCountry: z.string().optional(),
-    /** MapTiler API key (required when source is MAPTILER). */
+    /** MapTiler API key for Geocoding API. Optional when source is MAPTILER if
+     * mapSource is maptiler and mapSourceKey is set—then that key is used.
+     * Provide this when you want a separate key for autosuggest than for map
+     * tiles. */
     maptilerKey: z.string().min(1).optional(),
-    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2 (e.g. AU or AU,NZ). Defaults to AU. */
+    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
     maptilerAddressCountry: z.string().optional(),
   })
   .refine(
     data => {
       if (data.source === 'MAPBOX') return !!data.mapboxKey;
-      if (data.source === 'MAPTILER') return !!data.maptilerKey;
       return true;
     },
     {
-      message:
-        'When source is MAPBOX, mapboxKey is required; when source is MAPTILER, maptilerKey is required.',
+      message: 'When source is MAPBOX, mapboxKey is required.',
     }
   );
 
@@ -443,26 +450,41 @@ const AppSupportLinksSchema = z.object({
   docsUrl: z.string().url().optional(),
 });
 
-export const UiConfiguration = z.object({
-  /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
-  /** The notebook list type for the app */
-  notebookListType: z.enum(['tabs', 'headings']),
-  /** The display name for notebooks e.g. survey, notebook */
-  notebookName: z.string(),
-  /** The name of the App in app store etc - heading by default */
-  appName: z.string(),
-  /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
-  appId: z.string(),
-  /** Override the heading text in banner */
-  headingAppName: z.string().optional(),
-  /** Offline maps settings */
-  offlineMaps: OfflineMapsConfigSchema,
-  /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
-  addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
-    source: 'NONE',
-  }),
-});
+export const UiConfiguration = z
+  .object({
+    /** The UI Theme for the app */
+    uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
+    /** The notebook list type for the app */
+    notebookListType: z.enum(['tabs', 'headings']),
+    /** The display name for notebooks e.g. survey, notebook */
+    notebookName: z.string(),
+    /** The name of the App in app store etc - heading by default */
+    appName: z.string(),
+    /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
+    appId: z.string(),
+    /** Override the heading text in banner */
+    headingAppName: z.string().optional(),
+    /** Offline maps settings */
+    offlineMaps: OfflineMapsConfigSchema,
+    /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
+    addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
+      source: 'NONE',
+    }),
+  })
+  .refine(
+    data => {
+      if (data.addressAutosuggest?.source !== 'MAPTILER') return true;
+      if (data.addressAutosuggest.maptilerKey?.trim()) return true;
+      return (
+        data.offlineMaps.mapSource === 'maptiler' &&
+        !!data.offlineMaps.mapSourceKey?.trim()
+      );
+    },
+    {
+      message:
+        'When addressAutosuggest.source is MAPTILER, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
+    }
+  );
 
 export const SecurityConfigSchema = z.object({
   /** Maximum number of days for long lived tokens */
