@@ -30,7 +30,7 @@ import {
 import {toolbarPlugin} from '@mdxeditor/editor/plugins/toolbar';
 import {headingsPlugin} from '@mdxeditor/editor/plugins/headings';
 import {listsPlugin} from '@mdxeditor/editor/plugins/lists';
-import {quotePlugin} from '@mdxeditor/editor/plugins/quote';
+
 import {thematicBreakPlugin} from '@mdxeditor/editor/plugins/thematic-break';
 import {markdownShortcutPlugin} from '@mdxeditor/editor/plugins/markdown-shortcut';
 import {tablePlugin} from '@mdxeditor/editor/plugins/table';
@@ -68,8 +68,6 @@ const SUPPORTED_NODE_TYPES = new Set([
   // listsPlugin
   'list',
   'listItem',
-  // quotePlugin
-  'blockquote',
   // thematicBreakPlugin
   'thematicBreak',
   // tablePlugin
@@ -150,7 +148,6 @@ export const MdxEditor = ({
     return [
       headingsPlugin(),
       listsPlugin(),
-      quotePlugin(),
       thematicBreakPlugin(),
       markdownShortcutPlugin(),
       tablePlugin(),
