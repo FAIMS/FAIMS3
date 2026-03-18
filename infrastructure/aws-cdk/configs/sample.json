@@ -28,12 +28,16 @@
       "satelliteSource": "esri",
       "offlineMaps": true,
       "mapStyle": "basic"
+    },
+    "addressAutosuggest": {
+      "source": "NONE"
     }
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
     "privacyPolicyUrl": "https://your-domain.com/privacy-policy",
-    "contactUrl": "https://your-domain.com/contact"
+    "contactUrl": "https://your-domain.com/contact",
+    "docsUrl": "https://docs.your-domain.com"
   },
   "couch": {
     "ebsRecoverySnapshotId": "1234",
@@ -91,6 +95,7 @@
     "conductorDockerImage": "ghcr.io/faims/faims3-api",
     "conductorDockerImageTag": "latest",
     "shortCodePrefix": "FAIMS",
+    "provisionSSOUsersPolicy": "reject",
     "cpu": 1024,
     "memory": 2048,
     "autoScaling": {
@@ -102,12 +107,7 @@
       "scaleInCooldown": 300,
       "scaleOutCooldown": 60
     },
-    "localhostWhitelist": false,
-    "smtp": {
-      "host": "host-url",
-      "port": "2525",
-      "secure": "false"
-    }
+    "localhostWhitelist": false
   },
   "authProviders": {
     "disableLocalLogin": false,
@@ -155,13 +155,15 @@
     "conductor": "conductor",
     "couch": "couchdb",
     "faims": "faims",
-    "web": "web"
+    "web": "web",
+    "docs": "docs"
   },
   "mobileApps": {
     "androidAppPublicUrl": "https://play.google.com/store/apps/details?id=your.android.app.id",
     "iosAppPublicUrl": "https://apps.apple.com/app/your-ios-app-id"
   },
   "web": {},
+  "docs": {},
   "smtp": {
     "emailServiceType": "SMTP",
     "fromEmail": "notifications@your-domain.com",

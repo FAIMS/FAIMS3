@@ -217,7 +217,9 @@ export function addAuthPages(
 
   /*
    * PAGE: Email verification landing page
-   * This renders a view showing the result of the email verification process
+   * GET with code: shows a confirmation step (do not verify yet - avoids email
+   * scanners consuming the code). User must click "Verify" to submit.
+   * POST: performs verification and shows success or error.
    */
   app.get(
     '/verify-email',
@@ -245,17 +247,45 @@ export function addAuthPages(
         req.flash('error', 'No verification code was provided.');
         return res.render('verify-email', {
           success: false,
+          pending: false,
           redirect,
           messages: req.flash(),
         });
       }
 
-      // Call the shared verification function
+      // Show confirmation step only; do not verify yet (user must click button)
+      return res.render('verify-email', {
+        pending: true,
+        code,
+        redirect: valid ? redirect : DEFAULT_REDIRECT_URL,
+      });
+    }
+  );
+
+  app.post(
+    '/verify-email',
+    processRequest({
+      body: z.object({
+        code: z.string(),
+        redirect: z.string().optional(),
+      }),
+    }),
+    async (req, res) => {
+      const {code, redirect: redirectParam} = req.body;
+      const {valid, redirect} = validateRedirect(
+        redirectParam || DEFAULT_REDIRECT_URL
+      );
+
+      if (!valid) {
+        return res.render('redirect-error', {redirect});
+      }
+
       const result = await verifyEmailWithCode({code});
 
       if (!result.success) {
         return res.render('verify-email', {
           success: false,
+          pending: false,
           redirect,
           messages: {
             error:
@@ -265,11 +295,11 @@ export function addAuthPages(
         });
       }
 
-      // Verification successful
       return res.render('verify-email', {
         success: true,
+        pending: false,
         email: result.email,
-        redirect: valid ? redirect : DEFAULT_REDIRECT_URL,
+        redirect,
       });
     }
   );

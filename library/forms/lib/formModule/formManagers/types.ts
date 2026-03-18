@@ -4,6 +4,7 @@ import {
   IAttachmentService,
 } from '@faims3/data-model';
 import z from 'zod';
+import type {IAutosuggestAddressService} from '../../addressAutosuggest/types';
 import {AutoIncrementService} from '../incrementer';
 import {MapConfig} from '../../components/maps/types';
 
@@ -102,6 +103,18 @@ export interface FormManagerAdditions {
       fieldId: string;
       attachmentId: string;
     }) => Promise<void>;
+    /**
+     * Report that this field is saving an attachment (in memory → PouchDB).
+     * Blocks section navigation until the attachment is stored to prevent data loss.
+     */
+    setAttachmentSaving?: (fieldId: string, saving: boolean) => void;
+  };
+  /**
+   * When in full mode, indicates whether any field is currently saving an attachment.
+   * Section navigation should be blocked while this is true.
+   */
+  attachmentSaving?: {
+    isSaving: () => boolean;
   };
   /** Special behavior triggers */
   trigger: {
@@ -122,6 +135,10 @@ export interface FullFormConfig extends BaseFormConfig {
   dataEngine: () => DataEngine;
   /** Function to get attachment service instance */
   attachmentEngine: () => IAttachmentService;
+  /** Optional: address autosuggest service for AddressField. When absent, no autocomplete. */
+  addressAutosuggestService?: () => IAutosuggestAddressService;
+  /** Optional: whether the app is online. When absent, AddressField assumes online. Used for offline free-text fallback. */
+  getIsOnline?: () => boolean;
   /** What update mode ? */
   recordMode: AvpUpdateMode;
   /** Navigation functions for redirecting to other records */

@@ -12,11 +12,11 @@
  * - Component now uses MUI sx styling internally (no visual change)
  */
 
-import React, {useState, useCallback} from 'react';
 import {BarcodeScanner} from '@capacitor-mlkit/barcode-scanning';
 import {Camera} from '@capacitor/camera';
 import {Capacitor} from '@capacitor/core';
 import {Box, Button, ButtonProps, Typography} from '@mui/material';
+import React, {useCallback, useState} from 'react';
 import {
   ScannerOverlay,
   hideAppBackground,
@@ -58,6 +58,8 @@ export interface QRCodeButtonProps {
   label?: string;
   /** Callback when a QR code is successfully scanned */
   onScanResult: (value: string) => void;
+  /** Called when the user initiates a scan (e.g. to close a parent dialog first) */
+  onScanStart?: () => void;
   /** Whether the button is disabled */
   disabled?: boolean;
   /**
@@ -70,6 +72,7 @@ export interface QRCodeButtonProps {
 export const QRCodeButton: React.FC<QRCodeButtonProps> = ({
   label = 'Scan QR Code',
   onScanResult,
+  onScanStart,
   disabled = false,
   buttonProps,
 }) => {
@@ -79,6 +82,9 @@ export const QRCodeButton: React.FC<QRCodeButtonProps> = ({
   const isWeb = Capacitor.getPlatform() === 'web';
 
   const startScan = useCallback(async () => {
+    // Trigger for any interested parent dialog
+    onScanStart?.();
+
     // Request camera permission
     const permissions = await Camera.requestPermissions({
       permissions: ['camera'],
@@ -122,7 +128,7 @@ export const QRCodeButton: React.FC<QRCodeButtonProps> = ({
     );
 
     await BarcodeScanner.startScan();
-  }, [onScanResult]);
+  }, [onScanResult, onScanStart]);
 
   const stopScan = useCallback(async () => {
     showAppBackground();

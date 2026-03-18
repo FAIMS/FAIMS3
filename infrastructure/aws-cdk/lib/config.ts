@@ -26,6 +26,42 @@ const OfflineMapsConfigSchema = z.object({
     .default('basic'),
 });
 
+/** Address autosuggest source. NONE disables autocomplete; MAPBOX/MAPTILER
+ * require the corresponding API key. */
+const AddressAutosuggestSourceSchema = z.enum(['NONE', 'MAPBOX', 'MAPTILER']);
+
+/** Configuration for address autosuggest in the app (KEY_SOURCE-style
+ * dispatch). */
+const AddressAutosuggestConfigSchema = z
+  .object({
+    /** Source for address autosuggest. NONE disables; MAPBOX requires
+     * mapboxKey; MAPTILER requires maptilerKey or map source key (when
+     * mapSource is maptiler). */
+    source: AddressAutosuggestSourceSchema.default('NONE'),
+    /** Mapbox access token (required when source is MAPBOX). */
+    mapboxKey: z.string().min(1).optional(),
+    /** Mapbox address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
+    mapboxAddressCountry: z.string().optional(),
+    /** MapTiler API key for Geocoding API. Optional when source is MAPTILER if
+     * mapSource is maptiler and mapSourceKey is set—then that key is used.
+     * Provide this when you want a separate key for autosuggest than for map
+     * tiles. */
+    maptilerKey: z.string().min(1).optional(),
+    /** MapTiler address search country filter: comma-separated ISO 3166-1 alpha-2
+     * (e.g. AU or AU,NZ). Defaults to AU. */
+    maptilerAddressCountry: z.string().optional(),
+  })
+  .refine(
+    data => {
+      if (data.source === 'MAPBOX') return !!data.mapboxKey;
+      return true;
+    },
+    {
+      message: 'When source is MAPBOX, mapboxKey is required.',
+    }
+  );
+
 // For each provider we should have these secrets in the secrets manager
 // const AuthProviderSecretSchema = z.object({
 //   clientID: z.string(),
@@ -323,6 +359,8 @@ const DomainsConfigSchema = z.object({
   faims: z.string().default('faims'),
   /** New conductor/web deployment subdomain */
   web: z.string().default('web'),
+  /** The subdomain prefix for the documentation site (user docs, built with Sphinx) */
+  docs: z.string().default('docs'),
 });
 
 const ConductorConfigSchema = z.object({
@@ -338,6 +376,10 @@ const ConductorConfigSchema = z.object({
   conductorDockerImageTag: z.string().default('latest'),
   /** The prefix to use for the short codes in the app */
   shortCodePrefix: z.string().default('FAIMS'),
+  /** Provision SSO users policy - do we create a new user for an unknown SSO sign-in? Default 'reject' */
+  provisionSSOUsersPolicy: z
+    .enum(['own-team', 'general-user', 'reject'])
+    .default('reject'),
   /** The number of CPU units for the Fargate task */
   cpu: z.number().int().positive(),
   /** The amount of memory (in MiB) for the Fargate task */
@@ -365,6 +407,9 @@ const ConductorConfigSchema = z.object({
 });
 
 const WebConfigSchema = z.object({});
+
+/** Documentation site (Sphinx user docs) configuration */
+const DocsConfigSchema = z.object({});
 
 // Define the schema for the backup configuration
 const BackupConfigSchema = z
@@ -401,24 +446,45 @@ const AppSupportLinksSchema = z.object({
   privacyPolicyUrl: z.string().url().default('https://fieldnote.au/privacy'),
   /** The URL for the contact page */
   contactUrl: z.string().url().default(''),
+  /** Documentation website URL */
+  docsUrl: z.string().url().optional(),
 });
 
-export const UiConfiguration = z.object({
-  /** The UI Theme for the app */
-  uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
-  /** The notebook list type for the app */
-  notebookListType: z.enum(['tabs', 'headings']),
-  /** The display name for notebooks e.g. survey, notebook */
-  notebookName: z.string(),
-  /** The name of the App in app store etc - heading by default */
-  appName: z.string(),
-  /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
-  appId: z.string(),
-  /** Override the heading text in banner */
-  headingAppName: z.string().optional(),
-  /** Offline maps settings */
-  offlineMaps: OfflineMapsConfigSchema,
-});
+export const UiConfiguration = z
+  .object({
+    /** The UI Theme for the app */
+    uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
+    /** The notebook list type for the app */
+    notebookListType: z.enum(['tabs', 'headings']),
+    /** The display name for notebooks e.g. survey, notebook */
+    notebookName: z.string(),
+    /** The name of the App in app store etc - heading by default */
+    appName: z.string(),
+    /** The ID of the App in app store - should be simple acronym/short e.g. FAIMS */
+    appId: z.string(),
+    /** Override the heading text in banner */
+    headingAppName: z.string().optional(),
+    /** Offline maps settings */
+    offlineMaps: OfflineMapsConfigSchema,
+    /** Address autosuggest settings (NONE/MAPBOX/MAPTILER). Optional; defaults to NONE when omitted. */
+    addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
+      source: 'NONE',
+    }),
+  })
+  .refine(
+    data => {
+      if (data.addressAutosuggest?.source !== 'MAPTILER') return true;
+      if (data.addressAutosuggest.maptilerKey?.trim()) return true;
+      return (
+        data.offlineMaps.mapSource === 'maptiler' &&
+        !!data.offlineMaps.mapSourceKey?.trim()
+      );
+    },
+    {
+      message:
+        'When addressAutosuggest.source is MAPTILER, either maptilerKey must be set or mapSource must be "maptiler" with mapSourceKey set (the map tile key will be used for autosuggest).',
+    }
+  );
 
 export const SecurityConfigSchema = z.object({
   /** Maximum number of days for long lived tokens */
@@ -474,6 +540,8 @@ export const ConfigSchema = z.object({
   }),
   /** The new-conductor / web config */
   web: WebConfigSchema,
+  /** Documentation site config (Sphinx user docs) */
+  docs: DocsConfigSchema.optional().default({}),
   /** Email service configuration */
   smtp: SMTPConfigSchema,
   /** Social sign in providers */
@@ -498,6 +566,9 @@ export type ConductorConfig = z.infer<typeof ConductorConfigSchema>;
 export type DomainsConfig = z.infer<typeof DomainsConfigSchema>;
 export type SMTPConfig = z.infer<typeof SMTPConfigSchema>;
 export type OfflineMapsConfig = z.infer<typeof OfflineMapsConfigSchema>;
+export type AddressAutosuggestConfig = z.infer<
+  typeof AddressAutosuggestConfigSchema
+>;
 
 export const loadConfig = (filePath: string): Config => {
   // Parse and validate the config

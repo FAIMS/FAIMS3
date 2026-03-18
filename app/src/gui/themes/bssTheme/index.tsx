@@ -1,5 +1,5 @@
 import {colors, createTheme} from '@mui/material';
-import typography from '../default/typography';
+import typography from '../fieldmark/typography';
 
 const primaryMainColor = '#000000';
 
