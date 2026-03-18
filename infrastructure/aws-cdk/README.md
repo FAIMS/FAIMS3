@@ -315,10 +315,34 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `vaultArn`: (Optional) The ARN of an existing backup vault to use. If provided, a new vault will not be created
   - `retentionDays`: The number of days to retain backups (default: 30)
   - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
-- `uiConfiguration`:
-  - `uiTheme`: the UI theme to use, out of bubble or default
-  - `notebookListType`: 'tabs' or 'headings' display mode for notebook list
-  - `notebookName`: the app display name for notebooks, e.g. 'survey'
+- `uiConfiguration`: UI and app build-time settings for the main FAIMS frontend.
+  - `uiTheme`: The UI theme: `bubble`, `default`, or `bssTheme`
+  - `notebookListType`: Notebook list display mode: `tabs` or `headings`
+  - `notebookName`: Display name for notebooks, e.g. `survey` or `notebook`
+  - `appName`: App name used in app store and headings (e.g. "FAIMS Mobile")
+  - `appId`: App identifier for mobile builds (e.g. "FAIMS" or reverse-domain)
+  - `headingAppName`: (Optional) Override for the banner heading; defaults to `appName`
+  - `offlineMaps`: Map and tile configuration for the app.
+    - `mapSource`: Map tile provider: `osm` or `maptiler`
+    - `mapSourceKey`: (Optional) API key for the map tile service (e.g. MapTiler)
+    - `satelliteSource`: (Optional) Satellite layer source: `esri` or `maptiler`
+    - `offlineMaps`: Whether to enable offline map downloads (some providers e.g. OSM do not allow this)
+    - `mapStyle`: Map style: `basic`, `osm-bright`, `openstreetmap`, or `toner` (default: `basic`)
+  - `addressAutosuggest`: (Optional) Address autosuggest/autocomplete for address fields. Omit or set `source` to `NONE` to disable. Defaults to `{ "source": "NONE" }` if omitted.
+    - `source`: `NONE` (disable), `MAPBOX`, or `MAPTILER`
+    - `mapboxKey`: (Required when `source` is `MAPBOX`) Mapbox access token for Search Box API
+    - `mapboxAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for Mapbox (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
+    - `maptilerKey`: (Optional when `source` is `MAPTILER`) MapTiler API key for the Geocoding API (see https://cloud.maptiler.com/). If omitted and your map tiles use MapTiler (`mapSource` is `maptiler` and `mapSourceKey` is set), that key is used for address autosuggest as well. Provide `maptilerKey` only when you want a *separate* key for autosuggest (e.g. different quotas or restrictions) than for map tiles.
+    - `maptilerAddressCountry`: (Optional) Comma-separated ISO 3166-1 alpha-2 country codes for MapTiler (e.g. `AU` or `AU,NZ`). Defaults to Australia when unset.
+  - Example with MapTiler autosuggest (shared key): `"addressAutosuggest": { "source": "MAPTILER", "maptilerAddressCountry": "AU" }` when `offlineMaps.mapSource` is `maptiler` and `mapSourceKey` is set. Example with a dedicated autosuggest key: `"addressAutosuggest": { "source": "MAPTILER", "maptilerKey": "your-geocoding-key", "maptilerAddressCountry": "AU" }`
+
+  **API keys and public exposure:** Any API keys you put in `uiConfiguration` (e.g. `mapSourceKey`, `mapboxKey`, `maptilerKey`) are baked into the front-end app at build time and can therefore be exposed in the client—for example in bundled source or network requests. You should only use keys that are suitable for public consumption. Both Mapbox and MapTiler support public/client keys for front-end use; this is a standard pattern and is generally safe. Be aware that if someone obtains and abuses these keys, there can be cost implications (e.g. usage beyond your quotas). Use provider dashboards to set usage limits and monitor usage where possible.
+
+- `supportLinks`: Links shown in the app (support, privacy, contact, docs).
+  - `supportEmail`: Support email address (default: support@fieldmark.au)
+  - `privacyPolicyUrl`: Privacy policy URL (default: https://fieldnote.au/privacy)
+  - `contactUrl`: Contact page URL; empty string hides the contact link
+  - `docsUrl`: (Optional) Documentation site URL
 - `couch`:
   - `volumeSize`: The size in GB of the EBS volume to mount to the EC2 instance
   - `couchVersionTag`: (Optional) The DockerHub version tag to use for the couch image - defaults to 3.3.3, e.g. 'latest'
@@ -339,12 +363,19 @@ Note that this validation is at a schema level, it might not catch improperly fo
     - `http5xx`: (Optional) HTTP 5xx errors alarm settings (same structure as cpu, but threshold is count of errors)
     - `alarmTopic`: (Optional) SNS topic settings for alarms
       - `emailAddress`: Email address to send alarm notifications
-- `conductor`: Configuration for the Conductor service.
-  - `conductorDockerImage`: Conductor docker image name from public registry (dockerhub) e.g. org/faims3-api
-  - `conductorDockerImageTag`: (default "latest") Conductor docker image e.g. latest or sha-123456. Composed with `conductorDockerImage` in the format `image`:`tag`.
+- `conductor`: Configuration for the Conductor API service.
+  - `name`: Title for this conductor instance (e.g. shown on listings page)
+  - `description`: Subheading or description for the instance
+  - `conductorDockerImage`: Conductor docker image name from public registry (e.g. ghcr.io/faims/faims3-api or org/faims3-api)
+  - `conductorDockerImageTag`: (default "latest") Image tag; composed with `conductorDockerImage` as `image`:`tag`.
+  - `shortCodePrefix`: (default "FAIMS") Prefix for short codes in the app
+  - `provisionSSOUsersPolicy`: (default "reject") When an unknown user signs in via SSO: `own-team`, `general-user`, or `reject`
+  - `enhancedObservability`: (Optional) Enable ECS enhanced observability (container insights)
   - `cpu`: The number of CPU units for the Fargate task
   - `memory`: The amount of memory (in MiB) for the Fargate task
+  - `localhostWhitelist`: (default false) Allow localhost-style redirects; not recommended for production
   - `autoScaling`: Auto scaling configuration for the Conductor service
+    - `desiredCapacity`: The desired number of tasks to run
     - `minCapacity`: The minimum number of tasks to run
     - `maxCapacity`: The maximum number of tasks that can be run
     - `targetCpuUtilization`: The target CPU utilization percentage for scaling

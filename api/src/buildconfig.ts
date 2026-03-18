@@ -33,7 +33,10 @@ import {getKeyService, IKeyService, KeySource} from './services/keyService';
 
 // Get the package version directly from package.json
 import {version as packageVersion} from '../package.json';
-import {ProvisionSSOUsersPolicy, ProvisionSSOUsersPolicySchema} from './auth/types';
+import {
+  ProvisionSSOUsersPolicy,
+  ProvisionSSOUsersPolicySchema,
+} from './auth/types';
 console.log(`Using API version from package.json: ${packageVersion}`);
 export const API_VERSION = packageVersion;
 
@@ -740,4 +743,3 @@ function bugsnagApiKey(): string | undefined {
 }
 
 export const BUGSNAG_API_KEY = bugsnagApiKey();
-

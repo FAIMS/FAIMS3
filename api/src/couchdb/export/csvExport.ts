@@ -67,43 +67,66 @@ function generateRecordPrefixInformation(record: HydratedDataRecord) {
 // Type for a field header generator function
 type FieldHeaderGenerator = (fieldName: string) => string[];
 
-// Registry of field type header generators
-const FIELD_TYPE_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> = {
-  'faims-pos::Location': (fieldName: string) => [
-    fieldName,
-    `${fieldName}_latitude`,
-    `${fieldName}_longitude`,
-    `${fieldName}_accuracy`,
-  ],
+/** Build the full component key (namespace::name) for lookup. */
+function getComponentKey(namespace: string, name: string): string {
+  return namespace ? `${namespace}::${name}` : name;
+}
 
-  'faims-core::JSON': (fieldName: string) => [
-    fieldName,
-    `${fieldName}_latitude`,
-    `${fieldName}_longitude`,
-  ],
+// Registry of component header generators (keyed by namespace::name)
+const FIELD_COMPONENT_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> =
+  {
+    'faims-custom::TakePoint': (fieldName: string) => [
+      fieldName,
+      `${fieldName}_latitude`,
+      `${fieldName}_longitude`,
+      `${fieldName}_accuracy`,
+    ],
 
-  'faims-attachment::Files': (fieldName: string) => [fieldName],
+    'faims-custom::AddressField': (fieldName: string) => [
+      fieldName,
+      `${fieldName}_house_number`,
+      `${fieldName}_road`,
+      `${fieldName}_suburb`,
+      `${fieldName}_town`,
+      `${fieldName}_state`,
+      `${fieldName}_postcode`,
+      `${fieldName}_country`,
+      `${fieldName}_country_code`,
+      `${fieldName}_manual`,
+    ],
 
-  'faims-core::Relationship': (fieldName: string) => [fieldName],
-};
+    'mapping-plugin::MapFormField': (fieldName: string) => [
+      fieldName,
+      `${fieldName}_latitude`,
+      `${fieldName}_longitude`,
+    ],
 
-// Default generator for unregistered field types
+    'faims-custom::TakePhoto': (fieldName: string) => [fieldName],
+    'faims-custom::FileUploader': (fieldName: string) => [fieldName],
+
+    'faims-custom::RelatedRecordSelector': (fieldName: string) => [fieldName],
+  };
+
+// Default generator for unregistered components
 const defaultHeaderGenerator: FieldHeaderGenerator = (fieldName: string) => [
   fieldName,
 ];
 
 /**
- * Get the header generator for a given field type
+ * Get the header generator for a given component (namespace + name).
  */
-function getHeaderGeneratorForFieldType(
-  fieldType: string
+function getHeaderGeneratorForComponent(
+  componentNamespace: string,
+  componentName: string
 ): FieldHeaderGenerator {
-  return FIELD_TYPE_HEADER_GENERATORS[fieldType] || defaultHeaderGenerator;
+  const key = getComponentKey(componentNamespace, componentName);
+  return FIELD_COMPONENT_HEADER_GENERATORS[key] || defaultHeaderGenerator;
 }
 
 /**
- * Generate CSV headers from UI specification fields. Uses the registered field
- * type header generators to produce the additional headers for each data type.
+ * Generate CSV headers from UI specification fields. Uses the registered
+ * component header generators (by namespace + name) to produce the additional
+ * headers for each field type.
  */
 export function getHeaderInfoFromUiSpecification({
   fields,
@@ -113,10 +136,10 @@ export function getHeaderInfoFromUiSpecification({
   const additionalHeaders: string[] = [];
 
   for (const field of fields) {
-    // Get the appropriate header generator for this field type
-    const generator = getHeaderGeneratorForFieldType(field.type);
-
-    // Generate base headers for this field type
+    const generator = getHeaderGeneratorForComponent(
+      field.componentNamespace,
+      field.componentName
+    );
     const fieldHeaders = generator(field.name);
     additionalHeaders.push(...fieldHeaders);
 

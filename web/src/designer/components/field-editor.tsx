@@ -66,6 +66,7 @@ import {RichTextEditor} from './Fields/RichTextEditor';
 import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
 import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from './Fields/TextFieldEditor';
+import {AddressFieldEditor} from './Fields/AddressFieldEditor';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -744,6 +745,9 @@ export const FieldEditor = ({
             )) ||
             (fieldComponent === 'MapFormField' && (
               <MapFormFieldEditor fieldName={fieldName} />
+            )) ||
+            (fieldComponent === 'AddressField' && (
+              <AddressFieldEditor fieldName={fieldName} />
             )) ||
             (fieldComponent === 'TakePoint' && (
               <TakePointFieldEditor fieldName={fieldName} />

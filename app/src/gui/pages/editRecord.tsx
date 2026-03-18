@@ -36,6 +36,7 @@ import {
   APP_NAME,
   CAPACITOR_PLATFORM,
   DEBUG_APP,
+  getAddressAutosuggestService,
   getMapConfig,
 } from '../../buildconfig';
 import {
@@ -48,7 +49,7 @@ import {compiledSpecService} from '../../context/slices/helpers/compiledSpecServ
 import {selectProjectById} from '../../context/slices/projectSlice';
 import {useAppSelector} from '../../context/store';
 import {createProjectAttachmentService} from '../../utils/attachmentService';
-import {useUiSpecLayout} from '../../utils/customHooks';
+import {useIsOnline, useUiSpecLayout} from '../../utils/customHooks';
 import {localGetDataDb} from '../../utils/database';
 import {useAutoIncrementService} from '../../utils/useIncrementerService';
 import {AutoIncrementEditForm} from '../components/autoincrement/edit-form';
@@ -224,8 +225,11 @@ export const EditRecordPage = () => {
     onIssue: handleAutoIncrementIssue,
   });
 
+  const {isOnline} = useIsOnline();
+
   const formConfig: FullFormConfig = useMemo(
     () => {
+      const addressAutosuggestService = getAddressAutosuggestService();
       return {
         mode: 'full' as const,
         platform: CAPACITOR_PLATFORM,
@@ -234,6 +238,8 @@ export const EditRecordPage = () => {
         recordMode: mode,
         dataEngine,
         attachmentEngine,
+        ...(addressAutosuggestService && {addressAutosuggestService}),
+        getIsOnline: () => isOnline,
         mapConfig: getMapConfig,
         navigation: {
           navigateToRecordList: {
@@ -332,6 +338,7 @@ export const EditRecordPage = () => {
       mode,
       activeUser.username,
       relevantUiSpec.data,
+      isOnline,
     ]
   );
 
