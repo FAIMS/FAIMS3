@@ -264,6 +264,10 @@ export const SPATIAL_FIELDS = ['MapFormField', 'TakePoint'];
 export type FieldSummary = {
   name: string;
   type: string;
+  /** Component namespace from the UI spec (e.g. "faims-custom", "mapping-plugin"). */
+  componentNamespace: string;
+  /** Component name from the UI spec (e.g. "TakePoint", "AddressField"). */
+  componentName: string;
   annotation?: string;
   viewId: string;
   viewsetId: string;
@@ -301,6 +305,8 @@ export const getNotebookFieldTypes = ({
       const fieldInfo = uiSpecification.fields[field];
       fields.push({
         name: field,
+        componentNamespace: fieldInfo['component-namespace'] ?? '',
+        componentName: fieldInfo['component-name'],
         type: fieldInfo['type-returned'],
         viewsetId: viewID,
         viewId: view,
