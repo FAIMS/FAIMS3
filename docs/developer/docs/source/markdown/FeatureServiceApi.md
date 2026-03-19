@@ -45,6 +45,14 @@ Returns ESRI-style service metadata: list of layers and spatial reference.
 
 ---
 
+### Service info
+
+**GET** `/api/notebooks/:id/FeatureServer/info`
+
+Returns the same service metadata as the service root. Some ESRI-compatible clients (e.g. OpenLayers, Digital Atlas) request this endpoint to discover the service. Responds with the same JSON as the service root.
+
+---
+
 ### Layer metadata
 
 **GET** `/api/notebooks/:id/FeatureServer/:layerId`
@@ -85,6 +93,18 @@ Authorization: Bearer <access_token>
 1. **ArcGIS**: Add Layer from URL → type the service root URL (e.g. `https://<host>/api/notebooks/<projectId>/FeatureServer`). If the client requires a token, use the same Bearer token (e.g. in ArcGIS Pro or via a custom authentication option where supported).
 2. **QGIS**: Add ArcGIS Feature Server Layer → paste the same base URL. Configure authentication if the server requires it.
 3. **Scripts / curl**: Send `Authorization: Bearer <token>` on every request; use the query endpoint with `f=geojson` to fetch a layer’s features.
+
+## Troubleshooting
+
+**TerriaJS / Digital Atlas requests `f=pbf` or `resultType=tile` and gets 400**
+
+The service supports only **JSON** and **GeoJSON** (`supportedQueryFormats: "JSON, geoJSON"`). It does not support PBF or tile-based queries. Some clients (e.g. TerriaJS) may ignore `supportedQueryFormats` and request PBF; the server returns **400** with a JSON error suggesting `f=geojson`. Configure the client to use the GeoJSON format for this service, or use a client that respects `supportedQueryFormats`. Layer metadata also includes `advancedQueryCapabilities` (e.g. `supportsPagination: true`, `supportsResultType: false`) to improve discovery.
+
+**QGIS shows the service (layer list) but won't add any layers**
+
+- The service root (e.g. `GET …/FeatureServer`) can be cached or loaded once; adding a layer triggers extra requests to `…/FeatureServer/:layerId` and `…/FeatureServer/:layerId/query`. Those require the same authentication. If QGIS is not sending a Bearer token, those requests return **401 Unauthorized** and the layer fails to load.
+- **Option A (testing only):** In the API `.env`, set `DISABLE_FEATURE_SERVER_AUTH=true` so the Feature Server accepts unauthenticated requests. Use only for local/testing (e.g. QGIS on localhost).
+- **Option B:** Configure authentication in QGIS for the Feature Server URL (e.g. Basic or custom header with `Authorization: Bearer <your_token>`), so every request includes the token.
 
 ## Related
 

@@ -12,19 +12,25 @@ function buildFeatureServiceUrl(projectId: string): string {
   return `${base}/api/notebooks/${projectId}/FeatureServer`;
 }
 
+function buildWfsUrl(projectId: string): string {
+  const base = API_URL.replace(/\/$/, '');
+  return `${base}/api/notebooks/${projectId}/WFS`;
+}
+
 /**
  * ProjectExport component renders a card with options to export a project's data.
  * It allows users to:
  * - Create a full export with all data, photos, and spatial information
  * - Export the project's data to CSV or geospatial formats
  * - Download a ZIP file containing all photos
- * - Copy the ESRI Feature Service URL for use in ArcGIS, QGIS, or scripts
+ * - Copy the ESRI Feature Service or WFS URL for use in ArcGIS, QGIS, or scripts
  *
  * @param {string} projectId - The unique identifier of the project.
  * @returns {JSX.Element} The rendered ProjectExport component.
  */
 const ProjectExport = ({projectId}: {projectId: string}): JSX.Element => {
   const featureServiceUrl = buildFeatureServiceUrl(projectId);
+  const wfsUrl = buildWfsUrl(projectId);
 
   return (
     <div className="flex flex-col gap-2">
@@ -76,6 +82,26 @@ const ProjectExport = ({projectId}: {projectId: string}): JSX.Element => {
             aria-label="Feature Service URL"
           />
           <CopyButton value={featureServiceUrl}>Copy URL</CopyButton>
+        </div>
+      </Card>
+      <Card className="flex flex-col gap-4 flex-1 justify-between">
+        <ListItem>
+          <ListLabel>OGC WFS 2.0</ListLabel>
+          <ListDescription>
+            Use this URL in QGIS (Add WFS Layer), ArcGIS, or any WFS 2.0
+            client. Request GetCapabilities, DescribeFeatureType, or GetFeature
+            with SERVICE=WFS and REQUEST=... . Returns GeoJSON; same auth as
+            Records API.
+          </ListDescription>
+        </ListItem>
+        <div className="flex gap-2 items-center flex-wrap">
+          <Input
+            readOnly
+            value={wfsUrl}
+            className="flex-1 min-w-[280px] font-mono text-sm"
+            aria-label="WFS URL"
+          />
+          <CopyButton value={wfsUrl}>Copy URL</CopyButton>
         </div>
       </Card>
     </div>

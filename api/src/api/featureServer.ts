@@ -49,7 +49,7 @@ function projectIdFromReq(req: {params: {id?: string}}): string {
 
 const queryParamsSchema = z.object({
   where: z.string().optional(),
-  f: z.enum(['geojson', 'json']).optional(),
+  f: z.string().optional(), // validated in handler: only geojson/json supported; pbf returns 400
   outFields: z.string().optional(),
   returnGeometry: z.enum(['true', 'false']).optional(),
   resultOffset: z.coerce.number().min(0).optional(),
@@ -60,13 +60,19 @@ export const featureServerRouter: express.Router = express.Router({
   mergeParams: true,
 });
 
-const readRecordsAuth = [
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.READ_MY_PROJECT_RECORDS,
-    getResourceId: req => req.params.id,
-  }),
-];
+/** Set DISABLE_FEATURE_SERVER_AUTH=true to allow unauthenticated access for testing (e.g. QGIS/ArcGIS without JWT). */
+const featureServerAuthDisabled =
+  process.env.DISABLE_FEATURE_SERVER_AUTH === 'true';
+
+const readRecordsAuth = featureServerAuthDisabled
+  ? []
+  : [
+      requireAuthenticationAPI,
+      isAllowedToMiddleware({
+        action: Action.READ_MY_PROJECT_RECORDS,
+        getResourceId: req => req.params.id,
+      }),
+    ];
 
 /**
  * GET /api/notebooks/:id/FeatureServer
@@ -79,7 +85,41 @@ featureServerRouter.get(
     params: z.object({id: z.string().min(1)}),
   }),
   async (req: Request, res: Response) => {
-    if (!req.user) throw new Exceptions.UnauthorizedException();
+    if (!featureServerAuthDisabled && !req.user)
+      throw new Exceptions.UnauthorizedException();
+    const projectId = projectIdFromReq(req);
+    try {
+      const uiSpec = await getProjectUIModel(projectId);
+      const layers: FeatureServiceLayerDefinition[] =
+        buildFeatureServiceLayerIndex({uiSpecification: uiSpec});
+      res.json({
+        currentVersion: 11,
+        serviceDescription: 'FAIMS3 Feature Service',
+        layers: layers.map((l: FeatureServiceLayerDefinition) => ({
+          id: l.layerId,
+          name: l.name,
+        })),
+        spatialReference: {wkid: 4326, latestWkid: 4326},
+      });
+    } catch (err) {
+      throw err;
+    }
+  }
+);
+
+/**
+ * GET /api/notebooks/:id/FeatureServer/info
+ * Service info: same as service root. ESRI clients (e.g. OpenLayers/Digital Atlas) request this.
+ */
+featureServerRouter.get(
+  '/info',
+  readRecordsAuth,
+  processRequest({
+    params: z.object({id: z.string().min(1)}),
+  }),
+  async (req: Request, res: Response) => {
+    if (!featureServerAuthDisabled && !req.user)
+      throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     try {
       const uiSpec = await getProjectUIModel(projectId);
@@ -111,7 +151,8 @@ featureServerRouter.get(
     params: z.object({id: z.string().min(1), layerId: z.string()}),
   }),
   async (req: Request, res: Response) => {
-    if (!req.user) throw new Exceptions.UnauthorizedException();
+    if (!featureServerAuthDisabled && !req.user)
+      throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     const layerIdParam = req.params.layerId;
     const layerId = parseInt(layerIdParam, 10);
@@ -149,6 +190,15 @@ featureServerRouter.get(
         geometryType: 'esriGeometryPoint',
         spatialReference: {wkid: 4326, latestWkid: 4326},
         fields,
+        capabilities: 'Query',
+        supportedQueryFormats: 'JSON, geoJSON',
+        maxRecordCount: 2000,
+        advancedQueryCapabilities: {
+          supportsPagination: true,
+          supportsQueryWithDistance: false,
+          supportsResultType: false,
+          useStandardizedQueries: true,
+        },
       });
     } catch (err) {
       if (err instanceof Exceptions.ItemNotFoundException) throw err;
@@ -178,7 +228,8 @@ featureServerRouter.get(
     >,
     res: Response
   ) => {
-    if (!req.user) throw new Exceptions.UnauthorizedException();
+    if (!featureServerAuthDisabled && !req.user)
+      throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     const layerIdParam = req.params.layerId;
     const layerId = parseInt(layerIdParam, 10);
@@ -186,6 +237,18 @@ featureServerRouter.get(
       throw new Exceptions.InvalidRequestException('Invalid layer id');
     }
     const q = req.query;
+    const format = (q?.f as string | undefined) ?? 'geojson';
+    const supportedFormats = ['geojson', 'json'];
+    if (!supportedFormats.includes(format.toLowerCase())) {
+      res.status(400).json({
+        error: {
+          code: 400,
+          message: `Format '${format}' is not supported. Use f=geojson or f=json (see supportedQueryFormats in layer metadata).`,
+          details: ['PBF and tile requests are not supported; use standard query with f=geojson.'],
+        },
+      });
+      return;
+    }
     const resultOffset =
       typeof q?.resultOffset === 'number' ? q.resultOffset : Number(q?.resultOffset) || 0;
     const resultRecordCount =
@@ -214,9 +277,10 @@ featureServerRouter.get(
         while (!next.done) {
           const record = next.record;
           next = await iterator.next();
+          if (!record || record.type !== layerFormId) continue;
           if (
-            !record ||
-            record.type !== layerFormId ||
+            !featureServerAuthDisabled &&
+            user &&
             !canReadRecord({
               user,
               projectId,

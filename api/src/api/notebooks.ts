@@ -105,6 +105,7 @@ import {
 } from '../middleware';
 import {featureServerRouter} from './featureServer';
 import {recordsRouter} from './records';
+import {wfsRouter} from './wfs';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
@@ -118,6 +119,9 @@ api.use('/:id/records', recordsRouter);
 
 // ESRI-compatible Feature Service (one layer per viewset with spatial fields)
 api.use('/:id/FeatureServer', featureServerRouter);
+
+// OGC WFS 2.0 Web Feature Service (same layers/GeoJSON as Feature Server)
+api.use('/:id/WFS', wfsRouter);
 
 /**
  * Gets a list of notebooks

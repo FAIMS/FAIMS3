@@ -472,9 +472,9 @@ export async function getHRID({
         break;
       }
     } catch (e) {
-      console.log(
-        `Could not find suitable viewset/HRID for field name: ${candidateFieldName}. Error: ${e}.`
-      );
+      //console.log(
+      //  `Could not find suitable viewset/HRID for field name: ${candidateFieldName}. Error: ${e}.`
+      //);
     }
   }
 

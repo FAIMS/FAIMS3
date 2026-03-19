@@ -15,10 +15,14 @@ import {
   notebookRecordIterator,
 } from '@faims3/data-model';
 
-/** Options for layer GeoJSON stream (ESRI query-style paging). */
+/** Options for layer GeoJSON/GML stream (paging). */
 export interface StreamLayerGeoJSONOptions {
   resultOffset?: number;
   resultRecordCount?: number;
+  /** CRS name to place in GML geometry elements (e.g. urn:ogc:def:crs:OGC:1.3:CRS84). */
+  srsName?: string;
+  /** GeoJSON uses lon/lat; EPSG:4326 commonly expects lat/lon in GML. */
+  axisOrder?: 'lonlat' | 'latlon';
 }
 import archiver from 'archiver';
 import {PassThrough} from 'stream';
@@ -875,6 +879,170 @@ export const streamLayerAsGeoJSON = async (
 
   writeGeoJSONFooter(res);
   res.end();
+};
+
+// ============================================================================
+// GML 3.2 (WFS GetFeature) helpers
+// ============================================================================
+
+function escapeXmlForGml(s: string): string {
+  return String(s)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function geoJsonGeometryToGml(
+  geom: {
+    type: string;
+    coordinates?: any;
+  },
+  srsName: string,
+  axisOrder: 'lonlat' | 'latlon'
+): string {
+  if (!geom || !geom.type) return '';
+
+  const coords = geom.coordinates;
+  const swap = axisOrder === 'latlon';
+  const srsEscaped = escapeXmlForGml(srsName);
+  const srsAttr = ` srsName="${srsEscaped}"`;
+
+  const posFromLonLat = (lon: number, lat: number): string =>
+    swap ? `${lat} ${lon}` : `${lon} ${lat}`;
+
+  if (geom.type === 'Point' && Array.isArray(coords) && coords.length >= 2) {
+    const lon = Number(coords[0]);
+    const lat = Number(coords[1]);
+    return `<gml:Point xmlns:gml="http://www.opengis.net/gml/3.2"${srsAttr}><gml:pos>${posFromLonLat(lon, lat)}</gml:pos></gml:Point>`;
+  }
+
+  if (geom.type === 'LineString' && Array.isArray(coords)) {
+    const points = coords as any[];
+    const posList = points
+      .filter(p => Array.isArray(p) && p.length >= 2)
+      .map(p => posFromLonLat(Number(p[0]), Number(p[1])))
+      .join(' ');
+    return `<gml:LineString xmlns:gml="http://www.opengis.net/gml/3.2"${srsAttr}><gml:posList>${posList}</gml:posList></gml:LineString>`;
+  }
+
+  if (
+    geom.type === 'Polygon' &&
+    Array.isArray(coords) &&
+    Array.isArray(coords[0])
+  ) {
+    // GeoJSON polygon is [ [ [lon,lat], ... ] ] (first ring is exterior)
+    const ring = coords[0] as any[];
+    const posList = ring
+      .filter(p => Array.isArray(p) && p.length >= 2)
+      .map(p => posFromLonLat(Number(p[0]), Number(p[1])))
+      .join(' ');
+    return `<gml:Polygon xmlns:gml="http://www.opengis.net/gml/3.2"${srsAttr}><gml:exterior><gml:LinearRing><gml:posList>${posList}</gml:posList></gml:LinearRing></gml:exterior></gml:Polygon>`;
+  }
+
+  return '';
+}
+
+/**
+ * Streams a single layer as GML 3.2 to the response (WFS GetFeature format).
+ */
+export const streamLayerAsGML = async (
+  context: SpatialExportContext,
+  formId: string,
+  hydratedRecords: AsyncIterable<HydratedDataRecord>,
+  res: NodeJS.WritableStream,
+  options: StreamLayerGeoJSONOptions = {}
+): Promise<void> => {
+  const {
+    resultOffset = 0,
+    resultRecordCount,
+    srsName = 'urn:ogc:def:crs:OGC:1.3:CRS84',
+    axisOrder = 'lonlat',
+  } = options;
+  const filenames: string[] = [];
+  const ns = 'http://www.faims.org/notebook';
+  const featureElName = formId.replace(/[^A-Za-z0-9_-]/g, '_');
+  let featureIndex = 0;
+  let written = 0;
+  const limit = resultRecordCount ?? Infinity;
+
+  res.write(`<?xml version="1.0" encoding="UTF-8"?>
+<wfs:FeatureCollection xmlns:wfs="http://www.opengis.net/wfs/2.0" xmlns:gml="http://www.opengis.net/gml/3.2" xmlns:faims="${ns}">
+`);
+
+  outer: for await (const record of hydratedRecords) {
+    if (record.type !== formId) continue;
+    const {baseProperties, geometries} = processRecordForSpatial(
+      record,
+      context.viewFieldsMap,
+      filenames
+    );
+    for (const geom of geometries) {
+      if (featureIndex < resultOffset) {
+        featureIndex++;
+        continue;
+      }
+      if (written >= limit) break outer;
+      const properties = buildFeatureProperties(
+        baseProperties,
+        geom.geometrySource
+      );
+      const fid = `fid-${String(properties.record_id ?? featureIndex)}-${featureIndex}`;
+      const geomFieldElName = geom.geometrySource.fieldId.replace(
+        /[^A-Za-z0-9_-]/g,
+        '_'
+      );
+      const gmlGeom = geoJsonGeometryToGml(
+        geom.geometry,
+        srsName,
+        axisOrder
+      );
+      const propLines = Object.entries(properties)
+        .filter(([, v]) => v != null && v !== '')
+        .map(([k, v]) => {
+          const val = typeof v === 'object' ? JSON.stringify(v) : String(v);
+          const safeK = k.replace(/[^A-Za-z0-9_-]/g, '_');
+          return `    <faims:${safeK}>${escapeXmlForGml(val)}</faims:${safeK}>`;
+        })
+        .join('\n');
+      res.write(`  <gml:featureMember>
+  <faims:${featureElName} gml:id="${escapeXmlForGml(fid)}">
+    <faims:${geomFieldElName}>${gmlGeom}</faims:${geomFieldElName}>
+${propLines ? '\n' + propLines + '\n' : ''}  </faims:${featureElName}>
+  </gml:featureMember>
+`);
+      written++;
+      featureIndex++;
+    }
+  }
+
+  res.write('</wfs:FeatureCollection>');
+  res.end();
+};
+
+/**
+ * Counts features (geometries) for a single layer without streaming.
+ * Used by WFS GetFeature when RESULTTYPE=hits.
+ */
+export const countLayerFeatures = async (
+  context: SpatialExportContext,
+  formId: string,
+  hydratedRecords: AsyncIterable<HydratedDataRecord>
+): Promise<number> => {
+  const filenames: string[] = [];
+  let total = 0;
+  for await (const record of hydratedRecords) {
+    if (record.type !== formId) continue;
+    const {geometries} = processRecordForSpatial(
+      record,
+      context.viewFieldsMap,
+      filenames
+    );
+    total += geometries.length;
+  }
+  return total;
 };
 
 /**
