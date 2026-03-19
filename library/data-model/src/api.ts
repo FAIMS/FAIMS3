@@ -832,12 +832,21 @@ export type PostCreateRecordResponse = z.infer<
 >;
 
 /** GET list records query (all values are strings from query string) */
-export const GetListRecordsQuerySchema = z.object({
-  formId: z.string().optional(),
-  limit: z.string().optional(),
-  startKey: z.string().optional(),
-  filterDeleted: z.enum(['true', 'false']).optional(),
-});
+export const GetListRecordsQuerySchema = z
+  .object({
+    formId: z.string().optional(),
+    limit: z.string().optional(),
+    startKey: z.string().optional(),
+    filterDeleted: z.enum(['true', 'false']).optional(),
+  })
+  .refine(
+    data => {
+      if (data.limit === undefined || data.limit === '') return true;
+      const n = parseInt(data.limit, 10);
+      return !Number.isNaN(n) && n >= 1 && n <= 500;
+    },
+    {message: 'limit must be between 1 and 500'}
+  );
 export type GetListRecordsQuery = z.infer<typeof GetListRecordsQuerySchema>;
 
 /** Single record entry in list response (dates as ISO strings) */

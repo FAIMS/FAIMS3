@@ -112,6 +112,196 @@ patch();
 
 export const api: express.Router = express.Router();
 
+// =============================================================================
+// Types for download format and token payloads (must be before records router)
+// =============================================================================
+
+const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
+type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
+
+const DownloadTokenPayloadSchema = z.object({
+  projectID: z.string(),
+  format: DownloadFormatSchema,
+  viewID: z.string().optional(),
+  userID: z.string(),
+  // Full export config (only present when format === 'full')
+  fullConfig: FullExportConfigSchema.optional(),
+});
+type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
+
+// Formats requiring a view ID
+const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
+
+// Download tokens last this long
+const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
+
+const generateDownloadToken = async ({
+  user,
+  payload,
+}: {
+  user: Express.User;
+  payload: DownloadTokenPayload;
+}) => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  const token = await new SignJWT(payload)
+    .setProtectedHeader({
+      alg: signingKey.alg,
+      kid: signingKey.kid,
+    })
+    .setSubject(user.user_id)
+    .setIssuedAt()
+    .setIssuer(signingKey.instanceName)
+    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
+    .sign(signingKey.privateKey);
+  return token;
+};
+
+const validateDownloadToken = async ({
+  token,
+}: {
+  token: string;
+}): Promise<DownloadTokenPayload | null> => {
+  const signingKey = await KEY_SERVICE.getSigningKey();
+  try {
+    const result = await jwtVerify(token, signingKey.publicKey, {
+      algorithms: [signingKey.alg],
+      issuer: signingKey.instanceName,
+    });
+    return DownloadTokenPayloadSchema.parse(result.payload);
+  } catch {
+    console.log('invalid token');
+    return null;
+  }
+};
+
+// Register /:id/records/export before the records router so export is not matched as :recordId
+api.get(
+  '/:id/records/export',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    query: z.object({
+      viewID: z.string().optional(),
+      format: DownloadFormatSchema,
+      // Full export options
+      includeTabular: z.string().optional().default('true'),
+      includeAttachments: z.string().optional().default('true'),
+      includeGeoJSON: z.string().optional().default('true'),
+      includeKML: z.string().optional().default('true'),
+      includeMetadata: z.string().optional().default('true'),
+    }),
+    params: z.object({
+      id: z.string(),
+    }),
+  }),
+  async (req, res: Response<GetExportNotebookResponse>) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+
+    const payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.query.format,
+      userID: req.user.user_id,
+    };
+
+    // Handle full export
+    if (req.query.format === 'full') {
+      // Build full config from query params (defaults to true if not specified)
+      payload.fullConfig = {
+        includeTabular: req.query.includeTabular === 'true',
+        includeAttachments: req.query.includeAttachments === 'true',
+        includeGeoJSON: req.query.includeGeoJSON === 'true',
+        includeKML: req.query.includeKML === 'true',
+        includeMetadata: req.query.includeMetadata === 'true',
+      };
+    } else if (
+      REQUIRES_VIEW_ID.includes(req.query.format) ||
+      req.query.viewID
+    ) {
+      // Existing viewID handling for CSV
+      if (!req.query.viewID) {
+        throw new Exceptions.InvalidRequestException(
+          `The specified format ${req.query.format} requires a viewID to be included.`
+        );
+      }
+
+      // Validate the viewID exists
+      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+
+      if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
+        throw new Exceptions.ItemNotFoundException(
+          `Form with id ${req.query.viewID} not found in notebook`
+        );
+      }
+
+      payload.viewID = req.query.viewID;
+    }
+
+    // Build the download token
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+
+    // Return the url explicitly - rather than a redirect. Hard to carefully
+    // handle the auto redirect while triggering export only once
+    return res.json({
+      url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
+    });
+  }
+);
+
+/** @deprecated - use GET /:id/records/export with query params */
+api.get(
+  '/:id/records/:viewID.:format',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EXPORT_PROJECT_DATA,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({
+      id: z.string(),
+      viewID: z.string(),
+      format: z.enum(['csv', 'zip']),
+    }),
+  }),
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException('Not authenticated.');
+    }
+
+    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
+
+    if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
+      throw new Exceptions.ItemNotFoundException(
+        `Form with id ${req.query.viewID} not found in notebook`
+      );
+    }
+
+    const payload: DownloadTokenPayload = {
+      projectID: req.params.id,
+      format: req.params.format,
+      userID: req.user.user_id,
+      viewID: req.params.viewID,
+    };
+
+    const jwt = await generateDownloadToken({
+      user: req.user,
+      payload: payload,
+    });
+    return res.redirect(`/api/notebooks/download/${jwt}`);
+  }
+);
+
 // Stateless CRUD API for record data (mount so :id = projectId)
 api.use('/:id/records', recordsRouter);
 
@@ -486,227 +676,6 @@ api.get(
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
     }
-  }
-);
-
-// =============================================================================
-// Types for download format and token payloads
-// =============================================================================
-
-const DownloadFormatSchema = z.enum(['csv', 'zip', 'geojson', 'kml', 'full']);
-type DownloadFormat = z.infer<typeof DownloadFormatSchema>;
-
-const DownloadTokenPayloadSchema = z.object({
-  projectID: z.string(),
-  format: DownloadFormatSchema,
-  viewID: z.string().optional(),
-  userID: z.string(),
-  // Full export config (only present when format === 'full')
-  fullConfig: FullExportConfigSchema.optional(),
-});
-type DownloadTokenPayload = z.infer<typeof DownloadTokenPayloadSchema>;
-
-// Formats requiring a view ID
-const REQUIRES_VIEW_ID: DownloadFormat[] = ['csv'];
-
-// Download tokens last this long
-const DOWNLOAD_TOKEN_EXPIRY_MINUTES = 5;
-
-const generateDownloadToken = async ({
-  user,
-  payload,
-}: {
-  user: Express.User;
-  payload: DownloadTokenPayload;
-}) => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
-  const token = await new SignJWT(payload)
-    .setProtectedHeader({
-      alg: signingKey.alg,
-      kid: signingKey.kid,
-    })
-    .setSubject(user.user_id)
-    .setIssuedAt()
-    .setIssuer(signingKey.instanceName)
-    .setExpirationTime(DOWNLOAD_TOKEN_EXPIRY_MINUTES.toString() + 'm')
-    .sign(signingKey.privateKey);
-  return token;
-};
-
-const validateDownloadToken = async ({
-  token,
-}: {
-  token: string;
-}): Promise<DownloadTokenPayload | null> => {
-  const signingKey = await KEY_SERVICE.getSigningKey();
-  try {
-    const result = await jwtVerify(token, signingKey.publicKey, {
-      algorithms: [signingKey.alg],
-      issuer: signingKey.instanceName,
-    });
-    return DownloadTokenPayloadSchema.parse(result.payload);
-  } catch {
-    console.log('invalid token');
-    return null;
-  }
-};
-
-// =============================================================================
-// Export Routes
-// =============================================================================
-
-/**
- * Export record data.
- *
- * This route redirects to a new URL containing a signed JWT with download
- * details. The JWT is then validated by the /download/:downloadToken route.
- *
- * Supported formats:
- * - csv: Requires viewID, exports tabular data for a single view
- * - zip: Optional viewID, exports attachments (all views if no viewID)
- * - geojson: Exports all spatial data as GeoJSON
- * - kml: Exports all spatial data as KML
- * - full: Exports everything into a single ZIP archive
- *
- * For full exports, additional query parameters control what's included:
- * - includeTabular (default: true)
- * - includeAttachments (default: true)
- * - includeGeoJSON (default: true)
- * - includeKML (default: true)
- * - includeMetadata (default: true)
- */
-api.get(
-  '/:id/records/export',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.EXPORT_PROJECT_DATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    query: z.object({
-      viewID: z.string().optional(),
-      format: DownloadFormatSchema,
-      // Full export options
-      includeTabular: z.string().optional().default('true'),
-      includeAttachments: z.string().optional().default('true'),
-      includeGeoJSON: z.string().optional().default('true'),
-      includeKML: z.string().optional().default('true'),
-      includeMetadata: z.string().optional().default('true'),
-    }),
-    params: z.object({
-      id: z.string(),
-    }),
-  }),
-  async (req, res: Response<GetExportNotebookResponse>) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException('Not authenticated.');
-    }
-
-    const payload: DownloadTokenPayload = {
-      projectID: req.params.id,
-      format: req.query.format,
-      userID: req.user.user_id,
-    };
-
-    // Handle full export
-    if (req.query.format === 'full') {
-      // Build full config from query params (defaults to true if not specified)
-      payload.fullConfig = {
-        includeTabular: req.query.includeTabular === 'true',
-        includeAttachments: req.query.includeAttachments === 'true',
-        includeGeoJSON: req.query.includeGeoJSON === 'true',
-        includeKML: req.query.includeKML === 'true',
-        includeMetadata: req.query.includeMetadata === 'true',
-      };
-    } else if (
-      REQUIRES_VIEW_ID.includes(req.query.format) ||
-      req.query.viewID
-    ) {
-      // Existing viewID handling for CSV
-      if (!req.query.viewID) {
-        throw new Exceptions.InvalidRequestException(
-          `The specified format ${req.query.format} requires a viewID to be included.`
-        );
-      }
-
-      // Validate the viewID exists
-      const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-
-      if (!uiSpec || !(req.query.viewID in uiSpec.viewsets)) {
-        throw new Exceptions.ItemNotFoundException(
-          `Form with id ${req.query.viewID} not found in notebook`
-        );
-      }
-
-      payload.viewID = req.query.viewID;
-    }
-
-    // Build the download token
-    const jwt = await generateDownloadToken({
-      user: req.user,
-      payload: payload,
-    });
-
-    // Return the url explicitly - rather than a redirect. Hard to carefully
-    // handle the auto redirect while triggering export only once
-    return res.json({
-      url: CONDUCTOR_PUBLIC_URL + `/api/notebooks/download/${jwt}`,
-    });
-  }
-);
-
-/**
- * Export record data (old route for CSV/ZIP with ViewID and Format in the param)
- * @deprecated - use the new /export style route above - this is here for backwards compat
- */
-api.get(
-  '/:id/records/:viewID.:format',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.EXPORT_PROJECT_DATA,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({
-      id: z.string(),
-      viewID: z.string(),
-      // don't allow geoJSON or full here - must use new route
-      // @deprecated
-      format: z.enum(['csv', 'zip']),
-    }),
-  }),
-  async (req, res) => {
-    if (!req.user) {
-      throw new Exceptions.UnauthorizedException('Not authenticated.');
-    }
-
-    // get the label for this form for the filename header
-    const uiSpec = await getEncodedNotebookUISpec(req.params.id);
-
-    // check the view ID is valid
-    if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
-      throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.query.viewID} not found in notebook`
-      );
-    }
-
-    const payload: DownloadTokenPayload = {
-      projectID: req.params.id,
-      format: req.params.format,
-      userID: req.user.user_id,
-      viewID: req.params.viewID,
-    };
-
-    // Build the download token payload
-    const jwt = await generateDownloadToken({
-      user: req.user,
-      payload: payload,
-    });
-    return res.redirect(`/api/notebooks/download/${jwt}`);
   }
 );
 
