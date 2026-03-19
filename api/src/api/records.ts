@@ -109,8 +109,7 @@ recordsRouter.post(
   async (req, res: Response<PostCreateRecordResponse>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
-    const body = req.body as z.infer<typeof PostCreateRecordInputSchema>;
-    const createdBy = body.createdBy ?? req.user.user_id;
+    const createdBy = req.body.createdBy ?? req.user.user_id;
 
     try {
       const dataDb = await getDataDb(projectId);
@@ -121,9 +120,9 @@ recordsRouter.post(
       });
 
       const validated = newFormRecordSchema.parse({
-        formId: body.formId,
+        formId: req.body.formId,
         createdBy,
-        relationship: body.relationship,
+        relationship: req.body.relationship,
       });
       const {record, revision} = await engine.form.createRecord(validated);
       res.status(201).json({
@@ -148,14 +147,13 @@ recordsRouter.get(
   }),
   processRequest({
     params: z.object({id: z.string().min(1)}),
-    query: GetListRecordsQuerySchema.optional(),
+    query: GetListRecordsQuerySchema,
   }),
   async (req, res: Response<GetListRecordsResponse>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
-    const query = (req.query ?? {}) as Partial<GetListRecordsQuery>;
-    const filterDeleted = query.filterDeleted === 'false' ? false : true;
-    const {formId, limit, startKey} = query;
+    const filterDeleted = req.query.filterDeleted === 'false' ? false : true;
+    const {formId, limit, startKey} = req.query;
     const rawLimit =
       limit !== undefined && limit !== '' ? parseInt(limit, 10) : NaN;
     const limitNum =
@@ -186,19 +184,10 @@ recordsRouter.get(
       });
 
       const records = result.records.map(r => ({
-        projectId: r.projectId,
-        recordId: r.recordId,
-        revisionId: r.revisionId,
-        created:
-          r.created instanceof Date ? r.created.toISOString() : r.created,
-        createdBy: r.createdBy,
-        updated:
-          r.updated instanceof Date ? r.updated.toISOString() : r.updated,
-        updatedBy: r.updatedBy,
-        conflicts: r.conflicts,
-        deleted: r.deleted,
-        type: r.type,
-        relationship: r.relationship,
+        ...r,
+        // convert dates to ISO strings
+        created: r.created.toISOString(),
+        updated: r.updated.toISOString(),
       }));
       res.json({
         records,
@@ -224,14 +213,13 @@ recordsRouter.get(
   }),
   processRequest({
     params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
-    query: GetRecordQuerySchema.optional(),
+    query: GetRecordQuerySchema,
   }),
   async (req, res: Response<GetRecordResponse>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     const {recordId} = req.params;
-    const query = (req.query ?? {}) as Partial<GetRecordQuery>;
-    const revisionId = query.revisionId;
+    const revisionId = req.query.revisionId;
 
     try {
       const dataDb = await getDataDb(projectId);
@@ -286,7 +274,6 @@ recordsRouter.patch(
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     const {recordId} = req.params;
-    const body = req.body as z.infer<typeof PatchUpdateRecordInputSchema>;
 
     try {
       const dataDb = await getDataDb(projectId);
@@ -311,9 +298,9 @@ recordsRouter.patch(
 
       const updated = await engine.form.updateRevision({
         recordId,
-        revisionId: body.revisionId,
-        update: body.update,
-        mode: body.mode ?? 'parent',
+        revisionId: req.body.revisionId,
+        update: req.body.update,
+        mode: req.body.mode ?? 'parent',
         updatedBy: req.user.user_id,
       });
       res.json({revisionId: updated._id});
