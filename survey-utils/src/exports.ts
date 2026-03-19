@@ -11,7 +11,16 @@ import {
   HeadingLevel,
   TextRun,
 } from 'docx';
-import type { SpecReviewRow, SpecExportData, SpecMetadata } from './types';
+import type { SpecReviewRow, SpecExportData, SpecMetadata, UiSpecification, FieldSpec } from './types';
+import {
+  getOrderedViewsetIds,
+  normalizeViewIdList,
+  getViewsMap,
+  getLabel,
+  getPrimaryHelperText,
+  flattenOptionTree,
+  getFieldTypeLabel,
+} from './specParser';
 
 /** Extra space after headings (twips; 240 ≈ 12pt) */
 const SPACING_AFTER_HEADING = 280;
@@ -106,13 +115,11 @@ function buildFormSectionCounts(rows: SpecReviewRow[]): {
   };
 }
 
-/** Build a Word document with metadata at top and table (including Notes column) */
-export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
+/** Shared top of Word exports: metadata block + forms/sections summary table */
+function buildWordPreambleChildren(data: SpecExportData): (Paragraph | Table)[] {
   const { metadata, rows } = data;
-
   const sectionChildren: (Paragraph | Table)[] = [];
 
-  // Survey / notebook details: only name, project lead, lead institution, description
   if (metadata && typeof metadata === 'object') {
     sectionChildren.push(
       new Paragraph({
@@ -122,9 +129,10 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
       })
     );
     for (const { key, label } of METADATA_KEYS) {
-      const value = key === 'pre_description'
-        ? (metadata.pre_description ?? metadata.description)
-        : metadata[key];
+      const value =
+        key === 'pre_description'
+          ? (metadata.pre_description ?? metadata.description)
+          : metadata[key];
       if (value != null && value !== '') {
         sectionChildren.push(
           new Paragraph({
@@ -140,7 +148,6 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
     sectionChildren.push(new Paragraph({ text: '', spacing: { after: SPACING_AFTER_PARAGRAPH } }));
   }
 
-  // Counts: forms and sections in a table
   const { formOrder, formSections, totalSections, totalQuestions } = buildFormSectionCounts(rows);
   sectionChildren.push(
     new Paragraph({
@@ -156,15 +163,15 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
     })
   );
 
-  // Table: Form | Section | Questions
   const countTableRows: TableRow[] = [
     new TableRow({
       tableHeader: true,
-      children: ['Form', 'Section', 'Questions'].map(text =>
-        new TableCell({
-          children: [new Paragraph({ text, alignment: AlignmentType.CENTER })],
-          shading: { fill: 'E8E8E8' },
-        })
+      children: ['Form', 'Section', 'Questions'].map(
+        text =>
+          new TableCell({
+            children: [new Paragraph({ text, alignment: AlignmentType.CENTER })],
+            shading: { fill: 'E8E8E8' },
+          })
       ),
     }),
   ];
@@ -198,7 +205,9 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
           children: [new Paragraph(`${totalSections} section${totalSections === 1 ? '' : 's'}`)],
         }),
         new TableCell({
-          children: [new Paragraph({ children: [new TextRun({ text: String(totalQuestions), bold: true })] })],
+          children: [
+            new Paragraph({ children: [new TextRun({ text: String(totalQuestions), bold: true })] }),
+          ],
         }),
       ],
     })
@@ -219,6 +228,25 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
 
   sectionChildren.push(countTable);
   sectionChildren.push(new Paragraph({ text: '', spacing: { after: SPACING_AFTER_HEADING } }));
+
+  return sectionChildren;
+}
+
+function tableBorder() {
+  return {
+    top: { style: BorderStyle.SINGLE, size: 1 },
+    bottom: { style: BorderStyle.SINGLE, size: 1 },
+    left: { style: BorderStyle.SINGLE, size: 1 },
+    right: { style: BorderStyle.SINGLE, size: 1 },
+    insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+    insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+  } as const;
+}
+
+/** Summary Word doc: preamble + flat question table (same as historical export) */
+export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
+  const { rows } = data;
+  const sectionChildren: (Paragraph | Table)[] = [...buildWordPreambleChildren(data)];
 
   const tableRows = [
     new TableRow({
@@ -248,23 +276,19 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
             r.questionType,
             r.questionContent || '—',
             r.notes ?? '',
-          ].map(text => new TableCell({
-            children: [new Paragraph({ text: String(text) })],
-          })),
+          ].map(
+            text =>
+              new TableCell({
+                children: [new Paragraph({ text: String(text) })],
+              })
+          ),
         })
     ),
   ];
 
   const table = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1 },
-      bottom: { style: BorderStyle.SINGLE, size: 1 },
-      left: { style: BorderStyle.SINGLE, size: 1 },
-      right: { style: BorderStyle.SINGLE, size: 1 },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-      insideVertical: { style: BorderStyle.SINGLE, size: 1 },
-    },
+    borders: tableBorder(),
     rows: tableRows,
   });
 
@@ -282,13 +306,237 @@ export async function buildWordDocument(data: SpecExportData): Promise<Blob> {
     sections: [{ properties: {}, children: sectionChildren }],
   });
 
-  const buffer = await Packer.toBlob(doc);
-  return buffer;
+  return Packer.toBlob(doc);
 }
 
-/** Export table as Word document and trigger download */
+/** Strip HTML/Markdown-ish content to plain text for Word (images → placeholder) */
+function stripHtmlToPlainText(html: string): string {
+  let s = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  s = s.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  s = s.replace(/<img[^>]*>/gi, '[image]');
+  s = s.replace(/<br\s*\/?>/gi, '\n');
+  s = s.replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n');
+  s = s.replace(/<[^>]+>/g, '');
+  s = s
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+  return s.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function normalizeBlockContent(raw: string): string {
+  const t = raw.trim();
+  if (!t) return '';
+  if (t.includes('<')) return stripHtmlToPlainText(t);
+  return t;
+}
+
+function labelValueParagraph(label: string, value: string): Paragraph {
+  return new Paragraph({
+    spacing: { after: SPACING_AFTER_PARAGRAPH },
+    children: [
+      new TextRun({ text: `${label}: `, bold: true }),
+      new TextRun({ text: value }),
+    ],
+  });
+}
+
+function monoBlockParagraphs(heading: string, body: string): Paragraph[] {
+  const plain = body.trim();
+  if (!plain) return [];
+  const lines = plain.split('\n');
+  return [
+    new Paragraph({
+      children: [new TextRun({ text: heading, bold: true })],
+      spacing: { after: 80 },
+    }),
+    ...lines.map(
+      line =>
+        new Paragraph({
+          shading: { fill: 'F0F0F0' },
+          spacing: { after: 60 },
+          indent: { left: 360 },
+          children: [new TextRun({ text: line || ' ', font: 'Courier New', size: 20 })],
+        })
+    ),
+  ];
+}
+
+function relatedRecordTargetLine(spec: UiSpecification, relatedType: string): string {
+  const vs = spec.viewsets[relatedType];
+  const label = vs?.label ?? relatedType;
+  return `${label} (viewset: ${relatedType})`;
+}
+
+function buildOptionsParagraphs(field: FieldSpec): Paragraph[] {
+  const el = field['component-parameters']?.ElementProps;
+  const out: Paragraph[] = [];
+  if (!el) return out;
+
+  if (el.options?.length) {
+    out.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Options', bold: true })],
+        spacing: { after: 80 },
+      })
+    );
+    for (const opt of el.options) {
+      const text = opt.label ?? opt.value;
+      if (text) out.push(new Paragraph({ text: `• ${text}`, spacing: { after: 40 } }));
+    }
+    if (el.enableOtherOption) {
+      out.push(new Paragraph({ text: '• Other (free text)', spacing: { after: 80 } }));
+    }
+  } else if (el.optiontree?.length) {
+    out.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Options (tree)', bold: true })],
+        spacing: { after: 80 },
+      })
+    );
+    for (const line of flattenOptionTree(el.optiontree)) {
+      out.push(new Paragraph({ text: line, spacing: { after: 40 } }));
+    }
+  }
+  return out;
+}
+
+function buildDetailedQuestionParagraphs(
+  spec: UiSpecification,
+  fieldName: string,
+  field: FieldSpec
+): Paragraph[] {
+  const params = field['component-parameters'];
+  const titleLabel = params ? getLabel(params) || fieldName : fieldName;
+  const paras: Paragraph[] = [];
+
+  paras.push(
+    new Paragraph({
+      text: titleLabel,
+      heading: HeadingLevel.HEADING_4,
+      spacing: { before: 280, after: 80 },
+    })
+  );
+  paras.push(
+    new Paragraph({
+      spacing: { after: 120 },
+      children: [
+        new TextRun({ text: 'Field id: ', italics: true, color: '666666' }),
+        new TextRun({ text: fieldName, italics: true, color: '666666' }),
+      ],
+    })
+  );
+
+  paras.push(labelValueParagraph('Type of question', getFieldTypeLabel(field)));
+  paras.push(labelValueParagraph('Component', field['component-name'] ?? '—'));
+  paras.push(labelValueParagraph('Title', titleLabel));
+
+  const helper = params ? getPrimaryHelperText(params) : '';
+  if (helper.trim()) {
+    paras.push(labelValueParagraph('Helper text', helper));
+  }
+
+  const adv = params?.advancedHelperText;
+  if (typeof adv === 'string' && adv.trim()) {
+    paras.push(...monoBlockParagraphs('Advanced helper text', normalizeBlockContent(adv)));
+  }
+
+  const staticContent = params?.content;
+  if (typeof staticContent === 'string' && staticContent.trim()) {
+    paras.push(
+      ...monoBlockParagraphs('Static / default content', normalizeBlockContent(staticContent))
+    );
+  }
+
+  paras.push(...buildOptionsParagraphs(field));
+
+  const relatedType =
+    params && typeof params.related_type === 'string' ? params.related_type.trim() : '';
+  if (relatedType) {
+    paras.push(labelValueParagraph('Related record target', relatedRecordTargetLine(spec, relatedType)));
+    const relKind = params.relation_type;
+    if (typeof relKind === 'string' && relKind.trim()) {
+      paras.push(labelValueParagraph('Relationship type', relKind));
+    }
+  }
+
+  return paras;
+}
+
+/** Detailed Word doc: preamble + per-form / per-section / per-field narrative */
+export async function buildWordDetailedDocument(data: SpecExportData, spec: UiSpecification): Promise<Blob> {
+  const sectionChildren: (Paragraph | Table)[] = [...buildWordPreambleChildren(data)];
+
+  sectionChildren.push(
+    new Paragraph({
+      text: 'Detailed field review',
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: SPACING_AFTER_HEADING },
+    })
+  );
+  sectionChildren.push(
+    new Paragraph({
+      text: 'Each form and section below lists fields in order. Rich HTML is reduced to plain text; images are omitted as [image].',
+      spacing: { after: SPACING_AFTER_PARAGRAPH },
+    })
+  );
+
+  const views = getViewsMap(spec);
+  const viewsetIds = getOrderedViewsetIds(spec);
+
+  for (const viewsetId of viewsetIds) {
+    const viewset = spec.viewsets[viewsetId];
+    const viewIds = normalizeViewIdList(viewset?.views);
+    if (!viewset || viewIds.length === 0) continue;
+
+    const formHeading = viewset.label ?? viewsetId;
+    sectionChildren.push(
+      new Paragraph({
+        text: formHeading,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 360, after: SPACING_AFTER_HEADING },
+      })
+    );
+
+    for (const viewId of viewIds) {
+      const view = views[viewId];
+      if (!view) continue;
+      const sectionHeading = view.label ?? viewId;
+      sectionChildren.push(
+        new Paragraph({
+          text: sectionHeading,
+          heading: HeadingLevel.HEADING_3,
+          spacing: { before: 200, after: SPACING_AFTER_HEADING },
+        })
+      );
+
+      for (const fname of view.fields) {
+        const field = spec.fields[fname];
+        if (!field) continue;
+        sectionChildren.push(...buildDetailedQuestionParagraphs(spec, fname, field));
+      }
+    }
+  }
+
+  const doc = new Document({
+    sections: [{ properties: {}, children: sectionChildren }],
+  });
+
+  return Packer.toBlob(doc);
+}
+
+/** Summary table Word export (historical behaviour; filename *-review.docx) */
 export async function exportWord(data: SpecExportData) {
   const blob = await buildWordDocument(data);
   const name = (data.metadata?.name ?? 'survey-spec') + '-review.docx';
+  downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
+}
+
+/** Detailed narrative Word export */
+export async function exportWordDetailed(data: SpecExportData, spec: UiSpecification) {
+  const blob = await buildWordDetailedDocument(data, spec);
+  const name = (data.metadata?.name ?? 'survey-spec') + '-review-detailed.docx';
   downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
 }

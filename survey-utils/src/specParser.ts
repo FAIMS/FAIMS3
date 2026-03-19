@@ -13,8 +13,10 @@ import type {
 export function normalizeUiSpec(json: unknown): UiSpecification | null {
   if (!json || typeof json !== 'object') return null;
   const obj = json as Record<string, unknown>;
-  const spec = (obj['ui-specification'] as UiSpecification) ?? (obj as UiSpecification);
-  if (!spec || !spec.fields || !spec.viewsets) return null;
+  const rawSpec = obj['ui-specification'] ?? obj;
+  if (!rawSpec || typeof rawSpec !== 'object') return null;
+  const spec = rawSpec as UiSpecification;
+  if (!spec.fields || !spec.viewsets) return null;
   const views = spec.fviews ?? spec.views;
   if (!views || typeof views !== 'object') return null;
   return { ...spec, views, fviews: views } as UiSpecification;
@@ -29,17 +31,66 @@ export function extractMetadata(json: unknown): SpecMetadata | undefined {
   return meta as SpecMetadata;
 }
 
-function getViews(spec: UiSpecification): Record<string, { label?: string; fields: string[] }> {
+/** Resolved views/fviews map with normalized field name lists */
+export function getViewsMap(spec: UiSpecification): Record<string, { label?: string; fields: string[] }> {
   const v = spec.fviews ?? spec.views;
   const out: Record<string, { label?: string; fields: string[] }> = {};
+  if (!v || typeof v !== 'object') return out;
   for (const id of Object.keys(v)) {
     const x = v[id];
-    out[id] = { label: x?.label, fields: Array.isArray(x?.fields) ? x.fields : [] };
+    out[id] = { label: x?.label, fields: normalizeFieldNameList(x?.fields) };
   }
   return out;
 }
 
-function getLabel(params: ComponentParams): string {
+function getViews(spec: UiSpecification): Record<string, { label?: string; fields: string[] }> {
+  return getViewsMap(spec);
+}
+
+/** Accept view ids as an array, a single id string, or missing */
+export function normalizeFieldNameList(fields: unknown): string[] {
+  if (Array.isArray(fields)) return fields.filter((f): f is string => typeof f === 'string');
+  if (typeof fields === 'string' && fields) return [fields];
+  return [];
+}
+
+/**
+ * All viewsets in a stable order: visible_types first (when valid), then any remaining keys.
+ * Ensures every form in viewsets is included even if missing from visible_types.
+ */
+export function getOrderedViewsetIds(spec: UiSpecification): string[] {
+  const allKeys = Object.keys(spec.viewsets);
+  const raw = spec.visible_types;
+  const preferred: string[] = Array.isArray(raw)
+    ? raw.filter((id): id is string => typeof id === 'string' && id.length > 0)
+    : typeof raw === 'string' && raw
+      ? [raw]
+      : [];
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  for (const id of preferred) {
+    if (spec.viewsets[id] && !seen.has(id)) {
+      ordered.push(id);
+      seen.add(id);
+    }
+  }
+  for (const id of allKeys) {
+    if (!seen.has(id)) {
+      ordered.push(id);
+      seen.add(id);
+    }
+  }
+  return ordered;
+}
+
+/** View ids listed on a viewset (array or single string) */
+export function normalizeViewIdList(views: unknown): string[] {
+  if (Array.isArray(views)) return views.filter((v): v is string => typeof v === 'string');
+  if (typeof views === 'string' && views) return [views];
+  return [];
+}
+
+export function getLabel(params: ComponentParams): string {
   return (
     params?.label ??
     params?.InputLabelProps?.label ??
@@ -49,19 +100,31 @@ function getLabel(params: ComponentParams): string {
   );
 }
 
-function getHelperText(params: ComponentParams): string {
-  const helper =
+/** Primary helper for display (excludes advanced; detailed export shows advanced separately) */
+export function getPrimaryHelperText(params: ComponentParams): string {
+  return (
+    params?.helperText ??
+    (typeof params?.FormHelperTextProps?.children === 'string'
+      ? params.FormHelperTextProps.children
+      : '') ??
+    ''
+  );
+}
+
+/** Table column: first non-empty of primary helper or advanced (legacy behaviour) */
+function getTableHelperText(params: ComponentParams): string {
+  return (
     params?.helperText ??
     (typeof params?.FormHelperTextProps?.children === 'string'
       ? params.FormHelperTextProps.children
       : '') ??
     params?.advancedHelperText ??
-    '';
-  return helper;
+    ''
+  );
 }
 
 /** Flatten option tree to list of labels (for AdvancedSelect) */
-function flattenOptionTree(nodes: OptionTreeNode[] | undefined, depth = 0): string[] {
+export function flattenOptionTree(nodes: OptionTreeNode[] | undefined, depth = 0): string[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return [];
   const lines: string[] = [];
   for (const node of nodes) {
@@ -81,7 +144,7 @@ function getQuestionContent(field: FieldSpec): string {
   const params = field['component-parameters'];
   if (!params) return '';
   const label = getLabel(params);
-  const helper = getHelperText(params);
+  const helper = getTableHelperText(params);
 
   const parts: string[] = [];
   if (label) parts.push(label);
@@ -103,7 +166,7 @@ function getQuestionContent(field: FieldSpec): string {
   return parts.join('\n').trim() || '—';
 }
 
-function getQuestionType(field: FieldSpec): string {
+export function getFieldTypeLabel(field: FieldSpec): string {
   return field.humanReadableName ?? field['component-name'] ?? '—';
 }
 
@@ -113,17 +176,16 @@ function getQuestionType(field: FieldSpec): string {
  */
 export function deriveReviewTable(spec: UiSpecification): SpecReviewRow[] {
   const views = getViews(spec);
-  const viewsetIds = spec.visible_types?.length
-    ? spec.visible_types
-    : Object.keys(spec.viewsets);
+  const viewsetIds = getOrderedViewsetIds(spec);
   const rows: SpecReviewRow[] = [];
 
   for (const viewsetId of viewsetIds) {
     const viewset = spec.viewsets[viewsetId];
-    if (!viewset?.views?.length) continue;
+    const viewIds = normalizeViewIdList(viewset?.views);
+    if (!viewset || viewIds.length === 0) continue;
     const formLabel = viewset.label ?? viewsetId;
 
-    for (const viewId of viewset.views) {
+    for (const viewId of viewIds) {
       const view = views[viewId];
       if (!view) continue;
       const sectionLabel = view.label ?? viewId;
@@ -137,7 +199,7 @@ export function deriveReviewTable(spec: UiSpecification): SpecReviewRow[] {
           questionTitle,
           form: formLabel,
           section: sectionLabel,
-          questionType: getQuestionType(field),
+          questionType: getFieldTypeLabel(field),
           questionContent: getQuestionContent(field),
           notes: '',
         });

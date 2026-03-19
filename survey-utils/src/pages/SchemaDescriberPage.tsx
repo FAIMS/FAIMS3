@@ -1,20 +1,22 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { parseSpecFile } from '../specParser';
-import { buildExportData, exportJson, exportCsv, exportWord } from '../exports';
-import type { SpecReviewRow, SpecMetadata } from '../types';
+import { buildExportData, exportJson, exportCsv, exportWord, exportWordDetailed } from '../exports';
+import type { SpecReviewRow, SpecMetadata, UiSpecification } from '../types';
 import { UploadPanel } from '../UploadPanel';
 import { SummaryTable } from '../SummaryTable';
 
 export function SchemaDescriberPage() {
   const [rows, setRows] = useState<SpecReviewRow[]>([]);
   const [metadata, setMetadata] = useState<SpecMetadata | undefined>(undefined);
+  const [spec, setSpec] = useState<UiSpecification | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSpecLoaded = useCallback((content: string) => {
     if (!content.trim()) {
       setRows([]);
       setMetadata(undefined);
+      setSpec(null);
       setError('Please upload a JSON file.');
       return;
     }
@@ -22,10 +24,12 @@ export function SchemaDescriberPage() {
     if (result.ok) {
       setRows(result.rows);
       setMetadata(result.metadata);
+      setSpec(result.spec);
       setError(null);
     } else {
       setRows([]);
       setMetadata(undefined);
+      setSpec(null);
       setError(result.error);
     }
   }, []);
@@ -42,10 +46,16 @@ export function SchemaDescriberPage() {
     exportCsv(data);
   }, [rows, metadata]);
 
-  const handleExportWord = useCallback(async () => {
+  const handleExportWordSummary = useCallback(async () => {
     const data = buildExportData(rows, metadata);
     await exportWord(data);
   }, [rows, metadata]);
+
+  const handleExportWordDetailed = useCallback(async () => {
+    if (!spec) return;
+    const data = buildExportData(rows, metadata);
+    await exportWordDetailed(data, spec);
+  }, [rows, metadata, spec]);
 
   const hasData = rows.length > 0;
 
@@ -72,8 +82,11 @@ export function SchemaDescriberPage() {
           <button type="button" className="export-btn" onClick={handleExportCsv}>
             CSV
           </button>
-          <button type="button" className="export-btn" onClick={handleExportWord}>
-            Word
+          <button type="button" className="export-btn" onClick={handleExportWordSummary}>
+            Summary (Word)
+          </button>
+          <button type="button" className="export-btn" onClick={handleExportWordDetailed}>
+            Detailed review (Word)
           </button>
         </section>
       )}

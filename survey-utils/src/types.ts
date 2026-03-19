@@ -12,6 +12,11 @@ export interface ComponentParams {
   InputLabelProps?: { label?: string };
   FormControlLabelProps?: { label?: string };
   FormHelperTextProps?: { children?: string };
+  /** RelatedRecordSelector: target form / viewset id */
+  related_type?: string;
+  relation_type?: string;
+  /** RichText / static markdown or HTML body */
+  content?: string;
   ElementProps?: {
     options?: Array<{ value: string; label: string; key?: string }>;
     optiontree?: OptionTreeNode[];
