@@ -96,3 +96,45 @@ body > .image-dialog {
 .mdxEditor li {
   list-style-type: inherit !important;
 }
+
+/*
+ * Restore heading styles inside the MDXEditor content area.
+ *
+ * Same issue as lists: MUI CssBaseline resets h1-h6 to inherit font-size
+ * and normal font-weight, making headings look identical to paragraphs.
+ */
+.mdxEditor h1 {
+  font-size: 2em !important;
+  font-weight: bold !important;
+  margin: 0.67em 0 !important;
+}
+
+.mdxEditor h2 {
+  font-size: 1.5em !important;
+  font-weight: bold !important;
+  margin: 0.83em 0 !important;
+}
+
+.mdxEditor h3 {
+  font-size: 1.17em !important;
+  font-weight: bold !important;
+  margin: 1em 0 !important;
+}
+
+.mdxEditor h4 {
+  font-size: 1em !important;
+  font-weight: bold !important;
+  margin: 1.33em 0 !important;
+}
+
+.mdxEditor h5 {
+  font-size: 0.83em !important;
+  font-weight: bold !important;
+  margin: 1.67em 0 !important;
+}
+
+.mdxEditor h6 {
+  font-size: 0.67em !important;
+  font-weight: bold !important;
+  margin: 2.33em 0 !important;
+}
