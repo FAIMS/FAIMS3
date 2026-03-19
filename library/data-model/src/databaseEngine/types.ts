@@ -849,6 +849,8 @@ export interface MinimalRecordMetadataResult {
   count: number;
   /** Count of records skipped due to errors */
   errorCount: number;
+  /** When paginating, pass this as startKey for the next page (only set when more results exist) */
+  nextStartKey?: string;
 }
 
 // ============================================================================

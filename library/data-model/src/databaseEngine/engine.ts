@@ -1843,18 +1843,30 @@ class QueryOperations {
       endKey?: string;
       limit?: number;
       descending?: boolean;
+      /** When set, fetch only these revision IDs (e.g. for a page of records). */
+      keys?: string[];
     } = {}
   ): Promise<RevisionMetadataQueryResult> {
-    const {startKey, endKey, limit, descending = false} = options;
+    const {
+      startKey,
+      endKey,
+      limit,
+      descending = false,
+      keys: keysOpt,
+    } = options;
 
     const viewResult = await this.db.query<MinimalRevisionMetadataInternal>(
       'index/revisionMetadata',
       {
         include_docs: true,
-        ...(startKey !== undefined ? {startkey: startKey} : {}),
-        ...(endKey !== undefined ? {endkey: endKey} : {}),
-        ...(limit !== undefined ? {limit} : {}),
-        descending,
+        ...(keysOpt !== undefined && keysOpt.length > 0
+          ? {keys: keysOpt}
+          : {
+              ...(startKey !== undefined ? {startkey: startKey} : {}),
+              ...(endKey !== undefined ? {endkey: endKey} : {}),
+              ...(limit !== undefined ? {limit} : {}),
+              descending,
+            }),
       }
     );
 
@@ -1943,54 +1955,88 @@ class QueryOperations {
    * List minimal record metadata for listing pages.
    * Uses optimised views to avoid fetching full documents where possible.
    *
-   * This fetches:
-   * - All records via 'index/record' view
-   * - All revision metadata via 'index/revisionMetadata' view
-   *
-   * Then joins them to produce minimal metadata without hydrating AVPs.
+   * When limit or startKey are provided, paginates at the DB: only a page of
+   * records and their revision metadata is fetched. Otherwise fetches all
+   * records and all revision metadata (legacy behaviour).
    *
    * @param projectId - The project identifier
    * @param options.recordIds - Optional array of specific record IDs to retrieve
    * @param options.filterDeleted - Whether to exclude deleted records (default: false)
    * @param options.filterFunction - Custom optional filter function e.g. permissions
+   * @param options.limit - Max records to return (DB-level pagination when used with startKey)
+   * @param options.startKey - Cursor for next page (recordId); use nextStartKey from previous response
+   * @param options.formId - Optional form type filter (applied after join when paginating)
    *
-   * @returns Minimal record metadata for listing pages
+   * @returns Minimal record metadata for listing pages; nextStartKey set when more results exist
    */
   async listMinimalRecordMetadata({
     projectId,
     recordIds,
     filterDeleted = false,
     filterFunction,
+    limit,
+    startKey,
+    formId,
   }: {
     projectId: string;
     recordIds?: string[];
     filterDeleted?: boolean;
     filterFunction?: (rec: MinimalRecordMetadata) => boolean;
+    limit?: number;
+    startKey?: string;
+    formId?: string;
   }): Promise<MinimalRecordMetadataResult> {
     let errorCount = 0;
+    const usePagination =
+      (limit != null || startKey != null) && recordIds === undefined;
 
-    // Step 1: Fetch all revision metadata (optimised view - no full docs)
     const startTime = performance.now();
-    const [recordViewResult, revisionMetadataResult] = await Promise.all([
-      this.db.query<RecordDBDocument>('index/record', {
+
+    let recordViewResult: PouchDB.Query.Response<RecordDBDocument>;
+    let revisionMetadataResult: RevisionMetadataQueryResult;
+
+    if (usePagination) {
+      // Pagination path: fetch only a page of records, then revision metadata for those heads only
+      const pageSize = limit ?? 25;
+      recordViewResult = await this.db.query<RecordDBDocument>('index/record', {
+        include_docs: true,
+        limit: pageSize + 1,
+        ...(startKey !== undefined && startKey !== ''
+          ? {startkey: startKey, skip: 1}
+          : {}),
+      });
+      const headRevisionIds = recordViewResult.rows
+        .map(row => row.doc?.heads?.[0])
+        .filter((id): id is string => id != null);
+      revisionMetadataResult = await this.listRevisionMetadata({
+        keys: headRevisionIds,
+      });
+    } else {
+      // Legacy path: fetch records (all or by keys), then only their revision metadata
+      recordViewResult = await this.db.query<RecordDBDocument>('index/record', {
         include_docs: true,
         ...(recordIds ? {keys: recordIds} : {}),
-      }),
-      this.listRevisionMetadata(),
-    ]);
+      });
+      const headRevisionIds = recordViewResult.rows
+        .map(row => row.doc?.heads?.[0])
+        .filter((id): id is string => id != null);
+      revisionMetadataResult =
+        headRevisionIds.length > 0
+          ? await this.listRevisionMetadata({keys: headRevisionIds})
+          : {revisions: [], count: 0};
+    }
+
     console.log(
       `[listMinimalRecordMetadata] revision/record query ${(
         performance.now() - startTime
       ).toFixed(2)}ms`
     );
 
-    // Step 3: Build revision metadata lookup map
     const revisionMetadataMap = new Map<string, MinimalRevisionMetadata>();
     for (const rev of revisionMetadataResult.revisions) {
       revisionMetadataMap.set(rev._id, rev);
     }
 
-    // Step 4: Join records with revision metadata
     const records: MinimalRecordMetadata[] = [];
 
     for (const row of recordViewResult.rows) {
@@ -2001,7 +2047,6 @@ class QueryOperations {
         continue;
       }
 
-      // Get head revision ID
       const revisionId = record.heads[0];
       if (!revisionId) {
         console.warn(`Record ${record._id} has no heads[0], skipping`);
@@ -2009,7 +2054,6 @@ class QueryOperations {
         continue;
       }
 
-      // Look up revision metadata
       const revisionMeta = revisionMetadataMap.get(revisionId);
       if (!revisionMeta) {
         console.warn(
@@ -2019,7 +2063,6 @@ class QueryOperations {
         continue;
       }
 
-      // Apply deleted filter
       if (filterDeleted && revisionMeta.deleted) {
         continue;
       }
@@ -2039,14 +2082,33 @@ class QueryOperations {
       });
     }
 
-    const filteredRecords = filterFunction
+    let filteredRecords = filterFunction
       ? records.filter(filterFunction)
       : records;
 
+    if (formId) {
+      filteredRecords = filteredRecords.filter(r => r.type === formId);
+    }
+
+    // Sort by recordId for stable pagination (view order is by _id)
+    filteredRecords = [...filteredRecords].sort((a, b) =>
+      a.recordId.localeCompare(b.recordId, 'en')
+    );
+
+    let nextStartKey: string | undefined;
+    if (usePagination && limit != null && recordViewResult.rows.length > limit) {
+      nextStartKey = recordViewResult.rows[limit].id;
+    }
+    const pageRecords =
+      usePagination && limit != null
+        ? filteredRecords.slice(0, limit)
+        : filteredRecords;
+
     return {
-      records: filteredRecords,
-      count: filteredRecords.length,
+      records: pageRecords,
+      count: pageRecords.length,
       errorCount,
+      ...(nextStartKey !== undefined ? {nextStartKey} : {}),
     };
   }
 

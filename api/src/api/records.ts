@@ -22,7 +22,6 @@ import {
   DataEngine,
   DatabaseInterface,
   DocumentNotFoundError,
-  formUpdateDataSchema,
   MalformedParentsError,
   newFormRecordSchema,
   NoHeadsError,
@@ -30,51 +29,27 @@ import {
   RevisionMismatchError,
   setRecordAsDeleted,
 } from '@faims3/data-model';
+import {
+  DeleteRecordQuerySchema,
+  GetListRecordsQuerySchema,
+  GetListRecordsQuery,
+  GetRecordQuerySchema,
+  GetRecordQuery,
+  GetRecordResponse,
+  GetListRecordsResponse,
+  PatchUpdateRecordInputSchema,
+  PatchUpdateRecordResponse,
+  PostCreateRecordInputSchema,
+  PostCreateRecordResponse,
+} from '@faims3/data-model';
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
 import {getDataDb} from '../couchdb';
 import {getProjectUIModel} from '../couchdb/notebooks';
 import * as Exceptions from '../exceptions';
-import {
-  isAllowedToMiddleware,
-  requireAuthenticationAPI,
-} from '../middleware';
-import {
-  canDeleteRecord,
-  canEditRecord,
-  canReadRecord,
-} from '../recordAuth';
-
-// ---------------------------------------------------------------------------
-// Request/response schemas (reuse data-model schemas where possible)
-// ---------------------------------------------------------------------------
-
-/** Create record body: newFormRecord with createdBy optional (filled server-side) */
-const createRecordBodySchema = newFormRecordSchema.partial({
-  createdBy: true,
-});
-
-const updateRecordBodySchema = z.object({
-  revisionId: z.string(),
-  update: formUpdateDataSchema,
-  mode: z.enum(['new', 'parent']).optional(),
-});
-
-const deleteRecordQuerySchema = z.object({
-  revisionId: z.string(),
-});
-
-const listRecordsQuerySchema = z.object({
-  formId: z.string().optional(),
-  limit: z.coerce.number().min(1).max(500).optional(),
-  startKey: z.string().optional(),
-  filterDeleted: z.enum(['true', 'false']).optional(),
-});
-
-const getRecordQuerySchema = z.object({
-  revisionId: z.string().optional(),
-});
+import {isAllowedToMiddleware, requireAuthenticationAPI} from '../middleware';
+import {canDeleteRecord, canEditRecord, canReadRecord} from '../recordAuth';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -129,12 +104,12 @@ recordsRouter.post(
   }),
   processRequest({
     params: z.object({id: z.string().min(1)}),
-    body: createRecordBodySchema,
+    body: PostCreateRecordInputSchema,
   }),
-  async (req, res: Response<{recordId: string; revisionId: string}>) => {
+  async (req, res: Response<PostCreateRecordResponse>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
-    const body = req.body as z.infer<typeof createRecordBodySchema>;
+    const body = req.body as z.infer<typeof PostCreateRecordInputSchema>;
     const createdBy = body.createdBy ?? req.user.user_id;
 
     try {
@@ -173,13 +148,20 @@ recordsRouter.get(
   }),
   processRequest({
     params: z.object({id: z.string().min(1)}),
-    query: listRecordsQuerySchema.optional(),
+    query: GetListRecordsQuerySchema.optional(),
   }),
-  async (req, res: Response<{records: Array<Record<string, unknown>>}>) => {
+  async (req, res: Response<GetListRecordsResponse>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
-    const filterDeleted =
-      req.query?.filterDeleted === 'false' ? false : true;
+    const query = (req.query ?? {}) as Partial<GetListRecordsQuery>;
+    const filterDeleted = query.filterDeleted === 'false' ? false : true;
+    const {formId, limit, startKey} = query;
+    const rawLimit =
+      limit !== undefined && limit !== '' ? parseInt(limit, 10) : NaN;
+    const limitNum =
+      Number.isFinite(rawLimit) && rawLimit >= 1
+        ? Math.min(500, rawLimit)
+        : undefined;
 
     try {
       const dataDb = await getDataDb(projectId);
@@ -198,24 +180,12 @@ recordsRouter.get(
             projectId,
             createdBy: rec.createdBy,
           }),
+        limit: limitNum,
+        startKey,
+        formId,
       });
 
-      const formId =
-        typeof req.query?.formId === 'string' ? req.query.formId : undefined;
-      const limit =
-        typeof req.query?.limit === 'number' ? req.query.limit : undefined;
-      const startKey =
-        typeof req.query?.startKey === 'string'
-          ? req.query.startKey
-          : undefined;
-      let list = result.records;
-      if (formId) list = list.filter(r => r.type === formId);
-      list = [...list].sort((a, b) =>
-        a.recordId.localeCompare(b.recordId, 'en')
-      );
-      if (startKey) list = list.filter(r => r.recordId > startKey);
-      if (limit !== undefined) list = list.slice(0, limit);
-      const records = list.map(r => ({
+      const records = result.records.map(r => ({
         projectId: r.projectId,
         recordId: r.recordId,
         revisionId: r.revisionId,
@@ -230,7 +200,12 @@ recordsRouter.get(
         type: r.type,
         relationship: r.relationship,
       }));
-      res.json({records});
+      res.json({
+        records,
+        ...(result.nextStartKey !== undefined
+          ? {nextStartKey: result.nextStartKey}
+          : {}),
+      });
     } catch (err) {
       mapDataModelError(err);
     }
@@ -249,16 +224,14 @@ recordsRouter.get(
   }),
   processRequest({
     params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
-    query: getRecordQuerySchema.optional(),
+    query: GetRecordQuerySchema.optional(),
   }),
-  async (req, res: Response) => {
+  async (req, res: Response<GetRecordResponse>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     const {recordId} = req.params;
-    const revisionId =
-      typeof req.query?.revisionId === 'string'
-        ? req.query.revisionId
-        : undefined;
+    const query = (req.query ?? {}) as Partial<GetRecordQuery>;
+    const revisionId = query.revisionId;
 
     try {
       const dataDb = await getDataDb(projectId);
@@ -269,11 +242,13 @@ recordsRouter.get(
       });
 
       const record = await engine.core.getRecord(recordId);
-      if (!canReadRecord({
-        user: req.user,
-        projectId,
-        createdBy: record.created_by,
-      })) {
+      if (
+        !canReadRecord({
+          user: req.user,
+          projectId,
+          createdBy: record.created_by,
+        })
+      ) {
         throw new Exceptions.ForbiddenException(
           'You do not have permission to read this record.'
         );
@@ -305,13 +280,13 @@ recordsRouter.patch(
   }),
   processRequest({
     params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
-    body: updateRecordBodySchema,
+    body: PatchUpdateRecordInputSchema,
   }),
-  async (req, res: Response<{revisionId: string}>) => {
+  async (req, res: Response<PatchUpdateRecordResponse>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     const {recordId} = req.params;
-    const body = req.body as z.infer<typeof updateRecordBodySchema>;
+    const body = req.body as z.infer<typeof PatchUpdateRecordInputSchema>;
 
     try {
       const dataDb = await getDataDb(projectId);
@@ -322,11 +297,13 @@ recordsRouter.patch(
       });
 
       const record = await engine.core.getRecord(recordId);
-      if (!canEditRecord({
-        user: req.user,
-        projectId,
-        createdBy: record.created_by,
-      })) {
+      if (
+        !canEditRecord({
+          user: req.user,
+          projectId,
+          createdBy: record.created_by,
+        })
+      ) {
         throw new Exceptions.ForbiddenException(
           'You do not have permission to edit this record.'
         );
@@ -359,13 +336,13 @@ recordsRouter.delete(
   }),
   processRequest({
     params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
-    query: deleteRecordQuerySchema,
+    query: DeleteRecordQuerySchema,
   }),
-  async (req, res: Response) => {
+  async (req, res: Response<void>) => {
     if (!req.user) throw new Exceptions.UnauthorizedException();
     const projectId = projectIdFromReq(req);
     const {recordId} = req.params;
-    const revisionId = req.query.revisionId as string;
+    const {revisionId} = req.query;
 
     try {
       const dataDb = await getDataDb(projectId);
@@ -376,11 +353,13 @@ recordsRouter.delete(
       });
 
       const record = await engine.core.getRecord(recordId);
-      if (!canDeleteRecord({
-        user: req.user,
-        projectId,
-        createdBy: record.created_by,
-      })) {
+      if (
+        !canDeleteRecord({
+          user: req.user,
+          projectId,
+          createdBy: record.created_by,
+        })
+      ) {
         throw new Exceptions.ForbiddenException(
           'You do not have permission to delete this record.'
         );
