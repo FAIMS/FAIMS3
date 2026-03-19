@@ -1,0 +1,424 @@
+/*
+ * Copyright 2021, 2022 Macquarie University
+ *
+ * Licensed under the Apache License Version 2.0 (the, "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Integration tests for the stateless CRUD records API.
+ * Uses test/fixtures/recordsApi for paths, types, and backup helpers.
+ */
+
+import PouchDB from 'pouchdb';
+import PouchDBFind from 'pouchdb-find';
+PouchDB.plugin(PouchDBFind);
+PouchDB.plugin(require('pouchdb-adapter-memory'));
+
+import {registerClient} from '@faims3/data-model';
+import {expect} from 'chai';
+import request from 'supertest';
+import {app} from '../src/expressSetup';
+import {callbackObject} from './mocks';
+import {
+  BACKUP_FORM_IDS,
+  CreateRecordBody,
+  CreateRecordResponse,
+  GetRecordResponse,
+  ListRecordsResponse,
+  MinimalRecordInList,
+  recordPath,
+  recordsBasePath,
+  RECORD_ID_PREFIX,
+  REVISION_ID_PREFIX,
+  UpdateRecordBody,
+  UpdateRecordResponse,
+  withRecordsBackup,
+} from './fixtures/recordsApi';
+import {adminToken, beforeApiTests, localUserToken, requestAuthAndType} from './utils';
+
+registerClient(callbackObject);
+
+describe('Records CRUD API', () => {
+  beforeEach(beforeApiTests);
+
+  describe('list records', () => {
+    it('returns permission-filtered list after restore', async () => {
+      await withRecordsBackup(async projectId => {
+        const res = await requestAuthAndType(
+          request(app).get(recordsBasePath(projectId))
+        ).expect(200);
+
+        const body = res.body as ListRecordsResponse;
+        expect(body).to.have.property('records');
+        expect(body.records).to.be.an('array');
+        expect(body.records.length).to.be.greaterThan(0);
+
+        const first = body.records[0] as MinimalRecordInList;
+        expect(first).to.have.property('recordId');
+        expect(first).to.have.property('revisionId');
+        expect(first).to.have.property('createdBy');
+        expect(first).to.have.property('type');
+      });
+    });
+
+    it('accepts filterDeleted query', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({filterDeleted: 'true'})
+        ).expect(200);
+      });
+    });
+
+    it('filters by formId when provided', async () => {
+      await withRecordsBackup(async projectId => {
+        const res = await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({formId: BACKUP_FORM_IDS.FORM2})
+        ).expect(200);
+        const body = res.body as ListRecordsResponse;
+        expect(body.records).to.be.an('array');
+        body.records.forEach((r: MinimalRecordInList) => {
+          expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
+        });
+      });
+    });
+
+    it('applies limit when provided', async () => {
+      await withRecordsBackup(async projectId => {
+        const res = await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({limit: 3})
+        ).expect(200);
+        const body = res.body as ListRecordsResponse;
+        expect(body.records.length).to.be.at.most(3);
+      });
+    });
+
+    it('applies startKey for pagination (returns records after cursor)', async () => {
+      await withRecordsBackup(async projectId => {
+        const full = await requestAuthAndType(
+          request(app).get(recordsBasePath(projectId)).query({limit: 5})
+        ).expect(200);
+        const fullBody = full.body as ListRecordsResponse;
+        if (fullBody.records.length < 2) return;
+        const cursor = fullBody.records[1].recordId;
+        const res = await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({limit: 10, startKey: cursor})
+        ).expect(200);
+        const body = res.body as ListRecordsResponse;
+        expect(body.records.every((r: MinimalRecordInList) => r.recordId > cursor)).to.be.true;
+      });
+    });
+
+    it('regression: list honors formId, limit, and startKey (params were previously ignored)', async () => {
+      await withRecordsBackup(async projectId => {
+        const full = await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({formId: BACKUP_FORM_IDS.FORM2, limit: 5})
+        ).expect(200);
+        const fullBody = full.body as ListRecordsResponse;
+        expect(fullBody.records.length).to.be.at.most(5);
+        fullBody.records.forEach((r: MinimalRecordInList) => {
+          expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
+        });
+        if (fullBody.records.length < 2) return;
+        const cursor = fullBody.records[1].recordId;
+        const page2 = await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({
+              formId: BACKUP_FORM_IDS.FORM2,
+              limit: 2,
+              startKey: cursor,
+            })
+        ).expect(200);
+        const page2Body = page2.body as ListRecordsResponse;
+        expect(page2Body.records.length).to.be.at.most(2);
+        page2Body.records.forEach((r: MinimalRecordInList) => {
+          expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
+          expect(r.recordId > cursor).to.be.true;
+        });
+      });
+    });
+  });
+
+  describe('create record', () => {
+    it('creates record and returns recordId and revisionId', async () => {
+      await withRecordsBackup(async projectId => {
+        const body: CreateRecordBody = {
+          formId: BACKUP_FORM_IDS.FORM2,
+          createdBy: 'admin',
+        };
+
+        const res = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send(body)
+        ).expect(201);
+
+        const created = res.body as CreateRecordResponse;
+        expect(created.recordId).to.match(new RegExp(`^${RECORD_ID_PREFIX}`));
+        expect(created.revisionId).to.match(
+          new RegExp(`^${REVISION_ID_PREFIX}`)
+        );
+
+        const getRes = await requestAuthAndType(
+          request(app).get(recordPath(projectId, created.recordId))
+        ).expect(200);
+
+        const getBody = getRes.body as GetRecordResponse;
+        expect(getBody.formId).to.equal(BACKUP_FORM_IDS.FORM2);
+        expect(getBody.revisionId).to.equal(created.revisionId);
+        expect(getBody).to.have.property('data');
+      });
+    });
+
+    it('uses token user when createdBy omitted', async () => {
+      await withRecordsBackup(async projectId => {
+        const res = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({formId: BACKUP_FORM_IDS.FORM2})
+        ).expect(201);
+
+        const created = res.body as CreateRecordResponse;
+        expect(created).to.have.property('recordId');
+
+        const getRes = await requestAuthAndType(
+          request(app).get(recordPath(projectId, created.recordId))
+        ).expect(200);
+        const getBody = getRes.body as GetRecordResponse;
+        expect(getBody.context.record).to.be.an('object');
+      });
+    });
+
+    it('returns 401 without auth', async () => {
+      await withRecordsBackup(async projectId => {
+        await request(app)
+          .post(recordsBasePath(projectId))
+          .set('Content-Type', 'application/json')
+          .send({formId: BACKUP_FORM_IDS.FORM2})
+          .expect(401);
+      });
+    });
+  });
+
+  describe('get one record', () => {
+    it('returns full form data for existing record', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId} = createRes.body as CreateRecordResponse;
+
+        const res = await requestAuthAndType(
+          request(app).get(recordPath(projectId, recordId))
+        ).expect(200);
+
+        const body = res.body as GetRecordResponse;
+        expect(body).to.have.property('formId');
+        expect(body).to.have.property('revisionId');
+        expect(body).to.have.property('data');
+        expect(body).to.have.property('context');
+      });
+    });
+
+    it('returns 404 for missing record', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app).get(
+            recordPath(projectId, 'rec-nonexistent-0000000000000000')
+          )
+        ).expect(404);
+      });
+    });
+
+    it('returns 401 without auth', async () => {
+      await withRecordsBackup(async projectId => {
+        await request(app)
+          .get(recordsBasePath(projectId))
+          .expect(401);
+      });
+    });
+  });
+
+  describe('update record', () => {
+    it('updates with partial field data (field-level)', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+
+        const updateBody: UpdateRecordBody = {
+          revisionId,
+          update: {
+            hridFORM2: {
+              data: 'Element: Test-00001',
+              attachments: [],
+            },
+          },
+          mode: 'new',
+        };
+
+        const updateRes = await requestAuthAndType(
+          request(app)
+            .patch(recordPath(projectId, recordId))
+            .send(updateBody)
+        ).expect(200);
+
+        const updated = updateRes.body as UpdateRecordResponse;
+        expect(updated).to.have.property('revisionId');
+        expect(updated.revisionId).to.match(
+          new RegExp(`^${REVISION_ID_PREFIX}`)
+        );
+        const getRes = await requestAuthAndType(
+          request(app).get(recordPath(projectId, recordId))
+        ).expect(200);
+        const getBody = getRes.body as GetRecordResponse;
+        expect(getBody.data.hridFORM2?.data).to.equal('Element: Test-00001');
+      });
+    });
+
+    it('returns 401 when user has no project-level edit permission', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+
+        const updateBody: UpdateRecordBody = {
+          revisionId,
+          update: {hridFORM2: {data: 'x', attachments: []}},
+        };
+
+        await requestAuthAndType(
+          request(app)
+            .patch(recordPath(projectId, recordId))
+            .send(updateBody),
+          localUserToken
+        ).expect(401);
+      });
+    });
+
+  });
+
+  describe('delete record', () => {
+    it('soft-deletes and returns 204', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+
+        await requestAuthAndType(
+          request(app)
+            .delete(recordPath(projectId, recordId))
+            .query({revisionId})
+        ).expect(204);
+      });
+    });
+
+    it('returns 400 when revisionId query missing', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId} = createRes.body as CreateRecordResponse;
+
+        await requestAuthAndType(
+          request(app).delete(recordPath(projectId, recordId))
+        ).expect(400);
+      });
+    });
+
+    it('returns 401 when user has no project-level delete permission', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+
+        await requestAuthAndType(
+          request(app)
+            .delete(recordPath(projectId, recordId))
+            .query({revisionId}),
+          localUserToken
+        ).expect(401);
+      });
+    });
+  });
+
+  describe('authorization', () => {
+    it('list returns 401 without token', async () => {
+      await withRecordsBackup(async projectId => {
+        await request(app).get(recordsBasePath(projectId)).expect(401);
+      });
+    });
+
+    it('list returns 401 when user has no project-level read permission', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app).get(recordsBasePath(projectId)),
+          localUserToken
+        ).expect(401);
+      });
+    });
+
+    it('get one returns 401 without token', async () => {
+      await withRecordsBackup(async projectId => {
+        await request(app)
+          .get(
+            recordPath(
+              projectId,
+              `${RECORD_ID_PREFIX}00000000-0000-0000-0000-000000000001`
+            )
+          )
+          .expect(401);
+      });
+    });
+  });
+});

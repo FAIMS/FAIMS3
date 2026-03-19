@@ -30,6 +30,15 @@ export class InvalidRequestException extends CustomException {
 }
 
 /**
+ * Use when a resource conflict exists (e.g. multiple heads on a record).
+ */
+export class ConflictException extends CustomException {
+  constructor(message: string) {
+    super(message, 409);
+  }
+}
+
+/**
  * The provided request body/params/query strings are not valid/parseable.
  */
 export class ValidationException extends CustomException {
