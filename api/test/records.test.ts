@@ -22,9 +22,16 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory'));
 
-import {registerClient} from '@faims3/data-model';
+import {addProjectRole, registerClient, Role} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
+import {KEY_SERVICE} from '../src/buildconfig';
+import {
+  getCouchUserFromEmailOrUserId,
+  getExpressUserFromEmailOrUserId,
+  saveCouchUser,
+} from '../src/couchdb/users';
+import {generateJwtFromUser} from '../src/auth/keySigning/create';
 import {app} from '../src/expressSetup';
 import {callbackObject} from './mocks';
 import {
@@ -37,12 +44,19 @@ import {
   recordPath,
   recordsBasePath,
   RECORD_ID_PREFIX,
+  RECORDS_BACKUP_PROJECT_ID,
   REVISION_ID_PREFIX,
   UpdateRecordBody,
   UpdateRecordResponse,
   withRecordsBackup,
 } from './fixtures/recordsApi';
-import {adminToken, beforeApiTests, localUserToken, requestAuthAndType} from './utils';
+import {
+  adminToken,
+  beforeApiTests,
+  localUserToken,
+  localUserName,
+  requestAuthAndType,
+} from './utils';
 
 registerClient(callbackObject);
 
@@ -103,6 +117,16 @@ describe('Records CRUD API', () => {
         ).expect(200);
         const body = res.body as ListRecordsResponse;
         expect(body.records.length).to.be.at.most(3);
+      });
+    });
+
+    it('returns 400 when limit is greater than 500', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({limit: 501})
+        ).expect(400);
       });
     });
 
@@ -214,6 +238,49 @@ describe('Records CRUD API', () => {
           .expect(401);
       });
     });
+
+    it('returns 400 when formId is missing', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({})
+        ).expect(400);
+      });
+    });
+
+    it('creates record with optional relationship', async () => {
+      await withRecordsBackup(async projectId => {
+        const parentRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({formId: BACKUP_FORM_IDS.FORM2, createdBy: 'admin'})
+        ).expect(201);
+        const parent = parentRes.body as CreateRecordResponse;
+
+        const body: CreateRecordBody = {
+          formId: BACKUP_FORM_IDS.FORM2,
+          createdBy: 'admin',
+          relationship: {
+            parent: [
+              {
+                recordId: parent.recordId,
+                fieldId: 'parent-field',
+                relationTypeVocabPair: ['relation', 'type'],
+              },
+            ],
+          },
+        };
+        const res = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send(body)
+        ).expect(201);
+        const created = res.body as CreateRecordResponse;
+        expect(created.recordId).to.match(new RegExp(`^${RECORD_ID_PREFIX}`));
+        const getRes = await requestAuthAndType(
+          request(app).get(recordPath(projectId, created.recordId))
+        ).expect(200);
+        const getBody = getRes.body as GetRecordResponse;
+        expect(getBody.context.record).to.be.an('object');
+      });
+    });
   });
 
   describe('get one record', () => {
@@ -256,6 +323,49 @@ describe('Records CRUD API', () => {
         await request(app)
           .get(recordsBasePath(projectId))
           .expect(401);
+      });
+    });
+
+    it('returns specific revision when revisionId query provided', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId, revisionId: rev1} =
+          createRes.body as CreateRecordResponse;
+
+        const updateRes = await requestAuthAndType(
+          request(app)
+            .patch(recordPath(projectId, recordId))
+            .send({
+              revisionId: rev1,
+              update: {hridFORM2: {data: 'UpdatedValue', attachments: []}},
+              mode: 'new',
+            })
+        ).expect(200);
+        const revisionId2 = (updateRes.body as UpdateRecordResponse).revisionId;
+
+        const getHead = await requestAuthAndType(
+          request(app).get(recordPath(projectId, recordId))
+        ).expect(200);
+        const headBody = getHead.body as GetRecordResponse;
+        expect(headBody.revisionId).to.equal(revisionId2);
+        expect(headBody.data.hridFORM2?.data).to.equal('UpdatedValue');
+
+        const getRev1 = await requestAuthAndType(
+          request(app)
+            .get(recordPath(projectId, recordId))
+            .query({revisionId: rev1})
+        ).expect(200);
+        const bodyRev1 = getRev1.body as GetRecordResponse;
+        expect(bodyRev1.revisionId).to.equal(rev1);
+        expect(bodyRev1.formId).to.equal(BACKUP_FORM_IDS.FORM2);
+        expect(bodyRev1.data).to.be.an('object');
       });
     });
   });
@@ -329,6 +439,37 @@ describe('Records CRUD API', () => {
       });
     });
 
+    it('returns 400 when revisionId does not belong to record', async () => {
+      await withRecordsBackup(async projectId => {
+        const createA = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const createB = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId: recordIdA} = createA.body as CreateRecordResponse;
+        const {revisionId: revisionIdB} = createB.body as CreateRecordResponse;
+
+        await requestAuthAndType(
+          request(app)
+            .patch(recordPath(projectId, recordIdA))
+            .send({
+              revisionId: revisionIdB,
+              update: {hridFORM2: {data: 'x', attachments: []}},
+            })
+        ).expect(400);
+      });
+    });
   });
 
   describe('delete record', () => {
@@ -390,6 +531,83 @@ describe('Records CRUD API', () => {
         ).expect(401);
       });
     });
+
+    it('returns 404 when deleting non-existent record', async () => {
+      await withRecordsBackup(async projectId => {
+        await requestAuthAndType(
+          request(app)
+            .delete(
+              recordPath(projectId, 'rec-00000000-0000-0000-0000-000000000000')
+            )
+            .query({
+              revisionId: 'frev-00000000-0000-0000-0000-000000000000',
+            })
+        ).expect(404);
+      });
+    });
+  });
+
+  describe('list filterDeleted', () => {
+    it('excludes deleted records by default (filterDeleted true)', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        await requestAuthAndType(
+          request(app)
+            .delete(recordPath(projectId, recordId))
+            .query({revisionId})
+        ).expect(204);
+
+        const listRes = await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({formId: BACKUP_FORM_IDS.FORM2})
+        ).expect(200);
+        const list = (listRes.body as ListRecordsResponse).records;
+        const deletedInList = list.find(
+          (r: MinimalRecordInList) => r.recordId === recordId
+        );
+        expect(deletedInList).to.be.undefined;
+      });
+    });
+
+    it('includes deleted records when filterDeleted is false', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app)
+            .post(recordsBasePath(projectId))
+            .send({
+              formId: BACKUP_FORM_IDS.FORM2,
+              createdBy: 'admin',
+            })
+        ).expect(201);
+        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        await requestAuthAndType(
+          request(app)
+            .delete(recordPath(projectId, recordId))
+            .query({revisionId})
+        ).expect(204);
+
+        const listRes = await requestAuthAndType(
+          request(app)
+            .get(recordsBasePath(projectId))
+            .query({formId: BACKUP_FORM_IDS.FORM2, filterDeleted: 'false'})
+        ).expect(200);
+        const list = (listRes.body as ListRecordsResponse).records;
+        const deletedInList = list.find(
+          (r: MinimalRecordInList) => r.recordId === recordId
+        );
+        expect(deletedInList).to.not.be.undefined;
+        expect(deletedInList!.deleted).to.be.true;
+      });
+    });
   });
 
   describe('authorization', () => {
@@ -418,6 +636,121 @@ describe('Records CRUD API', () => {
             )
           )
           .expect(401);
+      });
+    });
+  });
+
+  describe('record-level authorization (403)', () => {
+    it('returns 403 when GUEST tries to get another user record', async () => {
+      await withRecordsBackup(async projectId => {
+        const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+        if (!couchUser) throw new Error('Local user not found');
+        addProjectRole({
+          user: couchUser,
+          projectId: RECORDS_BACKUP_PROJECT_ID,
+          role: Role.PROJECT_GUEST,
+        });
+        await saveCouchUser(couchUser);
+
+        const expressUser = await getExpressUserFromEmailOrUserId(localUserName);
+        if (!expressUser) throw new Error('Local user not found');
+        const signingKey = await KEY_SERVICE.getSigningKey();
+        const guestToken = await generateJwtFromUser({
+          user: expressUser,
+          signingKey,
+        });
+
+        const listAsAdmin = await requestAuthAndType(
+          request(app).get(recordsBasePath(projectId))
+        ).expect(200);
+        const records = (listAsAdmin.body as ListRecordsResponse).records;
+        const adminRecord = records.find(
+          (r: MinimalRecordInList) => r.createdBy === 'admin'
+        );
+        if (!adminRecord) throw new Error('No admin record in backup');
+
+        await request(app)
+          .get(recordPath(projectId, adminRecord.recordId))
+          .set('Authorization', `Bearer ${guestToken}`)
+          .set('Content-Type', 'application/json')
+          .expect(403);
+      });
+    });
+
+    it('returns 403 when GUEST tries to patch another user record', async () => {
+      await withRecordsBackup(async projectId => {
+        const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+        if (!couchUser) throw new Error('Local user not found');
+        addProjectRole({
+          user: couchUser,
+          projectId: RECORDS_BACKUP_PROJECT_ID,
+          role: Role.PROJECT_GUEST,
+        });
+        await saveCouchUser(couchUser);
+
+        const expressUser = await getExpressUserFromEmailOrUserId(localUserName);
+        if (!expressUser) throw new Error('Local user not found');
+        const signingKey = await KEY_SERVICE.getSigningKey();
+        const guestToken = await generateJwtFromUser({
+          user: expressUser,
+          signingKey,
+        });
+
+        const listAsAdmin = await requestAuthAndType(
+          request(app).get(recordsBasePath(projectId))
+        ).expect(200);
+        const records = (listAsAdmin.body as ListRecordsResponse).records;
+        const adminRecord = records.find(
+          (r: MinimalRecordInList) => r.createdBy === 'admin'
+        );
+        if (!adminRecord) throw new Error('No admin record in backup');
+
+        await request(app)
+          .patch(recordPath(projectId, adminRecord.recordId))
+          .set('Authorization', `Bearer ${guestToken}`)
+          .set('Content-Type', 'application/json')
+          .send({
+            revisionId: adminRecord.revisionId,
+            update: {hridFORM2: {data: 'x', attachments: []}},
+          })
+          .expect(403);
+      });
+    });
+
+    it('returns 403 when GUEST tries to delete another user record', async () => {
+      await withRecordsBackup(async projectId => {
+        const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+        if (!couchUser) throw new Error('Local user not found');
+        addProjectRole({
+          user: couchUser,
+          projectId: RECORDS_BACKUP_PROJECT_ID,
+          role: Role.PROJECT_GUEST,
+        });
+        await saveCouchUser(couchUser);
+
+        const expressUser = await getExpressUserFromEmailOrUserId(localUserName);
+        if (!expressUser) throw new Error('Local user not found');
+        const signingKey = await KEY_SERVICE.getSigningKey();
+        const guestToken = await generateJwtFromUser({
+          user: expressUser,
+          signingKey,
+        });
+
+        const listAsAdmin = await requestAuthAndType(
+          request(app).get(recordsBasePath(projectId))
+        ).expect(200);
+        const records = (listAsAdmin.body as ListRecordsResponse).records;
+        const adminRecord = records.find(
+          (r: MinimalRecordInList) => r.createdBy === 'admin'
+        );
+        if (!adminRecord) throw new Error('No admin record in backup');
+
+        await request(app)
+          .delete(recordPath(projectId, adminRecord.recordId))
+          .set('Authorization', `Bearer ${guestToken}`)
+          .set('Content-Type', 'application/json')
+          .query({revisionId: adminRecord.revisionId})
+          .expect(403);
       });
     });
   });

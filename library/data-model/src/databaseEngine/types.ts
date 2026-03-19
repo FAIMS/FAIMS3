@@ -494,7 +494,7 @@ export type FaimsAttachments = z.infer<typeof faimsAttachmentsSchema>;
  * Schema for an annotation on a form field.
  * Annotations provide additional context and metadata about field values.
  */
-const formAnnotationSchema = z.object({
+export const formAnnotationSchema = z.object({
   /** Human-readable annotation text describing the field value */
   annotation: z.string(),
   /** Flag indicating if there is uncertainty about this field's value */
@@ -506,16 +506,16 @@ export type FormAnnotations = z.infer<typeof formAnnotations>;
 export type FormAnnotation = z.infer<typeof formAnnotationSchema>;
 
 // Form data
-const formDataEntry = z.object({
+export const formDataEntrySchema = z.object({
   data: z.unknown(),
   // NOTE: do we want to use the internal representation
   annotation: formAnnotationSchema.optional(),
   // NOTE: do we want to use the internal representation?
   attachments: faimsAttachmentsSchema,
 });
-export type FormDataEntry = z.infer<typeof formDataEntry>;
-const formUpdateData = z.record(z.string(), formDataEntry);
-export type FormUpdateData = z.infer<typeof formUpdateData>;
+export type FormDataEntry = z.infer<typeof formDataEntrySchema>;
+export const formUpdateDataSchema = z.record(z.string(), formDataEntrySchema);
+export type FormUpdateData = z.infer<typeof formUpdateDataSchema>;
 
 // AVP update modes
 export type AvpUpdateMode = 'new' | 'parent';
@@ -524,7 +524,7 @@ export type AvpUpdateMode = 'new' | 'parent';
  * Schema for a relationship between records.
  * Used when a record is related to another record through a specific field.
  */
-const formRelationshipInstanceSchema = z.object({
+export const formRelationshipInstanceSchema = z.object({
   /** The ID of the parent record this record is related to */
   recordId: z.string(),
   /** The field ID in the parent record that defines this relationship */
@@ -535,7 +535,7 @@ const formRelationshipInstanceSchema = z.object({
 export type FormRelationshipInstance = z.infer<
   typeof formRelationshipInstanceSchema
 >;
-const formRelationshipSchema = z.object({
+export const formRelationshipSchema = z.object({
   parent: z.array(formRelationshipInstanceSchema).optional(),
   linked: z.array(formRelationshipInstanceSchema).optional(),
 });
@@ -689,7 +689,7 @@ export type HydratedRecord = z.infer<typeof hydratedRecordSchema>;
 const initialFormData = z.object({
   revisionId: z.string(),
   formId: z.string(),
-  data: formUpdateData,
+  data: formUpdateDataSchema,
   context: z.object({
     hrid: z.string(),
     record: hydratedRecordDocumentSchema,

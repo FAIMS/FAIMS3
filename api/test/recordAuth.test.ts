@@ -82,6 +82,7 @@ describe('recordAuth', () => {
         })
       ).to.be.true;
     });
+
   });
 
   describe('canEditRecord', () => {
@@ -107,6 +108,17 @@ describe('recordAuth', () => {
       ).to.be.false;
     });
 
+    it('allows PROJECT_GUEST to edit own record', () => {
+      const user = makeUser('alice', Role.PROJECT_GUEST);
+      expect(
+        canEditRecord({
+          user,
+          projectId,
+          createdBy: 'alice',
+        })
+      ).to.be.true;
+    });
+
     it('allows PROJECT_ADMIN to edit another user record', () => {
       const user = makeUser('alice', Role.PROJECT_ADMIN);
       expect(
@@ -122,6 +134,17 @@ describe('recordAuth', () => {
   describe('canDeleteRecord', () => {
     it('allows PROJECT_CONTRIBUTOR to delete own record', () => {
       const user = makeUser('alice', Role.PROJECT_CONTRIBUTOR);
+      expect(
+        canDeleteRecord({
+          user,
+          projectId,
+          createdBy: 'alice',
+        })
+      ).to.be.true;
+    });
+
+    it('allows PROJECT_GUEST to delete own record', () => {
+      const user = makeUser('alice', Role.PROJECT_GUEST);
       expect(
         canDeleteRecord({
           user,

@@ -22,6 +22,7 @@ import {
   DataEngine,
   DatabaseInterface,
   DocumentNotFoundError,
+  formUpdateDataSchema,
   MalformedParentsError,
   newFormRecordSchema,
   NoHeadsError,
@@ -46,43 +47,12 @@ import {
 } from '../recordAuth';
 
 // ---------------------------------------------------------------------------
-// Request/response schemas (aligned with data-model types)
+// Request/response schemas (reuse data-model schemas where possible)
 // ---------------------------------------------------------------------------
 
-const formAnnotationSchema = z.object({
-  annotation: z.string(),
-  uncertainty: z.boolean(),
-});
-
-const faimsAttachmentSchema = z.object({
-  attachmentId: z.string(),
-  filename: z.string(),
-  fileType: z.string(),
-});
-
-const formDataEntrySchema = z.object({
-  data: z.unknown(),
-  annotation: formAnnotationSchema.optional(),
-  attachments: z.array(faimsAttachmentSchema).optional(),
-});
-
-const formUpdateDataSchema = z.record(z.string(), formDataEntrySchema);
-
-const formRelationshipInstanceSchema = z.object({
-  recordId: z.string(),
-  fieldId: z.string(),
-  relationTypeVocabPair: z.tuple([z.string(), z.string()]),
-});
-
-const formRelationshipSchema = z.object({
-  parent: z.array(formRelationshipInstanceSchema).optional(),
-  linked: z.array(formRelationshipInstanceSchema).optional(),
-});
-
-const createRecordBodySchema = z.object({
-  formId: z.string(),
-  createdBy: z.string().optional(),
-  relationship: formRelationshipSchema.optional(),
+/** Create record body: newFormRecord with createdBy optional (filled server-side) */
+const createRecordBodySchema = newFormRecordSchema.partial({
+  createdBy: true,
 });
 
 const updateRecordBodySchema = z.object({
