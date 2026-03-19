@@ -103,6 +103,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
+import {featureServerRouter} from './featureServer';
 import {recordsRouter} from './records';
 import {mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
@@ -114,6 +115,9 @@ export const api: express.Router = express.Router();
 
 // Stateless CRUD API for record data (mount so :id = projectId)
 api.use('/:id/records', recordsRouter);
+
+// ESRI-compatible Feature Service (one layer per viewset with spatial fields)
+api.use('/:id/FeatureServer', featureServerRouter);
 
 /**
  * Gets a list of notebooks

@@ -14,6 +14,12 @@ import {
   buildViewsetFieldSummaries,
   notebookRecordIterator,
 } from '@faims3/data-model';
+
+/** Options for layer GeoJSON stream (ESRI query-style paging). */
+export interface StreamLayerGeoJSONOptions {
+  resultOffset?: number;
+  resultRecordCount?: number;
+}
 import archiver from 'archiver';
 import {PassThrough} from 'stream';
 import {getDataDb} from '..';
@@ -46,7 +52,7 @@ interface ExtractedGeometry {
 /**
  * Context required for spatial export operations.
  */
-interface SpatialExportContext {
+export interface SpatialExportContext {
   dataDb: DatabaseInterface<ProjectDataObject>;
   uiSpecification: any;
   viewFieldsMap: Record<string, FieldSummary[]>;
@@ -72,7 +78,7 @@ interface ProcessedRecord {
  * @param projectId - The project identifier
  * @returns Context object with database, UI spec, field map, and spatial field status
  */
-async function initSpatialExportContext(
+export async function initSpatialExportContext(
   projectId: ProjectID
 ): Promise<SpatialExportContext> {
   const dataDb = await getDataDb(projectId);
@@ -91,9 +97,9 @@ async function initSpatialExportContext(
  *
  * @param projectId - The project identifier
  * @param context - The spatial export context
- * @returns An async iterator over notebook records
+ * @returns An async iterator over notebook records (HydratedDataRecord)
  */
-async function createRecordIterator(
+export async function createRecordIterator(
   projectId: ProjectID,
   context: SpatialExportContext
 ) {
@@ -811,6 +817,60 @@ export const streamNotebookRecordsAsGeoJSON = async (
     const next = await iterator.next();
     record = next.record;
     done = next.done;
+  }
+
+  writeGeoJSONFooter(res);
+  res.end();
+};
+
+/**
+ * Streams a single layer (viewset) as GeoJSON to the response, using
+ * permission-filtered hydrated records. Used by the ESRI feature service.
+ *
+ * @param context - Spatial export context from initSpatialExportContext
+ * @param formId - Viewset/form ID for this layer
+ * @param hydratedRecords - Async iterable of hydrated records (same formId)
+ * @param res - Writable stream for output
+ * @param options - Optional resultOffset and resultRecordCount for paging
+ */
+export const streamLayerAsGeoJSON = async (
+  context: SpatialExportContext,
+  formId: string,
+  hydratedRecords: AsyncIterable<HydratedDataRecord>,
+  res: NodeJS.WritableStream,
+  options: StreamLayerGeoJSONOptions = {}
+): Promise<void> => {
+  const {resultOffset = 0, resultRecordCount} = options;
+  const filenames: string[] = [];
+  writeGeoJSONHeader(res);
+
+  let featureIndex = 0;
+  let written = 0;
+  let isFirstFeature = true;
+  const limit = resultRecordCount ?? Infinity;
+
+  outer: for await (const record of hydratedRecords) {
+    if (record.type !== formId) continue;
+    const {baseProperties, geometries} = processRecordForSpatial(
+      record,
+      context.viewFieldsMap,
+      filenames
+    );
+    for (const geom of geometries) {
+      if (featureIndex < resultOffset) {
+        featureIndex++;
+        continue;
+      }
+      if (written >= limit) break outer;
+      const properties = buildFeatureProperties(
+        baseProperties,
+        geom.geometrySource
+      );
+      writeGeoJSONFeature(res, geom, properties, isFirstFeature);
+      isFirstFeature = false;
+      written++;
+      featureIndex++;
+    }
   }
 
   writeGeoJSONFooter(res);

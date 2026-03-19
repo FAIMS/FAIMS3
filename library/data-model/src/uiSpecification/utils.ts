@@ -375,6 +375,38 @@ export const isValidForSpatialExport = ({
 };
 
 /**
+ * Builds the ordered list of layers for an ESRI-compatible feature service.
+ * One layer per viewset that has at least one spatial field.
+ *
+ * @param uiSpecification - The UI specification containing viewsets
+ * @returns Array of { layerId, formId, name } with stable ordering by formId
+ */
+export interface FeatureServiceLayerDefinition {
+  layerId: number;
+  formId: string;
+  name: string;
+}
+
+export const buildFeatureServiceLayerIndex = ({
+  uiSpecification,
+}: {
+  uiSpecification: ProjectUIModel;
+}): FeatureServiceLayerDefinition[] => {
+  const viewFieldsMap = buildViewsetFieldSummaries({uiSpecification});
+  const viewsetIdsWithSpatial = Object.keys(viewFieldsMap)
+    .filter(
+      viewsetId =>
+        viewFieldsMap[viewsetId].some(f => f.isSpatial)
+    )
+    .sort();
+  return viewsetIdsWithSpatial.map((formId, index) => ({
+    layerId: index,
+    formId,
+    name: uiSpecification.viewsets[formId]?.label ?? formId,
+  }));
+};
+
+/**
  * For the given ui spec, viewset and current form values, considers conditional
  * rendering, visibility etc to provide a set of visible views (sections).
  * @returns  List of visible views/sections

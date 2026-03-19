@@ -12,6 +12,7 @@ FAIMS3 Developer Documentation
    markdown/Long-lived-tokens.md
    markdown/TokenManagement.md
    markdown/RecordsCRUDApi.md
+   markdown/FeatureServiceApi.md
    markdown/Configuration.md
    markdown/Android-Deployment.md
    markdown/Backup.md
