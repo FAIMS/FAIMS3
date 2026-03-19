@@ -27,6 +27,7 @@ import {
   MapStylesheetNameType,
   MapConfig,
 } from '@faims3/forms';
+import pluralize from 'pluralize';
 
 // need to define a local logError here since logging.tsx imports this file
 const logError = (err: any) => console.error(err);
@@ -273,6 +274,25 @@ function get_notebook_name_capitalized(): string {
   const notebook_name = get_notebook_name();
 
   return notebook_name.charAt(0).toUpperCase() + notebook_name.slice(1);
+}
+
+/**
+ * Retrieves the plural form of the notebook name.
+ *
+ * @returns {string} - The pluralised notebook name.
+ */
+function get_notebook_name_plural(): string {
+  return pluralize(get_notebook_name());
+}
+
+/**
+ * Retrieves the plural form of the notebook name with the first letter capitalised.
+ *
+ * @returns {string} - The capitalised pluralised notebook name.
+ */
+function get_notebook_name_plural_capitalized(): string {
+  const plural = get_notebook_name_plural();
+  return plural.charAt(0).toUpperCase() + plural.slice(1);
 }
 
 /**
@@ -695,6 +715,8 @@ export const BUGSNAG_KEY = get_bugsnag_key();
 export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
+export const NOTEBOOK_NAME_PLURAL = get_notebook_name_plural();
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED = get_notebook_name_plural_capitalized();
 export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();

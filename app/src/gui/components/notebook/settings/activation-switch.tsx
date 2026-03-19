@@ -3,7 +3,7 @@ import {Box, Button, Typography} from '@mui/material';
 import React from 'react';
 import {
   NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
 } from '../../../../buildconfig';
 import {selectActiveUser} from '../../../../context/slices/authSlice';
 import {
@@ -63,7 +63,7 @@ export default function NotebookActivationSwitch({
       </Button>
       <FaimsDialog
         open={open}
-        title={`${ACTIVATE_ACTIVE_VERB_LABEL} ${NOTEBOOK_NAME_CAPITALIZED}s`}
+        title={`${ACTIVATE_ACTIVE_VERB_LABEL} ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`}
         icon={<InfoIcon style={{fontSize: 40, color: '#1976d2'}} />}
         onClose={handleClose}
         onPrimaryAction={handleActivationClick}
