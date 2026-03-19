@@ -315,7 +315,7 @@ const fields: {[key: string]: FieldType} = {
       },
     },
     initialValue: '',
-    humanReadableName: 'Select Field',
+    humanReadableName: 'Single Dropdown Select',
     humanReadableDescription: 'Dropdown list allowing one selection',
     category: CategoryKey.CHOICE,
     showInChooser: true,
