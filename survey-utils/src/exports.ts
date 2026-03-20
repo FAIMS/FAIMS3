@@ -19,7 +19,6 @@ import {
   getLabel,
   getPrimaryHelperText,
   flattenOptionTree,
-  getFieldTypeLabel,
 } from './specParser';
 
 /** Extra space after headings (twips; 240 ≈ 12pt) */
@@ -333,11 +332,12 @@ function normalizeBlockContent(raw: string): string {
   return t;
 }
 
-function labelValueParagraph(label: string, value: string): Paragraph {
+/** `Label: value` with no character-level bold (used in detailed review body lines) */
+function plainLabelLineParagraph(label: string, value: string): Paragraph {
   return new Paragraph({
     spacing: { after: SPACING_AFTER_PARAGRAPH },
     children: [
-      new TextRun({ text: `${label}: `, bold: true }),
+      new TextRun({ text: `${label}: ` }),
       new TextRun({ text: value }),
     ],
   });
@@ -349,7 +349,7 @@ function monoBlockParagraphs(heading: string, body: string): Paragraph[] {
   const lines = plain.split('\n');
   return [
     new Paragraph({
-      children: [new TextRun({ text: heading, bold: true })],
+      children: [new TextRun({ text: `${heading}:` })],
       spacing: { after: 80 },
     }),
     ...lines.map(
@@ -378,7 +378,7 @@ function buildOptionsParagraphs(field: FieldSpec): Paragraph[] {
   if (el.options?.length) {
     out.push(
       new Paragraph({
-        children: [new TextRun({ text: 'Options', bold: true })],
+        children: [new TextRun({ text: 'Options:' })],
         spacing: { after: 80 },
       })
     );
@@ -392,7 +392,7 @@ function buildOptionsParagraphs(field: FieldSpec): Paragraph[] {
   } else if (el.optiontree?.length) {
     out.push(
       new Paragraph({
-        children: [new TextRun({ text: 'Options (tree)', bold: true })],
+        children: [new TextRun({ text: 'Options (tree):' })],
         spacing: { after: 80 },
       })
     );
@@ -414,34 +414,33 @@ function buildDetailedQuestionParagraphs(
 
   paras.push(
     new Paragraph({
-      text: titleLabel,
       heading: HeadingLevel.HEADING_4,
-      spacing: { before: 280, after: 80 },
-    })
-  );
-  paras.push(
-    new Paragraph({
-      spacing: { after: 120 },
+      spacing: { before: 280, after: 120 },
       children: [
-        new TextRun({ text: 'Field id: ', italics: true, color: '666666' }),
-        new TextRun({ text: fieldName, italics: true, color: '666666' }),
+        new TextRun({
+          text: titleLabel,
+          bold: true,
+          italics: false,
+        }),
       ],
     })
   );
 
-  paras.push(labelValueParagraph('Type of question', getFieldTypeLabel(field)));
-  paras.push(labelValueParagraph('Component', field['component-name'] ?? '—'));
-  paras.push(labelValueParagraph('Title', titleLabel));
-
   const helper = params ? getPrimaryHelperText(params) : '';
   if (helper.trim()) {
-    paras.push(labelValueParagraph('Helper text', helper));
+    paras.push(plainLabelLineParagraph('Helper text', helper));
   }
+
+  paras.push(...buildOptionsParagraphs(field));
 
   const adv = params?.advancedHelperText;
   if (typeof adv === 'string' && adv.trim()) {
     paras.push(...monoBlockParagraphs('Advanced helper text', normalizeBlockContent(adv)));
   }
+
+  paras.push(
+    plainLabelLineParagraph('Component', field['component-name'] ?? '—')
+  );
 
   const staticContent = params?.content;
   if (typeof staticContent === 'string' && staticContent.trim()) {
@@ -450,15 +449,15 @@ function buildDetailedQuestionParagraphs(
     );
   }
 
-  paras.push(...buildOptionsParagraphs(field));
-
   const relatedType =
     params && typeof params.related_type === 'string' ? params.related_type.trim() : '';
   if (relatedType) {
-    paras.push(labelValueParagraph('Related record target', relatedRecordTargetLine(spec, relatedType)));
+    paras.push(
+      plainLabelLineParagraph('Related record target', relatedRecordTargetLine(spec, relatedType))
+    );
     const relKind = params.relation_type;
     if (typeof relKind === 'string' && relKind.trim()) {
-      paras.push(labelValueParagraph('Relationship type', relKind));
+      paras.push(plainLabelLineParagraph('Relationship type', relKind));
     }
   }
 
