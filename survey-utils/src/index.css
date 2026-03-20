@@ -530,6 +530,59 @@ details[open] > .diff-summary::before {
   word-break: break-word;
 }
 
+.diff-question-detail {
+  border-top: 1px solid #eee;
+}
+
+.diff-select-options {
+  padding: 0.5rem 0.65rem 0.5rem 1.5rem;
+  font-size: 0.8rem;
+  background: #f8f9fc;
+  border-bottom: 1px solid #eee;
+}
+
+.diff-select-options-title {
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #333;
+}
+
+.diff-select-options-group {
+  margin-bottom: 0.45rem;
+}
+
+.diff-select-options-group ul {
+  margin: 0.2rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.diff-select-options-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #666;
+}
+
+.diff-select-removed .diff-select-options-label {
+  color: #b71c1c;
+}
+
+.diff-select-added .diff-select-options-label {
+  color: #2e7d32;
+}
+
+.diff-select-modified .diff-select-options-label {
+  color: #e65100;
+}
+
+.diff-select-order-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #555;
+  font-style: italic;
+}
+
 .diff-value-list {
   margin: 0;
   padding: 0.35rem 0.65rem 0.5rem 1.75rem;

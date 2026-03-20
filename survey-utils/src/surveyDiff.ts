@@ -7,6 +7,21 @@ import {
   normalizeViewIdList,
 } from './specParser';
 
+/**
+ * Some specs repeat the same field id multiple times in `view.fields`.
+ * The diff UI should show one row per logical question (unique id); order/set checks use the raw list.
+ */
+function dedupeOrderedFieldIds(fieldIds: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of fieldIds) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 /** Single property path change (generic JSON diff leaf or subtree) */
 export interface ValueChange {
   path: string;
@@ -16,6 +31,22 @@ export interface ValueChange {
 
 export type DiffStatus = 'unchanged' | 'added' | 'removed' | 'modified';
 
+/** One row in `ElementProps.options` for semantic diff display */
+export interface SelectOptionLine {
+  value: string;
+  label: string;
+  key?: string;
+}
+
+/** Rich diff for select / multi-select option lists (replaces noisy JSON path spam) */
+export interface SelectOptionsSemanticDiff {
+  added: SelectOptionLine[];
+  removed: SelectOptionLine[];
+  modified: Array<{ before: SelectOptionLine; after: SelectOptionLine }>;
+  /** Same options (by identity) but different order in the array */
+  orderChanged?: boolean;
+}
+
 export interface QuestionDiffNode {
   fieldId: string;
   displayLeft: string;
@@ -23,6 +54,8 @@ export interface QuestionDiffNode {
   status: DiffStatus;
   /** Present when status is `modified` */
   changes?: ValueChange[];
+  /** When `ElementProps.options` changed in a way we can summarise */
+  selectOptionsDiff?: SelectOptionsSemanticDiff;
 }
 
 export interface SectionDiffNode {
@@ -165,6 +198,175 @@ function viewMeta(view: ViewSpec | undefined): Record<string, unknown> {
   return omitKey(raw, 'fields');
 }
 
+const ELEMENT_PROPS_OPTIONS_PREFIX = 'field.component-parameters.ElementProps.options';
+
+function isElementPropsOptionsChangePath(path: string): boolean {
+  return (
+    path === ELEMENT_PROPS_OPTIONS_PREFIX ||
+    path.startsWith(`${ELEMENT_PROPS_OPTIONS_PREFIX}[`) ||
+    path.startsWith(`${ELEMENT_PROPS_OPTIONS_PREFIX}.`)
+  );
+}
+
+function fieldHasOptionsArrayProperty(field: unknown): boolean {
+  if (!field || typeof field !== 'object') return false;
+  const params = (field as Record<string, unknown>)['component-parameters'];
+  if (!params || typeof params !== 'object') return false;
+  const el = (params as Record<string, unknown>).ElementProps;
+  if (!el || typeof el !== 'object') return false;
+  return 'options' in el && Array.isArray((el as { options?: unknown }).options);
+}
+
+function getFieldOptionsArray(field: unknown): unknown[] {
+  if (!field || typeof field !== 'object') return [];
+  const params = (field as Record<string, unknown>)['component-parameters'];
+  if (!params || typeof params !== 'object') return [];
+  const el = (params as Record<string, unknown>).ElementProps;
+  if (!el || typeof el !== 'object') return [];
+  const opts = (el as Record<string, unknown>).options;
+  return Array.isArray(opts) ? opts : [];
+}
+
+interface ParsedOpt {
+  value: string;
+  label: string;
+  key?: string;
+  raw: Record<string, unknown>;
+}
+
+function parseOptionRow(raw: unknown): ParsedOpt | null {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const o = raw as Record<string, unknown>;
+  const value = o.value != null && String(o.value).trim() !== '' ? String(o.value) : '';
+  const label = o.label != null && String(o.label).trim() !== '' ? String(o.label) : '';
+  const key = typeof o.key === 'string' && o.key.trim() ? o.key.trim() : undefined;
+  return { value, label, key, raw: o };
+}
+
+function toSelectOptionLine(p: ParsedOpt): SelectOptionLine {
+  return { value: p.value, label: p.label, key: p.key };
+}
+
+function matchOptionIdentity(p: ParsedOpt): string {
+  if (p.key) return `k:${p.key}`;
+  if (p.value !== '') return `v:${p.value}`;
+  if (p.label !== '') return `l:${p.label}`;
+  return '';
+}
+
+function orderSlotIds(opts: ParsedOpt[]): string[] {
+  let anon = 0;
+  return opts.map(p => {
+    const m = matchOptionIdentity(p);
+    return m || `anon:${anon++}`;
+  });
+}
+
+/**
+ * Multiset match on stable id (key → value → label), plus positional pairing for “anonymous” rows.
+ */
+function diffSelectOptionsSemantics(leftRaw: unknown[], rightRaw: unknown[]): SelectOptionsSemanticDiff | null {
+  const L = leftRaw.map(parseOptionRow).filter((x): x is ParsedOpt => x !== null);
+  const R = rightRaw.map(parseOptionRow).filter((x): x is ParsedOpt => x !== null);
+
+  const Ltag: ParsedOpt[] = [];
+  const Lanon: ParsedOpt[] = [];
+  for (const p of L) {
+    if (matchOptionIdentity(p)) Ltag.push(p);
+    else Lanon.push(p);
+  }
+  const Rtag: ParsedOpt[] = [];
+  const Ranon: ParsedOpt[] = [];
+  for (const p of R) {
+    if (matchOptionIdentity(p)) Rtag.push(p);
+    else Ranon.push(p);
+  }
+
+  const queues = new Map<string, ParsedOpt[]>();
+  for (const p of Ltag) {
+    const id = matchOptionIdentity(p);
+    const arr = queues.get(id) ?? [];
+    arr.push(p);
+    queues.set(id, arr);
+  }
+
+  const added: SelectOptionLine[] = [];
+  const removed: SelectOptionLine[] = [];
+  const modified: Array<{ before: SelectOptionLine; after: SelectOptionLine }> = [];
+
+  for (const pr of Rtag) {
+    const id = matchOptionIdentity(pr);
+    const q = queues.get(id);
+    if (q && q.length > 0) {
+      const pl = q.shift()!;
+      if (!deepEqual(pl.raw, pr.raw)) {
+        modified.push({ before: toSelectOptionLine(pl), after: toSelectOptionLine(pr) });
+      }
+    } else {
+      added.push(toSelectOptionLine(pr));
+    }
+  }
+  for (const q of queues.values()) {
+    for (const pl of q) removed.push(toSelectOptionLine(pl));
+  }
+
+  const maxAnon = Math.max(Lanon.length, Ranon.length);
+  for (let idx = 0; idx < maxAnon; idx++) {
+    const pl = Lanon[idx];
+    const pr = Ranon[idx];
+    if (pl && !pr) removed.push(toSelectOptionLine(pl));
+    else if (!pl && pr) added.push(toSelectOptionLine(pr));
+    else if (pl && pr && !deepEqual(pl.raw, pr.raw)) {
+      modified.push({ before: toSelectOptionLine(pl), after: toSelectOptionLine(pr) });
+    }
+  }
+
+  const orderChanged =
+    added.length === 0 &&
+    removed.length === 0 &&
+    modified.length === 0 &&
+    L.length === R.length &&
+    L.length > 0 &&
+    JSON.stringify(orderSlotIds(L)) !== JSON.stringify(orderSlotIds(R));
+
+  if (added.length || removed.length || modified.length || orderChanged) {
+    return {
+      added,
+      removed,
+      modified,
+      orderChanged: orderChanged || undefined,
+    };
+  }
+  return null;
+}
+
+function refineQuestionChangesForSelectOptions(
+  fieldL: unknown,
+  fieldR: unknown,
+  changes: ValueChange[]
+): { changes: ValueChange[]; selectOptionsDiff?: SelectOptionsSemanticDiff } {
+  if (!fieldHasOptionsArrayProperty(fieldL) && !fieldHasOptionsArrayProperty(fieldR)) {
+    return { changes };
+  }
+  const semantic = diffSelectOptionsSemantics(getFieldOptionsArray(fieldL), getFieldOptionsArray(fieldR));
+  if (!semantic) {
+    return { changes };
+  }
+  return {
+    changes: changes.filter(c => !isElementPropsOptionsChangePath(c.path)),
+    selectOptionsDiff: semantic,
+  };
+}
+
+/** Single-line label for markdown / Word / UI lists */
+export function formatSelectOptionLine(o: SelectOptionLine): string {
+  const parts: string[] = [];
+  if (o.label) parts.push(o.label);
+  if (o.value && o.value !== o.label) parts.push(`value: ${o.value}`);
+  if (o.key) parts.push(`key: ${o.key}`);
+  return parts.join(' · ') || '—';
+}
+
 /**
  * Ordered form ids: left visible_types order first, then remaining left keys, then right-only (alphabetical).
  */
@@ -253,7 +455,7 @@ function buildAddedForm(
   const sections: SectionDiffNode[] = [];
   for (const sectionId of viewIds) {
     const view = viewsMap[sectionId];
-    const fields = view ? normalizeFieldNameList(view.fields) : [];
+    const fields = dedupeOrderedFieldIds(view ? normalizeFieldNameList(view.fields) : []);
     const questions: QuestionDiffNode[] = fields.map(fieldId => ({
       fieldId,
       displayLeft: '—',
@@ -288,7 +490,7 @@ function buildRemovedForm(
   const sections: SectionDiffNode[] = [];
   for (const sectionId of viewIds) {
     const view = viewsMap[sectionId];
-    const fields = view ? normalizeFieldNameList(view.fields) : [];
+    const fields = dedupeOrderedFieldIds(view ? normalizeFieldNameList(view.fields) : []);
     const questions: QuestionDiffNode[] = fields.map(fieldId => ({
       fieldId,
       displayLeft: fieldDisplay(spec, fieldId),
@@ -327,7 +529,7 @@ function diffSectionsForForm(
   for (const sectionId of idsL) {
     if (!inR.has(sectionId)) {
       const view = viewsL[sectionId];
-      const fields = view ? normalizeFieldNameList(view.fields) : [];
+      const fields = dedupeOrderedFieldIds(view ? normalizeFieldNameList(view.fields) : []);
       sections.push({
         sectionId,
         displayLeft: view?.label ?? sectionId,
@@ -346,12 +548,17 @@ function diffSectionsForForm(
     const vL = left.fviews?.[sectionId] ?? left.views?.[sectionId];
     const vR = right.fviews?.[sectionId] ?? right.views?.[sectionId];
     const metaChanges = diffValues(viewMeta(vL), viewMeta(vR), 'section');
-    const fL = normalizeFieldNameList(vL?.fields);
-    const fR = normalizeFieldNameList(vR?.fields);
-    const { sameSet, sameOrder } = sameSetOrder(fL, fR);
+    const fLRaw = normalizeFieldNameList(vL?.fields);
+    const fRRaw = normalizeFieldNameList(vR?.fields);
+    const { sameSet, sameOrder } = sameSetOrder(fLRaw, fRRaw);
     const fieldOrderChanged = sameSet && !sameOrder;
 
-    const questions = diffQuestionsForSection(left, right, fL, fR);
+    const questions = diffQuestionsForSection(
+      left,
+      right,
+      dedupeOrderedFieldIds(fLRaw),
+      dedupeOrderedFieldIds(fRRaw)
+    );
     const hasQ = questions.some(q => q.status !== 'unchanged');
     const status: DiffStatus =
       metaChanges.length > 0 || fieldOrderChanged || hasQ ? 'modified' : 'unchanged';
@@ -370,7 +577,7 @@ function diffSectionsForForm(
   for (const sectionId of idsR) {
     if (inL.has(sectionId)) continue;
     const view = viewsR[sectionId];
-    const fields = view ? normalizeFieldNameList(view.fields) : [];
+    const fields = dedupeOrderedFieldIds(view ? normalizeFieldNameList(view.fields) : []);
     sections.push({
       sectionId,
       displayLeft: '—',
@@ -410,14 +617,18 @@ function diffQuestionsForSection(
     }
     const specL = left.fields[fieldId];
     const specR = right.fields[fieldId];
-    const changes = diffValues(specL, specR, 'field');
-    const status: DiffStatus = changes.length > 0 ? 'modified' : 'unchanged';
+    const rawChanges = diffValues(specL, specR, 'field');
+    const { changes, selectOptionsDiff } = refineQuestionChangesForSelectOptions(specL, specR, rawChanges);
+    const hasOtherChanges = changes.length > 0;
+    const hasOptionSummary = Boolean(selectOptionsDiff);
+    const status: DiffStatus = hasOtherChanges || hasOptionSummary ? 'modified' : 'unchanged';
     questions.push({
       fieldId,
       displayLeft: fieldDisplay(left, fieldId),
       displayRight: fieldDisplay(right, fieldId),
       status,
-      changes: changes.length ? changes : undefined,
+      changes: hasOtherChanges ? changes : undefined,
+      selectOptionsDiff,
     });
   }
 
@@ -503,6 +714,32 @@ export function surveyDiffToMarkdown(result: SurveyDiffResult, title = 'Survey s
         lines.push('**Modified questions**', '');
         for (const q of modified) {
           lines.push(`- \`${q.fieldId}\` — ${q.displayLeft} / ${q.displayRight}`);
+          if (q.selectOptionsDiff) {
+            const d = q.selectOptionsDiff;
+            if (d.removed.length) {
+              lines.push('  - **Select options removed:**');
+              for (const o of d.removed) {
+                lines.push(`    - ${formatSelectOptionLine(o)}`);
+              }
+            }
+            if (d.added.length) {
+              lines.push('  - **Select options added:**');
+              for (const o of d.added) {
+                lines.push(`    - ${formatSelectOptionLine(o)}`);
+              }
+            }
+            if (d.modified.length) {
+              lines.push('  - **Select options modified:**');
+              for (const { before, after } of d.modified) {
+                lines.push(
+                  `    - ${formatSelectOptionLine(before)} → ${formatSelectOptionLine(after)}`
+                );
+              }
+            }
+            if (d.orderChanged) {
+              lines.push('  - **Select option order changed** (same options, different sequence)');
+            }
+          }
           if (q.changes?.length) {
             for (const c of q.changes.slice(0, 15)) {
               lines.push(`  - \`${c.path}\`: ${formatValueForDisplay(c.before)} → ${formatValueForDisplay(c.after)}`);

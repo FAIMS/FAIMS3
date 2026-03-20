@@ -4,9 +4,11 @@ import { parseSpecFile } from '../specParser';
 import {
   computeSurveyDiff,
   surveyDiffToMarkdown,
+  formatSelectOptionLine,
   type FormDiffNode,
   type QuestionDiffNode,
   type SectionDiffNode,
+  type SelectOptionsSemanticDiff,
   type SurveyDiffResult,
 } from '../surveyDiff';
 import { exportSurveyDiffMarkdownFile, exportSurveyDiffWord } from '../exports';
@@ -34,6 +36,54 @@ function sectionHasVisibleContent(sec: SectionDiffNode, hideUnchanged: boolean):
   if (!hideUnchanged) return true;
   if (sec.status !== 'unchanged') return true;
   return sec.questions.some(q => q.status !== 'unchanged');
+}
+
+function SelectOptionsDiffBlock({ d }: { d: SelectOptionsSemanticDiff }) {
+  return (
+    <div className="diff-select-options">
+      <div className="diff-select-options-title">Select options</div>
+      {d.removed.length > 0 ? (
+        <div className="diff-select-options-group diff-select-removed">
+          <span className="diff-select-options-label">Removed</span>
+          <ul>
+            {d.removed.map((o, i) => (
+              <li key={`r-${i}-${o.value}-${o.label}`}>{formatSelectOptionLine(o)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {d.added.length > 0 ? (
+        <div className="diff-select-options-group diff-select-added">
+          <span className="diff-select-options-label">Added</span>
+          <ul>
+            {d.added.map((o, i) => (
+              <li key={`a-${i}-${o.value}-${o.label}`}>{formatSelectOptionLine(o)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {d.modified.length > 0 ? (
+        <div className="diff-select-options-group diff-select-modified">
+          <span className="diff-select-options-label">Modified</span>
+          <ul>
+            {d.modified.map((m, i) => (
+              <li key={`m-${i}`}>
+                <span className="diff-value diff-value-before">{formatSelectOptionLine(m.before)}</span>
+                <span className="diff-arrow" aria-hidden>
+                  {' '}
+                  →{' '}
+                </span>
+                <span className="diff-value diff-value-after">{formatSelectOptionLine(m.after)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {d.orderChanged ? (
+        <p className="diff-select-order-note">Option order changed (same options, different sequence).</p>
+      ) : null}
+    </div>
+  );
 }
 
 function DiffValueChanges({ changes }: { changes: NonNullable<QuestionDiffNode['changes']> }) {
@@ -73,7 +123,12 @@ function QuestionRow({ q }: { q: QuestionDiffNode }) {
           <span className="diff-label">{q.displayRight}</span>
         </div>
       </div>
-      {q.status === 'modified' && q.changes?.length ? <DiffValueChanges changes={q.changes} /> : null}
+      {q.status === 'modified' && (q.selectOptionsDiff || q.changes?.length) ? (
+        <div className="diff-question-detail">
+          {q.selectOptionsDiff ? <SelectOptionsDiffBlock d={q.selectOptionsDiff} /> : null}
+          {q.changes?.length ? <DiffValueChanges changes={q.changes} /> : null}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -240,7 +295,7 @@ export function SurveyDiffPage() {
   const [rightName, setRightName] = useState<string | null>(null);
   const [leftError, setLeftError] = useState<string | null>(null);
   const [rightError, setRightError] = useState<string | null>(null);
-  const [hideUnchanged, setHideUnchanged] = useState(false);
+  const [hideUnchanged, setHideUnchanged] = useState(true);
   const [summaryOpen, setSummaryOpen] = useState(false);
 
   const leftParsed = useMemo(() => {

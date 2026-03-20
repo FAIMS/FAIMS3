@@ -13,7 +13,7 @@ import {
 } from 'docx';
 import type { SpecReviewRow, SpecExportData, SpecMetadata, UiSpecification, FieldSpec } from './types';
 import type { SurveyDiffResult } from './surveyDiff';
-import { surveyDiffToMarkdown } from './surveyDiff';
+import { surveyDiffToMarkdown, formatSelectOptionLine } from './surveyDiff';
 import {
   getOrderedViewsetIds,
   normalizeViewIdList,
@@ -709,6 +709,73 @@ export async function buildSurveyDiffWordDocument(
               spacing: { after: 60 },
             })
           );
+          if (q.selectOptionsDiff) {
+            const d = q.selectOptionsDiff;
+            const indent = 360;
+            if (d.removed.length) {
+              children.push(
+                new Paragraph({
+                  spacing: { after: 40 },
+                  indent: { left: indent },
+                  children: [new TextRun({ text: 'Select options removed:', bold: true })],
+                })
+              );
+              for (const o of d.removed) {
+                children.push(
+                  new Paragraph({
+                    spacing: { after: 30 },
+                    indent: { left: indent + 240 },
+                    text: `• ${formatSelectOptionLine(o)}`,
+                  })
+                );
+              }
+            }
+            if (d.added.length) {
+              children.push(
+                new Paragraph({
+                  spacing: { after: 40 },
+                  indent: { left: indent },
+                  children: [new TextRun({ text: 'Select options added:', bold: true })],
+                })
+              );
+              for (const o of d.added) {
+                children.push(
+                  new Paragraph({
+                    spacing: { after: 30 },
+                    indent: { left: indent + 240 },
+                    text: `• ${formatSelectOptionLine(o)}`,
+                  })
+                );
+              }
+            }
+            if (d.modified.length) {
+              children.push(
+                new Paragraph({
+                  spacing: { after: 40 },
+                  indent: { left: indent },
+                  children: [new TextRun({ text: 'Select options modified:', bold: true })],
+                })
+              );
+              for (const { before, after } of d.modified) {
+                children.push(
+                  new Paragraph({
+                    spacing: { after: 30 },
+                    indent: { left: indent + 240 },
+                    text: `${formatSelectOptionLine(before)} → ${formatSelectOptionLine(after)}`,
+                  })
+                );
+              }
+            }
+            if (d.orderChanged) {
+              children.push(
+                new Paragraph({
+                  spacing: { after: 40 },
+                  indent: { left: indent },
+                  text: 'Select option order changed (same options, different sequence).',
+                })
+              );
+            }
+          }
           if (q.changes?.length) {
             const slice = q.changes.slice(0, 20);
             for (const c of slice) {
