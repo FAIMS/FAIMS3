@@ -12,6 +12,8 @@ import {
   TextRun,
 } from 'docx';
 import type { SpecReviewRow, SpecExportData, SpecMetadata, UiSpecification, FieldSpec } from './types';
+import type { SurveyDiffResult } from './surveyDiff';
+import { surveyDiffToMarkdown } from './surveyDiff';
 import {
   getOrderedViewsetIds,
   normalizeViewIdList,
@@ -538,4 +540,233 @@ export async function exportWordDetailed(data: SpecExportData, spec: UiSpecifica
   const blob = await buildWordDetailedDocument(data, spec);
   const name = (data.metadata?.name ?? 'survey-spec') + '-review-detailed.docx';
   downloadBlob(blob, name.replace(/[^\w.-]/g, '_'));
+}
+
+function formatDiffValuePlain(v: unknown): string {
+  if (v === undefined) return '—';
+  if (v === null) return 'null';
+  if (typeof v === 'string') return v.length > 400 ? v.slice(0, 400) + '…' : v;
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
+}
+
+/** Word document: survey diff change summary (mirrors markdown structure) */
+export async function buildSurveyDiffWordDocument(
+  result: SurveyDiffResult,
+  title = 'Survey specification changes'
+): Promise<Blob> {
+  const children: Paragraph[] = [
+    new Paragraph({
+      text: title,
+      heading: HeadingLevel.HEADING_1,
+      spacing: { after: SPACING_AFTER_HEADING },
+    }),
+    new Paragraph({
+      spacing: { after: SPACING_AFTER_PARAGRAPH },
+      children: [new TextRun({ text: `Generated: ${result.generatedAt}`, italics: true })],
+    }),
+  ];
+
+  let anyChange = false;
+  for (const form of result.forms) {
+    if (form.status === 'unchanged') continue;
+    anyChange = true;
+
+    const formLine =
+      form.status === 'added'
+        ? `Form added: ${form.displayRight} (${form.formId})`
+        : form.status === 'removed'
+          ? `Form removed: ${form.displayLeft} (${form.formId})`
+          : `Form modified: ${form.displayLeft} → ${form.displayRight} (${form.formId})`;
+
+    children.push(
+      new Paragraph({
+        text: formLine,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: SPACING_AFTER_HEADING },
+      })
+    );
+
+    if (form.metaChanges?.length) {
+      children.push(
+        new Paragraph({
+          text: 'Viewset metadata',
+          heading: HeadingLevel.HEADING_3,
+          spacing: { after: 120 },
+        })
+      );
+      for (const c of form.metaChanges) {
+        children.push(
+          new Paragraph({
+            spacing: { after: SPACING_AFTER_PARAGRAPH },
+            children: [
+              new TextRun({ text: `${c.path}: `, bold: true }),
+              new TextRun({ text: `${formatDiffValuePlain(c.before)} → ${formatDiffValuePlain(c.after)}` }),
+            ],
+          })
+        );
+      }
+    }
+    if (form.sectionOrderChanged) {
+      children.push(
+        new Paragraph({
+          text: 'Section order changed within this form.',
+          spacing: { after: SPACING_AFTER_PARAGRAPH },
+        })
+      );
+    }
+
+    for (const sec of form.sections) {
+      if (sec.status === 'unchanged') continue;
+
+      const secLine =
+        sec.status === 'added'
+          ? `Section added: ${sec.displayRight} (${sec.sectionId})`
+          : sec.status === 'removed'
+            ? `Section removed: ${sec.displayLeft} (${sec.sectionId})`
+            : `Section: ${sec.displayLeft} / ${sec.displayRight} (${sec.sectionId})`;
+
+      children.push(
+        new Paragraph({
+          text: secLine,
+          heading: HeadingLevel.HEADING_3,
+          spacing: { before: 160, after: 120 },
+        })
+      );
+
+      if (sec.metaChanges?.length) {
+        for (const c of sec.metaChanges) {
+          children.push(
+            new Paragraph({
+              spacing: { after: SPACING_AFTER_PARAGRAPH },
+              children: [
+                new TextRun({ text: `${c.path}: `, bold: true }),
+                new TextRun({ text: `${formatDiffValuePlain(c.before)} → ${formatDiffValuePlain(c.after)}` }),
+              ],
+            })
+          );
+        }
+      }
+      if (sec.fieldOrderChanged) {
+        children.push(
+          new Paragraph({
+            text: 'Question order changed within this section.',
+            spacing: { after: SPACING_AFTER_PARAGRAPH },
+          })
+        );
+      }
+
+      const added = sec.questions.filter(q => q.status === 'added');
+      const removed = sec.questions.filter(q => q.status === 'removed');
+      const modified = sec.questions.filter(q => q.status === 'modified');
+
+      if (removed.length) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: 'Removed questions', bold: true })],
+            spacing: { after: 80 },
+          })
+        );
+        for (const q of removed) {
+          children.push(
+            new Paragraph({
+              text: `• ${q.fieldId} — ${q.displayLeft}`,
+              spacing: { after: 40 },
+            })
+          );
+        }
+      }
+      if (added.length) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: 'Added questions', bold: true })],
+            spacing: { after: 80 },
+          })
+        );
+        for (const q of added) {
+          children.push(
+            new Paragraph({
+              text: `• ${q.fieldId} — ${q.displayRight}`,
+              spacing: { after: 40 },
+            })
+          );
+        }
+      }
+      if (modified.length) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: 'Modified questions', bold: true })],
+            spacing: { after: 80 },
+          })
+        );
+        for (const q of modified) {
+          children.push(
+            new Paragraph({
+              text: `${q.fieldId} — ${q.displayLeft} / ${q.displayRight}`,
+              spacing: { after: 60 },
+            })
+          );
+          if (q.changes?.length) {
+            const slice = q.changes.slice(0, 20);
+            for (const c of slice) {
+              children.push(
+                new Paragraph({
+                  spacing: { after: 40 },
+                  indent: { left: 360 },
+                  children: [
+                    new TextRun({ text: `${c.path}: `, bold: true }),
+                    new TextRun({
+                      text: `${formatDiffValuePlain(c.before)} → ${formatDiffValuePlain(c.after)}`,
+                    }),
+                  ],
+                })
+              );
+            }
+            if (q.changes.length > 20) {
+              children.push(
+                new Paragraph({
+                  spacing: { after: 40 },
+                  indent: { left: 360 },
+                  children: [
+                    new TextRun({
+                      text: `…and ${q.changes.length - 20} more paths`,
+                      italics: true,
+                    }),
+                  ],
+                })
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (!anyChange) {
+    children.push(
+      new Paragraph({
+        text: 'No structural or field-level differences detected.',
+        spacing: { after: SPACING_AFTER_PARAGRAPH },
+      })
+    );
+  }
+
+  const doc = new Document({
+    sections: [{ properties: {}, children }],
+  });
+  return Packer.toBlob(doc);
+}
+
+export async function exportSurveyDiffWord(result: SurveyDiffResult, filenameBase = 'survey-diff') {
+  const blob = await buildSurveyDiffWordDocument(result);
+  downloadBlob(blob, `${filenameBase.replace(/[^\w.-]/g, '_')}-summary.docx`);
+}
+
+export function exportSurveyDiffMarkdownFile(result: SurveyDiffResult, filenameBase = 'survey-diff') {
+  const md = surveyDiffToMarkdown(result);
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  downloadBlob(blob, `${filenameBase.replace(/[^\w.-]/g, '_')}-summary.md`);
 }
