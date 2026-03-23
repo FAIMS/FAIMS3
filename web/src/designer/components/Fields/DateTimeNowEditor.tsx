@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
-import {FieldType} from '../../state/initial';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
 
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
@@ -30,8 +30,9 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const dispatch = useAppDispatch();
 
   const updateIsAutoPick = (value: boolean) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].is_auto_pick = value;
+    const newField = withUpdatedField(field, nextField => {
+      nextField['component-parameters'].is_auto_pick = value;
+    });
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},

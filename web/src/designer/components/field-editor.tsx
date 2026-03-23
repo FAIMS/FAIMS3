@@ -21,7 +21,6 @@ import LockRounded from '@mui/icons-material/LockRounded';
 import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import {MultipleTextFieldEditor} from './Fields/MultipleTextField';
 
 import DuplicateIcon from '@mui/icons-material/ContentCopy';
 
@@ -52,21 +51,7 @@ import {
   findInvalidConditionReferences,
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
-import {AdvancedSelectEditor} from './Fields/AdvancedSelectEditor';
-import {BaseFieldEditor} from './Fields/BaseFieldEditor';
-import {BasicAutoIncrementerEditor} from './Fields/BasicAutoIncrementer';
-import {ControlledNumberFieldEditor} from './Fields/ControlledNumberFieldEditor';
-import {DateTimeNowEditor} from './Fields/DateTimeNowEditor';
-import {MapFormFieldEditor} from './Fields/MapFormFieldEditor';
-import {NumberFieldEditor} from './Fields/NumberFieldEditor';
-import {TakePointFieldEditor} from './Fields/TakePointFieldEditor';
-import {OptionsEditor} from './Fields/OptionsEditor';
-import {RelatedRecordEditor} from './Fields/RelatedRecordEditor';
-import {RichTextEditor} from './Fields/RichTextEditor';
-import {TakePhotoFieldEditor} from './Fields/TakePhotoField';
-import {TemplatedStringFieldEditor} from './Fields/TemplatedStringFieldEditor';
-import {TextFieldEditor} from './Fields/TextFieldEditor';
-import {AddressFieldEditor} from './Fields/AddressFieldEditor';
+import {renderFieldEditor} from '../features/design/field-editor-registry';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -715,68 +700,10 @@ export const FieldEditor = ({
             </Grid>
           )}
 
-          {(fieldComponent === 'MultipleTextField' && (
-            <MultipleTextFieldEditor fieldName={fieldName} />
-          )) ||
-            (fieldComponent === 'TakePhoto' && (
-              <TakePhotoFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'TextField' && (
-              <TextFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'DateTimeNow' && (
-              <DateTimeNowEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'Select' && (
-              <OptionsEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'MultiSelect' && (
-              <OptionsEditor
-                fieldName={fieldName}
-                showExpandedChecklist={true}
-                showExclusiveOptions={true}
-              />
-            )) ||
-            (fieldComponent === 'AdvancedSelect' && (
-              <AdvancedSelectEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RadioGroup' && (
-              <OptionsEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'MapFormField' && (
-              <MapFormFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'AddressField' && (
-              <AddressFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'TakePoint' && (
-              <TakePointFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'NumberField' && (
-              <NumberFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'ControlledNumber' && (
-              <ControlledNumberFieldEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RichText' && (
-              <RichTextEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'RelatedRecordSelector' && (
-              <RelatedRecordEditor fieldName={fieldName} />
-            )) ||
-            (fieldComponent === 'BasicAutoIncrementer' && (
-              <BasicAutoIncrementerEditor
-                fieldName={fieldName}
-                viewId={viewId}
-              />
-            )) ||
-            (fieldComponent === 'TemplatedStringField' && (
-              <TemplatedStringFieldEditor
-                fieldName={fieldName}
-                viewId={viewId}
-                viewsetId={viewSetId}
-              />
-            )) || <BaseFieldEditor fieldName={fieldName} />}
+          {renderFieldEditor({
+            fieldComponent,
+            context: {fieldName, viewId, viewSetId},
+          })}
         </div>
       </AccordionDetails>
     </Accordion>

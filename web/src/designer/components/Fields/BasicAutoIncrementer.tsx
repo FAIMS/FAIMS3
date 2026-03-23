@@ -1,7 +1,7 @@
 import {Typography} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 type PropType = {
@@ -18,10 +18,10 @@ export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
   const digits = field['component-parameters'].num_digits || 4;
 
   const updateDigits = (value: number) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
-    // ensure that the form_id in the field is set correctly
-    newField['component-parameters'].form_id = viewId;
-    newField['component-parameters'].num_digits = value;
+    const newField = withUpdatedField(field, nextField => {
+      nextField['component-parameters'].form_id = viewId;
+      nextField['component-parameters'].num_digits = value;
+    });
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},

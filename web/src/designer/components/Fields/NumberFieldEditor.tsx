@@ -7,7 +7,7 @@ import {
   RadioGroup,
 } from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
@@ -16,13 +16,6 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
   );
   const dispatch = useAppDispatch();
 
-  const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
-  };
-
   const numberType =
     (field['component-parameters'].numberType as 'integer' | 'floating') ||
     'integer';
@@ -30,11 +23,15 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
   const handleNumberTypeChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].numberType = event.target.value as
-      | 'integer'
-      | 'floating';
-    updateField(fieldName, newField);
+    const newField = withUpdatedField(field, nextField => {
+      nextField['component-parameters'].numberType = event.target.value as
+        | 'integer'
+        | 'floating';
+    });
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
   };
 
   return (

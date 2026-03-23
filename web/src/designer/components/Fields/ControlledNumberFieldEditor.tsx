@@ -1,6 +1,6 @@
 import {Box, FormHelperText, TextField} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 export const ControlledNumberFieldEditor = ({
@@ -13,46 +13,43 @@ export const ControlledNumberFieldEditor = ({
   );
   const dispatch = useAppDispatch();
 
-  const updateField = (fieldName: string, newField: FieldType) => {
+  const min = field['component-parameters'].min as number | undefined;
+  const max = field['component-parameters'].max as number | undefined;
+
+  const handleMinChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newField = withUpdatedField(field, nextField => {
+      const value = event.target.value;
+      if (value === '') {
+        delete nextField['component-parameters'].min;
+      } else {
+        const parsed = parseInt(value, 10);
+        if (!isNaN(parsed)) {
+          nextField['component-parameters'].min = parsed;
+        }
+      }
+    });
     dispatch({
       type: 'ui-specification/fieldUpdated',
       payload: {fieldName, newField},
     });
   };
 
-  const min = field['component-parameters'].min as number | undefined;
-  const max = field['component-parameters'].max as number | undefined;
-
-  const handleMinChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const value = event.target.value;
-
-    if (value === '') {
-      delete newField['component-parameters'].min;
-    } else {
-      const parsed = parseInt(value, 10);
-      if (!isNaN(parsed)) {
-        newField['component-parameters'].min = parsed;
-      }
-    }
-
-    updateField(fieldName, newField);
-  };
-
   const handleMaxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const value = event.target.value;
-
-    if (value === '') {
-      delete newField['component-parameters'].max;
-    } else {
-      const parsed = parseInt(value, 10);
-      if (!isNaN(parsed)) {
-        newField['component-parameters'].max = parsed;
+    const newField = withUpdatedField(field, nextField => {
+      const value = event.target.value;
+      if (value === '') {
+        delete nextField['component-parameters'].max;
+      } else {
+        const parsed = parseInt(value, 10);
+        if (!isNaN(parsed)) {
+          nextField['component-parameters'].max = parsed;
+        }
       }
-    }
-
-    updateField(fieldName, newField);
+    });
+    dispatch({
+      type: 'ui-specification/fieldUpdated',
+      payload: {fieldName, newField},
+    });
   };
 
   return (

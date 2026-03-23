@@ -41,10 +41,7 @@ import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
 import {ConditionType} from '../condition/types';
 
-import {
-  getViewIDForField,
-  slugify,
-} from '@/designer/state/helpers/uiSpec-helpers';
+import {getViewIDForField, slugify} from '../../state/helpers/uiSpec-helpers';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import SpeechSettingsEditor from './SpeechSettingsEditor';

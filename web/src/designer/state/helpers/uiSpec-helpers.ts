@@ -1,4 +1,4 @@
-import {ConditionType} from '@/designer/components/condition/types';
+import {ConditionType} from '../../components/condition/types';
 import {NotebookUISpec} from '../initial';
 
 /**
