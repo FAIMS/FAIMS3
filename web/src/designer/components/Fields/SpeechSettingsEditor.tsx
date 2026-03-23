@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 
 /**
  * Speech settings stored in component-parameters
@@ -95,10 +96,7 @@ export const SpeechSettingsEditor = ({
     value: boolean
   ) => {
     const newField = updateSpeechSettings(field, {[setting]: value});
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

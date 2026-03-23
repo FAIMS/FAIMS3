@@ -22,6 +22,7 @@ import {
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
@@ -33,10 +34,7 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
     const newField = withUpdatedField(field, nextField => {
       nextField['component-parameters'].is_auto_pick = value;
     });
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

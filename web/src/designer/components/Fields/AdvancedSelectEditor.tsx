@@ -32,6 +32,7 @@ import {
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 
 import {useState} from 'react';
 import DebouncedTextField from '../debounced-text-field';
@@ -76,10 +77,7 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
         newState.optionTree;
     }
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const updateProperty = (prop: string, value: string | OptionTreeType[]) => {

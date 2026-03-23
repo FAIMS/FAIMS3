@@ -169,7 +169,7 @@ export const sectionReducers = {
   },
   sectionConditionChanged: (
     state: NotebookUISpec,
-    action: PayloadAction<{viewId: string; condition: ConditionType}>
+    action: PayloadAction<{viewId: string; condition: ConditionType | null}>
   ) => {
     const {viewId, condition} = action.payload;
     if (viewId in state.fviews) {

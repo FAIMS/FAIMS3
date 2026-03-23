@@ -18,6 +18,7 @@ import {useRef} from 'react';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import {FieldType} from '../../state/initial';
 import {MdxEditor} from '../mdx-editor';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 
 export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
@@ -29,10 +30,7 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const ref = useRef<MDXEditorMethods>(null);
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const state = {

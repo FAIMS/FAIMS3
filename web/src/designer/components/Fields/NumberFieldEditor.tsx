@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
@@ -28,10 +29,7 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
         | 'integer'
         | 'floating';
     });
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

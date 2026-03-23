@@ -21,6 +21,7 @@ import {useEffect, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
+import {fieldAdded} from '../state/uiSpec-reducer';
 
 type Props = {
   viewSetId: string;
@@ -65,16 +66,15 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   };
 
   const handleDialogConfirm = (fieldName: string, fieldType: string) => {
-    dispatch({
-      type: 'ui-specification/fieldAdded',
-      payload: {
+    dispatch(
+      fieldAdded({
         fieldName,
         fieldType,
         viewId,
         viewSetId,
         addAfter: addAfterField,
-      },
-    });
+      })
+    );
     setDialogOpen(false);
   };
 

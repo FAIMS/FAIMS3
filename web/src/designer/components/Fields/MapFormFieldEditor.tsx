@@ -27,6 +27,7 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 
 type FieldState = {
   featureType: string;
@@ -49,10 +50,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
     field['component-parameters'].buttonLabelText ?? '';
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const state: FieldState = {

@@ -2,6 +2,7 @@ import {Typography} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 type PropType = {
@@ -22,10 +23,7 @@ export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
       nextField['component-parameters'].form_id = viewId;
       nextField['component-parameters'].num_digits = value;
     });
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

@@ -52,6 +52,13 @@ import {
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
+import {
+  fieldDeleted,
+  fieldDuplicated,
+  fieldMoved,
+  fieldMovedToSection,
+  toggleFieldHidden,
+} from '../state/uiSpec-reducer';
 
 type FieldEditorProps = {
   fieldName: string;
@@ -127,10 +134,7 @@ export const FieldEditor = ({
       setConditionsAffected(usage);
       setDeleteWarningOpen(true);
     } else {
-      dispatch({
-        type: 'ui-specification/fieldDeleted',
-        payload: {fieldName, viewId},
-      });
+      dispatch(fieldDeleted({fieldName, viewId}));
     }
   };
   const protection =
@@ -163,18 +167,12 @@ export const FieldEditor = ({
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldMoved',
-      payload: {fieldName, viewId, direction: 'down'},
-    });
+    dispatch(fieldMoved({fieldName, viewId, direction: 'down'}));
   };
 
   const moveFieldUp = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/fieldMoved',
-      payload: {fieldName, viewId, direction: 'up'},
-    });
+    dispatch(fieldMoved({fieldName, viewId, direction: 'up'}));
   };
 
   const addFieldBelow = (event: React.SyntheticEvent) => {
@@ -196,14 +194,13 @@ export const FieldEditor = ({
 
   const duplicateField = () => {
     if (duplicateTitle.trim()) {
-      dispatch({
-        type: 'ui-specification/fieldDuplicated',
-        payload: {
+      dispatch(
+        fieldDuplicated({
           originalFieldName: fieldName,
           newFieldName: duplicateTitle.trim(),
           viewId,
-        },
-      });
+        })
+      );
       handleCloseDuplicateDialog();
     }
   };
@@ -241,14 +238,13 @@ export const FieldEditor = ({
         return;
       }
 
-      dispatch({
-        type: 'ui-specification/fieldMovedToSection',
-        payload: {
+      dispatch(
+        fieldMovedToSection({
           fieldName,
           sourceViewId: viewId,
           targetViewId,
-        },
-      });
+        })
+      );
       moveFieldCallback(targetViewId);
       handleCloseMoveDialog();
     }
@@ -298,10 +294,7 @@ export const FieldEditor = ({
 
   const toggleHiddenState = (event: React.SyntheticEvent) => {
     event.stopPropagation();
-    dispatch({
-      type: 'ui-specification/toggleFieldHidden',
-      payload: {fieldName, hidden: !isHidden},
-    });
+    dispatch(toggleFieldHidden({fieldName, hidden: !isHidden}));
   };
 
   const requiredBlocksHiding =

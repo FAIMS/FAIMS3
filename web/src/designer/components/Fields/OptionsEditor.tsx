@@ -740,10 +740,7 @@ export const OptionsEditor = ({
       ...(newField['component-parameters'].ElementProps ?? {}),
       expandedChecklist: newValue,
     };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -760,10 +757,7 @@ export const OptionsEditor = ({
       otherOptionPosition: newValue ? options.length : undefined,
     };
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -775,10 +769,7 @@ export const OptionsEditor = ({
       ...(newField['component-parameters'].ElementProps ?? {}),
       otherOptionPosition: newPosition,
     };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**

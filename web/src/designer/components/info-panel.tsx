@@ -30,6 +30,7 @@ import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 
 import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
+import {propertyUpdated} from '../state/metadata-reducer';
 
 export const InfoPanel = () => {
   const metadata = useAppSelector(state => state.notebook.metadata);
@@ -78,7 +79,7 @@ export const InfoPanel = () => {
   }, [metadata]);
 
   const setProp = (property: string, value: string) => {
-    dispatch({type: 'metadata/propertyUpdated', payload: {property, value}});
+    dispatch(propertyUpdated({property, value}));
   };
 
   const updateMetadataFieldName = (

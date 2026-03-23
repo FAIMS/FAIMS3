@@ -45,6 +45,11 @@ import {getViewIDForField, slugify} from '../../state/helpers/uiSpec-helpers';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import SpeechSettingsEditor from './SpeechSettingsEditor';
+import {
+  fieldConditionChanged,
+  fieldRenamed,
+  fieldUpdated,
+} from '../../state/uiSpec-reducer';
 
 export const SPEECH_ENABLED_FIELDS = [
   'faims-custom::FAIMSTextField',
@@ -103,14 +108,13 @@ export const BaseFieldEditor = ({
     debounce((newFieldName: string) => {
       const viewId = getViewIDForField(uiSpec, fieldName);
       if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
-        dispatch({
-          type: 'ui-specification/fieldRenamed',
-          payload: {
+        dispatch(
+          fieldRenamed({
             viewId,
             fieldName,
             newFieldName: newFieldName.trim(),
-          },
-        });
+          })
+        );
       }
     }, 500),
     [dispatch, uiSpec, fieldName]
@@ -127,10 +131,7 @@ export const BaseFieldEditor = ({
     const viewId = getViewIDForField(uiSpec, fieldName);
     if (viewId && desired && desired !== fieldName) {
       setLocalFieldName(desired);
-      dispatch({
-        type: 'ui-specification/fieldRenamed',
-        payload: {viewId, fieldName, newFieldName: desired},
-      });
+      dispatch(fieldRenamed({viewId, fieldName, newFieldName: desired}));
     }
   };
 
@@ -156,10 +157,7 @@ export const BaseFieldEditor = ({
   };
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const cParams = field['component-parameters'];
@@ -237,10 +235,7 @@ export const BaseFieldEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    dispatch({
-      type: 'ui-specification/fieldConditionChanged',
-      payload: {fieldName, condition},
-    });
+    dispatch(fieldConditionChanged({fieldName, condition}));
   };
 
   return (

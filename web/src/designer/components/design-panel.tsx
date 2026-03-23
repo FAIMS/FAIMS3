@@ -26,6 +26,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {shallowEqual} from 'react-redux';
 import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
+import {viewSetAdded, viewSetMoved} from '../state/uiSpec-reducer';
 
 export const DesignPanel = () => {
   const navigate = useNavigate();
@@ -146,10 +147,7 @@ export const DesignPanel = () => {
   const addNewForm = () => {
     setAlertMessage('');
     try {
-      dispatch({
-        type: 'ui-specification/viewSetAdded',
-        payload: {formName: newFormName},
-      });
+      dispatch(viewSetAdded({formName: newFormName}));
       setIndexAndNavigate(`${visibleTypes.length}`);
       setAlertMessage('');
     } catch (error: unknown) {
@@ -159,16 +157,10 @@ export const DesignPanel = () => {
 
   const moveForm = (viewSetID: string, moveDirection: 'left' | 'right') => {
     if (moveDirection === 'left') {
-      dispatch({
-        type: 'ui-specification/viewSetMoved',
-        payload: {viewSetId: viewSetID, direction: 'left'},
-      });
+      dispatch(viewSetMoved({viewSetId: viewSetID, direction: 'left'}));
       setIndexAndNavigate(`${parseInt(tabIndex) - 1}`);
     } else {
-      dispatch({
-        type: 'ui-specification/viewSetMoved',
-        payload: {viewSetId: viewSetID, direction: 'right'},
-      });
+      dispatch(viewSetMoved({viewSetId: viewSetID, direction: 'right'}));
       setIndexAndNavigate(`${parseInt(tabIndex) + 1}`);
     }
   };

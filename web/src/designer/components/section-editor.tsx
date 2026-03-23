@@ -40,6 +40,10 @@ import {
 import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {sectionDuplicated} from '../state/uiSpec-reducer';
+import {
+  sectionConditionChanged,
+  sectionRenamed,
+} from '../state/uiSpec-reducer';
 
 import {ConditionModal} from './condition/ConditionModal';
 import {ConditionTranslation} from './condition/ConditionTranslation';
@@ -211,10 +215,7 @@ export const SectionEditor = ({
   };
 
   const updateSectionLabel = (label: string) => {
-    dispatch({
-      type: 'ui-specification/sectionRenamed',
-      payload: {viewId, label},
-    });
+    dispatch(sectionRenamed({viewId, label}));
   };
 
   const addNewSection = () => {
@@ -238,10 +239,7 @@ export const SectionEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    dispatch({
-      type: 'ui-specification/sectionConditionChanged',
-      payload: {viewId, condition},
-    });
+    dispatch(sectionConditionChanged({viewId, condition}));
   };
 
   const duplicateSection = () => {

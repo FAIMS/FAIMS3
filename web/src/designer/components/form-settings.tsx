@@ -24,6 +24,12 @@ import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import DebouncedTextField from './debounced-text-field';
+import {
+  viewSetHridUpdated,
+  viewSetLayoutUpdated,
+  viewSetPublishButtonBehaviourUpdated,
+  viewSetSummaryFieldsUpdated,
+} from '../state/uiSpec-reducer';
 
 type ViewSetType = {
   views: string[];
@@ -102,13 +108,12 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     const newValue = event.target.value;
     setSelectedPublishBehaviour(newValue);
 
-    dispatch({
-      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
-      payload: {
+    dispatch(
+      viewSetPublishButtonBehaviourUpdated({
         viewSetId,
         publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
-      },
-    });
+      })
+    );
   };
 
   /**
@@ -162,10 +167,12 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     _: any,
     newValue: Array<{label: string; value: string}>
   ) => {
-    dispatch({
-      type: 'ui-specification/viewSetSummaryFieldsUpdated',
-      payload: {viewSetId, fields: newValue.map(v => v.value)},
-    });
+    dispatch(
+      viewSetSummaryFieldsUpdated({
+        viewSetId,
+        fields: newValue.map(v => v.value),
+      })
+    );
   };
 
   /**
@@ -175,10 +182,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
     _: any,
     newValue: {label: string; value: string} | null
   ) => {
-    dispatch({
-      type: 'ui-specification/viewSetHridUpdated',
-      payload: {viewSetId, hridField: newValue?.value},
-    });
+    dispatch(viewSetHridUpdated({viewSetId, hridField: newValue?.value}));
   };
 
   const selectedFields = (viewSet.summary_fields || [])
@@ -255,13 +259,15 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               fullWidth
               value={viewSet.layout || 'tabs'}
               onChange={event =>
-                dispatch({
-                  type: 'ui-specification/viewSetLayoutUpdated',
-                  payload: {
+                dispatch(
+                  viewSetLayoutUpdated({
                     viewSetId,
-                    layout: event.target.value as 'inline' | 'tabs' | undefined,
-                  },
-                })
+                    layout: event.target.value as
+                      | 'inline'
+                      | 'tabs'
+                      | undefined,
+                  })
+                )
               }
             >
               <MenuItem value="tabs">Tabs</MenuItem>

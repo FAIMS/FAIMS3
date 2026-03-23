@@ -16,6 +16,7 @@ import {Card, Grid} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 export const MultipleTextFieldEditor = ({fieldName}: {fieldName: string}) => {
@@ -30,10 +31,7 @@ export const MultipleTextFieldEditor = ({fieldName}: {fieldName: string}) => {
     const newField = withUpdatedField(field, nextField => {
       nextField['component-parameters'].InputProps = {rows: value};
     });
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

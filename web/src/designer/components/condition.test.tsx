@@ -24,7 +24,8 @@ import globalTheme from '../theme/index';
 import {ReactNode} from 'react';
 import {migrateNotebook} from '@faims3/data-model';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
-import {AppState} from '../state/initial';
+import {AppState, NotebookUISpec} from '../state/initial';
+import {loaded} from '../state/uiSpec-reducer';
 
 const WithProviders = ({
   children,
@@ -42,10 +43,7 @@ describe('ConditionControl', () => {
   test('render and interact with a field condition', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
     const condition = {
       operator: 'equal',
       field: 'New-Text-Field',
@@ -107,10 +105,7 @@ describe('ConditionControl', () => {
   test('field condition omits field in select', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
 
     const theField = 'New-Text-Field';
     const onChangeFn = vi.fn();
@@ -136,10 +131,7 @@ describe('ConditionControl', () => {
   test('field condition omits all view fields in select', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
 
     const theView = 'Primary-New-Section';
     const onChangeFn = vi.fn();
@@ -167,10 +159,7 @@ describe('ConditionControl', () => {
   test('make a boolean condition from a field', () => {
     const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
 
     const condition = {
       operator: 'equal',

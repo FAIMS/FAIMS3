@@ -24,6 +24,7 @@ import {
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 
 type AddressFieldConfig = {
   enableAutoSuggestion: boolean;
@@ -48,10 +49,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
       newState.enableAutoSuggestion;
     newField['component-parameters'].allowFullAddressManualEntry =
       newState.allowFullAddressManualEntry;
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const updateProperty = (prop: keyof AddressFieldConfig, value: boolean) => {

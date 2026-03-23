@@ -5,6 +5,7 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {ComponentParameters, FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
+import {fieldUpdated} from '../../state/uiSpec-reducer';
 
 type PropType = {
   fieldName: string;
@@ -93,10 +94,7 @@ export const TemplatedStringFieldEditor = ({
     };
     newField['component-parameters'].helperText = newState.helperText;
     newField['component-parameters'].template = newState.template;
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const updateProperty = (prop: string, value: string | boolean) => {
