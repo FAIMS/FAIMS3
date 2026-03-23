@@ -26,7 +26,7 @@ The repository currently contains both active and legacy designer flows.
   - `components/dialogs/designer-dialog.tsx`
   - project/template actions integration
 
-- **Legacy/standalone artifacts under review**
+- **Legacy/standalone artifacts retired in this refactor**
   - `App.tsx`
   - `state/store.ts`
   - `components/notebook-loader.tsx`

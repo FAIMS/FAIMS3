@@ -17,14 +17,22 @@ import {act, fireEvent, render, screen} from '@testing-library/react';
 import {ConditionControl} from './condition/ConditionControl';
 import {ConditionType} from './condition/types';
 import {sampleNotebook} from '../test-notebook';
-import {store} from '../state/store';
+import {createDesignerStore} from '../createDesignerStore';
 import {Provider} from 'react-redux';
 import {ThemeProvider} from '@mui/material/styles';
 import globalTheme from '../theme/index';
 import {ReactNode} from 'react';
 import {migrateNotebook} from '@faims3/data-model';
+import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
+import {AppState} from '../state/initial';
 
-const WithProviders = ({children}: {children: ReactNode}) => (
+const WithProviders = ({
+  children,
+  store,
+}: {
+  children: ReactNode;
+  store: ToolkitStore<AppState>;
+}) => (
   <ThemeProvider theme={globalTheme}>
     <Provider store={store}>{children}</Provider>
   </ThemeProvider>
@@ -32,6 +40,7 @@ const WithProviders = ({children}: {children: ReactNode}) => (
 
 describe('ConditionControl', () => {
   test('render and interact with a field condition', () => {
+    const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
@@ -45,7 +54,7 @@ describe('ConditionControl', () => {
 
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl initial={condition} onChange={onChangeFn} />
       </WithProviders>
     );
@@ -96,6 +105,7 @@ describe('ConditionControl', () => {
   });
 
   test('field condition omits field in select', () => {
+    const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
@@ -105,7 +115,7 @@ describe('ConditionControl', () => {
     const theField = 'New-Text-Field';
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl onChange={onChangeFn} field={theField} />
       </WithProviders>
     );
@@ -124,6 +134,7 @@ describe('ConditionControl', () => {
   });
 
   test('field condition omits all view fields in select', () => {
+    const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
@@ -133,7 +144,7 @@ describe('ConditionControl', () => {
     const theView = 'Primary-New-Section';
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl onChange={onChangeFn} view={theView} />
       </WithProviders>
     );
@@ -154,6 +165,7 @@ describe('ConditionControl', () => {
   });
 
   test('make a boolean condition from a field', () => {
+    const store = createDesignerStore();
     const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
@@ -168,7 +180,7 @@ describe('ConditionControl', () => {
 
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl initial={condition} onChange={onChangeFn} />
       </WithProviders>
     );
