@@ -47,8 +47,8 @@ import ListItemText from '@mui/material/ListItemText';
 import React, {useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {
-  NOTEBOOK_NAME,
-  NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
   OFFLINE_MAPS,
 } from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
@@ -116,7 +116,7 @@ function getNestedProjects(pouchProjectList: Project[]) {
     });
   });
   return {
-    title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+    title: `${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
     icon: <AccountTree />,
     nested: projectListItems,
     to: ROUTES.NOTEBOOK_LIST_ROUTE,
@@ -146,7 +146,7 @@ export default function MainAppBar() {
     },
     projectList === null
       ? {
-          title: `Loading ${NOTEBOOK_NAME}s...`,
+          title: `Loading ${NOTEBOOK_NAME_PLURAL}...`,
           icon: <AccountTree />,
           to: '/',
           disabled: true,
@@ -154,7 +154,7 @@ export default function MainAppBar() {
       : isAuthenticated
         ? getNestedProjects(projectList)
         : {
-            title: `Active ${NOTEBOOK_NAME_CAPITALIZED}s`,
+            title: `Active ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`,
             icon: <AccountTree />,
             to: '/',
             disabled: true,

@@ -21,7 +21,7 @@
 import {Grid, Typography} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import React from 'react';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../buildconfig';
+import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '../../buildconfig';
 import {selectActiveUser} from '../../context/slices/authSlice';
 import {useAppSelector} from '../../context/store';
 import Notebooks from '../components/workspace/notebooks';
@@ -43,7 +43,7 @@ export default function Workspace() {
             color="textSecondary"
             style={{marginBottom: theme.spacing(2)}}
           >
-            My {NOTEBOOK_NAME_CAPITALIZED}s
+            My {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </Typography>
           <Typography
             variant="h4"
