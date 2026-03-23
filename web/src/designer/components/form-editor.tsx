@@ -69,6 +69,8 @@ import {
   viewSetRenamed,
 } from '../store/slices/uiSpec';
 
+const defaultTheme = createTheme();
+
 type Props = {
   viewSetId: string;
   moveCallback: (viewSetID: string, moveDirection: 'left' | 'right') => void;
@@ -96,9 +98,6 @@ export const FormEditor = ({
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
 
-  // Create a default theme with no customizations
-  const defaultTheme = createTheme();
-
   const uiSpec = useAppSelector(
     state => state.notebook['ui-specification'].present
   );
@@ -106,6 +105,7 @@ export const FormEditor = ({
   // we should also compile this
   const uiSpecInternal = useMemo(
     () => {
+      if (!previewForm) return null;
       // Clone the uiSpec - we need to do this to make it mutable
       const uiSpecEncoded = cloneDeep(uiSpec);
       return {
@@ -116,7 +116,7 @@ export const FormEditor = ({
       } satisfies UISpecification;
     },
     // Bit of a hack to force diff on uiSpec even tho ref may no
-    [uiSpec]
+    [previewForm, uiSpec]
   );
 
   const visibleTypes = useAppSelector(
@@ -718,7 +718,7 @@ export const FormEditor = ({
           </Card>
         </Grid>
       </Grid>
-      {previewForm && (
+      {previewForm && uiSpecInternal && (
         <Grid container item sx={{minWidth: '300px'}} xs={6}>
           <Box sx={{width: '100%'}}>
             <ThemeProvider theme={defaultTheme}>

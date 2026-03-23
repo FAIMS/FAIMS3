@@ -44,7 +44,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import React, {useMemo, useState} from 'react';
+import React, {memo, useCallback, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
   findFieldCondtionUsage,
@@ -61,12 +61,13 @@ import {
 } from '../store/slices/uiSpec';
 
 type FieldEditorProps = {
+  designerIdentifier: string;
   fieldName: string;
   viewSetId: string;
   viewId: string;
   expanded: boolean;
   addFieldCallback: (fieldName: string) => void;
-  handleExpandChange: (event: React.SyntheticEvent, newState: boolean) => void;
+  onExpandedChange: (designerIdentifier: string, expanded: boolean) => void;
   moveFieldCallback: (targetViewId: string) => void;
 };
 
@@ -76,13 +77,14 @@ type ConflictError = {
   conflicts: string[];
 };
 
-export const FieldEditor = ({
+const FieldEditorComponent = ({
+  designerIdentifier,
   fieldName,
   viewId,
   viewSetId,
   expanded,
   addFieldCallback,
-  handleExpandChange,
+  onExpandedChange,
   moveFieldCallback,
 }: FieldEditorProps) => {
   const field = useAppSelector(
@@ -100,13 +102,14 @@ export const FieldEditor = ({
   );
 
   const invalidRefs = useMemo(() => {
+    if (!expanded) return [];
     return findInvalidConditionReferences(
       fieldName,
       field,
       allFields,
       allFviews
     );
-  }, [fieldName, field, allFields, allFviews]);
+  }, [expanded, fieldName, field, allFields, allFviews]);
 
   const dispatch = useAppDispatch();
 
@@ -300,11 +303,19 @@ export const FieldEditor = ({
   const requiredBlocksHiding =
     isRequired && fieldComponent !== 'TemplatedStringField';
 
+  const handleAccordionChange = useCallback(
+    (_event: React.SyntheticEvent, nextExpanded: boolean) => {
+      onExpandedChange(designerIdentifier, nextExpanded);
+    },
+    [designerIdentifier, onExpandedChange]
+  );
+
   return (
     <Accordion
       key={fieldName}
       expanded={expanded}
-      onChange={handleExpandChange}
+      onChange={handleAccordionChange}
+      TransitionProps={{unmountOnExit: true}}
       disableGutters
       square
       elevation={0}
@@ -645,60 +656,65 @@ export const FieldEditor = ({
         </DialogActions>
       </Dialog>
 
-      <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
-        {(protection === 'protected' || protection === 'allow-hiding') && (
-          <Stack
-            direction="column"
-            alignItems="center"
-            justifyContent="center"
-            spacing={1}
-            sx={{
-              width: '100%',
-              padding: 2,
-              marginBottom: 2,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-              borderRadius: 1,
-              border: '1px solid #546e7a',
-              boxSizing: 'border-box',
-              textAlign: 'center',
+      {expanded && (
+        <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
+          {(protection === 'protected' || protection === 'allow-hiding') && (
+            <Stack
+              direction="column"
+              alignItems="center"
+              justifyContent="center"
+              spacing={1}
+              sx={{
+                width: '100%',
+                padding: 2,
+                marginBottom: 2,
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                borderRadius: 1,
+                border: '1px solid #546e7a',
+                boxSizing: 'border-box',
+                textAlign: 'center',
+              }}
+            >
+              <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
+              <Typography
+                variant="body2"
+                sx={{fontWeight: 500, color: '#546e7a'}}
+              >
+                {protectionMessage}
+              </Typography>
+            </Stack>
+          )}
+          <div
+            style={{
+              pointerEvents: disableEditing ? 'none' : 'auto',
+              opacity: disableEditing ? 0.5 : 1,
             }}
           >
-            <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
-            <Typography
-              variant="body2"
-              sx={{fontWeight: 500, color: '#546e7a'}}
-            >
-              {protectionMessage}
-            </Typography>
-          </Stack>
-        )}
-        <div
-          style={{
-            pointerEvents: disableEditing ? 'none' : 'auto',
-            opacity: disableEditing ? 0.5 : 1,
-          }}
-        >
-          {invalidRefs.length > 0 && (
-            <Grid item xs={12} sx={{marginBottom: 3.5}}>
-              <Alert severity="warning">
-                The following fields/sections have visibility conditions that
-                depend on this field having a specific option available:
-                <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
-                  {invalidRefs.map((msg, idx) => (
-                    <li key={idx}>{msg}</li>
-                  ))}
-                </ul>
-                Please update this field, or remove/modify affected conditions.
-              </Alert>
-            </Grid>
-          )}
+            {invalidRefs.length > 0 && (
+              <Grid item xs={12} sx={{marginBottom: 3.5}}>
+                <Alert severity="warning">
+                  The following fields/sections have visibility conditions that
+                  depend on this field having a specific option available:
+                  <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
+                    {invalidRefs.map((msg, idx) => (
+                      <li key={idx}>{msg}</li>
+                    ))}
+                  </ul>
+                  Please update this field, or remove/modify affected
+                  conditions.
+                </Alert>
+              </Grid>
+            )}
 
-          {renderFieldEditor({
-            fieldComponent,
-            context: {fieldName, viewId, viewSetId},
-          })}
-        </div>
-      </AccordionDetails>
+            {renderFieldEditor({
+              fieldComponent,
+              context: {fieldName, viewId, viewSetId},
+            })}
+          </div>
+        </AccordionDetails>
+      )}
     </Accordion>
   );
 };
+
+export const FieldEditor = memo(FieldEditorComponent);

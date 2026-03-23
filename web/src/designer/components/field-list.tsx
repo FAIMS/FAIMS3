@@ -17,7 +17,7 @@ import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRou
 import UnfoldLessDoubleRoundedIcon from '@mui/icons-material/UnfoldLessDoubleRounded';
 import UnfoldMoreDoubleRoundedIcon from '@mui/icons-material/UnfoldMoreDoubleRounded';
 
-import {useEffect, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
@@ -41,12 +41,20 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const dispatch = useAppDispatch();
 
   const [hiddenExpanded, setHiddenExpanded] = useState(true);
-  const hiddenFields = fView.fields.filter(
-    fieldName => fields[fieldName]?.['component-parameters']?.hidden
+  const hiddenFields = useMemo(
+    () =>
+      fView.fields.filter(
+        fieldName => fields[fieldName]?.['component-parameters']?.hidden
+      ),
+    [fView.fields, fields]
   );
 
-  const visibleFields = fView.fields.filter(
-    fieldName => !fields[fieldName]?.['component-parameters']?.hidden
+  const visibleFields = useMemo(
+    () =>
+      fView.fields.filter(
+        fieldName => !fields[fieldName]?.['component-parameters']?.hidden
+      ),
+    [fView.fields, fields]
   );
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,51 +68,72 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     setDialogOpen(false);
   };
 
-  const addFieldAfterCallback = (fieldName: string) => {
+  const addFieldAfterCallback = useCallback((fieldName: string) => {
     setAddAfterField(fieldName);
     setDialogOpen(true);
-  };
+  }, []);
 
-  const handleDialogConfirm = (fieldName: string, fieldType: string) => {
-    dispatch(
-      fieldAdded({
-        fieldName,
-        fieldType,
-        viewId,
-        viewSetId,
-        addAfter: addAfterField,
-      })
-    );
-    setDialogOpen(false);
-  };
+  const handleDialogConfirm = useCallback(
+    (fieldName: string, fieldType: string) => {
+      dispatch(
+        fieldAdded({
+          fieldName,
+          fieldType,
+          viewId,
+          viewSetId,
+          addAfter: addAfterField,
+        })
+      );
+      setDialogOpen(false);
+    },
+    [addAfterField, dispatch, viewId, viewSetId]
+  );
 
   const [isExpanded, setIsExpanded] = useState<{[key: string]: boolean}>({});
   const [showCollapseButton, setShowCollapseButton] = useState(false);
 
-  const allClosed: {[key: string]: boolean} = {};
-  const allOpen: {[key: string]: boolean} = {};
-  fView.fields.forEach((fieldName: string) => {
-    const designerIdentifier = fields[fieldName]?.designerIdentifier;
-    if (designerIdentifier) {
-      allClosed[designerIdentifier] = false;
-      allOpen[designerIdentifier] = true;
-    }
-  });
+  const allClosed = useMemo(() => {
+    const next: {[key: string]: boolean} = {};
+    fView.fields.forEach((fieldName: string) => {
+      const designerIdentifier = fields[fieldName]?.designerIdentifier;
+      if (designerIdentifier) {
+        next[designerIdentifier] = false;
+      }
+    });
+    return next;
+  }, [fView.fields, fields]);
+
+  const allOpen = useMemo(() => {
+    const next: {[key: string]: boolean} = {};
+    fView.fields.forEach((fieldName: string) => {
+      const designerIdentifier = fields[fieldName]?.designerIdentifier;
+      if (designerIdentifier) {
+        next[designerIdentifier] = true;
+      }
+    });
+    return next;
+  }, [fView.fields, fields]);
 
   useEffect(() => {
-    // if fView.label changes we are viewing a different
+    // if viewId changes we are viewing a different
     // section, so reset all fields to be closed
     setIsExpanded(allClosed);
-  }, [fView.label]);
+    setHiddenExpanded(true);
+    setShowCollapseButton(false);
+  }, [allClosed, viewId]);
 
-  const handleExpandChange = (designerIdentifier: string) => {
-    return (_event: React.SyntheticEvent, expanded: boolean) => {
-      setIsExpanded(prevState => ({
-        ...prevState,
-        [designerIdentifier]: expanded,
-      }));
-    };
-  };
+  const handleExpandedChange = useCallback(
+    (designerIdentifier: string, expanded: boolean) => {
+      setIsExpanded(prevState => {
+        if (prevState[designerIdentifier] === expanded) return prevState;
+        return {
+          ...prevState,
+          [designerIdentifier]: expanded,
+        };
+      });
+    },
+    []
+  );
 
   return (
     <>
@@ -165,7 +194,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             viewId={viewId}
             expanded={isExpanded[designerIdentifier] ?? false}
             addFieldCallback={addFieldAfterCallback}
-            handleExpandChange={handleExpandChange(designerIdentifier)}
+            onExpandedChange={handleExpandedChange}
+            designerIdentifier={designerIdentifier}
             moveFieldCallback={moveFieldCallback}
           />
         );
@@ -210,7 +240,8 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
                   expanded={isExpanded[designerIdentifier] ?? false}
                   addFieldCallback={addFieldAfterCallback}
                   moveFieldCallback={moveFieldCallback}
-                  handleExpandChange={handleExpandChange(designerIdentifier)}
+                  onExpandedChange={handleExpandedChange}
+                  designerIdentifier={designerIdentifier}
                 />
               );
             })}
