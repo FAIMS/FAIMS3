@@ -115,12 +115,13 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   }, [fView.fields, fields]);
 
   useEffect(() => {
-    // if viewId changes we are viewing a different
-    // section, so reset all fields to be closed
-    setIsExpanded(allClosed);
+    // When viewId changes we are viewing a different section — reset accordion state.
+    // Do not depend on `allClosed` / field data: that object is recreated on every field
+    // edit and would collapse open accordions whenever the spec updates.
+    setIsExpanded({});
     setHiddenExpanded(true);
     setShowCollapseButton(false);
-  }, [allClosed, viewId]);
+  }, [viewId]);
 
   const handleExpandedChange = useCallback(
     (designerIdentifier: string, expanded: boolean) => {
