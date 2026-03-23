@@ -20,17 +20,6 @@
 
 import {restoreFromBackup} from '../../src/couchdb/backupRestore';
 
-/** Same types as api/src/api/records.ts (Zod-inferred in library/data-model/src/api.ts). */
-export type {
-  GetListRecordsResponse as ListRecordsResponse,
-  GetRecordResponse,
-  ListRecordsItem as MinimalRecordInList,
-  PatchUpdateRecordInput as UpdateRecordBody,
-  PatchUpdateRecordResponse as UpdateRecordResponse,
-  PostCreateRecordInput as CreateRecordBody,
-  PostCreateRecordResponse as CreateRecordResponse,
-} from '@faims3/data-model';
-
 // ---------------------------------------------------------------------------
 // Backup fixture (must match test/backup.jsonl content)
 // ---------------------------------------------------------------------------

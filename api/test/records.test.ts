@@ -22,38 +22,42 @@ import PouchDBFind from 'pouchdb-find';
 PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory'));
 
-import {addProjectRole, registerClient, Role} from '@faims3/data-model';
+import {
+  addProjectRole,
+  GetListRecordsResponse,
+  GetRecordResponse,
+  ListRecordsItem,
+  PatchUpdateRecordInput,
+  PatchUpdateRecordResponse,
+  PostCreateRecordInput,
+  PostCreateRecordResponse,
+  registerClient,
+  Role,
+} from '@faims3/data-model';
 import {expect} from 'chai';
 import request from 'supertest';
+import {generateJwtFromUser} from '../src/auth/keySigning/create';
 import {KEY_SERVICE} from '../src/buildconfig';
 import {
   getCouchUserFromEmailOrUserId,
   getExpressUserFromEmailOrUserId,
   saveCouchUser,
 } from '../src/couchdb/users';
-import {generateJwtFromUser} from '../src/auth/keySigning/create';
 import {app} from '../src/expressSetup';
-import {callbackObject} from './mocks';
 import {
   BACKUP_FORM_IDS,
-  CreateRecordBody,
-  CreateRecordResponse,
-  GetRecordResponse,
-  ListRecordsResponse,
-  MinimalRecordInList,
-  recordPath,
-  recordsBasePath,
   RECORD_ID_PREFIX,
+  recordPath,
   RECORDS_BACKUP_PROJECT_ID,
+  recordsBasePath,
   REVISION_ID_PREFIX,
-  UpdateRecordBody,
-  UpdateRecordResponse,
   withRecordsBackup,
 } from './fixtures/recordsApi';
+import {callbackObject} from './mocks';
 import {
   beforeApiTests,
-  localUserToken,
   localUserName,
+  localUserToken,
   requestAuthAndType,
 } from './utils';
 
@@ -69,12 +73,12 @@ describe('Records CRUD API', () => {
           request(app).get(recordsBasePath(projectId))
         ).expect(200);
 
-        const body = res.body as ListRecordsResponse;
+        const body = res.body as GetListRecordsResponse;
         expect(body).to.have.property('records');
         expect(body.records).to.be.an('array');
         expect(body.records.length).to.be.greaterThan(0);
 
-        const first = body.records[0] as MinimalRecordInList;
+        const first = body.records[0] as ListRecordsItem;
         expect(first).to.have.property('recordId');
         expect(first).to.have.property('revisionId');
         expect(first).to.have.property('createdBy');
@@ -99,9 +103,9 @@ describe('Records CRUD API', () => {
             .get(recordsBasePath(projectId))
             .query({formId: BACKUP_FORM_IDS.FORM2})
         ).expect(200);
-        const body = res.body as ListRecordsResponse;
+        const body = res.body as GetListRecordsResponse;
         expect(body.records).to.be.an('array');
-        body.records.forEach((r: MinimalRecordInList) => {
+        body.records.forEach((r: ListRecordsItem) => {
           expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
         });
       });
@@ -112,7 +116,7 @@ describe('Records CRUD API', () => {
         const res = await requestAuthAndType(
           request(app).get(recordsBasePath(projectId)).query({limit: 3})
         ).expect(200);
-        const body = res.body as ListRecordsResponse;
+        const body = res.body as GetListRecordsResponse;
         expect(body.records.length).to.be.at.most(3);
       });
     });
@@ -130,7 +134,7 @@ describe('Records CRUD API', () => {
         const full = await requestAuthAndType(
           request(app).get(recordsBasePath(projectId)).query({limit: 5})
         ).expect(200);
-        const fullBody = full.body as ListRecordsResponse;
+        const fullBody = full.body as GetListRecordsResponse;
         if (fullBody.records.length < 2) return;
         const cursor = fullBody.records[1].recordId;
         const res = await requestAuthAndType(
@@ -138,10 +142,9 @@ describe('Records CRUD API', () => {
             .get(recordsBasePath(projectId))
             .query({limit: 10, startKey: cursor})
         ).expect(200);
-        const body = res.body as ListRecordsResponse;
-        expect(
-          body.records.every((r: MinimalRecordInList) => r.recordId > cursor)
-        ).to.be.true;
+        const body = res.body as GetListRecordsResponse;
+        expect(body.records.every((r: ListRecordsItem) => r.recordId > cursor))
+          .to.be.true;
       });
     });
 
@@ -152,9 +155,9 @@ describe('Records CRUD API', () => {
             .get(recordsBasePath(projectId))
             .query({formId: BACKUP_FORM_IDS.FORM2, limit: 5})
         ).expect(200);
-        const fullBody = full.body as ListRecordsResponse;
+        const fullBody = full.body as GetListRecordsResponse;
         expect(fullBody.records.length).to.be.at.most(5);
-        fullBody.records.forEach((r: MinimalRecordInList) => {
+        fullBody.records.forEach((r: ListRecordsItem) => {
           expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
         });
         if (fullBody.records.length < 2) return;
@@ -166,9 +169,9 @@ describe('Records CRUD API', () => {
             startKey: cursor,
           })
         ).expect(200);
-        const page2Body = page2.body as ListRecordsResponse;
+        const page2Body = page2.body as GetListRecordsResponse;
         expect(page2Body.records.length).to.be.at.most(2);
-        page2Body.records.forEach((r: MinimalRecordInList) => {
+        page2Body.records.forEach((r: ListRecordsItem) => {
           expect(r.type).to.equal(BACKUP_FORM_IDS.FORM2);
           expect(r.recordId > cursor).to.be.true;
         });
@@ -179,7 +182,7 @@ describe('Records CRUD API', () => {
   describe('create record', () => {
     it('creates record and returns recordId and revisionId', async () => {
       await withRecordsBackup(async projectId => {
-        const body: CreateRecordBody = {
+        const body: PostCreateRecordInput = {
           formId: BACKUP_FORM_IDS.FORM2,
           createdBy: 'admin',
         };
@@ -188,7 +191,7 @@ describe('Records CRUD API', () => {
           request(app).post(recordsBasePath(projectId)).send(body)
         ).expect(201);
 
-        const created = res.body as CreateRecordResponse;
+        const created = res.body as PostCreateRecordResponse;
         expect(created.recordId).to.match(new RegExp(`^${RECORD_ID_PREFIX}`));
         expect(created.revisionId).to.match(
           new RegExp(`^${REVISION_ID_PREFIX}`)
@@ -213,7 +216,7 @@ describe('Records CRUD API', () => {
             .send({formId: BACKUP_FORM_IDS.FORM2})
         ).expect(201);
 
-        const created = res.body as CreateRecordResponse;
+        const created = res.body as PostCreateRecordResponse;
         expect(created).to.have.property('recordId');
 
         const getRes = await requestAuthAndType(
@@ -249,9 +252,9 @@ describe('Records CRUD API', () => {
             .post(recordsBasePath(projectId))
             .send({formId: BACKUP_FORM_IDS.FORM2, createdBy: 'admin'})
         ).expect(201);
-        const parent = parentRes.body as CreateRecordResponse;
+        const parent = parentRes.body as PostCreateRecordResponse;
 
-        const body: CreateRecordBody = {
+        const body: PostCreateRecordInput = {
           formId: BACKUP_FORM_IDS.FORM2,
           createdBy: 'admin',
           relationship: {
@@ -267,7 +270,7 @@ describe('Records CRUD API', () => {
         const res = await requestAuthAndType(
           request(app).post(recordsBasePath(projectId)).send(body)
         ).expect(201);
-        const created = res.body as CreateRecordResponse;
+        const created = res.body as PostCreateRecordResponse;
         expect(created.recordId).to.match(new RegExp(`^${RECORD_ID_PREFIX}`));
         const getRes = await requestAuthAndType(
           request(app).get(recordPath(projectId, created.recordId))
@@ -287,7 +290,7 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId} = createRes.body as CreateRecordResponse;
+        const {recordId} = createRes.body as PostCreateRecordResponse;
 
         const res = await requestAuthAndType(
           request(app).get(recordPath(projectId, recordId))
@@ -326,7 +329,7 @@ describe('Records CRUD API', () => {
           })
         ).expect(201);
         const {recordId, revisionId: rev1} =
-          createRes.body as CreateRecordResponse;
+          createRes.body as PostCreateRecordResponse;
 
         const updateRes = await requestAuthAndType(
           request(app)
@@ -337,7 +340,8 @@ describe('Records CRUD API', () => {
               mode: 'new',
             })
         ).expect(200);
-        const revisionId2 = (updateRes.body as UpdateRecordResponse).revisionId;
+        const revisionId2 = (updateRes.body as PatchUpdateRecordResponse)
+          .revisionId;
 
         const getHead = await requestAuthAndType(
           request(app).get(recordPath(projectId, recordId))
@@ -368,9 +372,10 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
 
-        const updateBody: UpdateRecordBody = {
+        const updateBody: PatchUpdateRecordInput = {
           revisionId,
           update: {
             hridFORM2: {
@@ -385,7 +390,7 @@ describe('Records CRUD API', () => {
           request(app).put(recordPath(projectId, recordId)).send(updateBody)
         ).expect(200);
 
-        const updated = updateRes.body as UpdateRecordResponse;
+        const updated = updateRes.body as PatchUpdateRecordResponse;
         expect(updated).to.have.property('revisionId');
         expect(updated.revisionId).to.match(
           new RegExp(`^${REVISION_ID_PREFIX}`)
@@ -406,9 +411,10 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
 
-        const updateBody: UpdateRecordBody = {
+        const updateBody: PatchUpdateRecordInput = {
           revisionId,
           update: {hridFORM2: {data: 'x', attachments: []}},
         };
@@ -434,8 +440,9 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId: recordIdA} = createA.body as CreateRecordResponse;
-        const {revisionId: revisionIdB} = createB.body as CreateRecordResponse;
+        const {recordId: recordIdA} = createA.body as PostCreateRecordResponse;
+        const {revisionId: revisionIdB} =
+          createB.body as PostCreateRecordResponse;
 
         await requestAuthAndType(
           request(app)
@@ -458,7 +465,8 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
 
         await requestAuthAndType(
           request(app)
@@ -476,7 +484,7 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId} = createRes.body as CreateRecordResponse;
+        const {recordId} = createRes.body as PostCreateRecordResponse;
 
         await requestAuthAndType(
           request(app).delete(recordPath(projectId, recordId))
@@ -492,7 +500,8 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
 
         await requestAuthAndType(
           request(app)
@@ -527,7 +536,8 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
         await requestAuthAndType(
           request(app)
             .delete(recordPath(projectId, recordId))
@@ -539,9 +549,9 @@ describe('Records CRUD API', () => {
             .get(recordsBasePath(projectId))
             .query({formId: BACKUP_FORM_IDS.FORM2})
         ).expect(200);
-        const list = (listRes.body as ListRecordsResponse).records;
+        const list = (listRes.body as GetListRecordsResponse).records;
         const deletedInList = list.find(
-          (r: MinimalRecordInList) => r.recordId === recordId
+          (r: ListRecordsItem) => r.recordId === recordId
         );
         expect(deletedInList).to.be.undefined;
       });
@@ -555,7 +565,8 @@ describe('Records CRUD API', () => {
             createdBy: 'admin',
           })
         ).expect(201);
-        const {recordId, revisionId} = createRes.body as CreateRecordResponse;
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
         await requestAuthAndType(
           request(app)
             .delete(recordPath(projectId, recordId))
@@ -567,9 +578,9 @@ describe('Records CRUD API', () => {
             .get(recordsBasePath(projectId))
             .query({formId: BACKUP_FORM_IDS.FORM2, filterDeleted: 'false'})
         ).expect(200);
-        const list = (listRes.body as ListRecordsResponse).records;
+        const list = (listRes.body as GetListRecordsResponse).records;
         const deletedInList = list.find(
-          (r: MinimalRecordInList) => r.recordId === recordId
+          (r: ListRecordsItem) => r.recordId === recordId
         );
         expect(deletedInList).to.not.be.undefined;
         expect(deletedInList!.deleted).to.be.true;
@@ -631,9 +642,9 @@ describe('Records CRUD API', () => {
         const listAsAdmin = await requestAuthAndType(
           request(app).get(recordsBasePath(projectId))
         ).expect(200);
-        const records = (listAsAdmin.body as ListRecordsResponse).records;
+        const records = (listAsAdmin.body as GetListRecordsResponse).records;
         const adminRecord = records.find(
-          (r: MinimalRecordInList) => r.createdBy === 'admin'
+          (r: ListRecordsItem) => r.createdBy === 'admin'
         );
         if (!adminRecord) throw new Error('No admin record in backup');
 
@@ -668,9 +679,9 @@ describe('Records CRUD API', () => {
         const listAsAdmin = await requestAuthAndType(
           request(app).get(recordsBasePath(projectId))
         ).expect(200);
-        const records = (listAsAdmin.body as ListRecordsResponse).records;
+        const records = (listAsAdmin.body as GetListRecordsResponse).records;
         const adminRecord = records.find(
-          (r: MinimalRecordInList) => r.createdBy === 'admin'
+          (r: ListRecordsItem) => r.createdBy === 'admin'
         );
         if (!adminRecord) throw new Error('No admin record in backup');
 
@@ -709,9 +720,9 @@ describe('Records CRUD API', () => {
         const listAsAdmin = await requestAuthAndType(
           request(app).get(recordsBasePath(projectId))
         ).expect(200);
-        const records = (listAsAdmin.body as ListRecordsResponse).records;
+        const records = (listAsAdmin.body as GetListRecordsResponse).records;
         const adminRecord = records.find(
-          (r: MinimalRecordInList) => r.createdBy === 'admin'
+          (r: ListRecordsItem) => r.createdBy === 'admin'
         );
         if (!adminRecord) throw new Error('No admin record in backup');
 
