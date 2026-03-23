@@ -121,14 +121,11 @@ export const NotebookLoader = () => {
         dispatch({type: 'modifiedStatus/resetFlag', payload: false});
 
         return true;
-      } catch (e) {
-        if (e instanceof ValidationError) {
-          console.log('Error >>', e.messages);
-          setErrors(e.messages);
-        } else {
-          console.log('SOME OTHER ERROR', e);
-          setErrors(['unknown error']);
-        }
+      } catch (e: unknown) {
+        console.log('Designer notebook load error', e);
+        const message =
+          e instanceof Error && e.message ? e.message : 'unknown error';
+        setErrors([message]);
         return false;
       }
     },

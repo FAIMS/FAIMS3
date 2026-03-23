@@ -22,7 +22,7 @@ import {Provider} from 'react-redux';
 import {ThemeProvider} from '@mui/material/styles';
 import globalTheme from '../theme/index';
 import {ReactNode} from 'react';
-import {migrateNotebook} from '../state/migrateNotebook';
+import {migrateNotebook} from '@faims3/data-model';
 
 const WithProviders = ({children}: {children: ReactNode}) => (
   <ThemeProvider theme={globalTheme}>
@@ -32,7 +32,7 @@ const WithProviders = ({children}: {children: ReactNode}) => (
 
 describe('ConditionControl', () => {
   test('render and interact with a field condition', () => {
-    const notebook = migrateNotebook(sampleNotebook);
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
       payload: notebook['ui-specification'],
@@ -96,7 +96,7 @@ describe('ConditionControl', () => {
   });
 
   test('field condition omits field in select', () => {
-    const notebook = migrateNotebook(sampleNotebook);
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
       payload: notebook['ui-specification'],
@@ -124,7 +124,7 @@ describe('ConditionControl', () => {
   });
 
   test('field condition omits all view fields in select', () => {
-    const notebook = migrateNotebook(sampleNotebook);
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
       payload: notebook['ui-specification'],
@@ -154,7 +154,7 @@ describe('ConditionControl', () => {
   });
 
   test('make a boolean condition from a field', () => {
-    const notebook = migrateNotebook(sampleNotebook);
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
     store.dispatch({
       type: 'ui-specification/loaded',
       payload: notebook['ui-specification'],

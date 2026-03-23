@@ -88,6 +88,10 @@ export type ComponentParameters = {
   enableSpeech?: boolean;
   /** Whether to append speech to existing text or replace */
   speechAppendMode?: boolean;
+  /** Enable online address auto-suggestion providers */
+  enableAutoSuggestion?: boolean;
+  /** Allow manual structured address entry as fallback */
+  allowFullAddressManualEntry?: boolean;
 };
 
 export type FieldType = {
