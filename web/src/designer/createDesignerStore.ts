@@ -8,6 +8,7 @@ import {
 import metadataReducer from './state/metadata-reducer';
 import modifiedStatusReducer from './state/modifiedStatus-reducer';
 import {uiSpecificationReducer} from './state/uiSpec-reducer';
+import {uiSpecUndoConfig} from './store/undoConfig';
 
 export function createDesignerStore(
   notebook?: NotebookWithHistory,
@@ -25,12 +26,10 @@ export function createDesignerStore(
     reducer: {
       notebook: combineReducers<NotebookWithHistory>({
         metadata: metadataReducer,
-        'ui-specification': undoable(uiSpecificationReducer.reducer, {
-          limit: 10,
-          // TODO: add back the filter eventually
-          clearHistoryType: 'CLEAR_HISTORY',
-          initTypes: [],
-        }),
+        'ui-specification': undoable(
+          uiSpecificationReducer.reducer,
+          uiSpecUndoConfig
+        ),
       }),
       modified: modifiedStatusReducer,
     },

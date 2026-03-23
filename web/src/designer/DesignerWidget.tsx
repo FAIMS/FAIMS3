@@ -41,6 +41,7 @@ import {migrateNotebook} from '@faims3/data-model';
 import {createDesignerStore} from './createDesignerStore';
 import globalTheme from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
+import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
@@ -57,19 +58,6 @@ export interface DesignerWidgetProps {
   animationDuration?: number;
   animationScale?: number;
 }
-
-/**
- * Remove designerIdentifier keys just before export,
- * so the external schema remains clean.
- */
-const stripDesignerIdentifiers = (notebook: Notebook): Notebook => {
-  const clone = JSON.parse(JSON.stringify(notebook)) as Notebook;
-  const fields = clone['ui-specification']?.fields ?? {};
-  Object.keys(fields).forEach(fieldName => {
-    delete fields[fieldName].designerIdentifier;
-  });
-  return clone;
-};
 
 export function DesignerWidget({
   notebook,
@@ -91,18 +79,22 @@ export function DesignerWidget({
     };
     // migrate the notebook - update any out of date fields or structures
     const {migrated} = migrateNotebook(flat);
+    const migratedUiSpec = migrated[
+      'ui-specification'
+    ] as Notebook['ui-specification'];
+    const migratedMetadata = migrated.metadata as Notebook['metadata'];
 
     // Inject in-memory designerIdentifier if missing
-    Object.values(migrated['ui-specification'].fields).forEach(field => {
+    Object.values(migratedUiSpec.fields).forEach(field => {
       if (!field.designerIdentifier) {
         field.designerIdentifier = uuidv4();
       }
     });
 
     return {
-      metadata: migrated.metadata,
+      metadata: migratedMetadata,
       'ui-specification': {
-        present: migrated['ui-specification'],
+        present: migratedUiSpec,
         past: [],
         future: [],
       },
@@ -111,7 +103,7 @@ export function DesignerWidget({
 
   // 2. Create a fresh Redux store whenever processedNotebook or debug flag changes
   const store = useMemo(
-    () => createDesignerStore(processedNotebook),
+    () => createDesignerStore(processedNotebook, debug),
     [processedNotebook, debug]
   );
 
@@ -163,13 +155,7 @@ export function DesignerWidget({
   const doClose = (file: File | undefined) => onClose(file);
 
   const handleDone = () => {
-    const {metadata, 'ui-specification': historyState} =
-      store.getState().notebook;
-
-    const actualNotebook: Notebook = {
-      metadata,
-      'ui-specification': historyState.present,
-    };
+    const actualNotebook: Notebook = toNotebook(store.getState().notebook);
 
     // Remove internal IDs before serialisation
     const exportNotebook = stripDesignerIdentifiers(actualNotebook);

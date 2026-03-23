@@ -13,9 +13,9 @@
 // limitations under the License.
 
 import {TypedUseSelectorHook, useDispatch, useSelector} from 'react-redux';
-import type {AppDispatch} from './store';
+import type {DesignerDispatch} from '../createDesignerStore';
 import {AppState} from './initial';
 
 // Use throughout your app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch: () => AppDispatch = useDispatch;
+export const useAppDispatch = () => useDispatch<DesignerDispatch>();
 export const useAppSelector: TypedUseSelectorHook<AppState> = useSelector;

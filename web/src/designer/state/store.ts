@@ -15,12 +15,13 @@
 import {combineReducers, configureStore} from '@reduxjs/toolkit';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {throttle} from 'lodash';
-import undoable, {includeAction} from 'redux-undo';
+import undoable from 'redux-undo';
 import {AppState, NotebookWithHistory} from './initial';
 import {loadState, saveState} from './localStorage';
 import metadataReducer from './metadata-reducer';
 import modifiedStatusReducer from './modifiedStatus-reducer';
 import {uiSpecificationReducer} from './uiSpec-reducer';
+import {uiSpecUndoConfig} from '../store/undoConfig';
 
 const persistedState = loadState();
 if (
@@ -43,45 +44,10 @@ export const store: ToolkitStore<AppState> = configureStore({
   reducer: {
     notebook: combineReducers<NotebookWithHistory>({
       metadata: metadataReducer,
-      'ui-specification': undoable(uiSpecificationReducer.reducer, {
-        // This needs to be sensible as ui specs can be large
-        limit: 10,
-        filter: includeAction([
-          // Field actions
-          'ui-specification/fieldAdded',
-          'ui-specification/fieldDeleted',
-          'ui-specification/fieldUpdated',
-          'ui-specification/fieldDuplicated',
-          'ui-specification/fieldMoved',
-          'ui-specification/fieldConditionChanged',
-          'ui-specification/fieldMovedToSection',
-          'ui-specification/fieldRenamed',
-          'ui-specification/toggleFieldProtection',
-          'ui-specification/toggleFieldHidden',
-
-          // Section actions
-          'ui-specification/sectionAdded',
-          'ui-specification/sectionDeleted',
-          'ui-specification/sectionRenamed',
-          'ui-specification/sectionDuplicated',
-          'ui-specification/sectionMovedToForm',
-          'ui-specification/sectionMoved',
-          'ui-specification/sectionConditionChanged',
-
-          // ViewSet actions
-          'ui-specification/viewSetAdded',
-          'ui-specification/viewSetDeleted',
-          'ui-specification/viewSetRenamed',
-          'ui-specification/viewSetMoved',
-          'ui-specification/formVisibilityUpdated',
-          'ui-specification/viewSetPublishButtonBehaviourUpdated',
-          'ui-specification/viewSetLayoutUpdated',
-          'ui-specification/viewSetSummaryFieldsUpdated',
-          'ui-specification/viewSetHridUpdated',
-        ]),
-        clearHistoryType: 'CLEAR_HISTORY',
-        initTypes: [],
-      }),
+      'ui-specification': undoable(
+        uiSpecificationReducer.reducer,
+        uiSpecUndoConfig
+      ),
     }),
     modified: modifiedStatusReducer,
   },
