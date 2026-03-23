@@ -72,16 +72,6 @@ describe('ConditionControl', () => {
         .getByTestId('value-input')
         .querySelector('input');
       if (fieldInput !== null && valueInput !== null && opInput !== null) {
-        // TODO: fix this test!
-        // fireEvent.change(fieldInput, {target: {value: 'survey-note'}});
-        // expect(onChangeFn).toHaveBeenCalled();
-        // expect(onChangeFn.mock.lastCall).toStrictEqual([
-        //   {
-        //     field: 'survey-note',
-        //     operator: 'equal',
-        //     value: 'changed',
-        //   },
-        // ]);
         fireEvent.change(valueInput, {target: {value: 'Bobalooba'}});
         expect(onChangeFn.mock.lastCall).toStrictEqual([
           {
