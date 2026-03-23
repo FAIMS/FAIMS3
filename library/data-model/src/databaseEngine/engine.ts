@@ -2098,11 +2098,7 @@ class QueryOperations {
       filteredRecords = filteredRecords.filter(r => r.type === formId);
     }
 
-    // Sort by recordId for stable pagination (view order is by _id)
-    filteredRecords = [...filteredRecords].sort((a, b) =>
-      a.recordId.localeCompare(b.recordId, 'en')
-    );
-
+    // Order matches index/record (emit doc._id); keep it for correct startKey/nextStartKey.
     let nextStartKey: string | undefined;
     if (
       usePagination &&
@@ -2113,7 +2109,10 @@ class QueryOperations {
       nextStartKey = recordViewResult.rows[limit].id;
     }
     const pageRecords =
-      usePagination && limit !== undefined && limit !== null
+      usePagination &&
+      limit !== undefined &&
+      limit !== null &&
+      filteredRecords.length > limit
         ? filteredRecords.slice(0, limit)
         : filteredRecords;
 
