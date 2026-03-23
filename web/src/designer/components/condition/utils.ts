@@ -14,6 +14,11 @@
 
 import {FieldType} from '../../state/initial';
 import {ConditionType} from './types';
+import {
+  findOptionReferences as findOptionReferencesDomain,
+  updateConditionReferences as updateConditionReferencesDomain,
+} from '../../domain/conditions/references';
+import {isFieldUsedInCondition as isFieldUsedInConditionDomain} from '../../domain/conditions/traversal';
 
 export const getFieldLabel = (f: FieldType) => {
   return (
@@ -24,26 +29,7 @@ export const getFieldLabel = (f: FieldType) => {
 };
 
 // Recursively checks if a field is used in a single condition
-export function isFieldUsedInCondition(
-  condition: ConditionType | null | undefined,
-  fieldName: string
-): boolean {
-  if (!condition) return false;
-
-  const {operator, field, conditions} = condition;
-
-  // Base case
-  if (field === fieldName) {
-    return true;
-  }
-
-  // If it's an AND/OR group, check subconditions
-  if ((operator === 'and' || operator === 'or') && conditions) {
-    return conditions.some(sub => isFieldUsedInCondition(sub, fieldName));
-  }
-
-  return false;
-}
+export const isFieldUsedInCondition = isFieldUsedInConditionDomain;
 
 /**
  * Finds where a field is used in conditions or templated string fields
@@ -299,97 +285,9 @@ export function findInvalidConditionReferences(
 /**
  * Finds all conditions that reference the old option value in a specific field.
  */
-export function findOptionReferences(
-  allFields: Record<string, FieldType>,
-  allFviews: Record<string, {label: string; condition?: ConditionType}>,
-  fieldName: string,
-  oldValue: string
-): string[] {
-  const references: string[] = [];
-
-  // Check field conditions
-  for (const fieldId in allFields) {
-    const fieldCondition = allFields[fieldId].condition;
-    if (
-      fieldCondition &&
-      doesConditionContainValue(fieldCondition, fieldName, oldValue)
-    ) {
-      const label = allFields[fieldId]['component-parameters'].label ?? fieldId;
-      references.push(`Field: ${label}`);
-    }
-  }
-
-  // Check section conditions
-  for (const sectionId in allFviews) {
-    const sectionCondition = allFviews[sectionId].condition;
-    if (
-      sectionCondition &&
-      doesConditionContainValue(sectionCondition, fieldName, oldValue)
-    ) {
-      references.push(`Section: ${allFviews[sectionId].label}`);
-    }
-  }
-
-  return references;
-}
-
-/**
- * Checks if a condition contains a specific value for a given field.
- */
-function doesConditionContainValue(
-  condition: ConditionType,
-  fieldName: string,
-  oldValue: string
-): boolean {
-  const {operator, field, value, conditions} = condition;
-
-  if ((operator === 'and' || operator === 'or') && conditions) {
-    return conditions.some(c =>
-      doesConditionContainValue(c, fieldName, oldValue)
-    );
-  }
-
-  if (field === fieldName) {
-    if (Array.isArray(value)) {
-      return value.includes(oldValue);
-    } else {
-      return value === oldValue;
-    }
-  }
-
-  return false;
-}
+export const findOptionReferences = findOptionReferencesDomain;
 
 /**
  * Updates all references of oldValue to newValue in a condition.
  */
-export function updateConditionReferences(
-  condition: ConditionType,
-  fieldName: string,
-  oldValue: string,
-  newValue: string
-): ConditionType {
-  const {operator, field, value, conditions} = condition;
-
-  if ((operator === 'and' || operator === 'or') && conditions) {
-    return {
-      ...condition,
-      conditions: conditions.map(c =>
-        updateConditionReferences(c, fieldName, oldValue, newValue)
-      ),
-    };
-  }
-
-  if (field === fieldName) {
-    if (Array.isArray(value)) {
-      return {
-        ...condition,
-        value: value.map(v => (v === oldValue ? newValue : v)),
-      };
-    } else if (value === oldValue) {
-      return {...condition, value: newValue};
-    }
-  }
-
-  return condition;
-}
+export const updateConditionReferences = updateConditionReferencesDomain;
