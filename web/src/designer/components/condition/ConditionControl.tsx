@@ -569,7 +569,11 @@ export const FieldConditionControl = (props: ConditionProps) => {
             labelId="operator"
             label="Operator"
             onChange={e => updateOperator(e.target.value)}
-            value={condition.operator}
+            value={
+              allowedOperators.includes(condition.operator)
+                ? condition.operator
+                : ''
+            }
           >
             {allowedOperators.map(op => (
               <MenuItem key={op} value={op}>

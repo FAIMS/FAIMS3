@@ -116,6 +116,8 @@ describe('ConditionControl', () => {
     );
     const select = screen.getByTestId('field-input');
     expect(select).toBeDefined();
+    const opInput = screen.getByTestId('operator-input').querySelector('input');
+    expect(opInput?.value).toBe('');
 
     // would like to check for the options but they are not easy to find
     // since they don't render until the option button is clicked
@@ -143,6 +145,8 @@ describe('ConditionControl', () => {
 
     const select = screen.getByTestId('field-input');
     expect(select).toBeDefined();
+    const opInput = screen.getByTestId('operator-input').querySelector('input');
+    expect(opInput?.value).toBe('');
 
     // would like to check for the options but they are not easy to find
     // since they don't render until the option button is clicked
