@@ -5,7 +5,7 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {ComponentParameters, FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 type PropType = {
   fieldName: string;

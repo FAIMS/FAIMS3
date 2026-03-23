@@ -1,5 +1,5 @@
 import type {FieldType} from '../../state/initial';
-import type {ConditionType} from '../../components/condition/types';
+import type {ConditionType} from '../../types/condition';
 
 type ViewConditionMap = Record<
   string,

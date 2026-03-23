@@ -18,7 +18,7 @@ import {useRef} from 'react';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import {FieldType} from '../../state/initial';
 import {MdxEditor} from '../mdx-editor';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(

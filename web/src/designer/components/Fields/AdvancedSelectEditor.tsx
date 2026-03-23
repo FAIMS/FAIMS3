@@ -32,7 +32,7 @@ import {
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 import {useState} from 'react';
 import DebouncedTextField from '../debounced-text-field';

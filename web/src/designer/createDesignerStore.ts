@@ -7,7 +7,7 @@ import {
 } from './state/initial';
 import metadataReducer from './state/metadata-reducer';
 import modifiedStatusReducer from './state/modifiedStatus-reducer';
-import {uiSpecificationReducer} from './state/uiSpec-reducer';
+import {uiSpecificationReducer} from './store/slices/uiSpec';
 import {uiSpecUndoConfig} from './store/undoConfig';
 
 export function createDesignerStore(

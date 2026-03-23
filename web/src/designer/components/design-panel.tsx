@@ -26,7 +26,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {shallowEqual} from 'react-redux';
 import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
-import {viewSetAdded, viewSetMoved} from '../state/uiSpec-reducer';
+import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 
 export const DesignPanel = () => {
   const navigate = useNavigate();

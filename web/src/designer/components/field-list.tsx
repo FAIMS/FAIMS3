@@ -21,7 +21,7 @@ import {useEffect, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
-import {fieldAdded} from '../state/uiSpec-reducer';
+import {fieldAdded} from '../store/slices/uiSpec';
 
 type Props = {
   viewSetId: string;

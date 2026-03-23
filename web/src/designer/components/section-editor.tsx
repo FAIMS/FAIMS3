@@ -39,16 +39,16 @@ import {
 } from '@mui/material';
 import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {sectionDuplicated} from '../state/uiSpec-reducer';
+import {sectionDuplicated} from '../store/slices/uiSpec';
 import {
   sectionConditionChanged,
   sectionRenamed,
-} from '../state/uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 import {ConditionModal} from './condition/ConditionModal';
 import {ConditionTranslation} from './condition/ConditionTranslation';
 import {findSectionExternalUsage} from './condition/utils';
-import {ConditionType} from './condition/types';
+import {ConditionType} from '../types/condition';
 
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';

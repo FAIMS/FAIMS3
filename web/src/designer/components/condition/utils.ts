@@ -13,8 +13,7 @@
 // limitations under the License.
 
 import {FieldType} from '../../state/initial';
-import {ConditionType} from './types';
-import {SelectableConditionOption} from '../../types/condition';
+import {ConditionType, SelectableConditionOption} from '../../types/condition';
 import {
   findOptionReferences as findOptionReferencesDomain,
   updateConditionReferences as updateConditionReferencesDomain,

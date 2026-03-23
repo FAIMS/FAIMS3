@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 /**
  * Speech settings stored in component-parameters

@@ -14,7 +14,7 @@
 
 import {useAppSelector} from '../../state/hooks';
 import {allOperators} from './constants';
-import {ConditionType} from './types';
+import {ConditionType} from '../../types/condition';
 import {getFieldLabel} from './utils';
 
 export const ConditionTranslation = (props: {condition: ConditionType}) => {

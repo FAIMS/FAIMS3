@@ -21,7 +21,7 @@ import {
 } from '@mui/material';
 import {useCallback, useEffect, useState} from 'react';
 import {ConditionControl} from './ConditionControl';
-import {ConditionProps, ConditionType} from './types';
+import {ConditionProps, ConditionType} from '../../types/condition';
 import QuizIcon from '@mui/icons-material/Quiz';
 
 export const ConditionModal = (props: ConditionProps & {label: string}) => {

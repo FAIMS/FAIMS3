@@ -32,8 +32,11 @@ import {useMemo, useState} from 'react';
 import {useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {EMPTY_BOOLEAN_CONDITION, EMPTY_FIELD_CONDITION} from './constants';
-import {ConditionProps, ConditionType} from './types';
-import {SelectableConditionOption} from '../../types/condition';
+import {
+  ConditionProps,
+  ConditionType,
+  SelectableConditionOption,
+} from '../../types/condition';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import {getFieldLabel} from './utils';

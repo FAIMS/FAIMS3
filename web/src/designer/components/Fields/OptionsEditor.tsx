@@ -69,7 +69,7 @@ import {
 import {
   fieldUpdated,
   sectionConditionChanged,
-} from '../../state/uiSpec-reducer';
+} from '../../store/slices/uiSpec';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.

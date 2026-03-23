@@ -1,39 +1,42 @@
 # Designer module architecture
 
-This module contains the notebook designer used by the web app.
+This module contains the embedded notebook designer used by the web app.
 
-## Runtime entrypoint
+## Runtime flow
 
-- **Primary runtime path:** `DesignerWidget.tsx` via `components/dialogs/designer-dialog.tsx`
-- **Current host integrations:** project and template actions tabs
+1. Host screens open the designer dialog:
+   - `components/dialogs/designer-dialog.tsx`
+2. The dialog renders:
+   - `designer/DesignerWidget.tsx`
+3. Widget state is created by:
+   - `designer/createDesignerStore.ts`
+4. Save/load integration for host tabs is centralized in:
+   - `designer/integration/notebookAdapters.ts`
+   - `designer/integration/useDesignerSaveMutation.ts`
 
-## Module boundaries
+## Current module layout
 
-- `components/`: existing UI components and editors
-- `state/`: existing Redux slices, hooks, and helpers (legacy + active mixed)
-- `store/`: new refactor surface for shared selectors and store-oriented utilities
-- `domain/`: pure business logic and data transforms (no React rendering)
-- `features/`: feature-oriented barrels that group UI by area
-- `integration/`: host-side adapters/hooks for project/template integration
+- `components/`
+  - React UI for form/section/field editing, conditions, and dialogs.
+- `state/`
+  - Core state types (`initial.ts`), hooks (`hooks.ts`), metadata/modified reducers, and helper utilities.
+- `store/`
+  - Canonical ui-spec slice reducers under `store/slices/uiSpec/*`
+  - undo config and selector utilities.
+- `domain/`
+  - Pure data and condition logic (no React rendering).
+- `features/`
+  - Shared feature utilities such as field update helpers and the field editor registry.
+- `types/`
+  - Shared designer type definitions (including condition types).
 
-## Legacy vs active paths
+## Legacy cleanup status
 
-The repository currently contains both active and legacy designer flows.
+Legacy standalone and compatibility artifacts have been removed. The codebase no longer relies on:
 
-- **Active flow**
-  - `DesignerWidget.tsx`
-  - `createDesignerStore.ts`
-  - `components/dialogs/designer-dialog.tsx`
-  - project/template actions integration
+- standalone app/store/localStorage paths
+- legacy notebook loader/review/roles panels
+- compatibility re-export shims for ui-spec reducers or condition types
+- unused scaffold barrels that were not imported
 
-- **Legacy/standalone artifacts retired in this refactor**
-  - `App.tsx`
-  - `state/store.ts`
-  - `components/notebook-loader.tsx`
-  - `components/review-panel.tsx`
-  - `components/roles-panel.tsx`
-  - `state/localStorage.ts`
-  - `notebook-schema.ts`
-  - `components/Fields/HiddenToggle.tsx`
-
-The refactor path keeps behaviour stable while gradually consolidating around the active embedded flow.
+All active imports now point to canonical source modules.

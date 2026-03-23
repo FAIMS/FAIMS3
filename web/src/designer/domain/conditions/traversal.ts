@@ -1,4 +1,4 @@
-import type {ConditionType} from '../../components/condition/types';
+import type {ConditionType} from '../../types/condition';
 
 export const isFieldUsedInCondition = (
   condition: ConditionType | null | undefined,

@@ -39,7 +39,7 @@ import {FieldType} from '../../state/initial';
 
 import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
-import {ConditionType} from '../condition/types';
+import {ConditionType} from '../../types/condition';
 
 import {getViewIDForField, slugify} from '../../state/helpers/uiSpec-helpers';
 import DebouncedTextField from '../debounced-text-field';
@@ -49,7 +49,7 @@ import {
   fieldConditionChanged,
   fieldRenamed,
   fieldUpdated,
-} from '../../state/uiSpec-reducer';
+} from '../../store/slices/uiSpec';
 
 export const SPEECH_ENABLED_FIELDS = [
   'faims-custom::FAIMSTextField',

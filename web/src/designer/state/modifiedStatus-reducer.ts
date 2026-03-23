@@ -31,7 +31,7 @@ import {
   viewSetDeleted,
   viewSetMoved,
   viewSetRenamed,
-} from './uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 const modifiedStatusReducer = createSlice({
   name: 'modifiedStatus',

@@ -22,7 +22,7 @@ import {
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(

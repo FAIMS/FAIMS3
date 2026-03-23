@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {

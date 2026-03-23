@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ConditionType} from './types';
+import {ConditionType} from '../../types/condition';
 
 export const EMPTY_FIELD_CONDITION: ConditionType = {
   operator: 'equal',

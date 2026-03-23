@@ -30,7 +30,7 @@ import {
   viewSetLayoutUpdated,
   viewSetPublishButtonBehaviourUpdated,
   viewSetSummaryFieldsUpdated,
-} from '../state/uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 type ViewSetType = {
   views: string[];

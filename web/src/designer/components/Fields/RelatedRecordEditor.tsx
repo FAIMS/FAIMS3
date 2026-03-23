@@ -37,7 +37,7 @@ import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 type PairList = [string, string][];
 

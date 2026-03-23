@@ -2,7 +2,7 @@ import {Typography} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import DebouncedTextField from '../debounced-text-field';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
-import {fieldUpdated} from '../../state/uiSpec-reducer';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
 type PropType = {

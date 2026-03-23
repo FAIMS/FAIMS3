@@ -15,7 +15,7 @@
 import {vi, describe, expect, test} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {ConditionControl} from './condition/ConditionControl';
-import {ConditionType} from './condition/types';
+import {ConditionType} from '../types/condition';
 import {sampleNotebook} from '../test-notebook';
 import {createDesignerStore} from '../createDesignerStore';
 import {Provider} from 'react-redux';
@@ -25,7 +25,7 @@ import {ReactNode} from 'react';
 import {migrateNotebook} from '@faims3/data-model';
 import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
 import {AppState, NotebookUISpec} from '../state/initial';
-import {loaded} from '../state/uiSpec-reducer';
+import {loaded} from '../store/slices/uiSpec';
 
 const WithProviders = ({
   children,

@@ -1,6 +1,6 @@
 import {PayloadAction} from '@reduxjs/toolkit';
 import {v4 as uuidv4} from 'uuid';
-import {ConditionType} from '../../../components/condition/types';
+import {ConditionType} from '../../../types/condition';
 import {FieldType, NotebookUISpec} from '../../../state/initial';
 import {slugify} from '../../../state/helpers/uiSpec-helpers';
 

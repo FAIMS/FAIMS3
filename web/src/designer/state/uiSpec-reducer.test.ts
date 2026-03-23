@@ -16,7 +16,7 @@ import {
   viewSetLayoutUpdated,
   viewSetPublishButtonBehaviourUpdated,
   viewSetSummaryFieldsUpdated,
-} from './uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 const createBaseUiSpec = (): NotebookUISpec => ({
   fields: {},

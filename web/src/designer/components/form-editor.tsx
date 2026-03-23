@@ -67,7 +67,7 @@ import {
   sectionMovedToForm,
   viewSetDeleted,
   viewSetRenamed,
-} from '../state/uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 type Props = {
   viewSetId: string;

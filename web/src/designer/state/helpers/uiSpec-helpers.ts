@@ -1,4 +1,4 @@
-import {ConditionType} from '../../components/condition/types';
+import {ConditionType} from '../../types/condition';
 import {replaceFieldInCondition as replaceFieldInConditionDomain} from '../../domain/conditions/traversal';
 import {NotebookUISpec} from '../initial';
 

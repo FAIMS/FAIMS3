@@ -58,7 +58,7 @@ import {
   fieldMoved,
   fieldMovedToSection,
   toggleFieldHidden,
-} from '../state/uiSpec-reducer';
+} from '../store/slices/uiSpec';
 
 type FieldEditorProps = {
   fieldName: string;
