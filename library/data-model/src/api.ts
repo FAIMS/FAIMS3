@@ -908,6 +908,23 @@ export type PatchUpdateRecordResponse = z.infer<
   typeof PatchUpdateRecordResponseSchema
 >;
 
+/** POST fork revision body (parent revision to copy AVPs from) */
+export const PostCreateRevisionInputSchema = z.object({
+  revisionId: z.string(),
+  createdBy: z.string().optional(),
+});
+export type PostCreateRevisionInput = z.infer<
+  typeof PostCreateRevisionInputSchema
+>;
+
+/** POST fork revision response */
+export const PostCreateRevisionResponseSchema = z.object({
+  revisionId: z.string(),
+});
+export type PostCreateRevisionResponse = z.infer<
+  typeof PostCreateRevisionResponseSchema
+>;
+
 /** DELETE record query (revisionId required) */
 export const DeleteRecordQuerySchema = z.object({
   revisionId: z.string(),

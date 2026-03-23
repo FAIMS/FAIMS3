@@ -14,6 +14,9 @@
  * limitations under the License.
  *
  * Unit tests for record-level authorization helpers.
+ *
+ * Records API routes that mutate existing records (PUT record, POST …/revisions)
+ * use canEditRecord after project-level edit checks.
  */
 
 import {Role} from '@faims3/data-model';
@@ -113,6 +116,28 @@ describe('recordAuth', () => {
 
     it('allows PROJECT_ADMIN to edit another user record', () => {
       const user = makeUser('alice', Role.PROJECT_ADMIN);
+      expect(
+        canEditRecord({
+          user,
+          projectId,
+          createdBy: 'bob',
+        })
+      ).to.be.true;
+    });
+
+    it('allows PROJECT_CONTRIBUTOR to edit another user record (EDIT_ALL)', () => {
+      const user = makeUser('alice', Role.PROJECT_CONTRIBUTOR);
+      expect(
+        canEditRecord({
+          user,
+          projectId,
+          createdBy: 'bob',
+        })
+      ).to.be.true;
+    });
+
+    it('allows PROJECT_MANAGER to edit another user record (inherits contributor)', () => {
+      const user = makeUser('alice', Role.PROJECT_MANAGER);
       expect(
         canEditRecord({
           user,

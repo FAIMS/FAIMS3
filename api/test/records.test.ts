@@ -31,6 +31,8 @@ import {
   PatchUpdateRecordResponse,
   PostCreateRecordInput,
   PostCreateRecordResponse,
+  PostCreateRevisionInput,
+  PostCreateRevisionResponse,
   registerClient,
   Role,
 } from '@faims3/data-model';
@@ -48,6 +50,7 @@ import {
   BACKUP_FORM_IDS,
   RECORD_ID_PREFIX,
   recordPath,
+  recordRevisionsPath,
   RECORDS_BACKUP_PROJECT_ID,
   recordsBasePath,
   REVISION_ID_PREFIX,
@@ -456,6 +459,158 @@ describe('Records CRUD API', () => {
     });
   });
 
+  describe('create revision (fork)', () => {
+    it('creates a new head revision copying AVPs from the given revision', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
+        ).expect(201);
+        const {recordId, revisionId: baseRev} =
+          createRes.body as PostCreateRecordResponse;
+
+        const forkRes = await requestAuthAndType(
+          request(app)
+            .post(recordRevisionsPath(projectId, recordId))
+            .send({revisionId: baseRev} satisfies PostCreateRevisionInput)
+        ).expect(201);
+
+        const forked = forkRes.body as PostCreateRevisionResponse;
+        expect(forked.revisionId).to.match(
+          new RegExp(`^${REVISION_ID_PREFIX}`)
+        );
+        expect(forked.revisionId).to.not.equal(baseRev);
+
+        const getRes = await requestAuthAndType(
+          request(app).get(recordPath(projectId, recordId))
+        ).expect(200);
+        const getBody = getRes.body as GetRecordResponse;
+        expect(getBody.revisionId).to.equal(forked.revisionId);
+        expect(getBody.context.revision.parents).to.deep.equal([baseRev]);
+      });
+    });
+
+    it('allows default PUT parent mode on the forked revision', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
+        ).expect(201);
+        const {recordId, revisionId: baseRev} =
+          createRes.body as PostCreateRecordResponse;
+
+        const forkRes = await requestAuthAndType(
+          request(app)
+            .post(recordRevisionsPath(projectId, recordId))
+            .send({revisionId: baseRev})
+        ).expect(201);
+        const {revisionId: forkRev} =
+          forkRes.body as PostCreateRevisionResponse;
+
+        await requestAuthAndType(
+          request(app)
+            .put(recordPath(projectId, recordId))
+            .send({
+              revisionId: forkRev,
+              update: {hridFORM2: {data: 'ForkedParentEdit', attachments: []}},
+            })
+        ).expect(200);
+
+        const getRes = await requestAuthAndType(
+          request(app).get(recordPath(projectId, recordId))
+        ).expect(200);
+        expect(
+          (getRes.body as GetRecordResponse).data.hridFORM2?.data
+        ).to.equal('ForkedParentEdit');
+      });
+    });
+
+    it('returns 401 without auth', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
+        ).expect(201);
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
+
+        await request(app)
+          .post(recordRevisionsPath(projectId, recordId))
+          .set('Content-Type', 'application/json')
+          .send({revisionId})
+          .expect(401);
+      });
+    });
+
+    it('returns 401 when user has no project-level edit permission', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
+        ).expect(201);
+        const {recordId, revisionId} =
+          createRes.body as PostCreateRecordResponse;
+
+        await requestAuthAndType(
+          request(app)
+            .post(recordRevisionsPath(projectId, recordId))
+            .send({revisionId}),
+          localUserToken
+        ).expect(401);
+      });
+    });
+
+    it('returns 400 when revision belongs to a different record', async () => {
+      await withRecordsBackup(async projectId => {
+        const createA = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
+        ).expect(201);
+        const createB = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
+        ).expect(201);
+        const {recordId: recordIdA} = createA.body as PostCreateRecordResponse;
+        const {revisionId: revisionIdB} =
+          createB.body as PostCreateRecordResponse;
+
+        await requestAuthAndType(
+          request(app)
+            .post(recordRevisionsPath(projectId, recordIdA))
+            .send({revisionId: revisionIdB})
+        ).expect(400);
+      });
+    });
+
+    it('returns 400 when revisionId is missing from body', async () => {
+      await withRecordsBackup(async projectId => {
+        const createRes = await requestAuthAndType(
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
+        ).expect(201);
+        const {recordId} = createRes.body as PostCreateRecordResponse;
+
+        await requestAuthAndType(
+          request(app).post(recordRevisionsPath(projectId, recordId)).send({})
+        ).expect(400);
+      });
+    });
+  });
+
   describe('delete record', () => {
     it('soft-deletes and returns 204', async () => {
       await withRecordsBackup(async projectId => {
@@ -731,6 +886,44 @@ describe('Records CRUD API', () => {
           .set('Authorization', `Bearer ${guestToken}`)
           .set('Content-Type', 'application/json')
           .query({revisionId: adminRecord.revisionId})
+          .expect(403);
+      });
+    });
+
+    it('returns 403 when GUEST tries to fork revision on another user record', async () => {
+      await withRecordsBackup(async projectId => {
+        const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+        if (!couchUser) throw new Error('Local user not found');
+        addProjectRole({
+          user: couchUser,
+          projectId: RECORDS_BACKUP_PROJECT_ID,
+          role: Role.PROJECT_GUEST,
+        });
+        await saveCouchUser(couchUser);
+
+        const expressUser =
+          await getExpressUserFromEmailOrUserId(localUserName);
+        if (!expressUser) throw new Error('Local user not found');
+        const signingKey = await KEY_SERVICE.getSigningKey();
+        const guestToken = await generateJwtFromUser({
+          user: expressUser,
+          signingKey,
+        });
+
+        const listAsAdmin = await requestAuthAndType(
+          request(app).get(recordsBasePath(projectId))
+        ).expect(200);
+        const records = (listAsAdmin.body as GetListRecordsResponse).records;
+        const adminRecord = records.find(
+          (r: ListRecordsItem) => r.createdBy === 'admin'
+        );
+        if (!adminRecord) throw new Error('No admin record in backup');
+
+        await request(app)
+          .post(recordRevisionsPath(projectId, adminRecord.recordId))
+          .set('Authorization', `Bearer ${guestToken}`)
+          .set('Content-Type', 'application/json')
+          .send({revisionId: adminRecord.revisionId})
           .expect(403);
       });
     });

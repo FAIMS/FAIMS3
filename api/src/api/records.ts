@@ -14,6 +14,7 @@
  * limitations under the License.
  *
  * Stateless CRUD API for record data under /api/notebooks/:id/records
+ * (including POST …/records/:recordId/revisions to fork a revision).
  */
 
 import {
@@ -34,6 +35,8 @@ import {
   PatchUpdateRecordResponse,
   PostCreateRecordInputSchema,
   PostCreateRecordResponse,
+  PostCreateRevisionInputSchema,
+  PostCreateRevisionResponse,
   RecordConflictError,
   RevisionMismatchError,
   setRecordAsDeleted,
@@ -192,6 +195,61 @@ recordsRouter.get(
           : {}),
       });
     } catch (err) {
+      mapDataModelError(err);
+    }
+  }
+);
+
+/**
+ * POST /api/notebooks/:id/records/:recordId/revisions
+ * Fork a new head revision from an existing revision (same as FormOperations.createRevision).
+ */
+recordsRouter.post(
+  '/:recordId/revisions',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.EDIT_MY_PROJECT_RECORDS,
+    getResourceId: req => req.params.id,
+  }),
+  processRequest({
+    params: z.object({id: z.string().min(1), recordId: z.string().min(1)}),
+    body: PostCreateRevisionInputSchema,
+  }),
+  async (req, res: Response<PostCreateRevisionResponse>) => {
+    if (!req.user) throw new Exceptions.UnauthorizedException();
+    const projectId = projectIdFromReq(req);
+    const {recordId} = req.params;
+    const createdBy = req.body.createdBy ?? req.user.user_id;
+
+    try {
+      const dataDb = await getDataDb(projectId);
+      const uiSpec = await getProjectUIModel(projectId);
+      const engine = new DataEngine({
+        dataDb: dataDb as unknown as DatabaseInterface<DataDocument>,
+        uiSpec,
+      });
+
+      const record = await engine.core.getRecord(recordId);
+      if (
+        !canEditRecord({
+          user: req.user,
+          projectId,
+          createdBy: record.created_by,
+        })
+      ) {
+        throw new Exceptions.ForbiddenException(
+          'You do not have permission to edit this record.'
+        );
+      }
+
+      const revision = await engine.form.createRevision({
+        recordId,
+        revisionId: req.body.revisionId,
+        createdBy,
+      });
+      res.status(201).json({revisionId: revision._id});
+    } catch (err) {
+      if (err instanceof Exceptions.ForbiddenException) throw err;
       mapDataModelError(err);
     }
   }

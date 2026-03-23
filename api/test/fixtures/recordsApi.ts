@@ -54,6 +54,14 @@ export function recordPath(projectId: string, recordId: string): string {
   return `${recordsBasePath(projectId)}/${recordId}`;
 }
 
+/** POST createRevision (fork): same recordId segment as recordPath */
+export function recordRevisionsPath(
+  projectId: string,
+  recordId: string
+): string {
+  return `${recordPath(projectId, recordId)}/revisions`;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

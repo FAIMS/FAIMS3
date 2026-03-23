@@ -1994,6 +1994,7 @@ class QueryOperations {
 
     const startTime = performance.now();
 
+    // Step 1: Fetch all revision metadata (optimised view - no full docs)
     let recordViewResult: PouchDB.Query.Response<RecordDBDocument>;
     let revisionMetadataResult: RevisionMetadataQueryResult;
 
@@ -2034,11 +2035,13 @@ class QueryOperations {
       ).toFixed(2)}ms`
     );
 
+    // Step 3: Build revision metadata lookup map
     const revisionMetadataMap = new Map<string, MinimalRevisionMetadata>();
     for (const rev of revisionMetadataResult.revisions) {
       revisionMetadataMap.set(rev._id, rev);
     }
 
+    // Step 4: Join records with revision metadata
     const records: MinimalRecordMetadata[] = [];
 
     for (const row of recordViewResult.rows) {
@@ -2049,6 +2052,7 @@ class QueryOperations {
         continue;
       }
 
+      // Get head revision ID
       const revisionId = record.heads[0];
       if (!revisionId) {
         console.warn(`Record ${record._id} has no heads[0], skipping`);
@@ -2056,6 +2060,7 @@ class QueryOperations {
         continue;
       }
 
+      // Look up revision metadata
       const revisionMeta = revisionMetadataMap.get(revisionId);
       if (!revisionMeta) {
         console.warn(
@@ -2065,6 +2070,7 @@ class QueryOperations {
         continue;
       }
 
+      // Apply deleted filter
       if (filterDeleted && revisionMeta.deleted) {
         continue;
       }
