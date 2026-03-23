@@ -34,7 +34,8 @@ export const BACKUP_FORM_IDS = {
   FORM2: 'FORM2',
 } as const;
 
-export type BackupFormId = (typeof BACKUP_FORM_IDS)[keyof typeof BACKUP_FORM_IDS];
+export type BackupFormId =
+  (typeof BACKUP_FORM_IDS)[keyof typeof BACKUP_FORM_IDS];
 
 // ---------------------------------------------------------------------------
 // API path builders
@@ -82,7 +83,11 @@ export interface ListRecordsResponse {
 export interface FormDataEntryValue {
   data: unknown;
   annotation?: {annotation: string; uncertainty: boolean};
-  attachments?: Array<{attachmentId: string; filename: string; fileType: string}>;
+  attachments?: Array<{
+    attachmentId: string;
+    filename: string;
+    fileType: string;
+  }>;
 }
 
 export interface GetRecordResponse {
@@ -108,15 +113,27 @@ export interface CreateRecordBody {
   formId: string;
   createdBy?: string;
   relationship?: {
-    parent?: Array<{recordId: string; fieldId: string; relationTypeVocabPair: [string, string]}>;
-    linked?: Array<{recordId: string; fieldId: string; relationTypeVocabPair: [string, string]}>;
+    parent?: Array<{
+      recordId: string;
+      fieldId: string;
+      relationTypeVocabPair: [string, string];
+    }>;
+    linked?: Array<{
+      recordId: string;
+      fieldId: string;
+      relationTypeVocabPair: [string, string];
+    }>;
   };
 }
 
 export interface FormDataEntry {
   data: unknown;
   annotation?: {annotation: string; uncertainty: boolean};
-  attachments?: Array<{attachmentId: string; filename: string; fileType: string}>;
+  attachments?: Array<{
+    attachmentId: string;
+    filename: string;
+    fileType: string;
+  }>;
 }
 
 export interface UpdateRecordBody {

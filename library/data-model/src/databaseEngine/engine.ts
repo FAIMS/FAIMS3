@@ -1988,7 +1988,9 @@ class QueryOperations {
   }): Promise<MinimalRecordMetadataResult> {
     let errorCount = 0;
     const usePagination =
-      (limit != null || startKey != null) && recordIds === undefined;
+      ((limit !== undefined && limit !== null) ||
+        (startKey !== undefined && startKey !== '')) &&
+      recordIds === undefined;
 
     const startTime = performance.now();
 
@@ -2007,7 +2009,7 @@ class QueryOperations {
       });
       const headRevisionIds = recordViewResult.rows
         .map(row => row.doc?.heads?.[0])
-        .filter((id): id is string => id != null);
+        .filter((id): id is string => id !== undefined && id !== null);
       revisionMetadataResult = await this.listRevisionMetadata({
         keys: headRevisionIds,
       });
@@ -2019,7 +2021,7 @@ class QueryOperations {
       });
       const headRevisionIds = recordViewResult.rows
         .map(row => row.doc?.heads?.[0])
-        .filter((id): id is string => id != null);
+        .filter((id): id is string => id !== undefined && id !== null);
       revisionMetadataResult =
         headRevisionIds.length > 0
           ? await this.listRevisionMetadata({keys: headRevisionIds})
@@ -2096,11 +2098,16 @@ class QueryOperations {
     );
 
     let nextStartKey: string | undefined;
-    if (usePagination && limit != null && recordViewResult.rows.length > limit) {
+    if (
+      usePagination &&
+      limit !== undefined &&
+      limit !== null &&
+      recordViewResult.rows.length > limit
+    ) {
       nextStartKey = recordViewResult.rows[limit].id;
     }
     const pageRecords =
-      usePagination && limit != null
+      usePagination && limit !== undefined && limit !== null
         ? filteredRecords.slice(0, limit)
         : filteredRecords;
 

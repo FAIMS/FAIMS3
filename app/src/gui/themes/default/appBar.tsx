@@ -1,5 +1,5 @@
-import { createTheme } from '@mui/material';
-import { createUseStyles as makeStyles } from 'react-jss';
+import {createTheme} from '@mui/material';
+import {createUseStyles as makeStyles} from 'react-jss';
 
 const theme = createTheme();
 

@@ -52,9 +52,7 @@ import {
   OFFLINE_MAPS,
 } from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {
-  selectIsAuthenticated,
-} from '../../context/slices/authSlice';
+import {selectIsAuthenticated} from '../../context/slices/authSlice';
 import {
   Project,
   selectActiveServerProjects,

@@ -51,7 +51,6 @@ import {
   withRecordsBackup,
 } from './fixtures/recordsApi';
 import {
-  adminToken,
   beforeApiTests,
   localUserToken,
   localUserName,
@@ -111,9 +110,7 @@ describe('Records CRUD API', () => {
     it('applies limit when provided', async () => {
       await withRecordsBackup(async projectId => {
         const res = await requestAuthAndType(
-          request(app)
-            .get(recordsBasePath(projectId))
-            .query({limit: 3})
+          request(app).get(recordsBasePath(projectId)).query({limit: 3})
         ).expect(200);
         const body = res.body as ListRecordsResponse;
         expect(body.records.length).to.be.at.most(3);
@@ -123,9 +120,7 @@ describe('Records CRUD API', () => {
     it('returns 400 when limit is greater than 500', async () => {
       await withRecordsBackup(async projectId => {
         await requestAuthAndType(
-          request(app)
-            .get(recordsBasePath(projectId))
-            .query({limit: 501})
+          request(app).get(recordsBasePath(projectId)).query({limit: 501})
         ).expect(400);
       });
     });
@@ -144,7 +139,9 @@ describe('Records CRUD API', () => {
             .query({limit: 10, startKey: cursor})
         ).expect(200);
         const body = res.body as ListRecordsResponse;
-        expect(body.records.every((r: MinimalRecordInList) => r.recordId > cursor)).to.be.true;
+        expect(
+          body.records.every((r: MinimalRecordInList) => r.recordId > cursor)
+        ).to.be.true;
       });
     });
 
@@ -163,13 +160,11 @@ describe('Records CRUD API', () => {
         if (fullBody.records.length < 2) return;
         const cursor = fullBody.records[1].recordId;
         const page2 = await requestAuthAndType(
-          request(app)
-            .get(recordsBasePath(projectId))
-            .query({
-              formId: BACKUP_FORM_IDS.FORM2,
-              limit: 2,
-              startKey: cursor,
-            })
+          request(app).get(recordsBasePath(projectId)).query({
+            formId: BACKUP_FORM_IDS.FORM2,
+            limit: 2,
+            startKey: cursor,
+          })
         ).expect(200);
         const page2Body = page2.body as ListRecordsResponse;
         expect(page2Body.records.length).to.be.at.most(2);
@@ -287,12 +282,10 @@ describe('Records CRUD API', () => {
     it('returns full form data for existing record', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId} = createRes.body as CreateRecordResponse;
 
@@ -320,21 +313,17 @@ describe('Records CRUD API', () => {
 
     it('returns 401 without auth', async () => {
       await withRecordsBackup(async projectId => {
-        await request(app)
-          .get(recordsBasePath(projectId))
-          .expect(401);
+        await request(app).get(recordsBasePath(projectId)).expect(401);
       });
     });
 
     it('returns specific revision when revisionId query provided', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId, revisionId: rev1} =
           createRes.body as CreateRecordResponse;
@@ -374,12 +363,10 @@ describe('Records CRUD API', () => {
     it('updates with partial field data (field-level)', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId, revisionId} = createRes.body as CreateRecordResponse;
 
@@ -395,9 +382,7 @@ describe('Records CRUD API', () => {
         };
 
         const updateRes = await requestAuthAndType(
-          request(app)
-            .patch(recordPath(projectId, recordId))
-            .send(updateBody)
+          request(app).patch(recordPath(projectId, recordId)).send(updateBody)
         ).expect(200);
 
         const updated = updateRes.body as UpdateRecordResponse;
@@ -416,12 +401,10 @@ describe('Records CRUD API', () => {
     it('returns 401 when user has no project-level edit permission', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId, revisionId} = createRes.body as CreateRecordResponse;
 
@@ -431,9 +414,7 @@ describe('Records CRUD API', () => {
         };
 
         await requestAuthAndType(
-          request(app)
-            .patch(recordPath(projectId, recordId))
-            .send(updateBody),
+          request(app).patch(recordPath(projectId, recordId)).send(updateBody),
           localUserToken
         ).expect(401);
       });
@@ -442,20 +423,16 @@ describe('Records CRUD API', () => {
     it('returns 400 when revisionId does not belong to record', async () => {
       await withRecordsBackup(async projectId => {
         const createA = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const createB = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId: recordIdA} = createA.body as CreateRecordResponse;
         const {revisionId: revisionIdB} = createB.body as CreateRecordResponse;
@@ -476,12 +453,10 @@ describe('Records CRUD API', () => {
     it('soft-deletes and returns 204', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId, revisionId} = createRes.body as CreateRecordResponse;
 
@@ -496,12 +471,10 @@ describe('Records CRUD API', () => {
     it('returns 400 when revisionId query missing', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId} = createRes.body as CreateRecordResponse;
 
@@ -514,12 +487,10 @@ describe('Records CRUD API', () => {
     it('returns 401 when user has no project-level delete permission', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId, revisionId} = createRes.body as CreateRecordResponse;
 
@@ -551,12 +522,10 @@ describe('Records CRUD API', () => {
     it('excludes deleted records by default (filterDeleted true)', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId, revisionId} = createRes.body as CreateRecordResponse;
         await requestAuthAndType(
@@ -581,12 +550,10 @@ describe('Records CRUD API', () => {
     it('includes deleted records when filterDeleted is false', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app)
-            .post(recordsBasePath(projectId))
-            .send({
-              formId: BACKUP_FORM_IDS.FORM2,
-              createdBy: 'admin',
-            })
+          request(app).post(recordsBasePath(projectId)).send({
+            formId: BACKUP_FORM_IDS.FORM2,
+            createdBy: 'admin',
+          })
         ).expect(201);
         const {recordId, revisionId} = createRes.body as CreateRecordResponse;
         await requestAuthAndType(
@@ -652,7 +619,8 @@ describe('Records CRUD API', () => {
         });
         await saveCouchUser(couchUser);
 
-        const expressUser = await getExpressUserFromEmailOrUserId(localUserName);
+        const expressUser =
+          await getExpressUserFromEmailOrUserId(localUserName);
         if (!expressUser) throw new Error('Local user not found');
         const signingKey = await KEY_SERVICE.getSigningKey();
         const guestToken = await generateJwtFromUser({
@@ -688,7 +656,8 @@ describe('Records CRUD API', () => {
         });
         await saveCouchUser(couchUser);
 
-        const expressUser = await getExpressUserFromEmailOrUserId(localUserName);
+        const expressUser =
+          await getExpressUserFromEmailOrUserId(localUserName);
         if (!expressUser) throw new Error('Local user not found');
         const signingKey = await KEY_SERVICE.getSigningKey();
         const guestToken = await generateJwtFromUser({
@@ -728,7 +697,8 @@ describe('Records CRUD API', () => {
         });
         await saveCouchUser(couchUser);
 
-        const expressUser = await getExpressUserFromEmailOrUserId(localUserName);
+        const expressUser =
+          await getExpressUserFromEmailOrUserId(localUserName);
         if (!expressUser) throw new Error('Local user not found');
         const signingKey = await KEY_SERVICE.getSigningKey();
         const guestToken = await generateJwtFromUser({

@@ -818,9 +818,7 @@ export type PutConfirmEmailVerificationResponse = z.infer<
 export const PostCreateRecordInputSchema = newFormRecordSchema.partial({
   createdBy: true,
 });
-export type PostCreateRecordInput = z.infer<
-  typeof PostCreateRecordInputSchema
->;
+export type PostCreateRecordInput = z.infer<typeof PostCreateRecordInputSchema>;
 
 /** POST create record response */
 export const PostCreateRecordResponseSchema = z.object({

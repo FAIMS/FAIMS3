@@ -32,11 +32,11 @@ import sinon from 'sinon';
 // We import the modules themselves so sinon can stub their exported functions.
 // This works because ts-node compiles to CommonJS, making exports mutable.
 
-import * as usersModule from '../src/couchdb/users';
-import * as invitesModule from '../src/couchdb/invites';
-import * as teamsModule from '../src/couchdb/teams';
 import * as keySigningModule from '../src/auth/keySigning/create';
 import * as buildconfig from '../src/buildconfig';
+import * as invitesModule from '../src/couchdb/invites';
+import * as teamsModule from '../src/couchdb/teams';
+import * as usersModule from '../src/couchdb/users';
 
 // Import the functions under test — must come after the module imports above
 // so that when helpers.ts is loaded, the stubs are already in place on the
@@ -221,6 +221,7 @@ describe('applyProvisionPolicy', () => {
 
   let createUserStub: sinon.SinonStub;
   let createTeamStub: sinon.SinonStub;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let saveCouchUserStub: sinon.SinonStub;
 
   beforeEach(() => {

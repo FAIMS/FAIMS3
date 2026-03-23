@@ -17,10 +17,10 @@ import {
   useMediaQuery,
   useTheme,
 } from '@mui/material';
-import SyncIcon from '@mui/icons-material/Sync';
 import {useStore} from '@tanstack/react-form';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
+import {logError} from '../../logging';
 import {
   FieldVisibilityMap,
   FormManagerConfig,
@@ -29,7 +29,6 @@ import {
 import {FaimsForm} from '../types';
 import {getFieldId} from '../utils';
 import {FormSection} from './FormSection';
-import {logError} from '../../logging';
 
 // ============================================================================
 // Constants

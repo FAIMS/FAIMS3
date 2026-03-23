@@ -18,18 +18,11 @@
 
 import {Role} from '@faims3/data-model';
 import {expect} from 'chai';
-import {
-  canDeleteRecord,
-  canEditRecord,
-  canReadRecord,
-} from '../src/recordAuth';
+import {canDeleteRecord, canEditRecord, canReadRecord} from '../src/recordAuth';
 
 const projectId = 'test-project-id';
 
-function makeUser(
-  userId: string,
-  projectRole: Role
-): globalThis.Express.User {
+function makeUser(userId: string, projectRole: Role): globalThis.Express.User {
   return {
     user_id: userId,
     globalRoles: [],
@@ -82,7 +75,6 @@ describe('recordAuth', () => {
         })
       ).to.be.true;
     });
-
   });
 
   describe('canEditRecord', () => {
