@@ -14,6 +14,7 @@
 
 import {FieldType} from '../../state/initial';
 import {ConditionType} from './types';
+import {SelectableConditionOption} from '../../types/condition';
 import {
   findOptionReferences as findOptionReferencesDomain,
   updateConditionReferences as updateConditionReferencesDomain,
@@ -31,13 +32,19 @@ export const getFieldLabel = (f: FieldType) => {
 // Recursively checks if a field is used in a single condition
 export const isFieldUsedInCondition = isFieldUsedInConditionDomain;
 
+type FieldMap = Record<string, FieldType>;
+type ViewMap = Record<
+  string,
+  {label: string; condition?: ConditionType; fields: string[]}
+>;
+
 /**
  * Finds where a field is used in conditions or templated string fields
  */
 export const findFieldCondtionUsage = (
   fieldName: string,
-  allFields: Record<string, any>,
-  allFviews: Record<string, any>
+  allFields: FieldMap,
+  allFviews: ViewMap
 ): string[] => {
   const affected: string[] = [];
 
@@ -85,11 +92,8 @@ export const findFieldCondtionUsage = (
  */
 export function findSectionExternalUsage(
   targetSectionId: string,
-  allFviews: Record<
-    string,
-    {label: string; condition?: ConditionType; fields: string[]}
-  >,
-  allFields: Record<string, any>
+  allFviews: ViewMap,
+  allFields: FieldMap
 ): string[] {
   const references: string[] = [];
 
@@ -141,11 +145,8 @@ export function findSectionExternalUsage(
 export function findFormExternalUsage(
   targetFormId: string,
   viewsets: Record<string, {label: string; views: string[]}>,
-  allFviews: Record<
-    string,
-    {label: string; condition?: ConditionType; fields: string[]}
-  >,
-  allFields: Record<string, any>
+  allFviews: ViewMap,
+  allFields: FieldMap
 ): string[] {
   const references: string[] = [];
 
@@ -222,9 +223,10 @@ export function findInvalidConditionReferences(
   }
 
   const validOptions: string[] =
-    targetField['component-parameters'].ElementProps?.options?.map(
-      (opt: any) => opt.value
-    ) || [];
+    (
+      (targetField['component-parameters'].ElementProps?.options ??
+        []) as SelectableConditionOption[]
+    ).map(opt => opt.value);
 
   // Check if a condition is using a value that no longer exists
   const getInvalidExpectedValue = (condition: ConditionType): string[] => {

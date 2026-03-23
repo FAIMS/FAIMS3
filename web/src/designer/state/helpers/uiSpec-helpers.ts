@@ -1,4 +1,5 @@
 import {ConditionType} from '../../components/condition/types';
+import {replaceFieldInCondition as replaceFieldInConditionDomain} from '../../domain/conditions/traversal';
 import {NotebookUISpec} from '../initial';
 
 /**
@@ -117,35 +118,5 @@ export const replaceFieldInCondition = (
   condition: ConditionType | null | undefined,
   oldId: string,
   newId: string
-): ConditionType | null | undefined => {
-  if (!condition) return condition;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const node: any = condition;
-
-  if (
-    typeof node === 'object' &&
-    !Array.isArray(node) &&
-    node !== null &&
-    'field' in node &&
-    node.field === oldId
-  ) {
-    // Shallow-clone to preserve Immer draft semantics.
-    return {...node, field: newId};
-  }
-
-  if (
-    typeof node === 'object' &&
-    'conditions' in node &&
-    Array.isArray(node.conditions)
-  ) {
-    return {
-      ...node,
-      conditions: node.conditions.map((c: ConditionType) =>
-        replaceFieldInCondition(c, oldId, newId)
-      ),
-    };
-  }
-
-  return node as ConditionType;
-};
+): ConditionType | null | undefined =>
+  replaceFieldInConditionDomain(condition, oldId, newId);

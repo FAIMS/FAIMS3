@@ -33,9 +33,14 @@ import {useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {EMPTY_BOOLEAN_CONDITION, EMPTY_FIELD_CONDITION} from './constants';
 import {ConditionProps, ConditionType} from './types';
+import {SelectableConditionOption} from '../../types/condition';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import {getFieldLabel} from './utils';
+
+const getSelectableOptions = (fieldDef: FieldType): SelectableConditionOption[] =>
+  (fieldDef['component-parameters']?.ElementProps?.options ??
+    []) as SelectableConditionOption[];
 
 export const ConditionControl = (props: ConditionProps) => {
   const initial = props.initial || EMPTY_FIELD_CONDITION;
@@ -265,13 +270,12 @@ export const FieldConditionControl = (props: ConditionProps) => {
       newOperator = allowedOperators[0];
     }
 
-    let newValue: any = '';
+    let newValue: unknown = '';
     if (newFieldDef) {
       if (newFieldDef['component-name'] === 'Checkbox') {
         newValue = true;
       } else if (isPredefinedOptions(newFieldDef)) {
-        const options =
-          newFieldDef['component-parameters']?.ElementProps?.options ?? [];
+        const options = getSelectableOptions(newFieldDef);
         if (options.length > 0) {
           if (newFieldDef['component-name'] === 'MultiSelect') {
             newValue = [options[0].value];
@@ -312,7 +316,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
   const renderValueEditor = (fieldDef: FieldType) => {
     const cName = fieldDef['component-name'];
     const params = fieldDef['component-parameters'] || {};
-    const possibleOptions = params.ElementProps?.options || [];
+    const possibleOptions =
+      (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
+      [];
 
     if (
       cName !== 'Select' &&
@@ -336,7 +342,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       case 'Select':
       case 'RadioGroup': {
         const isValidOption = possibleOptions.some(
-          (opt: any) => opt.value === condition.value
+          opt => opt.value === condition.value
         );
         return (
           <FormControl sx={{minWidth: 200}} error={!isValidOption}>
@@ -347,7 +353,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
               value={isValidOption ? condition.value : condition.value ?? ''}
               onChange={e => updateValue(e.target.value)}
             >
-              {possibleOptions.map((opt: any) => (
+              {possibleOptions.map(opt => (
                 <MenuItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </MenuItem>
@@ -363,10 +369,10 @@ export const FieldConditionControl = (props: ConditionProps) => {
       }
       case 'MultiSelect': {
         const selectedValues = Array.isArray(condition.value)
-          ? condition.value
+          ? (condition.value as string[])
           : [];
         const areAllValid = selectedValues.every(v =>
-          possibleOptions.some((opt: any) => opt.value === v)
+          possibleOptions.some(opt => opt.value === v)
         );
         return (
           <FormControl sx={{minWidth: 200}} error={!areAllValid}>
@@ -376,19 +382,19 @@ export const FieldConditionControl = (props: ConditionProps) => {
               data-testid="value-input"
               label="Value"
               value={selectedValues}
-              onChange={e => updateValue(e.target.value)}
+              onChange={e => updateValue(e.target.value as string[])}
               // Render selected values as labels
               renderValue={selected => {
                 const selectedLabels = (selected as string[]).map(value => {
                   const option = possibleOptions.find(
-                    (opt: any) => opt.value === value
+                    opt => opt.value === value
                   );
                   return option ? option.label : value;
                 });
                 return selectedLabels.join(', ');
               }}
             >
-              {possibleOptions.map((opt: any) => (
+              {possibleOptions.map(opt => (
                 <MenuItem key={opt.value} value={opt.value}>
                   <Checkbox checked={selectedValues.indexOf(opt.value) > -1} />
                   <ListItemText primary={opt.label} />
@@ -396,14 +402,12 @@ export const FieldConditionControl = (props: ConditionProps) => {
               ))}
             </Select>
             {selectedValues.some(
-              v => !possibleOptions.some((opt: any) => opt.value === v)
+              v => !possibleOptions.some(opt => opt.value === v)
             ) && (
               <div style={{color: 'red', fontSize: '12px'}}>
                 Invalid values: "
                 {selectedValues
-                  .filter(
-                    v => !possibleOptions.some((opt: any) => opt.value === v)
-                  )
+                  .filter(v => !possibleOptions.some(opt => opt.value === v))
                   .join(', ')}
                 "
               </div>
@@ -445,7 +449,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           );
         } else {
           const isValidOption = possibleOptions.some(
-            (opt: any) => opt.value === condition.value
+            opt => opt.value === condition.value
           );
           return (
             <TextField
@@ -470,7 +474,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
     if (!targetFieldDef) return true;
     const cName = targetFieldDef['component-name'];
     const params = targetFieldDef['component-parameters'] || {};
-    const possibleOptions = params.ElementProps?.options || [];
+    const possibleOptions =
+      (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
+      [];
     const enableOtherOption = params.ElementProps?.enableOtherOption ?? false;
 
     if (
@@ -481,13 +487,13 @@ export const FieldConditionControl = (props: ConditionProps) => {
     }
 
     if (cName === 'Select' || cName === 'RadioGroup') {
-      return possibleOptions.some((o: any) => o.value === condition.value);
+      return possibleOptions.some(o => o.value === condition.value);
     }
     if (cName === 'MultiSelect') {
       if (!Array.isArray(condition.value)) return false;
       if (enableOtherOption) return true;
-      return (condition.value as any[]).every((val: any) =>
-        possibleOptions.some((o: any) => o.value === val)
+      return (condition.value as string[]).every(val =>
+        possibleOptions.some(o => o.value === val)
       );
     }
     if (cName === 'Checkbox') {

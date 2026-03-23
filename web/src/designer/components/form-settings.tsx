@@ -19,6 +19,7 @@ import {
   MenuItem,
   Select,
   Typography,
+  SelectChangeEvent,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
@@ -92,7 +93,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const [expanded, setExpanded] = React.useState(false);
 
   const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
-    React.useState('always');
+    React.useState<'always' | 'visited' | 'noErrors'>('always');
 
   // Ensure selected value persists and is updated in the Redux store
   React.useEffect(() => {
@@ -104,14 +105,16 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   /**
    * Updates the Finish Button Behavior setting in Redux and persists it
    */
-  const handlePublishButtonBehaviourChange = (event: any) => {
-    const newValue = event.target.value;
+  const handlePublishButtonBehaviourChange = (
+    event: SelectChangeEvent<'always' | 'visited' | 'noErrors'>
+  ) => {
+    const newValue = event.target.value as 'always' | 'visited' | 'noErrors';
     setSelectedPublishBehaviour(newValue);
 
     dispatch(
       viewSetPublishButtonBehaviourUpdated({
         viewSetId,
-        publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
+        publishButtonBehaviour: newValue,
       })
     );
   };
@@ -164,7 +167,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
    * Updates the selected summary fields
    */
   const handleSummaryFieldsChange = (
-    _: any,
+    _event: React.SyntheticEvent,
     newValue: Array<{label: string; value: string}>
   ) => {
     dispatch(
@@ -179,7 +182,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
    * Updates or clears the HRID field selection
    */
   const handleHridFieldChange = (
-    _: any,
+    _event: React.SyntheticEvent,
     newValue: {label: string; value: string} | null
   ) => {
     dispatch(viewSetHridUpdated({viewSetId, hridField: newValue?.value}));
