@@ -14,10 +14,22 @@
  * limitations under the License.
  *
  * Fixtures, types, and path helpers for Records CRUD API tests.
- * Single source of truth for backup project id, form ids, and API contract types.
+ * Backup/form ids live here; request/response shapes match @faims3/data-model api types
+ * (same as api/src/api/records.ts).
  */
 
 import {restoreFromBackup} from '../../src/couchdb/backupRestore';
+
+/** Same types as api/src/api/records.ts (Zod-inferred in library/data-model/src/api.ts). */
+export type {
+  GetListRecordsResponse as ListRecordsResponse,
+  GetRecordResponse,
+  ListRecordsItem as MinimalRecordInList,
+  PatchUpdateRecordInput as UpdateRecordBody,
+  PatchUpdateRecordResponse as UpdateRecordResponse,
+  PostCreateRecordInput as CreateRecordBody,
+  PostCreateRecordResponse as CreateRecordResponse,
+} from '@faims3/data-model';
 
 // ---------------------------------------------------------------------------
 // Backup fixture (must match test/backup.jsonl content)
@@ -48,98 +60,9 @@ export function recordsBasePath(projectId: string): string {
   return `${NOTEBOOKS_BASE}/${projectId}/records`;
 }
 
-/** Path for a single record: GET, PATCH, DELETE */
+/** Path for a single record: GET, PUT, DELETE */
 export function recordPath(projectId: string, recordId: string): string {
   return `${recordsBasePath(projectId)}/${recordId}`;
-}
-
-// ---------------------------------------------------------------------------
-// API response types (match API contract)
-// ---------------------------------------------------------------------------
-
-export interface CreateRecordResponse {
-  recordId: string;
-  revisionId: string;
-}
-
-export interface MinimalRecordInList {
-  projectId: string;
-  recordId: string;
-  revisionId: string;
-  created: string;
-  createdBy: string;
-  updated: string;
-  updatedBy: string;
-  conflicts: boolean;
-  deleted: boolean;
-  type: string;
-  relationship?: unknown;
-}
-
-export interface ListRecordsResponse {
-  records: MinimalRecordInList[];
-}
-
-export interface FormDataEntryValue {
-  data: unknown;
-  annotation?: {annotation: string; uncertainty: boolean};
-  attachments?: Array<{
-    attachmentId: string;
-    filename: string;
-    fileType: string;
-  }>;
-}
-
-export interface GetRecordResponse {
-  formId: string;
-  revisionId: string;
-  data: Record<string, FormDataEntryValue>;
-  context: {
-    record: unknown;
-    revision: unknown;
-    hrid: string | null;
-  };
-}
-
-export interface UpdateRecordResponse {
-  revisionId: string;
-}
-
-// ---------------------------------------------------------------------------
-// Request body types (for type-safe test payloads)
-// ---------------------------------------------------------------------------
-
-export interface CreateRecordBody {
-  formId: string;
-  createdBy?: string;
-  relationship?: {
-    parent?: Array<{
-      recordId: string;
-      fieldId: string;
-      relationTypeVocabPair: [string, string];
-    }>;
-    linked?: Array<{
-      recordId: string;
-      fieldId: string;
-      relationTypeVocabPair: [string, string];
-    }>;
-  };
-}
-
-export interface FormDataEntry {
-  data: unknown;
-  annotation?: {annotation: string; uncertainty: boolean};
-  attachments?: Array<{
-    attachmentId: string;
-    filename: string;
-    fileType: string;
-  }>;
-}
-
-export interface UpdateRecordBody {
-  revisionId: string;
-  update: Record<string, FormDataEntry>;
-  mode?: 'new' | 'parent';
 }
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,5 @@
-import {FormDataEntry} from '@faims3/data-model';
 import z from 'zod';
-import {FullFieldProps} from '../formModule/types';
+import {FormDataEntry, FullFieldProps} from '../formModule/types';
 import {DataViewFieldRegistryEntry} from '../rendering/types';
 
 export type FieldReturnType =

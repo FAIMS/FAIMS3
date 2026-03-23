@@ -253,9 +253,9 @@ recordsRouter.get(
 );
 
 /**
- * PATCH /api/notebooks/:id/records/:recordId - Update record (full or partial fields)
+ * PUT /api/notebooks/:id/records/:recordId - Update record (full or partial fields)
  */
-recordsRouter.patch(
+recordsRouter.put(
   '/:recordId',
   requireAuthenticationAPI,
   isAllowedToMiddleware({

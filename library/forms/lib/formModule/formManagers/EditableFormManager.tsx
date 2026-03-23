@@ -2,7 +2,6 @@ import {
   AvpUpdateMode,
   currentlyVisibleMap,
   FaimsAttachments,
-  FormDataEntry,
   getFormLabel,
   HydratedRecordDocument,
 } from '@faims3/data-model';
@@ -22,7 +21,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {logError, logInfo, logWarn} from '../../logging';
 import {formDataExtractor} from '../../utils';
 import {CompiledFormSchema, FormValidation} from '../../validationModule';
-import {FaimsForm, FaimsFormData} from '../types';
+import {FaimsForm, FaimsFormData, FormDataEntry} from '../types';
 import {LiveFormProgress} from './components/FormProgress';
 import {FormManager} from './FormManager';
 import {

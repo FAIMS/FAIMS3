@@ -10,8 +10,11 @@ import {
 import {grey} from '@mui/material/colors';
 import NoteIcon from '@mui/icons-material/Note';
 import {useState} from 'react';
-import {FormAnnotation} from '@faims3/data-model';
-import {FaimsFormFieldState, FieldSpecificationMeta} from './types';
+import {
+  FaimsFormFieldState,
+  FieldSpecificationMeta,
+  FormAnnotation,
+} from './types';
 
 type FieldAnnotationProps = {
   config: FieldSpecificationMeta;

@@ -174,7 +174,30 @@ const validateDownloadToken = async ({
   }
 };
 
-// Register /:id/records/export before the records router so export is not matched as :recordId
+// =============================================================================
+// Export Routes
+// =============================================================================
+
+/**
+ * Export record data.
+ *
+ * This route redirects to a new URL containing a signed JWT with download
+ * details. The JWT is then validated by the /download/:downloadToken route.
+ *
+ * Supported formats:
+ * - csv: Requires viewID, exports tabular data for a single view
+ * - zip: Optional viewID, exports attachments (all views if no viewID)
+ * - geojson: Exports all spatial data as GeoJSON
+ * - kml: Exports all spatial data as KML
+ * - full: Exports everything into a single ZIP archive
+ *
+ * For full exports, additional query parameters control what's included:
+ * - includeTabular (default: true)
+ * - includeAttachments (default: true)
+ * - includeGeoJSON (default: true)
+ * - includeKML (default: true)
+ * - includeMetadata (default: true)
+ */
 api.get(
   '/:id/records/export',
   requireAuthenticationAPI,
@@ -257,7 +280,10 @@ api.get(
   }
 );
 
-/** @deprecated - use GET /:id/records/export with query params */
+/**
+ * Export record data (old route for CSV/ZIP with ViewID and Format in the param)
+ * @deprecated - use the new /export style route above - this is here for backwards compat
+ */
 api.get(
   '/:id/records/:viewID.:format',
   requireAuthenticationAPI,
@@ -271,6 +297,8 @@ api.get(
     params: z.object({
       id: z.string(),
       viewID: z.string(),
+      // don't allow geoJSON or full here - must use new route
+      // @deprecated
       format: z.enum(['csv', 'zip']),
     }),
   }),
@@ -279,8 +307,10 @@ api.get(
       throw new Exceptions.UnauthorizedException('Not authenticated.');
     }
 
+    // get the label for this form for the filename header
     const uiSpec = await getEncodedNotebookUISpec(req.params.id);
 
+    // check the view ID is valid
     if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
       throw new Exceptions.ItemNotFoundException(
         `Form with id ${req.query.viewID} not found in notebook`
@@ -294,6 +324,7 @@ api.get(
       viewID: req.params.viewID,
     };
 
+    // Build the download token payload
     const jwt = await generateDownloadToken({
       user: req.user,
       payload: payload,

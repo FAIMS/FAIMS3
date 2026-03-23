@@ -330,7 +330,7 @@ describe('Records CRUD API', () => {
 
         const updateRes = await requestAuthAndType(
           request(app)
-            .patch(recordPath(projectId, recordId))
+            .put(recordPath(projectId, recordId))
             .send({
               revisionId: rev1,
               update: {hridFORM2: {data: 'UpdatedValue', attachments: []}},
@@ -382,7 +382,7 @@ describe('Records CRUD API', () => {
         };
 
         const updateRes = await requestAuthAndType(
-          request(app).patch(recordPath(projectId, recordId)).send(updateBody)
+          request(app).put(recordPath(projectId, recordId)).send(updateBody)
         ).expect(200);
 
         const updated = updateRes.body as UpdateRecordResponse;
@@ -414,7 +414,7 @@ describe('Records CRUD API', () => {
         };
 
         await requestAuthAndType(
-          request(app).patch(recordPath(projectId, recordId)).send(updateBody),
+          request(app).put(recordPath(projectId, recordId)).send(updateBody),
           localUserToken
         ).expect(401);
       });
@@ -439,7 +439,7 @@ describe('Records CRUD API', () => {
 
         await requestAuthAndType(
           request(app)
-            .patch(recordPath(projectId, recordIdA))
+            .put(recordPath(projectId, recordIdA))
             .send({
               revisionId: revisionIdB,
               update: {hridFORM2: {data: 'x', attachments: []}},
@@ -645,7 +645,7 @@ describe('Records CRUD API', () => {
       });
     });
 
-    it('returns 403 when GUEST tries to patch another user record', async () => {
+    it('returns 403 when GUEST tries to update another user record', async () => {
       await withRecordsBackup(async projectId => {
         const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
         if (!couchUser) throw new Error('Local user not found');
@@ -675,7 +675,7 @@ describe('Records CRUD API', () => {
         if (!adminRecord) throw new Error('No admin record in backup');
 
         await request(app)
-          .patch(recordPath(projectId, adminRecord.recordId))
+          .put(recordPath(projectId, adminRecord.recordId))
           .set('Authorization', `Bearer ${guestToken}`)
           .set('Content-Type', 'application/json')
           .send({

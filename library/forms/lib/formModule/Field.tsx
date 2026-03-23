@@ -1,8 +1,4 @@
-import {
-  FaimsAttachments,
-  FormAnnotation,
-  FormDataEntry,
-} from '@faims3/data-model';
+import {FaimsAttachments} from '@faims3/data-model';
 import {Alert} from '@mui/material';
 import React, {useMemo} from 'react';
 import {getFieldInfo} from '../fieldRegistry/registry';
@@ -14,6 +10,8 @@ import {
   EncodedFieldSpecification,
   FaimsForm,
   FaimsFormFieldState,
+  FormAnnotation,
+  FormDataEntry,
 } from './types';
 import {getFieldId} from './utils';
 
