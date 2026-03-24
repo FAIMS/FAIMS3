@@ -313,7 +313,7 @@ api.get(
     // check the view ID is valid
     if (!uiSpec || !(req.params.viewID in uiSpec.viewsets)) {
       throw new Exceptions.ItemNotFoundException(
-        `Form with id ${req.query.viewID} not found in notebook`
+        `Form with id ${req.params.viewID} not found in notebook`
       );
     }
 
