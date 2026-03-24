@@ -6,7 +6,7 @@ The Records CRUD API provides a **stateless REST interface** for reading and wri
 
 - **Online-only or server-driven workflows** (e.g. web back-office, scripts, integrations)
 - **Record-level or field-level updates** without syncing the full dataset
-- **The same authorization rules** as sync: project roles and "my records" vs "all records" are enforced per request
+- **The same authorization rules** as sync: project roles and "my records" vs "all records" are enforced per request (including fork and update)
 
 The API is **stateless**: each request is authenticated with a Bearer JWT and authorized against the project and, for read/update/delete, the specific record. No session state is kept on the server.
 
@@ -29,14 +29,25 @@ Authorization: Bearer <access_token>
 
 Authorization is enforced in two layers:
 
-1. **Project-level**: the user must have at least the action required for the operation on that project (e.g. `READ_MY_PROJECT_RECORDS` for list/get, `CREATE_PROJECT_RECORD` for create). See [PermissionModel](PermissionModel.md) for actions and roles.
-2. **Record-level**: for get/update/delete, the server checks whether the record is "yours" (`created_by` equals your user id) or someone else's, and requires `READ_MY_PROJECT_RECORDS` / `EDIT_MY_PROJECT_RECORDS` / `DELETE_MY_PROJECT_RECORDS` for your own records, or `READ_ALL_PROJECT_RECORDS` / `EDIT_ALL_PROJECT_RECORDS` / `DELETE_ALL_PROJECT_RECORDS` for others.
+1. **Project-level**: the user must have at least the action required for the operation on that project (e.g. `READ_MY_PROJECT_RECORDS` for list/get, `CREATE_PROJECT_RECORD` for create, `EDIT_MY_PROJECT_RECORDS` to pass the gate for update/fork/delete — see below). See [PermissionModel](PermissionModel.md) for actions and roles.
+2. **Record-level**: for get/update/fork/delete, the server checks whether the record is "yours" (`created_by` equals your user id) or someone else's, and requires `READ_MY_PROJECT_RECORDS` / `EDIT_MY_PROJECT_RECORDS` / `DELETE_MY_PROJECT_RECORDS` for your own records, or `READ_ALL_PROJECT_RECORDS` / `EDIT_ALL_PROJECT_RECORDS` / `DELETE_ALL_PROJECT_RECORDS` for others.
 
 ## Data model (brief)
 
 - A **record** is the top-level entity; it has a unique **record ID** (e.g. `rec-<uuid>`) and a **type** equal to the form/viewset ID (e.g. `FORM1`, `FORM2`).
-- Each record has one or more **revisions**. The current state is given by a **head** revision; each revision has a **revision ID** (e.g. `frev-<uuid>`).
+- Each record has one or more **revisions**. The current state is given by a **head** revision; each revision has a **revision ID** (e.g. `frev-<uuid>`). Revisions can reference a **parent** revision (for history and for update `mode: "parent"` in the data engine).
+- You can **fork** a revision: create a **new** revision document that copies the same AVP map as an existing revision, sets that revision as its single parent, and moves the record head to the new revision. This matches how the form app prepares a working copy before editing with parent-mode AVP semantics.
 - Field values are stored as **AVPs** (attribute–value pairs). When you **get** a record, you receive **form data**: a map of field IDs to `{ data, annotation?, attachments? }`. When you **update**, you send the same shape for the fields you want to change (partial updates are supported).
+
+## Attachments
+
+**Disclaimer:** The Records CRUD API does **not** provide full attachment workflows. There are no dedicated endpoints to upload files or to download a single attachment by ID.
+
+- **GET** responses may include an `attachments` array per field, but each entry is **metadata only** (`attachmentId`, `filename`, `fileType`). File bytes are **not** returned in JSON.
+- **PUT** accepts the same metadata shape on fields you update. The server writes **references** (`faims_attachments`) on AVPs; it does **not** create new attachment documents or accept raw file data (no multipart, base64 payload, or equivalent in this API). Pointing at attachment IDs that already exist in the project data store may be possible, but **uploading new files through this REST surface is not supported** at present.
+- The FAIMS app stores binaries via the data model’s attachment services and sync; that path is separate from these routes.
+
+To obtain attachment **files** in bulk, use the notebook **export** API (for example ZIP or full export) under `/api/notebooks/...`, not the per-record CRUD paths documented here.
 
 ## Endpoints
 
@@ -174,13 +185,52 @@ Returns the full form data for a single record (the current head revision, or a 
 }
 ```
 
-- **data**: map of field ID to `{ data, annotation?, attachments? }`. `data` is the field value (type depends on the field). `attachments` is an array of `{ attachmentId, filename, fileType }`.
+- **data**: map of field ID to `{ data, annotation?, attachments? }`. `data` is the field value (type depends on the field). `attachments` is an array of `{ attachmentId, filename, fileType }` (metadata only; see [Attachments](#attachments)).
+
+---
+
+### Fork revision (new head from an existing revision)
+
+**POST** `/api/notebooks/:id/records/:recordId/revisions`
+
+Creates a **new** revision that reuses the same AVP references as the revision you specify, sets that revision as the **parent** of the new one, and updates the record so the new revision is the **head**. No field values are changed by this call alone — use the update endpoint afterward.
+
+This is the same operation as `FormOperations.createRevision` in the data model: use it when you want default **`mode: "parent"`** updates (the updated revision must have exactly one parent) but the current head has **no** parent yet (e.g. first revision after create).
+
+**Required permission**: project-level `EDIT_MY_PROJECT_RECORDS` (same gate as update), plus record-level edit (`EDIT_MY_PROJECT_RECORDS` or `EDIT_ALL_PROJECT_RECORDS` depending on who created the record).
+
+**Request body**:
+
+| Field        | Type   | Required | Description |
+|-------------|--------|----------|-------------|
+| `revisionId`| string | Yes      | Existing revision to fork from (must belong to `:recordId`). |
+| `createdBy`| string | No       | User ID stored on the new revision. Defaults to the token user. |
+
+**Example**:
+
+```json
+{
+  "revisionId": "frev-<uuid>"
+}
+```
+
+**Response** (201 Created):
+
+```json
+{
+  "revisionId": "frev-<new-uuid>"
+}
+```
+
+The new `revisionId` is the record’s new head. The previous revision remains in history and is the parent of the new revision (`context.revision.parents` on a subsequent GET will include it).
+
+**Errors**: `400` if `revisionId` belongs to a different record (revision mismatch), or other invalid input; `404` if the record or revision does not exist.
 
 ---
 
 ### Update record (record-level or field-level)
 
-**PATCH** `/api/notebooks/:id/records/:recordId`
+**PUT** `/api/notebooks/:id/records/:recordId`
 
 Updates the given revision by applying the provided field data. You can send **all** fields (record-level) or **only the fields that change** (field-level); omitted fields keep their current values.
 
@@ -268,8 +318,9 @@ or a message string depending on the middleware.
 | GET    | `/api/notebooks/:id/records` | READ_MY_PROJECT_RECORDS | Applied in filter | List records |
 | POST   | `/api/notebooks/:id/records` | CREATE_PROJECT_RECORD   | — | Create record |
 | GET    | `/api/notebooks/:id/records/:recordId` | READ_* | Read this record | Get one record |
-| PATCH  | `/api/notebooks/:id/records/:recordId` | — | Edit this record | Update record |
-| DELETE | `/api/notebooks/:id/records/:recordId` | — | Delete this record | Soft-delete |
+| POST   | `/api/notebooks/:id/records/:recordId/revisions` | EDIT_MY_PROJECT_RECORDS | Edit this record | Fork revision (new head) |
+| PUT    | `/api/notebooks/:id/records/:recordId` | EDIT_MY_PROJECT_RECORDS | Edit this record | Update record |
+| DELETE | `/api/notebooks/:id/records/:recordId` | EDIT_MY_PROJECT_RECORDS | Delete this record | Soft-delete |
 
 ## Example: create and update a record
 
@@ -288,7 +339,7 @@ or a message string depending on the middleware.
 2. **Update** the first revision with field data (use `mode: "new"` because this revision has no parent):
 
    ```http
-   PATCH /api/notebooks/my-project-id/records/rec-...
+   PUT /api/notebooks/my-project-id/records/rec-...
    Content-Type: application/json
    Authorization: Bearer <token>
 
@@ -311,6 +362,39 @@ or a message string depending on the middleware.
    ```
 
    Response: `200` with full form data including the updated field.
+
+## Example: fork then update with default `parent` mode
+
+After the first save, the head revision may still have **no** parent. To align with **parent-mode** AVP behaviour (same as the form app), fork the head, then **PUT** with default `mode` (`"parent"`):
+
+1. **Fork** the current head (from list or GET):
+
+   ```http
+   POST /api/notebooks/my-project-id/records/rec-...
+   Content-Type: application/json
+   Authorization: Bearer <token>
+
+   { "revisionId": "frev-<current-head>" }
+   ```
+
+   Response: `201` with `{ "revisionId": "frev-<new-head>" }`.
+
+2. **Update** the new head (omit `mode` or set `"parent"`):
+
+   ```http
+   PUT /api/notebooks/my-project-id/records/rec-...
+   Content-Type: application/json
+   Authorization: Bearer <token>
+
+   {
+     "revisionId": "frev-<new-head>",
+     "update": {
+       "hridFORM2": { "data": "Element: Test-002", "attachments": [] }
+     }
+   }
+   ```
+
+If the head already has exactly one parent (e.g. you forked earlier), you can usually **PUT** directly with default `mode: "parent"` without forking again.
 
 ## Related documentation
 
