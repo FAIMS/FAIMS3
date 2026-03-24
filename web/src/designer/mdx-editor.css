@@ -1,0 +1,140 @@
+/*
+ * Styles for the MdxEditor component.
+ * Imported directly by mdx-editor.tsx so they load in BOTH the standalone
+ * designer app (App.tsx) AND the embedded widget (DesignerWidget.tsx).
+ */
+
+/*
+ * MDXEditor creates a hidden popup container <div> at document.body and puts
+ * className="image-dialog" on it. ALL portals (image dialog, block-type
+ * dropdown, tooltips) render inside that container. The container's default
+ * z-index is 1, which puts it behind MUI components (AppBar:1100,
+ * Modal:1300, etc.). Override to the same level as MUI modals.
+ */
+body > .image-dialog {
+  z-index: 1300 !important;
+}
+
+/* Image dialog: Radix renders the overlay then the dialog content as direct
+   children of the popup container. Target by role/aria attribute. */
+.image-dialog > div[aria-hidden="true"] {
+  z-index: 9998 !important;
+  opacity: 1 !important;
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.image-dialog > [role="dialog"] {
+  z-index: 9999 !important;
+  box-shadow:
+    0px 11px 15px -7px rgba(0, 0, 0, 0.2),
+    0px 24px 38px 3px rgba(0, 0, 0, 0.14),
+    0px 9px 46px 8px rgba(0, 0, 0, 0.12) !important;
+}
+
+.image-dialog > [role="dialog"] form {
+  font-family: 'Open Sans', sans-serif !important;
+}
+
+.image-dialog > [role="dialog"] form label {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 500;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: #263238;
+}
+
+.image-dialog > [role="dialog"] form button[type="submit"],
+.image-dialog > [role="dialog"] form button[type="reset"] {
+  cursor: pointer;
+  user-select: none;
+  color: #669911;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.75;
+  text-transform: uppercase;
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 4px;
+}
+
+.image-dialog > [role="dialog"] form button[type="submit"]:hover,
+.image-dialog > [role="dialog"] form button[type="reset"]:hover {
+  background-color: rgba(102, 153, 17, 0.04);
+}
+
+/*
+ * Restore list styles inside the MDXEditor content area.
+ *
+ * MDXEditor's Lexical theme assigns CSS classes to <li> but leaves <ul>/<ol>
+ * unstyled. MUI CssBaseline / ScopedCssBaseline then resets ul/ol to
+ * list-style:none, making bullets and numbers invisible. !important wins
+ * over Emotion's runtime-injected CSS regardless of injection order.
+ *
+ * The contenteditable div gets contentEditableClassName="mdxEditor".
+ */
+.mdxEditor ul {
+  list-style-type: disc !important;
+  padding-left: 1.5em !important;
+  margin: 0.25em 0 !important;
+}
+
+.mdxEditor ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5em !important;
+  margin: 0.25em 0 !important;
+}
+
+.mdxEditor ul ul {
+  list-style-type: circle !important;
+}
+
+.mdxEditor ul ul ul {
+  list-style-type: square !important;
+}
+
+.mdxEditor li {
+  list-style-type: inherit !important;
+}
+
+/*
+ * Restore heading styles inside the MDXEditor content area.
+ *
+ * Same issue as lists: MUI CssBaseline resets h1-h6 to inherit font-size
+ * and normal font-weight, making headings look identical to paragraphs.
+ */
+.mdxEditor h1 {
+  font-size: 2em !important;
+  font-weight: bold !important;
+  margin: 0.67em 0 !important;
+}
+
+.mdxEditor h2 {
+  font-size: 1.5em !important;
+  font-weight: bold !important;
+  margin: 0.83em 0 !important;
+}
+
+.mdxEditor h3 {
+  font-size: 1.17em !important;
+  font-weight: bold !important;
+  margin: 1em 0 !important;
+}
+
+.mdxEditor h4 {
+  font-size: 1em !important;
+  font-weight: bold !important;
+  margin: 1.33em 0 !important;
+}
+
+.mdxEditor h5 {
+  font-size: 0.83em !important;
+  font-weight: bold !important;
+  margin: 1.67em 0 !important;
+}
+
+.mdxEditor h6 {
+  font-size: 0.67em !important;
+  font-weight: bold !important;
+  margin: 2.33em 0 !important;
+}

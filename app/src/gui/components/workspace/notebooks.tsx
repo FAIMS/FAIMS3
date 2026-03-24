@@ -44,6 +44,8 @@ import {
   NOTEBOOK_LIST_TYPE,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
 } from '../../../buildconfig';
 import {useNotification} from '../../../context/popup';
 import {selectActiveUser} from '../../../context/slices/authSlice';
@@ -112,11 +114,11 @@ export default function NoteBooks() {
       await dispatch(initialiseProjects({serverId: activeServerId}));
     },
     onSuccess: () => {
-      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_CAPITALIZED}s`);
+      notify.showSuccess(`Refreshed ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}`);
     },
     onError: err => {
       console.log(err);
-      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_CAPITALIZED}s.`);
+      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`);
     },
   });
   const showRefreshButton = isOnline.isOnline;
@@ -197,9 +199,9 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {NOTEBOOK_NAME}
-      {activatedProjects.length !== 1 ? 's' : ''} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_CAPITALIZED}s in the{' '}
+      You have {activatedProjects.length} {' '}
+      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME} currently {ACTIVATED_LABEL} on
+      this device. {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -274,7 +276,7 @@ export default function NoteBooks() {
           }}
         >
           Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
-          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME}s
+          {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME_PLURAL}
         </Button>
       </Stack>
       {NOTEBOOK_LIST_TYPE === 'tabs' ? (
@@ -389,7 +391,7 @@ export default function NoteBooks() {
       >
         <DialogTitle>
           <Typography variant="h4">
-            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_CAPITALIZED}s
+            {ACTIVATE_ACTIVE_VERB_LABEL} {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </Typography>
         </DialogTitle>
         <DialogContent>

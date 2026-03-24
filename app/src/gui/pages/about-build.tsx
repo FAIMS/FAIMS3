@@ -48,7 +48,7 @@ import {
   RUNNING_UNDER_TEST,
   SHOW_POUCHDB_BROWSER,
   SHOW_WIPE,
-  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_PLURAL,
   CONDUCTOR_URLS,
   APP_VERSION,
   COMMIT_HASH,
@@ -227,7 +227,7 @@ export default function AboutBuild() {
             </Typography>
 
             <Typography variant={'body2'}>
-              Share or save a file containing all {NOTEBOOK_NAME}s and records
+              Share or save a file containing all {NOTEBOOK_NAME_PLURAL} and records
               stored on this device. Data download functionality is not
               well-supported by all device+browser combinations.
             </Typography>

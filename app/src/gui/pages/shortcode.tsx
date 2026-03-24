@@ -38,6 +38,7 @@ import {
   IS_WEB_PLATFORM,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
 } from '../../buildconfig';
 import {useNotification} from '../../context/popup';
 import {addAlert} from '../../context/slices/alertSlice';
@@ -149,7 +150,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       title={
         <>
           <Typography variant="h6" gutterBottom>
-            Register for {NOTEBOOK_NAME_CAPITALIZED}s
+            Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </Typography>
           <Typography variant="body1" gutterBottom>
             Enter the short code which was shared with you to get access to a{' '}
@@ -267,7 +268,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
         <Grid container>
           <Grid item xs>
             <Typography variant={'overline'}>
-              Register for {NOTEBOOK_NAME_CAPITALIZED}s
+              Register for {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
             </Typography>
             <Typography variant={'body2'} fontWeight={700} sx={{mb: 0}}>
               Scan a QRCode to get access to a {NOTEBOOK_NAME}.
