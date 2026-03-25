@@ -24,7 +24,8 @@ radio-group.md
   or unchecked) for presence/absence indicators, consent acknowledgements, and
   data quality flags.
 - **[Select Multiple](multi-select.md)** — Lets users pick multiple options
-  from a predefined list, with dropdown or expanded checklist display.
+  from a predefined list, with expanded checklist (default) or dropdown
+  display.
 - **[Select Field (Hierarchical)](hierarchical-select.md)** — Navigates a
   nested vocabulary tree to select a value. Beta feature.
 - **[Select one option](radio-group.md)** — Displays all options as a
