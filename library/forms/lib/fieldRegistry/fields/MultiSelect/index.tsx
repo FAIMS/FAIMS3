@@ -507,7 +507,7 @@ export const MultiSelect = (props: FieldProps) => {
       ? []
       : [rawValue as string];
 
-  const isExpandedChecklist = ElementProps.expandedChecklist ?? false;
+  const isExpandedChecklist = ElementProps.expandedChecklist ?? true;
   const exclusiveOptions = ElementProps.exclusiveOptions ?? [];
   const enableOtherOption = ElementProps.enableOtherOption ?? false;
   const otherOptionPosition = ElementProps.otherOptionPosition;
