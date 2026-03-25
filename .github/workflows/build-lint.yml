@@ -51,6 +51,9 @@ jobs:
             echo "TURBO_TEAM and/or TURBO_TOKEN not set. Remote caching may not be available."
           fi
 
+      - name: Format Check
+        run: pnpm run format:check
+
       - name: Lint
         run: pnpm run lint
 
