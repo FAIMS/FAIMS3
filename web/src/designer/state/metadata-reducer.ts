@@ -12,9 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Metadata slice: notebook title, descriptions, access roles, and ad-hoc properties.
+ * `propertyUpdated` rejects writes to keys in `protectedFields`.
+ */
+
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {initialState, NotebookMetadata} from './initial';
 
+/** Keys managed by the platform or notebook structure — not editable via `propertyUpdated`. */
 const protectedFields = [
   'meta',
   'project_status',
@@ -31,9 +37,11 @@ const metadataReducer = createSlice({
   name: 'metadata',
   initialState: initialState.notebook.metadata,
   reducers: {
+    /** Replace metadata when hydrating the store from a notebook record. */
     loaded: (_state, action: PayloadAction<NotebookMetadata>) => {
       return action.payload;
     },
+    /** Set a single string property; throws if `property` is protected. */
     propertyUpdated: (
       state,
       action: PayloadAction<{property: string; value: string}>
@@ -47,6 +55,7 @@ const metadataReducer = createSlice({
         state[property] = value;
       }
     },
+    /** Overwrite `accesses` from role picker UI. */
     rolesUpdated: (state, action: PayloadAction<{roles: string[]}>) => {
       const {roles} = action.payload;
       state.accesses = roles;

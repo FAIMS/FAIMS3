@@ -37,6 +37,7 @@ import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 type PairList = [string, string][];
 
@@ -54,6 +55,7 @@ type RelatedRecordConfig = {
   hideCreateAnotherButton: boolean;
 };
 
+/** Related record selector: target form, cardinality, relation type, linked vocab pairs. */
 export const RelatedRecordEditor = ({fieldName}: Props) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -91,10 +93,7 @@ export const RelatedRecordEditor = ({fieldName}: Props) => {
   };
 
   const updateField = (name: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName: name, newField},
-    });
+    dispatch(fieldUpdated({fieldName: name, newField}));
   };
 
   const updateFieldFromState = (newState: RelatedRecordConfig) => {

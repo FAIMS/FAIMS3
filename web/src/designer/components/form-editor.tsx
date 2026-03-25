@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file One notebook form: sections, live preview, delete guards, visibility in tab bar.
+ */
+
 import {getMapConfig} from '@/constants';
 import {UISpecification} from '@faims3/data-model';
 import {PreviewFormManager} from '@faims3/forms';
@@ -59,7 +63,20 @@ import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import FormSettingsPanel from './form-settings';
 import {SectionEditor} from './section-editor';
+import {
+  formVisibilityUpdated,
+  sectionAdded,
+  sectionDeleted,
+  sectionMoved,
+  sectionMovedToForm,
+  viewSetDeleted,
+  viewSetRenamed,
+} from '../store/slices/uiSpec';
 
+// Default MUI theme for the live form preview (no custom palette).
+const defaultTheme = createTheme();
+
+/** Props for one form tab: reorder/delete, visibility toggle, section list, live preview. */
 type Props = {
   viewSetId: string;
   moveCallback: (viewSetID: string, moveDirection: 'left' | 'right') => void;
@@ -72,6 +89,7 @@ type Props = {
   setPreviewForm: (preview: boolean) => void;
 };
 
+/** Single form (`viewSet`): sections stepper, CRUD, optional `PreviewFormManager`, settings panel. */
 export const FormEditor = ({
   viewSetId,
   moveCallback,
@@ -87,9 +105,6 @@ export const FormEditor = ({
   const searchParams = new URLSearchParams(location.search);
   const sectionParam = searchParams.get('section');
 
-  // Create a default theme with no customizations
-  const defaultTheme = createTheme();
-
   const uiSpec = useAppSelector(
     state => state.notebook['ui-specification'].present
   );
@@ -97,6 +112,7 @@ export const FormEditor = ({
   // we should also compile this
   const uiSpecInternal = useMemo(
     () => {
+      if (!previewForm) return null;
       // Clone the uiSpec - we need to do this to make it mutable
       const uiSpecEncoded = cloneDeep(uiSpec);
       return {
@@ -107,7 +123,7 @@ export const FormEditor = ({
       } satisfies UISpecification;
     },
     // Bit of a hack to force diff on uiSpec even tho ref may no
-    [uiSpec]
+    [previewForm, uiSpec]
   );
 
   const visibleTypes = useAppSelector(
@@ -181,10 +197,7 @@ export const FormEditor = ({
       ticked
     ) {
       setAlertMessage('');
-      dispatch({
-        type: 'ui-specification/formVisibilityUpdated',
-        payload: {viewSetId, ticked, initialIndex},
-      });
+      dispatch(formVisibilityUpdated({viewSetId, ticked, initialIndex}));
       handleChangeCallback(viewSetId, ticked);
     }
     // in the case that there are multiple forms in the notebook, but none are visible, allow to re-tick the checkbox
@@ -192,10 +205,13 @@ export const FormEditor = ({
       setAlertMessage('');
       setChecked(ticked);
       setInitialIndex(0);
-      dispatch({
-        type: 'ui-specification/formVisibilityUpdated',
-        payload: {viewSetId, ticked: checked, initialIndex: initialIndex},
-      });
+      dispatch(
+        formVisibilityUpdated({
+          viewSetId,
+          ticked: checked,
+          initialIndex: initialIndex,
+        })
+      );
       handleChangeCallback(viewSetId, checked);
     } else {
       setAlertMessage('This must remain ticked in at least one (1) form.');
@@ -203,10 +219,7 @@ export const FormEditor = ({
   };
 
   const deleteSection = (viewSetID: string, viewID: string) => {
-    dispatch({
-      type: 'ui-specification/sectionDeleted',
-      payload: {viewSetID, viewID},
-    });
+    dispatch(sectionDeleted({viewSetID, viewID}));
     // making sure the stepper jumps steps (forward or backward) intuitively
     if (
       viewSet.views[viewSet.views.length - 1] === viewID &&
@@ -222,10 +235,7 @@ export const FormEditor = ({
     viewId: string
   ) => {
     try {
-      dispatch({
-        type: 'ui-specification/sectionMovedToForm',
-        payload: {sourceViewSetId, targetViewSetId, viewId},
-      });
+      dispatch(sectionMovedToForm({sourceViewSetId, targetViewSetId, viewId}));
 
       setAddAlertMessage('');
       // let sectionEditor component know a section was moved successfully
@@ -243,17 +253,15 @@ export const FormEditor = ({
     moveDirection: 'left' | 'right'
   ) => {
     if (moveDirection === 'left') {
-      dispatch({
-        type: 'ui-specification/sectionMoved',
-        payload: {viewSetId: viewSetID, viewId: viewID, direction: 'left'},
-      });
+      dispatch(
+        sectionMoved({viewSetId: viewSetID, viewId: viewID, direction: 'left'})
+      );
       // making sure the stepper jumps a step backward intuitively
       setActiveStep(activeStep - 1);
     } else {
-      dispatch({
-        type: 'ui-specification/sectionMoved',
-        payload: {viewSetId: viewSetID, viewId: viewID, direction: 'right'},
-      });
+      dispatch(
+        sectionMoved({viewSetId: viewSetID, viewId: viewID, direction: 'right'})
+      );
       // making sure the stepper jumps a step forward intuitively
       setActiveStep(activeStep + 1);
     }
@@ -261,10 +269,7 @@ export const FormEditor = ({
 
   const addNewSection = (viewSetID: string, label: string) => {
     try {
-      dispatch({
-        type: 'ui-specification/sectionAdded',
-        payload: {viewSetId: viewSetID, sectionLabel: label},
-      });
+      dispatch(sectionAdded({viewSetId: viewSetID, sectionLabel: label}));
       // jump to the newly created section (i.e., to the end of the stepper)
       setActiveStep(viewSet.views.length);
       setAddAlertMessage('');
@@ -277,10 +282,7 @@ export const FormEditor = ({
   };
 
   const updateFormLabel = (label: string) => {
-    dispatch({
-      type: 'ui-specification/viewSetRenamed',
-      payload: {viewSetId, label},
-    });
+    dispatch(viewSetRenamed({viewSetId, label}));
   };
 
   const deleteConfirmation = () => {
@@ -359,10 +361,7 @@ export const FormEditor = ({
       setPreventDeleteDialog(true);
     } else {
       handleDeleteCallback(viewSetId);
-      dispatch({
-        type: 'ui-specification/viewSetDeleted',
-        payload: {viewSetId: viewSetId},
-      });
+      dispatch(viewSetDeleted({viewSetId: viewSetId}));
       handleClose();
     }
   };
@@ -726,7 +725,7 @@ export const FormEditor = ({
           </Card>
         </Grid>
       </Grid>
-      {previewForm && (
+      {previewForm && uiSpecInternal && (
         <Grid container item sx={{minWidth: '300px'}} xs={6}>
           <Box sx={{width: '100%'}}>
             <ThemeProvider theme={defaultTheme}>

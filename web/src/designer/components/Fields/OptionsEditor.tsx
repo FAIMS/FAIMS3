@@ -61,15 +61,11 @@ import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
 import {
   findOptionReferences,
   updateConditionReferences,
-} from '../condition/utils';
-
-import {
-  fieldUpdated,
-  sectionConditionChanged,
-} from '../../state/uiSpec-reducer';
+} from '../../domain/conditions/conditionReferences';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
@@ -349,6 +345,9 @@ type CombinedRow =
   | {id: string; type: 'option'; option: {label: string; value: string}}
   | {id: string; type: 'other'};
 
+/**
+ * Select / MultiSelect / Radio options table: reorder (dnd), edit, exclusive sets, condition ref updates.
+ */
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,
@@ -743,10 +742,7 @@ export const OptionsEditor = ({
       ...(newField['component-parameters'].ElementProps ?? {}),
       expandedChecklist: !checked,
     };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -763,10 +759,7 @@ export const OptionsEditor = ({
       otherOptionPosition: newValue ? options.length : undefined,
     };
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -778,10 +771,7 @@ export const OptionsEditor = ({
       ...(newField['component-parameters'].ElementProps ?? {}),
       otherOptionPosition: newPosition,
     };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**

@@ -8,10 +8,14 @@
 
 import {Grid} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
+/**
+ * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.
+ */
 export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -20,21 +24,15 @@ export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
 
   const buttonLabelText = field['component-parameters'].buttonLabelText ?? '';
 
-  const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
-  };
-
   const updateButtonLabel = (value: string) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    if (value.trim()) {
-      newField['component-parameters'].buttonLabelText = value;
-    } else {
-      delete newField['component-parameters'].buttonLabelText;
-    }
-    updateField(fieldName, newField);
+    const newField = withUpdatedField(field, nextField => {
+      if (value.trim()) {
+        nextField['component-parameters'].buttonLabelText = value;
+      } else {
+        delete nextField['component-parameters'].buttonLabelText;
+      }
+    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

@@ -12,16 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export type ConditionType = {
-  operator: string;
-  field?: string;
-  value?: unknown;
-  conditions?: ConditionType[];
-};
+/**
+ * @file Public surface for embedding: notebook shape adapters and save mutation hook.
+ */
 
-export type ConditionProps = {
-  onChange?: (v: ConditionType | null) => void;
-  initial?: ConditionType | null;
-  field?: string; // the field this condition will attach to
-  view?: string; // the view this condition will attach to
-};
+/** Public hooks and adapters for embedding the designer in the main web app. */
+export * from './notebookAdapters';
+export * from './useDesignerSaveMutation';

@@ -18,7 +18,9 @@ import {useRef} from 'react';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import {FieldType} from '../../state/initial';
 import {MdxEditor} from '../mdx-editor';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
+/** RichText display field: MDX body stored in `component-parameters.content`. */
 export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -29,10 +31,7 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const ref = useRef<MDXEditorMethods>(null);
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const state = {

@@ -1,3 +1,7 @@
+/**
+ * @file Modal listing condition references that block delete until the user fixes them.
+ */
+
 import {
   Dialog,
   DialogTitle,
@@ -14,6 +18,7 @@ type DeletionWarningDialogProps = {
   onClose: () => void;
 };
 
+/** Read-only warning when delete is blocked by visibility conditions elsewhere. */
 export const DeletionWarningDialog = ({
   open,
   title,

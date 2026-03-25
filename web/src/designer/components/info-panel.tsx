@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Project metadata and MDX pre-description editing.
+ */
+
 import {
   Alert,
   Button,
@@ -30,7 +34,9 @@ import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 
 import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
+import {propertyUpdated} from '../state/metadata-reducer';
 
+/** Notebook metadata editor: core fields, custom key/value pairs, MDX pre-description. */
 export const InfoPanel = () => {
   const metadata = useAppSelector(state => state.notebook.metadata);
   const dispatch = useAppDispatch();
@@ -78,7 +84,7 @@ export const InfoPanel = () => {
   }, [metadata]);
 
   const setProp = (property: string, value: string) => {
-    dispatch({type: 'metadata/propertyUpdated', payload: {property, value}});
+    dispatch(propertyUpdated({property, value}));
   };
 
   const updateMetadataFieldName = (
