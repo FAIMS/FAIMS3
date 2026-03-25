@@ -35,10 +35,7 @@
   },
   "overrides": [
     {
-      "files": [
-        "**/*.test.ts",
-        "**/*.test.tsx"
-      ],
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {
         "no-unused-vars": [
           "warn",

@@ -2,7 +2,10 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "singleQuote": true,
   "semi": true,
-  "trailingComma": "all",
+  "trailingComma": "es5",
+  "bracketSpacing": false,
+  "arrowParens": "avoid",
+  "objectWrap": "preserve",
   "printWidth": 80,
   "ignorePatterns": [
     "node_modules/**",
