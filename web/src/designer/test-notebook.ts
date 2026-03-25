@@ -1,4 +1,6 @@
-//import { Notebook } from "./state/initial";
+/**
+ * @file Large in-repo {@link Notebook} fixture for tests and local designer development.
+ */
 
 import {Notebook} from './state/initial';
 

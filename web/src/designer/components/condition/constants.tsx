@@ -12,18 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {ConditionType} from './types';
+/**
+ * @file Empty condition templates and operator label map for the builder UI.
+ */
 
+import {ConditionType} from '../../types/condition';
+
+/** Default leaf: equal operator, empty field/value (starting point in the builder). */
 export const EMPTY_FIELD_CONDITION: ConditionType = {
   operator: 'equal',
   field: '',
   value: '',
 };
+
+/** Default group: AND with no children yet. */
 export const EMPTY_BOOLEAN_CONDITION: ConditionType = {
   operator: 'and',
   conditions: [],
 };
 
+/** UI labels for condition operators (keys match persisted `operator` strings). */
 export const allOperators = new Map([
   ['equal', 'Equal to'],
   ['not-equal', 'Not equal to'],

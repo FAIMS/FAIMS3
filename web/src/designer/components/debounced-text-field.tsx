@@ -35,6 +35,9 @@ export interface DebouncedTextFieldProps
 
 const DEFAULT_DEBOUNCE_MS = 200;
 
+/**
+ * MUI `TextField` that debounces `onChange` and flushes pending input on blur/unmount.
+ */
 const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
   value,
   onChange,
@@ -89,4 +92,5 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
   );
 };
 
+/** Default export (same component as the `DebouncedTextField` implementation above). */
 export default DebouncedTextField;
