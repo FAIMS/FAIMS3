@@ -218,7 +218,7 @@ const fields: {[key: string]: FieldType} = {
         multiple: true,
       },
       ElementProps: {
-        expandedChecklist: false,
+        expandedChecklist: true,
         enableOtherOption: false,
         options: [
           {value: 'Default', label: 'Default'},
