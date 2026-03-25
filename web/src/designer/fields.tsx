@@ -17,8 +17,8 @@
  * Used by the field chooser and `fieldAdded` reducer via {@link getFieldSpec}.
  */
 
-import {FieldType} from './state/initial';
 import {CategoryKey} from './field-categories';
+import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
   FAIMSTextField: {

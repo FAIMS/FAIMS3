@@ -17,13 +17,16 @@
  */
 
 /**
- * Normalise a human-readable label into a URL-safe id fragment (accents stripped).
+ * Slugify a string, replacing special characters with less special ones.
  *
  * @param value - Raw name or label.
- * @returns Slug suitable for field / section ids inside the notebook.
+ * @returns URL-safe version of the string.
+ * @see https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
  */
 export const slugify = (value: string): string => {
   let result = value.trim();
+  //str = str.toLowerCase();
+  // remove accents, swap ñ for n, etc
   const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
   const to = 'aaaaaeeeeeiiiiooooouuuunc------';
 
@@ -32,9 +35,9 @@ export const slugify = (value: string): string => {
   }
 
   return result
-    .replace(/[^A-Za-z0-9 -]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-');
+    .replace(/[^A-Za-z0-9 -]/g, '') // remove invalid chars
+    .replace(/\s+/g, '-') // collapse whitespace and replace by -
+    .replace(/-+/g, '-'); // collapse dashes
 };
 
 /**

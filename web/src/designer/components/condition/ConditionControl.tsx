@@ -46,7 +46,9 @@ import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import {getFieldLabel} from './utils';
 
 /** Options from a Select/Radio/Multi field usable as condition RHS values. */
-const getSelectableOptions = (fieldDef: FieldType): SelectableConditionOption[] =>
+const getSelectableOptions = (
+  fieldDef: FieldType
+): SelectableConditionOption[] =>
   (fieldDef['component-parameters']?.ElementProps?.options ??
     []) as SelectableConditionOption[];
 
@@ -328,8 +330,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
     const cName = fieldDef['component-name'];
     const params = fieldDef['component-parameters'] || {};
     const possibleOptions =
-      (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
-      [];
+      (params.ElementProps?.options as
+        | SelectableConditionOption[]
+        | undefined) ?? [];
 
     if (
       cName !== 'Select' &&
@@ -361,7 +364,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             <Select
               data-testid="value-input"
               label="Value"
-              value={isValidOption ? condition.value : condition.value ?? ''}
+              value={isValidOption ? condition.value : (condition.value ?? '')}
               onChange={e => updateValue(e.target.value)}
             >
               {possibleOptions.map(opt => (
@@ -486,8 +489,9 @@ export const FieldConditionControl = (props: ConditionProps) => {
     const cName = targetFieldDef['component-name'];
     const params = targetFieldDef['component-parameters'] || {};
     const possibleOptions =
-      (params.ElementProps?.options as SelectableConditionOption[] | undefined) ??
-      [];
+      (params.ElementProps?.options as
+        | SelectableConditionOption[]
+        | undefined) ?? [];
     const enableOtherOption = params.ElementProps?.enableOtherOption ?? false;
 
     if (

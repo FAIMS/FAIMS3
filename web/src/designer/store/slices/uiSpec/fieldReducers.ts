@@ -24,7 +24,7 @@ import {
   replaceFieldInCondition,
 } from '../../../state/helpers/uiSpec-helpers';
 import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
-import {cloneField} from '@/designer/domain/notebook/fieldFactory';
+import {cloneField} from '../../../domain/notebook/fieldFactory';
 
 /** Field-level RTK reducers merged into `uiSpecificationReducer`. */
 export const fieldReducers = {
@@ -155,7 +155,7 @@ export const fieldReducers = {
 
     const field = state.fields[fieldName];
 
-    let fieldLabel = buildUniqueFieldName(
+    const fieldLabel = buildUniqueFieldName(
       newFieldName,
       Object.keys(state.fields)
     );

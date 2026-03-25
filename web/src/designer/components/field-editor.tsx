@@ -51,7 +51,7 @@ import {
 import React, {memo, useCallback, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
-  findFieldCondtionUsage,
+  findFieldConditionUsage,
   findInvalidConditionReferences,
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
@@ -140,7 +140,7 @@ const FieldEditorComponent = ({
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
 
-    const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+    const usage = findFieldConditionUsage(fieldName, allFields, allFviews);
 
     if (usage.length > 0) {
       setConditionsAffected(usage);
@@ -234,7 +234,7 @@ const FieldEditorComponent = ({
 
   const moveFieldToSection = () => {
     if (targetViewId) {
-      const usage = findFieldCondtionUsage(fieldName, allFields, allFviews);
+      const usage = findFieldConditionUsage(fieldName, allFields, allFviews);
       const targetSectionLabel = allFviews[targetViewId]?.label || '';
       const conflicts = usage.filter(u =>
         u.includes(`Section: ${targetSectionLabel}`)

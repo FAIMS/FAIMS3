@@ -61,15 +61,11 @@ import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
 import {
   findOptionReferences,
   updateConditionReferences,
-} from '../condition/utils';
-
-import {
-  fieldUpdated,
-  sectionConditionChanged,
-} from '../../store/slices/uiSpec';
+} from '../../domain/conditions/conditionReferences';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.

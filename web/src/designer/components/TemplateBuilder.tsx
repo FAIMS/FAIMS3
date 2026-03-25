@@ -175,9 +175,8 @@ const convertMustacheTokenToBlock = (
           content: content,
         };
 
-      case '#':
-        {
-          const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
+      case '#': {
+        const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
         return {
           id: generateBlockId(),
           type: 'if',
@@ -186,11 +185,10 @@ const convertMustacheTokenToBlock = (
             .map(convertMustacheTokenToBlock)
             .filter(isTemplateBlock),
         };
-        }
+      }
 
-      case '^':
-        {
-          const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
+      case '^': {
+        const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
         return {
           id: generateBlockId(),
           type: 'unless',
@@ -199,7 +197,7 @@ const convertMustacheTokenToBlock = (
             .map(convertMustacheTokenToBlock)
             .filter(isTemplateBlock),
         };
-        }
+      }
 
       default:
         return null;

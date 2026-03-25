@@ -182,7 +182,7 @@ export type NotebookWithHistory = {
   'ui-specification': StateWithHistory<NotebookUISpec>;
 };
 
-/** Default empty designer state (blank metadata and UI spec, empty undo stacks). */
+/** Default empty designer state — an empty notebook (blank metadata and UI spec, empty undo stacks). */
 export const initialState: AppState = {
   modified: false,
   notebook: {

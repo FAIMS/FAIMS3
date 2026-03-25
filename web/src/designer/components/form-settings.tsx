@@ -265,10 +265,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
                 dispatch(
                   viewSetLayoutUpdated({
                     viewSetId,
-                    layout: event.target.value as
-                      | 'inline'
-                      | 'tabs'
-                      | undefined,
+                    layout: event.target.value as 'inline' | 'tabs' | undefined,
                   })
                 )
               }

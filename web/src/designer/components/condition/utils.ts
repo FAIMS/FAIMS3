@@ -14,11 +14,7 @@
 
 import {FieldType} from '../../state/initial';
 import {ConditionType, SelectableConditionOption} from '../../types/condition';
-import {
-  findOptionReferences as findOptionReferencesDomain,
-  isFieldUsedInCondition as isFieldUsedInConditionDomain,
-  updateConditionReferences as updateConditionReferencesDomain,
-} from '../../domain/conditions/conditionReferences';
+import {isFieldUsedInCondition} from '../../domain/conditions/conditionReferences';
 
 /**
  * @file Designer-facing helpers for condition references, delete safety, and option renames.
@@ -38,9 +34,6 @@ export const getFieldLabel = (f: FieldType) => {
   );
 };
 
-/** Re-export of `isFieldUsedInCondition` from `domain/conditions/conditionReferences`. */
-export const isFieldUsedInCondition = isFieldUsedInConditionDomain;
-
 type FieldMap = Record<string, FieldType>;
 type ViewMap = Record<
   string,
@@ -49,9 +42,8 @@ type ViewMap = Record<
 
 /**
  * Lists sections/fields/templated strings that reference `fieldName` (conditions or `{{fieldName}}`).
- * @remarks Export name retains historical typo `Condtion` for call-site stability.
  */
-export const findFieldCondtionUsage = (
+export const findFieldConditionUsage = (
   fieldName: string,
   allFields: FieldMap,
   allFviews: ViewMap
@@ -232,11 +224,10 @@ export function findInvalidConditionReferences(
     return invalidConditions;
   }
 
-  const validOptions: string[] =
-    (
-      (targetField['component-parameters'].ElementProps?.options ??
-        []) as SelectableConditionOption[]
-    ).map(opt => opt.value);
+  const validOptions: string[] = (
+    (targetField['component-parameters'].ElementProps?.options ??
+      []) as SelectableConditionOption[]
+  ).map(opt => opt.value);
 
   // Check if a condition is using a value that no longer exists
   const getInvalidExpectedValue = (condition: ConditionType): string[] => {
@@ -293,13 +284,3 @@ export function findInvalidConditionReferences(
 
   return invalidConditions;
 }
-
-/**
- * Finds all conditions that reference the old option value in a specific field.
- */
-export const findOptionReferences = findOptionReferencesDomain;
-
-/**
- * Updates all references of oldValue to newValue in a condition.
- */
-export const updateConditionReferences = updateConditionReferencesDomain;

@@ -16,7 +16,7 @@
  * @file Small helpers to clone fields and apply updates before `fieldUpdated` dispatches.
  */
 
-import {cloneField} from '@/designer/domain/notebook/fieldFactory';
+import {cloneField} from '../../../domain/notebook/fieldFactory';
 import type {FieldType} from '../../../state/initial';
 
 /**

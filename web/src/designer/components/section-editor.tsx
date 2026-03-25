@@ -44,10 +44,7 @@ import {
 import {useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {sectionDuplicated} from '../store/slices/uiSpec';
-import {
-  sectionConditionChanged,
-  sectionRenamed,
-} from '../store/slices/uiSpec';
+import {sectionConditionChanged, sectionRenamed} from '../store/slices/uiSpec';
 
 import {ConditionModal} from './condition/ConditionModal';
 import {ConditionTranslation} from './condition/ConditionTranslation';

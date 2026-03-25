@@ -14,10 +14,10 @@
 
 import {PayloadAction} from '@reduxjs/toolkit';
 import {v4 as uuidv4} from 'uuid';
-import {ConditionType} from '../../../types/condition';
-import {FieldType, NotebookUISpec} from '../../../state/initial';
+import {cloneField} from '../../../domain/notebook/fieldFactory';
 import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
-import {cloneField} from '@/designer/domain/notebook/fieldFactory';
+import {NotebookUISpec} from '../../../state/initial';
+import {ConditionType} from '../../../types/condition';
 
 /** Section (fview) RTK reducers merged into `uiSpecificationReducer`. */
 export const sectionReducers = {
@@ -105,7 +105,7 @@ export const sectionReducers = {
       const baseLabel =
         originalField['component-parameters'].label || originalFieldName;
       const newFieldLabel = baseLabel;
-      let fieldSlug = buildUniqueFieldName(
+      const fieldSlug = buildUniqueFieldName(
         newFieldLabel,
         Object.keys(state.fields)
       );
