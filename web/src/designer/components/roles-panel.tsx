@@ -46,19 +46,13 @@ export const RolesPanel = () => {
 
   const addRole = () => {
     const newRoles = [...roles, newRole];
-    dispatch({
-      type: 'metadata/rolesUpdated',
-      payload: {roles: newRoles},
-    });
+    dispatch({type: 'metadata/rolesUpdated', payload: {roles: newRoles}});
     setNewRole('');
   };
 
   const removeRole = (role: string) => {
     const newRoles = roles.filter(r => r !== role);
-    dispatch({
-      type: 'metadata/rolesUpdated',
-      payload: {roles: newRoles},
-    });
+    dispatch({type: 'metadata/rolesUpdated', payload: {roles: newRoles}});
   };
 
   return (

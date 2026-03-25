@@ -95,23 +95,11 @@ const generatePointLayer = () => {
     scale: 0.25,
   });
 
-  const fill = new Fill({
-    color: 'rgba(255,255,255,0.4)',
-  });
-  const stroke = new Stroke({
-    color: '#3399CC',
-    width: 2,
-  });
-  const pinStyle = new Style({
-    image: pinIcon,
-    fill,
-    stroke,
-  });
+  const fill = new Fill({color: 'rgba(255,255,255,0.4)'});
+  const stroke = new Stroke({color: '#3399CC', width: 2});
+  const pinStyle = new Style({image: pinIcon, fill, stroke});
 
-  return new VectorLayer({
-    source: vectorSource,
-    style: pinStyle,
-  });
+  return new VectorLayer({source: vectorSource, style: pinStyle});
 };
 
 function MapWrapper(props: MapProps) {
@@ -336,10 +324,7 @@ function MapWrapper(props: MapProps) {
                   onClick={handleClickOpen}
                 >
                   <EditIcon
-                    sx={{
-                      fontSize: 26,
-                      color: theme.palette.primary.main,
-                    }}
+                    sx={{fontSize: 26, color: theme.palette.primary.main}}
                   />
                 </Box>
               </Tooltip>
@@ -407,12 +392,7 @@ function MapWrapper(props: MapProps) {
                 </IconButton>
               </Box>
 
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 1,
-                }}
-              >
+              <Box sx={{display: 'flex', gap: 1}}>
                 <Button
                   color="inherit"
                   onClick={() => handleClose('clear')}
@@ -515,9 +495,7 @@ function MapWrapper(props: MapProps) {
                         const source = featuresLayerRef.current?.getSource();
                         if (source) {
                           source.clear();
-                          const feature = new Feature({
-                            geometry: point,
-                          });
+                          const feature = new Feature({geometry: point});
                           source.addFeature(feature);
                           setHasDrawnFeatures(true);
                         }

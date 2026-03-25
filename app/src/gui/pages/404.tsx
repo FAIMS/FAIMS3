@@ -81,11 +81,7 @@ export default function NotFound404() {
               The page you are looking for does not exist.
             </Typography>
             <Link
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-              }}
+              style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap'}}
               component={RouterLink}
               to={ROUTES.INDEX}
             >

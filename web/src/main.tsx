@@ -36,9 +36,7 @@ if (bugsnagEnabled) {
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
-  context: {
-    auth: undefined!,
-  },
+  context: {auth: undefined!},
 });
 
 declare module '@tanstack/react-router' {

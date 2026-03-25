@@ -40,13 +40,9 @@ export const api: express.Router = express.Router();
  */
 api.post(
   '/',
-  processRequest({
-    body: PostRequestEmailVerificationRequestSchema,
-  }),
+  processRequest({body: PostRequestEmailVerificationRequestSchema}),
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.VERIFY_EMAIL,
-  }),
+  isAllowedToMiddleware({action: Action.VERIFY_EMAIL}),
   async (req, res: Response<PostRequestEmailVerificationResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('Not authenticated.');
@@ -109,16 +105,14 @@ api.post(
  * @param code The verification code
  * @returns A Promise that resolves to an object with the verification result
  */
-export async function verifyEmailWithCode({code}: {code: string}): Promise<{
-  success: boolean;
-  email?: string;
-  error?: string;
-}> {
+export async function verifyEmailWithCode({
+  code,
+}: {
+  code: string;
+}): Promise<{success: boolean; email?: string; error?: string}> {
   try {
     // Validate the verification code
-    const validationResult = await validateVerificationChallenge({
-      code,
-    });
+    const validationResult = await validateVerificationChallenge({code});
 
     if (
       !validationResult.valid ||
@@ -144,10 +138,7 @@ export async function verifyEmailWithCode({code}: {code: string}): Promise<{
     // Mark the verification code as used
     await consumeVerificationChallenge({code});
 
-    return {
-      success: true,
-      email: verifiedEmail,
-    };
+    return {success: true, email: verifiedEmail};
   } catch (error) {
     console.error('Error verifying email:', error);
     return {
@@ -171,9 +162,7 @@ export async function verifyEmailWithCode({code}: {code: string}): Promise<{
  */
 api.put(
   '/',
-  processRequest({
-    body: PutConfirmEmailVerificationRequestSchema,
-  }),
+  processRequest({body: PutConfirmEmailVerificationRequestSchema}),
   async (req, res: Response<PutConfirmEmailVerificationResponse>) => {
     const {code} = req.body;
 

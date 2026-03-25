@@ -23,9 +23,7 @@ import {defineConfig} from 'vitest/config';
 export default defineConfig({
   plugins: [],
   resolve: {
-    alias: {
-      events: 'rollup-plugin-node-polyfills/polyfills/events',
-    },
+    alias: {events: 'rollup-plugin-node-polyfills/polyfills/events'},
     preserveSymlinks: false,
   },
   define: {

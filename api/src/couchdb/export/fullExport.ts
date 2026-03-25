@@ -296,11 +296,7 @@ export const streamFullExport = async ({
             hasPart: metadata.includedFiles.map(path => ({'@id': path})),
             spatialFeatures: metadata.totals.spatialFeatures,
           },
-          {
-            '@id': '#author',
-            '@type': 'Person',
-            name: metadata.exportedBy,
-          },
+          {'@id': '#author', '@type': 'Person', name: metadata.exportedBy},
         ],
       };
 

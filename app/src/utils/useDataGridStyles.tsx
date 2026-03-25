@@ -19,9 +19,7 @@ import {Theme} from '@mui/material/styles';
  * @returns {object} - An object containing style definitions for root, wrapper, and grid sub-elements.
  */
 export const useDataGridStyles = (theme: Theme) => ({
-  root: {
-    border: 'none',
-  },
+  root: {border: 'none'},
   wrapper: {
     borderRadius: '12px',
     overflow: 'hidden',
@@ -44,9 +42,7 @@ export const useDataGridStyles = (theme: Theme) => ({
         color: theme.palette.text.primary,
         letterSpacing: '0.01em',
       },
-      '& .MuiDataGrid-columnSeparator': {
-        display: 'none',
-      },
+      '& .MuiDataGrid-columnSeparator': {display: 'none'},
       '& .MuiDataGrid-sortIcon': {
         color: theme.palette.text.secondary,
         opacity: 1,
@@ -87,17 +83,13 @@ export const useDataGridStyles = (theme: Theme) => ({
       '& .MuiTablePagination-displayedRows': {marginLeft: 8},
     },
     // Typography Fixes
-    '& .MuiTypography-root': {
-      lineHeight: 1.5,
-    },
+    '& .MuiTypography-root': {lineHeight: 1.5},
     // Responsive Adjustments for Small Screens
     [theme.breakpoints.down('sm')]: {
       '& .MuiDataGrid-columnHeaders .MuiDataGrid-columnHeader': {
         padding: '12px 16px',
       },
-      '& .MuiDataGrid-cell': {
-        padding: '12px 16px',
-      },
+      '& .MuiDataGrid-cell': {padding: '12px 16px'},
     },
   },
 });

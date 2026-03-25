@@ -32,14 +32,14 @@ There will usually be a short help text along with each field and in some cases,
 
 ### Parts of a Form
 
-The form you are filling may have more than one _section_, as shown in the screenshot here where it is showing section 1 of 2 sections.  You can navigate between sections using the 'Next' and 'Back' links.
+The form you are filling may have more than one _section_, as shown in the screenshot here where it is showing section 1 of 2 sections. You can navigate between sections using the 'Next' and 'Back' links.
 
 ```{screenshot} getting-started/record-form-finish-buttons-mobile.png
 :alt: Finishing a {{Notebook}} record
 :align: right
 ```
 
-As you complete the form and scroll to the end of the section, you will see the 'Finish' buttons as shown in this screenshot.   Above this, you may see a warning as shown here if there are errors in the form - generally if you have missed entering some data.
+As you complete the form and scroll to the end of the section, you will see the 'Finish' buttons as shown in this screenshot. Above this, you may see a warning as shown here if there are errors in the form - generally if you have missed entering some data.
 The error message should include a link that will scroll to the field that is missing.
 If the error is in a different section of the form, it will link you to that section.
 
@@ -55,14 +55,14 @@ The **FINISH AND NEW ...** button will finalise the current record and start a n
 of the same type. This is useful if you are entering a series of observations.
 
 The **CANCEL** button will cancel the current changes and return you to the record list
-or the parent record.  It will first check that you are sure that you want to lose
+or the parent record. It will first check that you are sure that you want to lose
 the changes you have made.
 
 ### Annotations and Uncertainty
 
 In the screenshots above you might notice the small blue icon below some fields. This indicates that the {{notebook}} field has been configured to allow annotations.
 
-If you click on this icon you will be able to enter either a textual annotation or note, or check a box that might be labelled 'Uncertain' or something similar.  These annotations are in addition to the data you enter in the field and can be used to make a note about the data - for example that you were unable to take a measurement properly or that you are uncertain about the exact value.
+If you click on this icon you will be able to enter either a textual annotation or note, or check a box that might be labelled 'Uncertain' or something similar. These annotations are in addition to the data you enter in the field and can be used to make a note about the data - for example that you were unable to take a measurement properly or that you are uncertain about the exact value.
 
 These annotations are then available alongside the actual data when it is exported from {{FAIMS}}.
 

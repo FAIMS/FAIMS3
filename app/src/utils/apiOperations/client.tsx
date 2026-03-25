@@ -71,9 +71,7 @@ export class ListingFetch {
       };
     }
 
-    return {
-      'Content-Type': 'application/json',
-    };
+    return {'Content-Type': 'application/json'};
   }
 
   /**

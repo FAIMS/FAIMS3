@@ -197,10 +197,7 @@ export const validateVerificationChallenge = async ({
 
     // Check if challenge exists
     if (!challenge) {
-      return {
-        valid: false,
-        validationError: 'Invalid verification code.',
-      };
+      return {valid: false, validationError: 'Invalid verification code.'};
     }
 
     // Check if challenge belongs to the specified user (if provided)
@@ -231,27 +228,17 @@ export const validateVerificationChallenge = async ({
 
     // Check if challenge has expired
     if (challenge.expiryTimestampMs < Date.now()) {
-      return {
-        valid: false,
-        validationError: 'Verification code has expired.',
-      };
+      return {valid: false, validationError: 'Verification code has expired.'};
     }
 
     // Get the user associated with the challenge
     const user = await getCouchUserFromEmailOrUserId(challenge.userId);
     if (!user) {
-      return {
-        valid: false,
-        validationError: 'Could not find associated user.',
-      };
+      return {valid: false, validationError: 'Could not find associated user.'};
     }
 
     // All checks passed
-    return {
-      valid: true,
-      user,
-      challenge,
-    };
+    return {valid: true, user, challenge};
   } catch (error) {
     console.error(
       'Unhandled error validating verification challenge. Code: ',
@@ -260,10 +247,7 @@ export const validateVerificationChallenge = async ({
       error,
       console.trace()
     );
-    return {
-      valid: false,
-      validationError: 'Internal server error',
-    };
+    return {valid: false, validationError: 'Internal server error'};
   }
 };
 
@@ -320,10 +304,7 @@ export const getVerificationChallengesByUserId = async ({
   // Query the database for challenges by user ID
   const result = await authDB.query<VerificationChallengeExistingDocument>(
     'viewsDocument/verificationChallengesByUserId',
-    {
-      key: userId,
-      include_docs: true,
-    }
+    {key: userId, include_docs: true}
   );
 
   // Return the challenge documents
@@ -346,10 +327,7 @@ export const getVerificationChallengesByEmail = async ({
   // Query the database for challenges by email
   const result = await authDB.query<VerificationChallengeExistingDocument>(
     'viewsDocument/verificationChallengesByEmail',
-    {
-      key: email,
-      include_docs: true,
-    }
+    {key: email, include_docs: true}
   );
 
   // Return the challenge documents
@@ -372,10 +350,7 @@ export const getVerificationChallengeByCode = async ({
   // Query the database for the challenge by code
   const result = await authDB.query<VerificationChallengeExistingDocument>(
     'viewsDocument/verificationChallengesByCode',
-    {
-      key: code,
-      include_docs: true,
-    }
+    {key: code, include_docs: true}
   );
 
   // Filter and check results
@@ -410,9 +385,7 @@ export const getAllVerificationChallenges = async (): Promise<
   // Query the database for all verification challenges
   const result = await authDB.query<VerificationChallengeExistingDocument>(
     'viewsDocument/verificationChallenges',
-    {
-      include_docs: true,
-    }
+    {include_docs: true}
   );
 
   // Return all docs

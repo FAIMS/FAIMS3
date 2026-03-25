@@ -67,9 +67,7 @@ interface RenderTree {
 }
 
 const AdvancedSelectFieldPropsSchema = BaseFieldPropsSchema.extend({
-  ElementProps: z.object({
-    optiontree: z.array(RenderTreeSchema),
-  }),
+  ElementProps: z.object({optiontree: z.array(RenderTreeSchema)}),
   valuetype: z.enum(['full', 'child']).optional().default('full'),
 });
 

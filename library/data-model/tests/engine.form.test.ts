@@ -41,10 +41,7 @@ describe('Form Operations', () => {
     }) as DatabaseInterface<DataDocument>;
 
     // Initialize engine
-    engine = new DataEngine({
-      dataDb: db,
-      uiSpec: uiSpec,
-    });
+    engine = new DataEngine({dataDb: db, uiSpec: uiSpec});
   });
 
   afterEach(async () => {
@@ -54,10 +51,7 @@ describe('Form Operations', () => {
 
   describe('createRecord', () => {
     test('should create record and revision successfully', async () => {
-      const formRecord: NewFormRecord = {
-        formId: 'A',
-        createdBy: 'test-user',
-      };
+      const formRecord: NewFormRecord = {formId: 'A', createdBy: 'test-user'};
 
       const result = await engine.form.createRecord(formRecord);
 
@@ -75,10 +69,7 @@ describe('Form Operations', () => {
     });
 
     test('should create record with no AVPs initially', async () => {
-      const formRecord: NewFormRecord = {
-        formId: 'A',
-        createdBy: 'test-user',
-      };
+      const formRecord: NewFormRecord = {formId: 'A', createdBy: 'test-user'};
 
       const result = await engine.form.createRecord(formRecord);
 
@@ -88,10 +79,7 @@ describe('Form Operations', () => {
     });
 
     test('should link record and revision correctly', async () => {
-      const formRecord: NewFormRecord = {
-        formId: 'B',
-        createdBy: 'test-user',
-      };
+      const formRecord: NewFormRecord = {formId: 'B', createdBy: 'test-user'};
 
       const result = await engine.form.createRecord(formRecord);
 
@@ -228,10 +216,7 @@ describe('Form Operations', () => {
       // Update parent revision to include these AVPs
       await engine.core.updateRevision({
         ...initialResult.revision,
-        avps: {
-          'field-1': avpId1,
-          'field-2': avpId2,
-        },
+        avps: {'field-1': avpId1, 'field-2': avpId2},
       });
 
       // Create child revision
@@ -404,11 +389,7 @@ describe('Form Operations', () => {
         engine.form.updateRevision({
           revisionId: childRevision._id,
           recordId: initialResult.record._id,
-          update: {
-            'First-1': {
-              data: 'test',
-            },
-          },
+          update: {'First-1': {data: 'test'}},
           mode: 'new',
           updatedBy: 'user-3',
         })
@@ -448,12 +429,8 @@ describe('Form Operations', () => {
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
         update: {
-          'First-1': {
-            data: 'first value',
-          },
-          'Second-1': {
-            data: 'second value',
-          },
+          'First-1': {data: 'first value'},
+          'Second-1': {data: 'second value'},
         },
         mode: 'new',
         updatedBy: 'user-1',
@@ -485,11 +462,7 @@ describe('Form Operations', () => {
       const rev1 = await engine.form.updateRevision({
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {
-            data: 'initial value',
-          },
-        },
+        update: {'First-1': {data: 'initial value'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -500,11 +473,7 @@ describe('Form Operations', () => {
       const rev2 = await engine.form.updateRevision({
         revisionId: rev1._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {
-            data: 'updated value',
-          },
-        },
+        update: {'First-1': {data: 'updated value'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -530,10 +499,7 @@ describe('Form Operations', () => {
         update: {
           'First-1': {
             data: 'test value',
-            annotation: {
-              annotation: 'initial note',
-              uncertainty: false,
-            },
+            annotation: {annotation: 'initial note', uncertainty: false},
           },
         },
         mode: 'new',
@@ -549,10 +515,7 @@ describe('Form Operations', () => {
         update: {
           'First-1': {
             data: 'test value',
-            annotation: {
-              annotation: 'updated note',
-              uncertainty: true,
-            },
+            annotation: {annotation: 'updated note', uncertainty: true},
           },
         },
         mode: 'new',
@@ -642,10 +605,7 @@ describe('Form Operations', () => {
       const rev1 = await engine.form.updateRevision({
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'value 1'},
-          'Second-1': {data: 'value 2'},
-        },
+        update: {'First-1': {data: 'value 1'}, 'Second-1': {data: 'value 2'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -684,9 +644,7 @@ describe('Form Operations', () => {
         engine.form.updateRevision({
           revisionId: initialResult.revision._id,
           recordId: initialResult.record._id,
-          update: {
-            'First-1': {data: 'test'},
-          },
+          update: {'First-1': {data: 'test'}},
           mode: 'parent',
           updatedBy: 'user-1',
         })
@@ -703,9 +661,7 @@ describe('Form Operations', () => {
       const parentRev = await engine.form.updateRevision({
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'parent value'},
-        },
+        update: {'First-1': {data: 'parent value'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -726,9 +682,7 @@ describe('Form Operations', () => {
       const updatedChildRev = await engine.form.updateRevision({
         revisionId: childRev._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'child value'},
-        },
+        update: {'First-1': {data: 'child value'}},
         mode: 'parent',
         updatedBy: 'user-2',
       });
@@ -757,9 +711,7 @@ describe('Form Operations', () => {
       const parentRev = await engine.form.updateRevision({
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'parent value'},
-        },
+        update: {'First-1': {data: 'parent value'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -775,9 +727,7 @@ describe('Form Operations', () => {
       const childRev1 = await engine.form.updateRevision({
         revisionId: childRev._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'child value 1'},
-        },
+        update: {'First-1': {data: 'child value 1'}},
         mode: 'parent',
         updatedBy: 'user-2',
       });
@@ -788,9 +738,7 @@ describe('Form Operations', () => {
       const childRev2 = await engine.form.updateRevision({
         revisionId: childRev1._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'child value 2'},
-        },
+        update: {'First-1': {data: 'child value 2'}},
         mode: 'parent',
         updatedBy: 'user-2',
       });
@@ -813,9 +761,7 @@ describe('Form Operations', () => {
       const parentRev = await engine.form.updateRevision({
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'parent value'},
-        },
+        update: {'First-1': {data: 'parent value'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -833,9 +779,7 @@ describe('Form Operations', () => {
       const childRev1 = await engine.form.updateRevision({
         revisionId: childRev._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'child value'},
-        },
+        update: {'First-1': {data: 'child value'}},
         mode: 'parent',
         updatedBy: 'user-2',
       });
@@ -846,9 +790,7 @@ describe('Form Operations', () => {
       const childRev2 = await engine.form.updateRevision({
         revisionId: childRev1._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'parent value'},
-        },
+        update: {'First-1': {data: 'parent value'}},
         mode: 'parent',
         updatedBy: 'user-2',
       });
@@ -1016,9 +958,7 @@ describe('Form Operations', () => {
       const rev1 = await engine.form.updateRevision({
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'version 1'},
-        },
+        update: {'First-1': {data: 'version 1'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -1027,9 +967,7 @@ describe('Form Operations', () => {
       const rev2 = await engine.form.updateRevision({
         revisionId: rev1._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'version 2'},
-        },
+        update: {'First-1': {data: 'version 2'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -1038,9 +976,7 @@ describe('Form Operations', () => {
       await engine.form.updateRevision({
         revisionId: rev2._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'version 3'},
-        },
+        update: {'First-1': {data: 'version 3'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -1062,9 +998,7 @@ describe('Form Operations', () => {
       const rev1 = await engine.form.updateRevision({
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'old value'},
-        },
+        update: {'First-1': {data: 'old value'}},
         mode: 'new',
         updatedBy: 'user-1',
       });
@@ -1080,9 +1014,7 @@ describe('Form Operations', () => {
       await engine.form.updateRevision({
         revisionId: res._id,
         recordId: initialResult.record._id,
-        update: {
-          'First-1': {data: 'new value'},
-        },
+        update: {'First-1': {data: 'new value'}},
         mode: 'parent',
         updatedBy: 'user-1',
       });
@@ -1118,11 +1050,7 @@ describe('Form Operations', () => {
           'First-1': {
             data: 'value',
             attachments: [
-              {
-                attachmentId,
-                filename: 'test.txt',
-                fileType: 'text/plain',
-              },
+              {attachmentId, filename: 'test.txt', fileType: 'text/plain'},
             ],
           },
         },
@@ -1168,9 +1096,7 @@ describe('Form Operations', () => {
         revisionId: initialResult.revision._id,
         recordId: initialResult.record._id,
         update: {
-          'First-1': {
-            data: 'simple string',
-          },
+          'First-1': {data: 'simple string'},
           'Second-1': {
             data: 'with annotation',
             annotation: {annotation: 'note', uncertainty: false},
@@ -1178,22 +1104,14 @@ describe('Form Operations', () => {
           'Third-1': {
             data: 'with attachment',
             attachments: [
-              {
-                attachmentId,
-                filename: 'file.txt',
-                fileType: 'text/plain',
-              },
+              {attachmentId, filename: 'file.txt', fileType: 'text/plain'},
             ],
           },
           'Fourth-1': {
             data: 'complete',
             annotation: {annotation: 'full', uncertainty: true},
             attachments: [
-              {
-                attachmentId,
-                filename: 'complete.txt',
-                fileType: 'text/plain',
-              },
+              {attachmentId, filename: 'complete.txt', fileType: 'text/plain'},
             ],
           },
         },

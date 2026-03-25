@@ -94,9 +94,7 @@ const valueSchema = (props: SelectFieldProps) => {
             if (value.startsWith(OTHER_PREFIX)) return true;
             return false;
           },
-          {
-            message: 'Please select an option',
-          }
+          {message: 'Please select an option'}
         );
     }
 
@@ -108,9 +106,7 @@ const valueSchema = (props: SelectFieldProps) => {
         if (value.startsWith(OTHER_PREFIX)) return true;
         return false;
       },
-      {
-        message: 'Please select a valid option',
-      }
+      {message: 'Please select a valid option'}
     );
   }
 
@@ -179,10 +175,7 @@ export const Select = (props: FieldProps) => {
       errors={props.state.meta.errors as unknown as string[]}
     >
       <FormControl
-        sx={{
-          width: '100%',
-          backgroundColor: theme.palette.background.default,
-        }}
+        sx={{width: '100%', backgroundColor: theme.palette.background.default}}
       >
         <MuiSelect
           ref={selectRef}
@@ -275,10 +268,7 @@ export const Select = (props: FieldProps) => {
               <MenuItem
                 key={option.key ? option.key : option.value}
                 value={option.value}
-                sx={{
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
-                }}
+                sx={{whiteSpace: 'normal', wordWrap: 'break-word'}}
               >
                 <ListItemText
                   primary={

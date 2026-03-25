@@ -272,14 +272,8 @@ export const uiSpecificationReducer = createSlice({
 
       // add in the meta field
       newField.meta = {
-        annotation: {
-          include: false,
-          label: 'annotation',
-        },
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
+        annotation: {include: false, label: 'annotation'},
+        uncertainty: {include: false, label: 'uncertainty'},
       };
       // set the field label
       newField['component-parameters'].label = fieldName;
@@ -410,10 +404,7 @@ export const uiSpecificationReducer = createSlice({
     ) => {
       const {viewSetId, sectionLabel} = action.payload;
       const sectionId = viewSetId + '-' + slugify(sectionLabel);
-      const newSection = {
-        label: sectionLabel,
-        fields: [],
-      };
+      const newSection = {label: sectionLabel, fields: []};
       if (sectionId in state.fviews) {
         throw new Error(`Section ${sectionLabel} already exists in this form.`);
       } else {

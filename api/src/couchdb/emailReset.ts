@@ -158,9 +158,7 @@ export const createNewEmailCode = async ({
   expiryMs?: number;
 }): Promise<{record: EmailCodeExistingDocument; code: string}> => {
   // Check rate limiting constraints
-  const rateCheckResult = await checkCanCreateEmailCode({
-    userId,
-  });
+  const rateCheckResult = await checkCanCreateEmailCode({userId});
 
   if (!rateCheckResult.canCreate) {
     throw new TooManyRequestsException(
@@ -213,10 +211,7 @@ export const validateEmailCode = async (
     const codeDoc = await getCodeByCode(hashedCode);
 
     if (!codeDoc) {
-      return {
-        valid: false,
-        validationError: 'Invalid reset code.',
-      };
+      return {valid: false, validationError: 'Invalid reset code.'};
     }
 
     if (userId && codeDoc.userId !== userId) {
@@ -239,10 +234,7 @@ export const validateEmailCode = async (
 
     const user = await getCouchUserFromEmailOrUserId(codeDoc.userId);
     if (!user) {
-      return {
-        valid: false,
-        validationError: 'Could not find associated user.',
-      };
+      return {valid: false, validationError: 'Could not find associated user.'};
     }
 
     return {valid: true, user};
@@ -293,10 +285,7 @@ export const getCodesByUserId = async (
 
   const result = await authDB.query<EmailCodeExistingDocument>(
     'viewsDocument/emailCodesByUserId',
-    {
-      key: userId,
-      include_docs: true,
-    }
+    {key: userId, include_docs: true}
   );
 
   return result.rows.filter(r => !!r.doc).map(row => row.doc!);
@@ -314,10 +303,7 @@ export const getCodeByCode = async (
 
   const result = await authDB.query<EmailCodeExistingDocument>(
     'viewsDocument/emailCodesByCode',
-    {
-      key: code,
-      include_docs: true,
-    }
+    {key: code, include_docs: true}
   );
 
   const filtered = result.rows.filter(r => !!r.doc).map(row => row.doc!);
@@ -344,9 +330,7 @@ export const getAllCodes = async (): Promise<EmailCodeExistingDocument[]> => {
 
   const result = await authDB.query<EmailCodeExistingDocument>(
     'viewsDocument/emailCodes',
-    {
-      include_docs: true,
-    }
+    {include_docs: true}
   );
 
   return result.rows.map(row => row.doc as EmailCodeExistingDocument);

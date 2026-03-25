@@ -158,10 +158,7 @@ export interface NavigationService {
   /** Navigate to a specific record */
   toRecord: (params: ToRecordParams) => void;
   /** Navigate to the record list */
-  navigateToRecordList: {
-    navigate: () => void;
-    label: string;
-  };
+  navigateToRecordList: {navigate: () => void; label: string};
   /** Navigate to view mode for a record */
   navigateToViewRecord?: (params: {recordId: string}) => void;
 }

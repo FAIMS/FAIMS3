@@ -5,31 +5,19 @@
     "version": "1.0.0",
     "title": "FAIMS3 API",
     "termsOfService": "http://faims.edu.au/terms/",
-    "contact": {
-      "email": "help@faims.edu.au"
-    },
+    "contact": {"email": "help@faims.edu.au"},
     "license": {
       "name": "Apache 2.0",
       "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
     }
   },
-  "servers": [
-    {
-      "url": "/api"
-    }
-  ],
+  "servers": [{"url": "/api"}],
   "components": {
     "securitySchemes": {
-      "Auth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
+      "Auth": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT"}
     },
     "responses": {
-      "UnauthorizedError": {
-        "description": "Access token is missing or invalid"
-      }
+      "UnauthorizedError": {"description": "Access token is missing or invalid"}
     }
   },
   "paths": {
@@ -37,11 +25,7 @@
       "get": {
         "summary": "Say hello",
         "description": "Return a hello message as JSON",
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "produces": ["application/json"],
         "responses": {
           "200": {
@@ -50,18 +34,12 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  }
+                  "properties": {"message": {"type": "string"}}
                 }
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -70,17 +48,13 @@
         "summary": "Get information",
         "description": "Provides details of the server such as name and description",
         "produces": ["application/json"],
-        "security": {
-          "Auth": []
-        },
+        "security": {"Auth": []},
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/ListingsObject"
-                }
+                "schema": {"$ref": "#/definitions/ListingsObject"}
               }
             }
           }
@@ -93,24 +67,16 @@
         "description": "Get a list of the notebooks managed by this server",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "schema": {
               "type": "array",
-              "items": {
-                "$ref": "#/definitions/NotebookMeta"
-              }
+              "items": {"$ref": "#/definitions/NotebookMeta"}
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "post": {
@@ -118,32 +84,20 @@
         "description": "Create a new notebook by uploading JSON metadata and ui-specification",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "description": "Notebook metadata and ui-specification",
           "required": true,
           "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/definitions/Notebook"
-              }
-            }
+            "application/json": {"schema": {"$ref": "#/definitions/Notebook"}}
           }
         },
         "responses": {
           "200": {
             "description": "successful operation",
-            "schema": {
-              "$ref": "#/definitions/Notebook"
-            }
+            "schema": {"$ref": "#/definitions/Notebook"}
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -162,25 +116,15 @@
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/Notebook"
-                }
-              }
+              "application/json": {"schema": {"$ref": "#/definitions/Notebook"}}
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "put": {
@@ -197,36 +141,22 @@
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "description": "Notebook metadata and ui-specification",
           "required": true,
           "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/definitions/Notebook"
-              }
-            }
+            "application/json": {"schema": {"$ref": "#/definitions/Notebook"}}
           }
         },
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/Notebook"
-                }
-              }
+              "application/json": {"schema": {"$ref": "#/definitions/Notebook"}}
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -245,24 +175,16 @@
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "schema": {
               "type": "array",
-              "items": {
-                "$ref": "#/definitions/RecordList"
-              }
+              "items": {"$ref": "#/definitions/RecordList"}
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -276,18 +198,14 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
+            "schema": {"type": "string"},
             "description": "Notebook identifier"
           },
           {
             "name": "viewID",
             "in": "query",
             "required": false,
-            "schema": {
-              "type": "string"
-            },
+            "schema": {"type": "string"},
             "description": "Form/view identifier (required for CSV format, optional for other formats.)"
           },
           {
@@ -301,21 +219,13 @@
             "description": "Export format. CSV requires viewID parameter."
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "302": {
             "description": "Redirect to download endpoint with JWT token"
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          },
-          "404": {
-            "description": "Notebook or form not found"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "404": {"description": "Notebook or form not found"}
         }
       }
     },
@@ -330,46 +240,31 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
+            "schema": {"type": "string"},
             "description": "Notebook identifier"
           },
           {
             "name": "viewID",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
+            "schema": {"type": "string"},
             "description": "Form/view identifier"
           },
           {
             "name": "format",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string",
-              "enum": ["csv", "zip"]
-            },
+            "schema": {"type": "string", "enum": ["csv", "zip"]},
             "description": "Export format (only CSV and ZIP supported in this deprecated route)"
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "302": {
             "description": "Redirect to download endpoint with JWT token"
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          },
-          "404": {
-            "description": "Notebook or form not found"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "404": {"description": "Notebook or form not found"}
         }
       }
     },
@@ -383,9 +278,7 @@
             "name": "downloadToken",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
+            "schema": {"type": "string"},
             "description": "Signed JWT download token containing download parameters (projectID, format, viewID, userID)"
           }
         ],
@@ -394,39 +287,25 @@
             "description": "File download",
             "content": {
               "text/csv": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                },
+                "schema": {"type": "string", "format": "binary"},
                 "example": "CSV file with notebook records"
               },
               "application/zip": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                },
+                "schema": {"type": "string", "format": "binary"},
                 "example": "ZIP archive containing photos and attachments"
               },
               "application/geo+json": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                },
+                "schema": {"type": "string", "format": "binary"},
                 "example": "GeoJSON file with geospatial notebook data"
               },
               "application/vnd.google-earth.kml+xml": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                },
+                "schema": {"type": "string", "format": "binary"},
                 "example": "KML file for Google Earth"
               }
             },
             "headers": {
               "Content-Disposition": {
-                "schema": {
-                  "type": "string"
-                },
+                "schema": {"type": "string"},
                 "description": "Attachment filename based on export label and format"
               }
             }
@@ -434,9 +313,7 @@
           "400": {
             "description": "Invalid token or missing required parameters"
           },
-          "404": {
-            "description": "Notebook or form not found"
-          }
+          "404": {"description": "Notebook or form not found"}
         }
       }
     },
@@ -455,24 +332,16 @@
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "schema": {
               "type": "array",
-              "items": {
-                "$ref": "#/definitions/UserList"
-              }
+              "items": {"$ref": "#/definitions/UserList"}
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "post": {
@@ -489,11 +358,7 @@
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "description": "User Information",
           "required": true,
@@ -502,15 +367,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "username": {
-                    "type": "string"
-                  },
-                  "role": {
-                    "type": "string"
-                  },
-                  "addrole": {
-                    "type": "boolean"
-                  }
+                  "username": {"type": "string"},
+                  "role": {"type": "string"},
+                  "addrole": {"type": "boolean"}
                 }
               }
             }
@@ -519,13 +378,9 @@
         "responses": {
           "200": {
             "description": "successful operation",
-            "schema": {
-              "$ref": "#/definitions/UserList"
-            }
+            "schema": {"$ref": "#/definitions/UserList"}
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -535,19 +390,13 @@
         "description": "Creates a new notebook based on an existing template. Requires permission to create notebooks.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "description": "Template ID and project name for the new notebook",
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostCreateNotebookFromTemplate"
-              }
+              "schema": {"$ref": "#/definitions/PostCreateNotebookFromTemplate"}
             }
           }
         },
@@ -562,12 +411,8 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"},
+          "500": {"description": "Internal server error"}
         }
       }
     },
@@ -586,11 +431,7 @@
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "description": "User Information",
           "required": true,
@@ -599,12 +440,8 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "username": {
-                    "type": "string"
-                  },
-                  "addrole": {
-                    "type": "boolean"
-                  },
+                  "username": {"type": "string"},
+                  "addrole": {"type": "boolean"},
                   "role": {
                     "type": "string",
                     "enum": ["cluster-admin", "notebook-creator"]
@@ -618,16 +455,10 @@
           "200": {
             "description": "successful operation",
             "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/UserList"
-                }
-              }
+              "application/json": {"schema": {"$ref": "#/definitions/UserList"}}
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -637,25 +468,17 @@
         "description": "Gets a list of templates from the templates DB.",
         "tags": ["Templates"],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/GetListTemplatesResponse"
-                }
+                "schema": {"$ref": "#/definitions/GetListTemplatesResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "post": {
@@ -663,19 +486,13 @@
         "description": "Creates a new template. The payload is validated before processing. Requires appropriate permissions.",
         "tags": ["Templates"],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "description": "Template details",
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostCreateTemplateInput"
-              }
+              "schema": {"$ref": "#/definitions/PostCreateTemplateInput"}
             }
           }
         },
@@ -684,15 +501,11 @@
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostCreateTemplateResponse"
-                }
+                "schema": {"$ref": "#/definitions/PostCreateTemplateResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -707,31 +520,21 @@
             "in": "path",
             "description": "Template id",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": {"type": "string"}
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/GetTemplateByIdResponse"
-                }
+                "schema": {"$ref": "#/definitions/GetTemplateByIdResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "put": {
@@ -744,25 +547,17 @@
             "in": "path",
             "description": "Template id",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": {"type": "string"}
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "description": "Template details",
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PutUpdateTemplateInput"
-              }
+              "schema": {"$ref": "#/definitions/PutUpdateTemplateInput"}
             }
           }
         },
@@ -771,15 +566,11 @@
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PutUpdateTemplateResponse"
-                }
+                "schema": {"$ref": "#/definitions/PutUpdateTemplateResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -794,24 +585,14 @@
             "in": "path",
             "description": "Template id",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": {"type": "string"}
           }
         ],
         "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
-          "200": {
-            "description": "successful operation"
-          },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "200": {"description": "successful operation"},
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -820,43 +601,29 @@
         "summary": "Get a list of teams",
         "description": "Gets a list of all teams from the teams DB",
         "tags": ["Teams"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/GetListTeamsResponse"
-                }
+                "schema": {"$ref": "#/definitions/GetListTeamsResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "post": {
         "summary": "Create a new team",
         "description": "Creates a new team. Requires authentication.",
         "tags": ["Teams"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostCreateTeamInput"
-              }
+              "schema": {"$ref": "#/definitions/PostCreateTeamInput"}
             }
           }
         },
@@ -865,15 +632,11 @@
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostCreateTeamResponse"
-                }
+                "schema": {"$ref": "#/definitions/PostCreateTeamResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -886,24 +649,16 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": {"type": "string"}
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/GetTeamByIdResponse"
-                }
+                "schema": {"$ref": "#/definitions/GetTeamByIdResponse"}
               }
             }
           }
@@ -917,23 +672,15 @@
             "name": "id",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": {"type": "string"}
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PutUpdateTeamInput"
-              }
+              "schema": {"$ref": "#/definitions/PutUpdateTeamInput"}
             }
           }
         },
@@ -942,9 +689,7 @@
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PutUpdateTeamResponse"
-                }
+                "schema": {"$ref": "#/definitions/PutUpdateTeamResponse"}
               }
             }
           }
@@ -960,30 +705,20 @@
             "name": "projectId",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": {"type": "string"}
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/GetProjectInvitesResponse"
-                }
+                "schema": {"$ref": "#/definitions/GetProjectInvitesResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "post": {
@@ -995,24 +730,16 @@
             "name": "projectId",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
+            "schema": {"type": "string"},
             "description": "Project/notebook identifier"
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostCreateInviteInput"
-              }
+              "schema": {"$ref": "#/definitions/PostCreateInviteInput"}
             }
           }
         },
@@ -1027,9 +754,7 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -1042,30 +767,20 @@
             "name": "teamId",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            }
+            "schema": {"type": "string"}
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/GetTeamInvitesResponse"
-                }
+                "schema": {"$ref": "#/definitions/GetTeamInvitesResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       },
       "post": {
@@ -1077,24 +792,16 @@
             "name": "teamId",
             "in": "path",
             "required": true,
-            "schema": {
-              "type": "string"
-            },
+            "schema": {"type": "string"},
             "description": "Team identifier"
           }
         ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostCreateInviteInput"
-              }
+              "schema": {"$ref": "#/definitions/PostCreateInviteInput"}
             }
           }
         },
@@ -1103,15 +810,11 @@
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostCreateTeamInviteResponse"
-                }
+                "schema": {"$ref": "#/definitions/PostCreateTeamInviteResponse"}
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
+          "401": {"$ref": "#/components/responses/UnauthorizedError"}
         }
       }
     },
@@ -1120,19 +823,13 @@
         "summary": "Get long-lived tokens",
         "description": "Get tokens for the authenticated user or all tokens (admin only)",
         "tags": ["Long-Lived Tokens"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "responses": {
           "200": {
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/GetLongLivedTokensResponse"
-                }
+                "schema": {"$ref": "#/definitions/GetLongLivedTokensResponse"}
               }
             }
           }
@@ -1141,11 +838,7 @@
       "post": {
         "summary": "Create a new long-lived token",
         "tags": ["Long-Lived Tokens"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
+        "security": [{"Auth": []}],
         "requestBody": {
           "required": true,
           "content": {
@@ -1179,9 +872,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostRefreshTokenInput"
-              }
+              "schema": {"$ref": "#/definitions/PostRefreshTokenInput"}
             }
           }
         },
@@ -1190,9 +881,7 @@
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostRefreshTokenResponse"
-                }
+                "schema": {"$ref": "#/definitions/PostRefreshTokenResponse"}
               }
             }
           }
@@ -1207,9 +896,7 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostExchangeTokenInput"
-              }
+              "schema": {"$ref": "#/definitions/PostExchangeTokenInput"}
             }
           }
         },
@@ -1218,9 +905,7 @@
             "description": "successful operation",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostExchangeTokenResponse"
-                }
+                "schema": {"$ref": "#/definitions/PostExchangeTokenResponse"}
               }
             }
           }
@@ -1232,142 +917,68 @@
     "ListingsObject": {
       "type": "object",
       "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "conductor_url": {
-          "type": "string"
-        },
-        "description": {
-          "type": "string"
-        },
-        "prefix": {
-          "type": "string"
-        }
+        "id": {"type": "string"},
+        "name": {"type": "string"},
+        "conductor_url": {"type": "string"},
+        "description": {"type": "string"},
+        "prefix": {"type": "string"}
       }
     },
     "NotebookMeta": {
       "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        }
-      }
+      "properties": {"id": {"type": "string"}, "name": {"type": "string"}}
     },
     "Notebook": {
       "type": "object",
       "properties": {
-        "metadata": {
-          "type": "object"
-        },
-        "name": {
-          "type": "string"
-        },
-        "ui-specification": {
-          "type": "object"
-        }
+        "metadata": {"type": "object"},
+        "name": {"type": "string"},
+        "ui-specification": {"type": "object"}
       }
     },
     "RecordList": {
       "type": "object",
       "properties": {
-        "records": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/Record"
-          }
-        }
+        "records": {"type": "array", "items": {"$ref": "#/definitions/Record"}}
       }
     },
     "Record": {
       "type": "object",
       "properties": {
-        "project_id": {
-          "type": "string"
-        },
-        "record_id": {
-          "type": "string"
-        },
-        "revision_id": {
-          "type": "object"
-        },
-        "type": {
-          "type": "string"
-        },
-        "data": {
-          "type": "object"
-        },
-        "annotations": {
-          "type": "object"
-        },
-        "field_types": {
-          "type": "object"
-        },
-        "relationship": {
-          "type": "object"
-        },
-        "deleted": {
-          "type": "boolean"
-        },
-        "updated_by": {
-          "type": "string"
-        },
-        "created_by": {
-          "type": "string"
-        },
-        "updated": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "created": {
-          "type": "string",
-          "format": "date-time"
-        }
+        "project_id": {"type": "string"},
+        "record_id": {"type": "string"},
+        "revision_id": {"type": "object"},
+        "type": {"type": "string"},
+        "data": {"type": "object"},
+        "annotations": {"type": "object"},
+        "field_types": {"type": "object"},
+        "relationship": {"type": "object"},
+        "deleted": {"type": "boolean"},
+        "updated_by": {"type": "string"},
+        "created_by": {"type": "string"},
+        "updated": {"type": "string", "format": "date-time"},
+        "created": {"type": "string", "format": "date-time"}
       }
     },
     "UserList": {
       "type": "object",
       "properties": {
-        "roles": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "users": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/User"
-          }
-        }
+        "roles": {"type": "array", "items": {"type": "string"}},
+        "users": {"type": "array", "items": {"$ref": "#/definitions/User"}}
       }
     },
     "User": {
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string"
-        },
-        "username": {
-          "type": "string"
-        },
+        "name": {"type": "string"},
+        "username": {"type": "string"},
         "roles": {
           "type": "array",
           "items": {
             "type": "object",
             "properties": {
-              "name": {
-                "type": "string"
-              },
-              "value": {
-                "type": "string"
-              }
+              "name": {"type": "string"},
+              "value": {"type": "string"}
             }
           }
         }
@@ -1378,163 +989,91 @@
       "properties": {
         "templates": {
           "type": "array",
-          "items": {
-            "$ref": "#/definitions/TemplateDocument"
-          }
+          "items": {"$ref": "#/definitions/TemplateDocument"}
         }
       }
     },
-    "GetTemplateByIdResponse": {
-      "$ref": "#/definitions/TemplateDocument"
-    },
+    "GetTemplateByIdResponse": {"$ref": "#/definitions/TemplateDocument"},
     "PostCreateTemplateInput": {
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "metadata": {
-          "type": "object"
-        },
-        "ui_specification": {
-          "type": "object"
-        },
-        "teamId": {
-          "type": "string",
-          "description": "Optional team ID"
-        }
+        "name": {"type": "string", "minLength": 1},
+        "metadata": {"type": "object"},
+        "ui_specification": {"type": "object"},
+        "teamId": {"type": "string", "description": "Optional team ID"}
       },
       "required": ["name", "metadata", "ui_specification"]
     },
-    "PostCreateTemplateResponse": {
-      "$ref": "#/definitions/TemplateDocument"
-    },
+    "PostCreateTemplateResponse": {"$ref": "#/definitions/TemplateDocument"},
     "PutUpdateTemplateInput": {
       "type": "object",
       "properties": {
-        "metadata": {
-          "type": "object"
-        },
-        "ui-specification": {
-          "type": "object"
-        },
-        "name": {
-          "type": "string",
-          "minLength": 1
-        },
-        "teamId": {
-          "type": "string"
-        }
+        "metadata": {"type": "object"},
+        "ui-specification": {"type": "object"},
+        "name": {"type": "string", "minLength": 1},
+        "teamId": {"type": "string"}
       },
       "required": []
     },
-    "PutUpdateTemplateResponse": {
-      "$ref": "#/definitions/TemplateDocument"
-    },
+    "PutUpdateTemplateResponse": {"$ref": "#/definitions/TemplateDocument"},
     "TemplateDocument": {
       "allOf": [
-        {
-          "$ref": "#/definitions/TemplateDetails"
-        },
-        {
-          "$ref": "#/definitions/CouchDocumentFields"
-        }
+        {"$ref": "#/definitions/TemplateDetails"},
+        {"$ref": "#/definitions/CouchDocumentFields"}
       ]
     },
     "TemplateDetails": {
       "allOf": [
-        {
-          "$ref": "#/definitions/TemplateEditableDetails"
-        },
-        {
-          "$ref": "#/definitions/TemplateDerivedDetails"
-        }
+        {"$ref": "#/definitions/TemplateEditableDetails"},
+        {"$ref": "#/definitions/TemplateDerivedDetails"}
       ]
     },
     "TemplateEditableDetails": {
       "type": "object",
       "properties": {
-        "name": {
-          "type": "string",
-          "minLength": 5
-        },
-        "ui_specification": {
-          "$ref": "#/definitions/UiSpecification"
-        },
-        "metadata": {
-          "$ref": "#/definitions/NotebookMetadata"
-        }
+        "name": {"type": "string", "minLength": 5},
+        "ui_specification": {"$ref": "#/definitions/UiSpecification"},
+        "metadata": {"$ref": "#/definitions/NotebookMetadata"}
       },
       "required": ["name", "ui_specification", "metadata"]
     },
     "TemplateDerivedDetails": {
       "type": "object",
-      "properties": {
-        "version": {
-          "type": "number",
-          "default": 1
-        }
-      }
+      "properties": {"version": {"type": "number", "default": 1}}
     },
     "CouchDocumentFields": {
       "type": "object",
       "properties": {
-        "_id": {
-          "type": "string",
-          "minLength": 1
-        },
-        "_rev": {
-          "type": "string"
-        },
-        "_deleted": {
-          "type": "boolean"
-        }
+        "_id": {"type": "string", "minLength": 1},
+        "_rev": {"type": "string"},
+        "_deleted": {"type": "boolean"}
       },
       "required": ["_id"]
     },
-    "UiSpecification": {
-      "type": "object",
-      "additionalProperties": true
-    },
-    "NotebookMetadata": {
-      "type": "object",
-      "additionalProperties": true
-    },
+    "UiSpecification": {"type": "object", "additionalProperties": true},
+    "NotebookMetadata": {"type": "object", "additionalProperties": true},
     "PostCreateNotebookFromTemplate": {
       "type": "object",
       "properties": {
-        "template_id": {
-          "type": "string"
-        },
-        "project_name": {
-          "type": "string"
-        }
+        "template_id": {"type": "string"},
+        "project_name": {"type": "string"}
       },
       "required": ["template_id", "project_name"]
     },
     "PostCreateNotebookFromTemplateResponse": {
       "type": "object",
-      "properties": {
-        "notebook": {
-          "type": "string"
-        }
-      }
+      "properties": {"notebook": {"type": "string"}}
     },
     "GetListTeamsResponse": {
       "type": "object",
       "properties": {
         "teams": {
           "type": "array",
-          "items": {
-            "$ref": "#/definitions/TeamDocument"
-          }
+          "items": {"$ref": "#/definitions/TeamDocument"}
         }
       }
     },
-    "GetTeamByIdResponse": {
-      "$ref": "#/definitions/TeamDocument"
-    },
+    "GetTeamByIdResponse": {"$ref": "#/definitions/TeamDocument"},
     "PostCreateTeamInput": {
       "type": "object",
       "properties": {
@@ -1550,9 +1089,7 @@
       },
       "required": ["name"]
     },
-    "PostCreateTeamResponse": {
-      "$ref": "#/definitions/TeamDocument"
-    },
+    "PostCreateTeamResponse": {"$ref": "#/definitions/TeamDocument"},
     "PutUpdateTeamInput": {
       "type": "object",
       "properties": {
@@ -1567,9 +1104,7 @@
         }
       }
     },
-    "PutUpdateTeamResponse": {
-      "$ref": "#/definitions/TeamDocument"
-    },
+    "PutUpdateTeamResponse": {"$ref": "#/definitions/TeamDocument"},
     "TeamDocument": {
       "type": "object",
       "properties": {
@@ -1581,10 +1116,7 @@
           "type": "string",
           "description": "CouchDB revision identifier"
         },
-        "name": {
-          "type": "string",
-          "description": "Name of the team"
-        },
+        "name": {"type": "string", "description": "Name of the team"},
         "description": {
           "type": "string",
           "description": "Description of the team"
@@ -1609,9 +1141,7 @@
       "properties": {
         "invites": {
           "type": "array",
-          "items": {
-            "$ref": "#/definitions/ProjectInviteDocument"
-          }
+          "items": {"$ref": "#/definitions/ProjectInviteDocument"}
         }
       }
     },
@@ -1620,9 +1150,7 @@
       "properties": {
         "invites": {
           "type": "array",
-          "items": {
-            "$ref": "#/definitions/TeamInviteDocument"
-          }
+          "items": {"$ref": "#/definitions/TeamInviteDocument"}
         }
       }
     },
@@ -1689,10 +1217,7 @@
           "type": "string",
           "description": "CouchDB revision identifier"
         },
-        "teamId": {
-          "type": "string",
-          "description": "Team identifier"
-        },
+        "teamId": {"type": "string", "description": "Team identifier"},
         "email": {
           "type": "string",
           "format": "email",
@@ -1763,9 +1288,7 @@
       "properties": {
         "tokens": {
           "type": "array",
-          "items": {
-            "$ref": "#/definitions/LongLivedTokenDocument"
-          }
+          "items": {"$ref": "#/definitions/LongLivedTokenDocument"}
         }
       }
     },
@@ -1783,9 +1306,7 @@
         },
         "scopes": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": {"type": "string"},
           "description": "Scopes/permissions for the token (optional)"
         }
       },
@@ -1798,9 +1319,7 @@
           "type": "string",
           "description": "The generated token string"
         },
-        "tokenDoc": {
-          "$ref": "#/definitions/LongLivedTokenDocument"
-        }
+        "tokenDoc": {"$ref": "#/definitions/LongLivedTokenDocument"}
       },
       "required": ["token", "tokenDoc"]
     },
@@ -1841,9 +1360,7 @@
         },
         "scopes": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": {"type": "string"},
           "description": "Scopes/permissions associated with the token"
         }
       },
@@ -1866,10 +1383,7 @@
           "type": "string",
           "description": "New JWT access token"
         },
-        "refreshToken": {
-          "type": "string",
-          "description": "New refresh token"
-        },
+        "refreshToken": {"type": "string", "description": "New refresh token"},
         "expiresIn": {
           "type": "number",
           "description": "Token expiration time in seconds"
@@ -1895,10 +1409,7 @@
     "PostExchangeTokenResponse": {
       "type": "object",
       "properties": {
-        "accessToken": {
-          "type": "string",
-          "description": "JWT access token"
-        },
+        "accessToken": {"type": "string", "description": "JWT access token"},
         "refreshToken": {
           "type": "string",
           "description": "Refresh token for obtaining new access tokens"
@@ -1911,15 +1422,9 @@
           "type": "object",
           "description": "User information",
           "properties": {
-            "user_id": {
-              "type": "string"
-            },
-            "name": {
-              "type": "string"
-            },
-            "email": {
-              "type": "string"
-            }
+            "user_id": {"type": "string"},
+            "name": {"type": "string"},
+            "email": {"type": "string"}
           }
         }
       },

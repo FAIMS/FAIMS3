@@ -245,11 +245,15 @@ export class FaimsFrontEnd extends Construct {
         : {}),
 
       // Address autosuggest configuration
-      ...(props.addressAutosuggest?.source && props.addressAutosuggest.source !== 'NONE'
+      ...(props.addressAutosuggest?.source &&
+      props.addressAutosuggest.source !== 'NONE'
         ? {
             VITE_AUTOSUGGEST_SOURCE: props.addressAutosuggest.source,
             ...(props.addressAutosuggest.mapboxKey
-              ? {VITE_AUTOSUGGEST_MAPBOX_KEY: props.addressAutosuggest.mapboxKey}
+              ? {
+                  VITE_AUTOSUGGEST_MAPBOX_KEY:
+                    props.addressAutosuggest.mapboxKey,
+                }
               : {}),
             ...(props.addressAutosuggest.mapboxAddressCountry
               ? {
@@ -535,10 +539,7 @@ export class FaimsFrontEnd extends Construct {
       ],
       certificate: props.faimsUsEast1Certificate,
       securityHeadersBehavior: {
-        contentSecurityPolicy: {
-          contentSecurityPolicy: csp,
-          override: true,
-        },
+        contentSecurityPolicy: {contentSecurityPolicy: csp, override: true},
       },
     });
 
@@ -563,9 +564,7 @@ export class FaimsFrontEnd extends Construct {
       IOS_APP_PUBLIC_URL: props.iosAppPublicUrl,
     };
 
-    const sphinxImage = DockerImage.fromBuild(docsPath, {
-      file: 'Dockerfile',
-    });
+    const sphinxImage = DockerImage.fromBuild(docsPath, {file: 'Dockerfile'});
 
     new aws_s3_deployment.BucketDeployment(this, 'docs-deploy', {
       destinationBucket: this.docsBucket,

@@ -37,9 +37,7 @@ const ExportProjectForm = () => {
     const decodedUiSpec = decodeUiSpec(
       uiSpecification as EncodedUISpecification
     );
-    return isValidForSpatialExport({
-      uiSpecification: decodedUiSpec,
-    });
+    return isValidForSpatialExport({uiSpecification: decodedUiSpec});
   }, [data]);
 
   const viewSets = data['ui-specification'].viewsets as ProjectUIViewsets;
@@ -79,13 +77,9 @@ const ExportProjectForm = () => {
     },
   ];
 
-  const tabularDefaultValues = {
-    format: 'csv' as const,
-  };
+  const tabularDefaultValues = {format: 'csv' as const};
 
-  const geospatialDefaultValues = {
-    format: 'geojson' as const,
-  };
+  const geospatialDefaultValues = {format: 'geojson' as const};
 
   const handleTabularSubmit = async ({
     form,

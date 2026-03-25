@@ -70,10 +70,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
   const handleDeactivateConfirm = () => {
     dispatch(
-      deactivateProject({
-        projectId: projectId,
-        serverId: project.serverId,
-      })
+      deactivateProject({projectId: projectId, serverId: project.serverId})
     );
     setOpenDeactivateDialog(false);
     nav(NOTEBOOK_LIST_ROUTE);
@@ -126,9 +123,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
                         color: theme.palette.icon.main,
                       },
                       '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track':
-                        {
-                          backgroundColor: theme.palette.icon.main,
-                        },
+                        {backgroundColor: theme.palette.icon.main},
                     }}
                     onChange={async (event, checked) => {
                       if (checked) {

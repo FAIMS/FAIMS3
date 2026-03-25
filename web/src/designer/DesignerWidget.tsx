@@ -180,9 +180,7 @@ export function DesignerWidget({
     const filename =
       String(exportNotebook.metadata.name ?? 'notebook').replace(/\s+/g, '_') +
       '.json';
-    const file = new File([blob], filename, {
-      type: 'application/json',
-    });
+    const file = new File([blob], filename, {type: 'application/json'});
 
     setAnimateOut(true);
     setAnimateIn(false);

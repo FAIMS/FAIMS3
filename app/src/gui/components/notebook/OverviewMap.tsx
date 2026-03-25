@@ -288,7 +288,10 @@ const createResetNorthControl = (map: Map): Control => {
   button.addEventListener('click', () => {
     const view = map.getView();
     const currentRotation = view.getRotation();
-    if (currentRotation !== undefined && Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD) {
+    if (
+      currentRotation !== undefined &&
+      Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD
+    ) {
       view.animate({rotation: 0, duration: 200});
     }
   });
@@ -430,18 +433,12 @@ export const OverviewMap = (props: OverviewMapProps) => {
               // Handle FeatureCollection with multiple features
               geoJson.features?.forEach(feature => {
                 if (feature && feature.geometry) {
-                  features.push({
-                    ...feature,
-                    properties: baseProperties,
-                  });
+                  features.push({...feature, properties: baseProperties});
                 }
               });
             } else if (geoJson.type === 'Feature') {
               // Handle single Feature or geometry object
-              features.push({
-                ...geoJson,
-                properties: baseProperties,
-              });
+              features.push({...geoJson, properties: baseProperties});
             }
           } catch (error) {
             // Log but don't fail - skip this field/record combination
@@ -478,10 +475,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
       allFeatures.push(...batchResults.flat());
     }
 
-    return {
-      type: 'FeatureCollection',
-      features: allFeatures,
-    };
+    return {type: 'FeatureCollection', features: allFeatures};
   }, [gisFields, records.allRecords, extractFeaturesFromRecord]);
 
   // Use React Query to manage the async feature fetching
@@ -556,10 +550,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
           if (isSelected) {
             return new Style({
-              stroke: new Stroke({
-                color: '#ffffff',
-                width: 5,
-              }),
+              stroke: new Stroke({color: '#ffffff', width: 5}),
               fill: new Fill({color: color + 'cc'}),
               image: new CircleStyle({
                 radius: 10,
@@ -570,10 +561,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
           }
 
           return new Style({
-            stroke: new Stroke({
-              color,
-              width: 4,
-            }),
+            stroke: new Stroke({color, width: 4}),
             fill: new Fill({color: color + '80'}), // 50% opacity for polygons
             image: new CircleStyle({
               radius: 7,
@@ -662,11 +650,7 @@ export const OverviewMap = (props: OverviewMapProps) => {
 
     const handlePointerDown = (evt: PointerEvent) => {
       const pixel = map.getEventPixel(evt).slice();
-      pointerDown = {
-        pixel,
-        time: Date.now(),
-        id: evt.pointerId,
-      };
+      pointerDown = {pixel, time: Date.now(), id: evt.pointerId};
     };
 
     const handlePointerUp = (evt: PointerEvent) => {
@@ -785,17 +769,11 @@ export const OverviewMap = (props: OverviewMapProps) => {
         onClose={handlePopoverClose}
         anchorReference="anchorPosition"
         anchorPosition={popoverAnchorPosition ?? {left: 0, top: 0}}
-        transformOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
-        }}
+        transformOrigin={{vertical: 'bottom', horizontal: 'center'}}
         marginThreshold={24}
         slotProps={{
           paper: {
-            sx: {
-              maxWidth: 'min(320px, calc(100vw - 48px))',
-              minWidth: 0,
-            },
+            sx: {maxWidth: 'min(320px, calc(100vw - 48px))', minWidth: 0},
           },
         }}
       >

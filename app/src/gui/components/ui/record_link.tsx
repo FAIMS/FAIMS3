@@ -13,11 +13,7 @@ interface PropsType {
 export default function RecordRouteDisplay(props: PropsType) {
   const inner = (
     <span
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        flexWrap: 'nowrap',
-      }}
+      style={{display: 'flex', alignItems: 'flex-start', flexWrap: 'nowrap'}}
     >
       {props.deleted ? (
         <Chip label="Deleted" color="error" variant="outlined" size="small" />

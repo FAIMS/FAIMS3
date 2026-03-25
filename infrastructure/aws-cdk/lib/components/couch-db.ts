@@ -582,9 +582,7 @@ EOL`,
       metric: new cloudwatch.Metric({
         namespace: 'CWAgent',
         metricName: 'disk_used_percent',
-        dimensionsMap: {
-          InstanceId: this.instance.instanceId,
-        },
+        dimensionsMap: {InstanceId: this.instance.instanceId},
         statistic: 'Average',
         period: Duration.minutes(5),
       }),

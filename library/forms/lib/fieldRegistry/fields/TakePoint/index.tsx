@@ -139,11 +139,7 @@ const PositionDisplay = ({position}: PositionDisplayProps) => {
   return (
     <Paper
       variant="outlined"
-      sx={{
-        p: 2,
-        mt: 2,
-        backgroundColor: theme.palette.grey[50],
-      }}
+      sx={{p: 2, mt: 2, backgroundColor: theme.palette.grey[50]}}
     >
       <Typography variant="subtitle2" gutterBottom>
         Captured Location
@@ -256,9 +252,7 @@ export const TakePoint = (props: FieldProps) => {
             textTransform: 'none',
             whiteSpace: 'normal',
             wordWrap: 'break-word',
-            '&:hover': {
-              boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)',
-            },
+            '&:hover': {boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.2)'},
           }}
         >
           {isCapturing ? 'Capturing...' : buttonLabel}

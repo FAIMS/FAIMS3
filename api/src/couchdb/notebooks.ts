@@ -78,10 +78,7 @@ export const getProjectIdsByTeamId = async ({
   try {
     const resultList = await projectsDb.query<ProjectDBFields>(
       PROJECTS_BY_TEAM_ID,
-      {
-        key: teamId,
-        include_docs: false,
-      }
+      {key: teamId, include_docs: false}
     );
     return resultList.rows
       .filter(res => {
@@ -133,9 +130,7 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
 export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
   const projectsDb = localGetProjectsDb();
   const projects: ProjectDocument[] = [];
-  const res = await projectsDb.allDocs<ProjectDocument>({
-    include_docs: true,
-  });
+  const res = await projectsDb.allDocs<ProjectDocument>({include_docs: true});
   res.rows.forEach(e => {
     if (e.doc !== undefined && !e.id.startsWith('_')) {
       const doc = e.doc;
@@ -160,11 +155,7 @@ export const getUserProjectsDirectory = async (
   user: Express.User
 ): Promise<ProjectDocument[]> => {
   return (await getAllProjectsDirectory()).filter(p =>
-    userCanDo({
-      user,
-      action: Action.READ_PROJECT_METADATA,
-      resourceId: p._id,
-    })
+    userCanDo({user, action: Action.READ_PROJECT_METADATA, resourceId: p._id})
   );
 };
 
@@ -184,9 +175,7 @@ export const getUserProjectsDetailed = async (
 
   let allDocs;
   if (!teamId) {
-    allDocs = await projectsDb.allDocs<ProjectDocument>({
-      include_docs: true,
-    });
+    allDocs = await projectsDb.allDocs<ProjectDocument>({include_docs: true});
   } else {
     allDocs = await projectsDb.query<ProjectDocument>(PROJECTS_BY_TEAM_ID, {
       key: teamId,
@@ -276,17 +265,10 @@ export const validateDatabases = async () => {
             'Cannot find UI specification for project with ID ' + projectId
           );
         }
-        await doNotebookMigration({
-          projectId,
-          metadata,
-          uiSpec: uiSpec,
-        });
+        await doNotebookMigration({projectId, metadata, uiSpec: uiSpec});
       }
       // Initialise data db if required
-      await initialiseDataDb({
-        projectId,
-        force: true,
-      });
+      await initialiseDataDb({projectId, force: true});
     }
     return report;
   } catch (e) {
@@ -343,12 +325,8 @@ export const createNotebook = async (
     _id: projectId,
     name: projectName.trim(),
     templateId: template_id,
-    metadataDb: {
-      db_name: metaDBName,
-    },
-    dataDb: {
-      db_name: dataDBName,
-    },
+    metadataDb: {db_name: metaDBName},
+    dataDb: {db_name: dataDBName},
     // Default status is open
     status: ProjectStatus.OPEN,
     ownedByTeamId: teamId,
@@ -365,10 +343,7 @@ export const createNotebook = async (
   }
 
   // Initialise the metadata DB
-  const metaDB = await initialiseMetadataDb({
-    projectId,
-    force: true,
-  });
+  const metaDB = await initialiseMetadataDb({projectId, force: true});
 
   const payload = {_id: 'ui-specification', ...uispec};
   await safeWriteDocument({
@@ -381,10 +356,7 @@ export const createNotebook = async (
   await writeProjectMetadata(metaDB, metadata);
 
   // data database
-  await initialiseDataDb({
-    projectId,
-    force: true,
-  });
+  await initialiseDataDb({projectId, force: true});
 
   return projectId;
 };
@@ -402,14 +374,8 @@ export const updateNotebook = async (
   metadata: any
 ) => {
   // Re-initialise metadata/data dbs (includes security update)
-  const metaDB = await initialiseMetadataDb({
-    projectId,
-    force: true,
-  });
-  await initialiseMetadataDb({
-    projectId,
-    force: true,
-  });
+  const metaDB = await initialiseMetadataDb({projectId, force: true});
+  await initialiseMetadataDb({projectId, force: true});
 
   // update the existing uispec document
   // need the revision id of the existing one to do this...

@@ -71,9 +71,7 @@ export default function TabProjectGrid({
         <TabList
           onChange={(_, value: string) => handleChange(value)}
           TabIndicatorProps={{
-            style: {
-              backgroundColor: theme.palette.secondary.contrastText,
-            },
+            style: {backgroundColor: theme.palette.secondary.contrastText},
           }}
           sx={{backgroundColor: theme.palette.background.tabsBackground}}
         >

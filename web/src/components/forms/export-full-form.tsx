@@ -44,9 +44,7 @@ const ExportFullForm = () => {
     const decodedUiSpec = decodeUiSpec(
       uiSpecification as EncodedUISpecification
     );
-    return isValidForSpatialExport({
-      uiSpecification: decodedUiSpec,
-    });
+    return isValidForSpatialExport({uiSpecification: decodedUiSpec});
   }, [data]);
 
   if (!data) {

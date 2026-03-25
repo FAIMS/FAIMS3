@@ -102,10 +102,7 @@ export function files_to_attachments(files: File[]): FullAttachments {
   const attachments: FullAttachments = {};
   for (const file of files) {
     const file_name = file.name ?? generate_file_name();
-    attachments[file_name] = {
-      content_type: file.type,
-      data: file,
-    };
+    attachments[file_name] = {content_type: file.type, data: file};
   }
   return attachments;
 }

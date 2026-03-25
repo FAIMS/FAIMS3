@@ -295,10 +295,7 @@ export class CoreOperations {
       throw new Error(`Failed to create document: ${response}`);
     }
 
-    return {
-      ...validated,
-      _rev: response.rev,
-    };
+    return {...validated, _rev: response.rev};
   }
 
   /**
@@ -343,10 +340,7 @@ export class CoreOperations {
           `Failed to update document with id ${validated._id}: ${response}`
         );
       }
-      return {
-        ...validated,
-        _rev: response.rev,
-      };
+      return {...validated, _rev: response.rev};
     } catch (err: any) {
       // If 409 - that's a conflict - handle based on writeOnClash setting
       if (err.status === 409) {
@@ -367,10 +361,7 @@ export class CoreOperations {
                   `Failed to update document with id ${updatedDoc._id}: ${response}`
                 );
               }
-              return {
-                ...updatedDoc,
-                _rev: response.rev,
-              };
+              return {...updatedDoc, _rev: response.rev};
             } catch (retryErr: any) {
               attempts++;
               // If it's another 409 and we haven't hit max retries, continue loop
@@ -663,10 +654,7 @@ export class CoreOperations {
     }
 
     if (heads.length === 1) {
-      return {
-        selectedHead: heads[0],
-        hadConflict: false,
-      };
+      return {selectedHead: heads[0], hadConflict: false};
     }
 
     // Multiple heads - conflict detected
@@ -675,16 +663,10 @@ export class CoreOperations {
         throw new Exceptions.RecordConflictError(recordId, heads);
       // Take the first one
       case 'pickFirst':
-        return {
-          selectedHead: heads[0],
-          hadConflict: true,
-        };
+        return {selectedHead: heads[0], hadConflict: true};
       // Take the last one
       case 'pickLast':
-        return {
-          selectedHead: heads[heads.length - 1],
-          hadConflict: true,
-        };
+        return {selectedHead: heads[heads.length - 1], hadConflict: true};
     }
   }
 }
@@ -881,10 +863,7 @@ class HydratedOperations {
     const results = await Promise.all(
       recordIds.map(async (id): Promise<HydrationResult> => {
         try {
-          const record = await this.getHydratedRecord({
-            recordId: id,
-            config,
-          });
+          const record = await this.getHydratedRecord({recordId: id, config});
           return {success: true, record};
         } catch (err) {
           return {
@@ -1348,11 +1327,7 @@ class FormOperations {
     limit?: number;
     startKey?: string;
   }): Promise<HydratedRecordQueryResult> {
-    const documents = await this.query.getRecords({
-      formId,
-      limit,
-      startKey,
-    });
+    const documents = await this.query.getRecords({formId, limit, startKey});
 
     return {
       hasMore: documents.hasMore,
@@ -1863,10 +1838,7 @@ class QueryOperations {
       ...toMinimalRevisionMetadata(row.value),
     }));
 
-    return {
-      revisions,
-      count: revisions.length,
-    };
+    return {revisions, count: revisions.length};
   }
 
   /**
@@ -1932,11 +1904,7 @@ class QueryOperations {
       }
     }
 
-    return {
-      records,
-      hasMore,
-      nextStartKey,
-    };
+    return {records, hasMore, nextStartKey};
   }
 
   /**
@@ -2173,9 +2141,6 @@ class QueryOperations {
       batchCount === batchSize
     );
 
-    return {
-      recordIds: Array.from(recordIdSet),
-      avpMatchCount: totalAvpMatches,
-    };
+    return {recordIds: Array.from(recordIdSet), avpMatchCount: totalAvpMatches};
   }
 }

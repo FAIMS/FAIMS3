@@ -177,9 +177,7 @@ interface FullFormManagerConfig extends FullFormConfig {
     addAttachment: (params) => Promise<string>;
     removeAttachment: (params) => Promise<void>;
   };
-  trigger: {
-    commit: () => Promise<void>;
-  };
+  trigger: {commit: () => Promise<void>};
 }
 ```
 

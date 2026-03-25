@@ -58,17 +58,13 @@ Long-Lived Token → Exchange API → Short-Lived Access Token → API Calls
 **Request**:
 
 ```json
-{
-  "token": "your-long-lived-token-here"
-}
+{"token": "your-long-lived-token-here"}
 ```
 
 **Response**:
 
 ```json
-{
-  "token": "short-lived-access-token"
-}
+{"token": "short-lived-access-token"}
 ```
 
 ### 3. Use Access Token
@@ -132,10 +128,7 @@ class APIClient {
 
     return fetch(`${this.baseURL}${endpoint}`, {
       ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${token}`,
-      },
+      headers: {...options.headers, Authorization: `Bearer ${token}`},
     });
   }
 }

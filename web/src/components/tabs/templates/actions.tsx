@@ -55,9 +55,7 @@ const TemplateActions = () => {
     },
     onSuccess: updated => {
       queryClient.setQueryData(['templates', templateId], () => updated);
-      queryClient.invalidateQueries({
-        queryKey: ['templates', templateId],
-      });
+      queryClient.invalidateQueries({queryKey: ['templates', templateId]});
     },
   });
 
@@ -88,9 +86,7 @@ const TemplateActions = () => {
     resourceId: templateId,
   });
 
-  const canCreateProject = useIsAuthorisedTo({
-    action: Action.CREATE_PROJECT,
-  });
+  const canCreateProject = useIsAuthorisedTo({action: Action.CREATE_PROJECT});
 
   const canCreateProjectInTeam =
     getUserResourcesForAction({

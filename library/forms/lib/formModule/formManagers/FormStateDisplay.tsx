@@ -236,18 +236,9 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#181825',
     borderBottom: '1px solid #313244',
   },
-  headerIcon: {
-    fontSize: 14,
-  },
-  headerTitle: {
-    fontWeight: 600,
-    color: '#cba6f7',
-  },
-  fieldCount: {
-    marginLeft: 'auto',
-    color: '#6c7086',
-    fontSize: 11,
-  },
+  headerIcon: {fontSize: 14},
+  headerTitle: {fontWeight: 600, color: '#cba6f7'},
+  fieldCount: {marginLeft: 'auto', color: '#6c7086', fontSize: 11},
   errorBadge: {
     background: '#f38ba8',
     color: '#1e1e2e',
@@ -310,10 +301,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     flexShrink: 0,
   },
-  fieldCardError: {
-    borderColor: '#f38ba8',
-    borderLeftWidth: 3,
-  },
+  fieldCardError: {borderColor: '#f38ba8', borderLeftWidth: 3},
   fieldHeader: {
     display: 'flex',
     alignItems: 'center',
@@ -322,11 +310,7 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: 'pointer',
     userSelect: 'none',
   },
-  expandIcon: {
-    color: '#6c7086',
-    fontSize: 8,
-    width: 12,
-  },
+  expandIcon: {color: '#6c7086', fontSize: 8, width: 12},
   fieldKey: {
     color: '#a6e3a1',
     fontWeight: 500,
@@ -335,10 +319,7 @@ const styles: Record<string, React.CSSProperties> = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  badges: {
-    display: 'flex',
-    gap: 4,
-  },
+  badges: {display: 'flex', gap: 4},
   badge: {
     background: '#45475a',
     color: '#bac2de',
@@ -361,11 +342,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 8,
   },
-  detailSection: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-  },
+  detailSection: {display: 'flex', flexDirection: 'column', gap: 2},
   detailLabel: {
     color: '#f9e2af',
     fontSize: 10,
@@ -389,17 +366,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 8,
     flexShrink: 0,
   },
-  errorPath: {
-    color: '#f9e2af',
-    fontWeight: 500,
-    marginBottom: 2,
-    fontSize: 11,
-  },
-  errorMessage: {
-    color: '#f38ba8',
-    fontSize: 11,
-    lineHeight: 1.4,
-  },
+  errorPath: {color: '#f9e2af', fontWeight: 500, marginBottom: 2, fontSize: 11},
+  errorMessage: {color: '#f38ba8', fontSize: 11, lineHeight: 1.4},
   errorCode: {
     display: 'inline-block',
     marginTop: 4,
@@ -418,20 +386,9 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#a6e3a1',
     fontSize: 11,
   },
-  checkIcon: {
-    fontSize: 14,
-  },
-  empty: {
-    padding: 20,
-    textAlign: 'center',
-    color: '#6c7086',
-    fontSize: 11,
-  },
-  errorCount: {
-    color: '#f38ba8',
-    fontWeight: 600,
-    fontSize: 11,
-  },
+  checkIcon: {fontSize: 14},
+  empty: {padding: 20, textAlign: 'center', color: '#6c7086', fontSize: 11},
+  errorCount: {color: '#f38ba8', fontWeight: 600, fontSize: 11},
   errorPathItem: {
     background: '#45475a',
     color: '#f9e2af',

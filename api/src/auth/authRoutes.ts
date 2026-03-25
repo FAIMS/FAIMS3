@@ -112,10 +112,7 @@ const logFailedLoginAttempt = async (username: string) => {
   const user = await getCouchUserFromEmailOrUserId(username);
   if (user) {
     if (!failedLoginAttempts[username]) {
-      failedLoginAttempts[username] = {
-        count: 1,
-        lastAttempt: new Date(),
-      };
+      failedLoginAttempts[username] = {count: 1, lastAttempt: new Date()};
     } else {
       failedLoginAttempts[username].count += 1;
       failedLoginAttempts[username].lastAttempt = new Date();
@@ -175,9 +172,7 @@ const userIsLockedOut = (
       delaySec > 60
         ? `Too many failed login attempts. Please try again in ${delayMin} minute${delayMin > 1 ? 's' : ''}`
         : `Too many failed login attempts. Please try again in ${delaySec} second${delaySec > 1 ? 's' : ''}`;
-    flash('error', {
-      loginError: {msg: message},
-    });
+    flash('error', {loginError: {msg: message}});
     return true;
   }
   return false;
@@ -211,9 +206,7 @@ export function addAuthRoutes(
   // For legacy versions of the app, we provide a message on /auth to
   // let them know they need to upgrade to the latest version
   app.get('/auth', (req, res) => {
-    res.render('auth-legacy', {
-      socialProviders,
-    });
+    res.render('auth-legacy', {socialProviders});
   });
 
   if (LOCAL_LOGIN_ENABLED) {
@@ -232,10 +225,7 @@ export function addAuthRoutes(
         let loginPayload: PostLoginInput;
 
         const errorRedirect = `/login${buildQueryString({
-          values: {
-            inviteId: req.body.inviteId,
-            redirect: req.body.redirect,
-          },
+          values: {inviteId: req.body.inviteId, redirect: req.body.redirect},
         })}`;
 
         // If anything goes wrong - flash back to form fields
@@ -322,10 +312,7 @@ export function addAuthRoutes(
         let registerPayload: PostRegisterInput;
 
         const errorRedirect = `/register${buildQueryString({
-          values: {
-            inviteId: req.body.inviteId,
-            redirect: req.body.redirect,
-          },
+          values: {inviteId: req.body.inviteId, redirect: req.body.redirect},
         })}`;
 
         // If anything goes wrong - flash back to form fields
@@ -397,9 +384,7 @@ export function addAuthRoutes(
         try {
           validatePasswordOrThrow(password, [email, name]);
         } catch (error: any) {
-          req.flash('error', {
-            password: {msg: error.message},
-          });
+          req.flash('error', {password: {msg: error.message}});
           req.flash('email', email);
           req.flash('name', name);
           res.status(400);
@@ -525,11 +510,7 @@ export function addAuthRoutes(
           dbUser: createdDbUser,
         });
 
-        return redirectWithToken({
-          res,
-          user: expressUser,
-          redirect,
-        });
+        return redirectWithToken({res, user: expressUser, redirect});
       }
     });
   }
@@ -591,9 +572,7 @@ export function addAuthRoutes(
     try {
       validatePasswordOrThrow(newPassword, [username]);
     } catch (error: any) {
-      req.flash('error', {
-        newPassword: {msg: error.message},
-      });
+      req.flash('error', {newPassword: {msg: error.message}});
       return res.redirect(errRedirect);
     }
 
@@ -656,9 +635,7 @@ export function addAuthRoutes(
   app.put(
     '/auth/logout',
     requireAuthenticationAPI,
-    processRequest({
-      body: PutLogoutInputSchema,
-    }),
+    processRequest({body: PutLogoutInputSchema}),
     async ({user, body: {refreshToken}}, res) => {
       if (!user) {
         throw new UnauthorizedException();
@@ -700,9 +677,7 @@ export function addAuthRoutes(
    */
   app.post(
     '/auth/forgotPassword',
-    processRequest({
-      body: PostForgotPasswordInputSchema,
-    }),
+    processRequest({body: PostForgotPasswordInputSchema}),
     async (req, res) => {
       const {email, redirect} = req.body;
 
@@ -766,9 +741,7 @@ export function addAuthRoutes(
         } catch (error) {
           if (error instanceof TooManyRequestsException) {
             req.flash('error', {
-              forgotPasswordError: {
-                msg: 'Too many password reset attempts.',
-              },
+              forgotPasswordError: {msg: 'Too many password reset attempts.'},
             });
           } else {
             // For other errors, log but don't reveal details to user
@@ -858,9 +831,7 @@ export function addAuthRoutes(
           validationResult.user.user_id,
         ]);
       } catch (error: any) {
-        req.flash('error', {
-          newPassword: {msg: error.message},
-        });
+        req.flash('error', {newPassword: {msg: error.message}});
         return res.redirect(errRedirect);
       }
 
@@ -881,9 +852,7 @@ export function addAuthRoutes(
 
       // Redirect to login page with the original redirect parameter
       return res.redirect(
-        `/login${buildQueryString({
-          values: {redirect: validatedRedirect},
-        })}`
+        `/login${buildQueryString({values: {redirect: validatedRedirect}})}`
       );
     } catch (error) {
       console.error('Password reset error:', error);
@@ -908,9 +877,9 @@ export function addAuthRoutes(
       app.get(`/auth/${provider}/metadata`, (req, res) => {
         let metadata = strategy.generateServiceProviderMetadata(
           handlerDetails.enableDecryptionPvk
-            ? handlerDetails.publicKey ?? null
+            ? (handlerDetails.publicKey ?? null)
             : null,
-          handlerDetails.privateKey ? handlerDetails.publicKey ?? null : null
+          handlerDetails.privateKey ? (handlerDetails.publicKey ?? null) : null
         );
 
         // Sign metadata if configured and private key is available
@@ -928,9 +897,7 @@ export function addAuthRoutes(
     // configured callback (see below)
     app.get(
       providerAuthUrl(provider),
-      processRequest({
-        query: AuthContextSchema,
-      }),
+      processRequest({query: AuthContextSchema}),
 
       /**
        * The purpose of this handler is to store necessary information into the

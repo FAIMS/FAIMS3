@@ -157,9 +157,7 @@ const SortableOtherOptionRow = ({
         transition,
         opacity: isDragging ? 0.5 : 1,
       }}
-      sx={{
-        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-      }}
+      sx={{backgroundColor: 'rgba(0, 0, 0, 0.02)'}}
     >
       {/* EDITED: Drag handle is ENABLED for Other */}
       <TableCell sx={{width: '40px', py: 1}}>
@@ -179,10 +177,7 @@ const SortableOtherOptionRow = ({
             <strong>Other</strong>{' '}
             <Typography
               component="span"
-              sx={{
-                fontSize: '0.75rem',
-                color: 'rgba(0, 0, 0, 0.6)',
-              }}
+              sx={{fontSize: '0.75rem', color: 'rgba(0, 0, 0, 0.6)'}}
             >
               (allows custom text input)
             </Typography>
@@ -481,10 +476,7 @@ export const OptionsEditor = ({
       ...newField['component-parameters'].ElementProps,
       options: updatedOptions.map((o, index) => {
         if (fieldName.includes('radio')) {
-          return {
-            RadioProps: {id: 'radio-group-field-' + index},
-            ...o,
-          };
+          return {RadioProps: {id: 'radio-group-field-' + index}, ...o};
         }
         return o;
       }),
@@ -803,9 +795,7 @@ export const OptionsEditor = ({
               sx={{
                 mb: 2,
                 backgroundColor: 'rgb(229, 246, 253)',
-                '& .MuiAlert-icon': {
-                  color: 'rgb(1, 67, 97)',
-                },
+                '& .MuiAlert-icon': {color: 'rgb(1, 67, 97)'},
               }}
             >
               You can use <strong>Markdown syntax</strong> in option text (e.g.{' '}
@@ -838,9 +828,7 @@ export const OptionsEditor = ({
                         height: '40px',
                         backgroundColor: '#fff',
                         textTransform: 'none',
-                        '&:hover': {
-                          backgroundColor: '#f5f5f5',
-                        },
+                        '&:hover': {backgroundColor: '#f5f5f5'},
                       }}
                     >
                       Add
@@ -887,9 +875,7 @@ export const OptionsEditor = ({
                 size="small"
                 onClick={toggleEnableOtherOption}
                 disabled={enableOther}
-                sx={{
-                  textTransform: 'none',
-                }}
+                sx={{textTransform: 'none'}}
               >
                 Add "Other" Option
               </Button>

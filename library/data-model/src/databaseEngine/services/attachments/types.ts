@@ -274,7 +274,9 @@ export abstract class BaseAttachmentService implements IAttachmentService {
    */
   protected base64ToBlob(base64: string, contentType: string): Blob {
     const byteCharacters = atob(base64);
-    const byteNumbers = new Array(byteCharacters.length);
+    const byteNumbers: Array<number> = Array.from({
+      length: byteCharacters.length,
+    });
     for (let i = 0; i < byteCharacters.length; i++) {
       byteNumbers[i] = byteCharacters.charCodeAt(i);
     }

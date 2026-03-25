@@ -12,10 +12,7 @@ export const MetadataDBSecurityDocument = ({
 }): SecurityDocument => {
   return {
     // admins have admin ownership
-    admins: {
-      names: [],
-      roles: [Role.GENERAL_ADMIN],
-    },
+    admins: {names: [], roles: [Role.GENERAL_ADMIN]},
     members: {
       names: [],
       // Must be at least able to read project metadata!

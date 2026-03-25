@@ -66,10 +66,7 @@ export default function AddRecordButtons({
 
     const engine = dataEngine();
     engine.form
-      .createRecord({
-        createdBy: activeUser.username,
-        formId: viewsetName,
-      })
+      .createRecord({createdBy: activeUser.username, formId: viewsetName})
       .then(newRecord =>
         navigate(
           ROUTES.getEditRecordRoute({
@@ -136,9 +133,7 @@ export default function AddRecordButtons({
                 fontWeight: 'bold',
                 backgroundColor: theme.palette.icon.main,
                 color: theme.palette.primary.light,
-                '&:hover': {
-                  backgroundColor: theme.palette.secondary.dark,
-                },
+                '&:hover': {backgroundColor: theme.palette.secondary.dark},
               }}
               startIcon={<AddCircleSharpIcon />}
               key="newRecord"
@@ -189,9 +184,7 @@ export default function AddRecordButtons({
           )}
           <Button
             variant="outlined"
-            sx={{
-              fontWeight: 'bold',
-            }}
+            sx={{fontWeight: 'bold'}}
             startIcon={<Refresh />}
             key="refreshList"
             onClick={refreshList}

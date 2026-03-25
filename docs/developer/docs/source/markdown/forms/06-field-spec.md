@@ -93,14 +93,8 @@ For complex fields:
 
 ```typescript
 const FieldSpecificationMeta = z.object({
-  annotation: z.object({
-    include: z.boolean(),
-    label: z.string(),
-  }),
-  uncertainty: z.object({
-    include: z.boolean(),
-    label: z.string(),
-  }),
+  annotation: z.object({include: z.boolean(), label: z.string()}),
+  uncertainty: z.object({include: z.boolean(), label: z.string()}),
 });
 ```
 
@@ -239,12 +233,7 @@ type FieldVisibilityMap = Record<string, string[]>;
 To hide a field from display while keeping it in the data model:
 
 ```json
-{
-  "component-parameters": {
-    "name": "internal_id",
-    "hidden": true
-  }
-}
+{"component-parameters": {"name": "internal_id", "hidden": true}}
 ```
 
 Hidden fields:

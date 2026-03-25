@@ -127,23 +127,13 @@ export default function FieldChooserDialog({
       onClose={onClose}
       fullWidth
       maxWidth="md"
-      sx={{
-        '& .MuiDialog-paper': {
-          maxHeight: '75vh',
-        },
-      }}
+      sx={{'& .MuiDialog-paper': {maxHeight: '75vh'}}}
     >
       <DialogTitle>Add a field</DialogTitle>
 
       <DialogContent
         dividers
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          px: 3,
-          pt: 2,
-          pb: 0,
-        }}
+        sx={{display: 'flex', flexDirection: 'column', px: 3, pt: 2, pb: 0}}
       >
         <TextField
           label="Field name"
@@ -191,12 +181,7 @@ export default function FieldChooserDialog({
         />
 
         <Box
-          sx={{
-            flex: 1,
-            overflowY: 'auto',
-            pr: 1,
-            pb: 2,
-          }}
+          sx={{flex: 1, overflowY: 'auto', pr: 1, pb: 2}}
           onScroll={() => {
             if (tooltipOpenKey) {
               setTooltipOpenKey(false);

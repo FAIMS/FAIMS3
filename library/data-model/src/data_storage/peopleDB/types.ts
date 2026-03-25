@@ -75,12 +75,7 @@ export type PeopleV1Document = PouchDB.Core.ExistingDocument<PeopleV1Fields>;
 // Resource Role Map schema
 export const ResourceRoleMapSchema = z.record(
   z
-    .array(
-      z.object({
-        resourceId: z.string(),
-        role: z.nativeEnum(Role),
-      })
-    )
+    .array(z.object({resourceId: z.string(), role: z.nativeEnum(Role)}))
     .optional()
 );
 export type ResourceRoleMap = z.infer<typeof ResourceRoleMapSchema>;

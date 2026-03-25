@@ -13,9 +13,7 @@
 // limitations under the License.
 
 // Minimal types for notebook structure
-export type NotebookMetadata = {
-  [key: string]: unknown;
-};
+export type NotebookMetadata = {[key: string]: unknown};
 
 export type NotebookUISpec = {
   fields: {[key: string]: any};
@@ -186,26 +184,17 @@ const updateFieldLabels = (notebook: NotebookV1) => {
     } else if (params?.name) {
       params.label = params.name;
     }
-    fields[fieldName] = {
-      ...field,
-      'component-parameters': params,
-    };
+    fields[fieldName] = {...field, 'component-parameters': params};
   }
   notebook['ui-specification'].fields = fields;
 };
 
-type LabelInclude = {
-  label: string;
-  include: boolean;
-};
+type LabelInclude = {label: string; include: boolean};
 
 type OldMetaType = {
   annotation_label?: string;
   annotation?: boolean | LabelInclude;
-  uncertainty: {
-    include: boolean;
-    label: string;
-  };
+  uncertainty: {include: boolean; label: string};
 };
 
 /**
@@ -269,12 +258,8 @@ const updateHelperText = (notebook: NotebookV1) => {
  * A couple of types to make the migration code easier below
  * since we're removing this stuff it doesn't need to be seen outside here
  */
-type StringMap = {
-  [key: string]: string;
-};
-type SectionType = {
-  [key: string]: StringMap;
-};
+type StringMap = {[key: string]: string};
+type SectionType = {[key: string]: StringMap};
 
 /**
  * Update a notebook to put form labels in the form section

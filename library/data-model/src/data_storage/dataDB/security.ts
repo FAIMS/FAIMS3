@@ -12,10 +12,7 @@ export const DataDBSecurityDocument = ({
 }): SecurityDocument => {
   return {
     // General admins have complete access
-    admins: {
-      names: [],
-      roles: [Role.GENERAL_ADMIN],
-    },
+    admins: {names: [], roles: [Role.GENERAL_ADMIN]},
     members: {
       names: [],
       // We have to stoop to reading here since there is no differentiation

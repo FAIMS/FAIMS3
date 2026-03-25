@@ -1,6 +1,6 @@
 # Adding a Field
 
-*How to open the Add a field dialog and add a new field to your form.*
+_How to open the Add a field dialog and add a new field to your form._
 
 ---
 
@@ -43,17 +43,17 @@ The dialog has four main areas:
 
 The tab bar organises field types into nine categories:
 
-| Tab | Field Types |
-| --- | ----------- |
-| **ALL** | Shows every available field type (default view) |
-| **TEXT** | FAIMS Text Field, Multi-line Text Field, Email, Templated String, QR / Barcode Scanner, Address |
-| **NUMBERS** | Number Input, Controlled Number, Auto Incrementing Field |
-| **DATE & TIME** | Date time picker, Date picker, Month picker, Date and Time with Now button |
-| **MEDIA** | Take Photo, Upload a File |
-| **LOCATION** | Take GPS Point, Map Field |
-| **CHOICE** | Select Field, Select Multiple, Checkbox, Select Field (Hierarchical), Select one option |
-| **RELATIONSHIP** | Related Records |
-| **DISPLAY** | Rich Text |
+| Tab              | Field Types                                                                                     |
+| ---------------- | ----------------------------------------------------------------------------------------------- |
+| **ALL**          | Shows every available field type (default view)                                                 |
+| **TEXT**         | FAIMS Text Field, Multi-line Text Field, Email, Templated String, QR / Barcode Scanner, Address |
+| **NUMBERS**      | Number Input, Controlled Number, Auto Incrementing Field                                        |
+| **DATE & TIME**  | Date time picker, Date picker, Month picker, Date and Time with Now button                      |
+| **MEDIA**        | Take Photo, Upload a File                                                                       |
+| **LOCATION**     | Take GPS Point, Map Field                                                                       |
+| **CHOICE**       | Select Field, Select Multiple, Checkbox, Select Field (Hierarchical), Select one option         |
+| **RELATIONSHIP** | Related Records                                                                                 |
+| **DISPLAY**      | Rich Text                                                                                       |
 
 > **Note:** Not all tabs may be visible at once. If you see a **›**
 > arrow button on the right side of the tab bar, **click** it to scroll

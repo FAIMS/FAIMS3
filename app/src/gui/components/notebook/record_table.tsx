@@ -167,21 +167,13 @@ const SORT_OPTIONS: Record<SortOption, SortConfig> = {
     field: 'updated',
     direction: 'desc',
   },
-  updated_asc: {
-    label: 'Oldest Updated',
-    field: 'updated',
-    direction: 'asc',
-  },
+  updated_asc: {label: 'Oldest Updated', field: 'updated', direction: 'asc'},
   created_desc: {
     label: 'Recently Created',
     field: 'created',
     direction: 'desc',
   },
-  created_asc: {
-    label: 'Oldest Created',
-    field: 'created',
-    direction: 'asc',
-  },
+  created_asc: {label: 'Oldest Created', field: 'created', direction: 'asc'},
   created_by_asc: {
     label: 'Created By (A-Z)',
     field: 'createdBy',
@@ -202,16 +194,8 @@ const SORT_OPTIONS: Record<SortOption, SortConfig> = {
     field: 'updatedBy',
     direction: 'desc',
   },
-  type_asc: {
-    label: 'Type (A-Z)',
-    field: 'type',
-    direction: 'asc',
-  },
-  type_desc: {
-    label: 'Type (Z-A)',
-    field: 'type',
-    direction: 'desc',
-  },
+  type_asc: {label: 'Type (A-Z)', field: 'type', direction: 'asc'},
+  type_desc: {label: 'Type (Z-A)', field: 'type', direction: 'desc'},
 };
 
 /** Default sort option */
@@ -375,11 +359,8 @@ export function buildColumnsFromSummaryFields({
     filterable: false,
     flex: 1,
     valueGetter: params => {
-      const data = 'data' in params.row ? params.row.data ?? {} : {};
-      return getDisplayDataFromRecordMetadata({
-        field,
-        data: data,
-      });
+      const data = 'data' in params.row ? (params.row.data ?? {}) : {};
+      return getDisplayDataFromRecordMetadata({field, data: data});
     },
   }));
 }
@@ -724,27 +705,18 @@ function buildColumnDefinitions({
   } else if (width === 'md') {
     // Medium width: summary fields or HRID, plus mandatory columns
     columnList.push(
-      buildColumnFromSystemField({
-        columnType: 'SYNC_STATUS',
-        uiSpecification,
-      })
+      buildColumnFromSystemField({columnType: 'SYNC_STATUS', uiSpecification})
     );
 
     if (includeKind) {
       columnList.push(
-        buildColumnFromSystemField({
-          columnType: 'KIND',
-          uiSpecification,
-        })
+        buildColumnFromSystemField({columnType: 'KIND', uiSpecification})
       );
     }
 
     if (summaryFields.length > 0) {
       columnList = columnList.concat(
-        buildColumnsFromSummaryFields({
-          summaryFields,
-          uiSpecification,
-        })
+        buildColumnsFromSummaryFields({summaryFields, uiSpecification})
       );
     } else {
       columnList.push(buildHridColumn());
@@ -752,10 +724,7 @@ function buildColumnDefinitions({
 
     MANDATORY_COLUMNS.forEach(columnType => {
       columnList.push(
-        buildColumnFromSystemField({
-          columnType,
-          uiSpecification,
-        })
+        buildColumnFromSystemField({columnType, uiSpecification})
       );
     });
 
@@ -768,26 +737,17 @@ function buildColumnDefinitions({
     // Large width: all columns
     if (includeKind) {
       columnList.push(
-        buildColumnFromSystemField({
-          columnType: 'KIND',
-          uiSpecification,
-        })
+        buildColumnFromSystemField({columnType: 'KIND', uiSpecification})
       );
     }
 
     columnList.push(
-      buildColumnFromSystemField({
-        columnType: 'SYNC_STATUS',
-        uiSpecification,
-      })
+      buildColumnFromSystemField({columnType: 'SYNC_STATUS', uiSpecification})
     );
 
     if (summaryFields.length > 0) {
       columnList = columnList.concat(
-        buildColumnsFromSummaryFields({
-          summaryFields,
-          uiSpecification,
-        })
+        buildColumnsFromSummaryFields({summaryFields, uiSpecification})
       );
     } else {
       columnList.push(buildHridColumn());
@@ -795,10 +755,7 @@ function buildColumnDefinitions({
 
     LARGE_COLUMNS.forEach(columnType => {
       columnList.push(
-        buildColumnFromSystemField({
-          columnType,
-          uiSpecification,
-        })
+        buildColumnFromSystemField({columnType, uiSpecification})
       );
     });
 
@@ -1001,10 +958,7 @@ const useSortedAndPaginatedRows = (
     const end = start + paginationModel.pageSize;
     const pageRows = sorted.slice(start, end);
 
-    return {
-      allSorted: sorted,
-      pageRows,
-    };
+    return {allSorted: sorted, pageRows};
   }, [rows, sortOption, paginationModel]);
 };
 
@@ -1141,10 +1095,7 @@ export function RecordsTable(props: RecordsTableProps) {
   if (recordStatus) {
     filteredRows = rawFilteredRows.map(row => {
       const synced = recordStatus.status[row.recordId];
-      return {
-        ...row,
-        synced,
-      };
+      return {...row, synced};
     });
   }
 

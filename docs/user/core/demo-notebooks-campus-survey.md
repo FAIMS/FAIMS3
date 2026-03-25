@@ -1,6 +1,6 @@
 # Demonstration Notebooks: Campus Survey
 
-The *Campus-Demo-Notebook* is a simple workflow designed for a team of recorders to observe landscape elements and street furniture in a typical campus setting.
+The _Campus-Demo-Notebook_ is a simple workflow designed for a team of recorders to observe landscape elements and street furniture in a typical campus setting.
 
 ## Access
 
@@ -8,7 +8,4 @@ To access the {{Notebook}}, open the App on your {{ANDROID_APP_LINK}} or {{IOS_A
 
 If you are a new user or cannot see the {{Notebook}} in your **NOT ACTIVE** list, contact [support](../core/support.md).
 
-
-
 [THIS PAGE IS UNDER REVIEW]
-

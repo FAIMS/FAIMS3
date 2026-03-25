@@ -30,9 +30,7 @@ const getDatabase = (databaseName: string) => {
 const mockGetDataDB = async (project_id: ProjectID) => {
   const databaseName = 'data-' + project_id;
   const db = getDatabase(databaseName);
-  const config = initDataDB({
-    projectId: project_id,
-  });
+  const config = initDataDB({projectId: project_id});
   await couchInitialiser({
     db,
     content: config,
@@ -86,22 +84,14 @@ export const sampleUiSpecForViewId = ({
           helperText: '',
           variant: 'outlined',
           required: false,
-          InputProps: {
-            type: 'text',
-          },
+          InputProps: {type: 'text'},
           name: 'name',
         },
         validationSchema: [['yup.string']],
         initialValue: '',
         meta: {
-          annotation: {
-            include: false,
-            label: 'annotation',
-          },
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          annotation: {include: false, label: 'annotation'},
+          uncertainty: {include: false, label: 'uncertainty'},
         },
         condition: null,
         persistent: false,
@@ -117,34 +107,21 @@ export const sampleUiSpecForViewId = ({
           helperText: '',
           variant: 'outlined',
           required: false,
-          InputProps: {
-            type: 'number',
-          },
+          InputProps: {type: 'number'},
           name: 'age',
         },
         validationSchema: [['yup.number']],
         initialValue: '',
         meta: {
-          annotation: {
-            include: false,
-            label: 'annotation',
-          },
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          annotation: {include: false, label: 'annotation'},
+          uncertainty: {include: false, label: 'uncertainty'},
         },
         condition: null,
         persistent: false,
         displayParent: false,
       },
     },
-    views: {
-      [`TEST-${viewId}`]: {
-        label: 'TEST',
-        fields: ['name', 'age'],
-      },
-    },
+    views: {[`TEST-${viewId}`]: {label: 'TEST', fields: ['name', 'age']}},
     viewsets: {
       TEST: {
         label: 'TEST',
@@ -175,10 +152,7 @@ export const createRecord = async (
     created: new Date(),
     updated: new Date(),
     annotations: {},
-    field_types: {
-      name: 'faims::string',
-      age: 'faims::integer',
-    },
+    field_types: {name: 'faims::string', age: 'faims::integer'},
     relationship: undefined,
     deleted: false,
   };

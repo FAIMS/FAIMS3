@@ -35,23 +35,16 @@ export const sampleNotebook: NotebookV1 = {
           helperText: 'Summarise the collection location.',
           variant: 'outlined',
           required: false,
-          InputProps: {
-            type: 'text',
-          },
+          InputProps: {type: 'text'},
           SelectProps: {},
-          InputLabelProps: {
-            label: 'Location Description',
-          },
+          InputLabelProps: {label: 'Location Description'},
           FormHelperTextProps: {},
           name: 'New-Text-Field',
         },
         initialValue: '',
         meta: {
           annotation: {include: true, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'Field-ID': {
@@ -70,10 +63,7 @@ export const sampleNotebook: NotebookV1 = {
         initialValue: null,
         meta: {
           annotation: {include: true, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'hridPrimary-Next-Section': {
@@ -88,20 +78,13 @@ export const sampleNotebook: NotebookV1 = {
           variant: 'outlined',
           required: true,
           template: '',
-          InputProps: {
-            type: 'text',
-          },
-          InputLabelProps: {
-            label: 'Identifier',
-          },
+          InputProps: {type: 'text'},
+          InputLabelProps: {label: 'Identifier'},
         },
         initialValue: '',
         meta: {
           annotation: {include: true, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'IGSN-QR-Code': {
@@ -113,9 +96,7 @@ export const sampleNotebook: NotebookV1 = {
           id: 'qr-code-field',
           variant: 'outlined',
           required: true,
-          FormLabelProps: {
-            children: 'IGSN QR Code',
-          },
+          FormLabelProps: {children: 'IGSN QR Code'},
           FormHelperTextProps: {
             children: 'Scan the pre-printed QR Code for this sample.',
           },
@@ -123,10 +104,7 @@ export const sampleNotebook: NotebookV1 = {
         initialValue: '1',
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
       'Sample-Location': {
@@ -144,10 +122,7 @@ export const sampleNotebook: NotebookV1 = {
         initialValue: null,
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'Sample-Photograph': {
@@ -165,10 +140,7 @@ export const sampleNotebook: NotebookV1 = {
         initialValue: null,
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
       'Length-mm': {
@@ -180,23 +152,16 @@ export const sampleNotebook: NotebookV1 = {
           helperText: 'Longest dimension of sample in mm.',
           variant: 'outlined',
           required: false,
-          InputProps: {
-            type: 'number',
-          },
+          InputProps: {type: 'number'},
           SelectProps: {},
-          InputLabelProps: {
-            label: 'Length (mm)',
-          },
+          InputLabelProps: {label: 'Length (mm)'},
           FormHelperTextProps: {},
           name: 'Length-mm',
         },
         initialValue: '',
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: true,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: true, label: 'uncertainty'},
         },
       },
 
@@ -210,14 +175,9 @@ export const sampleNotebook: NotebookV1 = {
           variant: 'outlined',
           required: false,
           multiline: true,
-          InputProps: {
-            type: 'text',
-            rows: 4,
-          },
+          InputProps: {type: 'text', rows: 4},
           SelectProps: {},
-          InputLabelProps: {
-            label: 'Survey Note',
-          },
+          InputLabelProps: {label: 'Survey Note'},
           FormHelperTextProps: {},
           id: 'survey-note',
           name: 'survey-note',
@@ -226,10 +186,7 @@ export const sampleNotebook: NotebookV1 = {
         access: ['admin'],
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
       Type: {
@@ -246,32 +203,18 @@ export const sampleNotebook: NotebookV1 = {
           SelectProps: {},
           ElementProps: {
             options: [
-              {
-                label: 'Igneous',
-                value: 'Igneous',
-              },
-              {
-                label: 'Metamorphic',
-                value: 'Metamorphic',
-              },
-              {
-                label: 'Sedementary',
-                value: 'Sedementary',
-              },
+              {label: 'Igneous', value: 'Igneous'},
+              {label: 'Metamorphic', value: 'Metamorphic'},
+              {label: 'Sedementary', value: 'Sedementary'},
             ],
           },
-          InputLabelProps: {
-            label: 'Type',
-          },
+          InputLabelProps: {label: 'Type'},
           name: 'Type',
         },
         initialValue: '',
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
       safety_hazard: {
@@ -283,9 +226,7 @@ export const sampleNotebook: NotebookV1 = {
           id: 'safety_hazard',
           required: false,
           type: 'checkbox',
-          FormControlLabelProps: {
-            label: 'Safety Hazard',
-          },
+          FormControlLabelProps: {label: 'Safety Hazard'},
           FormHelperTextProps: {
             children: 'Selecting this box will alert maintenance (eventually)',
           },
@@ -294,10 +235,7 @@ export const sampleNotebook: NotebookV1 = {
         access: ['admin'],
         meta: {
           annotation: {include: false, label: 'annotation'},
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       },
     },

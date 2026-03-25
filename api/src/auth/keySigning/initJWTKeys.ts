@@ -27,10 +27,7 @@ export async function initialiseJWTKey(): Promise<void> {
     await axios.put(
       `${couchdbConfigUrl}${encodeURIComponent(keyName)}`,
       JSON.stringify(publicKey),
-      {
-        auth: LOCAL_COUCHDB_AUTH,
-        headers: {'Content-Type': 'application/json'},
-      }
+      {auth: LOCAL_COUCHDB_AUTH, headers: {'Content-Type': 'application/json'}}
     );
     console.log('JWT public key configured in CouchDB');
   } catch (error) {

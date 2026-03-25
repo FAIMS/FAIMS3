@@ -30,10 +30,7 @@ import MarkdownIt from 'markdown-it';
 // Configure markdown-it with minimal HTML support
 // html: true is required for img tags to work, but all HTML is sanitized before rendering
 // typographer: true enables smart quotes and other typographic features
-const md = new MarkdownIt({
-  html: true,
-  typographer: true,
-});
+const md = new MarkdownIt({html: true, typographer: true});
 
 /**
  * Validates URLs to ensure they use safe protocols.

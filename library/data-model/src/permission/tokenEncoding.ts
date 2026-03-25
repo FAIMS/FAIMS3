@@ -24,10 +24,7 @@ export const decodePerResourceStatement = ({
   input,
 }: {
   input: string;
-}): {
-  resourceId: string;
-  claimString: string;
-} => {
+}): {resourceId: string; claimString: string} => {
   const splitResult = input.split(ENCODING_SEPARATOR);
   if (
     splitResult.length !== 2 ||
@@ -61,10 +58,7 @@ export function decodeAndValidateToken(
         input: encodedRole,
       });
 
-      return {
-        resourceId,
-        role: roleString,
-      };
+      return {resourceId, role: roleString};
     } catch (error: any) {
       throw new Error(
         `Invalid resource role encoding: ${encodedRole}. ${error.message}`
@@ -76,10 +70,7 @@ export function decodeAndValidateToken(
   const globalRoles = validatedRawToken.globalRoles;
 
   // Create the decoded token
-  const decodedToken = {
-    resourceRoles,
-    globalRoles,
-  };
+  const decodedToken = {resourceRoles, globalRoles};
 
   // Validate the decoded token against the schema
   return decodedTokenSchema.parse(decodedToken);
@@ -133,9 +124,5 @@ export function encodeToken(
   // General roles don't need special encoding
   const globalRoles = decodedToken.globalRoles.map(role => role.toString());
 
-  return {
-    [COUCHDB_ROLES_PATH]: couchDbRoles,
-    resourceRoles,
-    globalRoles,
-  };
+  return {[COUCHDB_ROLES_PATH]: couchDbRoles, resourceRoles, globalRoles};
 }

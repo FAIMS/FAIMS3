@@ -79,12 +79,7 @@ export const AutoIncrementEditForm = ({
   const incrementer = new AutoIncrementer(project_id, form_id, field_id);
 
   const errorHandler = (error: Error) => {
-    dispatch(
-      addAlert({
-        message: error.toString(),
-        severity: 'error',
-      })
-    );
+    dispatch(addAlert({message: error.toString(), severity: 'error'}));
   };
 
   const updateRange =
@@ -114,11 +109,7 @@ export const AutoIncrementEditForm = ({
       <IconButton
         aria-label="close"
         onClick={handleClose}
-        sx={{
-          position: 'absolute',
-          right: 8,
-          top: 8,
-        }}
+        sx={{position: 'absolute', right: 8, top: 8}}
       >
         <CloseIcon />
       </IconButton>
@@ -241,10 +232,7 @@ const IncrementerRange = (props: IncremenenterRangeProps) => {
           stop: newStart + 99,
         });
       } else {
-        props.updateRange({
-          ...props.range,
-          start: newStart,
-        });
+        props.updateRange({...props.range, start: newStart});
       }
     }
   };
@@ -258,18 +246,12 @@ const IncrementerRange = (props: IncremenenterRangeProps) => {
     const newStop = parseInt(event.target.value);
     if (newStop > props.range.start) {
       setStop(newStop);
-      props.updateRange({
-        ...props.range,
-        stop: newStop,
-      });
+      props.updateRange({...props.range, stop: newStop});
     }
   };
 
   const handleDisableRange = () => {
-    props.updateRange({
-      ...props.range,
-      fully_used: true,
-    });
+    props.updateRange({...props.range, fully_used: true});
   };
 
   return (

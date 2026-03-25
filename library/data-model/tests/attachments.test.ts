@@ -38,13 +38,7 @@ describe('attachments', () => {
         record_id: 'test',
         created: '2021-01-01T00:00:00.000Z',
         created_by: 'test',
-        data: [
-          {
-            name: 'test.txt',
-            type: 'text/plain',
-            data: 'Some Text Data',
-          },
-        ],
+        data: [{name: 'test.txt', type: 'text/plain', data: 'Some Text Data'}],
       };
       const docs = file_data_to_attachments(avp);
       const attachments = docs.filter(
@@ -93,14 +87,8 @@ describe('attachments', () => {
   describe('attachments_to_files', () => {
     it('should convert attachments to files', () => {
       const attachments: PouchDB.Core.Attachments = {
-        'test.txt': {
-          content_type: 'text/plain',
-          data: 'Some Text Data',
-        },
-        'hello.txt': {
-          content_type: 'text/plain',
-          data: 'aGVsbG8gd29ybGQ=',
-        },
+        'test.txt': {content_type: 'text/plain', data: 'Some Text Data'},
+        'hello.txt': {content_type: 'text/plain', data: 'aGVsbG8gd29ybGQ='},
       };
       const files = attachments_to_files(attachments);
       expect(files).toHaveLength(2);
@@ -140,10 +128,7 @@ describe('attachments', () => {
           created_by: avp.created_by,
           filename: 'test.txt',
           _attachments: {
-            attachment1: {
-              content_type: 'text/plain',
-              data: 'Some Text Data',
-            },
+            attachment1: {content_type: 'text/plain', data: 'Some Text Data'},
           },
         },
       ];

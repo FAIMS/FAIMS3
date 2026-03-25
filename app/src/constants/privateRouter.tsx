@@ -149,9 +149,7 @@ const OfflineLoginBanner = ({loginPath, visible}: OfflineLoginBannerProps) => {
             },
 
             // Ensure message takes full width
-            '& .MuiAlert-message': {
-              width: '100%',
-            },
+            '& .MuiAlert-message': {width: '100%'},
           }}
         >
           <Box

@@ -14,11 +14,7 @@ export const userCanDo = ({
   action: Action;
   resourceId?: string;
 }): boolean => {
-  return isAuthorized({
-    decodedToken: user.decodedToken!,
-    action,
-    resourceId,
-  });
+  return isAuthorized({decodedToken: user.decodedToken!, action, resourceId});
 };
 
 /**
@@ -58,12 +54,7 @@ export const useIsAuthorisedTo = ({
   }
 
   return useMemo(
-    () =>
-      userCanDo({
-        user,
-        action,
-        resourceId,
-      }),
+    () => userCanDo({user, action, resourceId}),
     [action, resourceId, user.token]
   );
 };

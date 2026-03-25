@@ -1,15 +1,12 @@
-import { createTheme } from '@mui/material';
-import { createUseStyles as makeStyles } from 'react-jss';
+import {createTheme} from '@mui/material';
+import {createUseStyles as makeStyles} from 'react-jss';
 
 const theme = createTheme();
 
 const drawerWidth = 240;
 
 export default makeStyles({
-  root: {
-    display: 'flex',
-    boxShadow: 'none',
-  },
+  root: {display: 'flex', boxShadow: 'none'},
   appBar: {
     transition: theme.transitions.create(['margin', 'width'], {
       easing: theme.transitions.easing.sharp,
@@ -25,20 +22,11 @@ export default makeStyles({
       duration: theme.transitions.duration.enteringScreen,
     }),
   },
-  menuButton: {
-    marginRight: theme.spacing(2),
-  },
+  menuButton: {marginRight: theme.spacing(2)},
   menuIcon: {},
-  hide: {
-    display: 'none',
-  },
-  drawer: {
-    width: drawerWidth,
-    flexShrink: 0,
-  },
-  drawerPaper: {
-    width: drawerWidth,
-  },
+  hide: {display: 'none'},
+  drawer: {width: drawerWidth, flexShrink: 0},
+  drawerPaper: {width: drawerWidth},
   drawerHeader: {
     display: 'flex',
     alignItems: 'center',
@@ -62,7 +50,5 @@ export default makeStyles({
     }),
     marginLeft: 0,
   },
-  nested: {
-    paddingLeft: theme.spacing(4),
-  },
+  nested: {paddingLeft: theme.spacing(4)},
 });

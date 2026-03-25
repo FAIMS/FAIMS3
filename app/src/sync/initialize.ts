@@ -78,9 +78,7 @@ const migrateOldDatabases = async () => {
     const newDb = new PouchDB(newDbName);
     console.log(`Migrating old database ${oldDbName} to new name ${newDbName}`);
     try {
-      await PouchDB.replicate(oldDb, newDb, {
-        live: false,
-      });
+      await PouchDB.replicate(oldDb, newDb, {live: false});
       console.log(
         `Migrated old database ${oldDbName} to new name ${newDbName}`
       );

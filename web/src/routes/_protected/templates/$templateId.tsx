@@ -10,18 +10,9 @@ import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo} from 'react';
 
 const tabs = [
-  {
-    name: 'Details',
-    Component: TemplateDetails,
-  },
-  {
-    name: `${NOTEBOOK_NAME_CAPITALIZED}s`,
-    Component: TemplateProjects,
-  },
-  {
-    name: 'Actions',
-    Component: TemplateActions,
-  },
+  {name: 'Details', Component: TemplateDetails},
+  {name: `${NOTEBOOK_NAME_CAPITALIZED}s`, Component: TemplateProjects},
+  {name: 'Actions', Component: TemplateActions},
 ];
 
 /**
@@ -44,23 +35,14 @@ function RouteComponent() {
   const paths = useMemo(
     () => [
       // projects ->
-      {
-        path: '/templates',
-        label: 'Templates',
-      },
+      {path: '/templates', label: 'Templates'},
       // project name
-      {
-        path: pathname,
-        label: template?.name ?? templateId,
-      },
+      {path: pathname, label: template?.name ?? templateId},
     ],
     [pathname, template]
   );
 
-  useBreadcrumbUpdate({
-    isLoading,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading, paths});
 
   return (
     <Tabs defaultValue={tabs[0].name}>

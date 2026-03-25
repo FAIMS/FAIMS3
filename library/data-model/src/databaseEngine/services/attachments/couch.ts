@@ -229,10 +229,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
 
     return {
       blob,
-      metadata: {
-        contentType: attachmentDetails.content_type,
-        filename,
-      },
+      metadata: {contentType: attachmentDetails.content_type, filename},
     };
   }
 
@@ -263,10 +260,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
 
     return {
       blob: file,
-      metadata: {
-        ...blobResult.metadata,
-        filename: finalFilename,
-      },
+      metadata: {...blobResult.metadata, filename: finalFilename},
     };
   }
 
@@ -369,10 +363,7 @@ export class CouchAttachmentService extends BaseAttachmentService {
 
     return {
       base64: attachmentDetails.data,
-      metadata: {
-        contentType: attachmentDetails.content_type,
-        filename,
-      },
+      metadata: {contentType: attachmentDetails.content_type, filename},
     };
   }
 }

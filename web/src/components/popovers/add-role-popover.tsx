@@ -71,10 +71,7 @@ export const AddRolePopover = ({
                       'Content-Type': 'application/json',
                       Authorization: `Bearer ${user?.token}`,
                     },
-                    body: JSON.stringify({
-                      addrole: true,
-                      role: role.id,
-                    }),
+                    body: JSON.stringify({addrole: true, role: role.id}),
                   }
                 );
 

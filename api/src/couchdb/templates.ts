@@ -35,15 +35,10 @@ export const getTemplates = async ({
     if (teamId) {
       resultList = await templatesDb.query<TemplateDBFields>(
         TEMPLATES_BY_TEAM_ID,
-        {
-          key: teamId,
-          include_docs: true,
-        }
+        {key: teamId, include_docs: true}
       );
     } else {
-      resultList = await templatesDb.allDocs({
-        include_docs: true,
-      });
+      resultList = await templatesDb.allDocs({include_docs: true});
     }
     return resultList.rows
       .filter(document => {
@@ -72,10 +67,7 @@ export const getTemplateIdsByTeamId = async ({
   try {
     const resultList = await templatesDb.query<TemplateDBFields>(
       TEMPLATES_BY_TEAM_ID,
-      {
-        key: teamId,
-        include_docs: false,
-      }
+      {key: teamId, include_docs: false}
     );
     return resultList.rows
       .filter(res => {
@@ -161,10 +153,7 @@ export const createTemplate = async ({
     _id: templateId,
     version: 1,
     'ui-specification': payload['ui-specification'],
-    metadata: {
-      ...payload.metadata,
-      project_status: 'active',
-    },
+    metadata: {...payload.metadata, project_status: 'active'},
     ownedByTeamId: payload.teamId,
     name: payload.name,
   };

@@ -299,11 +299,7 @@ interface FieldInfo {
 // Example
 const textFieldPropsSchema = BaseFieldPropsSchema.extend({
   multiline: z.boolean().optional(),
-  InputProps: z
-    .object({
-      type: z.string().optional(),
-    })
-    .optional(),
+  InputProps: z.object({type: z.string().optional()}).optional(),
 });
 ```
 

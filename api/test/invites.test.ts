@@ -249,17 +249,11 @@ describe('Invite Tests', () => {
       const localUser = await getExpressUserFromEmailOrUserId(localUserName);
       expect(localUser).to.not.be.null;
 
-      await consumeInvite({
-        invite: limitedInvite,
-        user: localUser!,
-      });
+      await consumeInvite({invite: limitedInvite, user: localUser!});
       await saveCouchUser(localUser!);
 
       const updatedInvite = await getInvite({inviteId: limitedInvite._id});
-      await consumeInvite({
-        invite: updatedInvite!,
-        user: localUser!,
-      });
+      await consumeInvite({invite: updatedInvite!, user: localUser!});
       await saveCouchUser(localUser!);
 
       // Check if it's now invalid due to usage limit
@@ -297,10 +291,7 @@ describe('Invite Tests', () => {
       ).to.be.false;
 
       // Use the invite
-      const updatedInvite = await consumeInvite({
-        invite,
-        user: localUser!,
-      });
+      const updatedInvite = await consumeInvite({invite, user: localUser!});
       await saveCouchUser(localUser!);
 
       // Check results
@@ -359,18 +350,11 @@ describe('Invite Tests', () => {
       // Check initial state
       expect(invite.usesConsumed).to.equal(0);
       expect(invite.uses).to.be.an('array').that.is.empty;
-      expect(
-        userHasGlobalRole({
-          user: localUser!,
-          role: Role.OPERATIONS_ADMIN,
-        })
-      ).to.be.false;
+      expect(userHasGlobalRole({user: localUser!, role: Role.OPERATIONS_ADMIN}))
+        .to.be.false;
 
       // Use the invite
-      const updatedInvite = await consumeInvite({
-        invite,
-        user: localUser!,
-      });
+      const updatedInvite = await consumeInvite({invite, user: localUser!});
       await saveCouchUser(localUser!);
 
       // Check results
@@ -379,12 +363,8 @@ describe('Invite Tests', () => {
       expect(updatedInvite.uses[0].userId).to.equal(localUser!.user_id);
 
       // Double check the role was added
-      expect(
-        userHasGlobalRole({
-          user: localUser!,
-          role: Role.OPERATIONS_ADMIN,
-        })
-      ).to.be.true;
+      expect(userHasGlobalRole({user: localUser!, role: Role.OPERATIONS_ADMIN}))
+        .to.be.true;
     });
   });
 
@@ -542,20 +522,12 @@ describe('Invite Tests', () => {
         throw new Error('Admin user not found');
       }
 
-      addTeamRole({
-        user: adminUser,
-        teamId: team._id,
-        role: Role.TEAM_ADMIN,
-      });
+      addTeamRole({user: adminUser, teamId: team._id, role: Role.TEAM_ADMIN});
 
       const response = await request(app)
         .post(`/api/invites/team/${team._id}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({
-          role: Role.TEAM_MEMBER,
-          name: 'Team API Invite',
-          uses: 10,
-        })
+        .send({role: Role.TEAM_MEMBER, name: 'Team API Invite', uses: 10})
         .expect(200);
 
       expect(response.body._id).to.exist;
@@ -581,11 +553,7 @@ describe('Invite Tests', () => {
         throw new Error('Admin user not found');
       }
 
-      addTeamRole({
-        user: adminUser,
-        teamId: team._id,
-        role: Role.TEAM_ADMIN,
-      });
+      addTeamRole({user: adminUser, teamId: team._id, role: Role.TEAM_ADMIN});
 
       const response = await request(app)
         .post(`/api/invites/team/${team._id}`)
@@ -635,11 +603,7 @@ describe('Invite Tests', () => {
         throw new Error('Admin user not found');
       }
 
-      addTeamRole({
-        user: adminUser,
-        teamId: team._id,
-        role: Role.TEAM_ADMIN,
-      });
+      addTeamRole({user: adminUser, teamId: team._id, role: Role.TEAM_ADMIN});
 
       const invite = await createResourceInvite({
         resourceType: Resource.TEAM,
@@ -676,10 +640,7 @@ describe('Invite Tests', () => {
       await request(app)
         .post(`/api/invites/notebook/${projectId}`)
         .set('Authorization', `Bearer ${localUserToken}`)
-        .send({
-          role: Role.PROJECT_ADMIN,
-          name: 'Unauthorized Invite',
-        })
+        .send({role: Role.PROJECT_ADMIN, name: 'Unauthorized Invite'})
         .expect(401); // Unauthorized
     });
   });
@@ -729,19 +690,12 @@ describe('Invite Tests', () => {
       throw new Error('Admin user not found');
     }
 
-    addGlobalRole({
-      user: adminUser,
-      role: Role.OPERATIONS_ADMIN,
-    });
+    addGlobalRole({user: adminUser, role: Role.OPERATIONS_ADMIN});
 
     const response = await request(app)
       .post('/api/invites/global')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({
-        role: Role.OPERATIONS_ADMIN,
-        name: 'Op Admin Invite',
-        uses: 10,
-      })
+      .send({role: Role.OPERATIONS_ADMIN, name: 'Op Admin Invite', uses: 10})
       .expect(200);
 
     expect(response.body._id).to.exist;
@@ -759,10 +713,7 @@ describe('Invite Tests', () => {
       throw new Error('Admin user not found');
     }
 
-    addGlobalRole({
-      user: adminUser,
-      role: Role.OPERATIONS_ADMIN,
-    });
+    addGlobalRole({user: adminUser, role: Role.OPERATIONS_ADMIN});
 
     const response = await request(app)
       .post('/api/invites/global')
@@ -797,10 +748,7 @@ describe('Invite Tests', () => {
       throw new Error('Admin user not found');
     }
 
-    addGlobalRole({
-      user: adminUser,
-      role: Role.OPERATIONS_ADMIN,
-    });
+    addGlobalRole({user: adminUser, role: Role.OPERATIONS_ADMIN});
 
     const invite = await createGlobalInvite({
       role: Role.OPERATIONS_ADMIN,

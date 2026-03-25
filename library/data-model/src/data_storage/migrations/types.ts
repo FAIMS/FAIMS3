@@ -36,9 +36,7 @@ type MigrationUpdateFuncReturn = {
   updatedRecord: PouchDB.Core.ExistingDocument<any>;
 };
 
-type MigrationOtherFuncReturn = {
-  action: 'delete' | 'none';
-};
+type MigrationOtherFuncReturn = {action: 'delete' | 'none'};
 
 export type MigrationFuncReturn =
   | MigrationOtherFuncReturn

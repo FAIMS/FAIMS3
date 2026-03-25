@@ -27,10 +27,7 @@ describe('safeWriteDocument', () => {
 
   describe('Basic functionality', () => {
     it('should successfully write a new document without conflicts', async () => {
-      const doc = {
-        _id: 'doc1',
-        data: 'test data',
-      };
+      const doc = {_id: 'doc1', data: 'test data'};
 
       const result = await safeWriteDocument({db: testDb, data: doc});
 
@@ -46,10 +43,7 @@ describe('safeWriteDocument', () => {
 
     it('should successfully update an existing document when _rev is provided', async () => {
       // Create initial document
-      const initialDoc = {
-        _id: 'doc2',
-        data: 'initial data',
-      };
+      const initialDoc = {_id: 'doc2', data: 'initial data'};
 
       const initialResult = await testDb.put(initialDoc);
 
@@ -75,18 +69,12 @@ describe('safeWriteDocument', () => {
   describe('Conflict handling with writeOnClash=true', () => {
     it('should resolve a 409 conflict by fetching the latest _rev and retrying', async () => {
       // Create initial document
-      const initialDoc = {
-        _id: 'doc3',
-        data: 'initial data',
-      };
+      const initialDoc = {_id: 'doc3', data: 'initial data'};
 
       await testDb.put(initialDoc);
 
       // Try to update without the correct _rev (will cause 409)
-      const conflictingDoc = {
-        _id: 'doc3',
-        data: 'conflicting data',
-      };
+      const conflictingDoc = {_id: 'doc3', data: 'conflicting data'};
 
       const result = await safeWriteDocument({
         db: testDb,
@@ -104,10 +92,7 @@ describe('safeWriteDocument', () => {
 
     it('should handle multiple consecutive conflicts within retry limit', async () => {
       // Create initial document
-      const initialDoc = {
-        _id: 'doc4',
-        data: 'initial data',
-      };
+      const initialDoc = {_id: 'doc4', data: 'initial data'};
 
       await testDb.put(initialDoc);
 
@@ -136,10 +121,7 @@ describe('safeWriteDocument', () => {
         }
       });
 
-      const conflictingDoc = {
-        _id: 'doc4',
-        data: 'multi-conflict data',
-      };
+      const conflictingDoc = {_id: 'doc4', data: 'multi-conflict data'};
 
       const result = await safeWriteDocument({
         db: testDb,
@@ -158,10 +140,7 @@ describe('safeWriteDocument', () => {
 
     it('should throw an error when max retries is exceeded', async () => {
       // Create initial document
-      const initialDoc = {
-        _id: 'doc5',
-        data: 'initial data',
-      };
+      const initialDoc = {_id: 'doc5', data: 'initial data'};
 
       await testDb.put(initialDoc);
 
@@ -181,10 +160,7 @@ describe('safeWriteDocument', () => {
         }
       });
 
-      const conflictingDoc = {
-        _id: 'doc5',
-        data: 'will fail',
-      };
+      const conflictingDoc = {_id: 'doc5', data: 'will fail'};
 
       await expect(
         safeWriteDocument({
@@ -201,10 +177,7 @@ describe('safeWriteDocument', () => {
 
     it('should respect custom maxRetries parameter', async () => {
       // Create initial document
-      const initialDoc = {
-        _id: 'doc6',
-        data: 'initial data',
-      };
+      const initialDoc = {_id: 'doc6', data: 'initial data'};
 
       await testDb.put(initialDoc);
 
@@ -223,10 +196,7 @@ describe('safeWriteDocument', () => {
         }
       });
 
-      const doc = {
-        _id: 'doc6',
-        data: 'updated',
-      };
+      const doc = {_id: 'doc6', data: 'updated'};
 
       await expect(
         safeWriteDocument({
@@ -254,10 +224,7 @@ describe('safeWriteDocument', () => {
       await testDb.put(existingDoc);
 
       // Try to write without the correct _rev (will cause 409)
-      const newDoc = {
-        _id: 'doc7',
-        data: 'new data',
-      };
+      const newDoc = {_id: 'doc7', data: 'new data'};
 
       const result = await safeWriteDocument({
         db: testDb,
@@ -274,10 +241,7 @@ describe('safeWriteDocument', () => {
     });
 
     it('should write new document even when writeOnClash=false if no conflict', async () => {
-      const newDoc = {
-        _id: 'doc8',
-        data: 'brand new data',
-      };
+      const newDoc = {_id: 'doc8', data: 'brand new data'};
 
       const result = await safeWriteDocument({
         db: testDb,
@@ -295,19 +259,12 @@ describe('safeWriteDocument', () => {
 
     it('should return undefined when trying to update with _rev and writeOnClash=false causes conflict', async () => {
       // Create initial document
-      const initialDoc = {
-        _id: 'doc7b',
-        data: 'v1',
-      };
+      const initialDoc = {_id: 'doc7b', data: 'v1'};
 
       const v1Result = await testDb.put(initialDoc);
 
       // Update it to create v2
-      await testDb.put({
-        _id: 'doc7b',
-        _rev: v1Result.rev,
-        data: 'v2',
-      });
+      await testDb.put({_id: 'doc7b', _rev: v1Result.rev, data: 'v2'});
 
       // Try to update with old _rev (v1) and writeOnClash=false
       const staleDoc = {
@@ -340,10 +297,7 @@ describe('safeWriteDocument', () => {
         throw error;
       });
 
-      const doc = {
-        _id: 'doc9',
-        data: 'test',
-      };
+      const doc = {_id: 'doc9', data: 'test'};
 
       await expect(safeWriteDocument({db: testDb, data: doc})).rejects.toThrow(
         /Failed to update record - non 409 error/
@@ -377,10 +331,7 @@ describe('safeWriteDocument', () => {
         throw error;
       });
 
-      const doc = {
-        _id: 'doc10',
-        data: 'updated',
-      };
+      const doc = {_id: 'doc10', data: 'updated'};
 
       await expect(
         safeWriteDocument({db: testDb, data: doc, writeOnClash: true})
@@ -395,16 +346,8 @@ describe('safeWriteDocument', () => {
       const complexDoc = {
         _id: 'doc11',
         data: {
-          nested: {
-            deeply: {
-              value: 'test',
-              array: [1, 2, 3],
-            },
-          },
-          metadata: {
-            created: new Date().toISOString(),
-            tags: ['tag1', 'tag2'],
-          },
+          nested: {deeply: {value: 'test', array: [1, 2, 3]}},
+          metadata: {created: new Date().toISOString(), tags: ['tag1', 'tag2']},
         },
       };
 
@@ -420,9 +363,7 @@ describe('safeWriteDocument', () => {
 
   describe('Edge cases', () => {
     it('should handle empty data object', async () => {
-      const doc = {
-        _id: 'doc12',
-      };
+      const doc = {_id: 'doc12'};
 
       const result = await safeWriteDocument({db: testDb, data: doc});
 
@@ -437,10 +378,7 @@ describe('safeWriteDocument', () => {
       // Create initial document
       await testDb.put({_id: 'doc14', data: 'initial'});
 
-      const doc = {
-        _id: 'doc14',
-        data: 'updated',
-      };
+      const doc = {_id: 'doc14', data: 'updated'};
 
       // With maxRetries=0, should fail immediately on conflict
       await expect(
@@ -457,10 +395,7 @@ describe('safeWriteDocument', () => {
       // Create initial document
       await testDb.put({_id: 'doc15', data: 'initial'});
 
-      const doc = {
-        _id: 'doc15',
-        data: 'updated',
-      };
+      const doc = {_id: 'doc15', data: 'updated'};
 
       // With maxRetries=1, should succeed on first retry
       const result = await safeWriteDocument({
@@ -486,11 +421,7 @@ describe('safeWriteDocument', () => {
       const writes = Array.from({length: 5}, (_, i) =>
         safeWriteDocument({
           db: testDb,
-          data: {
-            _id: 'doc17',
-            data: `write-${i}`,
-            counter: i,
-          },
+          data: {_id: 'doc17', data: `write-${i}`, counter: i},
           writeOnClash: true,
           maxRetries: 10,
         })
@@ -517,10 +448,7 @@ describe('safeWriteDocument', () => {
       await testDb.remove('doc18', initialResult.rev);
 
       // Try to write a new document with the same ID
-      const doc = {
-        _id: 'doc18',
-        data: 'recreated',
-      };
+      const doc = {_id: 'doc18', data: 'recreated'};
 
       const result = await safeWriteDocument({db: testDb, data: doc});
 

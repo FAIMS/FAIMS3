@@ -52,13 +52,9 @@ export const api: express.Router = express.Router();
  */
 api.post(
   '/',
-  processRequest({
-    body: PostCreateLongLivedTokenRequestSchema,
-  }),
+  processRequest({body: PostCreateLongLivedTokenRequestSchema}),
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CREATE_LONG_LIVED_TOKEN,
-  }),
+  isAllowedToMiddleware({action: Action.CREATE_LONG_LIVED_TOKEN}),
   async (req, res: Response<PostCreateLongLivedTokenResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException('Not authenticated.');
@@ -187,9 +183,7 @@ api.get(
  */
 api.put(
   '/:tokenId',
-  processRequest({
-    body: PutUpdateLongLivedTokenRequestSchema,
-  }),
+  processRequest({body: PutUpdateLongLivedTokenRequestSchema}),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     // they at least need to be able to edit their own tokens
@@ -262,9 +256,7 @@ api.put(
  */
 api.delete(
   '/:tokenId',
-  processRequest({
-    body: PutRevokeLongLivedTokenRequestSchema,
-  }),
+  processRequest({body: PutRevokeLongLivedTokenRequestSchema}),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     // they at least need to be able to edit their own tokens

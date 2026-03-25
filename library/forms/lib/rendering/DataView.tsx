@@ -124,12 +124,8 @@ const DataViewSection: React.FC<DataViewSectionProps> = props => {
       sx={{
         backgroundColor: 'grey.50',
         borderRadius: '4px !important',
-        '&:before': {
-          display: 'none',
-        },
-        '&:not(:last-child)': {
-          marginBottom: 2,
-        },
+        '&:before': {display: 'none'},
+        '&:not(:last-child)': {marginBottom: 2},
       }}
     >
       <AccordionSummary
@@ -137,40 +133,22 @@ const DataViewSection: React.FC<DataViewSectionProps> = props => {
         sx={{
           padding: '0 16px',
           minHeight: 56,
-          '&.Mui-expanded': {
-            minHeight: 56,
-          },
+          '&.Mui-expanded': {minHeight: 56},
           '& .MuiAccordionSummary-content': {
             margin: '12px 0',
-            '&.Mui-expanded': {
-              margin: '12px 0',
-            },
+            '&.Mui-expanded': {margin: '12px 0'},
           },
         }}
       >
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: 700,
-            color: 'text.primary',
-          }}
-        >
+        <Typography variant="h5" sx={{fontWeight: 700, color: 'text.primary'}}>
           {sectionLabel ?? props.viewId}
         </Typography>
       </AccordionSummary>
-      <AccordionDetails
-        sx={{
-          padding: 2,
-          paddingTop: 0,
-        }}
-      >
+      <AccordionDetails sx={{padding: 2, paddingTop: 0}}>
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              md: 'repeat(2, 1fr)',
-            },
+            gridTemplateColumns: {xs: '1fr', md: 'repeat(2, 1fr)'},
             gap: 1.5,
             columnGap: 3,
           }}
@@ -195,9 +173,7 @@ const DataViewSection: React.FC<DataViewSectionProps> = props => {
             return (
               <Box
                 key={field.name}
-                sx={{
-                  gridColumn: singleColumn ? '1 / -1' : 'auto',
-                }}
+                sx={{gridColumn: singleColumn ? '1 / -1' : 'auto'}}
               >
                 <DataViewField {...props} fieldInfo={field} />
               </Box>
@@ -244,11 +220,7 @@ const DataViewField: React.FC<DataViewFieldProps> = props => {
   // Get the data for this field
   const {data, annotation, attachments} = props.formData[
     props.fieldInfo.name
-  ] ?? {
-    data: undefined,
-    annotation: undefined,
-    attachments: undefined,
-  };
+  ] ?? {data: undefined, annotation: undefined, attachments: undefined};
 
   // Get the renderer for the field
   // Build the lookup key

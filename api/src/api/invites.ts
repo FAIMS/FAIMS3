@@ -62,9 +62,7 @@ export const api: express.Router = express.Router();
 api.get(
   '/notebook/:projectId',
   requireAuthenticationAPI,
-  processRequest({
-    params: z.object({projectId: z.string()}),
-  }),
+  processRequest({params: z.object({projectId: z.string()})}),
   async (
     {user, params: {projectId}},
     res: Response<GetProjectInvitesResponse>
@@ -107,9 +105,7 @@ api.get(
 api.get(
   '/team/:teamId',
   requireAuthenticationAPI,
-  processRequest({
-    params: z.object({teamId: z.string()}),
-  }),
+  processRequest({params: z.object({teamId: z.string()})}),
   async ({user, params: {teamId}}, res: Response<GetTeamInvitesResponse>) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
@@ -256,10 +252,7 @@ api.delete(
   '/notebook/:projectId/:inviteId',
   requireAuthenticationAPI,
   processRequest({
-    params: z.object({
-      projectId: z.string(),
-      inviteId: z.string(),
-    }),
+    params: z.object({projectId: z.string(), inviteId: z.string()}),
   }),
   async ({user, params: {projectId, inviteId}}, res) => {
     if (!user) {
@@ -315,10 +308,7 @@ api.delete(
   '/team/:teamId/:inviteId',
   requireAuthenticationAPI,
   processRequest({
-    params: z.object({
-      teamId: z.string(),
-      inviteId: z.string(),
-    }),
+    params: z.object({teamId: z.string(), inviteId: z.string()}),
   }),
   async ({user, params: {teamId, inviteId}}, res) => {
     if (!user) {
@@ -396,9 +386,7 @@ api.post(
   '/global',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.CREATE_GLOBAL_INVITE}),
-  processRequest({
-    body: PostCreateGlobalInviteInputSchema,
-  }),
+  processRequest({body: PostCreateGlobalInviteInputSchema}),
   async ({user, body}, res: Response<PostCreateGlobalInviteResponse>) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
@@ -423,11 +411,7 @@ api.delete(
   '/global/:inviteId',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.DELETE_GLOBAL_INVITE}),
-  processRequest({
-    params: z.object({
-      inviteId: z.string(),
-    }),
-  }),
+  processRequest({params: z.object({inviteId: z.string()})}),
   async ({user, params: {inviteId}}, res) => {
     if (!user) {
       throw new Exceptions.UnauthorizedException();
@@ -455,9 +439,7 @@ api.delete(
  */
 api.get(
   '/:inviteId',
-  processRequest({
-    params: z.object({inviteId: z.string()}),
-  }),
+  processRequest({params: z.object({inviteId: z.string()})}),
   async (req, res: Response<GetInviteByIdResponse>) => {
     const invite = await getInvite({inviteId: req.params.inviteId});
 

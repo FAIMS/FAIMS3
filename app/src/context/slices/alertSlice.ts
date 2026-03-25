@@ -19,9 +19,7 @@ interface AlertState {
 }
 
 // Initial state
-const initialState: AlertState = {
-  alerts: [],
-};
+const initialState: AlertState = {alerts: []};
 
 // Create slice (combines actions and reducers)
 const alertsSlice = createSlice({
@@ -29,10 +27,7 @@ const alertsSlice = createSlice({
   initialState,
   reducers: {
     addAlert: (state, action: PayloadAction<Omit<Alert, 'key'>>) => {
-      state.alerts.push({
-        ...action.payload,
-        key: uuidv4(),
-      });
+      state.alerts.push({...action.payload, key: uuidv4()});
     },
     deleteAlert: (state, action: PayloadAction<{key: string}>) => {
       state.alerts = state.alerts.filter(

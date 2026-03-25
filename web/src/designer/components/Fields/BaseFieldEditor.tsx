@@ -108,11 +108,7 @@ export const BaseFieldEditor = ({
       if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
         dispatch({
           type: 'ui-specification/fieldRenamed',
-          payload: {
-            viewId,
-            fieldName,
-            newFieldName: newFieldName.trim(),
-          },
+          payload: {viewId, fieldName, newFieldName: newFieldName.trim()},
         });
       }
     }, 500),

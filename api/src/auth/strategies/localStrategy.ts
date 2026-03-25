@@ -68,10 +68,7 @@ export const verifyUserCredentials = async ({
 
   // Handle case where user doesn't exist
   if (!dbUser) {
-    return {
-      success: false,
-      error: ambiguousErrorMessage,
-    };
+    return {success: false, error: ambiguousErrorMessage};
   }
 
   // Get the local authentication profile for the user
@@ -108,16 +105,10 @@ export const verifyUserCredentials = async ({
   // Compare the computed hash with the stored password hash
   if (hashedPassword.toString('hex') === profile.password) {
     // Password matches
-    return {
-      success: true,
-      user: dbUser,
-    };
+    return {success: true, user: dbUser};
   } else {
     // Password doesn't match
-    return {
-      success: false,
-      error: ambiguousErrorMessage,
-    };
+    return {success: false, error: ambiguousErrorMessage};
   }
 };
 

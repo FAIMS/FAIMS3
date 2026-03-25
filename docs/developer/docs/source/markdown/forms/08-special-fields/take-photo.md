@@ -16,13 +16,13 @@ Camera capture field using Capacitor Camera API. Supports both native mobile and
 
 ## Component Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| `name` | `string` | Yes | - | Field identifier |
-| `label` | `string` | No | - | Display label |
-| `helperText` | `string` | No | - | Help text |
-| `required` | `boolean` | No | `false` | At least one photo required |
-| `disabled` | `boolean` | No | `false` | Disable capture |
+| Parameter    | Type      | Required | Default | Description                 |
+| ------------ | --------- | -------- | ------- | --------------------------- |
+| `name`       | `string`  | Yes      | -       | Field identifier            |
+| `label`      | `string`  | No       | -       | Display label               |
+| `helperText` | `string`  | No       | -       | Help text                   |
+| `required`   | `boolean` | No       | `false` | At least one photo required |
+| `disabled`   | `boolean` | No       | `false` | Disable capture             |
 
 ### Props Schema
 
@@ -39,13 +39,13 @@ flowchart TD
     TP[TakePhoto Field] --> PC{Platform Check}
     PC -->|Native iOS/Android| NC[Capacitor Camera]
     PC -->|Web| WC[Browser Camera API]
-    
+
     NC --> GP[Geolocation Plugin]
     NC --> EX[EXIF Plugin]
-    
+
     GP --> GT[GPS Geotagging]
     EX --> GT
-    
+
     WC --> B64[Base64 Capture]
     B64 --> BL[Blob Conversion]
 ```
@@ -73,18 +73,18 @@ sequenceDiagram
     participant GEO as Geolocation
     participant EXIF as EXIF Plugin
     participant AS as AttachmentService
-    
+
     U->>TP: Click capture
     TP->>CAM: Camera.getPhoto()
     CAM-->>TP: Photo result
-    
+
     alt Native Platform
         TP->>GEO: getCurrentPosition()
         GEO-->>TP: GPS coordinates
         TP->>EXIF: Write GPS to EXIF
         EXIF-->>TP: Modified image path
     end
-    
+
     TP->>TP: Convert to Blob
     TP->>AS: addAttachment(blob)
     AS-->>TP: attachmentId
@@ -143,12 +143,12 @@ await Exif.setCoordinates({
 
 ### States
 
-| State | Display |
-|-------|---------|
-| Empty | Placeholder with "Take First Photo" button |
-| Has Photos | Grid of thumbnails with add/delete buttons |
-| Loading | Thumbnail skeleton |
-| Offline | "Not synced" placeholder for unloaded photos |
+| State      | Display                                      |
+| ---------- | -------------------------------------------- |
+| Empty      | Placeholder with "Take First Photo" button   |
+| Has Photos | Grid of thumbnails with add/delete buttons   |
+| Loading    | Thumbnail skeleton                           |
+| Offline    | "Not synced" placeholder for unloaded photos |
 
 ### Actions
 
@@ -167,7 +167,7 @@ const TakePhotoRender: DataViewFieldRender = (props) => {
     (props.attachments ?? []).map(a => a.attachmentId),
     attachmentService
   );
-  
+
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
       {displayableImages.map((img, idx) => (
@@ -226,9 +226,9 @@ const imageTypes = [
 ```typescript
 const takePhotoDataSchemaFunction = (props: TakePhotoProps) => {
   if (props.required) {
-    return z.array(z.string()).min(1, {
-      message: 'At least one photo is required',
-    });
+    return z
+      .array(z.string())
+      .min(1, {message: 'At least one photo is required'});
   }
   return z.array(z.string()).optional();
 };
@@ -250,26 +250,20 @@ const takePhotoDataSchemaFunction = (props: TakePhotoProps) => {
   "persistent": true,
   "displayParent": true,
   "meta": {
-    "annotation": {
-      "include": true,
-      "label": "Photo notes"
-    },
-    "uncertainty": {
-      "include": false,
-      "label": ""
-    }
+    "annotation": {"include": true, "label": "Photo notes"},
+    "uncertainty": {"include": false, "label": ""}
   }
 }
 ```
 
 ## Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `@capacitor/camera` | Camera access |
-| `@capacitor/geolocation` | GPS coordinates |
+| Package                     | Purpose               |
+| --------------------------- | --------------------- |
+| `@capacitor/camera`         | Camera access         |
+| `@capacitor/geolocation`    | GPS coordinates       |
 | `@capacitor-community/exif` | EXIF metadata writing |
-| `buffer` | Base64 conversion |
+| `buffer`                    | Base64 conversion     |
 
 ## Field Value Structure
 
@@ -290,9 +284,9 @@ const takePhotoDataSchemaFunction = (props: TakePhotoProps) => {
 
 ## Error Handling
 
-| Error | Handling |
-|-------|----------|
+| Error                    | Handling              |
+| ------------------------ | --------------------- |
 | Camera permission denied | Show permission alert |
-| Geolocation failed | Continue without GPS |
-| Storage full | Show error message |
-| Upload failed | Show retry option |
+| Geolocation failed       | Continue without GPS  |
+| Storage full             | Show error message    |
+| Upload failed            | Show retry option     |

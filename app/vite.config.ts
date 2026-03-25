@@ -24,22 +24,11 @@ import react from '@vitejs/plugin-react-swc';
 
 const config: any = {
   base: '/',
-  build: {
-    outDir: 'build',
-  },
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-    strictPort: true,
-  },
-  preview: {
-    port: 3000,
-    host: true,
-  },
+  build: {outDir: 'build'},
+  server: {host: '0.0.0.0', port: 3000, strictPort: true},
+  preview: {port: 3000, host: true},
   resolve: {
-    alias: {
-      events: 'rollup-plugin-node-polyfills/polyfills/events',
-    },
+    alias: {events: 'rollup-plugin-node-polyfills/polyfills/events'},
     preserveSymlinks: false,
   },
   plugins: [react({jsxImportSource: '@emotion/react'})],
@@ -48,9 +37,7 @@ const config: any = {
     'process.env': {} /* some libraries check this */,
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
-  optimizeDeps: {
-    exclude: ['@ionic/pwa-elements'],
-  },
+  optimizeDeps: {exclude: ['@ionic/pwa-elements']},
 };
 
 // Conditional configuration.  If run with --mode sourcemap

@@ -17,12 +17,8 @@ The `directory` database holds a default document as follows:
   "_id": "default",
   "name": "Default instance",
   "description": "Default FAIMS instance on hostname",
-  "people_db": {
-    "db_name": "people"
-  },
-  "projects_db": {
-    "db_name": "projects"
-  },
+  "people_db": {"db_name": "people"},
+  "projects_db": {"db_name": "projects"},
   "conductor_url": "https://dev.conductor.faims.edu.au/"
 }
 ```
@@ -50,12 +46,8 @@ Every notebook has it's own document with the notebook name as the `id` containi
   "_id": "blue_mountains_survey",
   "_rev": "1-d3aa99ada9503360b611b060bee1a72b",
   "name": "Blue-Mountains-Survey",
-  "metadataDb": {
-    "db_name": "metadata-blue_mountains_survey"
-  },
-  "dataDb": {
-    "db_name": "data-blue_mountains_survey"
-  },
+  "metadataDb": {"db_name": "metadata-blue_mountains_survey"},
+  "dataDb": {"db_name": "data-blue_mountains_survey"},
   "auth_mechanisms": {
     "demo": {
       "portal": "https://dev.conductor.faims.edu.au:443",
@@ -171,10 +163,7 @@ The avp document contains a single value and any annotations:
   "data": "αβγ",
   "revision_id": "frev-d8acc814-9e60-4c6b-bf0d-104a2146bd9c",
   "record_id": "rec-53589208-24c6-4f48-9c8f-6ed608762127",
-  "annotations": {
-    "annotation": "",
-    "uncertainty": false
-  },
+  "annotations": {"annotation": "", "uncertainty": false},
   "created": "2022-07-12T03:32:14.544Z",
   "created_by": "liz.mannering"
 }

@@ -81,9 +81,7 @@ async function base64ImageToBlob(image: Photo): Promise<Blob> {
   const buffer = Buffer.from(image.base64String, 'base64');
   const content = new Uint8Array(buffer);
 
-  return new Blob([content], {
-    type: `image/${image.format}`,
-  });
+  return new Blob([content], {type: `image/${image.format}`});
 }
 
 // ============================================================================
@@ -138,10 +136,10 @@ const TakePhotoPreview: React.FC<TakePhotoFieldProps> = props => {
  * Empty state component displayed when no photos have been captured yet.
  * Shows a call-to-action button to take the first photo.
  */
-const EmptyState: React.FC<{
-  onAddPhoto: () => void;
-  disabled: boolean;
-}> = ({onAddPhoto, disabled}) => {
+const EmptyState: React.FC<{onAddPhoto: () => void; disabled: boolean}> = ({
+  onAddPhoto,
+  disabled,
+}) => {
   const theme = useTheme();
 
   return (
@@ -175,9 +173,9 @@ const EmptyState: React.FC<{
  * Common container wrapper for all image list items.
  * Provides consistent sizing, spacing, and hover effects.
  */
-const ImageItemContainer: React.FC<{
-  children: React.ReactNode;
-}> = ({children}) => {
+const ImageItemContainer: React.FC<{children: React.ReactNode}> = ({
+  children,
+}) => {
   const theme = useTheme();
 
   return (
@@ -187,9 +185,7 @@ const ImageItemContainer: React.FC<{
         overflow: 'hidden',
         boxShadow: theme.shadows[2],
         aspectRatio: '4/3',
-        '&:hover': {
-          boxShadow: theme.shadows[4],
-        },
+        '&:hover': {boxShadow: theme.shadows[4]},
       }}
     >
       {children}
@@ -314,10 +310,10 @@ const PhotoItem: React.FC<{
  * Pending photo item - shows optimistic preview while saving to database.
  * Displays a sync indicator overlay to show the photo is being processed.
  */
-const PendingPhotoItem: React.FC<{
-  url: string;
-  onClick: () => void;
-}> = ({url, onClick}) => {
+const PendingPhotoItem: React.FC<{url: string; onClick: () => void}> = ({
+  url,
+  onClick,
+}) => {
   const theme = useTheme();
 
   return (
@@ -378,16 +374,8 @@ const PendingPhotoItem: React.FC<{
  * Unified photo entry for the gallery - can be either a loaded photo or a pending one.
  */
 type GalleryPhoto =
-  | {
-      type: 'loaded';
-      photo: useAttachmentsResult[number];
-      originalIndex: number;
-    }
-  | {
-      type: 'pending';
-      pending: PendingPhoto;
-      tempId: string;
-    };
+  | {type: 'loaded'; photo: useAttachmentsResult[number]; originalIndex: number}
+  | {type: 'pending'; pending: PendingPhoto; tempId: string};
 
 /**
  * Photo gallery component displaying all captured photos in a responsive grid.
@@ -541,11 +529,7 @@ const PhotoGallery: React.FC<{
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
-        sx={{
-          '& .MuiDialog-paper': {
-            borderRadius: theme.spacing(2),
-          },
-        }}
+        sx={{'& .MuiDialog-paper': {borderRadius: theme.spacing(2)}}}
       >
         <DialogContent>
           <DialogContentText>

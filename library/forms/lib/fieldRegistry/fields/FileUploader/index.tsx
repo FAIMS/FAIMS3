@@ -158,11 +158,7 @@ const AttachmentDialog: React.FC<{
               component="img"
               src={attachment.url}
               alt={attachment.metadata.filename}
-              sx={{
-                maxWidth: '100%',
-                maxHeight: '90vh',
-                objectFit: 'contain',
-              }}
+              sx={{maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain'}}
             />
           </Box>
         ) : (
@@ -322,9 +318,7 @@ const UnavailableFilePlaceholder: React.FC<{filename: string}> = ({
       <ListItemText
         primary={filename}
         secondary="File not available - enable download in Settings"
-        secondaryTypographyProps={{
-          sx: {color: theme.palette.warning.main},
-        }}
+        secondaryTypographyProps={{sx: {color: theme.palette.warning.main}}}
       />
     </ListItem>
   );
@@ -353,9 +347,7 @@ const FileItem: React.FC<{
         alignItems: {xs: 'stretch', sm: 'center'},
         gap: {xs: 1, sm: 0},
         p: {xs: 1.5, sm: 2},
-        '&:hover': {
-          bgcolor: theme.palette.action.hover,
-        },
+        '&:hover': {bgcolor: theme.palette.action.hover},
       }}
       secondaryAction={
         !disabled && (
@@ -400,11 +392,7 @@ const FileItem: React.FC<{
               component="img"
               src={data.url}
               alt={data.metadata.filename}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
+              sx={{width: '100%', height: '100%', objectFit: 'cover'}}
             />
           </Box>
         ) : (
@@ -428,11 +416,7 @@ const FileItem: React.FC<{
         <ListItemText
           primary={data.metadata.filename}
           secondary={data.metadata.contentType}
-          sx={{
-            cursor: 'pointer',
-            minWidth: 0,
-            flex: 1,
-          }}
+          sx={{cursor: 'pointer', minWidth: 0, flex: 1}}
           primaryTypographyProps={{
             sx: {
               wordBreak: 'break-word',
@@ -695,7 +679,7 @@ const FileUploaderFull: React.FC<FullFileUploaderFieldProps> = props => {
         )}
 
         {/* Upload Area */}
-        {!disabled && (maxFiles === 0 || maxFiles > 0) && (
+        {!disabled && maxFiles >= 0 && (
           <DropzoneArea
             onDrop={handleDrop}
             onReject={handleReject}

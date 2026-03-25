@@ -6,22 +6,11 @@ import {tanstackRouter} from '@tanstack/router-plugin/vite';
 export default defineConfig({
   // Just a hack to get this to typecheck - works fine??
   plugins: [
-    tanstackRouter({
-      target: 'react',
-      autoCodeSplitting: true,
-    }),
+    tanstackRouter({target: 'react', autoCodeSplitting: true}),
     react(),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
-  },
-  server: {
-    port: 3001,
-    host: true,
-    fs: {allow: ['..']},
-  },
+  resolve: {alias: {'@': path.resolve(__dirname, './src')}},
+  server: {port: 3001, host: true, fs: {allow: ['..']}},
   optimizeDeps: {
     include: [
       '@mui/material',

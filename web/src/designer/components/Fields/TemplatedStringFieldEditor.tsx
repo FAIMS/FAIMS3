@@ -6,11 +6,7 @@ import {ComponentParameters, FieldType} from '../../state/initial';
 import {MustacheTemplateBuilder} from '../TemplateBuilder';
 import DebouncedTextField from '../debounced-text-field';
 
-type PropType = {
-  fieldName: string;
-  viewId: string;
-  viewsetId: string;
-};
+type PropType = {fieldName: string; viewId: string; viewsetId: string};
 
 /**
  * Enhanced TemplatedStringFieldEditor with visual Mustache template building support.

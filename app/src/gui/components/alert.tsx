@@ -27,12 +27,7 @@ import {useAppDispatch, useAppSelector} from '../../context/store';
 import {theme} from '../themes';
 
 const useStyles = createUseStyles({
-  root: {
-    width: '100%',
-    '& > * + *': {
-      marginTop: '16px',
-    },
-  },
+  root: {width: '100%', '& > * + *': {marginTop: '16px'}},
 });
 
 /**
@@ -57,11 +52,7 @@ export default function SystemAlert() {
    * @param {string} key - The unique key identifying the alert to be closed.
    */
   const handleClose = (key: string) => {
-    dispatch(
-      deleteAlert({
-        key,
-      })
-    );
+    dispatch(deleteAlert({key}));
   };
 
   const currentAlert = alerts.length > 0 ? alerts[alerts.length - 1] : null;

@@ -41,7 +41,6 @@ import {useMutation} from '@tanstack/react-query';
 import {useState} from 'react';
 import {
   CAPACITOR_PLATFORM,
-  IS_WEB_PLATFORM,
   NOTEBOOK_LIST_TYPE,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
@@ -58,13 +57,13 @@ import {
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
-import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import HeadingProjectGrid from '../ui/heading-grid';
-import Tabs from '../ui/tab-grid';
 import {
   QRCodeButtonOnly,
   ShortCodeOnlyComponent,
 } from '../authentication/shortCodeOnly';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import HeadingProjectGrid from '../ui/heading-grid';
+import Tabs from '../ui/tab-grid';
 
 // Survey status naming conventions
 
@@ -119,7 +118,9 @@ export default function NoteBooks() {
     },
     onError: err => {
       console.log(err);
-      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`);
+      notify.showError(
+        `Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`
+      );
     },
   });
   const showRefreshButton = isOnline.isOnline;
@@ -144,9 +145,7 @@ export default function NoteBooks() {
             variant={is_xs ? 'body2' : 'body1'}
             fontWeight={row.isActivated ? 'bold' : 'normal'}
             color={row.isActivated ? 'black' : grey[800]}
-            sx={{
-              padding: '8px 0px',
-            }}
+            sx={{padding: '8px 0px'}}
           >
             {row.name ??
               // Just as a backwards compat thing, consider looking for name in
@@ -200,9 +199,10 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {' '}
-      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
+      You have {activatedProjects.length}{' '}
+      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME}{' '}
+      currently {ACTIVATED_LABEL} on this device.{' '}
+      {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (
@@ -271,10 +271,7 @@ export default function NoteBooks() {
           fullWidth={isMobile}
           startIcon={<InfoOutlinedIcon fontSize="small" />}
           onClick={() => setInfoDialogOpen(true)}
-          sx={{
-            textTransform: 'none',
-            fontSize: 'body2.fontSize',
-          }}
+          sx={{textTransform: 'none', fontSize: 'body2.fontSize'}}
         >
           Learn about {ACTIVATE_ACTIVE_VERB_LABEL.toLowerCase()}/
           {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()} {NOTEBOOK_NAME_PLURAL}
@@ -323,11 +320,7 @@ export default function NoteBooks() {
       >
         <Paper
           elevation={8}
-          sx={{
-            maxWidth: 'sm',
-            width: '100%',
-            overflow: 'hidden',
-          }}
+          sx={{maxWidth: 'sm', width: '100%', overflow: 'hidden'}}
           onClick={e => e.stopPropagation()}
         >
           <Box sx={{p: 2.5, pb: 0}}>

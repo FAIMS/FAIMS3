@@ -39,9 +39,7 @@ interface EBState {
 // Define a fallback ErrorBoundary to use in case we don't use Bugsnag
 //
 export class FAIMSErrorBoundary extends React.Component<EBProps, EBState> {
-  public state: EBState = {
-    hasError: false,
-  };
+  public state: EBState = {hasError: false};
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static getDerivedStateFromError(_: Error): EBState {

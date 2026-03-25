@@ -28,10 +28,7 @@ export interface AuthContext {
   getUserDetails: (
     token?: string,
     refreshToken?: string
-  ) => Promise<{
-    status: 'success' | 'error';
-    message: string;
-  }>;
+  ) => Promise<{status: 'success' | 'error'; message: string}>;
   logout: () => void;
   user: User | null;
   refreshToken: () => Promise<{status: string; message: string}>;

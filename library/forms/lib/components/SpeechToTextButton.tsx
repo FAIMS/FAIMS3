@@ -181,15 +181,9 @@ export const SpeechToTextButton: React.FC<SpeechToTextButtonProps> = ({
               ...(isListening && {
                 animation: 'pulse 1.5s ease-in-out infinite',
                 '@keyframes pulse': {
-                  '0%': {
-                    boxShadow: `0 0 0 0 ${activeColor}40`,
-                  },
-                  '70%': {
-                    boxShadow: `0 0 0 10px ${activeColor}00`,
-                  },
-                  '100%': {
-                    boxShadow: `0 0 0 0 ${activeColor}00`,
-                  },
+                  '0%': {boxShadow: `0 0 0 0 ${activeColor}40`},
+                  '70%': {boxShadow: `0 0 0 10px ${activeColor}00`},
+                  '100%': {boxShadow: `0 0 0 0 ${activeColor}00`},
                 },
               }),
             }}

@@ -26,25 +26,15 @@
           "helperText": "Human Readable ID",
           "required": true,
           "template": "{{Text-Field}}-{{Select}}",
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "hrid": true,
-          "InputLabelProps": {
-            "label": "HRID Field"
-          }
+          "InputLabelProps": {"label": "HRID Field"}
         },
         "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "Text-Field": {
@@ -57,22 +47,14 @@
           "helperText": "Enter text",
           "variant": "outlined",
           "required": true,
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "name": "Text-Field"
         },
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -89,23 +71,12 @@
           "variant": "outlined",
           "required": true,
           "select": true,
-          "SelectProps": {
-            "multiple": true
-          },
+          "SelectProps": {"multiple": true},
           "ElementProps": {
             "options": [
-              {
-                "label": "One",
-                "value": "One"
-              },
-              {
-                "label": "Two",
-                "value": "Two"
-              },
-              {
-                "label": "Three",
-                "value": "Three"
-              }
+              {"label": "One", "value": "One"},
+              {"label": "Two", "value": "Two"},
+              {"label": "Three", "value": "Three"}
             ]
           },
           "name": "Multi-Select"
@@ -113,14 +84,8 @@
         "validationSchema": [["yup.array"]],
         "initialValue": [],
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -137,18 +102,9 @@
           "required": true,
           "ElementProps": {
             "options": [
-              {
-                "label": "First",
-                "value": "First"
-              },
-              {
-                "label": "Last",
-                "value": "Last"
-              },
-              {
-                "label": "Never",
-                "value": "Never"
-              }
+              {"label": "First", "value": "First"},
+              {"label": "Last", "value": "Last"},
+              {"label": "Never", "value": "Never"}
             ]
           },
           "name": "Select"
@@ -156,14 +112,8 @@
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -179,22 +129,14 @@
           "helperText": "And a calendar prompt with a timestamp.",
           "variant": "outlined",
           "required": true,
-          "InputProps": {
-            "type": "datetime-local"
-          },
+          "InputProps": {"type": "datetime-local"},
           "name": "Date-and-Time"
         },
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -214,14 +156,8 @@
         "validationSchema": [["yup.mixed"]],
         "initialValue": null,
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -245,14 +181,8 @@
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -270,14 +200,8 @@
           "required": true,
           "ElementProps": {
             "options": [
-              {
-                "label": "Big",
-                "value": "Big"
-              },
-              {
-                "label": "Little",
-                "value": "Little"
-              }
+              {"label": "Big", "value": "Big"},
+              {"label": "Little", "value": "Little"}
             ]
           },
           "helperText": "Make sure you choose the right one!"
@@ -285,14 +209,8 @@
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -313,14 +231,8 @@
         "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -343,14 +255,8 @@
         ],
         "initialValue": null,
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -371,14 +277,8 @@
         "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -397,14 +297,8 @@
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -422,14 +316,8 @@
         },
         "validationSchema": [["yup.object"], ["yup.nullable"]],
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -462,10 +350,7 @@
       }
     },
     "viewsets": {
-      "Main": {
-        "label": "Main",
-        "views": ["Main-New-Section", "Main-Section2"]
-      }
+      "Main": {"label": "Main", "views": ["Main-New-Section", "Main-Section2"]}
     },
     "visible_types": ["Main"]
   }

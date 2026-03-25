@@ -47,16 +47,16 @@ export function CreateLongLivedTokenForm({
     {
       name: 'title',
       label: 'Title',
-      schema: z.string().min(5, {
-        message: 'Title must be at least 5 characters',
-      }),
+      schema: z
+        .string()
+        .min(5, {message: 'Title must be at least 5 characters'}),
     },
     {
       name: 'description',
       label: 'Description',
-      schema: z.string().min(10, {
-        message: 'Description must be at least 10 characters',
-      }),
+      schema: z
+        .string()
+        .min(10, {message: 'Description must be at least 10 characters'}),
     },
   ];
 
@@ -138,9 +138,7 @@ export function CreateLongLivedTokenForm({
 
       setCreatedToken(response.token);
 
-      QueryClient.invalidateQueries({
-        queryKey: ['long-lived-tokens'],
-      });
+      QueryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
     } catch (error) {
       return {
         type: 'submit',

@@ -4,8 +4,6 @@
 
 **{{FAIMS}}** can be configured to support either local (username/password) login or a federated login such as Google, AAF or an institutional single sign-on provider.
 
-
-
 ## Login
 
 To sign into **{{FAIMS}}**, choose your authentication provider from the **Login** screen:
@@ -21,13 +19,13 @@ If your account is recognised, you will be successfully signed in and see your l
 
 <!-- ![sign in screen](/common-images/userscreen.png) -->
 
-````{Note}
+```{Note}
 > Your login details will be recorded against all new records and any changes made to records while you are logged in. Always check you are correctly signed in.
-````
+```
 
 ## Logging in for the first time
 
-If you don't already have an account on the {{FAIMS}} server, you will be able to register for an account at this point.  You can either register with your email and password, or a supported authentication service (eg a Google account).
+If you don't already have an account on the {{FAIMS}} server, you will be able to register for an account at this point. You can either register with your email and password, or a supported authentication service (eg a Google account).
 
 ## Logging in with Multiple Accounts
 

@@ -127,12 +127,7 @@ export const NotebookAuthSummarySchema = z.object({
     z.object({
       name: z.string(),
       username: z.string(),
-      roles: z.array(
-        z.object({
-          name: z.nativeEnum(Role),
-          value: z.boolean(),
-        })
-      ),
+      roles: z.array(z.object({name: z.nativeEnum(Role), value: z.boolean()})),
     })
   ),
 });
@@ -186,9 +181,7 @@ export const PostRegisterInputSchema = AuthContextSchema.extend({
 });
 export type PostRegisterInput = z.infer<typeof PostRegisterInputSchema>;
 
-export const PostRefreshTokenInputSchema = z.object({
-  refreshToken: z.string(),
-});
+export const PostRefreshTokenInputSchema = z.object({refreshToken: z.string()});
 export type PostRefreshTokenInput = z.infer<typeof PostRefreshTokenInputSchema>;
 export const PostRefreshTokenResponseSchema = z.object({
   // fresh JWT
@@ -422,11 +415,7 @@ export const PutUpdateTemplateInputSchema = TemplateDBFieldsSchema.pick({
   'ui-specification': true,
   name: true,
 })
-  .partial({
-    metadata: true,
-    'ui-specification': true,
-    name: true,
-  })
+  .partial({metadata: true, 'ui-specification': true, name: true})
   .extend({
     // prefer to use a nicer team ID input field
     teamId: z.string().trim().min(1).optional(),
@@ -566,9 +555,7 @@ export const TeamMembershipInputSchema = z
   .object({
     username: z.string().min(1, 'Username is required'),
     role: z
-      .nativeEnum(Role, {
-        errorMap: () => ({message: 'Must be a valid role'}),
-      })
+      .nativeEnum(Role, {errorMap: () => ({message: 'Must be a valid role'})})
       .optional(),
     action: z.enum(['ADD_ROLE', 'REMOVE_ROLE', 'REMOVE_USER']),
   })
@@ -695,12 +682,7 @@ const InviteDocumentSchema = z.object({
   expiry: z.number(),
   usesOriginal: z.number().optional(),
   usesConsumed: z.number(),
-  uses: z.array(
-    z.object({
-      userId: z.string(),
-      usedAt: z.number(),
-    })
-  ),
+  uses: z.array(z.object({userId: z.string(), usedAt: z.number()})),
 });
 
 /**
@@ -854,9 +836,7 @@ export const PutUpdateLongLivedTokenResponseSchema =
   LongLivedTokenResponseSchema;
 
 export const PutRevokeLongLivedTokenResponseSchema =
-  LongLivedTokenResponseSchema.extend({
-    message: z.string(),
-  });
+  LongLivedTokenResponseSchema.extend({message: z.string()});
 
 export const GetLongLivedTokensResponseSchema = z.object({
   tokens: z.array(LongLivedTokenResponseSchema),

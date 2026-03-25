@@ -59,10 +59,7 @@ export const appendAttachmentsToArchive = async ({
   targetViewID?: string;
   pathPrefix?: string;
 }): Promise<AttachmentAppendStats> => {
-  const stats: AttachmentAppendStats = {
-    fileCount: 0,
-    perViewCounts: new Map(),
-  };
+  const stats: AttachmentAppendStats = {fileCount: 0, perViewCounts: new Map()};
 
   // Get UI spec to know all valid view IDs
   const uiSpec = await getProjectUIModel(projectId);
@@ -319,11 +316,7 @@ function processRecordAttachments({
      * - file_type: MIME type for determining file extension
      */
     const attachmentList = record.data[fieldId] as
-      | {
-          attachment_id: string;
-          filename: string;
-          file_type: string;
-        }[]
+      | {attachment_id: string; filename: string; file_type: string}[]
       | null;
 
     // Null indicates an incomplete or pending attachment field
@@ -433,7 +426,7 @@ export const generateFilenameForAttachment = ({
   const type = file?.type || fileMimeType || undefined;
 
   // Look up extension, default to 'dat' for unknown types
-  const extension = type ? fileTypes[type] ?? 'dat' : 'dat';
+  const extension = type ? (fileTypes[type] ?? 'dat') : 'dat';
 
   // Slugify each component first (before length limiting)
   // This ensures the hash is computed on the slugified version

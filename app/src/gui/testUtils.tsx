@@ -49,24 +49,9 @@ const testProject = {
 //    state => state.projects.servers[serverId]?.projects[projectId]
 const mockState = {
   projects: {
-    servers: {
-      'test-server': {
-        projects: {
-          'test-project': testProject,
-        },
-      },
-    },
+    servers: {'test-server': {projects: {'test-project': testProject}}},
   },
-  auth: {
-    activeUser: testUser,
-    servers: {
-      'test-server': {
-        users: {
-          testUser,
-        },
-      },
-    },
-  },
+  auth: {activeUser: testUser, servers: {'test-server': {users: {testUser}}}},
 };
 
 // Mock just the store with getState method
@@ -82,12 +67,7 @@ vi.mock('../context/store', () => ({
 
 // Mock React DOM createRoot to prevent DOM mounting during tests
 vi.mock('react-dom/client', () => ({
-  default: {
-    createRoot: vi.fn(() => ({
-      render: vi.fn(),
-      unmount: vi.fn(),
-    })),
-  },
+  default: {createRoot: vi.fn(() => ({render: vi.fn(), unmount: vi.fn()}))},
 }));
 
 // Mock the authSlice
@@ -109,10 +89,7 @@ vi.mock('../../context/slices/authSlice', () => ({
   selectActiveToken: vi.fn(() => ({
     token: 'test-token',
     refreshToken: 'test-refresh-token',
-    parsedToken: {
-      username: 'testuser',
-      exp: Date.now() / 1000 + 3600,
-    },
+    parsedToken: {username: 'testuser', exp: Date.now() / 1000 + 3600},
     expiresAt: Date.now() / 1000 + 3600,
   })),
 
@@ -157,11 +134,7 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
   children,
 }) => {
   const testStore = configureStore({
-    reducer: {
-      auth: () => null,
-      projects: () => null,
-      alerts: () => null,
-    },
+    reducer: {auth: () => null, projects: () => null, alerts: () => null},
     middleware: getDefaultMiddleware =>
       getDefaultMiddleware({
         serializableCheck: {

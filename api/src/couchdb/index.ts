@@ -117,9 +117,7 @@ export const verifyCouchDBConnection = async () => {
   // can we reach the couchdb server?
   const response = await fetch(url, {
     method: 'HEAD',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: {'Content-Type': 'application/json'},
   }).catch(() => {
     console.log('Catching error');
     return null;
@@ -697,16 +695,8 @@ export const initialiseAndMigrateDBs = async ({
     const dataDb = (await getDataDb(projectId)) as DatabaseInterface;
     const metadataDb = (await getMetadataDb(projectId)) as DatabaseInterface;
     dbs.concat([
-      {
-        db: dataDb,
-        dbType: DatabaseType.DATA,
-        dbName: dataDb.name,
-      },
-      {
-        db: metadataDb,
-        dbType: DatabaseType.METADATA,
-        dbName: metadataDb.name,
-      },
+      {db: dataDb, dbType: DatabaseType.DATA, dbName: dataDb.name},
+      {db: metadataDb, dbType: DatabaseType.METADATA, dbName: metadataDb.name},
     ]);
   }
   await migrateDbs({dbs, migrationDb: migrationsDb, userId: 'system'});

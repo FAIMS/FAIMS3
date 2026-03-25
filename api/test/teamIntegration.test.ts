@@ -95,10 +95,7 @@ const getSampleNotebook = () => {
  */
 const createTeam = async (
   app: Express,
-  options: {
-    teamName?: string;
-    description?: string;
-  },
+  options: {teamName?: string; description?: string},
   token: string = adminToken
 ) => {
   return await requestAuthAndType(
@@ -148,11 +145,7 @@ describe('Team integration with templates and projects', () => {
     const templateWithTeam = await requestAuthAndType(
       request(app)
         .post(`${TEMPLATE_API_BASE}`)
-        .send({
-          ...notebook,
-          name: 'test template',
-          teamId: team._id,
-        }),
+        .send({...notebook, name: 'test template', teamId: team._id}),
       adminToken
     )
       .expect(200)
@@ -241,10 +234,7 @@ describe('Team integration with templates and projects', () => {
     // Create a test user who is a team member
     const username = 'teamuser';
     const password = 'password123';
-    const [user, err] = await createUser({
-      username,
-      name: 'Team User',
-    });
+    const [user, err] = await createUser({username, name: 'Team User'});
     expect(err).to.equal('');
     expect(user).to.not.be.null;
 
@@ -253,11 +243,7 @@ describe('Team integration with templates and projects', () => {
     }
 
     // Add team member role
-    addTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MEMBER,
-    });
+    addTeamRole({user, teamId: team._id, role: Role.TEAM_MEMBER});
     await saveCouchUser(user);
     await addLocalPasswordForUser(user, password);
     // Generate token for this user
@@ -309,16 +295,8 @@ describe('Team integration with templates and projects', () => {
     ).expect(401);
 
     // Upgrade to manager
-    removeTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MEMBER,
-    });
-    addTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MANAGER,
-    });
+    removeTeamRole({user, teamId: team._id, role: Role.TEAM_MEMBER});
+    addTeamRole({user, teamId: team._id, role: Role.TEAM_MANAGER});
     await saveCouchUser(user);
     const upgradedManager = await upgradeCouchUserToExpressUser({dbUser: user});
     const managerToken = await generateJwtFromUser({
@@ -369,10 +347,7 @@ describe('Team integration with templates and projects', () => {
     const username = 'outsider';
     const password = 'password123';
 
-    const [user, err] = await createUser({
-      username,
-      name: 'Outsider User',
-    });
+    const [user, err] = await createUser({username, name: 'Outsider User'});
 
     expect(err).to.equal('');
     expect(user).to.not.be.null;
@@ -381,10 +356,7 @@ describe('Team integration with templates and projects', () => {
     }
 
     // Add basic user permissions
-    addGlobalRole({
-      user,
-      role: Role.GENERAL_CREATOR,
-    });
+    addGlobalRole({user, role: Role.GENERAL_CREATOR});
 
     await saveCouchUser(user);
     await addLocalPasswordForUser(user, password);
@@ -487,38 +459,21 @@ describe('Team integration with templates and projects', () => {
 
     // Create template in team 1
     const template1 = await createTemplate({
-      payload: {
-        ...notebook,
-        name: 'tempalate1',
-        teamId: team1._id,
-      },
+      payload: {...notebook, name: 'tempalate1', teamId: team1._id},
     });
 
     // Create template in team 2
     const template2 = await createTemplate({
-      payload: {
-        ...notebook,
-        name: 'tempalate2',
-        teamId: team2._id,
-      },
+      payload: {...notebook, name: 'tempalate2', teamId: team2._id},
     });
 
     // Create another template in team 1
     const template3 = await createTemplate({
-      payload: {
-        ...notebook,
-        name: 'tempalate3',
-        teamId: team1._id,
-      },
+      payload: {...notebook, name: 'tempalate3', teamId: team1._id},
     });
 
     // Create template without a team
-    await createTemplate({
-      payload: {
-        ...notebook,
-        name: 'tempalate4',
-      },
-    });
+    await createTemplate({payload: {...notebook, name: 'tempalate4'}});
 
     // Get templates by team ID
     const team1Templates = await getTemplateIdsByTeamId({teamId: team1._id});
@@ -621,11 +576,7 @@ describe('Team integration with templates and projects', () => {
     }
 
     // Test with team member role
-    addTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MEMBER,
-    });
+    addTeamRole({user, teamId: team._id, role: Role.TEAM_MEMBER});
 
     await saveCouchUser(user);
 
@@ -636,19 +587,10 @@ describe('Team integration with templates and projects', () => {
     // Set up resource associations
     const resourceAssociations: ResourceAssociation[] = [
       {
-        resource: {
-          resourceId: team._id,
-          resourceType: Resource.TEAM,
-        },
+        resource: {resourceId: team._id, resourceType: Resource.TEAM},
         associatedResources: [
-          {
-            resourceId: projectId!,
-            resourceType: Resource.PROJECT,
-          },
-          {
-            resourceId: template._id,
-            resourceType: Resource.TEMPLATE,
-          },
+          {resourceId: projectId!, resourceType: Resource.PROJECT},
+          {resourceId: template._id, resourceType: Resource.TEMPLATE},
         ],
       },
     ];
@@ -676,17 +618,9 @@ describe('Team integration with templates and projects', () => {
     expect(hasTemplateGuestVirtual).to.be.true;
 
     // Test with team manager role (should grant PROJECT_MANAGER virtually)
-    removeTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MEMBER,
-    });
+    removeTeamRole({user, teamId: team._id, role: Role.TEAM_MEMBER});
 
-    addTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MANAGER,
-    });
+    addTeamRole({user, teamId: team._id, role: Role.TEAM_MANAGER});
 
     await saveCouchUser(user);
 
@@ -709,17 +643,9 @@ describe('Team integration with templates and projects', () => {
     expect(hasProjectManagerVirtual).to.be.true;
 
     // Test with team admin role (should grant PROJECT_ADMIN and TEMPLATE_ADMIN virtually)
-    removeTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MANAGER,
-    });
+    removeTeamRole({user, teamId: team._id, role: Role.TEAM_MANAGER});
 
-    addTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_ADMIN,
-    });
+    addTeamRole({user, teamId: team._id, role: Role.TEAM_ADMIN});
 
     await saveCouchUser(user);
 
@@ -799,10 +725,7 @@ describe('Team integration with templates and projects', () => {
         .put(`${TEMPLATE_API_BASE}/${template._id}`)
         .send({
           'ui-specification': templateData['ui-specification'],
-          metadata: {
-            ...templateData.metadata,
-            updated_field: 'updated-value',
-          },
+          metadata: {...templateData.metadata, updated_field: 'updated-value'},
         }),
       adminToken
     ).expect(200);
@@ -816,9 +739,7 @@ describe('Team integration with templates and projects', () => {
         .put(`${NOTEBOOKS_API_BASE}/${project.notebook}`)
         .send({
           'ui-specification': uispec,
-          metadata: {
-            test_key: 'updated-value',
-          },
+          metadata: {test_key: 'updated-value'},
         }),
       adminToken
     ).expect(200);
@@ -858,9 +779,9 @@ describe('Team integration with templates and projects', () => {
 
     // Assign the project to the team
     await requestAuthAndType(
-      request(app).put(`${NOTEBOOKS_API_BASE}/${project.notebook}/team`).send({
-        teamId: team._id,
-      }),
+      request(app)
+        .put(`${NOTEBOOKS_API_BASE}/${project.notebook}/team`)
+        .send({teamId: team._id}),
       adminToken
     ).expect(200);
 
@@ -911,11 +832,7 @@ describe('Team integration with templates and projects', () => {
       throw new Error('User create failed ' + err);
     }
 
-    addTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MEMBER,
-    });
+    addTeamRole({user, teamId: team._id, role: Role.TEAM_MEMBER});
 
     await saveCouchUser(user);
 
@@ -961,18 +878,10 @@ describe('Team integration with templates and projects', () => {
 
     // Create templates owned by the team
     const template1 = await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'template 1',
-        teamId: team._id,
-      },
+      payload: {...getSampleNotebook(), name: 'template 1', teamId: team._id},
     });
     const template2 = await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'template 2',
-        teamId: team._id,
-      },
+      payload: {...getSampleNotebook(), name: 'template 2', teamId: team._id},
     });
 
     // Create test user with team role
@@ -988,11 +897,7 @@ describe('Team integration with templates and projects', () => {
       throw new Error('User create failed ' + err);
     }
 
-    addTeamRole({
-      user,
-      teamId: team._id,
-      role: Role.TEAM_MEMBER,
-    });
+    addTeamRole({user, teamId: team._id, role: Role.TEAM_MEMBER});
 
     await saveCouchUser(user);
 
@@ -1077,11 +982,7 @@ describe('Team integration with templates and projects', () => {
       team1._id
     );
     await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'template 1',
-        teamId: team1._id,
-      },
+      payload: {...getSampleNotebook(), name: 'template 1', teamId: team1._id},
     });
 
     // Create resources for team 2
@@ -1100,11 +1001,7 @@ describe('Team integration with templates and projects', () => {
       team2._id
     );
     await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'template 1',
-        teamId: team2._id,
-      },
+      payload: {...getSampleNotebook(), name: 'template 1', teamId: team2._id},
     });
 
     // Create test user with multiple team roles
@@ -1121,23 +1018,11 @@ describe('Team integration with templates and projects', () => {
     }
 
     // Add user to all three teams with different roles
-    addTeamRole({
-      user,
-      teamId: team1._id,
-      role: Role.TEAM_MEMBER,
-    });
+    addTeamRole({user, teamId: team1._id, role: Role.TEAM_MEMBER});
 
-    addTeamRole({
-      user,
-      teamId: team2._id,
-      role: Role.TEAM_MANAGER,
-    });
+    addTeamRole({user, teamId: team2._id, role: Role.TEAM_MANAGER});
 
-    addTeamRole({
-      user,
-      teamId: team3._id,
-      role: Role.TEAM_ADMIN,
-    });
+    addTeamRole({user, teamId: team3._id, role: Role.TEAM_ADMIN});
 
     await saveCouchUser(user);
 
@@ -1215,11 +1100,7 @@ describe('Team integration with templates and projects', () => {
 
     // Create a template owned by the team
     const template = await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'template 1',
-        teamId: team._id,
-      },
+      payload: {...getSampleNotebook(), name: 'template 1', teamId: team._id},
     });
 
     // Create test users with different team roles
@@ -1253,23 +1134,11 @@ describe('Team integration with templates and projects', () => {
     }
 
     // Assign different roles to each user
-    addTeamRole({
-      user: memberUser,
-      teamId: team._id,
-      role: Role.TEAM_MEMBER,
-    });
+    addTeamRole({user: memberUser, teamId: team._id, role: Role.TEAM_MEMBER});
 
-    addTeamRole({
-      user: managerUser,
-      teamId: team._id,
-      role: Role.TEAM_MANAGER,
-    });
+    addTeamRole({user: managerUser, teamId: team._id, role: Role.TEAM_MANAGER});
 
-    addTeamRole({
-      user: adminUser,
-      teamId: team._id,
-      role: Role.TEAM_ADMIN,
-    });
+    addTeamRole({user: adminUser, teamId: team._id, role: Role.TEAM_ADMIN});
 
     await saveCouchUser(memberUser);
     await saveCouchUser(managerUser);
@@ -1377,10 +1246,7 @@ describe('Team integration with templates and projects', () => {
     }
 
     // Add global role
-    addGlobalRole({
-      user,
-      role: Role.GENERAL_CREATOR,
-    });
+    addGlobalRole({user, role: Role.GENERAL_CREATOR});
 
     await saveCouchUser(user);
 
@@ -1411,11 +1277,7 @@ describe('Team integration with templates and projects', () => {
     );
     await createNotebook('Team 1 Project B', uispec, {}, undefined, team1._id);
     const template1 = await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'template 1',
-        teamId: team1._id,
-      },
+      payload: {...getSampleNotebook(), name: 'template 1', teamId: team1._id},
     });
 
     // Create resources for team 2
@@ -1427,11 +1289,7 @@ describe('Team integration with templates and projects', () => {
       team2._id
     );
     await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'template 2',
-        teamId: team2._id,
-      },
+      payload: {...getSampleNotebook(), name: 'template 2', teamId: team2._id},
     });
 
     // Create some non-team resources
@@ -1442,10 +1300,7 @@ describe('Team integration with templates and projects', () => {
     );
 
     const independentTemplate = await createTemplate({
-      payload: {
-        ...getSampleNotebook(),
-        name: 'independant template',
-      },
+      payload: {...getSampleNotebook(), name: 'independant template'},
     });
 
     // Make the user an admin of the independent notebook (since they made it)
@@ -1456,17 +1311,9 @@ describe('Team integration with templates and projects', () => {
     });
 
     // Add user to teams with different roles
-    addTeamRole({
-      user,
-      teamId: team1._id,
-      role: Role.TEAM_ADMIN,
-    });
+    addTeamRole({user, teamId: team1._id, role: Role.TEAM_ADMIN});
 
-    addTeamRole({
-      user,
-      teamId: team2._id,
-      role: Role.TEAM_MEMBER,
-    });
+    addTeamRole({user, teamId: team2._id, role: Role.TEAM_MEMBER});
 
     // Add direct project role (non-virtual)
     addProjectRole({

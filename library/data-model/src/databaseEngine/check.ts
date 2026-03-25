@@ -59,12 +59,7 @@ function getConfig(): Config {
     process.exit(1);
   }
 
-  return {
-    url: args[0],
-    username: args[1],
-    password: args[2],
-    testHydration,
-  };
+  return {url: args[0], username: args[1], password: args[2], testHydration};
 }
 
 // ============================================================================
@@ -282,10 +277,7 @@ async function testHydration(
 
     if (error instanceof Error) {
       errorMessage = error.message;
-      errorDetails = {
-        name: error.name,
-        stack: error.stack,
-      };
+      errorDetails = {name: error.name, stack: error.stack};
     }
 
     stats.hydrationErrors.push({
@@ -655,19 +647,13 @@ async function validateDatabase(
   console.log(`  Connecting to ${dbName}...`);
 
   const db = new PouchDB<DataDocument>(`${url}/${dbName}`, {
-    auth: {
-      username: auth.username,
-      password: auth.password,
-    },
+    auth: {username: auth.username, password: auth.password},
   });
 
   try {
     console.log(`  Fetching documents from ${dbName}...`);
 
-    const result = await db.allDocs({
-      include_docs: true,
-      attachments: false,
-    });
+    const result = await db.allDocs({include_docs: true, attachments: false});
 
     console.log(`  Found ${result.rows.length} documents in ${dbName}`);
     console.log('  Validating documents...');
@@ -749,10 +735,7 @@ async function main() {
       dbStats[dbName] = await validateDatabase(
         config.url,
         dbName,
-        {
-          username: config.username,
-          password: config.password,
-        },
+        {username: config.username, password: config.password},
         config.testHydration
       );
     } catch (error) {

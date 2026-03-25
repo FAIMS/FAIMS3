@@ -179,9 +179,7 @@ describe('FormValidation', () => {
 
     it('should return errors for invalid data', () => {
       const compiledSchema: CompiledFormSchema = {
-        schema: z.object({
-          'First-name': z.string().min(1),
-        }),
+        schema: z.object({'First-name': z.string().min(1)}),
         fieldSchemas: {'First-name': z.string().min(1)},
         fields: ['First-name'],
       };
@@ -240,13 +238,9 @@ describe('FormValidation', () => {
       ).toBeFalsy();
     });
   });
-  describe('form schema compilation and recompilation', () => {
+  (describe('form schema compilation and recompilation', () => {
     it('should compile schema', () => {
-      FormValidation.compileFormSchema({
-        uiSpec,
-        formId: 'Person',
-        data: {},
-      });
+      FormValidation.compileFormSchema({uiSpec, formId: 'Person', data: {}});
     });
     it('should re-compile schema', () => {
       const schema = FormValidation.compileFormSchema({
@@ -278,10 +272,7 @@ describe('FormValidation', () => {
       });
 
       it('should validate with all fields when visibleBehaviour is include', () => {
-        const data = {
-          'First-name': 'John',
-          'Last-name': 'Doe',
-        };
+        const data = {'First-name': 'John', 'Last-name': 'Doe'};
 
         const result = FormValidation.validateFormDataWithCompiledSchema({
           data,
@@ -292,7 +283,7 @@ describe('FormValidation', () => {
 
         expect(typeof result.valid).toBe('boolean');
       });
-    });
+    }));
 
   describe('validateField', () => {
     it('should validate a single field successfully', () => {

@@ -351,10 +351,7 @@ export const appendAllCSVsToArchive = async ({
   await Promise.all(streamPromises);
 
   // Build stats
-  const stats: MultiViewCSVAppendStats = {
-    views: [],
-    totalRecords: 0,
-  };
+  const stats: MultiViewCSVAppendStats = {views: [], totalRecords: 0};
 
   for (const viewState of viewStates.values()) {
     stats.views.push({

@@ -37,10 +37,7 @@ Sections are defined in `views` and referenced by `viewsets` (interchangeably re
       "label": "Basic Information",
       "fields": ["site_name", "site_type", "location"]
     },
-    "media": {
-      "label": "Media",
-      "fields": ["photos", "documents"]
-    },
+    "media": {"label": "Media", "fields": ["photos", "documents"]},
     "relationships": {
       "label": "Related Records",
       "fields": ["parent_site", "artifacts"]

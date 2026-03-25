@@ -75,18 +75,10 @@ export const TakePhotoRender: DataViewFieldRender = props => {
                 p: 2,
               }}
             >
-              <CloudOffIcon
-                sx={{
-                  fontSize: 48,
-                  color: 'rgba(0, 0, 0, 0.3)',
-                }}
-              />
+              <CloudOffIcon sx={{fontSize: 48, color: 'rgba(0, 0, 0, 0.3)'}} />
               <Typography
                 variant="body2"
-                sx={{
-                  color: 'rgba(0, 0, 0, 0.6)',
-                  textAlign: 'center',
-                }}
+                sx={{color: 'rgba(0, 0, 0, 0.6)', textAlign: 'center'}}
               >
                 Attachment not synced
               </Typography>

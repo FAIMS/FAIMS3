@@ -47,20 +47,12 @@ const createFeatureStyle = () => {
       fill: new Fill({
         color: 'rgba(255, 69, 0, 0.8)', // Bright orange-red with opacity
       }),
-      stroke: new Stroke({
-        color: '#fff',
-        width: 2,
-      }),
+      stroke: new Stroke({color: '#fff', width: 2}),
     }),
     // Style for line geometries
-    stroke: new Stroke({
-      color: 'rgba(255, 69, 0, 0.9)',
-      width: 3,
-    }),
+    stroke: new Stroke({color: 'rgba(255, 69, 0, 0.9)', width: 3}),
     // Style for polygon geometries
-    fill: new Fill({
-      color: 'rgba(255, 69, 0, 0.2)',
-    }),
+    fill: new Fill({color: 'rgba(255, 69, 0, 0.2)'}),
   });
 };
 
@@ -115,10 +107,7 @@ export const MapPreview: React.FC<MapPreviewProps> = props => {
     const map = new Map({
       target: mapRef.current,
       layers: [tileLayer, vectorLayer],
-      view: new View({
-        center: [0, 0],
-        zoom: 2,
-      }),
+      view: new View({center: [0, 0], zoom: 2}),
       controls: [],
       interactions: [],
     });
@@ -126,10 +115,7 @@ export const MapPreview: React.FC<MapPreviewProps> = props => {
     // Fit the view to the geometry extent if features exist
     const extent = vectorSource.getExtent();
     if (extent && extent.every(coord => isFinite(coord))) {
-      map.getView().fit(extent, {
-        padding: [50, 50, 50, 50],
-        maxZoom: 16,
-      });
+      map.getView().fit(extent, {padding: [50, 50, 50, 50], maxZoom: 16});
     }
 
     // Store map instance for cleanup

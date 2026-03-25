@@ -159,14 +159,8 @@ const routes: RouteObject[] = [
       // =========================================================================
       // PUBLIC ROUTES
       // =========================================================================
-      {
-        path: ROUTES.SIGN_IN,
-        element: <SignIn />,
-      },
-      {
-        path: ROUTES.AUTH_RETURN,
-        element: <AuthReturn />,
-      },
+      {path: ROUTES.SIGN_IN, element: <SignIn />},
+      {path: ROUTES.AUTH_RETURN, element: <AuthReturn />},
 
       // =========================================================================
       // PROTECTED ROUTES - WORKSPACE & NOTEBOOKS
@@ -221,18 +215,10 @@ const routes: RouteObject[] = [
       // =========================================================================
       // UTILITY ROUTES
       // =========================================================================
-      {
-        path: ROUTES.ABOUT_BUILD,
-        element: <AboutBuild />,
-      },
+      {path: ROUTES.ABOUT_BUILD, element: <AboutBuild />},
       // Offline maps route (conditionally included based on build config)
       ...(OFFLINE_MAPS
-        ? [
-            {
-              path: ROUTES.OFFLINE_MAPS,
-              element: <MapDownload />,
-            },
-          ]
+        ? [{path: ROUTES.OFFLINE_MAPS, element: <MapDownload />}]
         : []),
       {
         // Debug tool for inspecting PouchDB state
@@ -243,10 +229,7 @@ const routes: RouteObject[] = [
       // =========================================================================
       // CATCH-ALL 404
       // =========================================================================
-      {
-        path: '*',
-        element: <NotFound404 />,
-      },
+      {path: '*', element: <NotFound404 />},
     ],
   },
 ];

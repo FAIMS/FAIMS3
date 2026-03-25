@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ESNext",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -28,11 +24,6 @@
       "@testing-library/jest-dom"
     ]
   },
-  "include": [
-    "./src/",
-  ],
-  "exclude": [
-    "node_modules/*",
-    "test/*"
-  ]
+  "include": ["./src/"],
+  "exclude": ["node_modules/*", "test/*"]
 }

@@ -45,9 +45,7 @@ export interface DataViewProps {
   hrid: string;
   // The full form data
   formData: FormUpdateData;
-  config: {
-    debugMode?: boolean;
-  };
+  config: {debugMode?: boolean};
   // track history
   trace: DataViewTraceEntry[];
   // Controls/triggers

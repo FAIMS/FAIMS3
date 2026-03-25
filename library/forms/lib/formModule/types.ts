@@ -7,9 +7,7 @@ import {FormConfig} from './formManagers/types';
 export type FaimsFormData = FormUpdateData | undefined;
 
 // Extract the Field type from the form instance
-type ExtractFieldType<T> = T extends {
-  Field: React.ComponentType<infer P>;
-}
+type ExtractFieldType<T> = T extends {Field: React.ComponentType<infer P>}
   ? P extends {children: (field: infer F) => any}
     ? F
     : never
@@ -17,10 +15,7 @@ type ExtractFieldType<T> = T extends {
 
 // We don't actually use this - but it is a way to let Typescript infer the type
 // we need
-const myUseForm = () =>
-  useForm({
-    defaultValues: {} as FaimsFormData,
-  });
+const myUseForm = () => useForm({defaultValues: {} as FaimsFormData});
 export type FaimsForm = ReturnType<typeof myUseForm>;
 export type FaimsFormField = ExtractFieldType<FaimsForm>;
 export type FaimsFormFieldState = FaimsFormField['state'];

@@ -606,10 +606,7 @@ describe('isAuthorized', () => {
 
       // From global GENERAL_USER
       expect(
-        isTokenAuthorized({
-          token: token,
-          action: Action.LIST_PROJECTS,
-        })
+        isTokenAuthorized({token: token, action: Action.LIST_PROJECTS})
       ).toBe(true);
 
       // From resource role PROJECT_CONTRIBUTOR

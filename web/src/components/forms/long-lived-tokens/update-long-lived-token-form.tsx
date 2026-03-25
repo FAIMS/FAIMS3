@@ -24,16 +24,16 @@ export function UpdateLongLivedTokenForm({
     {
       name: 'title',
       label: 'Title',
-      schema: z.string().min(5, {
-        message: 'Title must be at least 5 characters',
-      }),
+      schema: z
+        .string()
+        .min(5, {message: 'Title must be at least 5 characters'}),
     },
     {
       name: 'description',
       label: 'Description',
-      schema: z.string().min(10, {
-        message: 'Description must be at least 10 characters',
-      }),
+      schema: z
+        .string()
+        .min(10, {message: 'Description must be at least 10 characters'}),
     },
   ];
 
@@ -49,17 +49,10 @@ export function UpdateLongLivedTokenForm({
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
     try {
-      await updateLongLivedToken({
-        tokenId: token.id,
-        title,
-        description,
-        user,
-      });
+      await updateLongLivedToken({tokenId: token.id, title, description, user});
 
       // Invalidate the long-lived tokens query to refresh the list
-      queryClient.invalidateQueries({
-        queryKey: ['long-lived-tokens'],
-      });
+      queryClient.invalidateQueries({queryKey: ['long-lived-tokens']});
 
       setDialogOpen(false);
     } catch (error) {
@@ -76,10 +69,7 @@ export function UpdateLongLivedTokenForm({
       onSubmit={onSubmit}
       submitButtonText={'Update Token'}
       submitButtonVariant={'outline'}
-      defaultValues={{
-        title: token.title,
-        description: token.description,
-      }}
+      defaultValues={{title: token.title, description: token.description}}
     />
   );
 }

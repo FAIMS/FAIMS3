@@ -703,11 +703,7 @@ const projectsSlice = createSlice({
           isSyncing,
           isSyncingAttachments,
           localDbId,
-          remote: {
-            connectionConfiguration,
-            remoteDbId,
-            syncId,
-          },
+          remote: {connectionConfiguration, remoteDbId, syncId},
         },
       };
     },
@@ -1441,9 +1437,7 @@ export const activateProject = createAsyncThunk<
     // push in the specified jwt
     jwtToken: payload.jwtToken,
     couchUrl: server.couchDbUrl,
-    databaseName: getRemoteDatabaseNameFromId({
-      projectId: project.projectId,
-    }),
+    databaseName: getRemoteDatabaseNameFromId({projectId: project.projectId}),
   };
 
   // creates and/or links to the local data database
@@ -1471,10 +1465,7 @@ export const activateProject = createAsyncThunk<
     remoteDb,
     eventHandlers: handlers,
   });
-  const syncId = buildSyncId({
-    localId: localDatabaseId,
-    remoteId: remoteDbId,
-  });
+  const syncId = buildSyncId({localId: localDatabaseId, remoteId: remoteDbId});
   await databaseService.registerSync(syncId, sync);
 
   // now call the reducer to update the state
@@ -1612,9 +1603,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
 
     // Fetch the directory (which lists projects)
     const response = await fetch(`${server.serverUrl}/api/directory`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: {Authorization: `Bearer ${token}`},
     });
 
     if (!response.ok) {
@@ -1646,23 +1635,13 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
             token,
           });
 
-          return {
-            status: 'success' as const,
-            projectId,
-            details,
-            meta,
-          };
+          return {status: 'success' as const, projectId, details, meta};
         } catch (e) {
           console.warn(
             `Failed to get metadata from API for project ${projectId}.`
           );
           console.error(e);
-          return {
-            status: 'error' as const,
-            projectId,
-            details,
-            error: e,
-          };
+          return {status: 'error' as const, projectId, details, error: e};
         }
       })
     );
@@ -1895,9 +1874,7 @@ export const stopSyncingProject = createAsyncThunk<void, ProjectIdentity>(
       database: {
         ...project.database,
         isSyncing: false,
-        remote: {
-          ...project.database.remote,
-        },
+        remote: {...project.database.remote},
       },
     };
 
@@ -2004,10 +1981,7 @@ export const resumeSyncingProject = createAsyncThunk<void, ProjectIdentity>(
       database: {
         ...project.database,
         isSyncing: true,
-        remote: {
-          ...project.database.remote,
-          syncId: syncId,
-        },
+        remote: {...project.database.remote, syncId: syncId},
       },
     };
 

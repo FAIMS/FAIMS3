@@ -365,10 +365,7 @@ async function do3WayMerge({
       // TODO: Work out how to handle changing types if that's going to be a
       // thing
       type: us.type,
-      relationship: {
-        parent: parent,
-        linked: linked,
-      },
+      relationship: {parent: parent, linked: linked},
     };
     await dataDb.put(new_revision);
     await updateHeads({
@@ -410,10 +407,7 @@ export async function mergeHeads({
     revision_ids_to_seed_cache
   );
   const revision_cache: RevisionCache = buildDocumentMap({
-    docs: await getRevisions({
-      dataDb,
-      revisionIds: revision_ids_to_seed_cache,
-    }),
+    docs: await getRevisions({dataDb, revisionIds: revision_ids_to_seed_cache}),
   }) as RevisionCache;
   const working_heads = record.heads.concat(); // make a clean copy
   console.debug('Getting initial head revisions', projectId, recordId);
@@ -516,10 +510,7 @@ async function findInitialMergeDetails({
         projectId,
         revision: revisions[rev_id],
       });
-      return {
-        initial_head: rev_id,
-        initial_head_data: full_record,
-      };
+      return {initial_head: rev_id, initial_head_data: full_record};
     } catch (err) {
       console.log('Error while looking up initial merge information', err);
       continue;
@@ -559,10 +550,7 @@ export async function getInitialMergeDetails({
     throw new Error(`Cannot get merge details for missing record ${recordId}`);
   }
   const available_revisions = buildDocumentMap({
-    docs: await getRevisions({
-      dataDb,
-      revisionIds: record.heads,
-    }),
+    docs: await getRevisions({dataDb, revisionIds: record.heads}),
   });
   const initial_head_details = await findInitialMergeDetails({
     dataDb,

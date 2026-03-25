@@ -12,10 +12,7 @@ const MINIMUM_PASSWORD_LENGTH = 10;
 export interface PasswordStrengthResult {
   isValid: boolean;
   score: number;
-  feedback: {
-    warning?: string;
-    suggestions: string[];
-  };
+  feedback: {warning?: string; suggestions: string[]};
   crackTime?: string;
 }
 

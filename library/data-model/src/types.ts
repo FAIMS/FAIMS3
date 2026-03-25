@@ -99,10 +99,7 @@ export type PossibleConnectionInfo = {
   host?: string | undefined;
   port?: number | undefined;
   db_name?: string | undefined;
-  auth?: {
-    username: string;
-    password: string;
-  };
+  auth?: {username: string; password: string};
   jwt_token?: string;
 };
 
@@ -161,17 +158,11 @@ export type AttributeValuePairIDMap = {
   [field_name: string]: AttributeValuePairID;
 };
 
-export type AttributeValuePairMap = {
-  [field_name: string]: AttributeValuePair;
-};
+export type AttributeValuePairMap = {[field_name: string]: AttributeValuePair};
 
-export type RevisionMap = {
-  [revision_id: string]: Revision;
-};
+export type RevisionMap = {[revision_id: string]: Revision};
 
-export type RecordMap = {
-  [record_id: string]: EncodedRecord;
-};
+export type RecordMap = {[record_id: string]: EncodedRecord};
 
 export interface Revision {
   _id: string;
@@ -251,26 +242,18 @@ export interface EncodedDraft {
   _id: string;
   // Fields (may itself contain an _id)
   fields: {[key: string]: unknown};
-  annotations: {
-    [key: string]: Annotations;
-  };
+  annotations: {[key: string]: Annotations};
   attachments: {
     [key: string]: (
       | FAIMSAttachmentReference
-      | {
-          filename: string;
-          draft_attachment: boolean;
-        }
+      | {filename: string; draft_attachment: boolean}
     )[];
   };
   _attachments?: PouchDB.Core.Attachments;
   project_id: ProjectID;
   // If this draft is for the user updating an existing record, the following
   // is non-null, the record it's editing.
-  existing: null | {
-    record_id: RecordID;
-    revision_id: RevisionID;
-  };
+  existing: null | {record_id: RecordID; revision_id: RevisionID};
   created: string;
   updated: string;
   type: string;
@@ -283,10 +266,7 @@ export interface EncodedDraft {
 export interface DraftMetadata {
   _id: string;
   project_id: ProjectID;
-  existing: null | {
-    record_id: RecordID;
-    revision_id: RevisionID;
-  };
+  existing: null | {record_id: RecordID; revision_id: RevisionID};
   // Only difference: Date is a date, not string
   created: Date;
   updated: Date;
@@ -295,9 +275,7 @@ export interface DraftMetadata {
   record_id: string;
 }
 
-export type DraftMetadataList = {
-  [key: string]: DraftMetadata;
-};
+export type DraftMetadataList = {[key: string]: DraftMetadata};
 
 // Define an abstract database interface that will allow for real
 // PouchDB databases or our wrapped version in the app
@@ -543,9 +521,7 @@ export interface RecordMetadata {
 
 export type UnhydratedRecord = Omit<RecordMetadata, 'data' | 'hrid'>;
 
-export type RecordMetadataList = {
-  [key: string]: RecordMetadata;
-};
+export type RecordMetadataList = {[key: string]: RecordMetadata};
 
 // This is used within the form/ui subsystem, do not use with pouch
 export interface Record {
@@ -603,9 +579,7 @@ export interface UserMergeResult {
   relationship: Relationship;
 }
 
-export type RecordList = {
-  [key: string]: Record;
-};
+export type RecordList = {[key: string]: Record};
 
 /*
  * This somehow needs to handle class-based components and function-based

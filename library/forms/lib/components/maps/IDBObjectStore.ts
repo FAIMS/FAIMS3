@@ -39,9 +39,7 @@ export class IDBObjectStore<Type> {
   // onupgradeneeded for the database
   createObjectStore() {
     if (!this.db.objectStoreNames.contains(this.dbName)) {
-      this.db.createObjectStore(this.dbName, {
-        keyPath: this.keyPath,
-      });
+      this.db.createObjectStore(this.dbName, {keyPath: this.keyPath});
     }
   }
 

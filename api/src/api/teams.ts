@@ -101,9 +101,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
+  processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetTeamByIdResponse>) => {
     const team = await getTeamById(req.params.id);
     res.json(team);
@@ -120,9 +118,7 @@ api.post(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.CREATE_TEAM}),
-  processRequest({
-    body: PostCreateTeamInputSchema,
-  }),
+  processRequest({body: PostCreateTeamInputSchema}),
   async (req, res: Response<PostCreateTeamResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
@@ -186,9 +182,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
+  processRequest({params: z.object({id: z.string()})}),
   async (req, res) => {
     // Pull out team ID
     const teamId = req.params.id;
@@ -214,9 +208,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
+  processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetTeamMembersResponse>) => {
     const teamId = req.params.id;
 
@@ -339,11 +331,7 @@ api.post(
       });
     } else if (action === 'REMOVE_USER') {
       for (const hasRole of rolesOfTargetUser) {
-        removeTeamRole({
-          user: targetUser,
-          teamId,
-          role: hasRole,
-        });
+        removeTeamRole({user: targetUser, teamId, role: hasRole});
       }
     }
 

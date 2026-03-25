@@ -57,9 +57,7 @@ const AddressAutosuggestConfigSchema = z
       if (data.source === 'MAPBOX') return !!data.mapboxKey;
       return true;
     },
-    {
-      message: 'When source is MAPBOX, mapboxKey is required.',
-    }
+    {message: 'When source is MAPBOX, mapboxKey is required.'}
   );
 
 // For each provider we should have these secrets in the secrets manager
@@ -234,9 +232,7 @@ const AuthProvidersConfigSchema = z
       // Ensure all providers listed in 'providers' have a corresponding config
       return data.providers.every(provider => provider in data.config);
     },
-    {
-      message: 'All providers must have a corresponding configuration entry',
-    }
+    {message: 'All providers must have a corresponding configuration entry'}
   );
 
 export type AuthProvidersConfig = z.infer<typeof AuthProvidersConfigSchema>;
@@ -434,9 +430,7 @@ const BackupConfigSchema = z
   })
   .refine(
     data => (data.vaultName !== undefined) !== (data.vaultArn !== undefined),
-    {
-      message: 'Either vaultName or vaultArn must be provided, but not both',
-    }
+    {message: 'Either vaultName or vaultArn must be provided, but not both'}
   );
 
 const AppSupportLinksSchema = z.object({
@@ -497,10 +491,7 @@ export const ConfigSchema = z.object({
    * this will completely redeploy your application. */
   stackName: z.string(),
   /** Attributes of the hosted zone to use */
-  hostedZone: z.object({
-    id: z.string(),
-    name: z.string(),
-  }),
+  hostedZone: z.object({id: z.string(), name: z.string()}),
   certificates: z.object({
     /** ARN of the primary SSL/TLS certificate */
     primary: z.string(),

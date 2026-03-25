@@ -134,19 +134,8 @@ const QRCodeFieldRenderer: DataViewFieldRender = props => {
   }
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 1,
-      }}
-    >
-      <QrCode2Icon
-        sx={{
-          color: 'text.secondary',
-          flexShrink: 0,
-        }}
-      />
+    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+      <QrCode2Icon sx={{color: 'text.secondary', flexShrink: 0}} />
       <Typography
         sx={{
           fontFamily: 'monospace',

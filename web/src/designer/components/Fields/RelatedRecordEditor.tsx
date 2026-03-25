@@ -40,9 +40,7 @@ import DebouncedTextField from '../debounced-text-field';
 
 type PairList = [string, string][];
 
-type Props = {
-  fieldName: string;
-};
+type Props = {fieldName: string};
 
 type RelatedRecordConfig = {
   multiple: boolean;

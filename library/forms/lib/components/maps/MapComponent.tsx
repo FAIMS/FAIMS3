@@ -463,10 +463,7 @@ export const MapComponent = (props: MapComponentProps) => {
                 'EPSG:4326',
                 map.getView().getProjection()
               ),
-              {
-                padding: [20, 20, 20, 20],
-                maxZoom: props.zoom,
-              }
+              {padding: [20, 20, 20, 20], maxZoom: props.zoom}
             );
         } else {
           map.getView().setCenter(center);
@@ -501,25 +498,13 @@ export const MapComponent = (props: MapComponentProps) => {
         <Box sx={{height: '100%', width: '100%'}}>
           <Box
             ref={refCallback} // will create the map
-            sx={{
-              height: '97%',
-              width: '100%',
-            }}
+            sx={{height: '97%', width: '100%'}}
           />
-          <Box
-            sx={{
-              height: '3%',
-              paddingLeft: '50px',
-            }}
-          >
+          <Box sx={{height: '3%', paddingLeft: '50px'}}>
             {attribution && (
               <div
                 dangerouslySetInnerHTML={{__html: attribution}}
-                style={{
-                  fontSize: '10px',
-                  lineHeight: 1.1,
-                  color: '#666',
-                }}
+                style={{fontSize: '10px', lineHeight: 1.1, color: '#666'}}
               />
             )}
           </Box>

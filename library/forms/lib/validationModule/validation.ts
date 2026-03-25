@@ -115,11 +115,7 @@ export const FormValidation = {
       }
     }
 
-    return {
-      schema: z.object(shape),
-      fieldSchemas,
-      fields: relevantFields,
-    };
+    return {schema: z.object(shape), fieldSchemas, fields: relevantFields};
   },
 
   /**
@@ -157,11 +153,7 @@ export const FormValidation = {
       }
     }
 
-    return {
-      schema: z.object(shape),
-      fieldSchemas,
-      fields: filteredFields,
-    };
+    return {schema: z.object(shape), fieldSchemas, fields: filteredFields};
   },
 
   /**
@@ -308,11 +300,7 @@ export const FormValidation = {
       );
     }
 
-    return currentlyVisibleFields({
-      values: data,
-      uiSpec,
-      viewsetId: formId,
-    });
+    return currentlyVisibleFields({values: data, uiSpec, viewsetId: formId});
   },
 
   /**
@@ -383,10 +371,7 @@ export const FormValidation = {
       return {valid: true};
     }
 
-    return {
-      valid: false,
-      errors: result.error.issues as ValidationError[],
-    };
+    return {valid: false, errors: result.error.issues as ValidationError[]};
   },
 
   /**
@@ -518,9 +503,6 @@ export const FormValidation = {
       return {valid: true};
     }
 
-    return {
-      valid: false,
-      errors: result.error.issues as ValidationError[],
-    };
+    return {valid: false, errors: result.error.issues as ValidationError[]};
   },
 } as const;

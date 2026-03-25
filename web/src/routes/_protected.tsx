@@ -56,9 +56,7 @@ const upgradeExchangeTokenForRefresh = async ({
   const response = await fetch(API_URL + '/api/auth/exchange', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({
-      exchangeToken,
-    } satisfies PostExchangeTokenInput),
+    body: JSON.stringify({exchangeToken} satisfies PostExchangeTokenInput),
   });
 
   if (!response.ok) {

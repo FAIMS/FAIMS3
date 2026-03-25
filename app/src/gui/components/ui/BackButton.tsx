@@ -26,10 +26,7 @@ const BackButton = ({link}: {link: string}) => {
         <Typography
           variant="h5"
           fontWeight="bold"
-          sx={{
-            color: 'primary.main',
-            textAlign: 'center',
-          }}
+          sx={{color: 'primary.main', textAlign: 'center'}}
         >
           Back
         </Typography>

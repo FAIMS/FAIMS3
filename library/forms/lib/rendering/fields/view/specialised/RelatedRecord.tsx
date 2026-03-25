@@ -134,13 +134,7 @@ const EmptyState = () => <EmptyResponsePlaceholder />;
  * Title display for related record items
  */
 const RelatedRecordTitle = ({recordLabel}: {recordLabel: string}) => (
-  <Typography
-    variant="body2"
-    sx={{
-      fontWeight: 500,
-      textWrap: 'wrap',
-    }}
-  >
+  <Typography variant="body2" sx={{fontWeight: 500, textWrap: 'wrap'}}>
     {recordLabel}
   </Typography>
 );
@@ -151,12 +145,7 @@ const RelatedRecordTitle = ({recordLabel}: {recordLabel: string}) => (
 const RelatedRecordsHeader = ({count}: {count: number}) => (
   <Typography
     variant="h6"
-    sx={{
-      mb: 2,
-      color: 'text.secondary',
-      fontWeight: 500,
-      fontSize: '1rem',
-    }}
+    sx={{mb: 2, color: 'text.secondary', fontWeight: 500, fontSize: '1rem'}}
   >
     Related Records ({count})
   </Typography>
@@ -208,9 +197,7 @@ const LinkedRecordItem = ({
         border: '1px solid',
         borderColor: 'divider',
         borderRadius: 1,
-        '&:hover': {
-          bgcolor: '#eeeeee',
-        },
+        '&:hover': {bgcolor: '#eeeeee'},
       }}
     >
       <Stack spacing={0.5}>
@@ -272,9 +259,7 @@ const NestedRecordItem = ({
         mb: 2,
         '&:before': {display: 'none'},
         boxShadow: 1,
-        '&.Mui-expanded': {
-          margin: '0 0 16px 0',
-        },
+        '&.Mui-expanded': {margin: '0 0 16px 0'},
       }}
     >
       <AccordionSummary
@@ -284,12 +269,8 @@ const NestedRecordItem = ({
           borderBottom: '1px solid',
           borderColor: 'divider',
           borderRadius: expanded ? '4px 4px 0 0' : '4px',
-          '&:hover': {
-            bgcolor: '#eeeeee',
-          },
-          '& .MuiAccordionSummary-content': {
-            my: 1.5,
-          },
+          '&:hover': {bgcolor: '#eeeeee'},
+          '& .MuiAccordionSummary-content': {my: 1.5},
         }}
       >
         <Stack
@@ -315,12 +296,7 @@ const NestedRecordItem = ({
           </Box>
         </Stack>
       </AccordionSummary>
-      <AccordionDetails
-        sx={{
-          p: 0,
-          bgcolor: '#fafafa',
-        }}
-      >
+      <AccordionDetails sx={{p: 0, bgcolor: '#fafafa'}}>
         <Paper
           elevation={0}
           sx={{

@@ -7,21 +7,17 @@ import React from 'react';
  * Used by both the TakePhoto view-only renderer and the TakePhoto edit component.
  * Includes a floating close button (top-left) and click-outside-to-close.
  */
-export const PhotoLightbox: React.FC<{
-  url: string;
-  onClose: () => void;
-}> = ({url, onClose}) => {
+export const PhotoLightbox: React.FC<{url: string; onClose: () => void}> = ({
+  url,
+  onClose,
+}) => {
   return (
     <Dialog
       open={true}
       onClose={onClose}
       maxWidth={false}
       fullScreen
-      sx={{
-        '& .MuiDialog-paper': {
-          backgroundColor: 'rgba(0,0,0,0.92)',
-        },
-      }}
+      sx={{'& .MuiDialog-paper': {backgroundColor: 'rgba(0,0,0,0.92)'}}}
     >
       <DialogContent
         onClick={onClose}
@@ -51,9 +47,7 @@ export const PhotoLightbox: React.FC<{
             bgcolor: 'rgba(255, 255, 255, 0.22)',
             boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
             padding: 2,
-            '& .MuiSvgIcon-root': {
-              fontSize: 32,
-            },
+            '& .MuiSvgIcon-root': {fontSize: 32},
             '&:hover': {
               bgcolor: 'rgba(255, 255, 255, 0.32)',
               boxShadow: '0 6px 24px rgba(0, 0, 0, 0.35)',

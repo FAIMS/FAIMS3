@@ -194,11 +194,7 @@ export function completion({
 
   if (fieldCount === 0) {
     // avoid division by zero, consider empty form as complete
-    return {
-      progress: 1.0,
-      requiredCount: 0,
-      completedCount: 0,
-    };
+    return {progress: 1.0, requiredCount: 0, completedCount: 0};
   }
 
   return {

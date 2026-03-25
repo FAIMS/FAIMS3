@@ -4,9 +4,7 @@ import {z} from 'zod';
 // Common Schemas
 // ============================================================================
 
-const newPouchDBDocumentSchema = z.object({
-  _id: z.string(),
-});
+const newPouchDBDocumentSchema = z.object({_id: z.string()});
 
 const pouchDBDocumentSchema = newPouchDBDocumentSchema.extend({
   _rev: z.string().optional(),
@@ -205,18 +203,14 @@ const v1AttachmentDBFieldsBaseSchema = z.object({
 
 // Encoded attachment document fields
 export const v1AttachmentDBFieldsSchema = v1AttachmentDBFieldsBaseSchema
-  .extend({
-    _attachments: z.record(z.string(), encodedAttachmentSchema),
-  })
+  .extend({_attachments: z.record(z.string(), encodedAttachmentSchema)})
   .strict();
 export type V1AttachmentDBFields = z.infer<typeof v1AttachmentDBFieldsSchema>;
 export type AttachmentDBFields = V1AttachmentDBFields;
 
 // Pending attachment document fields
 export const v1PendingAttachmentDBFieldsSchema = v1AttachmentDBFieldsBaseSchema
-  .extend({
-    _attachments: z.record(z.string(), pendingAttachmentSchema),
-  })
+  .extend({_attachments: z.record(z.string(), pendingAttachmentSchema)})
   .strict();
 export type V1PendingAttachmentDBFields = z.infer<
   typeof v1PendingAttachmentDBFieldsSchema

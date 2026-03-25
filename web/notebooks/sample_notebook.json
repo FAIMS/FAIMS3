@@ -61,10 +61,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield1b5341a3": {
@@ -85,10 +82,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield83238a4d": {
@@ -105,35 +99,15 @@
           "SelectProps": {},
           "ElementProps": {
             "options": [
-              {
-                "value": "Other ",
-                "label": "Other "
-              },
-              {
-                "value": "Metal Feature",
-                "label": "Metal Feature"
-              },
-              {
-                "value": "Masonry",
-                "label": "Masonry"
-              },
-              {
-                "value": "Rock cutting",
-                "label": "Rock cutting"
-              },
-              {
-                "value": "Hearth",
-                "label": "Hearth"
-              },
-              {
-                "value": "",
-                "label": ""
-              }
+              {"value": "Other ", "label": "Other "},
+              {"value": "Metal Feature", "label": "Metal Feature"},
+              {"value": "Masonry", "label": "Masonry"},
+              {"value": "Rock cutting", "label": "Rock cutting"},
+              {"value": "Hearth", "label": "Hearth"},
+              {"value": "", "label": ""}
             ]
           },
-          "InputLabelProps": {
-            "label": "Feature Type"
-          },
+          "InputLabelProps": {"label": "Feature Type"},
           "id": "newfield83238a4d",
           "name": "newfield83238a4d"
         },
@@ -143,10 +117,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfieldc25e8929": {
@@ -159,14 +130,9 @@
           "variant": "outlined",
           "required": false,
           "multiline": true,
-          "InputProps": {
-            "type": "text",
-            "rows": 4
-          },
+          "InputProps": {"type": "text", "rows": 4},
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Feature Description"
-          },
+          "InputLabelProps": {"label": "Feature Description"},
           "FormHelperTextProps": {},
           "id": "newfieldc25e8929",
           "name": "newfieldc25e8929"
@@ -177,10 +143,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfieldb22417a4": {
@@ -194,14 +157,10 @@
           "required": false,
           "related_type": "FORM2",
           "relation_type": "faims-core::Child",
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "multiple": true,
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Artefacts"
-          },
+          "InputLabelProps": {"label": "Artefacts"},
           "FormHelperTextProps": {},
           "id": "newfieldb22417a4",
           "name": "newfieldb22417a4"
@@ -212,10 +171,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield51a822a0": {
@@ -229,14 +185,10 @@
           "required": false,
           "related_type": "FORM3",
           "relation_type": "faims-core::Child",
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "multiple": false,
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Measurements"
-          },
+          "InputLabelProps": {"label": "Measurements"},
           "FormHelperTextProps": {},
           "id": "newfield51a822a0",
           "name": "newfield51a822a0"
@@ -247,10 +199,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield4bfc3c26": {
@@ -267,51 +216,22 @@
           "SelectProps": {},
           "ElementProps": {
             "options": [
-              {
-                "value": "Height (m)",
-                "label": "Height (m)"
-              },
-              {
-                "value": "Length (m)",
-                "label": "Length (m)"
-              },
-              {
-                "value": "Width (m)",
-                "label": "Width (m)"
-              },
-              {
-                "value": "Depth (m)",
-                "label": "Depth (m)"
-              },
-              {
-                "value": "Diameter (m)",
-                "label": "Diameter (m)"
-              },
-              {
-                "value": "Area sqm",
-                "label": "Area sqm"
-              },
-              {
-                "value": "Other",
-                "label": "Other"
-              },
+              {"value": "Height (m)", "label": "Height (m)"},
+              {"value": "Length (m)", "label": "Length (m)"},
+              {"value": "Width (m)", "label": "Width (m)"},
+              {"value": "Depth (m)", "label": "Depth (m)"},
+              {"value": "Diameter (m)", "label": "Diameter (m)"},
+              {"value": "Area sqm", "label": "Area sqm"},
+              {"value": "Other", "label": "Other"},
               {
                 "value": "Max preserved Height (m)",
                 "label": "Max preserved Height (m)"
               },
-              {
-                "value": "Exterior Length (m)",
-                "label": "Exterior Length (m)"
-              },
-              {
-                "value": "Exterior Width (m) ",
-                "label": "Exterior Width (m) "
-              }
+              {"value": "Exterior Length (m)", "label": "Exterior Length (m)"},
+              {"value": "Exterior Width (m) ", "label": "Exterior Width (m) "}
             ]
           },
-          "InputLabelProps": {
-            "label": "Dimension"
-          },
+          "InputLabelProps": {"label": "Dimension"},
           "id": "newfield4bfc3c26",
           "name": "newfield4bfc3c26"
         },
@@ -321,10 +241,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "newfield0b21d3e2": {
@@ -336,13 +253,9 @@
           "helperText": "Enter your value here",
           "variant": "outlined",
           "required": false,
-          "InputProps": {
-            "type": "number"
-          },
+          "InputProps": {"type": "number"},
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Measurement"
-          },
+          "InputLabelProps": {"label": "Measurement"},
           "FormHelperTextProps": {},
           "id": "newfield0b21d3e2",
           "name": "newfield0b21d3e2"
@@ -353,10 +266,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield8baedbec": {
@@ -373,35 +283,15 @@
           "SelectProps": {},
           "ElementProps": {
             "options": [
-              {
-                "value": "Ceramic",
-                "label": "Ceramic"
-              },
-              {
-                "value": "Glass",
-                "label": "Glass"
-              },
-              {
-                "value": "Metal",
-                "label": "Metal"
-              },
-              {
-                "value": "Stone",
-                "label": "Stone"
-              },
-              {
-                "value": "Organic",
-                "label": "Organic"
-              },
-              {
-                "value": "Other",
-                "label": "Other"
-              }
+              {"value": "Ceramic", "label": "Ceramic"},
+              {"value": "Glass", "label": "Glass"},
+              {"value": "Metal", "label": "Metal"},
+              {"value": "Stone", "label": "Stone"},
+              {"value": "Organic", "label": "Organic"},
+              {"value": "Other", "label": "Other"}
             ]
           },
-          "InputLabelProps": {
-            "label": "Material"
-          },
+          "InputLabelProps": {"label": "Material"},
           "id": "newfield8baedbec",
           "name": "newfield8baedbec"
         },
@@ -411,10 +301,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfieldcce6babf": {
@@ -435,10 +322,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfieldfa3c1b6b": {
@@ -453,13 +337,8 @@
           "variant": "outlined",
           "required": true,
           "template": "{{newfield4ac4f23b}}-{{newfield4510ea65}}",
-          "InputProps": {
-            "type": "text",
-            "readOnly": true
-          },
-          "InputLabelProps": {
-            "label": "ArtefactID"
-          },
+          "InputProps": {"type": "text", "readOnly": true},
+          "InputLabelProps": {"label": "ArtefactID"},
           "hrid": true,
           "fieldselect10": "newfield4ac4f23b",
           "numberfield": 2,
@@ -471,10 +350,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "hridFORM2": {
@@ -489,13 +365,8 @@
           "variant": "outlined",
           "required": true,
           "template": "{{newfield4ac4f23b}}-{{newfield4510ea65}}",
-          "InputProps": {
-            "type": "text",
-            "readOnly": true
-          },
-          "InputLabelProps": {
-            "label": "ArtefactID"
-          },
+          "InputProps": {"type": "text", "readOnly": true},
+          "InputLabelProps": {"label": "ArtefactID"},
           "hrid": true,
           "linked": "newfieldfa3c1b6b",
           "fieldselect10": "newfield4ac4f23b",
@@ -508,10 +379,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield5334b903": {
@@ -524,14 +392,9 @@
           "variant": "outlined",
           "required": true,
           "multiline": true,
-          "InputProps": {
-            "type": "text",
-            "rows": 4
-          },
+          "InputProps": {"type": "text", "rows": 4},
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Interpretation"
-          },
+          "InputLabelProps": {"label": "Interpretation"},
           "FormHelperTextProps": {},
           "id": "newfield5334b903",
           "name": "newfield5334b903"
@@ -542,10 +405,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield813f3aee": {
@@ -558,14 +418,9 @@
           "variant": "outlined",
           "required": false,
           "multiline": true,
-          "InputProps": {
-            "type": "text",
-            "rows": 4
-          },
+          "InputProps": {"type": "text", "rows": 4},
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Comments"
-          },
+          "InputLabelProps": {"label": "Comments"},
           "FormHelperTextProps": {},
           "id": "newfield813f3aee",
           "name": "newfield813f3aee"
@@ -576,10 +431,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfielda0f81ae8": {
@@ -601,10 +453,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield4510ea65": {
@@ -626,10 +475,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield020362dc": {
@@ -644,13 +490,8 @@
           "variant": "outlined",
           "required": false,
           "template": "{{newfield83238a4d}}-{{newfielda0f81ae8}}",
-          "InputProps": {
-            "type": "text",
-            "readOnly": true
-          },
-          "InputLabelProps": {
-            "label": "FeatureID"
-          },
+          "InputProps": {"type": "text", "readOnly": true},
+          "InputLabelProps": {"label": "FeatureID"},
           "hrid": true,
           "numberfield": 2,
           "fieldselect10": "newfield83238a4d",
@@ -662,10 +503,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "hridFORM1": {
@@ -680,13 +518,8 @@
           "variant": "outlined",
           "required": true,
           "template": "{{newfield83238a4d}}-{{newfielda0f81ae8}}",
-          "InputProps": {
-            "type": "text",
-            "readOnly": true
-          },
-          "InputLabelProps": {
-            "label": "FeatureID"
-          },
+          "InputProps": {"type": "text", "readOnly": true},
+          "InputLabelProps": {"label": "FeatureID"},
           "hrid": true,
           "linked": "newfield020362dc",
           "numberfield": 2,
@@ -699,10 +532,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield4ac4f23b": {
@@ -725,10 +555,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield44fdbc12": {
@@ -743,13 +570,8 @@
           "variant": "outlined",
           "required": true,
           "template": "{{newfield0b21d3e2}}-{{newfield4bfc3c26}}",
-          "InputProps": {
-            "type": "text",
-            "readOnly": true
-          },
-          "InputLabelProps": {
-            "label": ""
-          },
+          "InputProps": {"type": "text", "readOnly": true},
+          "InputLabelProps": {"label": ""},
           "hrid": true,
           "numberfield": 2,
           "fieldselect10": "newfield0b21d3e2",
@@ -761,10 +583,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "hridFORM3": {
@@ -779,13 +598,8 @@
           "variant": "outlined",
           "required": true,
           "template": "{{newfield0b21d3e2}}-{{newfield4bfc3c26}}",
-          "InputProps": {
-            "type": "text",
-            "readOnly": true
-          },
-          "InputLabelProps": {
-            "label": ""
-          },
+          "InputProps": {"type": "text", "readOnly": true},
+          "InputLabelProps": {"label": ""},
           "hrid": true,
           "linked": "newfield44fdbc12",
           "numberfield": 2,
@@ -798,10 +612,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "newfield8530569f": {
@@ -814,14 +625,9 @@
           "variant": "outlined",
           "required": false,
           "multiline": true,
-          "InputProps": {
-            "type": "text",
-            "rows": 4
-          },
+          "InputProps": {"type": "text", "rows": 4},
           "SelectProps": {},
-          "InputLabelProps": {
-            "label": "Artefact Comment"
-          },
+          "InputLabelProps": {"label": "Artefact Comment"},
           "FormHelperTextProps": {},
           "id": "newfield8530569f",
           "name": "newfield8530569f"
@@ -832,10 +638,7 @@
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       }
     },
@@ -875,18 +678,9 @@
       }
     },
     "viewsets": {
-      "FORM1": {
-        "views": ["FORM1SECTION1"],
-        "label": "Feature"
-      },
-      "FORM2": {
-        "views": ["FORM2SECTION1"],
-        "label": "Artefact"
-      },
-      "FORM3": {
-        "views": ["FORM3SECTION1"],
-        "label": "Measurements"
-      }
+      "FORM1": {"views": ["FORM1SECTION1"], "label": "Feature"},
+      "FORM2": {"views": ["FORM2SECTION1"], "label": "Artefact"},
+      "FORM3": {"views": ["FORM3SECTION1"], "label": "Measurements"}
     },
     "visible_types": ["FORM1", "FORM2", "FORM3"]
   }

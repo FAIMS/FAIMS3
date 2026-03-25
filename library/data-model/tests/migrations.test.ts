@@ -136,10 +136,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _rev: '1-def456',
         name: 'template-template_456', // Should use the ID-based fallback
         version: 1,
-        metadata: {
-          description: 'A template without a name',
-          version: '1.0',
-        },
+        metadata: {description: 'A template without a name', version: '1.0'},
         'ui-specification': {
           fields: {},
           fviews: {},
@@ -209,11 +206,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
             name: {minLength: 2, maxLength: 50},
           },
           advanced: {
-            settings: {
-              display: 'grid',
-              pagination: true,
-              itemsPerPage: 10,
-            },
+            settings: {display: 'grid', pagination: true, itemsPerPage: 10},
           },
         },
         tags: ['survey', 'complex', 'nested'],
@@ -242,11 +235,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
               name: {minLength: 2, maxLength: 50},
             },
             advanced: {
-              settings: {
-                display: 'grid',
-                pagination: true,
-                itemsPerPage: 10,
-              },
+              settings: {display: 'grid', pagination: true, itemsPerPage: 10},
             },
           },
           tags: ['survey', 'complex', 'nested'],
@@ -311,9 +300,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       version: 1,
       _id: 'template_additional',
       _rev: '1-additional',
-      metadata: {
-        name: 'Template with Additional Fields',
-      },
+      metadata: {name: 'Template with Additional Fields'},
       'ui-specification': {
         fields: {},
         fviews: {},
@@ -331,9 +318,7 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _rev: '1-additional',
         version: 1,
         name: 'Template with Additional Fields',
-        metadata: {
-          name: 'Template with Additional Fields',
-        },
+        metadata: {name: 'Template with Additional Fields'},
         'ui-specification': {
           fields: {},
           fviews: {},
@@ -537,10 +522,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         proto: 'https',
         db_name: 'data_complex',
         port: 443,
-        auth: {
-          username: 'datauser',
-          password: 'datapass',
-        },
+        auth: {username: 'datauser', password: 'datapass'},
       },
       metadata_db: {
         host: 'example.com',
@@ -562,10 +544,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           proto: 'https',
           db_name: 'data_complex',
           port: 443,
-          auth: {
-            username: 'datauser',
-            password: 'datapass',
-          },
+          auth: {username: 'datauser', password: 'datapass'},
         },
         metadataDb: {
           host: 'example.com',
@@ -1043,18 +1022,10 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
         'cluster-admin',
         'notebook-creator',
       ],
-      project_roles: {
-        survey1: ['admin'],
-        survey2: ['admin', 'user'],
-      },
+      project_roles: {survey1: ['admin'], survey2: ['admin', 'user']},
       other_roles: ['cluster-admin', 'notebook-creator'],
       owned: [],
-      profiles: {
-        local: {
-          password: '1234',
-          salt: '123456',
-        },
-      },
+      profiles: {local: {password: '1234', salt: '123456'}},
     } satisfies PeopleV1Document,
     expectedResult: {
       action: 'update',
@@ -1074,12 +1045,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
           Role.GENERAL_CREATOR,
           Role.GENERAL_USER,
         ],
-        profiles: {
-          local: {
-            password: '1234',
-            salt: '123456',
-          },
-        },
+        profiles: {local: {password: '1234', salt: '123456'}},
       } satisfies PeopleV2Document,
     },
     equalityFunction: areDocsEqual,
@@ -1270,12 +1236,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
         Role.GENERAL_CREATOR,
         Role.GENERAL_USER,
       ],
-      profiles: {
-        local: {
-          password: '1234',
-          salt: '123456',
-        },
-      },
+      profiles: {local: {password: '1234', salt: '123456'}},
     } satisfies PeopleV2Document,
     expectedResult: {
       action: 'update',
@@ -1297,12 +1258,7 @@ const MIGRATION_TEST_CASES: MigrationTestCase[] = [
         // added empty team roles
         teamRoles: [],
         templateRoles: [],
-        profiles: {
-          local: {
-            password: '1234',
-            salt: '123456',
-          },
-        },
+        profiles: {local: {password: '1234', salt: '123456'}},
       } satisfies PeopleV3Document,
     },
     equalityFunction: areDocsEqual,
@@ -1323,12 +1279,7 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       user_id: 'user_single_email',
       name: 'Jerry Seinfeld',
       emails: ['jerry@seinfeld.com'],
-      profiles: {
-        google: {
-          id: '12345',
-          email: 'jerry@seinfeld.com',
-        },
-      },
+      profiles: {google: {id: '12345', email: 'jerry@seinfeld.com'}},
       projectRoles: [{resourceId: 'comedy_show', role: Role.PROJECT_ADMIN}],
       teamRoles: [],
       templateRoles: [],
@@ -1342,12 +1293,7 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         user_id: 'user_single_email',
         name: 'Jerry Seinfeld',
         emails: [{email: 'jerry@seinfeld.com', verified: false}],
-        profiles: {
-          google: {
-            id: '12345',
-            email: 'jerry@seinfeld.com',
-          },
-        },
+        profiles: {google: {id: '12345', email: 'jerry@seinfeld.com'}},
         projectRoles: [{resourceId: 'comedy_show', role: Role.PROJECT_ADMIN}],
         teamRoles: [],
         templateRoles: [],
@@ -1373,12 +1319,7 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         'elaine.benes@gmail.com',
         'ebenes@hotmail.com',
       ],
-      profiles: {
-        local: {
-          password: 'hashed_password',
-          salt: 'salt123',
-        },
-      },
+      profiles: {local: {password: 'hashed_password', salt: 'salt123'}},
       projectRoles: [
         {resourceId: 'pendant_publishing', role: Role.PROJECT_ADMIN},
         {resourceId: 'j_peterman', role: Role.PROJECT_CONTRIBUTOR},
@@ -1399,12 +1340,7 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
           {email: 'elaine.benes@gmail.com', verified: false},
           {email: 'ebenes@hotmail.com', verified: false},
         ],
-        profiles: {
-          local: {
-            password: 'hashed_password',
-            salt: 'salt123',
-          },
-        },
+        profiles: {local: {password: 'hashed_password', salt: 'salt123'}},
         projectRoles: [
           {resourceId: 'pendant_publishing', role: Role.PROJECT_ADMIN},
           {resourceId: 'j_peterman', role: Role.PROJECT_CONTRIBUTOR},

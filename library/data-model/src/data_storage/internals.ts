@@ -227,9 +227,9 @@ export async function queryCouch<DocType extends {}>({
  * @throws Error if the specified record cannot be found in the database
  */
 export async function updateHeads({
-  newRevisionId: newRevisionId,
-  baseRevisionId: baseRevisionId,
-  recordId: recordId,
+  newRevisionId,
+  baseRevisionId,
+  recordId,
   dataDb,
 }: {
   dataDb: DataDbType;
@@ -464,10 +464,7 @@ export async function getHRID({
         fieldName: candidateFieldName,
       });
       // get the HRID for the view set - might not succeed
-      hridFieldName = getHridFieldNameForViewset({
-        uiSpecification,
-        viewSetId,
-      });
+      hridFieldName = getHridFieldNameForViewset({uiSpecification, viewSetId});
       if (hridFieldName) {
         break;
       }
@@ -859,9 +856,7 @@ export async function getAttributeValuePairs({
   dataDb: DataDbType | AvpDbType;
   avpIds: AttributeValuePairID[];
   includeAttachments?: boolean;
-}): Promise<{
-  [id: string]: PouchDB.Core.ExistingDocument<AttributeValuePair>;
-}> {
+}): Promise<{[id: string]: PouchDB.Core.ExistingDocument<AttributeValuePair>}> {
   // Early return for empty input
   if (!avpIds || avpIds.length === 0) {
     return {};
@@ -985,9 +980,7 @@ async function createAuditHash(
  * up to date copy of the record on the server.
  *
  */
-export type RecordAuditMap = {
-  [recordId: string]: string;
-};
+export type RecordAuditMap = {[recordId: string]: string};
 
 export async function getRecordListAudit({
   recordIds,
@@ -1007,11 +1000,7 @@ export async function getRecordListAudit({
   const BATCH_SIZE = 5000;
   for (const batch of chunk(recordIds, BATCH_SIZE)) {
     const recordsResult = await dataDb.find({
-      selector: {
-        _id: {
-          $in: batch,
-        },
-      },
+      selector: {_id: {$in: batch}},
       // we'll only fetch _id and _rev to compute the audit hash
       fields: ['_id', '_rev'],
       limit: batch.length + 10,
@@ -1043,10 +1032,9 @@ export async function getRecordListAudit({
         if (!relatedDocsByRecord.has(recordId)) {
           relatedDocsByRecord.set(recordId, []);
         }
-        relatedDocsByRecord.get(recordId)!.push({
-          id: docInfo._id,
-          rev: docInfo._rev,
-        });
+        relatedDocsByRecord
+          .get(recordId)!
+          .push({id: docInfo._id, rev: docInfo._rev});
       }
 
       // build audit hashes for this batch
@@ -1054,10 +1042,7 @@ export async function getRecordListAudit({
         const recordId = row._id;
 
         const audit = [
-          {
-            id: recordId,
-            rev: row._rev,
-          },
+          {id: recordId, rev: row._rev},
           ...(relatedDocsByRecord.get(recordId) || []),
         ];
 
@@ -1103,11 +1088,7 @@ export async function getFormDataFromRevision({
   includeAttachments?: boolean;
 }): Promise<FormData> {
   // Scaffold
-  const form_data: FormData = {
-    data: {},
-    annotations: {},
-    types: {},
-  };
+  const form_data: FormData = {data: {}, annotations: {}, types: {}};
 
   // Get relevant avps and then populate (including fetching attachments)
   const avp_ids = Object.values(revision.avps);
@@ -1196,11 +1177,7 @@ async function addNewAttributeValuePairs({
     data = await getFormDataFromRevision({dataDb, revision});
   } else {
     revision = {};
-    data = {
-      data: {},
-      annotations: {},
-      types: {},
-    };
+    data = {data: {}, annotations: {}, types: {}};
   }
 
   // Start to build up a list of documents to push to the DB - this includes

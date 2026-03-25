@@ -292,10 +292,7 @@ export async function migrateDbs({
       // Try to find an existing migration document for this database
       const migrationDocs = await migrationDb.query<MigrationsDBFields>(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-        {
-          key: [dbType, dbName],
-          include_docs: true,
-        }
+        {key: [dbType, dbName], include_docs: true}
       );
 
       // Determine if we have an existing migration document or need to create one
@@ -435,10 +432,7 @@ export async function migrateDbs({
         // Try to find the migration document
         const migrationDocs = await migrationDb.query<MigrationsDBFields>(
           MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-          {
-            key: [dbType, dbName],
-            include_docs: true,
-          }
+          {key: [dbType, dbName], include_docs: true}
         );
 
         if (migrationDocs.rows.length > 0) {

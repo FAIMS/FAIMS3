@@ -587,9 +587,7 @@ export function useSpeechToText(
    * Toggle listening state
    */
   const toggleListening = useCallback(async (): Promise<void> => {
-    debug('toggleListening called', {
-      isListeningRef: isListeningRef.current,
-    });
+    debug('toggleListening called', {isListeningRef: isListeningRef.current});
     if (isListeningRef.current) {
       await stopListening();
     } else {

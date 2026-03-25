@@ -157,12 +157,7 @@ export const RadioGroup = (props: FieldProps) => {
                 key="__other__"
                 value={OTHER_MARKER}
                 control={
-                  <MuiRadio
-                    sx={{
-                      alignSelf: 'flex-start',
-                      paddingTop: '6px',
-                    }}
-                  />
+                  <MuiRadio sx={{alignSelf: 'flex-start', paddingTop: '6px'}} />
                 }
                 label={
                   <TextField
@@ -210,12 +205,7 @@ export const RadioGroup = (props: FieldProps) => {
                 key={option.key || option.value}
                 value={option.value}
                 control={
-                  <MuiRadio
-                    sx={{
-                      alignSelf: 'flex-start',
-                      paddingTop: '6px',
-                    }}
-                  />
+                  <MuiRadio sx={{alignSelf: 'flex-start', paddingTop: '6px'}} />
                 }
                 label={
                   <div
@@ -241,16 +231,9 @@ export const RadioGroup = (props: FieldProps) => {
                     display: 'block',
                     marginTop: '0px',
                     alignSelf: 'flex-start',
-                    '& p': {
-                      margin: 0,
-                      padding: 0,
-                    },
-                    '& p:first-of-type': {
-                      marginTop: 0,
-                    },
-                    '& p:last-of-type': {
-                      marginBottom: 0,
-                    },
+                    '& p': {margin: 0, padding: 0},
+                    '& p:first-of-type': {marginTop: 0},
+                    '& p:last-of-type': {marginBottom: 0},
                   },
                 }}
               />
@@ -305,9 +288,7 @@ const valueSchema = (props: RadioGroupFieldProps) => {
           if (value.startsWith(OTHER_PREFIX)) return true;
           return false;
         },
-        {
-          message: 'Please select an option',
-        }
+        {message: 'Please select an option'}
       );
     }
 
@@ -319,9 +300,7 @@ const valueSchema = (props: RadioGroupFieldProps) => {
         if (value.startsWith(OTHER_PREFIX)) return true;
         return false;
       },
-      {
-        message: 'Please select a valid option',
-      }
+      {message: 'Please select a valid option'}
     );
   }
 

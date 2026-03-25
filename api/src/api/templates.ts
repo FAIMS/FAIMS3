@@ -97,9 +97,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
+  processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetTemplateByIdResponse>) => {
     const template = await getTemplate(req.params.id);
     res.json(template);
@@ -117,9 +115,7 @@ api.get(
 api.post(
   '/',
   requireAuthenticationAPI,
-  processRequest({
-    body: PostCreateTemplateInputSchema,
-  }),
+  processRequest({body: PostCreateTemplateInputSchema}),
   isAllowedToMiddleware({
     getAction(req) {
       const body = req.body as PostCreateTemplateInput;
@@ -146,9 +142,7 @@ api.post(
     }
 
     // Now we can create the new template and return it
-    const newTemplate = await createTemplate({
-      payload: req.body,
-    });
+    const newTemplate = await createTemplate({payload: req.body});
 
     // Make the creator the admin
     addTemplateRole({
@@ -208,9 +202,7 @@ api.post(
       return req.params.id;
     },
   }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
+  processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<PutUpdateTemplateResponse>) => {
     // pull out template Id
     const templateId = req.params.id;

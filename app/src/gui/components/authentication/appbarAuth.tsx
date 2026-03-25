@@ -227,13 +227,7 @@ const AuthenticatedDisplayComponent = () => {
             },
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-            }}
-          >
+          <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
             <Person
               style={{
                 fontSize: '1.25rem',
@@ -257,12 +251,7 @@ const AuthenticatedDisplayComponent = () => {
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        PaperProps={{
-          sx: {
-            mt: 1,
-            width: 280,
-          },
-        }}
+        PaperProps={{sx: {mt: 1, width: 280}}}
       >
         {/* Current User Header */}
         <Box
@@ -276,41 +265,26 @@ const AuthenticatedDisplayComponent = () => {
           }}
         >
           <AccountCircle sx={{width: 40, height: 40}} />
-          <Box
-            sx={{
-              flexGrow: 1,
-              minWidth: 0,
-            }}
-          >
+          <Box sx={{flexGrow: 1, minWidth: 0}}>
             <Typography
               variant="subtitle1"
               fontWeight="bold"
               noWrap
-              sx={{
-                display: 'block',
-              }}
+              sx={{display: 'block'}}
             >
               {activeUser?.parsedToken.name ?? ''}
             </Typography>
             <Typography
               variant="body2"
               noWrap
-              sx={{
-                opacity: 0.8,
-                display: 'block',
-                mb: 0.6,
-                mt: 0.6,
-              }}
+              sx={{opacity: 0.8, display: 'block', mb: 0.6, mt: 0.6}}
             >
               {activeUser?.parsedToken.username}
             </Typography>
             <Typography
               variant="body2"
               noWrap
-              sx={{
-                opacity: 0.8,
-                display: 'block',
-              }}
+              sx={{opacity: 0.8, display: 'block'}}
             >
               {activeServerInfo?.serverTitle}
             </Typography>

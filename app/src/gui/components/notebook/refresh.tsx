@@ -64,12 +64,7 @@ export default function RefreshNotebook(props: RefreshNotebookProps) {
         );
       })
       .catch((err: Error) => {
-        dispatch(
-          addAlert({
-            message: err.message,
-            severity: 'error',
-          })
-        );
+        dispatch(addAlert({message: err.message, severity: 'error'}));
       });
   };
 

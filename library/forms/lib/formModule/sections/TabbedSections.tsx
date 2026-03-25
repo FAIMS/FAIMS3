@@ -261,9 +261,7 @@ const StepperTab = styled(Tab)(() => ({
   paddingTop: '14px',
 
   backgroundColor: 'transparent',
-  '&.Mui-selected': {
-    backgroundColor: 'transparent',
-  },
+  '&.Mui-selected': {backgroundColor: 'transparent'},
 
   // Connector line between steps
   '&::after': {
@@ -278,9 +276,7 @@ const StepperTab = styled(Tab)(() => ({
   },
 
   // Hide connector on the last tab
-  '&:last-child::after': {
-    display: 'none',
-  },
+  '&:last-child::after': {display: 'none'},
 }));
 
 // ============================================================================
@@ -395,9 +391,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
             cursor: 'pointer',
             fontWeight: 500,
             fontSize: '0.813rem',
-            '&:hover': {
-              color: theme.palette.error.main,
-            },
+            '&:hover': {color: theme.palette.error.main},
           }}
         >
           {label}
@@ -436,9 +430,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
             cursor: 'pointer',
             fontWeight: 500,
             fontSize: '0.813rem',
-            '&:hover': {
-              color: theme.palette.error.main,
-            },
+            '&:hover': {color: theme.palette.error.main},
           }}
         >
           {sectionLabel}
@@ -470,11 +462,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
       {/* Panel header */}
       <Typography
         variant="subtitle1"
-        sx={{
-          fontWeight: 600,
-          color: theme.palette.text.primary,
-          mb: 1.5,
-        }}
+        sx={{fontWeight: 600, color: theme.palette.text.primary, mb: 1.5}}
       >
         Please fix the following errors
       </Typography>
@@ -507,11 +495,7 @@ const ErrorSummaryPanel: React.FC<ErrorSummaryPanelProps> = ({
         <Box>
           <Typography
             variant="body2"
-            sx={{
-              fontWeight: 600,
-              color: theme.palette.text.primary,
-              mb: 1,
-            }}
+            sx={{fontWeight: 600, color: theme.palette.text.primary, mb: 1}}
           >
             In other sections:
           </Typography>
@@ -537,10 +521,7 @@ interface MobileNavigationStepperProps {
   /** Callback invoked when the user clicks Next or Back */
   onStep: (direction: 'next' | 'back') => void;
   /** Optional handler for completing the form on the final section */
-  onCompleteHandler?: {
-    label: string;
-    onClick: () => void;
-  };
+  onCompleteHandler?: {label: string; onClick: () => void};
   /** When true, navigation is blocked (e.g. photo saving); buttons are disabled */
   navigationBlocked?: boolean;
 }
@@ -641,10 +622,7 @@ interface TabbedSectionDisplayProps {
    * Optional handler for the mobile stepper's complete action on the final section.
    * When provided, replaces the disabled "Next" button with a clickable button.
    */
-  onCompleteHandler?: {
-    label: string;
-    onClick: () => void;
-  };
+  onCompleteHandler?: {label: string; onClick: () => void};
 }
 
 /**
@@ -822,10 +800,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
 
     // Otherwise, mark all fields in the section as touched
     for (const fieldName of sectionFields) {
-      form.setFieldMeta(fieldName, meta => ({
-        ...meta,
-        isTouched: true,
-      }));
+      form.setFieldMeta(fieldName, meta => ({...meta, isTouched: true}));
     }
 
     // Trigger form-wide validation
@@ -952,9 +927,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
                 overflowY: 'hidden',
                 pointerEvents: isNavigationBlocked ? 'none' : 'auto',
                 opacity: isNavigationBlocked ? 0.6 : 1,
-                '& .MuiTabs-flexContainer': {
-                  alignItems: 'flex-start',
-                },
+                '& .MuiTabs-flexContainer': {alignItems: 'flex-start'},
                 // Hide the default underline indicator
                 '& .MuiTabs-indicator': {display: 'none'},
               }}

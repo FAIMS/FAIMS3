@@ -25,9 +25,7 @@ function RouteComponent() {
   const navigate = useNavigate();
 
   // can they create templates outside team?
-  const canCreateGlobally = useIsAuthorisedTo({
-    action: Action.CREATE_TEMPLATE,
-  });
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_TEMPLATE});
   // or in some team?
   const canCreateInSomeTeam =
     getUserResourcesForAction({
@@ -39,18 +37,12 @@ function RouteComponent() {
   const paths = useMemo(
     () => [
       // projects ->
-      {
-        path: '/templates',
-        label: 'Templates',
-      },
+      {path: '/templates', label: 'Templates'},
     ],
     []
   );
 
-  useBreadcrumbUpdate({
-    isLoading: false,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading: false, paths});
 
   return (
     <DataTable

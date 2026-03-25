@@ -59,10 +59,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
 // Build the map from namespace::name to the field info
 const FIELD_REGISTRY: Map<string, FieldInfo> = new Map();
 for (const spec of FieldSpecList) {
-  const key = buildKey({
-    namespace: spec.namespace,
-    name: spec.name,
-  });
+  const key = buildKey({namespace: spec.namespace, name: spec.name});
   FIELD_REGISTRY.set(key, spec);
 }
 
@@ -78,18 +75,12 @@ function buildKey({
 }
 
 // Internal helper to split the registry key
-function splitKey(key: string): {
-  namespace: string;
-  name: string;
-} {
+function splitKey(key: string): {namespace: string; name: string} {
   const parts = key.split('::');
   if (parts.length !== 2) {
     throw new Error(`Invalid key: ${key}`);
   }
-  return {
-    namespace: parts[0],
-    name: parts[1],
-  };
+  return {namespace: parts[0], name: parts[1]};
 }
 
 /**
@@ -127,8 +118,5 @@ validateFieldRegistry(FIELD_REGISTRY);
 
 // Ignored fields - currently narrow exception cases which should never be rendered - e.g. incrementer
 export const FORCE_IGNORED_FIELDS: Array<{name: string; namespace: string}> = [
-  {
-    namespace: 'faims-custom',
-    name: 'BasicAutoIncrementer',
-  },
+  {namespace: 'faims-custom', name: 'BasicAutoIncrementer'},
 ];

@@ -1,17 +1,11 @@
 {
   "stackName": "FaimsInfraStack",
-  "hostedZone": {
-    "id": "your-hosted-zone-id",
-    "name": "your-domain.com"
-  },
+  "hostedZone": {"id": "your-hosted-zone-id", "name": "your-domain.com"},
   "certificates": {
     "primary": "arn:aws:acm:region:account-id:certificate/certificate-id",
     "cloudfront": "arn:aws:acm:us-east-1:account-id:certificate/certificate-id"
   },
-  "aws": {
-    "account": "your-aws-account-id",
-    "region": "ap-southeast-2"
-  },
+  "aws": {"account": "your-aws-account-id", "region": "ap-southeast-2"},
   "secrets": {
     "privateKey": "arn:aws:secretsmanager:region:account-id:secret:private-key-secret-id",
     "publicKey": "arn:aws:secretsmanager:region:account-id:secret:public-key-secret-id"
@@ -29,9 +23,7 @@
       "offlineMaps": true,
       "mapStyle": "basic"
     },
-    "addressAutosuggest": {
-      "source": "NONE"
-    }
+    "addressAutosuggest": {"source": "NONE"}
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",
@@ -44,25 +36,14 @@
     "volumeSize": 20,
     "instanceType": "t3.small",
     "monitoring": {
-      "cpu": {
-        "threshold": 80,
-        "evaluationPeriods": 3,
-        "datapointsToAlarm": 2
-      },
+      "cpu": {"threshold": 80, "evaluationPeriods": 3, "datapointsToAlarm": 2},
       "memory": {
         "threshold": 80,
         "evaluationPeriods": 3,
         "datapointsToAlarm": 2
       },
-      "disk": {
-        "threshold": 80,
-        "evaluationPeriods": 3,
-        "datapointsToAlarm": 2
-      },
-      "statusCheck": {
-        "evaluationPeriods": 2,
-        "datapointsToAlarm": 2
-      },
+      "disk": {"threshold": 80, "evaluationPeriods": 3, "datapointsToAlarm": 2},
+      "statusCheck": {"evaluationPeriods": 2, "datapointsToAlarm": 2},
       "networkIn": {
         "threshold": 10000000,
         "evaluationPeriods": 3,
@@ -78,9 +59,7 @@
         "evaluationPeriods": 5,
         "datapointsToAlarm": 3
       },
-      "alarmTopic": {
-        "emailAddress": "fake@gmail.com"
-      }
+      "alarmTopic": {"emailAddress": "fake@gmail.com"}
     }
   },
   "backup": {
@@ -111,11 +90,7 @@
   },
   "authProviders": {
     "disableLocalLogin": false,
-    "providers": [
-      "google",
-      "someOidcProvider",
-      "someSamlProvider"
-    ],
+    "providers": ["google", "someOidcProvider", "someSamlProvider"],
     "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
     "config": {
       "google": {
@@ -173,10 +148,6 @@
     "cacheExpirySeconds": 300,
     "credentialsSecretArn": "arn:aws:secretsmanager:region:account-id:secret:smtp-credentials-id"
   },
-  "security": {
-    "maximumLongLivedTokenDurationDays": 90
-  },
-  "bugMonitoring": {
-    "bugsnagKey": "1234-your-key"
-  }
+  "security": {"maximumLongLivedTokenDurationDays": 90},
+  "bugMonitoring": {"bugsnagKey": "1234-your-key"}
 }

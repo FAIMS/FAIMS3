@@ -35,18 +35,14 @@ describe('password reset tests', () => {
     // Should fail without auth token
     await request(app)
       .post('/api/reset')
-      .send({
-        email: localUserName,
-      } as PostRequestPasswordResetRequest)
+      .send({email: localUserName} as PostRequestPasswordResetRequest)
       .expect(401);
 
     // Should fail with non-admin token
     await requestAuthAndType(
       request(app)
         .post('/api/reset')
-        .send({
-          email: localUserName,
-        } as PostRequestPasswordResetRequest),
+        .send({email: localUserName} as PostRequestPasswordResetRequest),
       localUserToken
     ).expect(401);
   });
@@ -55,9 +51,7 @@ describe('password reset tests', () => {
     const response = await requestAuthAndType(
       request(app)
         .post('/api/reset')
-        .send({
-          email: localUserName,
-        } as PostRequestPasswordResetRequest),
+        .send({email: localUserName} as PostRequestPasswordResetRequest),
       adminToken
     ).expect(200);
 

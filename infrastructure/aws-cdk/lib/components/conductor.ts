@@ -341,9 +341,7 @@ export class FaimsConductor extends Construct {
       // Enable enhanced metrics - this gives container/task level insights and
       // more metrics
       ...(props.config.enhancedObservability
-        ? {
-            containerInsightsV2: ecs.ContainerInsights.ENHANCED,
-          }
+        ? {containerInsightsV2: ecs.ContainerInsights.ENHANCED}
         : {}),
     });
 

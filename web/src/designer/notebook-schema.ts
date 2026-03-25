@@ -5,12 +5,8 @@ export const schema = {
     Notebook: {
       type: 'object',
       properties: {
-        metadata: {
-          $ref: '#/definitions/NotebookMetadata',
-        },
-        'ui-specification': {
-          $ref: '#/definitions/NotebookUISpec',
-        },
+        metadata: {$ref: '#/definitions/NotebookMetadata'},
+        'ui-specification': {$ref: '#/definitions/NotebookUISpec'},
       },
       required: ['metadata', 'ui-specification'],
       additionalProperties: false,
@@ -30,24 +26,17 @@ export const schema = {
       properties: {
         fields: {
           type: 'object',
-          additionalProperties: {
-            $ref: '#/definitions/FieldType',
-          },
+          additionalProperties: {$ref: '#/definitions/FieldType'},
         },
         fviews: {
           type: 'object',
           additionalProperties: {
             type: 'object',
             properties: {
-              fields: {
-                type: 'array',
-                items: {type: 'string'},
-              },
+              fields: {type: 'array', items: {type: 'string'}},
               uidesign: {type: 'string'},
               label: {type: 'string'},
-              condition: {
-                $ref: '#/definitions/ConditionType',
-              },
+              condition: {$ref: '#/definitions/ConditionType'},
             },
             required: ['fields', 'label'],
           },
@@ -57,19 +46,13 @@ export const schema = {
           additionalProperties: {
             type: 'object',
             properties: {
-              views: {
-                type: 'array',
-                items: {type: 'string'},
-              },
+              views: {type: 'array', items: {type: 'string'}},
               label: {type: 'string'},
             },
             required: ['views', 'label'],
           },
         },
-        visible_types: {
-          type: 'array',
-          items: {type: 'string'},
-        },
+        visible_types: {type: 'array', items: {type: 'string'}},
       },
       required: ['fields', 'fviews', 'viewsets', 'visible_types'],
       additionalProperties: false,
@@ -80,29 +63,15 @@ export const schema = {
         'component-namespace': {type: 'string'},
         'component-name': {type: 'string'},
         'type-returned': {type: 'string'},
-        'component-parameters': {
-          $ref: '#/definitions/ComponentParameters',
-        },
+        'component-parameters': {$ref: '#/definitions/ComponentParameters'},
         validationSchema: {
           type: 'array',
-          items: {
-            $ref: '#/definitions/ValidationSchemaElement',
-          },
+          items: {$ref: '#/definitions/ValidationSchemaElement'},
         },
         initialValue: {},
-        access: {
-          type: 'array',
-          items: {type: 'string'},
-        },
+        access: {type: 'array', items: {type: 'string'}},
         condition: {
-          anyOf: [
-            {
-              $ref: '#/definitions/ConditionType',
-            },
-            {
-              type: 'null',
-            },
-          ],
+          anyOf: [{$ref: '#/definitions/ConditionType'}, {type: 'null'}],
         },
         persistent: {type: 'boolean'},
         displayParent: {type: 'boolean'},
@@ -111,15 +80,11 @@ export const schema = {
           properties: {
             annotation: {
               anyOf: [
-                {
-                  type: 'boolean',
-                },
+                {type: 'boolean'},
                 {
                   type: 'object',
                   properties: {
-                    include: {
-                      type: 'boolean',
-                    },
+                    include: {type: 'boolean'},
                     label: {type: 'string'},
                   },
                   required: ['include', 'label'],
@@ -129,10 +94,7 @@ export const schema = {
             annotation_label: {type: 'string'},
             uncertainty: {
               type: 'object',
-              properties: {
-                include: {type: 'boolean'},
-                label: {type: 'string'},
-              },
+              properties: {include: {type: 'boolean'}, label: {type: 'string'}},
               required: ['include', 'label'],
               additionalProperties: false,
             },
@@ -182,41 +144,24 @@ export const schema = {
         },
         InputLabelProps: {
           type: 'object',
-          properties: {
-            label: {type: 'string'},
-          },
+          properties: {label: {type: 'string'}},
           required: ['label'],
         },
         InputProps: {
           type: 'object',
-          properties: {
-            rows: {
-              type: 'number',
-            },
-            type: {
-              type: 'string',
-            },
-          },
+          properties: {rows: {type: 'number'}, type: {type: 'string'}},
         },
         FormLabelProps: {
           type: 'object',
-          properties: {
-            children: {
-              type: 'string',
-            },
-          },
+          properties: {children: {type: 'string'}},
         },
         FormHelperTextProps: {
           type: 'object',
-          properties: {
-            children: {type: 'string'},
-          },
+          properties: {children: {type: 'string'}},
         },
         FormControlLabelProps: {
           type: 'object',
-          properties: {
-            label: {type: 'string'},
-          },
+          properties: {label: {type: 'string'}},
           required: ['label'],
         },
         initialValue: {},
@@ -228,9 +173,7 @@ export const schema = {
           type: 'array',
           items: {
             type: 'array',
-            items: {
-              type: 'string',
-            },
+            items: {type: 'string'},
             minItems: 2,
             maxItems: 2,
           },
@@ -255,15 +198,9 @@ export const schema = {
       type: 'array',
       items: {
         anyOf: [
-          {
-            type: 'string',
-          },
-          {
-            type: 'number',
-          },
-          {
-            $ref: '#/definitions/ValidationSchemaElement',
-          },
+          {type: 'string'},
+          {type: 'number'},
+          {$ref: '#/definitions/ValidationSchemaElement'},
         ],
       },
     },
@@ -275,9 +212,7 @@ export const schema = {
         value: {},
         conditions: {
           type: 'array',
-          items: {
-            $ref: '#/definitions/ConditionType',
-          },
+          items: {$ref: '#/definitions/ConditionType'},
         },
       },
       required: ['operator'],

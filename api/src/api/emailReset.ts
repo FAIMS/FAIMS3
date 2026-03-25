@@ -41,9 +41,7 @@ export const api: express.Router = express.Router();
  */
 api.post(
   '/',
-  processRequest({
-    body: PostRequestPasswordResetRequestSchema,
-  }),
+  processRequest({body: PostRequestPasswordResetRequestSchema}),
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.RESET_USER_PASSWORD,
@@ -83,10 +81,7 @@ api.post(
       redirect: validatedRedirect,
     });
 
-    res.json({
-      code,
-      url,
-    });
+    res.json({code, url});
   }
 );
 
@@ -105,9 +100,7 @@ api.post(
  */
 api.put(
   '/',
-  processRequest({
-    body: PutRequestPasswordResetRequestSchema,
-  }),
+  processRequest({body: PutRequestPasswordResetRequestSchema}),
   async (req, res: Response<PutRequestPasswordResetResponse>) => {
     const {code, newPassword} = req.body;
 
@@ -126,9 +119,7 @@ api.put(
     // Mark the code as used
     await markCodeAsUsed(code);
 
-    res.json({
-      message: 'Password has been successfully reset.',
-    });
+    res.json({message: 'Password has been successfully reset.'});
   }
 );
 

@@ -52,21 +52,14 @@ export function CreateTeamInviteForm({
           userCanDo({
             user,
             resourceId: teamId,
-            action: teamInviteToAction({
-              action: 'create',
-              role: role as Role,
-            }),
+            action: teamInviteToAction({action: 'create', role: role as Role}),
           })
       )
       .map(([value, {name: label}]) => ({label, value}));
   }, [user, teamId]);
 
   const fields: Field[] = [
-    {
-      name: 'name',
-      label: 'Invite title',
-      schema: z.string().min(4),
-    },
+    {name: 'name', label: 'Invite title', schema: z.string().min(4)},
     {
       name: 'role',
       label: 'Role',

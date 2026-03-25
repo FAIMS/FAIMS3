@@ -61,11 +61,7 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     onGlobalFilterChange: setGlobalFilter,
     getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      sorting,
-      pagination,
-      globalFilter,
-    },
+    state: {sorting, pagination, globalFilter},
   });
 
   return (

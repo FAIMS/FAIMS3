@@ -28,19 +28,9 @@ function ProgressBarBase({
 
   return (
     <div
-      style={{
-        ...style,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-      }}
+      style={{...style, display: 'flex', flexDirection: 'column', gap: '6px'}}
     >
-      <div
-        style={{
-          backgroundColor: '#e0e0e0',
-          borderRadius: '10px',
-        }}
-      >
+      <div style={{backgroundColor: '#e0e0e0', borderRadius: '10px'}}>
         <div
           style={{
             width: `${rounded}%`,

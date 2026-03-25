@@ -468,12 +468,7 @@ export function necessaryActionToCouchRoleList({
 
     // For resource-specific roles, encode with resourceId
     else {
-      roles.push(
-        encodeClaim({
-          resourceId,
-          claim: role,
-        })
-      );
+      roles.push(encodeClaim({resourceId, claim: role}));
     }
   });
   // Finally, add the global admin role

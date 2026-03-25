@@ -133,13 +133,7 @@ const parseTemplate = (
     return {blocks, error: null};
   } catch (error) {
     return {
-      blocks: [
-        {
-          id: generateBlockId(),
-          type: 'text',
-          content: template || '',
-        },
-      ],
+      blocks: [{id: generateBlockId(), type: 'text', content: template || ''}],
       error: error instanceof Error ? error.message : 'Invalid template syntax',
     };
   }
@@ -154,18 +148,10 @@ const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
   try {
     switch (tokenType) {
       case 'text':
-        return {
-          id: generateBlockId(),
-          type: 'text',
-          content: content,
-        };
+        return {id: generateBlockId(), type: 'text', content: content};
 
       case 'name':
-        return {
-          id: generateBlockId(),
-          type: 'variable',
-          content: content,
-        };
+        return {id: generateBlockId(), type: 'variable', content: content};
 
       case '#':
         return {
@@ -237,10 +223,7 @@ const TemplateBlockEditor: React.FC<{
       type: 'text',
       content: '',
     };
-    onUpdate({
-      ...block,
-      children: [...(block.children || []), newBlock],
-    });
+    onUpdate({...block, children: [...(block.children || []), newBlock]});
   };
 
   return (
@@ -458,9 +441,7 @@ const TemplatePreview: React.FC<{
 
   const renderPreview = useCallback(() => {
     try {
-      const result = Mustache.render(compiledTemplate, {
-        ...previewValues,
-      });
+      const result = Mustache.render(compiledTemplate, {...previewValues});
       if (previewError) {
         setPreviewError(null);
         onTemplateError?.(null);
@@ -556,13 +537,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
       setTemplate(blocks);
       setParseError(error);
     } else if (!template.length) {
-      setTemplate([
-        {
-          id: generateBlockId(),
-          type: 'text',
-          content: '',
-        },
-      ]);
+      setTemplate([{id: generateBlockId(), type: 'text', content: ''}]);
     }
   }, [initialTemplate]);
 
@@ -757,11 +732,7 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
               onClick={() =>
                 setTemplate([
                   ...template,
-                  {
-                    id: generateBlockId(),
-                    type: 'text',
-                    content: '',
-                  },
+                  {id: generateBlockId(), type: 'text', content: ''},
                 ])
               }
               sx={{mt: 2}}

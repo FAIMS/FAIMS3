@@ -243,18 +243,10 @@ export class AutoIncrementer {
     const last_used = ref_state.last_used_id;
     for (const range of ref_state.ranges) {
       if (range.using) {
-        return {
-          label: label,
-          last_used: last_used,
-          end: range.stop,
-        };
+        return {label: label, last_used: last_used, end: range.stop};
       }
     }
-    return {
-      label: label,
-      last_used: last_used,
-      end: null,
-    };
+    return {label: label, last_used: last_used, end: null};
   }
 }
 
@@ -327,18 +319,10 @@ async function getDisplayStatusForField(
   const last_used = ref_state.last_used_id;
   for (const range of ref_state.ranges) {
     if (range.using) {
-      return {
-        label: label,
-        last_used: last_used,
-        end: range.stop,
-      };
+      return {label: label, last_used: last_used, end: range.stop};
     }
   }
-  return {
-    label: label,
-    last_used: last_used,
-    end: null,
-  };
+  return {label: label, last_used: last_used, end: null};
 }
 
 // return the status of all auto incrementers in a project so

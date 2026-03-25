@@ -257,10 +257,7 @@ interface NavigationConfig {
 
   navigateToLink: (to: string) => void;
 
-  navigateToRecordList: {
-    label: string;
-    navigate: () => void;
-  };
+  navigateToRecordList: {label: string; navigate: () => void};
 
   navigateToViewRecord: (params: {recordId: string}) => void;
 }
@@ -451,9 +448,7 @@ const impliedParents = useMemo(() => {
       label: `View ${entry.hrid}`,
       recordId: entry.recordId,
       onNavigate() {
-        config.navigation.navigateToViewRecord({
-          recordId: entry.recordId,
-        });
+        config.navigation.navigateToViewRecord({recordId: entry.recordId});
       },
       formId: entry.formId,
       fieldId: entry.fieldId,

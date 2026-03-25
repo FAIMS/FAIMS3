@@ -6,11 +6,7 @@ import {
   useState,
 } from 'react';
 
-export type BreadcrumbInfo = {
-  label: string;
-  path: string;
-  isLoading?: boolean;
-};
+export type BreadcrumbInfo = {label: string; path: string; isLoading?: boolean};
 
 type BreadcrumbContextType = {
   setBreadcrumb: (path: string, info: Omit<BreadcrumbInfo, 'path'>) => void;
@@ -42,10 +38,7 @@ export function BreadcrumbProvider({children}: {children: ReactNode}) {
           return prev;
         }
 
-        return {
-          ...prev,
-          [path]: newInfo,
-        };
+        return {...prev, [path]: newInfo};
       });
     },
     []

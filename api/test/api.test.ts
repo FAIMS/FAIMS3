@@ -241,10 +241,7 @@ describe('API tests', () => {
       meta: {
         annotation_label: 'annotation',
         annotation: true,
-        uncertainty: {
-          include: false,
-          label: 'uncertainty',
-        },
+        uncertainty: {include: false, label: 'uncertainty'},
       },
     };
 
@@ -302,9 +299,7 @@ describe('API tests', () => {
 
     response = await request(app)
       .put(`/api/notebooks/${projectId}/status`)
-      .send({
-        status: ProjectStatus.OPEN,
-      })
+      .send({status: ProjectStatus.OPEN})
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200);
@@ -321,9 +316,7 @@ describe('API tests', () => {
 
     response = await request(app)
       .put(`/api/notebooks/${projectId}/status`)
-      .send({
-        status: ProjectStatus.CLOSED,
-      })
+      .send({status: ProjectStatus.CLOSED})
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200);
@@ -340,9 +333,7 @@ describe('API tests', () => {
 
     response = await request(app)
       .put(`/api/notebooks/${projectId}/status`)
-      .send({
-        status: ProjectStatus.OPEN,
-      })
+      .send({status: ProjectStatus.OPEN})
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
       .expect(200);
@@ -607,10 +598,7 @@ describe('API tests', () => {
     const projectId = '1693291182736-campus-survey-demo';
     const dataDb = await getDataDb(projectId);
     // get a list of record ids from the project
-    const records = await queryCouch({
-      db: dataDb,
-      index: RECORDS_INDEX,
-    });
+    const records = await queryCouch({db: dataDb, index: RECORDS_INDEX});
     const recordIds = records.map(r => r._id);
     const myAudit = await getRecordListAudit({recordIds, dataDb});
 
@@ -619,9 +607,7 @@ describe('API tests', () => {
       .post(`/api/notebooks/${projectId}/sync-status`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({
-        record_map: myAudit,
-      })
+      .send({record_map: myAudit})
       .expect(200)
       .then(response => {
         for (const recordId of recordIds) {
@@ -636,9 +622,7 @@ describe('API tests', () => {
       .post(`/api/notebooks/${projectId}/sync-status`)
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
-      .send({
-        record_map: myAudit,
-      })
+      .send({record_map: myAudit})
       .expect(200)
       .then(response => {
         expect(response.body.status[recordIds[0]]).to.be.false;
@@ -764,16 +748,11 @@ describe('API tests', () => {
     const mockSendEmail = async () => ({
       messageId: 'test-message-id-123',
       response: 'Test email sent successfully',
-      envelope: {
-        from: 'test@example.com',
-        to: ['test-recipient@example.com'],
-      },
+      envelope: {from: 'test@example.com', to: ['test-recipient@example.com']},
     });
 
     // Replace with mock temporarily
-    require('../src/buildconfig').EMAIL_SERVICE = {
-      sendEmail: mockSendEmail,
-    };
+    require('../src/buildconfig').EMAIL_SERVICE = {sendEmail: mockSendEmail};
 
     try {
       const result = await request(app)
@@ -801,9 +780,7 @@ describe('API tests', () => {
     };
 
     // Replace with mock temporarily
-    require('../src/buildconfig').EMAIL_SERVICE = {
-      sendEmail: mockSendEmail,
-    };
+    require('../src/buildconfig').EMAIL_SERVICE = {sendEmail: mockSendEmail};
 
     try {
       const result = await request(app)

@@ -33,18 +33,10 @@ import {databaseService} from '../context/slices/helpers/databaseService';
 PouchDB.plugin(memoryAdapter);
 
 // Mock store and logging
-vi.mock('../logging', () => ({
-  logError: vi.fn(),
-}));
+vi.mock('../logging', () => ({logError: vi.fn()}));
 
 vi.mock('../context/store', () => ({
-  store: {
-    getState: vi.fn().mockReturnValue({
-      projects: {
-        byId: {},
-      },
-    }),
-  },
+  store: {getState: vi.fn().mockReturnValue({projects: {byId: {}}})},
   selectProjectById: vi.fn().mockReturnValue(null),
 }));
 
@@ -527,11 +519,7 @@ describe('AutoIncrementer', () => {
       const incrementer = new AutoIncrementer(PROJECT_ID, FORM_ID, FIELD_ID);
       const result = await incrementer.getDisplayStatus('Test Label');
 
-      expect(result).toEqual({
-        label: 'Test Label',
-        last_used: 105,
-        end: 200,
-      });
+      expect(result).toEqual({label: 'Test Label', last_used: 105, end: 200});
     });
 
     it('should return status with null end value when no range is in use', async () => {
@@ -550,11 +538,7 @@ describe('AutoIncrementer', () => {
       const incrementer = new AutoIncrementer(PROJECT_ID, FORM_ID, FIELD_ID);
       const result = await incrementer.getDisplayStatus('Test Label');
 
-      expect(result).toEqual({
-        label: 'Test Label',
-        last_used: 199,
-        end: null,
-      });
+      expect(result).toEqual({label: 'Test Label', last_used: 199, end: null});
     });
   });
 });

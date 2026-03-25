@@ -161,9 +161,7 @@ api.delete(
       return req.params.id;
     },
   }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
+  processRequest({params: z.object({id: z.string()})}),
   async ({params: {id}}, res) => {
     if (!id) throw new Exceptions.ValidationException('User ID not specified');
 

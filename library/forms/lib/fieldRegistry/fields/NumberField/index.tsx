@@ -103,13 +103,9 @@ const valueSchema = (props: NumberFieldProps) => {
   let schema;
 
   if (numberType === 'integer') {
-    schema = z.number().int({
-      message: 'Please enter a valid whole number',
-    });
+    schema = z.number().int({message: 'Please enter a valid whole number'});
   } else {
-    schema = z.number({
-      message: 'Please enter a valid number',
-    });
+    schema = z.number({message: 'Please enter a valid number'});
   }
 
   return schema;

@@ -77,19 +77,11 @@ describe('ConditionControl', () => {
         // ]);
         fireEvent.change(valueInput, {target: {value: 'Bobalooba'}});
         expect(onChangeFn.mock.lastCall).toStrictEqual([
-          {
-            field: 'New-Text-Field',
-            operator: 'equal',
-            value: 'Bobalooba',
-          },
+          {field: 'New-Text-Field', operator: 'equal', value: 'Bobalooba'},
         ]);
         fireEvent.change(opInput, {target: {value: 'not-equal'}});
         expect(onChangeFn.mock.lastCall).toStrictEqual([
-          {
-            field: 'New-Text-Field',
-            operator: 'not-equal',
-            value: 'Bobalooba',
-          },
+          {field: 'New-Text-Field', operator: 'not-equal', value: 'Bobalooba'},
         ]);
       }
     });
@@ -160,11 +152,7 @@ describe('ConditionControl', () => {
       payload: notebook['ui-specification'],
     });
 
-    const condition = {
-      operator: 'equal',
-      field: 'Sample-Location',
-      value: 100,
-    };
+    const condition = {operator: 'equal', field: 'Sample-Location', value: 100};
 
     const onChangeFn = vi.fn();
     render(

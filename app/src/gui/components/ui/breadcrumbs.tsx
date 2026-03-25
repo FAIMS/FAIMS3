@@ -11,9 +11,7 @@ import {useTheme} from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import {NAVIGATION_STYLE} from '../../../buildconfig';
 
-type BreadcrumbProps = {
-  data: Array<{title: string; link?: string}>;
-};
+type BreadcrumbProps = {data: Array<{title: string; link?: string}>};
 
 export default function Breadcrumbs(props: BreadcrumbProps) {
   const {data} = props;

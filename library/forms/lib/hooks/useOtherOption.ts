@@ -31,13 +31,8 @@ export const otherTextFieldSx: SxProps<Theme> = {
     wordBreak: 'break-word',
     whiteSpace: 'normal',
   },
-  '& .MuiInput-input::placeholder': {
-    color: 'rgba(0, 0, 0, 0.5)',
-    opacity: 1,
-  },
-  '& .MuiInput-underline:before': {
-    borderBottomColor: 'rgba(0, 0, 0, 0.42)',
-  },
+  '& .MuiInput-input::placeholder': {color: 'rgba(0, 0, 0, 0.5)', opacity: 1},
+  '& .MuiInput-underline:before': {borderBottomColor: 'rgba(0, 0, 0, 0.42)'},
   '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
     borderBottomColor: 'rgba(0, 0, 0, 0.87)',
   },

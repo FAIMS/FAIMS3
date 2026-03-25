@@ -114,10 +114,7 @@ export function AuthReturn() {
 
       // and make it active!
       dispatch(
-        setActiveUser({
-          serverId: serverId,
-          username: parsedToken.username,
-        })
+        setActiveUser({serverId: serverId, username: parsedToken.username})
       );
 
       const login = async () => {

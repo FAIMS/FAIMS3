@@ -24,9 +24,7 @@ export function LoginButton(props: LoginButtonProps) {
       variant={props.variant ?? 'outlined'}
       color="primary"
       size={props.size}
-      sx={{
-        ...props.sx,
-      }}
+      sx={{...props.sx}}
       startIcon={props.startIcon}
       onClick={async () => {
         if (IS_WEB_PLATFORM) {

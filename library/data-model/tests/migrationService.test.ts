@@ -286,10 +286,7 @@ describe('Migration System Tests', () => {
       // Migration function that marks all documents as processed
       const migrationFunc: MigrationFunc = doc => {
         if (doc._id.startsWith('batch-doc-')) {
-          return {
-            action: 'update',
-            updatedRecord: {...doc, processed: true},
-          };
+          return {action: 'update', updatedRecord: {...doc, processed: true}};
         }
         return {action: 'none'};
       };
@@ -318,10 +315,7 @@ describe('Migration System Tests', () => {
         if (doc._id === 'problem-doc') {
           throw new Error('Test error for problem document');
         }
-        return {
-          action: 'update',
-          updatedRecord: {...doc, migrated: true},
-        };
+        return {action: 'update', updatedRecord: {...doc, migrated: true}};
       };
 
       // Perform the migration
@@ -486,10 +480,7 @@ describe('Migration System Tests', () => {
       // Check that a migration document was created
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-        {
-          key: [DatabaseType.PEOPLE, 'test-people-db'],
-          include_docs: true,
-        }
+        {key: [DatabaseType.PEOPLE, 'test-people-db'], include_docs: true}
       );
 
       expect(migrationDocs.rows.length).toBe(1);
@@ -582,10 +573,7 @@ describe('Migration System Tests', () => {
       // Check that migration document was updated
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-        {
-          key: [DatabaseType.PEOPLE, 'real-people-db'],
-          include_docs: true,
-        }
+        {key: [DatabaseType.PEOPLE, 'real-people-db'], include_docs: true}
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
@@ -666,10 +654,7 @@ describe('Migration System Tests', () => {
       // Check that migration document was not modified
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-        {
-          key: [DatabaseType.PEOPLE, 'test-people-db'],
-          include_docs: true,
-        }
+        {key: [DatabaseType.PEOPLE, 'test-people-db'], include_docs: true}
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
@@ -710,10 +695,7 @@ describe('Migration System Tests', () => {
         if (record._id === 'person1') {
           throw new Error('Test migration error');
         }
-        return {
-          action: 'update',
-          updatedRecord: {...record, migrated: true},
-        };
+        return {action: 'update', updatedRecord: {...record, migrated: true}};
       };
 
       // Run migration
@@ -731,10 +713,7 @@ describe('Migration System Tests', () => {
       // Check that migration document reflects the failure
       const migrationDocs = await testMigrationDb.query(
         MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-        {
-          key: [DatabaseType.PEOPLE, 'test-people-db'],
-          include_docs: true,
-        }
+        {key: [DatabaseType.PEOPLE, 'test-people-db'], include_docs: true}
       );
 
       const migrationDoc = migrationDocs.rows[0].doc as MigrationsDBDocument;
@@ -773,10 +752,7 @@ describe('Migration System Tests', () => {
         DB_TARGET_VERSIONS[DatabaseType.PROJECTS].defaultVersion = 1;
         DB_TARGET_VERSIONS[DatabaseType.PROJECTS].targetVersion = 1;
         DB_MIGRATIONS[0].migrationFunction = record => {
-          return {
-            action: 'update',
-            updatedRecord: {...record, migrated: true},
-          };
+          return {action: 'update', updatedRecord: {...record, migrated: true}};
         };
 
         // Run migration on both databases
@@ -800,10 +776,7 @@ describe('Migration System Tests', () => {
         const peopleMigrationDocs =
           await testMigrationDb.query<MigrationsDBFields>(
             MIGRATIONS_BY_DB_TYPE_AND_NAME_INDEX,
-            {
-              key: [DatabaseType.PEOPLE, 'test-people-db'],
-              include_docs: true,
-            }
+            {key: [DatabaseType.PEOPLE, 'test-people-db'], include_docs: true}
           );
 
         expect(peopleMigrationDocs.rows.length).toBe(1);

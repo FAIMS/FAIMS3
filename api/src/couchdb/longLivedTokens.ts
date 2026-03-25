@@ -124,10 +124,7 @@ export const createNewLongLivedToken = async ({
  */
 export const updateLongLivedToken = async (
   tokenId: string,
-  updates: {
-    title?: string;
-    description?: string;
-  }
+  updates: {title?: string; description?: string}
 ): Promise<LongLivedTokenExistingDocument> => {
   const authDB = getAuthDB();
 
@@ -212,32 +209,20 @@ export const validateLongLivedToken = async (
     const tokenDoc = await getTokenByTokenHash(tokenHash);
 
     if (!tokenDoc) {
-      return {
-        valid: false,
-        validationError: 'Invalid token.',
-      };
+      return {valid: false, validationError: 'Invalid token.'};
     }
 
     if (!tokenDoc.enabled) {
-      return {
-        valid: false,
-        validationError: 'Token has been revoked.',
-      };
+      return {valid: false, validationError: 'Token has been revoked.'};
     }
 
     if (tokenDoc.expiryTimestampMs && tokenDoc.expiryTimestampMs < Date.now()) {
-      return {
-        valid: false,
-        validationError: 'Token has expired.',
-      };
+      return {valid: false, validationError: 'Token has expired.'};
     }
 
     const user = await getCouchUserFromEmailOrUserId(tokenDoc.userId);
     if (!user) {
-      return {
-        valid: false,
-        validationError: 'Could not find associated user.',
-      };
+      return {valid: false, validationError: 'Could not find associated user.'};
     }
 
     // Update last used timestamp if requested
@@ -283,10 +268,7 @@ export const getTokensByUserId = async (
 
   const result = await authDB.query<LongLivedTokenExistingDocument>(
     'viewsDocument/longLivedTokensByUserId',
-    {
-      key: userId,
-      include_docs: true,
-    }
+    {key: userId, include_docs: true}
   );
 
   return result.rows.filter(r => !!r.doc).map(row => row.doc!);
@@ -304,10 +286,7 @@ export const getTokenByTokenHash = async (
 
   const result = await authDB.query<LongLivedTokenExistingDocument>(
     'viewsDocument/longLivedTokensByTokenHash',
-    {
-      key: tokenHash,
-      include_docs: true,
-    }
+    {key: tokenHash, include_docs: true}
   );
 
   const filtered = result.rows.filter(r => !!r.doc).map(row => row.doc!);
@@ -348,9 +327,7 @@ export const getAllTokens = async (): Promise<
 
   const result = await authDB.query<LongLivedTokenExistingDocument>(
     'viewsDocument/longLivedTokens',
-    {
-      include_docs: true,
-    }
+    {include_docs: true}
   );
 
   return result.rows.map(row => row.doc as LongLivedTokenExistingDocument);

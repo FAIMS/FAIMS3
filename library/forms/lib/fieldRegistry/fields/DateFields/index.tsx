@@ -124,9 +124,7 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = props => {
         disabled={disabled}
         required={required}
         error={Boolean(errors && errors.length > 0)}
-        InputLabelProps={{
-          shrink: true,
-        }}
+        InputLabelProps={{shrink: true}}
       />
     </FieldWrapper>
   );
@@ -261,9 +259,7 @@ const DateTimeNowField: React.FC<DateTimeNowFieldFullProps> = props => {
               borderRadius: {xs: '4px', sm: '4px 0 0 4px'},
             },
           }}
-          InputLabelProps={{
-            shrink: true,
-          }}
+          InputLabelProps={{shrink: true}}
         />
         <Button
           variant="contained"

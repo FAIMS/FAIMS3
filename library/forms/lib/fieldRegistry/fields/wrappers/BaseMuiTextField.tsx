@@ -181,10 +181,7 @@ export const BaseMuiTextField: React.FC<BaseMuiTextFieldProps> = props => {
             // Highlight border when listening
             ...(speech.isListening && {
               '& .MuiOutlinedInput-root': {
-                '& fieldset': {
-                  borderColor: 'error.main',
-                  borderWidth: 2,
-                },
+                '& fieldset': {borderColor: 'error.main', borderWidth: 2},
               },
             }),
             ...muiProps.sx,

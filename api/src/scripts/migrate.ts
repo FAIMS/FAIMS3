@@ -16,10 +16,7 @@ const main = async () => {
     );
 
     // Run database initialisation and migration with force and pushKeys parameters
-    await initialiseAndMigrateDBs({
-      force: true,
-      pushKeys: pushKeys,
-    });
+    await initialiseAndMigrateDBs({force: true, pushKeys: pushKeys});
 
     console.log('Migration completed successfully');
     process.exit(0);

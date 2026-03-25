@@ -17,11 +17,7 @@ export const createTemplateRequest = async ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${user.token}`,
     },
-    body: JSON.stringify({
-      ...templateData,
-      teamId,
-      name,
-    }),
+    body: JSON.stringify({...templateData, teamId, name}),
   });
 };
 
@@ -46,11 +42,7 @@ export const updateTemplateRequest = async ({
         'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`,
       },
-      body: JSON.stringify({
-        ...templateData,
-        teamId,
-        name,
-      }),
+      body: JSON.stringify({...templateData, teamId, name}),
     }
   );
 };

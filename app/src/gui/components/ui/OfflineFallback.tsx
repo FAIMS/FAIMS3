@@ -28,32 +28,21 @@ const useStyles = makeStyles({
     marginBottom: theme.spacing(3),
     color: theme.palette.text.secondary,
   },
-  title: {
-    color: theme.palette.text.primary,
-    marginBottom: theme.spacing(1),
-  },
+  title: {color: theme.palette.text.primary, marginBottom: theme.spacing(1)},
   subtitle: {
     color: theme.palette.text.secondary,
     marginBottom: theme.spacing(3),
   },
-  buttonContainer: {
-    '& > :not(:last-child)': {
-      marginRight: theme.spacing(2),
-    },
-  },
+  buttonContainer: {'& > :not(:last-child)': {marginRight: theme.spacing(2)}},
   primaryButton: {
     backgroundColor: theme.palette.primary.main,
     color: theme.palette.primary.contrastText,
-    '&:hover': {
-      backgroundColor: theme.palette.primary.dark,
-    },
+    '&:hover': {backgroundColor: theme.palette.primary.dark},
   },
   secondaryButton: {
     color: theme.palette.text.primary,
     borderColor: theme.palette.text.primary,
-    '&:hover': {
-      backgroundColor: theme.palette.action.hover,
-    },
+    '&:hover': {backgroundColor: theme.palette.action.hover},
   },
   buttonProgress: {
     color: theme.palette.primary.contrastText,

@@ -32,14 +32,7 @@ import {
  * Replace this import with your actual CameraPermissionIssue component.
  */
 const CameraPermissionIssue: React.FC = () => (
-  <Box
-    sx={{
-      mt: 1,
-      p: 2,
-      bgcolor: 'warning.light',
-      borderRadius: 1,
-    }}
-  >
+  <Box sx={{mt: 1, p: 2, bgcolor: 'warning.light', borderRadius: 1}}>
     <Typography variant="body2" color="warning.dark">
       Camera permission is required for QR code scanning. Please enable camera
       access in your device settings.

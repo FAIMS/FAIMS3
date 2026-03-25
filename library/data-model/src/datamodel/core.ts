@@ -57,10 +57,7 @@ export function split_full_record_id(
     throw Error('Not a valid full record id');
   }
   const cleaned_project_id = splitId[0].replace('\\|\\|', '||');
-  return {
-    project_id: cleaned_project_id,
-    record_id: splitId[1],
-  };
+  return {project_id: cleaned_project_id, record_id: splitId[1]};
 }
 
 /**
@@ -88,9 +85,5 @@ export const decodeCouchUiSpec = (
   rawUiSpec: CouchProjectUIModel
 ): ProjectUIModel => {
   const {_id, _rev, ...spec} = rawUiSpec;
-  return {
-    _id,
-    _rev,
-    ...decodeUiSpec(spec),
-  };
+  return {_id, _rev, ...decodeUiSpec(spec)};
 };

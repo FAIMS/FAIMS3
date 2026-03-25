@@ -11,26 +11,26 @@ flowchart TD
         AS[AttachmentService Instance]
         NAV[Navigation Implementation]
     end
-    
+
     subgraph "FullFormConfig"
         DEF["dataEngine: () => DataEngine"]
         ASF["attachmentEngine: () => IAttachmentService"]
         NAVF["navigation: NavigationConfig"]
     end
-    
+
     subgraph "Form Components"
         EFM[EditableFormManager]
         F[Field Components]
     end
-    
+
     DE --> DEF
     AS --> ASF
     NAV --> NAVF
-    
+
     DEF --> EFM
     ASF --> EFM
     NAVF --> EFM
-    
+
     EFM -->|config| F
 ```
 
@@ -40,17 +40,17 @@ flowchart TD
 interface FullFormConfig extends BaseFormConfig {
   mode: 'full';
   recordId: string;
-  
+
   // Factory functions for services
   dataEngine: () => DataEngine;
   attachmentEngine: () => IAttachmentService;
-  
+
   // Update mode
   recordMode: AvpUpdateMode;
-  
+
   // Navigation configuration
   navigation: NavigationConfig;
-  
+
   // Context
   appName: string;
   user: string;
@@ -79,6 +79,7 @@ const dataEngine = useMemo(() => {
 ### Why Factory Functions?
 
 Factory functions allow:
+
 1. **Lazy instantiation** - Engine created only when needed
 2. **Fresh references** - Handle database reconnections/updates
 3. **Testing** - Easy to substitute mock implementations
@@ -88,7 +89,7 @@ Factory functions allow:
 ```typescript
 interface DataEngine {
   uiSpec: ProjectUIModel;
-  
+
   form: {
     createRecord(params): Promise<RecordResult>;
     createRevision(params): Promise<RevisionDocument>;
@@ -96,7 +97,7 @@ interface DataEngine {
     getExistingFormData(params): Promise<FormData>;
     getHydratedRecords(params): Promise<PaginatedRecords>;
   };
-  
+
   hydrated: {
     getHydratedRecord(params): Promise<HydratedRecordDocument>;
     updateRevision(params): Promise<void>;
@@ -144,7 +145,7 @@ interface IAttachmentService {
     blob: Blob;
     metadata: AttachmentMetadata;
   }): Promise<AttachmentResult>;
-  
+
   getAttachment(id: string): Promise<AttachmentDocument | null>;
 }
 ```
@@ -156,7 +157,7 @@ sequenceDiagram
     participant FC as Field Component
     participant EFM as EditableFormManager
     participant AS as AttachmentService
-    
+
     FC->>EFM: addAttachment({ blob, contentType })
     EFM->>EFM: ensureWorkingRevision()
     EFM->>AS: storeAttachmentFromBlob()
@@ -170,31 +171,32 @@ sequenceDiagram
 EditableFormManager creates handlers that fields use:
 
 ```typescript
-const handleAddAttachment = useCallback(async ({
-  fieldId,
-  blob,
-  contentType,
-  type,
-  fileFormat,
-}) => {
-  const revisionToUse = await ensureWorkingRevision();
-  
-  const result = await props.config.attachmentEngine().storeAttachmentFromBlob({
-    blob,
-    metadata: {
-      attachmentDetails: { filename, contentType },
-      recordContext: { recordId, revisionId, created, createdBy },
-    },
-  });
-  
-  // Update form state with new attachment reference
-  form.setFieldValue(fieldId, {
-    ...currentValue,
-    attachments: [newAttachment, ...existingAttachments],
-  });
-  
-  return result.identifier.id;
-}, [/* deps */]);
+const handleAddAttachment = useCallback(
+  async ({fieldId, blob, contentType, type, fileFormat}) => {
+    const revisionToUse = await ensureWorkingRevision();
+
+    const result = await props.config
+      .attachmentEngine()
+      .storeAttachmentFromBlob({
+        blob,
+        metadata: {
+          attachmentDetails: {filename, contentType},
+          recordContext: {recordId, revisionId, created, createdBy},
+        },
+      });
+
+    // Update form state with new attachment reference
+    form.setFieldValue(fieldId, {
+      ...currentValue,
+      attachments: [newAttachment, ...existingAttachments],
+    });
+
+    return result.identifier.id;
+  },
+  [
+    /* deps */
+  ]
+);
 ```
 
 ## Navigation
@@ -212,20 +214,14 @@ interface NavigationConfig {
     stripNavigationEntry?: number;
     scrollTarget?: RedirectInfo;
   }) => void;
-  
-  getToRecordLink: (params: {
-    recordId: string;
-    mode: AvpUpdateMode;
-  }) => string;
-  
+
+  getToRecordLink: (params: {recordId: string; mode: AvpUpdateMode}) => string;
+
   navigateToLink: (to: string) => void;
-  
-  navigateToRecordList: {
-    label: string;
-    navigate: () => void;
-  };
-  
-  navigateToViewRecord: (params: { recordId: string }) => void;
+
+  navigateToRecordList: {label: string; navigate: () => void};
+
+  navigateToViewRecord: (params: {recordId: string}) => void;
 }
 ```
 
@@ -249,7 +245,7 @@ props.config.navigation.toRecord({
   recordId: parentRecordId,
   mode: parentMode,
   stripNavigationEntry: 1,
-  scrollTarget: { fieldId: originFieldId },
+  scrollTarget: {fieldId: originFieldId},
 });
 
 // Get link without navigating
@@ -266,15 +262,13 @@ Additional handlers injected by EditableFormManager:
 ```typescript
 interface FormManagerAdditions {
   navigationContext: FormNavigationContext;
-  
+
   attachmentHandlers: {
     addAttachment: (params) => Promise<string>;
     removeAttachment: (params) => Promise<void>;
   };
-  
-  trigger: {
-    commit: () => Promise<void>;
-  };
+
+  trigger: {commit: () => Promise<void>};
 }
 ```
 
@@ -294,18 +288,23 @@ In preview mode, dependencies are mocked:
 
 ```typescript
 // Field.tsx mock handlers for preview
-const addAttachmentHandler = props.config.mode === 'full'
-  ? async (params) => {
-      return await config.attachmentHandlers.addAttachment({ ...params, fieldId });
-    }
-  : async () => {
-      console.log('Mock addAttachment');
-      return 'fakeId';
-    };
+const addAttachmentHandler =
+  props.config.mode === 'full'
+    ? async params => {
+        return await config.attachmentHandlers.addAttachment({
+          ...params,
+          fieldId,
+        });
+      }
+    : async () => {
+        console.log('Mock addAttachment');
+        return 'fakeId';
+      };
 
-const triggers = props.config.mode === 'full'
-  ? props.config.trigger
-  : { commit: async () => console.log('Mock commit') };
+const triggers =
+  props.config.mode === 'full'
+    ? props.config.trigger
+    : {commit: async () => console.log('Mock commit')};
 ```
 
 ## Testing
@@ -316,7 +315,7 @@ Replace dependencies with test implementations:
 const mockDataEngine: DataEngine = {
   uiSpec: testUISpec,
   form: {
-    createRecord: vi.fn().mockResolvedValue({ record: { _id: 'test-id' } }),
+    createRecord: vi.fn().mockResolvedValue({record: {_id: 'test-id'}}),
     updateFormData: vi.fn().mockResolvedValue(undefined),
     // ...
   },

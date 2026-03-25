@@ -31,19 +31,13 @@ export const validateSyncStatus = async ({
   // get the list of record ids from the project
   const dataDb = localGetDataDb(projectId);
   const isOnline = window.navigator.onLine;
-  const emptyStatus = {
-    status: {},
-    recordHashes: {},
-  };
+  const emptyStatus = {status: {}, recordHashes: {}};
 
   // we can't do an audit if we don't have a user
   if (!username) return emptyStatus;
 
   // get a list of record ids from the project
-  const records = await queryCouch({
-    db: dataDb,
-    index: RECORDS_INDEX,
-  });
+  const records = await queryCouch({db: dataDb, index: RECORDS_INDEX});
   const recordIds = records.map(r => r._id);
   const audit = await getRecordListAudit({recordIds, dataDb});
   let filteredAudit: Record<string, string> = {};
@@ -75,14 +69,8 @@ export const validateSyncStatus = async ({
       });
       // we need to merge the returned value with the
       // current status
-      const status = {
-        ...currentStatus?.status,
-        ...response.status,
-      };
-      return {
-        status: status,
-        recordHashes: audit,
-      };
+      const status = {...currentStatus?.status, ...response.status};
+      return {status: status, recordHashes: audit};
     } else if (currentStatus) {
       return currentStatus;
     } else {
@@ -99,10 +87,7 @@ export const validateSyncStatus = async ({
           offlineStatus[recordId] = false;
         }
       }
-      return {
-        status: offlineStatus,
-        recordHashes: audit,
-      };
+      return {status: offlineStatus, recordHashes: audit};
     } else return emptyStatus;
   }
 };

@@ -22,12 +22,12 @@ The system is configured in `expressSetup.ts` which initializes:
 
 Local password authentication is always available and if configured, one or
 more identity providers can also be used. There is a custom implementation for
-Google authentication and a more general OIDC based provider.  
+Google authentication and a more general OIDC based provider.
 
 The available
 providers are configured via environment variables using a pattern of variable
-names to encode an object structure.  Variables starting with `AUTH_` define
-the properties of different providers with the pattern `AUTH_{provider}_{property}`.   There are two kinds of provider: Google and OIDC.  These are configured
+names to encode an object structure. Variables starting with `AUTH_` define
+the properties of different providers with the pattern `AUTH_{provider}_{property}`. There are two kinds of provider: Google and OIDC. These are configured
 as follows:
 
 For a Google provider, the TYPE property should be `google` and the following
@@ -43,7 +43,7 @@ AUTH_GOOGLE_CLIENT_SECRET="google client secret"
 AUTH_GOOGLE_SCOPE="profile,email,https://www.googleapis.com/auth/plus.login"
 ```
 
-For an OIDC provider, the `TYPE` property should be `oidc` and the following 
+For an OIDC provider, the `TYPE` property should be `oidc` and the following
 properties should be defined:
 
 ```shell
@@ -60,11 +60,11 @@ AUTH_AAF_CLIENT_SECRET="aaf client secret"
 AUTH_AAF_SCOPE="profile,email"
 ```
 
-Note that another provider of the same type can be configured, eg. you 
+Note that another provider of the same type can be configured, eg. you
 could configure `AUTH_FOOBAR_TYPE="oidc"` and supply the other `AUTH_FOOBAR_*`
 properties as well.
 
-The `DISPLAY_NAME` field is used to label the login button _"Continue with XXX"_. 
+The `DISPLAY_NAME` field is used to label the login button _"Continue with XXX"_.
 The `HELPER_TEXT` field is optional and is displayed below the login button
 if provided. The `INDEX` field is optional but if present, defines the ordering
 of buttons on the login page.

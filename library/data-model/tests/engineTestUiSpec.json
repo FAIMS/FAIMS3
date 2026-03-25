@@ -15,11 +15,7 @@
           "name": "First",
           "protection": "none"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -27,14 +23,8 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "persistent": false,
         "displayParent": false
@@ -52,11 +42,7 @@
           "required": false,
           "name": "Second"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -64,14 +50,8 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "First-1": {
@@ -87,11 +67,7 @@
           "required": false,
           "name": "First-1"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -99,14 +75,8 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "Second-1": {
@@ -122,11 +92,7 @@
           "required": false,
           "name": "Second-1"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -134,14 +100,8 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "First-2": {
@@ -157,11 +117,7 @@
           "required": false,
           "name": "First-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -169,14 +125,8 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "Second-2": {
@@ -192,11 +142,7 @@
           "required": false,
           "name": "Second-2"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -204,14 +150,8 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "First-3": {
@@ -227,11 +167,7 @@
           "required": false,
           "name": "First-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -239,14 +175,8 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       },
       "Second-3": {
@@ -262,11 +192,7 @@
           "required": false,
           "name": "Second-3"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "humanReadableName": "FAIMS Text Field",
         "humanReadableDescription": "Single-line text input for free-form entries",
@@ -274,69 +200,30 @@
         "showInChooser": true,
         "order": 1,
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         }
       }
     },
     "fviews": {
-      "A-A": {
-        "label": "A",
-        "fields": [
-          "First-1",
-          "Second-1"
-        ]
-      },
-      "A-B": {
-        "label": "B",
-        "fields": [
-          "First",
-          "Second"
-        ]
-      },
-      "B-A": {
-        "label": "A",
-        "fields": [
-          "First-2",
-          "Second-2"
-        ]
-      },
-      "B-B": {
-        "label": "B",
-        "fields": [
-          "First-3",
-          "Second-3"
-        ]
-      }
+      "A-A": {"label": "A", "fields": ["First-1", "Second-1"]},
+      "A-B": {"label": "B", "fields": ["First", "Second"]},
+      "B-A": {"label": "A", "fields": ["First-2", "Second-2"]},
+      "B-B": {"label": "B", "fields": ["First-3", "Second-3"]}
     },
     "viewsets": {
       "A": {
         "label": "A",
-        "views": [
-          "A-A",
-          "A-B"
-        ],
+        "views": ["A-A", "A-B"],
         "publishButtonBehaviour": "always"
       },
       "B": {
         "label": "B",
-        "views": [
-          "B-A",
-          "B-B"
-        ],
+        "views": ["B-A", "B-B"],
         "publishButtonBehaviour": "always"
       }
     },
-    "visible_types": [
-      "A",
-      "B"
-    ]
+    "visible_types": ["A", "B"]
   },
   "metadata": {
     "filenames": [],

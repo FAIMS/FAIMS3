@@ -42,18 +42,11 @@ export function CreateGlobalInviteForm({
         ([role, detail]) =>
           detail.scope === RoleScope.GLOBAL && role !== Role.GENERAL_ADMIN
       )
-      .map(([value, {name: label}]) => ({
-        label,
-        value,
-      }));
+      .map(([value, {name: label}]) => ({label, value}));
   }, [user]);
 
   const fields: Field[] = [
-    {
-      name: 'name',
-      label: 'Invite title',
-      schema: z.string().min(4),
-    },
+    {name: 'name', label: 'Invite title', schema: z.string().min(4)},
     {
       name: 'role',
       label: 'Role',

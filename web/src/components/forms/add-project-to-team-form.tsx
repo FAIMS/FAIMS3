@@ -42,10 +42,7 @@ export function AddProjectToTeamForm({
     {
       name: 'teamId',
       label: 'Team',
-      options: teamsAvailable.map(t => ({
-        label: t.name,
-        value: t._id,
-      })),
+      options: teamsAvailable.map(t => ({label: t.name, value: t._id})),
       schema: z.string(),
     },
   ];
@@ -60,11 +57,7 @@ export function AddProjectToTeamForm({
   const onSubmit = async ({teamId}: onSubmitProps) => {
     if (!user) return {type: 'submit', message: 'User not authenticated'};
 
-    const response = await modifyTeamForProject({
-      projectId,
-      teamId,
-      user,
-    });
+    const response = await modifyTeamForProject({projectId, teamId, user});
 
     if (!response.ok)
       return {

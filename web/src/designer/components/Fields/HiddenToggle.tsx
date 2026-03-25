@@ -75,9 +75,7 @@ export const HiddenFieldEditor = ({fieldName}: {fieldName: string}) => {
             sx={{
               mb: 2,
               backgroundColor: 'rgb(229, 246, 253)',
-              '& .MuiAlert-icon': {
-                color: 'rgb(1, 67, 97)',
-              },
+              '& .MuiAlert-icon': {color: 'rgb(1, 67, 97)'},
             }}
           >
             Control whether this field is hidden in the form. Hidden fields can

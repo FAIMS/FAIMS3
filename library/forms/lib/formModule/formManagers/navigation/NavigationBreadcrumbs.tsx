@@ -27,10 +27,7 @@ export interface FormBreadcrumbsProps {
   /** Config for data engine and navigation */
   config: FullFormConfig;
   /** Navigate to record list */
-  navigateToRecordList: {
-    label: string;
-    navigate: () => void;
-  };
+  navigateToRecordList: {label: string; navigate: () => void};
 }
 
 /**
@@ -156,9 +153,7 @@ export const FormBreadcrumbs = ({
           sx={{
             color: 'primary.main',
             cursor: 'pointer',
-            '&:hover': {
-              textDecoration: 'underline',
-            },
+            '&:hover': {textDecoration: 'underline'},
           }}
         >
           Records
@@ -192,9 +187,7 @@ export const FormBreadcrumbs = ({
               sx={{
                 color: 'primary.main',
                 cursor: 'pointer',
-                '&:hover': {
-                  textDecoration: 'underline',
-                },
+                '&:hover': {textDecoration: 'underline'},
               }}
               title={item.label} // Show HRID on hover
             >
@@ -210,11 +203,7 @@ export const FormBreadcrumbs = ({
           </Typography>
           <Typography
             component="span"
-            sx={{
-              color: 'text.primary',
-              fontWeight: 600,
-              fontSize: '0.875rem',
-            }}
+            sx={{color: 'text.primary', fontWeight: 600, fontSize: '0.875rem'}}
           >
             {currentFormLabel}
           </Typography>
@@ -242,9 +231,7 @@ export const FormBreadcrumbs = ({
         sx={{
           color: 'primary.main',
           cursor: 'pointer',
-          '&:hover': {
-            textDecoration: 'underline',
-          },
+          '&:hover': {textDecoration: 'underline'},
         }}
       >
         Record list
@@ -272,9 +259,7 @@ export const FormBreadcrumbs = ({
             sx={{
               color: 'primary.main',
               cursor: 'pointer',
-              '&:hover': {
-                textDecoration: 'underline',
-              },
+              '&:hover': {textDecoration: 'underline'},
             }}
           >
             {item.formLabel && (
@@ -297,11 +282,7 @@ export const FormBreadcrumbs = ({
         </Typography>
         <Typography
           component="span"
-          sx={{
-            color: 'text.primary',
-            fontWeight: 600,
-            fontSize: '0.875rem',
-          }}
+          sx={{color: 'text.primary', fontWeight: 600, fontSize: '0.875rem'}}
         >
           {currentFormLabel}
         </Typography>

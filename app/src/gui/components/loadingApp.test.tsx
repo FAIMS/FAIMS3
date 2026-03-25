@@ -23,9 +23,7 @@ import LoadingApp from './loadingApp';
 import {test, expect, vi} from 'vitest';
 
 // Mock the SystemAlert component since it uses Redux
-vi.mock('./alert', () => ({
-  default: () => null,
-}));
+vi.mock('./alert', () => ({default: () => null}));
 
 test('Check loadingApp component', () => {
   render(<LoadingApp />);

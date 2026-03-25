@@ -33,9 +33,7 @@ export function CreateTemplateForm({
   const {data: teams} = useGetTeams({user});
 
   // can they create projects outside team?
-  const canCreateGlobally = useIsAuthorisedTo({
-    action: Action.CREATE_TEMPLATE,
-  });
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_TEMPLATE});
 
   // get the teams that we have permission to create
   // templates in
@@ -58,9 +56,9 @@ export function CreateTemplateForm({
       name: 'name',
       label: 'Template Name',
       description: 'A short display name for the template',
-      schema: z.string().min(5, {
-        message: 'Template name must be at least 5 characters.',
-      }),
+      schema: z
+        .string()
+        .min(5, {message: 'Template name must be at least 5 characters.'}),
     },
     {
       name: 'file',
@@ -80,10 +78,7 @@ export function CreateTemplateForm({
     fields.push({
       name: 'team',
       label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
-      options: possibleTeams?.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
+      options: possibleTeams?.map(({_id, name}) => ({label: name, value: _id})),
       schema: canCreateGlobally ? z.string().optional() : z.string(),
     });
   }
@@ -133,11 +128,7 @@ export function CreateTemplateForm({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user.token}`,
           },
-          body: JSON.stringify({
-            teamId: chosenTeamId,
-            name,
-            ...jsonPayload,
-          }),
+          body: JSON.stringify({teamId: chosenTeamId, name, ...jsonPayload}),
         }
       );
       if (!res.ok) throw new Error(res.statusText);

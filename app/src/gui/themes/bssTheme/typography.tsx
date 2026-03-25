@@ -36,12 +36,6 @@ export default {
     fontSize: 14,
     letterSpacing: '-0.05px',
   },
-  overline: {
-    fontWeight: 500,
-  },
-  subtitle2: {
-    fontSize: '0.75rem',
-    fontWeight: 500,
-    lineHeight: 1.66,
-  },
+  overline: {fontWeight: 500},
+  subtitle2: {fontSize: '0.75rem', fontWeight: 500, lineHeight: 1.66},
 };

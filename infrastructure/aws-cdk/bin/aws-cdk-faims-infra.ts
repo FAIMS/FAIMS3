@@ -19,9 +19,6 @@ const app = new cdk.App();
 
 // Create the stack
 new FaimsInfraStack(app, config.stackName, {
-  env: {
-    account: config.aws.account,
-    region: config.aws.region,
-  },
+  env: {account: config.aws.account, region: config.aws.region},
   config,
 });

@@ -18,9 +18,7 @@ import {ConditionType} from '../components/condition/types';
 
 export type NotebookMetadata = PropertyMap;
 
-export type PropertyMap = {
-  [key: string]: unknown;
-};
+export type PropertyMap = {[key: string]: unknown};
 
 export type ComponentParameters = {
   fullWidth?: boolean;
@@ -41,11 +39,7 @@ export type ComponentParameters = {
     exclusiveOptions?: string[];
     enableOtherOption?: boolean;
     otherOptionPosition?: number;
-    options?: {
-      value: string;
-      label: string;
-      RadioProps?: unknown;
-    }[];
+    options?: {value: string; label: string; RadioProps?: unknown}[];
     optiontree?: unknown;
   };
   InputLabelProps?: {label: string};
@@ -109,14 +103,8 @@ export type FieldType = {
   order?: number;
 
   meta?: {
-    annotation: {
-      include: boolean;
-      label: string;
-    };
-    uncertainty: {
-      include: boolean;
-      label: string;
-    };
+    annotation: {include: boolean; label: string};
+    uncertainty: {include: boolean; label: string};
   };
 };
 
@@ -145,14 +133,9 @@ export type NotebookUISpec = {
   visible_types: string[];
 };
 
-export type NotebookModified = {
-  flag: boolean;
-};
+export type NotebookModified = {flag: boolean};
 
-export type AppState = {
-  modified: boolean;
-  notebook: NotebookWithHistory;
-};
+export type AppState = {modified: boolean; notebook: NotebookWithHistory};
 
 export type Notebook = {
   metadata: NotebookMetadata;
@@ -181,12 +164,7 @@ export const initialState: AppState = {
       sections: {},
     },
     'ui-specification': {
-      present: {
-        fields: {},
-        fviews: {},
-        viewsets: {},
-        visible_types: [],
-      },
+      present: {fields: {}, fviews: {}, viewsets: {}, visible_types: []},
       past: [],
       future: [],
     },

@@ -23,13 +23,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* eslint-disable */
 
-
 // Extracted out of jasmine 2.5.2
 export function equals(
   a: unknown,
   b: unknown,
   customTesters?: Array<any>,
-  strictCheck?: boolean,
+  strictCheck?: boolean
 ): boolean {
   customTesters = customTesters || [];
   return eq(a, b, [], [], customTesters, strictCheck ? hasKey : hasDefinedKey);
@@ -66,7 +65,7 @@ function eq(
   aStack: Array<unknown>,
   bStack: Array<unknown>,
   customTesters: Array<any>,
-  hasKey: any,
+  hasKey: any
 ): boolean {
   var result = true;
 
@@ -84,8 +83,16 @@ function eq(
 
   // Equivalent to a instanceof Error && b instanceof Error
   // however instanceof didn't seem to work
-  if (a !== null && typeof a === 'object' && 'name' in a && 'message' in a &&
-    b !== null && typeof b === 'object' && 'name' in b && 'message' in b) {
+  if (
+    a !== null &&
+    typeof a === 'object' &&
+    'name' in a &&
+    'message' in a &&
+    b !== null &&
+    typeof b === 'object' &&
+    'name' in b &&
+    'message' in b
+  ) {
     return a.message == b.message;
   }
 
@@ -203,9 +210,9 @@ function eq(
 function keys(
   obj: object,
   isArray: boolean,
-  hasKey: (obj: object, key: string) => boolean,
+  hasKey: (obj: object, key: string) => boolean
 ) {
-  var allKeys = (function(o) {
+  var allKeys = (function (o) {
     var keys: string[] = [];
     for (var key in o) {
       if (hasKey(o, key)) {
@@ -216,8 +223,8 @@ function keys(
       (Object.getOwnPropertySymbols(o) as Array<any>).filter(
         symbol =>
           (Object.getOwnPropertyDescriptor(o, symbol) as PropertyDescriptor)
-            .enumerable,
-      ),
+            .enumerable
+      )
     );
   })(obj);
 

@@ -13,12 +13,10 @@
         "999999",
         "--colors",
         "--exit",
-        "${workspaceFolder}/test/**/*.ts",
+        "${workspaceFolder}/test/**/*.ts"
       ],
       "internalConsoleOptions": "openOnSessionStart",
-      "env": {
-        "NODE_ENV": "test"
-      }
+      "env": {"NODE_ENV": "test"}
     }
   ]
 }

@@ -52,10 +52,7 @@ export const Field = React.memo((props: FieldProps) => {
               ? value((current?.data ?? undefined) as any)
               : value;
 
-          const newValue: FormDataEntry = {
-            ...(current || {}),
-            data: nextData,
-          };
+          const newValue: FormDataEntry = {...(current || {}), data: nextData};
           field.handleChange(newValue as any);
         };
         const setFieldAnnotation = (value: FormAnnotation) => {

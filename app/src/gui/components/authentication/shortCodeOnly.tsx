@@ -52,15 +52,10 @@ export function QRCodeButtonOnly(props: QRCodeButtonOnlyProps) {
       });
 
       // Use the capacitor browser plugin in apps
-      await Browser.open({
-        url: finalUrl,
-      });
+      await Browser.open({url: finalUrl});
     } else {
       dispatch(
-        addAlert({
-          message: 'Invalid QRCode Scanned',
-          severity: 'warning',
-        })
+        addAlert({message: 'Invalid QRCode Scanned', severity: 'warning'})
       );
     }
   };
@@ -177,9 +172,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href = url + '&redirect=' + redirect;
     } else {
-      await Browser.open({
-        url: `${url}&redirect=${APP_ID}://auth-return`,
-      });
+      await Browser.open({url: `${url}&redirect=${APP_ID}://auth-return`});
     }
   };
 
@@ -234,11 +227,7 @@ export const ShortCodeOnlyComponent = (props: ShortCodeOnlyComponentProps) => {
         variant="outlined"
         startIcon={<LoginIcon />}
         disabled={shortCode.length !== 6}
-        sx={{
-          minWidth: '100px',
-          height: '40px',
-          bgcolor: 'grey.100',
-        }}
+        sx={{minWidth: '100px', height: '40px', bgcolor: 'grey.100'}}
       >
         Submit
       </Button>

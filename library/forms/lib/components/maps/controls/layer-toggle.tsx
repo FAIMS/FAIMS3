@@ -94,12 +94,7 @@ export const createLayerToggle = ({
   button.setAttribute('type', 'button');
   button.title = 'Toggle satellite view';
   button.appendChild(
-    CreateDomIcon({
-      src,
-      width: 24,
-      height: 24,
-      alt: 'Toggle satellite view',
-    })
+    CreateDomIcon({src, width: 24, height: 24, alt: 'Toggle satellite view'})
   );
 
   /**
@@ -126,10 +121,7 @@ export const createLayerToggle = ({
     );
 
     if (clampedZoom !== currentZoom) {
-      view.animate({
-        zoom: clampedZoom,
-        duration: 250,
-      });
+      view.animate({zoom: clampedZoom, duration: 250});
     }
   };
 

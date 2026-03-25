@@ -158,10 +158,7 @@ const setFieldValue = (a: AddressType) => {
   } ${a.postcode || ''}`;
   setDisplayName(dn);
   setAddress(a);
-  props.setFieldData({
-    display_name: dn,
-    address: a,
-  });
+  props.setFieldData({display_name: dn, address: a});
 };
 ```
 

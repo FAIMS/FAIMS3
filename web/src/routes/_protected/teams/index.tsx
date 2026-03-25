@@ -28,18 +28,12 @@ export function RouteComponent() {
   const paths = useMemo(
     () => [
       // projects ->
-      {
-        path: '/teams',
-        label: 'Teams',
-      },
+      {path: '/teams', label: 'Teams'},
     ],
     [pathname]
   );
 
-  useBreadcrumbUpdate({
-    isLoading: false,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading: false, paths});
 
   if (!user) {
     return <p>No user!</p>;

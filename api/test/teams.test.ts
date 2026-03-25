@@ -58,10 +58,7 @@ const TEAMS_API_BASE = '/api/teams';
  */
 export const createSampleTeam = async (
   app: Express,
-  options: {
-    teamName?: string;
-    description?: string;
-  },
+  options: {teamName?: string; description?: string},
   token: string = adminToken
 ): Promise<PostCreateTeamResponse> => {
   const teamData: PostCreateTeamInput = {
@@ -268,16 +265,16 @@ describe('Teams API tests', () => {
     });
 
     // Update the team name
-    await updateATeam(app, team._id, {
-      name: 'Updated Team Name',
-    }).then(updatedTeam => {
-      // Check the updated properties
-      expect(updatedTeam.name).to.equal('Updated Team Name');
-      // Description should remain unchanged
-      expect(updatedTeam.description).to.equal('Original description');
-      // updatedAt should be changed
-      expect(updatedTeam.updatedAt).to.be.greaterThan(team.updatedAt);
-    });
+    await updateATeam(app, team._id, {name: 'Updated Team Name'}).then(
+      updatedTeam => {
+        // Check the updated properties
+        expect(updatedTeam.name).to.equal('Updated Team Name');
+        // Description should remain unchanged
+        expect(updatedTeam.description).to.equal('Original description');
+        // updatedAt should be changed
+        expect(updatedTeam.updatedAt).to.be.greaterThan(team.updatedAt);
+      }
+    );
 
     // Get the team and verify updates
     await getATeam(app, team._id).then(fetchedTeam => {
@@ -286,12 +283,12 @@ describe('Teams API tests', () => {
     });
 
     // Update just the description
-    await updateATeam(app, team._id, {
-      description: 'Updated description',
-    }).then(updatedTeam => {
-      expect(updatedTeam.name).to.equal('Updated Team Name');
-      expect(updatedTeam.description).to.equal('Updated description');
-    });
+    await updateATeam(app, team._id, {description: 'Updated description'}).then(
+      updatedTeam => {
+        expect(updatedTeam.name).to.equal('Updated Team Name');
+        expect(updatedTeam.description).to.equal('Updated description');
+      }
+    );
 
     // Update both name and description
     await updateATeam(app, team._id, {
@@ -345,9 +342,7 @@ describe('Teams API tests', () => {
     await requestAuthAndType(
       request(app)
         .put(`${TEAMS_API_BASE}/${fakeId}`)
-        .send({
-          name: 'Updated Name',
-        } as PutUpdateTeamInput)
+        .send({name: 'Updated Name'} as PutUpdateTeamInput)
     ).expect(404);
   });
 
@@ -483,9 +478,7 @@ describe('Teams API tests', () => {
     return await requestAuthAndType(
       request(app)
         .put(`${TEAMS_API_BASE}/123456`)
-        .send({
-          name: 'Updated Name',
-        } as PutUpdateTeamInput),
+        .send({name: 'Updated Name'} as PutUpdateTeamInput),
       localUserToken
     ).expect(401);
   });

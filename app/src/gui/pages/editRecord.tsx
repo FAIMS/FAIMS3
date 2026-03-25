@@ -187,9 +187,7 @@ export const EditRecordPage = () => {
     queryKey: ['formData', recordId],
     queryFn: async () => {
       // Get the hydrated record data in the form format
-      return await dataEngine().form.getExistingFormData({
-        recordId: recordId,
-      });
+      return await dataEngine().form.getExistingFormData({recordId: recordId});
     },
     // Try offline
     networkMode: 'always',

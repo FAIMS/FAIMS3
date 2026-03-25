@@ -115,11 +115,7 @@ export function addProjectRole({
   projectId: string;
 }): void {
   // Check if the user already has this role for this project
-  const hasRole = userHasProjectRole({
-    user,
-    role,
-    projectId,
-  });
+  const hasRole = userHasProjectRole({user, role, projectId});
 
   // If the user already has this role, return
   if (hasRole) {
@@ -127,10 +123,7 @@ export function addProjectRole({
   }
 
   // Create a new project role and add it to the user
-  const newProjectRole: ResourceRole = {
-    resourceId: projectId,
-    role,
-  };
+  const newProjectRole: ResourceRole = {resourceId: projectId, role};
 
   user.projectRoles = [...user.projectRoles, newProjectRole];
 }
@@ -173,11 +166,7 @@ export function addTeamRole({
   teamId: string;
 }): void {
   // Check if the user already has this role for this team
-  const hasRole = userHasTeamRole({
-    user,
-    role,
-    teamId,
-  });
+  const hasRole = userHasTeamRole({user, role, teamId});
 
   // If the user already has this role, return
   if (hasRole) {
@@ -185,10 +174,7 @@ export function addTeamRole({
   }
 
   // Create a new team role and add it to the user
-  const newTeamRole: ResourceRole = {
-    resourceId: teamId,
-    role,
-  };
+  const newTeamRole: ResourceRole = {resourceId: teamId, role};
 
   user.teamRoles = [...user.teamRoles, newTeamRole];
 }
@@ -311,11 +297,7 @@ export function addTemplateRole({
   templateId: string;
 }): void {
   // Check if the user already has this role for this template
-  const hasRole = userHasTemplateRole({
-    user,
-    role,
-    templateId,
-  });
+  const hasRole = userHasTemplateRole({user, role, templateId});
 
   // If the user already has this role, return
   if (hasRole) {
@@ -323,10 +305,7 @@ export function addTemplateRole({
   }
 
   // Create a new template role and add it to the user
-  const newTemplateRole: ResourceRole = {
-    resourceId: templateId,
-    role,
-  };
+  const newTemplateRole: ResourceRole = {resourceId: templateId, role};
 
   user.templateRoles = [...user.templateRoles, newTemplateRole];
 }

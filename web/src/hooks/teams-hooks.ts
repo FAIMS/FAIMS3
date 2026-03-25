@@ -23,10 +23,7 @@ export const createTeam = async ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${user.token}`,
     },
-    body: JSON.stringify({
-      name,
-      description,
-    }),
+    body: JSON.stringify({name, description}),
   });
 
 /**
@@ -53,10 +50,7 @@ export const updateTeam = async ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${user.token}`,
     },
-    body: JSON.stringify({
-      name,
-      description,
-    }),
+    body: JSON.stringify({name, description}),
   });
 
 /**

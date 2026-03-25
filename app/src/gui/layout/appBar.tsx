@@ -52,9 +52,7 @@ import {
   OFFLINE_MAPS,
 } from '../../buildconfig';
 import * as ROUTES from '../../constants/routes';
-import {
-  selectIsAuthenticated,
-} from '../../context/slices/authSlice';
+import {selectIsAuthenticated} from '../../context/slices/authSlice';
 import {
   Project,
   selectActiveServerProjects,
@@ -243,11 +241,7 @@ export default function MainAppBar() {
         </MuiAppBar>
         <Offset />
         <Drawer
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            zIndex: 1500,
-          }}
+          sx={{width: drawerWidth, flexShrink: 0, zIndex: 1500}}
           variant="temporary"
           anchor="left"
           open={isOpen}

@@ -159,12 +159,7 @@ export function addAuthPages(
         postUrl: '/auth/local',
         // This is the URL which will be used for 'already have an account, sign
         // in' button
-        loginURL: `/login${buildQueryString({
-          values: {
-            redirect,
-            inviteId,
-          },
-        })}`,
+        loginURL: `/login${buildQueryString({values: {redirect, inviteId}})}`,
         providers: providers.length > 0 ? providers : undefined,
         localRegisterPostPayload: {
           redirect,
@@ -205,10 +200,7 @@ export function addAuthPages(
       return res.render('change-password', {
         // The POST endpoint to handle password change
         postUrl: '/auth/changePassword',
-        changePasswordPostPayload: {
-          username,
-          redirect,
-        },
+        changePasswordPostPayload: {username, redirect},
         username,
         messages: req.flash(),
       });
@@ -265,10 +257,7 @@ export function addAuthPages(
   app.post(
     '/verify-email',
     processRequest({
-      body: z.object({
-        code: z.string(),
-        redirect: z.string().optional(),
-      }),
+      body: z.object({code: z.string(), redirect: z.string().optional()}),
     }),
     async (req, res) => {
       const {code, redirect: redirectParam} = req.body;
@@ -310,11 +299,7 @@ export function addAuthPages(
    */
   app.get(
     '/forgot-password',
-    processRequest({
-      query: z.object({
-        redirect: z.string().optional(),
-      }),
-    }),
+    processRequest({query: z.object({redirect: z.string().optional()})}),
     async (req, res) => {
       const {valid, redirect} = validateRedirect(
         req.query.redirect || DEFAULT_REDIRECT_URL
@@ -326,9 +311,7 @@ export function addAuthPages(
 
       return res.render('forgot-password', {
         postUrl: '/auth/forgotPassword',
-        forgotPasswordPostPayload: {
-          redirect,
-        },
+        forgotPasswordPostPayload: {redirect},
         messages: req.flash(),
       });
     }
@@ -340,12 +323,7 @@ export function addAuthPages(
    */
   app.get(
     '/auth/reset-password',
-    processRequest({
-      query: z.object({
-        code: z.string(),
-        redirect: z.string(),
-      }),
-    }),
+    processRequest({query: z.object({code: z.string(), redirect: z.string()})}),
     async (req, res) => {
       const code = req.query.code;
       const {valid, redirect} = validateRedirect(req.query.redirect);

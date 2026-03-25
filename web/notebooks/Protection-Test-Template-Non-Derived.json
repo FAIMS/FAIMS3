@@ -3,11 +3,7 @@
     "notebook_version": "1.0",
     "schema_version": "1.0",
     "name": "Protection Test Template (Non Derived)",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "filenames": [],
     "ispublic": false,
     "isrequest": false,
@@ -29,26 +25,14 @@
           "helperText": "Enter text",
           "variant": "outlined",
           "required": false,
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "name": "Field-with-No-Protection"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "Field-with-Hiding-Allowed-Protection": {
@@ -66,30 +50,18 @@
               {
                 "value": "1",
                 "label": "1",
-                "RadioProps": {
-                  "id": "radio-group-field-1"
-                }
+                "RadioProps": {"id": "radio-group-field-1"}
               }
             ]
           },
           "helperText": "Make sure you choose the right one!",
           "protection": "allow-hiding"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "Field-with-Full-Protection": {
@@ -107,21 +79,11 @@
           "geoTiff": "",
           "protection": "protected"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "No-Protection-2": {
@@ -136,21 +98,11 @@
           "type": "checkbox",
           "helperText": "Checkbox help."
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "Hiding-Allowed-2": {
@@ -166,21 +118,11 @@
           "helperText": "Checkbox help.",
           "protection": "allow-hiding"
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "Full-Protection-2": {
@@ -196,21 +138,11 @@
           "helperText": "Checkbox help.",
           "protection": "protected"
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       }
     },
@@ -230,13 +162,9 @@
     "viewsets": {
       "New-Form": {
         "label": "Protection Test",
-        "views": [
-          "New-Form-New-Section"
-        ]
+        "views": ["New-Form-New-Section"]
       }
     },
-    "visible_types": [
-      "New-Form"
-    ]
+    "visible_types": ["New-Form"]
   }
 }

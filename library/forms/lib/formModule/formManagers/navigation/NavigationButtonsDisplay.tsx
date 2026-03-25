@@ -83,11 +83,7 @@ const NavigationButton: React.FC<SingleButtonProps> = ({
           {statusText && (
             <Box
               component="span"
-              sx={{
-                ml: 1,
-                fontSize: '0.75rem',
-                color: 'warning.main',
-              }}
+              sx={{ml: 1, fontSize: '0.75rem', color: 'warning.main'}}
             >
               ({statusText})
             </Box>

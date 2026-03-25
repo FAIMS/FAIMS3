@@ -78,11 +78,7 @@ describe('compiling expressions', () => {
   });
 
   it('compiles a regex expression', () => {
-    const expr = {
-      operator: 'regex',
-      field: 'surveyArea',
-      value: 'A.*;',
-    };
+    const expr = {operator: 'regex', field: 'surveyArea', value: 'A.*;'};
     const fn = compileExpression(expr);
     expect(fn({surveyArea: 'Zone Alpha; '})).toBe(true);
     expect(fn({surveyArea: 'Axminster; '})).toBe(true);
@@ -90,22 +86,14 @@ describe('compiling expressions', () => {
   });
 
   it('compiles an greater expression', () => {
-    const expr = {
-      operator: 'greater',
-      field: 'price',
-      value: 100,
-    };
+    const expr = {operator: 'greater', field: 'price', value: 100};
     const fn = compileExpression(expr);
     expect(fn({price: 200})).toBe(true);
     expect(fn({price: 50})).toBe(false);
   });
 
   it('compiles an greater-equal expression', () => {
-    const expr = {
-      operator: 'greater-equal',
-      field: 'price',
-      value: 100,
-    };
+    const expr = {operator: 'greater-equal', field: 'price', value: 100};
     const fn = compileExpression(expr);
     expect(fn({price: 100})).toBe(true);
     expect(fn({price: 200})).toBe(true);
@@ -113,22 +101,14 @@ describe('compiling expressions', () => {
   });
 
   it('compiles a less expression', () => {
-    const expr = {
-      operator: 'less',
-      field: 'price',
-      value: 100,
-    };
+    const expr = {operator: 'less', field: 'price', value: 100};
     const fn = compileExpression(expr);
     expect(fn({price: 200})).toBe(false);
     expect(fn({price: 50})).toBe(true);
   });
 
   it('compiles an less-equal expression', () => {
-    const expr = {
-      operator: 'less-equal',
-      field: 'price',
-      value: 100,
-    };
+    const expr = {operator: 'less-equal', field: 'price', value: 100};
     const fn = compileExpression(expr);
     expect(fn({price: 100})).toBe(true);
     expect(fn({price: 200})).toBe(false);
@@ -196,11 +176,7 @@ describe('compiling expressions', () => {
   });
 
   it('throws an error for an invalid expression', () => {
-    const expr = {
-      operator: 'unknown-operator',
-      field: 'price',
-      value: 100,
-    };
+    const expr = {operator: 'unknown-operator', field: 'price', value: 100};
     expect(() => compileExpression(expr)).toThrowError(
       /^Unknown operator unknown-operator in conditional expression$/
     );
@@ -231,11 +207,7 @@ describe('compiling expressions', () => {
   });
 
   it('compiles a contains expression', () => {
-    const expr = {
-      operator: 'contains',
-      field: 'tags',
-      value: 'urgent',
-    };
+    const expr = {operator: 'contains', field: 'tags', value: 'urgent'};
     const fn = compileExpression(expr);
     expect(fn({tags: ['urgent', 'important']})).toBe(true);
     expect(fn({tags: ['important']})).toBe(false);
@@ -244,11 +216,7 @@ describe('compiling expressions', () => {
   });
 
   it('compiles a does-not-contain expression', () => {
-    const expr = {
-      operator: 'does-not-contain',
-      field: 'tags',
-      value: 'urgent',
-    };
+    const expr = {operator: 'does-not-contain', field: 'tags', value: 'urgent'};
     const fn = compileExpression(expr);
     expect(fn({tags: ['urgent', 'important']})).toBe(false);
     expect(fn({tags: ['important']})).toBe(true);
@@ -257,11 +225,7 @@ describe('compiling expressions', () => {
   });
 
   it('compiles a contains-regex expression', () => {
-    const expr = {
-      operator: 'contains-regex',
-      field: 'tags',
-      value: '^urg.*$',
-    };
+    const expr = {operator: 'contains-regex', field: 'tags', value: '^urg.*$'};
     const fn = compileExpression(expr);
     expect(fn({tags: ['urgent', 'important']})).toBe(true);
     expect(fn({tags: ['urge']})).toBe(true);
@@ -283,11 +247,7 @@ describe('compiling expressions', () => {
   });
 
   it('handles whitespace in contains expression', () => {
-    const expr = {
-      operator: 'contains',
-      field: 'tags',
-      value: 'urgent',
-    };
+    const expr = {operator: 'contains', field: 'tags', value: 'urgent'};
     const fn = compileExpression(expr);
     // Can strip white space from search param AND
     expect(fn({tags: ['urgent', 'important']})).toBe(true);

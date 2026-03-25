@@ -60,19 +60,11 @@ export default function FaimsAttachmentManagerDialog(props: DiagProps) {
             right: 8,
             top: 8,
             bgcolor: 'rgba(0, 0, 0, 0.5)',
-            '&:hover': {
-              bgcolor: 'rgba(0, 0, 0, 0.7)',
-              transform: 'scale(1.1)',
-            },
+            '&:hover': {bgcolor: 'rgba(0, 0, 0, 0.7)', transform: 'scale(1.1)'},
             transition: 'all 0.2s ease-in-out',
           }}
         >
-          <CloseIcon
-            sx={{
-              color: 'white',
-              fontSize: 24,
-            }}
-          />
+          <CloseIcon sx={{color: 'white', fontSize: 24}} />
         </IconButton>
       </DialogTitle>
       <DialogContent>

@@ -109,10 +109,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
         >
           <Typography
             variant="h5"
-            sx={{
-              fontWeight: 'bold',
-              fontSize: {xs: '1.1rem', md: '1.25rem'},
-            }}
+            sx={{fontWeight: 'bold', fontSize: {xs: '1.1rem', md: '1.25rem'}}}
           >
             {heading}
             {required && (
@@ -141,9 +138,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 sx={{
                   mt: '4px',
                   padding: 0,
-                  '&:hover': {
-                    backgroundColor: 'transparent',
-                  },
+                  '&:hover': {backgroundColor: 'transparent'},
                 }}
               >
                 <InfoOutlinedIcon
@@ -162,10 +157,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
       {subheading && (
         <Typography
           variant="body2"
-          sx={{
-            marginBottom: 1,
-            fontSize: {xs: '0.9rem', md: '1rem'},
-          }}
+          sx={{marginBottom: 1, fontSize: {xs: '0.9rem', md: '1rem'}}}
         >
           {subheading}
         </Typography>
@@ -198,11 +190,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
               }}
             >
               <ErrorOutlineIcon
-                sx={{
-                  color: 'error.main',
-                  fontSize: '1.3rem',
-                  mt: '1px',
-                }}
+                sx={{color: 'error.main', fontSize: '1.3rem', mt: '1px'}}
               />
               <Typography
                 sx={{
@@ -252,11 +240,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
           }}
         >
           <DialogTitle
-            sx={{
-              fontWeight: 'bold',
-              fontSize: '1.2rem',
-              paddingRight: 4,
-            }}
+            sx={{fontWeight: 'bold', fontSize: '1.2rem', paddingRight: 4}}
           >
             {heading}
             <IconButton
@@ -280,17 +264,10 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 display: 'block',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               },
-              '& p': {
-                wordBreak: 'break-word',
-              },
+              '& p': {wordBreak: 'break-word'},
             }}
           >
-            <Box
-              sx={{
-                fontSize: '1rem',
-                lineHeight: 1.6,
-              }}
-            >
+            <Box sx={{fontSize: '1rem', lineHeight: 1.6}}>
               <RichTextContent content={String(advancedHelperText || '')} />
             </Box>
           </DialogContent>
@@ -304,9 +281,7 @@ const FieldWrapper: React.FC<FieldWrapperProps> = ({
                 textTransform: 'none',
                 fontSize: isMobile ? '0.85rem' : '0.95rem',
                 px: 2.5,
-                '&:hover': {
-                  color: '#fff',
-                },
+                '&:hover': {color: '#fff'},
               }}
             >
               Close

@@ -74,10 +74,7 @@ addResourceRole({
 });
 
 // Remove a global role from a user
-removeGlobalRole({
-  user,
-  role: Role.GENERAL_CREATOR,
-});
+removeGlobalRole({user, role: Role.GENERAL_CREATOR});
 ```
 
 ### Token Authorization

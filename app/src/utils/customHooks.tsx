@@ -362,9 +362,7 @@ export function invalidateProjectHydration({
   reset?: boolean;
 }) {
   if (reset) {
-    client.resetQueries({
-      queryKey: [HYDRATION_KEY_PREFIX, projectId],
-    });
+    client.resetQueries({queryKey: [HYDRATION_KEY_PREFIX, projectId]});
   } else {
     client.invalidateQueries({
       queryKey: [HYDRATION_KEY_PREFIX, projectId],
@@ -388,9 +386,7 @@ export function invalidateProjectRecordList({
   reset?: boolean;
 }) {
   if (reset) {
-    client.resetQueries({
-      queryKey: [RECORD_LIST_KEY_PREFIX, projectId],
-    });
+    client.resetQueries({queryKey: [RECORD_LIST_KEY_PREFIX, projectId]});
   } else {
     client.invalidateQueries({
       queryKey: [RECORD_LIST_KEY_PREFIX, projectId],
@@ -595,10 +591,7 @@ export const useRecordList = ({
       );
     }
 
-    return {
-      myRecords: justMyRecords,
-      otherRecords,
-    };
+    return {myRecords: justMyRecords, otherRecords};
   }, [nonDraftRecords, activeUser, enableProfiling, projectId]);
 
   // Log final state when profiling
@@ -643,11 +636,7 @@ export const useIndividualHydratedRecord = ({
       activeUser?.username,
       token?.globalRoles,
       token?.resourceRoles,
-      ...buildHydrateKeys({
-        projectId,
-        recordId,
-        revisionId,
-      }),
+      ...buildHydrateKeys({projectId, recordId, revisionId}),
     ],
     queryFn: () => {
       // Grab the minimal metadata
@@ -767,11 +756,7 @@ export const useIsAuthorisedTo = ({
 
   return useMemo(
     () =>
-      isAuthorized({
-        decodedToken: activeUser.parsedToken,
-        action,
-        resourceId,
-      }),
+      isAuthorized({decodedToken: activeUser.parsedToken, action, resourceId}),
     [action, resourceId, activeUser.token]
   );
 };

@@ -118,9 +118,7 @@ describe('Email Verification Tests', () => {
       });
 
       // Validate with correct information
-      let validation = await validateVerificationChallenge({
-        code,
-      });
+      let validation = await validateVerificationChallenge({code});
 
       expect(validation.valid).to.be.true;
       expect(validation.user).to.not.be.undefined;
@@ -160,14 +158,10 @@ describe('Email Verification Tests', () => {
       expect(validation.valid).to.be.false;
 
       // Consume the verification challenge
-      await consumeVerificationChallenge({
-        code,
-      });
+      await consumeVerificationChallenge({code});
 
       // Validate used code
-      validation = await validateVerificationChallenge({
-        code,
-      });
+      validation = await validateVerificationChallenge({code});
 
       expect(validation.valid).to.be.false;
       expect(validation.validationError).to.include('already been used');
@@ -246,24 +240,18 @@ describe('Email Verification Tests', () => {
 
       // Verify it's not used
       const hashedCode = hashChallengeCode(code);
-      let challenge = await getVerificationChallengeByCode({
-        code: hashedCode,
-      });
+      let challenge = await getVerificationChallengeByCode({code: hashedCode});
 
       expect(challenge).to.not.be.null;
       expect(challenge!.used).to.be.false;
 
       // Consume the challenge
-      const consumedChallenge = await consumeVerificationChallenge({
-        code,
-      });
+      const consumedChallenge = await consumeVerificationChallenge({code});
 
       expect(consumedChallenge.used).to.be.true;
 
       // Verify it's marked as used in the database
-      challenge = await getVerificationChallengeByCode({
-        code: hashedCode,
-      });
+      challenge = await getVerificationChallengeByCode({code: hashedCode});
 
       expect(challenge).to.not.be.null;
       expect(challenge!.used).to.be.true;
@@ -371,9 +359,7 @@ describe('Email Verification Tests', () => {
       // Confirm verification
       const response = await request(app)
         .put('/api/verify')
-        .send({
-          code,
-        } as PutConfirmEmailVerificationRequest)
+        .send({code} as PutConfirmEmailVerificationRequest)
         .expect(200);
 
       expect(response.body.message).to.include('successfully verified');
@@ -411,18 +397,14 @@ describe('Email Verification Tests', () => {
       // Attempt to confirm verification
       await request(app)
         .put('/api/verify')
-        .send({
-          code,
-        } as PutConfirmEmailVerificationRequest)
+        .send({code} as PutConfirmEmailVerificationRequest)
         .expect(401);
     });
 
     it('confirm email verification with invalid code fails', async () => {
       await request(app)
         .put('/api/verify')
-        .send({
-          code: 'invalid-code',
-        } as PutConfirmEmailVerificationRequest)
+        .send({code: 'invalid-code'} as PutConfirmEmailVerificationRequest)
         .expect(401);
     });
 
@@ -437,16 +419,12 @@ describe('Email Verification Tests', () => {
       });
 
       // Consume the code
-      await consumeVerificationChallenge({
-        code,
-      });
+      await consumeVerificationChallenge({code});
 
       // Attempt to confirm verification
       await request(app)
         .put('/api/verify')
-        .send({
-          code,
-        } as PutConfirmEmailVerificationRequest)
+        .send({code} as PutConfirmEmailVerificationRequest)
         .expect(401);
     });
 

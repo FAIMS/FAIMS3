@@ -89,11 +89,7 @@ const ImageAttachment: React.FC<{
     <img
       src={url}
       alt={filename || `Attachment ${index + 1}`}
-      style={{
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-      }}
+      style={{width: '100%', height: '100%', objectFit: 'cover'}}
     />
   </Box>
 );
@@ -101,10 +97,10 @@ const ImageAttachment: React.FC<{
 /**
  * Renders a non-image file attachment as an icon card
  */
-const FileAttachment: React.FC<{
-  filename: string;
-  contentType: string;
-}> = ({filename, contentType}) => (
+const FileAttachment: React.FC<{filename: string; contentType: string}> = ({
+  filename,
+  contentType,
+}) => (
   <Paper
     elevation={0}
     sx={{
@@ -162,12 +158,7 @@ const UnsyncedPlaceholder: React.FC<{index: number}> = () => (
       p: 1.5,
     }}
   >
-    <CloudOffIcon
-      sx={{
-        fontSize: 36,
-        color: 'rgba(0, 0, 0, 0.3)',
-      }}
-    />
+    <CloudOffIcon sx={{fontSize: 36, color: 'rgba(0, 0, 0, 0.3)'}} />
     <Typography
       variant="caption"
       sx={{

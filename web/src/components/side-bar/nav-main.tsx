@@ -22,11 +22,7 @@ export interface NavItem {
   url: string;
   icon?: LucideIcon;
   isActive?: boolean;
-  items?: {
-    id: string;
-    title: string;
-    url?: string;
-  }[];
+  items?: {id: string; title: string; url?: string}[];
 }
 
 interface NavMainProps {

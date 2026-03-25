@@ -24,10 +24,7 @@ function wrap(fn) {
     if (ret && ret.catch) ret.catch(err => next(err));
     return ret;
   };
-  Object.defineProperty(newFn, 'length', {
-    value: fn.length,
-    writable: false,
-  });
+  Object.defineProperty(newFn, 'length', {value: fn.length, writable: false});
   return copyFnProps(fn, newFn);
 }
 

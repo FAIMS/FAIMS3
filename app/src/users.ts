@@ -77,13 +77,7 @@ export function parseToken(token: string): TokenContents {
   const name = (payload['name'] as string) ?? undefined;
   const decodedRoles = decodeAndValidateToken(payload as TokenPermissions);
 
-  return {
-    username: username,
-    name: name,
-    server: server,
-    exp,
-    ...decodedRoles,
-  };
+  return {username: username, name: name, server: server, exp, ...decodedRoles};
 }
 
 export async function shouldDisplayRecord({

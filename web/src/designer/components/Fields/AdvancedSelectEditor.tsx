@@ -43,10 +43,7 @@ type OptionTreeType = {
   children?: OptionTreeType[];
 };
 
-type newState = {
-  optionTree: OptionTreeType;
-  valueType: string;
-};
+type newState = {optionTree: OptionTreeType; valueType: string};
 
 export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
@@ -201,12 +198,7 @@ export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
                         },
                         {
                           name: 'Level 2',
-                          children: [
-                            {
-                              name: 'Level 2.1',
-                              children: [],
-                            },
-                          ],
+                          children: [{name: 'Level 2.1', children: []}],
                         },
                       ],
                       null,

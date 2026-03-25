@@ -135,10 +135,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
           ? JSON.parse(JSON.stringify(existing[0]))
           : {...EMPTY_FIELD_CONDITION};
 
-      const newCondition = {
-        ...condition,
-        conditions: [...existing, template],
-      };
+      const newCondition = {...condition, conditions: [...existing, template]};
       updateCondition(newCondition);
     }
   };
@@ -201,12 +198,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
 
 export const FieldConditionControl = (props: ConditionProps) => {
   const initialValue = useMemo(
-    () =>
-      props.initial || {
-        field: '',
-        operator: 'equal',
-        value: '',
-      },
+    () => props.initial || {field: '', operator: 'equal', value: ''},
     [props]
   );
   const [condition, setCondition] = useState(initialValue);
@@ -282,11 +274,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
       }
     }
 
-    updateCondition({
-      field: value,
-      operator: newOperator,
-      value: newValue,
-    });
+    updateCondition({field: value, operator: newOperator, value: newValue});
   };
 
   const updateOperator = (value: string) => {
@@ -344,7 +332,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
             <Select
               data-testid="value-input"
               label="Value"
-              value={isValidOption ? condition.value : condition.value ?? ''}
+              value={isValidOption ? condition.value : (condition.value ?? '')}
               onChange={e => updateValue(e.target.value)}
             >
               {possibleOptions.map((opt: any) => (

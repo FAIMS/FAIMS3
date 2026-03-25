@@ -31,23 +31,14 @@ function RouteComponent() {
   const paths = useMemo(
     () => [
       // projects ->
-      {
-        path: '/teams',
-        label: 'Teams',
-      },
+      {path: '/teams', label: 'Teams'},
       // project name
-      {
-        path: pathname,
-        label: team?.name ?? teamId,
-      },
+      {path: pathname, label: team?.name ?? teamId},
     ],
     [pathname, team]
   );
 
-  useBreadcrumbUpdate({
-    isLoading,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading, paths});
 
   // Access checks
   const canSeeTeamDetails = useIsAuthorisedTo({

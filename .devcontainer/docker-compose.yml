@@ -1,12 +1,12 @@
 services:
   couchdb:
     image: couchdb:3@sha256:d341311cf03840dfb96a7c1bcf7ef5b6a6a4d2ac53e01e7a5095329cbe8cd37c
-    volumes: 
+    volumes:
       - type: volume
         source: couchdb-data
         target: /opt/couchdb/data
     ports:
-      - "0.0.0.0:5984:5984"     
+      - '0.0.0.0:5984:5984'
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=aSecretPasswordThatCantBeGuessed

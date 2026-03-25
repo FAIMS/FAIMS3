@@ -87,13 +87,8 @@ const NotifyPopup: React.FC<PopupProps> = ({
       variant="filled"
       sx={{
         width: '100%',
-        '& .MuiAlert-message': {
-          fontSize: '1rem',
-          padding: '8px 0',
-        },
-        '& .MuiAlert-icon': {
-          fontSize: '24px',
-        },
+        '& .MuiAlert-message': {fontSize: '1rem', padding: '8px 0'},
+        '& .MuiAlert-icon': {fontSize: '24px'},
       }}
     >
       {message}
@@ -166,12 +161,7 @@ export const NotificationProvider: React.FC<{children: React.ReactNode}> = ({
   // Provide notification functions to children and render the notification component
   return (
     <NotificationContext.Provider
-      value={{
-        showSuccess,
-        showError,
-        showInfo,
-        showWarning,
-      }}
+      value={{showSuccess, showError, showInfo, showWarning}}
     >
       {children}
       <NotifyPopup

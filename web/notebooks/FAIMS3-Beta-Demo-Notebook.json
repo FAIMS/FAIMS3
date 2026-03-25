@@ -1,18 +1,7 @@
 {
   "metadata": {
-    "access": {
-      "accessFORM1": [
-        "admin"
-      ],
-      "accessFORM2": [
-        "admin"
-      ]
-    },
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "access": {"accessFORM1": ["admin"], "accessFORM2": ["admin"]},
+    "accesses": ["admin", "moderator", "team"],
     "behaviours": {},
     "filenames": [],
     "forms": {
@@ -34,9 +23,7 @@
     "ispublic": false,
     "isrequest": false,
     "lead_institution": "Macquarie University",
-    "meta": {
-      "Thing2Label": "Demonstration project metadata"
-    },
+    "meta": {"Thing2Label": "Demonstration project metadata"},
     "pre_description": "This is a demonstration notebook walking through the key features of FAIMS3 Beta.",
     "project_lead": "Penny Crook",
     "project_status": "New",
@@ -47,19 +34,13 @@
   "ui-specification": {
     "fields": {
       "colour-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Colour picker"
-          },
-          "InputProps": {
-            "type": "color"
-          },
+          "InputLabelProps": {"label": "Colour picker"},
+          "InputProps": {"type": "color"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "Tap the colour picker to select an RGB value from the array.",
@@ -72,32 +53,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Colour",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "date-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Date picker"
-          },
-          "InputProps": {
-            "type": "date"
-          },
+          "InputLabelProps": {"label": "Date picker"},
+          "InputProps": {"type": "date"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "We have a date picker with a calendar prompt.",
@@ -110,32 +78,19 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Date",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "date-and-time-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Date and Time picker"
-          },
-          "InputProps": {
-            "type": "datetime-local"
-          },
+          "InputLabelProps": {"label": "Date and Time picker"},
+          "InputProps": {"type": "datetime-local"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "And a calendar prompt with a timestamp.",
@@ -148,32 +103,18 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Datetime",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "hridFORM1": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
-          "InputLabelProps": {
-            "label": "Thing 1 Unique ID"
-          },
-          "InputProps": {
-            "readOnly": true,
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Thing 1 Unique ID"},
+          "InputProps": {"readOnly": true, "type": "text"},
           "fieldselect10": "text-field",
           "fieldselect11": "number-field",
           "fullWidth": true,
@@ -191,35 +132,18 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ]
+        "validationSchema": [["yup.string"], ["yup.required"]]
       },
       "hridFORM2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
-          "InputLabelProps": {
-            "label": "Thing 2 Human Identifier"
-          },
-          "InputProps": {
-            "readOnly": true,
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Thing 2 Human Identifier"},
+          "InputProps": {"readOnly": true, "type": "text"},
           "fieldselect10": "thing-2-incrementer",
           "fieldselect11": "thing-2-name",
           "fullWidth": true,
@@ -237,32 +161,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "month-picker": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Month picker"
-          },
-          "InputProps": {
-            "type": "month"
-          },
+          "InputLabelProps": {"label": "Month picker"},
+          "InputProps": {"type": "month"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "And one to select just the month if that is all you need.",
@@ -275,22 +186,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Date",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -307,45 +209,30 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "radio-with-option-for-other": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "ElementProps": {
             "options": [
               {
-                "RadioProps": {
-                  "id": "radio-group-field-0"
-                },
+                "RadioProps": {"id": "radio-group-field-0"},
                 "label": "Up",
                 "value": "Up"
               },
               {
-                "RadioProps": {
-                  "id": "radio-group-field-1"
-                },
+                "RadioProps": {"id": "radio-group-field-1"},
                 "label": " Down",
                 "value": " Down"
               },
               {
-                "RadioProps": {
-                  "id": "radio-group-field-2"
-                },
+                "RadioProps": {"id": "radio-group-field-2"},
                 "label": " Other",
                 "value": " Other"
               }
@@ -354,9 +241,7 @@
           "FormHelperTextProps": {
             "children": "If you cannot see you option, select OTHER, tap the icon to the right and enter it as OTHER."
           },
-          "FormLabelProps": {
-            "children": "Radio with Option for Other"
-          },
+          "FormLabelProps": {"children": "Radio with Option for Other"},
           "id": "radio-with-option-for-other",
           "name": "radio-with-option-for-other",
           "required": false,
@@ -366,38 +251,25 @@
         "meta": {
           "annotation": true,
           "annotation_label": "Other",
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "radio-button": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RadioGroup",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "ElementProps": {
             "options": [
               {
-                "RadioProps": {
-                  "id": "radio-group-field-0"
-                },
+                "RadioProps": {"id": "radio-group-field-0"},
                 "label": " Left",
                 "value": " Left"
               },
               {
-                "RadioProps": {
-                  "id": "radio-group-field-1"
-                },
+                "RadioProps": {"id": "radio-group-field-1"},
                 "label": " Right",
                 "value": " Right"
               }
@@ -406,9 +278,7 @@
           "FormHelperTextProps": {
             "children": "If you only have a few choices, a Radio button might be the best option"
           },
-          "FormLabelProps": {
-            "children": "Radio Button"
-          },
+          "FormLabelProps": {"children": "Radio Button"},
           "id": "radio-button",
           "name": "radio-button",
           "required": false,
@@ -418,22 +288,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -450,29 +311,18 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "controlled-number": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Controlled Number"
-          },
+          "InputLabelProps": {"label": "Controlled Number"},
           "InputProps": {},
           "SelectProps": {},
           "fullWidth": true,
@@ -486,62 +336,31 @@
         "meta": {
           "annotation": false,
           "annotation_label": "",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
         "validationSchema": [
-          [
-            "yup.number"
-          ],
-          [
-            "yup.min",
-            10,
-            "Must be 10 or more"
-          ],
-          [
-            "yup.max",
-            20,
-            "Must be 20 or less"
-          ],
-          [
-            "yup.required",
-            "You must fill this in!"
-          ]
+          ["yup.number"],
+          ["yup.min", 10, "Must be 10 or more"],
+          ["yup.max", 20, "Must be 20 or less"],
+          ["yup.required", "You must fill this in!"]
         ]
       },
       "multi-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultiSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "ElementProps": {
             "options": [
-              {
-                "label": "Option A",
-                "value": "Option A"
-              },
-              {
-                "label": " Option B",
-                "value": " Option B"
-              },
-              {
-                "label": " Option C",
-                "value": " Option C"
-              }
+              {"label": "Option A", "value": "Option A"},
+              {"label": " Option B", "value": " Option B"},
+              {"label": " Option C", "value": " Option C"}
             ]
           },
-          "InputLabelProps": {
-            "label": "Multi Select Field"
-          },
+          "InputLabelProps": {"label": "Multi Select Field"},
           "InputProps": {},
-          "SelectProps": {
-            "multiple": true
-          },
+          "SelectProps": {"multiple": true},
           "fullWidth": true,
           "helperText": "You can also select multiple options from the pick list",
           "id": "multi-select-field",
@@ -554,32 +373,18 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Array",
-        "validationSchema": [
-          [
-            "yup.array"
-          ]
-        ]
+        "validationSchema": [["yup.array"]]
       },
       "thing-2-human-identifier": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
-          "InputLabelProps": {
-            "label": "Thing 2 Human Identifier"
-          },
-          "InputProps": {
-            "readOnly": true,
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Thing 2 Human Identifier"},
+          "InputProps": {"readOnly": true, "type": "text"},
           "fieldselect10": "thing-2-incrementer",
           "fieldselect11": "thing-2-name",
           "fullWidth": true,
@@ -596,44 +401,24 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "Select",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "ElementProps": {
             "options": [
-              {
-                "label": " Option 1",
-                "value": " Option 1"
-              },
-              {
-                "label": " Option 2",
-                "value": " Option 2"
-              },
-              {
-                "label": " Option 3",
-                "value": " Option 3"
-              }
+              {"label": " Option 1", "value": " Option 1"},
+              {"label": " Option 2", "value": " Option 2"},
+              {"label": " Option 3", "value": " Option 3"}
             ]
           },
-          "InputLabelProps": {
-            "label": "Select Field"
-          },
+          "InputLabelProps": {"label": "Select Field"},
           "InputProps": {},
           "SelectProps": {},
           "fullWidth": true,
@@ -648,22 +433,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-3": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -680,28 +456,17 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "mapformfield": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MapFormField",
         "component-namespace": "mapping-plugin",
         "component-parameters": {
-          "FormLabelProps": {
-            "children": ""
-          },
+          "FormLabelProps": {"children": ""},
           "featureType": "Polygon",
           "id": "mapformfield",
           "label": "",
@@ -714,32 +479,19 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::JSON",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "controlled-text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Controlled Text Field"
-          },
-          "InputProps": {
-            "type": "string"
-          },
+          "InputLabelProps": {"label": "Controlled Text Field"},
+          "InputProps": {"type": "string"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "If the text does not meet the validation rule you cannot save and sync. This one must be at least 5 characters long.",
@@ -752,41 +504,26 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
         "validationSchema": [
-          [
-            "yup.string"
-          ],
+          ["yup.string"],
           [
             "yup.required",
             "I do not want to eat these green eggs and ham -- I want a longer string instead!"
           ],
-          [
-            "yup.min",
-            "5",
-            "At least 5 characters, please. Not just ham..."
-          ]
+          ["yup.min", "5", "At least 5 characters, please. Not just ham..."]
         ]
       },
       "required-text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Required Text Field"
-          },
-          "InputProps": {
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Required Text Field"},
+          "InputProps": {"type": "text"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "If no value is entered, you can't save and sync the record. ",
@@ -799,22 +536,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "hierarchical-picker-full-path": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "AdvancedSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -825,41 +553,24 @@
                   {
                     "children": [
                       {
-                        "children": [
-                          {
-                            "children": [],
-                            "name": "Level 1.1.1.1"
-                          }
-                        ],
+                        "children": [{"children": [], "name": "Level 1.1.1.1"}],
                         "name": "Level 1.1.1"
                       }
                     ],
                     "name": "Level 1.1"
                   },
-                  {
-                    "children": [],
-                    "name": "Level 1.2"
-                  }
+                  {"children": [], "name": "Level 1.2"}
                 ],
                 "name": "Level 1"
               },
               {
                 "children": [
-                  {
-                    "children": [],
-                    "name": "Level 2.1"
-                  },
-                  {
-                    "children": [],
-                    "name": "Level 2.2"
-                  }
+                  {"children": [], "name": "Level 2.1"},
+                  {"children": [], "name": "Level 2.2"}
                 ],
                 "name": "Level 2"
               },
-              {
-                "children": [],
-                "name": "Level 3"
-              }
+              {"children": [], "name": "Level 3"}
             ]
           },
           "InputProps": {},
@@ -878,22 +589,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "hierarchical-picker-full-path-only": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "AdvancedSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -904,41 +606,24 @@
                   {
                     "children": [
                       {
-                        "children": [
-                          {
-                            "children": [],
-                            "name": "Level 1.1.1.1"
-                          }
-                        ],
+                        "children": [{"children": [], "name": "Level 1.1.1.1"}],
                         "name": "Level 1.1.1"
                       }
                     ],
                     "name": "Level 1.1"
                   },
-                  {
-                    "children": [],
-                    "name": "Level 1.2"
-                  }
+                  {"children": [], "name": "Level 1.2"}
                 ],
                 "name": "Level 1"
               },
               {
                 "children": [
-                  {
-                    "children": [],
-                    "name": "Level 2.1"
-                  },
-                  {
-                    "children": [],
-                    "name": "Level 2.2"
-                  }
+                  {"children": [], "name": "Level 2.1"},
+                  {"children": [], "name": "Level 2.2"}
                 ],
                 "name": "Level 2"
               },
-              {
-                "children": [],
-                "name": "Level 3"
-              }
+              {"children": [], "name": "Level 3"}
             ]
           },
           "InputProps": {},
@@ -957,22 +642,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-4": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -989,32 +665,18 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "thing-1-unique-id": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TemplatedStringField",
         "component-namespace": "faims-custom",
         "component-parameters": {
-          "InputLabelProps": {
-            "label": "Thing 1 Unique ID"
-          },
-          "InputProps": {
-            "readOnly": true,
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Thing 1 Unique ID"},
+          "InputProps": {"readOnly": true, "type": "text"},
           "fieldselect10": "text-field",
           "fieldselect11": "number-field",
           "fullWidth": true,
@@ -1031,35 +693,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ]
+        "validationSchema": [["yup.string"], ["yup.required"]]
       },
       "thing-2-name": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Thing 2 name"
-          },
-          "InputProps": {
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Thing 2 name"},
+          "InputProps": {"type": "text"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "Give Thing 2 a name or title",
@@ -1072,22 +718,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-5": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1104,22 +741,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "fileuploader": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "FileUploader",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1131,22 +759,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-attachment::Files",
-        "validationSchema": [
-          [
-            "yup.mixed"
-          ]
-        ]
+        "validationSchema": [["yup.mixed"]]
       },
       "thing-2-incrementer": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "BasicAutoIncrementer",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1162,22 +781,13 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "take-point": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePoint",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1192,25 +802,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-pos::Location",
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ]
+        "validationSchema": [["yup.object"], ["yup.nullable"]]
       },
       "html-text-6": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1227,22 +825,13 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-7": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1259,32 +848,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "is-related-to": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Is related to"
-          },
-          "InputProps": {
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Is related to"},
+          "InputProps": {"type": "text"},
           "SelectProps": {},
           "current_form": "FORM2",
           "current_form_label": "Thing 2",
@@ -1296,14 +872,8 @@
           "related_type": "FORM2",
           "related_type_label": "Thing 2",
           "relation_linked_vocabPair": [
-            [
-              "is_above",
-              "is below"
-            ],
-            [
-              "is related",
-              "is related to"
-            ]
+            ["is_above", "is below"],
+            ["is related", "is related to"]
           ],
           "relation_type": "faims-core::Linked",
           "required": false,
@@ -1313,22 +883,13 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "take-photo": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePhoto",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1343,36 +904,19 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-attachment::Files",
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ]
+        "validationSchema": [["yup.object"], ["yup.nullable"]]
       },
       "multi-line-text": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultipleTextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Multi line text"
-          },
-          "InputProps": {
-            "rows": 4,
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Multi line text"},
+          "InputProps": {"rows": 4, "type": "text"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "We can also store multi line Text boxes for when you have a lot of data.",
@@ -1386,28 +930,17 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "date-and-time-now": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "DateTimeNow",
         "component-namespace": "faims-custom",
         "component-parameters": {
-          "InputLabelProps": {
-            "label": "Date and Time NOW"
-          },
+          "InputLabelProps": {"label": "Date and Time NOW"},
           "fullWidth": true,
           "helperText": "Click or tap to add the current Date and Time ",
           "id": "date-and-time-now",
@@ -1420,32 +953,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "related-thing": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Related Thing"
-          },
-          "InputProps": {
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Related Thing"},
+          "InputProps": {"type": "text"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "Select or Add new related record",
@@ -1461,22 +981,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-8": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1493,22 +1004,13 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-9": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1525,22 +1027,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-10": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1557,22 +1050,13 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "take-photo-2": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TakePhoto",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1587,35 +1071,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-attachment::Files",
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ]
+        "validationSchema": [["yup.object"], ["yup.nullable"]]
       },
       "linking-relationships": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Linking Relationships"
-          },
-          "InputProps": {
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Linking Relationships"},
+          "InputProps": {"type": "text"},
           "SelectProps": {},
           "current_form": "FORM2",
           "current_form_label": "Thing 2",
@@ -1627,14 +1095,8 @@
           "related_type": "FORM2",
           "related_type_label": "Thing 2",
           "relation_linked_vocabPair": [
-            [
-              "is_above",
-              "is below"
-            ],
-            [
-              "is related",
-              "is related to"
-            ]
+            ["is_above", "is below"],
+            ["is related", "is related to"]
           ],
           "relation_type": "faims-core::Linked",
           "required": true,
@@ -1644,28 +1106,17 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "checkbox": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "Checkbox",
         "component-namespace": "faims-custom",
         "component-parameters": {
-          "FormControlLabelProps": {
-            "label": "Check box"
-          },
+          "FormControlLabelProps": {"label": "Check box"},
           "FormHelperTextProps": {
             "children": "If you need just one option, you might use a Check box"
           },
@@ -1678,44 +1129,24 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Bool",
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ]
+        "validationSchema": [["yup.bool"]]
       },
       "uncertain-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "Select",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "ElementProps": {
             "options": [
-              {
-                "label": "Option 1",
-                "value": "Option 1"
-              },
-              {
-                "label": " Option 2",
-                "value": " Option 2"
-              },
-              {
-                "label": " Option 3",
-                "value": " Option 3"
-              }
+              {"label": "Option 1", "value": "Option 1"},
+              {"label": " Option 2", "value": " Option 2"},
+              {"label": " Option 3", "value": " Option 3"}
             ]
           },
-          "InputLabelProps": {
-            "label": "Uncertain Select Field"
-          },
+          "InputLabelProps": {"label": "Uncertain Select Field"},
           "InputProps": {},
           "SelectProps": {},
           "fullWidth": true,
@@ -1730,32 +1161,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "Marginal Note",
-          "uncertainty": {
-            "include": true,
-            "label": "Not Sure"
-          }
+          "uncertainty": {"include": true, "label": "Not Sure"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "email": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Email"
-          },
-          "InputProps": {
-            "type": "email"
-          },
+          "InputLabelProps": {"label": "Email"},
+          "InputProps": {"type": "email"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "We can also store Email addresses.",
@@ -1768,26 +1186,16 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Email",
         "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.email",
-            "Enter a valid email"
-          ]
+          ["yup.string"],
+          ["yup.email", "Enter a valid email"]
         ]
       },
       "html-text-11": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1804,32 +1212,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "text-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Text Field"
-          },
-          "InputProps": {
-            "type": "string"
-          },
+          "InputLabelProps": {"label": "Text Field"},
+          "InputProps": {"type": "string"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "We have Text fields.",
@@ -1842,32 +1237,19 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "text-field-prepop": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Prepopulated Field"
-          },
-          "InputProps": {
-            "type": "string"
-          },
+          "InputLabelProps": {"label": "Prepopulated Field"},
+          "InputProps": {"type": "string"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "This field's default is 'Default'",
@@ -1880,22 +1262,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-12": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1912,22 +1285,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-13": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1943,22 +1307,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-14": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -1975,32 +1330,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "parent-child-relationships": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RelatedRecordSelector",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Parent-Child Relationships"
-          },
-          "InputProps": {
-            "type": "text"
-          },
+          "InputLabelProps": {"label": "Parent-Child Relationships"},
+          "InputProps": {"type": "text"},
           "SelectProps": {},
           "current_form": "FORM2",
           "current_form_label": "Thing 2",
@@ -2020,48 +1362,26 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Relationship",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "new-select-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "MultiSelect",
         "component-namespace": "faims-custom",
         "component-parameters": {
           "ElementProps": {
             "options": [
-              {
-                "label": "Option A",
-                "value": "Option A"
-              },
-              {
-                "label": "Option B",
-                "value": "Option B"
-              },
-              {
-                "label": "Option C",
-                "value": "Option C"
-              }
+              {"label": "Option A", "value": "Option A"},
+              {"label": "Option B", "value": "Option B"},
+              {"label": "Option C", "value": "Option C"}
             ]
           },
-          "InputLabelProps": {
-            "label": "New select field"
-          },
+          "InputLabelProps": {"label": "New select field"},
           "InputProps": {},
-          "SelectProps": {
-            "multiple": true
-          },
+          "SelectProps": {"multiple": true},
           "fullWidth": true,
           "helperText": "Select your field here",
           "id": "new-select-field",
@@ -2074,22 +1394,13 @@
         "meta": {
           "annotation": true,
           "annotation_label": "Marginal notes",
-          "uncertainty": {
-            "include": true,
-            "label": ""
-          }
+          "uncertainty": {"include": true, "label": ""}
         },
         "type-returned": "faims-core::Array",
-        "validationSchema": [
-          [
-            "yup.array"
-          ]
-        ]
+        "validationSchema": [["yup.array"]]
       },
       "html-text-15": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -2105,22 +1416,13 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "html-text-16": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "RandomStyle",
         "component-namespace": "faims-custom",
         "component-parameters": {
@@ -2137,32 +1439,19 @@
         "meta": {
           "annotation": true,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       },
       "number-field": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Number field"
-          },
-          "InputProps": {
-            "type": "number"
-          },
+          "InputLabelProps": {"label": "Number field"},
+          "InputProps": {"type": "number"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "We have fields for storing Numbers which can have validation.",
@@ -2175,32 +1464,19 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Integer",
-        "validationSchema": [
-          [
-            "yup.number"
-          ]
-        ]
+        "validationSchema": [["yup.number"]]
       },
       "number-field-val": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "TextField",
         "component-namespace": "formik-material-ui",
         "component-parameters": {
           "FormHelperTextProps": {},
-          "InputLabelProps": {
-            "label": "Number field"
-          },
-          "InputProps": {
-            "type": "number"
-          },
+          "InputLabelProps": {"label": "Number field"},
+          "InputProps": {"type": "number"},
           "SelectProps": {},
           "fullWidth": true,
           "helperText": "We have fields for storing Numbers which can have validation min 10 max 20.",
@@ -2213,30 +1489,13 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::Integer",
-        "validationSchema": [
-          [
-            "yup.number"
-          ],
-          [
-            "yup.min",
-            10
-          ],
-          [
-            "yup.max",
-            20
-          ]
-        ]
+        "validationSchema": [["yup.number"], ["yup.min", 10], ["yup.max", 20]]
       },
       "qr-code-demonstration-button-mobile-device-only": {
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "component-name": "QRCodeFormField",
         "component-namespace": "qrcode",
         "component-parameters": {
@@ -2253,17 +1512,10 @@
         "meta": {
           "annotation": false,
           "annotation_label": "annotation",
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "type-returned": "faims-core::String",
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ]
+        "validationSchema": [["yup.string"]]
       }
     },
     "fviews": {
@@ -2323,11 +1575,7 @@
         "uidesign": "form"
       },
       "FORM1SECTION7": {
-        "fields": [
-          "html-text-2",
-          "html-text-6",
-          "html-text-9"
-        ],
+        "fields": ["html-text-2", "html-text-6", "html-text-9"],
         "label": "Views",
         "uidesign": "form"
       },
@@ -2360,10 +1608,7 @@
         "uidesign": "form"
       },
       "FORM2SECTION2": {
-        "fields": [
-          "parent-child-relationships",
-          "linking-relationships"
-        ],
+        "fields": ["parent-child-relationships", "linking-relationships"],
         "label": "Relationships",
         "uidesign": "form"
       }
@@ -2381,17 +1626,8 @@
           "FORM1SECTION8"
         ]
       },
-      "FORM2": {
-        "label": "Thing 2",
-        "views": [
-          "FORM2SECTION1",
-          "FORM2SECTION2"
-        ]
-      }
+      "FORM2": {"label": "Thing 2", "views": ["FORM2SECTION1", "FORM2SECTION2"]}
     },
-    "visible_types": [
-      "FORM1",
-      "FORM2"
-    ]
+    "visible_types": ["FORM1", "FORM2"]
   }
 }

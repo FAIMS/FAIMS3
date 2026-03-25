@@ -17,14 +17,13 @@ const badgeVariants = cva(
         outline: 'text-foreground',
       },
     },
-    defaultVariants: {
-      variant: 'default',
-    },
+    defaultVariants: {variant: 'default'},
   }
 );
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
 function Badge({className, variant, ...props}: BadgeProps) {

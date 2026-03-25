@@ -30,20 +30,14 @@ export default function CircularLoading(props: {label: string}) {
         <CircularProgress
           size={36}
           thickness={5}
-          sx={{
-            color: 'primary.main',
-          }}
+          sx={{color: 'primary.main'}}
         />
       </Grid>
       <Grid item>
         <Typography
           variant="h6"
           color="text.secondary"
-          sx={{
-            fontWeight: 600,
-            display: 'block',
-            mt: {xs: 2, sm: 0},
-          }}
+          sx={{fontWeight: 600, display: 'block', mt: {xs: 2, sm: 0}}}
         >
           {props.label}
         </Typography>

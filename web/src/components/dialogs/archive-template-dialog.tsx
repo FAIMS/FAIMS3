@@ -35,9 +35,7 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${user?.token}`,
           },
-          body: JSON.stringify({
-            archive: !archived,
-          }),
+          body: JSON.stringify({archive: !archived}),
         }
       );
 

@@ -54,6 +54,4 @@ const indexDocument = {
 /**
  * Exports all design documents for the migrations database
  */
-export const migrationDbDesignDocuments = {
-  indexDocument,
-};
+export const migrationDbDesignDocuments = {indexDocument};

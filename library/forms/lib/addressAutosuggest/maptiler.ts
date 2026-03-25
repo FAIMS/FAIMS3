@@ -48,10 +48,7 @@ interface MapTilerFeature {
   place_type?: string[];
   center?: [number, number];
   context?: MapTilerContext[];
-  properties?: {
-    country_code?: string;
-    kind?: string;
-  };
+  properties?: {country_code?: string; kind?: string};
   geometry?: {type: string; coordinates: [number, number]};
 }
 
@@ -147,10 +144,7 @@ export class MapTilerAutosuggestAddressService implements IAutosuggestAddressSer
         'MapTilerAutosuggestAddressService requires a non-empty apiKey'
       );
     }
-    this.config = {
-      limit: 10,
-      ...config,
-    };
+    this.config = {limit: 10, ...config};
   }
 
   /** Suggests addresses for a query; results can be resolved to
@@ -217,9 +211,7 @@ export class MapTilerAutosuggestAddressService implements IAutosuggestAddressSer
     if (cached) {
       return mapTilerFeatureToAddressValue(cached);
     }
-    const params = new URLSearchParams({
-      key: this.config.apiKey,
-    });
+    const params = new URLSearchParams({key: this.config.apiKey});
     if (this.config.language) {
       params.set('language', this.config.language);
     }

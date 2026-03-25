@@ -5,10 +5,7 @@ type Theme = 'dark' | 'light' | 'system';
 const ThemeProviderContext = createContext<{
   theme: Theme;
   setTheme: (theme: Theme) => void;
-}>({
-  theme: 'system',
-  setTheme: () => null,
-});
+}>({theme: 'system', setTheme: () => null});
 
 /**
  * ThemeProvider component provides a context for managing the theme state.

@@ -614,12 +614,8 @@ export const EditableFormManager: React.FC<
         removeAttachment: handleRemoveAttachment,
         setAttachmentSaving,
       },
-      attachmentSaving: {
-        isSaving: () => attachmentSavingCounts.size > 0,
-      },
-      trigger: {
-        commit: flushSave,
-      },
+      attachmentSaving: {isSaving: () => attachmentSavingCounts.size > 0},
+      trigger: {commit: flushSave},
     }),
     [
       onCompleteHandlerWithAttachmentLock,

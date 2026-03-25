@@ -48,9 +48,7 @@ import {replaceOrAppendRedirect} from '../../utils/helpers';
 import MainCard from '../components/ui/main-card';
 import {QRCodeButton} from '@faims3/forms';
 
-type ShortCodeProps = {
-  servers: Server[];
-};
+type ShortCodeProps = {servers: Server[]};
 
 /**
  * Component to render a control to register for a notebook via a short-code
@@ -136,9 +134,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
       const redirect = `${window.location.protocol}//${window.location.host}/auth-return`;
       window.location.href = url + '&redirect=' + redirect;
     } else {
-      await Browser.open({
-        url: `${url}&redirect=${APP_ID}://auth-return`,
-      });
+      await Browser.open({url: `${url}&redirect=${APP_ID}://auth-return`});
     }
   };
 
@@ -212,11 +208,7 @@ export function ShortCodeRegistration(props: ShortCodeProps) {
             variant="outlined"
             startIcon={<LoginIcon />}
             disabled={shortCode.length !== 6}
-            sx={{
-              minWidth: '100px',
-              height: '40px',
-              bgcolor: 'grey.100',
-            }}
+            sx={{minWidth: '100px', height: '40px', bgcolor: 'grey.100'}}
           >
             Submit
           </Button>
@@ -249,15 +241,10 @@ export function QRCodeRegistration(props: ShortCodeProps) {
       });
 
       // Use the capacitor browser plugin in apps
-      await Browser.open({
-        url: finalUrl,
-      });
+      await Browser.open({url: finalUrl});
     } else {
       dispatch(
-        addAlert({
-          message: 'Invalid QRCode Scanned',
-          severity: 'warning',
-        })
+        addAlert({message: 'Invalid QRCode Scanned', severity: 'warning'})
       );
     }
   };
@@ -277,13 +264,7 @@ export function QRCodeRegistration(props: ShortCodeProps) {
         </Grid>
       }
     >
-      <Grid
-        container
-        spacing={2}
-        sx={{
-          margin: 'auto',
-        }}
-      >
+      <Grid container spacing={2} sx={{margin: 'auto'}}>
         <Grid item xs={12}>
           <QRCodeButton label="Scan QR Code" onScanResult={handleRegister} />
         </Grid>

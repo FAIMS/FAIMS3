@@ -48,9 +48,7 @@ export const PreviewFormManager = (props: PreviewFormManagerProps) => {
 
   const [visibleMap, setVisibleMap] = useState<FieldVisibilityMap>(
     currentlyVisibleMap({
-      values: formDataExtractor({
-        fullData: formValues,
-      }),
+      values: formDataExtractor({fullData: formValues}),
       uiSpec: uiSpec,
       viewsetId: props.formName,
     })

@@ -233,9 +233,7 @@ api.post(
  */
 api.post(
   '/auth/exchange-long-lived-token',
-  processRequest({
-    body: PostLongLivedTokenExchangeInputSchema,
-  }),
+  processRequest({body: PostLongLivedTokenExchangeInputSchema}),
   async (req, res: Response<PostLongLivedTokenExchangeResponse>) => {
     const {token} = req.body;
 
@@ -315,11 +313,7 @@ api.post(
       status: 'unknown',
       message: '',
       details: {},
-      timings: {
-        total: 0,
-        configValidation: 0,
-        emailSending: 0,
-      },
+      timings: {total: 0, configValidation: 0, emailSending: 0},
     };
 
     try {

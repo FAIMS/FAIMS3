@@ -43,7 +43,7 @@ export const areDocsEqual = (
       if (a.length !== b.length) return false;
 
       // Create a copy of b that we can mark elements as "used"
-      const bUsed = new Array(b.length).fill(false);
+      const bUsed = Array.from({length: b.length}).fill(false);
 
       // For each element in a, find a matching unused element in b
       for (let i = 0; i < a.length; i++) {

@@ -16,11 +16,7 @@ export type MigrationLog = {
   status: 'success' | 'failure';
   issues?: string[];
   // Detailed information about documents that had issues during migration
-  documentsWithIssues?: {
-    id: string;
-    error: any;
-    document: any;
-  }[];
+  documentsWithIssues?: {id: string; error: any; document: any}[];
   // Complete error details for migration-level errors
   errorDetails?: {
     message: string;

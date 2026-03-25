@@ -309,11 +309,7 @@ function writeGeoJSONFeature(
   properties: Record<string, any>,
   isFirst: boolean
 ): void {
-  const output = {
-    type: geom.type,
-    geometry: geom.geometry,
-    properties,
-  };
+  const output = {type: geom.type, geometry: geom.geometry, properties};
   stream.write(`${isFirst ? '' : ','}${JSON.stringify(output)}`);
 }
 
@@ -509,11 +505,7 @@ function createInitialStats(
   filename: string,
   hasSpatialFields: boolean
 ): SpatialAppendStats {
-  return {
-    featureCount: 0,
-    filename,
-    hasSpatialFields,
-  };
+  return {featureCount: 0, filename, hasSpatialFields};
 }
 
 // ============================================================================

@@ -38,10 +38,7 @@ export default function SupportEmail() {
       <Obfuscate
         className={'support-link'}
         email={SUPPORT_EMAIL}
-        headers={{
-          subject: `${APP_NAME} Support`,
-          body: bodyContent,
-        }}
+        headers={{subject: `${APP_NAME} Support`, body: bodyContent}}
       />
     </Typography>
   );

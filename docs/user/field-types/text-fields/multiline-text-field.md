@@ -1,6 +1,6 @@
 # Multi-line Text Field
 
-*How to add and configure a Multi-line Text Field in the Notebook Editor.*
+_How to add and configure a Multi-line Text Field in the Notebook Editor._
 
 ---
 
@@ -45,8 +45,8 @@ Field ID, and add any desired Helper Text.
 
 ### Multiline Text Field-Specific Settings
 
-| Setting | What It Does |
-| ------- | ------------ |
+| Setting             | What It Does                                                                                                                                                          |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Rows to display** | The number of visible text rows in the field. Controls the initial height of the text area — collectors can still type beyond this limit and scroll within the field. |
 
 ### Shared Field Options

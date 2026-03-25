@@ -245,8 +245,8 @@ export async function listFAIMSProjectRevisions({
 }
 
 export async function deleteFAIMSDataForID({
-  recordId: recordId,
-  userId: userId,
+  recordId,
+  userId,
   dataDb,
 }: {
   dataDb: DataDbType;
@@ -495,55 +495,53 @@ export async function getPossibleRelatedRecords({
     }
 
     const records: RecordReference[] = [];
-    await listRecordMetadata({
-      projectId,
-      dataDb,
-      uiSpecification,
-    }).then(record_list => {
-      for (const key in record_list) {
-        const metadata = record_list[key];
+    await listRecordMetadata({projectId, dataDb, uiSpecification}).then(
+      record_list => {
+        for (const key in record_list) {
+          const metadata = record_list[key];
 
-        let is_parent = false;
-        const relationship = metadata['relationship'];
+          let is_parent = false;
+          const relationship = metadata['relationship'];
 
-        if (relationType === 'faims-core::Child') {
-          //check if record has the parent, record should only have one parent
-          if (
-            relationship === undefined ||
-            relationship['parent'] === undefined ||
-            relationship['parent'] === null ||
-            relationship['parent'].record_id === undefined
-          )
-            is_parent = false;
-          else if (relationship['parent'].record_id !== recordId)
-            is_parent = true;
-          else if (
-            relationship['parent'].record_id === recordId &&
-            relationship['parent'].field_id !== fieldId
-          )
-            is_parent = true;
-        }
-        if (!metadata.deleted && metadata.type === type && !is_parent) {
-          const hrid =
-            metadata.hrid !== '' && metadata.hrid !== undefined
-              ? metadata.hrid
-              : metadata.record_id;
-          if (relation_vocab === null)
-            records.push({
-              project_id: projectId,
-              record_id: metadata.record_id,
-              record_label: hrid,
-            });
-          else
-            records.push({
-              project_id: projectId,
-              record_id: metadata.record_id,
-              record_label: hrid,
-              relation_type_vocabPair: relation_vocab, // pass the value of the vocab
-            });
+          if (relationType === 'faims-core::Child') {
+            //check if record has the parent, record should only have one parent
+            if (
+              relationship === undefined ||
+              relationship['parent'] === undefined ||
+              relationship['parent'] === null ||
+              relationship['parent'].record_id === undefined
+            )
+              is_parent = false;
+            else if (relationship['parent'].record_id !== recordId)
+              is_parent = true;
+            else if (
+              relationship['parent'].record_id === recordId &&
+              relationship['parent'].field_id !== fieldId
+            )
+              is_parent = true;
+          }
+          if (!metadata.deleted && metadata.type === type && !is_parent) {
+            const hrid =
+              metadata.hrid !== '' && metadata.hrid !== undefined
+                ? metadata.hrid
+                : metadata.record_id;
+            if (relation_vocab === null)
+              records.push({
+                project_id: projectId,
+                record_id: metadata.record_id,
+                record_label: hrid,
+              });
+            else
+              records.push({
+                project_id: projectId,
+                record_id: metadata.record_id,
+                record_label: hrid,
+                relation_type_vocabPair: relation_vocab, // pass the value of the vocab
+              });
+          }
         }
       }
-    });
+    );
     return records;
   } catch (err) {
     // TODO: What are we doing here, why would things error?
@@ -655,11 +653,7 @@ export async function getMetadataForAllRecords({
 }): Promise<RecordMetadata[]> {
   try {
     const record_list = Object.values(
-      await listRecordMetadata({
-        dataDb,
-        projectId: projectId,
-        uiSpecification,
-      })
+      await listRecordMetadata({dataDb, projectId: projectId, uiSpecification})
     );
     return await filterRecordMetadata({
       tokenContents,
@@ -875,10 +869,7 @@ export async function getSomeRecords(
     await getDataDB(project_id);
   if (!dataDB) throw Error('No data DB with project ID ' + project_id);
 
-  const options: {[key: string]: any} = {
-    limit: limit,
-    include_docs: true,
-  };
+  const options: {[key: string]: any} = {limit: limit, include_docs: true};
   // if we have a bookmark, start from there
   if (bookmark !== null) {
     options.startkey = bookmark;

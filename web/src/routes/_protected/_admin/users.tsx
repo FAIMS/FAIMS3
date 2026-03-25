@@ -18,26 +18,18 @@ function RouteComponent() {
   const paths = useMemo(
     () => [
       // projects ->
-      {
-        path: '/users',
-        label: 'Users',
-      },
+      {path: '/users', label: 'Users'},
     ],
     []
   );
 
-  useBreadcrumbUpdate({
-    isLoading: false,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading: false, paths});
 
   // Access checks
   const canSeeGlobalInvites = useIsAuthorisedTo({
     action: Action.VIEW_GLOBAL_INVITES,
   });
-  const canSeeUsers = useIsAuthorisedTo({
-    action: Action.VIEW_USER_LIST,
-  });
+  const canSeeUsers = useIsAuthorisedTo({action: Action.VIEW_USER_LIST});
 
   if (!canSeeGlobalInvites && !canSeeUsers) {
     return <p>You do not have access to view this page.</p>;

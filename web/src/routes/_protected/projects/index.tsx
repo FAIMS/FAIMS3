@@ -28,18 +28,12 @@ export function ProjectsRouteComponent() {
   const paths = useMemo(
     () => [
       // projects ->
-      {
-        path: '/projects',
-        label: NOTEBOOK_NAME_CAPITALIZED + 's',
-      },
+      {path: '/projects', label: NOTEBOOK_NAME_CAPITALIZED + 's'},
     ],
     [pathname, isLoading]
   );
 
-  useBreadcrumbUpdate({
-    isLoading,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading, paths});
 
   const navigate = useNavigate();
 

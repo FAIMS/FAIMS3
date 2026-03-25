@@ -103,16 +103,11 @@ function a11yProps(index: number, id: string) {
   /**
    * Accessibility props
    */
-  return {
-    id: `${id}-tab-${index}`,
-    'aria-controls': `${id}-tabpanel-${index}`,
-  };
+  return {id: `${id}-tab-${index}`, 'aria-controls': `${id}-tabpanel-${index}`};
 }
 
 const MyTabScrollButton = styled(TabScrollButton)({
-  '&.Mui-disabled': {
-    width: 0,
-  },
+  '&.Mui-disabled': {width: 0},
   overflow: 'hidden',
   transition: 'width 0.3s',
   width: 25,
@@ -122,9 +117,7 @@ const MyTabScrollButton = styled(TabScrollButton)({
 /**
  * NotebookComponentProps defines the properties for the NotebookComponent component.
  */
-type NotebookComponentProps = {
-  project: Project;
-};
+type NotebookComponentProps = {project: Project};
 
 /**
  * NotebookComponent is a component that displays the main interface for the notebook.
@@ -289,9 +282,7 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
               aria-label={`${NOTEBOOK_NAME} tabs`}
               indicatorColor="secondary"
               TabIndicatorProps={{
-                style: {
-                  backgroundColor: theme.palette.secondary.contrastText,
-                },
+                style: {backgroundColor: theme.palette.secondary.contrastText},
               }}
               sx={{
                 backgroundColor: theme.palette.background.tabsBackground,

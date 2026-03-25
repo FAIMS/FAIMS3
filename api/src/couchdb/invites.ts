@@ -199,9 +199,7 @@ export async function deleteInvite({
   // Get the invite from the db to ensure we have the most recent revision
   const fetched = await getInvite({inviteId: invite._id});
   if (fetched) {
-    await inviteDb.remove({
-      ...fetched,
-    });
+    await inviteDb.remove({...fetched});
     return fetched;
   } else {
     throw Error('Unable to find invite in database to delete');
@@ -264,21 +262,12 @@ export async function consumeInvite({
   const updatedInvite: ExistingInvitesDBDocument = {
     ...invite,
     usesConsumed: invite.usesConsumed + 1,
-    uses: [
-      ...invite.uses,
-      {
-        userId: user._id,
-        usedAt: now,
-      },
-    ],
+    uses: [...invite.uses, {userId: user._id, usedAt: now}],
   };
 
   // Save the updated invite
   const inviteDb = getInvitesDB();
-  const result = await safeWriteDocument({
-    db: inviteDb,
-    data: updatedInvite,
-  });
+  const result = await safeWriteDocument({db: inviteDb, data: updatedInvite});
 
   // Now grant the associated role
   if (invite.inviteType === RoleScope.GLOBAL) {
@@ -340,9 +329,7 @@ export async function getGlobalInvites(): Promise<ExistingInvitesDBDocument[]> {
   const inviteDb = getInvitesDB();
   if (inviteDb) {
     const result = await inviteDb.find({
-      selector: {
-        inviteType: {$eq: RoleScope.GLOBAL},
-      },
+      selector: {inviteType: {$eq: RoleScope.GLOBAL}},
     });
     return result.docs as ExistingInvitesDBDocument[];
   } else {
@@ -364,10 +351,7 @@ export function isInviteValid({invite}: {invite: ExistingInvitesDBDocument}): {
   const now = Date.now();
 
   if (invite.expiry < now) {
-    return {
-      isValid: false,
-      reason: 'Invite has expired',
-    };
+    return {isValid: false, reason: 'Invite has expired'};
   }
 
   if (
@@ -380,7 +364,5 @@ export function isInviteValid({invite}: {invite: ExistingInvitesDBDocument}): {
     };
   }
 
-  return {
-    isValid: true,
-  };
+  return {isValid: true};
 }

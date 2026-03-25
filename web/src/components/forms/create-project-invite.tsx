@@ -60,11 +60,7 @@ export function CreateProjectInviteForm({
   }, [user, projectId]);
 
   const fields: Field[] = [
-    {
-      name: 'name',
-      label: 'Invite title',
-      schema: z.string().min(4),
-    },
+    {name: 'name', label: 'Invite title', schema: z.string().min(4)},
     {
       name: 'role',
       label: 'Role',

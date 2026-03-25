@@ -204,10 +204,7 @@ abstract class TileStoreBase {
 
   getVectorZoomRange(): {minZoom: number; maxZoom: number} {
     const config = TILE_URL_MAP[this.config.mapSource]?.vector;
-    return {
-      minZoom: config?.minZoom ?? 0,
-      maxZoom: config?.maxZoom ?? 19,
-    };
+    return {minZoom: config?.minZoom ?? 0, maxZoom: config?.maxZoom ?? 19};
   }
 
   getSatelliteZoomRange(): {minZoom: number; maxZoom: number} {
@@ -215,10 +212,7 @@ abstract class TileStoreBase {
     if (!source) return {minZoom: 0, maxZoom: 19};
 
     const config = TILE_URL_MAP[source]?.satellite;
-    return {
-      minZoom: config?.minZoom ?? 0,
-      maxZoom: config?.maxZoom ?? 19,
-    };
+    return {minZoom: config?.minZoom ?? 0, maxZoom: config?.maxZoom ?? 19};
   }
 
   /**
@@ -255,10 +249,7 @@ abstract class TileStoreBase {
       maxZoom: config.maxZoom,
     });
 
-    return new TileLayer({
-      source: source,
-      visible: false,
-    });
+    return new TileLayer({source: source, visible: false});
   }
 
   getSatelliteAttribution(): string {
@@ -504,9 +495,7 @@ abstract class TileStoreBase {
 
               dispatchEvent(
                 // eslint-disable-next-line n/no-unsupported-features/node-builtins
-                new CustomEvent('offline-map-download', {
-                  detail: tileSet,
-                })
+                new CustomEvent('offline-map-download', {detail: tileSet})
               );
             }
           }

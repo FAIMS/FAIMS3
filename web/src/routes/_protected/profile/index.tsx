@@ -53,20 +53,9 @@ function RouteComponent() {
   const {user} = useAuth();
 
   // breadcrumbs addition
-  const paths = useMemo(
-    () => [
-      {
-        path: '/profile',
-        label: 'User Profile',
-      },
-    ],
-    []
-  );
+  const paths = useMemo(() => [{path: '/profile', label: 'User Profile'}], []);
 
-  useBreadcrumbUpdate({
-    isLoading: false,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading: false, paths});
 
   /**
    * Redirects to the change password page with the appropriate username and redirect URL

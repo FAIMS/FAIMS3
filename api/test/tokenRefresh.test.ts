@@ -243,9 +243,7 @@ describe('token refresh tests', () => {
     const newToken = await requestAuthAndType(
       request(app)
         .post('/api/auth/refresh')
-        .send({
-          refreshToken: refresh,
-        } as PostRefreshTokenInput),
+        .send({refreshToken: refresh} as PostRefreshTokenInput),
       localUserToken
     )
       .expect(200)
@@ -268,9 +266,7 @@ describe('token refresh tests', () => {
     await requestAuthAndType(
       request(app)
         .post('/api/auth/refresh')
-        .send({
-          refreshToken: refresh,
-        } as PostRefreshTokenInput),
+        .send({refreshToken: refresh} as PostRefreshTokenInput),
       localUserToken
     ).expect(200);
 
@@ -278,9 +274,7 @@ describe('token refresh tests', () => {
     await requestAuthAndType(
       request(app)
         .post('/api/auth/refresh')
-        .send({
-          refreshToken: refresh,
-        } as PostRefreshTokenInput),
+        .send({refreshToken: refresh} as PostRefreshTokenInput),
       adminToken
     ).expect(400);
   });
@@ -333,9 +327,7 @@ describe('token refresh tests', () => {
     // Exchange the token for access and refresh tokens
     const response = await request(app)
       .post('/api/auth/exchange')
-      .send({
-        exchangeToken: exchangeToken,
-      } satisfies PostExchangeTokenInput)
+      .send({exchangeToken: exchangeToken} satisfies PostExchangeTokenInput)
       .expect(200)
       .then(res => {
         return PostExchangeTokenResponseSchema.parse(res.body);
@@ -366,17 +358,13 @@ describe('token refresh tests', () => {
     // First exchange should succeed
     await request(app)
       .post('/api/auth/exchange')
-      .send({
-        exchangeToken: exchangeToken,
-      } satisfies PostExchangeTokenInput)
+      .send({exchangeToken: exchangeToken} satisfies PostExchangeTokenInput)
       .expect(200);
 
     // Second exchange with the same token should fail
     await request(app)
       .post('/api/auth/exchange')
-      .send({
-        exchangeToken,
-      } satisfies PostExchangeTokenInput)
+      .send({exchangeToken} satisfies PostExchangeTokenInput)
       .expect(400);
   });
 
@@ -401,9 +389,7 @@ describe('token refresh tests', () => {
     // Exchange should succeed when not authenticated
     await request(app)
       .post('/api/auth/exchange')
-      .send({
-        exchangeToken: exchangeToken,
-      } satisfies PostExchangeTokenInput)
+      .send({exchangeToken: exchangeToken} satisfies PostExchangeTokenInput)
       .expect(200);
 
     // Create another token for testing with authentication
@@ -449,9 +435,7 @@ describe('token refresh tests', () => {
     // Exchange the token for access and refresh tokens
     const exchangeResponse = await request(app)
       .post('/api/auth/exchange')
-      .send({
-        exchangeToken: exchangeToken,
-      } satisfies PostExchangeTokenInput)
+      .send({exchangeToken: exchangeToken} satisfies PostExchangeTokenInput)
       .expect(200)
       .then(res => {
         return PostExchangeTokenResponseSchema.parse(res.body);
@@ -485,9 +469,7 @@ describe('token refresh tests', () => {
     // Exchange the token for access and refresh tokens
     const exchangeResponse = await request(app)
       .post('/api/auth/exchange')
-      .send({
-        exchangeToken: exchangeToken,
-      } as PostExchangeTokenInput)
+      .send({exchangeToken: exchangeToken} as PostExchangeTokenInput)
       .expect(200)
       .then(res => {
         return PostExchangeTokenResponseSchema.parse(res.body);
@@ -518,9 +500,7 @@ describe('token refresh tests', () => {
     // Immediately exchange it (should work)
     await request(app)
       .post('/api/auth/exchange')
-      .send({
-        exchangeToken: exchangeToken,
-      } satisfies PostExchangeTokenInput)
+      .send({exchangeToken: exchangeToken} satisfies PostExchangeTokenInput)
       .expect(200);
 
     // Create another with even shorter expiry for testing expiration
@@ -556,10 +536,7 @@ describe('token refresh tests', () => {
 
     // Create another with even shorter exchange expiry for testing expiration
     const {exchangeToken: veryShortExchangeToken} = await createNewRefreshToken(
-      {
-        userId: localUser.user_id!,
-        exchangeExpiryMs: 10,
-      }
+      {userId: localUser.user_id!, exchangeExpiryMs: 10}
     );
 
     // Wait for it to expire

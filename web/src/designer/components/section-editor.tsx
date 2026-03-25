@@ -53,10 +53,7 @@ import {FieldList} from './field-list';
 type Props = {
   viewSetId: string;
   viewId: string;
-  viewSet: {
-    views: string[];
-    label: string;
-  };
+  viewSet: {views: string[]; label: string};
   deleteCallback: (viewSetID: string, viewID: string) => void;
   addCallback: (viewSetID: string, label: string) => boolean;
   moveCallback: (
@@ -183,10 +180,7 @@ export const SectionEditor = ({
     () =>
       Object.entries(viewSets)
         .filter(([formId]) => formId !== viewSetId) // exclude the source form
-        .map(([formId, form]) => ({
-          id: formId,
-          label: form.label,
-        })),
+        .map(([formId, form]) => ({id: formId, label: form.label})),
     [viewSets, viewSetId]
   );
 

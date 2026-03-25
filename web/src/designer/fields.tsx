@@ -214,9 +214,7 @@ const fields: {[key: string]: FieldType} = {
       variant: 'outlined',
       required: false,
       select: true,
-      SelectProps: {
-        multiple: true,
-      },
+      SelectProps: {multiple: true},
       ElementProps: {
         expandedChecklist: false,
         enableOtherOption: false,
@@ -265,10 +263,7 @@ const fields: {[key: string]: FieldType} = {
     'component-namespace': 'faims-custom',
     'component-name': 'RichText',
     'type-returned': 'faims-core::String',
-    'component-parameters': {
-      label: 'Unused',
-      content: 'Hello __World__',
-    },
+    'component-parameters': {label: 'Unused', content: 'Hello __World__'},
     humanReadableName: 'RichText',
     humanReadableDescription: 'Add formatted text to your form',
     category: CategoryKey.DISPLAY,
@@ -309,10 +304,7 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
       advancedHelperText: '',
       required: false,
-      ElementProps: {
-        enableOtherOption: false,
-        options: [],
-      },
+      ElementProps: {enableOtherOption: false, options: []},
     },
     initialValue: '',
     humanReadableName: 'Select Field',
@@ -331,9 +323,7 @@ const fields: {[key: string]: FieldType} = {
       fullWidth: true,
       helperText: '',
       required: false,
-      ElementProps: {
-        optiontree: [{name: 'Default', children: []}],
-      },
+      ElementProps: {optiontree: [{name: 'Default', children: []}]},
       valuetype: 'full',
     },
     initialValue: '',
@@ -450,9 +440,7 @@ const fields: {[key: string]: FieldType} = {
       required: false,
       // Defaults to integer (can be floating)
       numberType: 'integer',
-      InputProps: {
-        type: 'number',
-      },
+      InputProps: {type: 'number'},
     },
     initialValue: null,
     humanReadableName: 'Number Input',
@@ -515,9 +503,7 @@ const fields: {[key: string]: FieldType} = {
       advancedHelperText: '',
       variant: 'outlined',
       required: false,
-      InputProps: {
-        rows: 4,
-      },
+      InputProps: {rows: 4},
       // Default speech settings
       speechAppendMode: false,
       enableSpeech: true,

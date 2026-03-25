@@ -133,7 +133,7 @@ const AddressField: React.FC<AddressFieldFullProps> = props => {
     const fullCfg = config.mode === 'full' ? (config as FullFormConfig) : null;
     const isOn = fullCfg?.getIsOnline?.() ?? true;
     const service =
-      props.enableAutoSuggestion ?? true
+      (props.enableAutoSuggestion ?? true)
         ? fullCfg?.addressAutosuggestService?.()
         : undefined;
     const manualOnly = !isOn || !service;
@@ -593,8 +593,5 @@ export const addressFieldSpec: FieldInfo<AddressFieldFullProps> = {
   component: AddressField,
   fieldPropsSchema: AddressFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
-  view: {
-    component: AddressFieldRenderer,
-    config: {},
-  },
+  view: {component: AddressFieldRenderer, config: {}},
 };

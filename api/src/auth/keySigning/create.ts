@@ -142,9 +142,7 @@ export async function generateJwtFromUser({
   // The data model provides this encoding method - it takes the couch user
   // details and determines how to put that into the token
   try {
-    const permissionsComponent = expressUserToTokenPermissions({
-      user,
-    });
+    const permissionsComponent = expressUserToTokenPermissions({user});
 
     // We then augment this with extra details to help identify the origin of the
     // token + user details
@@ -157,10 +155,7 @@ export async function generateJwtFromUser({
 
     // Then there are other parts we wish to include
     const jwt = await new SignJWT(completePayload)
-      .setProtectedHeader({
-        alg: signingKey.alg,
-        kid: signingKey.kid,
-      })
+      .setProtectedHeader({alg: signingKey.alg, kid: signingKey.kid})
       .setSubject(user.user_id)
       .setIssuedAt()
       .setIssuer(signingKey.instanceName)

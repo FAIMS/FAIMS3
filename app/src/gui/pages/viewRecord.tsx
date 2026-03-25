@@ -66,10 +66,7 @@ import {theme} from '../themes';
 /**
  * Available tabs for the record view page
  */
-const RECORD_TABS = {
-  VIEW: 'view',
-  INFO: 'info',
-} as const;
+const RECORD_TABS = {VIEW: 'view', INFO: 'info'} as const;
 
 type RecordTab = (typeof RECORD_TABS)[keyof typeof RECORD_TABS];
 

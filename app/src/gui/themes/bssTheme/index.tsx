@@ -18,11 +18,7 @@ const theme = createTheme({
       lightBackground: '#f3f3f3',
       tabsBackground: '#F0F0F0FF',
     },
-    primary: {
-      main: primaryMainColor,
-      light: '#FFFFFF',
-      dark: '#000000',
-    },
+    primary: {main: primaryMainColor, light: '#FFFFFF', dark: '#000000'},
     text: {
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
@@ -34,14 +30,8 @@ const theme = createTheme({
       error: '#EE1616FF',
       notVisited: '#BDBDBD',
     },
-    highlightColor: {
-      main: '#B10000',
-      contrastText: '#F4F4F4',
-    },
-    secondary: {
-      main: '#12B0FB',
-      contrastText: '#F4F4F4',
-    },
+    highlightColor: {main: '#B10000', contrastText: '#F4F4F4'},
+    secondary: {main: '#12B0FB', contrastText: '#F4F4F4'},
     alert: {
       warningBackground: '#FFFFFF',
       warningText: '#EA0E0EFF',
@@ -55,10 +45,7 @@ const theme = createTheme({
       dialogText: '#FFFFFF',
       hoverBackground: '#711111FF',
     },
-    progressBar: {
-      background: '#edeeeb',
-      complete: '#EA6216',
-    },
+    progressBar: {background: '#edeeeb', complete: '#EA6216'},
     icon: {
       main: '#197A01',
       light: '#EAEAEA',
@@ -75,33 +62,22 @@ const theme = createTheme({
   components: {
     MuiAppBar: {
       styleOverrides: {
-        root: {
-          '&.MuiAppBar-root': {
-            boxShadow: 'none',
-          },
-        },
+        root: {'&.MuiAppBar-root': {boxShadow: 'none'}},
         colorPrimary: {
           backgroundColor: '#FFFFFF',
           color: '#000000FF',
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
-          text: {
-            primary: '#fff',
-          },
+          text: {primary: '#fff'},
         },
       },
     },
     MuiTabs: {
       styleOverrides: {
         root: {
-          '&.MuiTabs-root': {
-            boxShadow: 'none',
-            fontWeight: 'bold',
-          },
-          '&.MuiTab-root': {
-            fontWeight: '700 !important',
-          },
+          '&.MuiTabs-root': {boxShadow: 'none', fontWeight: 'bold'},
+          '&.MuiTab-root': {fontWeight: '700 !important'},
           '&.Mui-selected': {
             fontWeight: '700 !important',
             color: 'white',
@@ -120,9 +96,7 @@ const theme = createTheme({
             backgroundColor: primaryMainColor,
             fontWeight: '700',
           },
-          '&:not(.Mui-selected)': {
-            color: '#000000',
-          },
+          '&:not(.Mui-selected)': {color: '#000000'},
         },
       },
     },

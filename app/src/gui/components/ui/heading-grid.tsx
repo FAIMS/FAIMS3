@@ -5,7 +5,10 @@ import {
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
-import {NOTEBOOK_NAME_PLURAL, NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '../../../buildconfig';
+import {
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '../../../buildconfig';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
@@ -87,9 +90,7 @@ export default function HeadingProjectGrid({
             visibility: 'visible',
             color: '#ccc',
           },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #eee',
-          },
+          '& .MuiDataGrid-cell': {borderBottom: '1px solid #eee'},
         }}
         getRowId={({projectId}) => projectId}
         hideFooter={true}
@@ -128,9 +129,7 @@ export default function HeadingProjectGrid({
             visibility: 'visible',
             color: '#ccc',
           },
-          '& .MuiDataGrid-cell': {
-            borderBottom: '1px solid #eee',
-          },
+          '& .MuiDataGrid-cell': {borderBottom: '1px solid #eee'},
         }}
         onRowClick={handleRowClick}
         getRowId={({projectId}) => projectId}

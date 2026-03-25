@@ -213,10 +213,7 @@ export function useNavigationDataPreparation({
       formId: entry.formId,
       type: entry.type,
       onNavigate: () => {
-        config.navigation.toRecord({
-          recordId: entry.recordId,
-          mode: mode,
-        });
+        config.navigation.toRecord({recordId: entry.recordId, mode: mode});
       },
     }));
   }, [query.data, mode, config.navigation]);
@@ -343,10 +340,7 @@ export function useNavigationDataPreparation({
         await flushSave();
 
         // Navigate to the new record
-        config.navigation.toRecord({
-          recordId: res.record._id,
-          mode: 'new',
-        });
+        config.navigation.toRecord({recordId: res.record._id, mode: 'new'});
       } catch (error) {
         logError(new Error('Failed to create another child:'), {error});
         onError('Failed to create another record. Please try again.');

@@ -53,10 +53,7 @@ export const useCreateNotebookFromTemplate = (
     return {ready: false};
   }
 
-  return {
-    ready: true,
-    mutation,
-  };
+  return {ready: true, mutation};
 };
 
 /**

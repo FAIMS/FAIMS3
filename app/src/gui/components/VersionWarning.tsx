@@ -42,10 +42,7 @@ const hasMinorOrGreaterDifference = (
 ): boolean => {
   const parse = (v: string): {major: number; minor: number} => {
     const parts = v.split('.').map(p => parseInt(p, 10));
-    return {
-      major: parts[0] || 0,
-      minor: parts[1] || 0,
-    };
+    return {major: parts[0] || 0, minor: parts[1] || 0};
   };
 
   const v1 = parse(version1);

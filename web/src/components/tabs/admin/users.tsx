@@ -33,10 +33,7 @@ export function UsersTab() {
         data={
           isPending
             ? []
-            : data.map((user: any) => ({
-                ...user,
-                email: user.emails[0],
-              }))
+            : data.map((user: any) => ({...user, email: user.emails[0]}))
         }
         loading={isPending}
         defaultRowsPerPage={15}

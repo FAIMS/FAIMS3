@@ -37,12 +37,7 @@ export const createSetPointToCurrentLocationControl = ({
   button.setAttribute('type', 'button');
   button.title = 'Use current location';
   button.appendChild(
-    CreateDomIcon({
-      src,
-      width: 24,
-      height: 24,
-      alt: 'Use current location',
-    })
+    CreateDomIcon({src, width: 24, height: 24, alt: 'Use current location'})
   );
 
   /**

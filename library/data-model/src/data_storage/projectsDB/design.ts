@@ -31,6 +31,4 @@ const indexDocument = {
 /**
  * Exports all design documents for the templates database
  */
-export const projectsDbDesignDocuments = {
-  indexDocument,
-};
+export const projectsDbDesignDocuments = {indexDocument};

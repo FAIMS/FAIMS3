@@ -129,9 +129,7 @@ export default function ClusterCard(props: ClusterCardProps) {
     if (IS_WEB_PLATFORM) {
       window.location.href = changePasswordUrl;
     } else {
-      Browser.open({
-        url: changePasswordUrl,
-      });
+      Browser.open({url: changePasswordUrl});
     }
   };
 
@@ -184,9 +182,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                   onClick={handleAddNewUser}
                   sx={{
                     borderStyle: 'dashed',
-                    '&:hover': {
-                      borderStyle: 'solid',
-                    },
+                    '&:hover': {borderStyle: 'solid'},
                   }}
                 >
                   Add New User
@@ -276,9 +272,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                             border: '1px solid',
                             borderColor: 'divider',
                             backgroundColor: 'background.paper',
-                            '&:hover': {
-                              backgroundColor: 'action.hover',
-                            },
+                            '&:hover': {backgroundColor: 'action.hover'},
                             p: 1,
                           }}
                         >
@@ -296,9 +290,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                           border: '1px solid',
                           borderColor: 'divider',
                           backgroundColor: 'background.paper',
-                          '&:hover': {
-                            backgroundColor: 'action.hover',
-                          },
+                          '&:hover': {backgroundColor: 'action.hover'},
                           p: 1,
                         }}
                       >
@@ -336,9 +328,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                           width: isMobile ? '100%' : 'auto',
                           justifyContent: isMobile ? 'center' : 'flex-end',
                         },
-                        '& .MuiAlert-message': {
-                          overflow: 'hidden',
-                        },
+                        '& .MuiAlert-message': {overflow: 'hidden'},
                         flexDirection: isMobile ? 'column' : 'row',
                         alignItems: isMobile ? 'stretch' : 'center',
                       }}
@@ -371,9 +361,7 @@ export default function ClusterCard(props: ClusterCardProps) {
                       conductor_url={props.conductor_url}
                       is_refresh={false}
                       startIcon={<LoginIcon />}
-                      sx={{
-                        width: isMobile ? '100%' : 'auto',
-                      }}
+                      sx={{width: isMobile ? '100%' : 'auto'}}
                     />
                   )}
                 </Stack>
@@ -388,11 +376,7 @@ export default function ClusterCard(props: ClusterCardProps) {
             onClose={handleActionMenuClose}
             PaperProps={{
               elevation: 3,
-              sx: {
-                minWidth: 200,
-                maxWidth: '90vw',
-                mt: 1,
-              },
+              sx: {minWidth: 200, maxWidth: '90vw', mt: 1},
             }}
             transformOrigin={{horizontal: 'right', vertical: 'top'}}
             anchorOrigin={{horizontal: 'right', vertical: 'bottom'}}

@@ -95,7 +95,7 @@ describe('round-trip reading and writing to db', () => {
       try {
         await cleanDataDBS();
       } catch (err) {
-        fail('Failed to clean dbs');
+        fail('Failed to clean dbs' + String(err));
       }
 
       const dataDb = await getDataDB(project_id);
@@ -139,20 +139,14 @@ test('updating an existing record with extended data', async () => {
   try {
     await cleanDataDBS();
   } catch (err) {
-    fail('Failed to clean dbs');
+    fail('Failed to clean dbs' + String(err));
   }
 
   const project_id = 'test';
   const record_id = generateFAIMSDataID();
   const fullType = 'test::test';
-  const data = {
-    name: 'Bob Bobalooba',
-    age: 42,
-  };
-  const fieldTypes = {
-    name: 'faims::string',
-    age: 'faims::integer',
-  };
+  const data = {name: 'Bob Bobalooba', age: 42};
+  const fieldTypes = {name: 'faims::string', age: 'faims::integer'};
   const new_data = {
     name: 'Bob Bobalooba',
     age: 54,
@@ -239,7 +233,7 @@ describe('CRUD for data', () => {
       try {
         await cleanDataDBS();
       } catch (err) {
-        fail('Failed to clean dbs');
+        fail('Failed to clean dbs' + String(err));
       }
 
       const fullType = namespace + '::' + name;
@@ -367,7 +361,7 @@ describe('listing revisions', () => {
     try {
       await cleanDataDBS();
     } catch (err) {
-      fail('Failed to clean dbs');
+      fail('Failed to clean dbs' + String(err));
     }
 
     const fullType = namespace + '::' + name;
@@ -552,9 +546,7 @@ describe.skip('record queries', () => {
               }
             },
           },
-          {
-            include_docs: true,
-          }
+          {include_docs: true}
         )
         .catch((err: any) => {
           console.log('query failed', err);

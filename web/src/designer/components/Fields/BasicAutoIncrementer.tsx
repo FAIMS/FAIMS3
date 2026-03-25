@@ -4,10 +4,7 @@ import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
-type PropType = {
-  fieldName: string;
-  viewId: string;
-};
+type PropType = {fieldName: string; viewId: string};
 
 export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
   const field = useAppSelector(

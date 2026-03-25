@@ -23,12 +23,8 @@ export function initDirectoryDB({
       _id: 'default',
       name: defaultConfig.conductorInstanceName,
       description: defaultConfig.description,
-      people_db: {
-        db_name: defaultConfig.peopleDbName,
-      },
-      projects_db: {
-        db_name: defaultConfig.projectsDbName,
-      },
+      people_db: {db_name: defaultConfig.peopleDbName},
+      projects_db: {db_name: defaultConfig.projectsDbName},
       conductor_url: defaultConfig.conductorUrl,
     };
   }

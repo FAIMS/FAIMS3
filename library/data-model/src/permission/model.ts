@@ -1011,10 +1011,7 @@ export const resourceRoles: Record<Resource, (RoleDetails & {role: Role})[]> =
         }
 
         // Add the role details with the role enum value included
-        acc[details.resource].push({
-          ...details,
-          role: role as unknown as Role,
-        });
+        acc[details.resource].push({...details, role: role as unknown as Role});
       }
       return acc;
     },
@@ -1091,9 +1088,7 @@ export const roleActions: Record<
   },
 
   // TEMPLATE ROLES
-  [Role.TEMPLATE_GUEST]: {
-    actions: [Action.READ_TEMPLATE_DETAILS],
-  },
+  [Role.TEMPLATE_GUEST]: {actions: [Action.READ_TEMPLATE_DETAILS]},
   [Role.TEMPLATE_ADMIN]: {
     actions: [
       Action.UPDATE_TEMPLATE_DETAILS,

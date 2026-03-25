@@ -37,15 +37,10 @@ type EqualityForFAIMSTypeFunction = (
   second: any
 ) => Promise<boolean>;
 
-const attachment_dumpers: {
-  [typename: string]: AttributeValuePairDumper;
-} = {};
-const attachment_loaders: {
-  [typename: string]: AttributeValuePairLoader;
-} = {};
-const equality_functions: {
-  [typename: string]: EqualityForFAIMSTypeFunction;
-} = {};
+const attachment_dumpers: {[typename: string]: AttributeValuePairDumper} = {};
+const attachment_loaders: {[typename: string]: AttributeValuePairLoader} = {};
+const equality_functions: {[typename: string]: EqualityForFAIMSTypeFunction} =
+  {};
 
 export function getAttachmentLoaderForType(
   type: FAIMSTypeName

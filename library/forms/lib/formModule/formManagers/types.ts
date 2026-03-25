@@ -113,9 +113,7 @@ export interface FormManagerAdditions {
    * When in full mode, indicates whether any field is currently saving an attachment.
    * Section navigation should be blocked while this is true.
    */
-  attachmentSaving?: {
-    isSaving: () => boolean;
-  };
+  attachmentSaving?: {isSaving: () => boolean};
   /** Special behavior triggers */
   trigger: {
     /** Force a commit/save of the current record */

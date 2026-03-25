@@ -129,12 +129,7 @@ export async function createUser({
   }
 
   // make a new user record
-  const initialUser = generateInitialUser({
-    email,
-    username,
-    name,
-    verified,
-  });
+  const initialUser = generateInitialUser({email, username, name, verified});
   return [initialUser, ''];
 }
 
@@ -269,10 +264,7 @@ async function getUserFromEmail(
   // Query the byEmail view
   const result = await usersDb.query<ExistingPeopleDBDocument>(
     'indexes/byEmail',
-    {
-      key: normalizedEmail,
-      include_docs: true,
-    }
+    {key: normalizedEmail, include_docs: true}
   );
 
   if (result.rows.length === 0) {
@@ -299,10 +291,7 @@ async function getUserFromUserId(
   // Query the byUserId view
   const result = await usersDb.query<ExistingPeopleDBDocument>(
     'indexes/byUserId',
-    {
-      key: userId,
-      include_docs: true,
-    }
+    {key: userId, include_docs: true}
   );
 
   if (result.rows.length === 0) {
@@ -353,11 +342,7 @@ export async function getUserInfoForProject({
       username: user.user_id,
       roles: roles.map(role => ({
         name: role,
-        value: userHasProjectRole({
-          user,
-          projectId,
-          role,
-        }),
+        value: userHasProjectRole({user, projectId, role}),
       })),
     })),
   };

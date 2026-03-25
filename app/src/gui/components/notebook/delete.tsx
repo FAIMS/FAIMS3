@@ -99,24 +99,14 @@ export default function RecordDelete(props: RecordDeleteProps) {
     })
       .then(() => {
         const message = `Record ${recordId} deleted`;
-        dispatch(
-          addAlert({
-            message: message,
-            severity: 'success',
-          })
-        );
+        dispatch(addAlert({message: message, severity: 'success'}));
         handleClose();
         history(ROUTES.INDIVIDUAL_NOTEBOOK_ROUTE + serverId + '/' + projectId);
       })
       .catch(err => {
         console.error('Failed to delete', recordId, err);
         const message = `Record ${recordId} could not be deleted`;
-        dispatch(
-          addAlert({
-            message: message,
-            severity: 'error',
-          })
-        );
+        dispatch(addAlert({message: message, severity: 'error'}));
         handleClose();
       });
   };

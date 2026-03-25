@@ -282,11 +282,7 @@ describe('user creation', () => {
     removeGlobalRole({user, role: Role.GENERAL_ADMIN});
 
     // Add PROJECT_GUEST role (similar to old 'user' role) for specific project
-    addProjectRole({
-      user,
-      projectId: project_id,
-      role: Role.PROJECT_GUEST,
-    });
+    addProjectRole({user, projectId: project_id, role: Role.PROJECT_GUEST});
     // Recompile permissions
     user = await upgradeCouchUserToExpressUser({dbUser: user});
 
@@ -325,11 +321,7 @@ describe('user creation', () => {
     ).to.be.false;
 
     // Give them PROJECT_ADMIN permission for the project
-    addProjectRole({
-      user,
-      projectId: project_id,
-      role: Role.PROJECT_ADMIN,
-    });
+    addProjectRole({user, projectId: project_id, role: Role.PROJECT_ADMIN});
 
     // Recompile permissions
     user = await upgradeCouchUserToExpressUser({dbUser: user});
@@ -402,11 +394,7 @@ describe('user creation', () => {
         projectId: project_id,
         role: Role.PROJECT_CONTRIBUTOR,
       });
-      addProjectRole({
-        user,
-        projectId: project_id,
-        role: Role.PROJECT_MANAGER,
-      });
+      addProjectRole({user, projectId: project_id, role: Role.PROJECT_MANAGER});
       await saveCouchUser(user);
 
       const userInfo = await getUserInfoForProject({projectId: project_id});

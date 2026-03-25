@@ -57,10 +57,7 @@ const createPointFeature = (
     features: [
       {
         type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: center,
-        },
+        geometry: {type: 'Point', coordinates: center},
         properties: null,
       },
     ],
@@ -195,12 +192,7 @@ export function MapFormField(props: FieldProps): JSX.Element {
       {/* if offline and no downloaded map, offer to use current location for point features only */}
 
       <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
-          width: '100%',
-        }}
+        sx={{display: 'flex', flexDirection: 'column', gap: 1, width: '100%'}}
       >
         {!canShowMap ? (
           <>

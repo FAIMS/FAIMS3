@@ -81,11 +81,7 @@ const getSampleNotebook = () => {
  */
 const createSampleTemplate = async (
   app: Express,
-  options: {
-    teamId?: string;
-    payloadExtras?: Object;
-    name?: string;
-  },
+  options: {teamId?: string; payloadExtras?: Object; name?: string},
   token: string = adminToken
 ) => {
   // create a template from loaded spec
@@ -400,20 +396,18 @@ describe('template API tests', () => {
     const team2 = await createSampleTeam(app, {teamName: 'team2'});
 
     // create a template
-    const {template} = await createSampleTemplate(app, {
-      teamId: team1._id,
-    });
+    const {template} = await createSampleTemplate(app, {teamId: team1._id});
 
     // update team ownership
 
     // update the existing template but only send the metadata and name
-    await updateATemplate(app, template._id, {
-      teamId: team2._id,
-    }).then(newTemplate => {
-      // Check the new properties
-      expect(newTemplate.version).to.equal(2);
-      expect(newTemplate.ownedByTeamId).to.equal(team2._id);
-    });
+    await updateATemplate(app, template._id, {teamId: team2._id}).then(
+      newTemplate => {
+        // Check the new properties
+        expect(newTemplate.version).to.equal(2);
+        expect(newTemplate.ownedByTeamId).to.equal(team2._id);
+      }
+    );
 
     // get the template and check the same
     await getATemplate(app, template._id).then(newTemplate => {
@@ -427,14 +421,12 @@ describe('template API tests', () => {
     const team1 = await createSampleTeam(app, {teamName: 'team1'});
 
     // create a template
-    const {template} = await createSampleTemplate(app, {
-      teamId: team1._id,
-    });
+    const {template} = await createSampleTemplate(app, {teamId: team1._id});
 
     const response = await requestAuthAndType(
-      request(app).put(`${TEMPLATE_API_BASE}/${template._id}`).send({
-        teamId: 'non-existent-team-id',
-      }),
+      request(app)
+        .put(`${TEMPLATE_API_BASE}/${template._id}`)
+        .send({teamId: 'non-existent-team-id'}),
       adminToken
     );
 

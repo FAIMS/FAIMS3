@@ -221,12 +221,12 @@ describe('applyProvisionPolicy', () => {
 
   let createUserStub: sinon.SinonStub;
   let createTeamStub: sinon.SinonStub;
-  let saveCouchUserStub: sinon.SinonStub;
+  let _saveCouchUserStub: sinon.SinonStub;
 
   beforeEach(() => {
     createUserStub = sinon.stub(usersModule, 'createUser');
     createTeamStub = sinon.stub(teamsModule, 'createTeamDocument');
-    saveCouchUserStub = sinon.stub(usersModule, 'saveCouchUser');
+    _saveCouchUserStub = sinon.stub(usersModule, 'saveCouchUser');
 
     // Default: createUser returns a valid new user
     const newUser = buildNewUser();
@@ -454,11 +454,7 @@ describe('ssoVerify', () => {
 
   describe('guard clauses', () => {
     it('calls done with error when session has no action', async () => {
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({}), done});
 
       expect(done.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
@@ -467,11 +463,7 @@ describe('ssoVerify', () => {
     });
 
     it('calls done with error when action is register but no inviteId', async () => {
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'register'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'register'}), done});
 
       expect(done.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
@@ -482,11 +474,7 @@ describe('ssoVerify', () => {
     it('calls done with error when identifyUser throws', async () => {
       getCouchUserStub.rejects(new Error('db connection failure'));
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       expect(done.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
@@ -502,11 +490,7 @@ describe('ssoVerify', () => {
       const existingUser = buildExistingUser();
       getCouchUserStub.resolves(existingUser);
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       expect(done.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
@@ -518,11 +502,7 @@ describe('ssoVerify', () => {
       const existingUser = buildExistingUser({profiles: {}});
       getCouchUserStub.resolves(existingUser);
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       expect(existingUser.profiles['google']).to.equal(baseProfile);
       expect(saveCouchUserStub.calledWith(existingUser)).to.be.true;
@@ -535,11 +515,7 @@ describe('ssoVerify', () => {
       });
       getCouchUserStub.resolves(existingUser);
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       expect(existingUser.profiles['google']).to.equal(existingProfile);
       expect(saveCouchUserStub.called).to.be.false;
@@ -556,11 +532,7 @@ describe('ssoVerify', () => {
     it('calls done with error when policy is reject', async () => {
       setPolicy('reject');
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       expect(done.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
@@ -574,11 +546,7 @@ describe('ssoVerify', () => {
       const newUser = buildNewUser();
       createUserStub.resolves([newUser, '']);
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       expect(createUserStub.calledOnce).to.be.true;
       const [err, user] = done.firstCall.args;
@@ -591,11 +559,7 @@ describe('ssoVerify', () => {
       const newUser = buildNewUser();
       createUserStub.resolves([newUser, '']);
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       expect(createUserStub.calledOnce).to.be.true;
       expect(createTeamStub.calledOnce).to.be.true;
@@ -608,11 +572,7 @@ describe('ssoVerify', () => {
       setPolicy('general-user');
       createUserStub.resolves([null, 'db error']);
 
-      await ssoVerify({
-        ...baseArgs,
-        req: buildReq({action: 'login'}),
-        done,
-      });
+      await ssoVerify({...baseArgs, req: buildReq({action: 'login'}), done});
 
       const [err, user] = done.firstCall.args;
       expect(err).to.be.instanceOf(Error);

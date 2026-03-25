@@ -60,11 +60,7 @@ class SyncStateService {
   ): SyncState {
     const key = this.buildKey(serverId, projectId);
     const current = this.syncStates.get(key) ?? this.createInitialSyncState();
-    const updated: SyncState = {
-      ...current,
-      ...update,
-      lastUpdated: Date.now(),
-    };
+    const updated: SyncState = {...current, ...update, lastUpdated: Date.now()};
     this.syncStates.set(key, updated);
     return updated;
   }
@@ -170,11 +166,7 @@ class SyncStateService {
    * Create initial sync state
    */
   private createInitialSyncState(): SyncState {
-    return {
-      status: 'initial',
-      lastUpdated: Date.now(),
-      pendingRecords: 0,
-    };
+    return {status: 'initial', lastUpdated: Date.now(), pendingRecords: 0};
   }
 }
 

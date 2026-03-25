@@ -148,9 +148,7 @@ const ExpandedChecklist = ({
           checked={hasOtherSelected || false}
           onChange={() => handleChange(OTHER_MARKER)}
           disabled={selectedExclusiveOption !== undefined || disabled}
-          sx={{
-            padding: '4px 8px 4px 0',
-          }}
+          sx={{padding: '4px 8px 4px 0'}}
         />
       }
       label={
@@ -173,16 +171,10 @@ const ExpandedChecklist = ({
           disabled={disabled}
           variant="standard"
           multiline
-          sx={{
-            minWidth: '200px',
-            ...otherTextFieldSx,
-          }}
+          sx={{minWidth: '200px', ...otherTextFieldSx}}
         />
       }
-      sx={{
-        alignItems: 'center',
-        m: 0,
-      }}
+      sx={{alignItems: 'center', m: 0}}
     />
   );
 
@@ -199,9 +191,7 @@ const ExpandedChecklist = ({
               option.value !== selectedExclusiveOption) ||
             disabled
           }
-          sx={{
-            padding: '4px 8px 4px 0',
-          }}
+          sx={{padding: '4px 8px 4px 0'}}
         />
       }
       label={
@@ -216,11 +206,7 @@ const ExpandedChecklist = ({
           }}
         />
       }
-      sx={{
-        alignItems: 'center',
-        mb: 1,
-        m: 0,
-      }}
+      sx={{alignItems: 'center', mb: 1, m: 0}}
     />
   );
 
@@ -353,14 +339,7 @@ const MuiMultiSelect = ({
               />
             );
           }}
-          MenuProps={{
-            PaperProps: {
-              style: {
-                maxHeight: 300,
-                marginTop: 8,
-              },
-            },
-          }}
+          MenuProps={{PaperProps: {style: {maxHeight: 300, marginTop: 8}}}}
         >
           {/* Render options and "Other" in correct order */}
           {(() => {
@@ -441,19 +420,13 @@ const MuiMultiSelect = ({
                   selectedExclusiveOption !== undefined &&
                   option.value !== selectedExclusiveOption
                 }
-                sx={{
-                  whiteSpace: 'normal',
-                  wordWrap: 'break-word',
-                }}
+                sx={{whiteSpace: 'normal', wordWrap: 'break-word'}}
               >
                 <Checkbox checked={value.includes(option.value)} />
                 <ListItemText
                   primary={
                     <span
-                      style={{
-                        whiteSpace: 'normal',
-                        wordBreak: 'break-word',
-                      }}
+                      style={{whiteSpace: 'normal', wordBreak: 'break-word'}}
                       dangerouslySetInnerHTML={{
                         __html: contentToSanitizedHtml(option.label),
                       }}
@@ -627,9 +600,7 @@ const valueSchema = (props: MultiSelectFieldProps) => {
               return false;
             });
           },
-          {
-            message: 'Please select valid options',
-          }
+          {message: 'Please select valid options'}
         );
     }
 
@@ -641,9 +612,7 @@ const valueSchema = (props: MultiSelectFieldProps) => {
           return false;
         });
       },
-      {
-        message: 'Please select valid options',
-      }
+      {message: 'Please select valid options'}
     );
   }
 

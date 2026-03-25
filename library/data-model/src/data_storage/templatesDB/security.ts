@@ -7,12 +7,6 @@ import {SecurityDocument} from '../utils';
 
 export const TemplatesDBSecurityDocument: SecurityDocument = {
   // Only DB admins can do anything with this
-  admins: {
-    names: [],
-    roles: [COUCH_ADMIN_ROLE_NAME],
-  },
-  members: {
-    names: [],
-    roles: [COUCH_ADMIN_ROLE_NAME],
-  },
+  admins: {names: [], roles: [COUCH_ADMIN_ROLE_NAME]},
+  members: {names: [], roles: [COUCH_ADMIN_ROLE_NAME]},
 };

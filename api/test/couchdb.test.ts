@@ -392,10 +392,7 @@ describe('notebook api', () => {
         meta: {
           annotation_label: 'annotation',
           annotation: true,
-          uncertainty: {
-            include: false,
-            label: 'uncertainty',
-          },
+          uncertainty: {include: false, label: 'uncertainty'},
         },
       };
 

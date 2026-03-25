@@ -45,22 +45,13 @@ function RouteComponent() {
   // breadcrumbs addition
   const paths = useMemo(
     () => [
-      {
-        path: '/profile',
-        label: 'User Profile',
-      },
-      {
-        path: '/profile/long-lived-tokens',
-        label: 'Manage API Tokens',
-      },
+      {path: '/profile', label: 'User Profile'},
+      {path: '/profile/long-lived-tokens', label: 'Manage API Tokens'},
     ],
     []
   );
 
-  useBreadcrumbUpdate({
-    isLoading: false,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading: false, paths});
 
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [selectedToken, setSelectedToken] = useState<

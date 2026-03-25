@@ -36,9 +36,7 @@ export function createAttachmentService({
           'CouchDB configuration is required for COUCH attachment service'
         );
       }
-      return new CouchAttachmentService({
-        config: serviceConfig,
-      });
+      return new CouchAttachmentService({config: serviceConfig});
 
     default:
       throw new Error(`Unsupported attachment service type: ${serviceType}`);

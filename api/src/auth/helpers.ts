@@ -235,11 +235,7 @@ export function providersToRenderDetails({
       name: handlers[id].config.displayName,
       helperText: handlers[id].config.helperText,
       targetUrl: `/auth/${id}${buildQueryString({
-        values: {
-          redirect: redirectUrl,
-          inviteId,
-          action,
-        } satisfies AuthContext,
+        values: {redirect: redirectUrl, inviteId, action} satisfies AuthContext,
       })}`,
     });
   }
@@ -475,9 +471,7 @@ export async function identifyUser(
 
 // A type describing the things we expect to see in a generic
 // SSO profile for the purposes of our authentication helpers
-type GenericProfile = {
-  [key: string]: any;
-};
+type GenericProfile = {[key: string]: any};
 
 /**
  * A generic SSO verify function that handles both login and registration
@@ -767,10 +761,7 @@ export async function applyProvisionPolicy({
     });
   } else if (PROVISION_SSO_USERS_POLICY === 'general-user') {
     // Give the user a general user role
-    addGlobalRole({
-      user: newDbUser,
-      role: Role.GENERAL_USER,
-    });
+    addGlobalRole({user: newDbUser, role: Role.GENERAL_USER});
   }
   return newDbUser;
 }

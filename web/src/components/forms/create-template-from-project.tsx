@@ -32,9 +32,7 @@ export function CreateTemplateFromProjectForm({
   const {data: projectData} = useGetProject({user, projectId});
 
   // can they create projects outside team?
-  const canCreateGlobally = useIsAuthorisedTo({
-    action: Action.CREATE_TEMPLATE,
-  });
+  const canCreateGlobally = useIsAuthorisedTo({action: Action.CREATE_TEMPLATE});
 
   // filter teams by those we can create templates in
   const possibleTeams = teams?.teams.filter(team => {
@@ -54,9 +52,9 @@ export function CreateTemplateFromProjectForm({
       name: 'name',
       label: 'Template Name',
       description: 'A short display name for the template',
-      schema: z.string().min(5, {
-        message: 'Template name must be at least 5 characters.',
-      }),
+      schema: z
+        .string()
+        .min(5, {message: 'Template name must be at least 5 characters.'}),
     },
   ];
 
@@ -64,10 +62,7 @@ export function CreateTemplateFromProjectForm({
     fields.push({
       name: 'team',
       label: `Team${canCreateGlobally ? ' (optional)' : ''}`,
-      options: possibleTeams?.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
+      options: possibleTeams?.map(({_id, name}) => ({label: name, value: _id})),
       schema: canCreateGlobally ? z.string().optional() : z.string(),
     });
   }

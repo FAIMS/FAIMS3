@@ -31,22 +31,10 @@ const router = createBrowserRouter([
     path: '/',
     element: <NotebookEditor />,
     children: [
-      {
-        index: true,
-        element: <NotebookLoader />,
-      },
-      {
-        path: 'info',
-        element: <InfoPanel />,
-      },
-      {
-        path: 'design/*',
-        element: <DesignPanel />,
-      },
-      {
-        path: 'export',
-        element: <ReviewPanel />,
-      },
+      {index: true, element: <NotebookLoader />},
+      {path: 'info', element: <InfoPanel />},
+      {path: 'design/*', element: <DesignPanel />},
+      {path: 'export', element: <ReviewPanel />},
     ],
   },
 ]);

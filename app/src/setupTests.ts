@@ -41,9 +41,7 @@ async function mockProjectDB(project_id: ProjectID) {
   return projdbs[project_id];
 }
 
-vi.mock('./sync/index', () => ({
-  getProjectDB: mockProjectDB,
-}));
+vi.mock('./sync/index', () => ({getProjectDB: mockProjectDB}));
 
 async function mockGetTokenForCluster(listing_id: string) {
   return 'token-' + listing_id;

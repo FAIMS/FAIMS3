@@ -24,9 +24,7 @@
           "helperText": "Helper Text",
           "variant": "outlined",
           "required": false,
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "SelectProps": {},
           "name": "Name",
           "label": "Factory Name"
@@ -34,14 +32,8 @@
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -58,25 +50,15 @@
           "helperText": "Human Readable ID",
           "required": true,
           "template": "{{Name}}",
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "hrid": true,
-          "InputLabelProps": {
-            "label": "hridField"
-          }
+          "InputLabelProps": {"label": "hridField"}
         },
         "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "Name-2": {
@@ -89,22 +71,14 @@
           "helperText": "Enter text",
           "variant": "outlined",
           "required": false,
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "name": "Name-2"
         },
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -121,25 +95,15 @@
           "helperText": "Human Readable ID",
           "required": true,
           "template": "{{Name-2}}",
-          "InputProps": {
-            "type": "text"
-          },
+          "InputProps": {"type": "text"},
           "hrid": true,
-          "InputLabelProps": {
-            "label": "ID"
-          }
+          "InputLabelProps": {"label": "ID"}
         },
         "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         }
       },
       "Widgets": {
@@ -162,14 +126,8 @@
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": false,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": false,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": false, "label": "annotation"},
+          "uncertainty": {"include": false, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -197,14 +155,8 @@
         "validationSchema": [["yup.string"]],
         "initialValue": "",
         "meta": {
-          "annotation": {
-            "include": true,
-            "label": "annotation"
-          },
-          "uncertainty": {
-            "include": true,
-            "label": "uncertainty"
-          }
+          "annotation": {"include": true, "label": "annotation"},
+          "uncertainty": {"include": true, "label": "uncertainty"}
         },
         "condition": null,
         "persistent": false,
@@ -216,20 +168,11 @@
         "label": "Section",
         "fields": ["hridForm-Section", "Name", "Widgets", "Factories"]
       },
-      "Widget-Main": {
-        "label": "Main",
-        "fields": ["hridWidget-Main", "Name-2"]
-      }
+      "Widget-Main": {"label": "Main", "fields": ["hridWidget-Main", "Name-2"]}
     },
     "viewsets": {
-      "Form": {
-        "label": "Factory",
-        "views": ["Form-Section"]
-      },
-      "Widget": {
-        "label": "Widget",
-        "views": ["Widget-Main"]
-      }
+      "Form": {"label": "Factory", "views": ["Form-Section"]},
+      "Widget": {"label": "Widget", "views": ["Widget-Main"]}
     },
     "visible_types": ["Form", "Widget"]
   }

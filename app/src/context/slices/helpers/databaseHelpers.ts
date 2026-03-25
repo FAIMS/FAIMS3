@@ -183,11 +183,7 @@ export interface ChangeSyncInfo {
     /** Start time of the replication */
     start_time: string;
     /** Documents involved in the change */
-    docs?: Array<{
-      _id: string;
-      _rev: string;
-      [key: string]: any;
-    }>;
+    docs?: Array<{_id: string; _rev: string; [key: string]: any}>;
   };
 }
 
@@ -294,13 +290,8 @@ export function createPouchDbSync<Content extends {}>({
     batch_size: POUCH_BATCH_SIZE,
     batches_limit: POUCH_BATCHES_LIMIT,
     // Push and pull specific options
-    push: {
-      checkpoint: 'source',
-    },
-    pull: {
-      checkpoint: 'target',
-      ...pullFilter,
-    },
+    push: {checkpoint: 'source'},
+    pull: {checkpoint: 'target', ...pullFilter},
   };
 
   // Create the sync object
@@ -355,9 +346,7 @@ export const fetchProjectMetadataAndSpec = async ({
 }): Promise<GetNotebookResponse & {decodedSpec: ProjectUIModel}> => {
   const url = `${serverUrl}/api/notebooks/${projectId}`;
   const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: {Authorization: `Bearer ${token}`},
   });
   const notebook = (await response.json()) as GetNotebookResponse;
 

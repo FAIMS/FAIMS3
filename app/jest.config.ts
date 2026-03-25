@@ -3,9 +3,5 @@ module.exports = {
     '\\@capacitor-community/barcode-scanner':
       'src/jest/__mocks__/@capacitor-community/barcode-scanner.ts',
   },
-  globals: {
-    'ts-jest': {
-      isolatedModules: true,
-    },
-  },
+  globals: {'ts-jest': {isolatedModules: true}},
 };

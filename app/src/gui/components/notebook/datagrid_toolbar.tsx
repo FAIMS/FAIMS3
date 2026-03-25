@@ -119,18 +119,12 @@ export function GridToolbarSearchRecordDataButton({
             borderColor: '#bdbdbd',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
           },
-          '&.Mui-focused': {
-            borderColor: '#e0e0e0',
-            boxShadow: 'none',
-          },
+          '&.Mui-focused': {borderColor: '#e0e0e0', boxShadow: 'none'},
         },
         '& .MuiOutlinedInput-input': {
           padding: '10px 14px',
           fontSize: '0.9rem',
-          '&::placeholder': {
-            color: '#757575',
-            opacity: 0.8,
-          },
+          '&::placeholder': {color: '#757575', opacity: 0.8},
         },
       }}
       InputProps={{
@@ -255,12 +249,8 @@ export function NotebookDataGridToolbar(props: ToolbarProps) {
                     backgroundColor: 'rgba(25, 118, 210, 0.08)',
                     borderColor: theme => theme.palette.primary.main,
                   },
-                  '& .MuiButton-startIcon': {
-                    margin: 0,
-                  },
-                  '& .MuiButton-endIcon': {
-                    display: 'none',
-                  },
+                  '& .MuiButton-startIcon': {margin: 0},
+                  '& .MuiButton-endIcon': {display: 'none'},
                 }}
               />
             </Grid>

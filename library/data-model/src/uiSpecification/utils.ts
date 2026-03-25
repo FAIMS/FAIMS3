@@ -214,10 +214,7 @@ export const getHridFieldMap = (
 
   // Iterate through viewsets and get HRID field for each
   for (const viewSetId of viewSetIds) {
-    const hridField = getHridFieldNameForViewset({
-      uiSpecification,
-      viewSetId,
-    });
+    const hridField = getHridFieldNameForViewset({uiSpecification, viewSetId});
     hridFieldMap[viewSetId] = hridField;
   }
 
@@ -240,17 +237,11 @@ export const getFieldToIdsMap = (
 
   // For each viewset, get all fields and map them
   for (const viewSetId of viewsetIds) {
-    const fieldNames = getFieldNamesForViewset({
-      uiSpecification,
-      viewSetId,
-    });
+    const fieldNames = getFieldNamesForViewset({uiSpecification, viewSetId});
 
     // For each field, find its view ID and add to map
     for (const fieldName of fieldNames) {
-      const ids = getIdsByFieldName({
-        uiSpecification,
-        fieldName,
-      });
+      const ids = getIdsByFieldName({uiSpecification, fieldName});
       fieldMap[fieldName] = ids;
     }
   }
@@ -666,26 +657,17 @@ export function getVisibleTypes(ui_specification: ProjectUIModel) {
 export function getSummaryFieldInformation(
   uiSpecification: ProjectUIModel,
   viewsetId: string
-): {
-  enabled: boolean;
-  fieldNames: string[];
-} {
+): {enabled: boolean; fieldNames: string[]} {
   // Check if viewset exists
   if (!uiSpecification.viewsets || !(viewsetId in uiSpecification.viewsets)) {
-    return {
-      enabled: false,
-      fieldNames: [],
-    };
+    return {enabled: false, fieldNames: []};
   }
 
   const viewset = uiSpecification.viewsets[viewsetId];
   const summaryFields = viewset.summary_fields || [];
   const enabled = summaryFields.length > 0;
 
-  return {
-    enabled,
-    fieldNames: enabled ? summaryFields : [],
-  };
+  return {enabled, fieldNames: enabled ? summaryFields : []};
 }
 
 export function getFieldsForView(

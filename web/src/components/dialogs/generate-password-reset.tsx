@@ -85,9 +85,7 @@ export const GeneratePasswordReset = ({
           'Content-Type': 'application/json',
           Authorization: `Bearer ${user!.token}`,
         },
-        body: JSON.stringify({
-          email: id,
-        }),
+        body: JSON.stringify({email: id}),
       }).then(async res => {
         if (res.ok) {
           return (await res.json()) as {code: string; url: string};

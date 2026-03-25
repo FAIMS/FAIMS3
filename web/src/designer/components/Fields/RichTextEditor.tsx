@@ -35,13 +35,9 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
     });
   };
 
-  const state = {
-    content: field['component-parameters'].content || '',
-  };
+  const state = {content: field['component-parameters'].content || ''};
 
-  type newState = {
-    content: string;
-  };
+  type newState = {content: string};
 
   const updateFieldFromState = (newState: newState) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy

@@ -47,11 +47,7 @@ export function AddUserToTeamForm({
   }
 
   const fields: Field[] = [
-    {
-      name: 'email',
-      label: 'User Email',
-      schema: z.string().email(),
-    },
+    {name: 'email', label: 'User Email', schema: z.string().email()},
     {
       name: 'role',
       label: 'Role',

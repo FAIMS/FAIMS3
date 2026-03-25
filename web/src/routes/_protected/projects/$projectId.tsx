@@ -39,25 +39,19 @@ function RouteComponent() {
   const paths = useMemo(
     () => [
       // projects ->
-      {
-        path: '/projects',
-        label: NOTEBOOK_NAME_CAPITALIZED + 's',
-      },
+      {path: '/projects', label: NOTEBOOK_NAME_CAPITALIZED + 's'},
       // project name
       {
         path: pathname,
         label: isLoading
           ? 'Loading...'
-          : (project?.name as string) ?? projectId,
+          : ((project?.name as string) ?? projectId),
       },
     ],
     [pathname, project, isLoading]
   );
 
-  useBreadcrumbUpdate({
-    isLoading,
-    paths,
-  });
+  useBreadcrumbUpdate({isLoading, paths});
 
   return (
     <Tabs defaultValue={tabs[0].name}>

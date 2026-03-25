@@ -80,10 +80,7 @@ export const useUsersColumns = ({
                               'Content-Type': 'application/json',
                               Authorization: `Bearer ${user?.token}`,
                             },
-                            body: JSON.stringify({
-                              addrole: false,
-                              role,
-                            }),
+                            body: JSON.stringify({addrole: false, role}),
                           }
                         );
 

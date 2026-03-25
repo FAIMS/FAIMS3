@@ -32,9 +32,6 @@ export function createProjectAttachmentService(
       AttachmentServiceType[
         ATTACHMENT_SERVICE_TYPE as keyof typeof AttachmentServiceType
       ],
-    serviceConfig: {
-      dataDb,
-      documentIdPrefix: ATTACHMENT_DOCUMENT_ID_PREFIX,
-    },
+    serviceConfig: {dataDb, documentIdPrefix: ATTACHMENT_DOCUMENT_ID_PREFIX},
   });
 }

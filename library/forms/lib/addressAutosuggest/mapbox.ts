@@ -134,9 +134,7 @@ function mapboxSuggestionToAddressValue(
  * Mapbox Search Box API implementation of IAutosuggestAddressService.
  * Uses /suggest and /retrieve endpoints with session tokens for billing.
  */
-export class MapboxAutosuggestAddressService
-  implements IAutosuggestAddressService
-{
+export class MapboxAutosuggestAddressService implements IAutosuggestAddressService {
   private readonly config: MapboxAutosuggestConfig;
 
   constructor(config: MapboxAutosuggestConfig) {
@@ -145,10 +143,7 @@ export class MapboxAutosuggestAddressService
         'MapboxAutosuggestAddressService requires a non-empty apiKey'
       );
     }
-    this.config = {
-      limit: 10,
-      ...config,
-    };
+    this.config = {limit: 10, ...config};
   }
 
   async suggest(

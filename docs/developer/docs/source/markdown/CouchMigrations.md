@@ -102,10 +102,7 @@ const peopleV2toV3Migration: MigrationFunc = doc => {
   }
 
   // Return the action and updated record
-  return {
-    action: 'update',
-    updatedRecord: outputDoc,
-  };
+  return {action: 'update', updatedRecord: outputDoc};
 };
 ```
 
@@ -380,10 +377,7 @@ export const projectsV1toV2Migration: MigrationFunc = doc => {
     status: inputDoc.status,
     analytics,
     tags,
-    settings: inputDoc.settings || {
-      isPublic: false,
-      allowComments: true,
-    },
+    settings: inputDoc.settings || {isPublic: false, allowComments: true},
   };
 
   return {action: 'update', updatedRecord: outputDoc};

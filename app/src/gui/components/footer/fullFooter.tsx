@@ -138,11 +138,7 @@ export default function FullFooter() {
               <img
                 src="/static/logo/partners/ARDC_logo_RGB.png"
                 alt="ARDC logo"
-                style={{
-                  maxWidth: '150px',
-                  width: '100%',
-                  marginTop: '10px',
-                }}
+                style={{maxWidth: '150px', width: '100%', marginTop: '10px'}}
               />
             </Grid>
             <Grid item sm={8} lg={12}>
@@ -161,10 +157,7 @@ export default function FullFooter() {
                 <img
                   src="/static/logo/partners/MQ_INT_HOR_RGB_POS.png"
                   alt="Macquarie University logo"
-                  style={{
-                    maxWidth: '200px',
-                    width: '100%',
-                  }}
+                  style={{maxWidth: '200px', width: '100%'}}
                 />
               </Grid>
               <Grid item style={{textAlign: 'left'}}>

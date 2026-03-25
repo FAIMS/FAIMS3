@@ -2,6 +2,7 @@ import PouchDB from 'pouchdb';
 import PouchDBSecurity from 'pouchdb-security-helper';
 import {z} from 'zod';
 import {DatabaseInterface} from '../types';
+import {logError} from '../logging';
 PouchDB.plugin(PouchDBSecurity);
 
 // Zod schema for the document and existing document couch interfaces
@@ -31,26 +32,15 @@ export function convertToCouchDBString(func: Function) {
 export type DesignDocument = {
   _id: string;
   _rev?: string;
-  views?: {
-    [key: string]: {
-      map: string;
-      reduce?: string;
-    };
-  };
+  views?: {[key: string]: {map: string; reduce?: string}};
   language?: string;
   validate_doc_update?: string;
 };
 
 export type SecurityDocument = {
   // Standard fields for a CouchDB security document
-  admins: {
-    names: string[];
-    roles: string[];
-  };
-  members: {
-    names: string[];
-    roles: string[];
-  };
+  admins: {names: string[]; roles: string[]};
+  members: {names: string[]; roles: string[]};
 };
 
 /** Init methods produce this initialisation content. */
@@ -178,7 +168,7 @@ export async function batchWriteDocuments<T extends {}>({
             doc._rev = existing._rev;
             await db.put(doc);
             successful++;
-          } catch (conflictErr) {
+          } catch {
             console.warn(`Failed to resolve conflict for ${doc._id}`);
             failed++;
           }
@@ -189,6 +179,7 @@ export async function batchWriteDocuments<T extends {}>({
         }
       }
     } catch (bulkErr) {
+      logError(bulkErr);
       // Fallback to individual writes for this chunk
       for (const doc of chunk) {
         try {
@@ -268,10 +259,7 @@ export const couchInitialiser = async ({
 }: {
   db: DatabaseInterface;
   content: InitialisationContent;
-  config?: {
-    forceWrite?: boolean;
-    applyPermissions?: boolean;
-  };
+  config?: {forceWrite?: boolean; applyPermissions?: boolean};
 }): Promise<void> => {
   // For each design document - write - forcing if necessary
   for (const designDoc of content.designDocuments) {

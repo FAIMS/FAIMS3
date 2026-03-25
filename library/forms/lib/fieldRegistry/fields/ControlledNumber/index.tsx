@@ -112,20 +112,14 @@ function buildRangeHint(
  * Includes min/max constraints and required validation.
  */
 const valueSchema = (props: ControlledNumberProps) => {
-  let schema = z.number({
-    message: 'Please enter a valid number',
-  });
+  let schema = z.number({message: 'Please enter a valid number'});
 
   if (props.min !== undefined) {
-    schema = schema.min(props.min, {
-      message: `Must be ${props.min} or more`,
-    });
+    schema = schema.min(props.min, {message: `Must be ${props.min} or more`});
   }
 
   if (props.max !== undefined) {
-    schema = schema.max(props.max, {
-      message: `Must be ${props.max} or less`,
-    });
+    schema = schema.max(props.max, {message: `Must be ${props.max} or less`});
   }
 
   return schema;

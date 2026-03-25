@@ -25,10 +25,7 @@ declare module '@mui/material/styles' {
       error: string;
       notVisited: string;
     };
-    progressBar: {
-      background: string;
-      complete: string;
-    };
+    progressBar: {background: string; complete: string};
     alert: {
       warningBackground: string;
       warningText: string;
@@ -42,21 +39,9 @@ declare module '@mui/material/styles' {
       dialogText: string;
       hoverBackground: string;
     };
-    highlightColor: {
-      main: string;
-      contrastText: string;
-    };
-    icon: {
-      main: string;
-      light: string;
-      required: string;
-      highlight: string;
-    };
-    table?: {
-      divider: string;
-      rowBorder: string;
-      columnSeparator: string;
-    };
+    highlightColor: {main: string; contrastText: string};
+    icon: {main: string; light: string; required: string; highlight: string};
+    table?: {divider: string; rowBorder: string; columnSeparator: string};
     stepperGradient: string[];
   }
 
@@ -67,29 +52,13 @@ declare module '@mui/material/styles' {
       error: string;
       notVisited: string;
     };
-    primary?: {
-      main: string;
-      secondMain: string;
-      light: string;
-      dark: string;
-    };
+    primary?: {main: string; secondMain: string; light: string; dark: string};
 
-    highlightColor?: {
-      main: string;
-      contrastText: string;
-    };
+    highlightColor?: {main: string; contrastText: string};
 
-    icon: {
-      main: string;
-      light: string;
-      required: string;
-      highlight: string;
-    };
+    icon: {main: string; light: string; required: string; highlight: string};
 
-    progressBar?: {
-      background: string;
-      complete: string;
-    };
+    progressBar?: {background: string; complete: string};
 
     alert?: {
       warningBackground: string;
@@ -106,11 +75,7 @@ declare module '@mui/material/styles' {
       hoverBackground: string;
     };
 
-    table?: {
-      divider: string;
-      rowBorder: string;
-      columnSeparator: string;
-    };
+    table?: {divider: string; rowBorder: string; columnSeparator: string};
     stepperGradient?: string[];
   }
 }

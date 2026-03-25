@@ -19,15 +19,10 @@ import {defineConfig} from 'vitest/config';
 export default defineConfig({
   plugins: [],
   resolve: {
-    alias: {
-      events: 'rollup-plugin-node-polyfills/polyfills/events',
-    },
+    alias: {events: 'rollup-plugin-node-polyfills/polyfills/events'},
     preserveSymlinks: false,
   },
-  define: {
-    global: 'globalThis',
-    'process.env': {},
-  },
+  define: {global: 'globalThis', 'process.env': {}},
   test: {
     globals: true,
     environment: 'jsdom',

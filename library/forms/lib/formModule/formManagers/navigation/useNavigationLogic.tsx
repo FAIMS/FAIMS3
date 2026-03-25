@@ -236,24 +236,14 @@ export function useNavigationLogic({
 
   const onCompleteHandler = useMemo((): OnCompleteHandler => {
     if (navigationType === 'child' && handleNavigateToParent) {
-      return {
-        label: 'Finish',
-        onClick: handleNavigateToParent,
-      };
+      return {label: 'Finish', onClick: handleNavigateToParent};
     }
-    return {
-      label: 'Finish',
-      onClick: handleNavigateToRecordList,
-    };
+    return {label: 'Finish', onClick: handleNavigateToRecordList};
   }, [navigationType, handleNavigateToParent, handleNavigateToRecordList]);
 
   // ===========================================================================
   // Return
   // ===========================================================================
 
-  return {
-    buttons,
-    onCompleteHandler,
-    isSaving,
-  };
+  return {buttons, onCompleteHandler, isSaving};
 }

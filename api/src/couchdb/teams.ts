@@ -74,10 +74,7 @@ export const createTeamDocument = async (
   const teamId = generateTeamId(payload.name);
 
   // Setup the document with id included
-  const teamDoc: TeamsDBDocument = {
-    _id: teamId,
-    ...payload,
-  };
+  const teamDoc: TeamsDBDocument = {_id: teamId, ...payload};
 
   // Try putting the new document
   try {

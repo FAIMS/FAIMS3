@@ -47,10 +47,7 @@ describe('DataEngine', () => {
     }) as DatabaseInterface<DataDocument>;
 
     // Initialize engine
-    engine = new DataEngine({
-      dataDb: db,
-      uiSpec: uiSpec,
-    });
+    engine = new DataEngine({dataDb: db, uiSpec: uiSpec});
   });
 
   afterEach(async () => {
@@ -373,10 +370,7 @@ describe('DataEngine', () => {
           created_by: 'test-user',
           filename: 'test.txt',
           _attachments: {
-            'test.txt': {
-              content_type: 'text/plain',
-              data: testData,
-            },
+            'test.txt': {content_type: 'text/plain', data: testData},
           },
         };
 
@@ -406,10 +400,7 @@ describe('DataEngine', () => {
           created_by: 'test-user',
           filename: 'test.txt',
           _attachments: {
-            'test.txt': {
-              content_type: 'text/plain',
-              data: testData,
-            },
+            'test.txt': {content_type: 'text/plain', data: testData},
           },
         };
 
@@ -440,10 +431,7 @@ describe('DataEngine', () => {
           created_by: 'test-user',
           filename: 'test.txt',
           _attachments: {
-            'test.txt': {
-              content_type: 'text/plain',
-              data: testData,
-            },
+            'test.txt': {content_type: 'text/plain', data: testData},
           },
         };
 
@@ -478,10 +466,7 @@ describe('DataEngine', () => {
           created_by: 'test-user',
           filename: 'test.txt',
           _attachments: {
-            'test.txt': {
-              content_type: 'text/plain',
-              data: testData,
-            },
+            'test.txt': {content_type: 'text/plain', data: testData},
           },
         };
 
@@ -530,9 +515,7 @@ describe('DataEngine', () => {
       await engine.core.createRevision(revision);
 
       // Hydrate the record
-      const hydrated = await engine.hydrated.getHydratedRecord({
-        recordId,
-      });
+      const hydrated = await engine.hydrated.getHydratedRecord({recordId});
 
       // Verify the relationship exists and has the default vocab pair
       expect(hydrated.revision.relationship).toBeDefined();
@@ -598,10 +581,7 @@ describe('DataEngine', () => {
       const revision: NewRevisionDBDocument = {
         _id: revisionId,
         revision_format_version: 1,
-        avps: {
-          'First-1': avp1Id,
-          'Second-1': avp2Id,
-        },
+        avps: {'First-1': avp1Id, 'Second-1': avp2Id},
         record_id: recordId,
         parents: [],
         created: new Date().toISOString(),
@@ -612,9 +592,7 @@ describe('DataEngine', () => {
       await engine.core.createRevision(revision);
 
       // Hydrate the record
-      const hydrated = await engine.hydrated.getHydratedRecord({
-        recordId,
-      });
+      const hydrated = await engine.hydrated.getHydratedRecord({recordId});
 
       expect(hydrated.record._id).toBe(recordId);
       expect(hydrated.revision._id).toBe(revisionId);
@@ -849,9 +827,7 @@ describe('DataEngine', () => {
       expect(hydratedOld.data['First-1'].data).toBe('Old value');
 
       // Retrieve head (default)
-      const hydratedNew = await engine.hydrated.getHydratedRecord({
-        recordId,
-      });
+      const hydratedNew = await engine.hydrated.getHydratedRecord({recordId});
 
       expect(hydratedNew.revision._id).toBe(revision2Id);
       expect(hydratedNew.data['First-1'].data).toBe('New value');
@@ -875,10 +851,7 @@ describe('DataEngine', () => {
         created_by: 'test-user',
         filename: 'test.txt',
         _attachments: {
-          'test.txt': {
-            content_type: 'text/plain',
-            data: testData,
-          },
+          'test.txt': {content_type: 'text/plain', data: testData},
         },
       });
 
@@ -925,9 +898,7 @@ describe('DataEngine', () => {
       });
 
       // Hydrate the record
-      const hydrated = await engine.hydrated.getHydratedRecord({
-        recordId,
-      });
+      const hydrated = await engine.hydrated.getHydratedRecord({recordId});
 
       expect(hydrated.data['First-1'].faimsAttachments).toHaveLength(1);
       expect(hydrated.data['First-1'].faimsAttachments?.[0].attachmentId).toBe(

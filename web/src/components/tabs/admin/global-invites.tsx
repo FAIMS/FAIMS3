@@ -21,10 +21,7 @@ const GlobalInvites = () => {
     return <ErrorComponent error="Not authenticated" />;
   }
 
-  const {data, isLoading} = useGetGlobalInvites({
-    user,
-    redirect: `${WEB_URL}`,
-  });
+  const {data, isLoading} = useGetGlobalInvites({user, redirect: `${WEB_URL}`});
 
   const columns = useGetGlobalInviteColumns({
     deleteInviteHandler: async (inviteId: string) => {

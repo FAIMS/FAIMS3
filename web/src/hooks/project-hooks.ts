@@ -25,11 +25,7 @@ export const createProjectFromTemplate = async ({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${user.token}`,
     },
-    body: JSON.stringify({
-      template_id: template,
-      name,
-      teamId,
-    }),
+    body: JSON.stringify({template_id: template, name, teamId}),
   });
 
 /**

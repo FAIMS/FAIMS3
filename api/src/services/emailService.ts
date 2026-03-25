@@ -161,10 +161,7 @@ export class SMTPEmailService extends BaseEmailService {
       host: this.smtpConfig.host,
       port: this.smtpConfig.port,
       secure: this.smtpConfig.secure,
-      auth: {
-        user: this.smtpConfig.auth.user,
-        pass: this.smtpConfig.auth.pass,
-      },
+      auth: {user: this.smtpConfig.auth.user, pass: this.smtpConfig.auth.pass},
     });
 
     // Verify the connection
@@ -255,10 +252,7 @@ export class MockEmailService extends BaseEmailService {
     }
 
     // Store the email for later inspection
-    this.sentEmails.push({
-      ...options,
-      timestamp: new Date(),
-    });
+    this.sentEmails.push({...options, timestamp: new Date()});
 
     // Return a mock response
     return {
@@ -326,9 +320,7 @@ export function createEmailService({
       });
 
     case EmailServiceType.MOCK:
-      return new MockEmailService({
-        config: emailConfig,
-      });
+      return new MockEmailService({config: emailConfig});
 
     default:
       throw new Error(`Unsupported email service type: ${serviceType}`);

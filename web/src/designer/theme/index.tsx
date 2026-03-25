@@ -23,22 +23,13 @@ import {createTheme, colors} from '@mui/material';
 
 const theme = createTheme({
   palette: {
-    background: {
-      default: '#FAFAFB',
-    },
-    primary: {
-      main: '#669911',
-      light: '#a7e938',
-      dark: '#141E03',
-    },
+    background: {default: '#FAFAFB'},
+    primary: {main: '#669911', light: '#a7e938', dark: '#141E03'},
     secondary: {
       main: '#E18200', //'#FFA000',
       contrastText: '#fff',
     },
-    text: {
-      primary: colors.blueGrey[900],
-      secondary: colors.blueGrey[600],
-    },
+    text: {primary: colors.blueGrey[900], secondary: colors.blueGrey[600]},
   },
   typography: {
     fontFamily: "'Open Sans', sans-serif",
@@ -77,33 +68,22 @@ const theme = createTheme({
   components: {
     MuiAppBar: {
       styleOverrides: {
-        root: {
-          '&.MuiAppBar-root': {
-            boxShadow: 'none',
-          },
-        },
+        root: {'&.MuiAppBar-root': {boxShadow: 'none'}},
         colorPrimary: {
           backgroundColor: '#edeeeb',
           color: '#324C08',
           contrastText: '#fff',
           textColor: '#fff',
           indicatorColor: '#fff',
-          text: {
-            primary: '#fff',
-          },
+          text: {primary: '#fff'},
         },
       },
     },
     MuiTabs: {
       styleOverrides: {
         root: {
-          '&.MuiTabs-root': {
-            boxShadow: 'none',
-            fontWeight: 'bold',
-          },
-          '&.MuiTab-root': {
-            fontWeight: '700 !important',
-          },
+          '&.MuiTabs-root': {boxShadow: 'none', fontWeight: 'bold'},
+          '&.MuiTab-root': {fontWeight: '700 !important'},
           '&.Mui-selected': {
             fontWeight: '700 !important',
             color: 'white',
@@ -112,15 +92,7 @@ const theme = createTheme({
         },
       },
     },
-    MuiTab: {
-      styleOverrides: {
-        root: {
-          '&.MuiTab-root': {
-            fontWeight: 'bold',
-          },
-        },
-      },
-    },
+    MuiTab: {styleOverrides: {root: {'&.MuiTab-root': {fontWeight: 'bold'}}}},
   },
 });
 

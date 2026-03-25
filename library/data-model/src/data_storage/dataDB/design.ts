@@ -29,14 +29,10 @@ export const permissionsDocument = (projectId: string) => ({
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (newDoc, oldDoc, userCtx, _secObj) => {
       if (userCtx === null || userCtx === undefined) {
-        throw {
-          unauthorized: 'You must be logged in. No token given.',
-        };
+        throw {unauthorized: 'You must be logged in. No token given.'};
       }
       if (userCtx.name === null || userCtx.name === undefined) {
-        throw {
-          unauthorized: 'You must be logged in. No username given.',
-        };
+        throw {unauthorized: 'You must be logged in. No username given.'};
       }
 
       // Never allow 'changing' authors - noting this will only catch rec -
@@ -248,10 +244,7 @@ export const recordAuditDocument = {
       map: convertToCouchDBString(doc => {
         // Only emit documents that have record_id and are not attachments
         if (doc.record_id && doc.attach_format_version === undefined) {
-          emit(doc.record_id, {
-            _id: doc._id,
-            _rev: doc._rev,
-          });
+          emit(doc.record_id, {_id: doc._id, _rev: doc._rev});
         }
       }),
     },

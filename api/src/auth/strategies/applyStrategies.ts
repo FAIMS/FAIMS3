@@ -199,10 +199,7 @@ export const registerAuthProviders = (): RegisteredAuthProviders => {
     passport.use(providerId, strategy);
 
     // Store both config and strategy for later use
-    registeredProviders[providerId] = {
-      config,
-      strategy,
-    };
+    registeredProviders[providerId] = {config, strategy};
   });
 
   return registeredProviders;

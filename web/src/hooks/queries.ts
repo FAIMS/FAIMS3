@@ -315,11 +315,7 @@ export const useGetProjectInvites = ({
       );
       const promises = invites.map(async invite => {
         const url = buildRegisterUrl({inviteId: invite._id, redirect});
-        return {
-          ...invite,
-          url: url,
-          qrCode: await QRCode.toDataURL(url),
-        };
+        return {...invite, url: url, qrCode: await QRCode.toDataURL(url)};
       });
       // Resolving all promises to get enhanced invites
       return Promise.all(promises);
@@ -353,11 +349,7 @@ export const useGetTeamInvites = ({
       );
       const promises = invites.map(async invite => {
         const url = buildRegisterUrl({inviteId: invite._id, redirect});
-        return {
-          ...invite,
-          url: url,
-          qrCode: await QRCode.toDataURL(url),
-        };
+        return {...invite, url: url, qrCode: await QRCode.toDataURL(url)};
       });
       return Promise.all(promises);
     },
@@ -388,11 +380,7 @@ export const useGetGlobalInvites = ({
       );
       const promises = invites.map(async invite => {
         const url = buildRegisterUrl({inviteId: invite._id, redirect});
-        return {
-          ...invite,
-          url: url,
-          qrCode: await QRCode.toDataURL(url),
-        };
+        return {...invite, url: url, qrCode: await QRCode.toDataURL(url)};
       });
       return Promise.all(promises);
     },
@@ -504,11 +492,7 @@ export const createLongLivedToken = async ({
   await post<PostCreateLongLivedTokenRequest, PostCreateLongLivedTokenResponse>(
     {
       user,
-      data: {
-        title,
-        expiryTimestampMs,
-        description,
-      },
+      data: {title, expiryTimestampMs, description},
       path: '/api/long-lived-tokens',
     }
   );

@@ -113,9 +113,7 @@ export const consumeExchangeTokenForRefreshToken = async ({
 }> => {
   const exchangeTokenHash = hashChallengeCode(exchangeToken);
   try {
-    const tokenDocs = await getTokensByExchangeTokenHash({
-      exchangeTokenHash,
-    });
+    const tokenDocs = await getTokensByExchangeTokenHash({exchangeTokenHash});
 
     if (tokenDocs.length === 0) {
       return {
@@ -267,10 +265,7 @@ export const getTokensByUserId = async (
 
   const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokensByUserId',
-    {
-      key: userId,
-      include_docs: true,
-    }
+    {key: userId, include_docs: true}
   );
 
   return result.rows
@@ -292,10 +287,7 @@ export const getTokensByExchangeTokenHash = async ({
 
   const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokensByExchangeTokenHash',
-    {
-      key: exchangeTokenHash,
-      include_docs: true,
-    }
+    {key: exchangeTokenHash, include_docs: true}
   );
 
   return result.rows
@@ -315,10 +307,7 @@ export const invalidateToken = async (
 
   const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokensByToken',
-    {
-      key: token,
-      include_docs: true,
-    }
+    {key: token, include_docs: true}
   );
 
   const filtered = result.rows.filter(r => !!r.doc).map(row => row.doc!);
@@ -363,10 +352,7 @@ export const getTokenByToken = async (
 
   const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokensByToken',
-    {
-      key: token,
-      include_docs: true,
-    }
+    {key: token, include_docs: true}
   );
 
   const filtered = result.rows.filter(r => !!r.doc).map(row => row.doc!);
@@ -409,9 +395,7 @@ export const getAllTokens = async (): Promise<
 
   const result = await authDB.query<RefreshRecordExistingDocument>(
     'viewsDocument/refreshTokens',
-    {
-      include_docs: true,
-    }
+    {include_docs: true}
   );
 
   return result.rows.map(row => row.doc as RefreshRecordExistingDocument);

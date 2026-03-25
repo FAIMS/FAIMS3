@@ -7,12 +7,6 @@ import {SecurityDocument} from '../utils';
 
 export const MigrationsDBSecurityDocument: SecurityDocument = {
   // Only DB admins or cluster admins can interact with the Invites DB
-  admins: {
-    names: [],
-    roles: [COUCH_ADMIN_ROLE_NAME],
-  },
-  members: {
-    names: [],
-    roles: [COUCH_ADMIN_ROLE_NAME],
-  },
+  admins: {names: [], roles: [COUCH_ADMIN_ROLE_NAME]},
+  members: {names: [], roles: [COUCH_ADMIN_ROLE_NAME]},
 };

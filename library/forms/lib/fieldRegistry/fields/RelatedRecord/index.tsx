@@ -478,13 +478,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         relationTypeVocabPair: relationTypeToPair(props.relation_type),
       };
       if (props.relation_type === 'faims-core::Child') {
-        relationship = {
-          parent: [relation],
-        };
+        relationship = {parent: [relation]};
       } else {
-        relationship = {
-          linked: [relation],
-        };
+        relationship = {linked: [relation]};
       }
 
       const res = await props.config.dataEngine().form.createRecord({
@@ -555,10 +551,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         : {...existing, linked: [...(existing?.linked ?? []), relation]};
 
     // Persist the updated relationship on the target record's revision
-    await props.config.dataEngine().hydrated.updateRevision({
-      ...record.revision,
-      relationship,
-    });
+    await props.config
+      .dataEngine()
+      .hydrated.updateRevision({...record.revision, relationship});
   };
 
   // Fetch and hydrate all related records

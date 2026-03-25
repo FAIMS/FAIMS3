@@ -84,10 +84,7 @@ export function CreateProjectForm({
       label: `Create ${NOTEBOOK_NAME} in this team${
         canCreateGlobally ? ' (optional)' : ''
       }`,
-      options: teams?.teams.map(({_id, name}) => ({
-        label: name,
-        value: _id,
-      })),
+      options: teams?.teams.map(({_id, name}) => ({label: name, value: _id})),
       schema: canCreateGlobally ? z.string().optional() : z.string(),
     });
     dividers.push({index: 3, component: <div className="h-5" />});

@@ -54,11 +54,7 @@ export const restoreFromBackup = async ({
       if (processedCount % GC_INTERVAL === 0 && processedCount > 0) {
         // Process batch before GC
         if (batch.length > 0 && db) {
-          await batchWriteDocuments({
-            db,
-            documents: batch,
-            writeOnClash: true,
-          });
+          await batchWriteDocuments({db, documents: batch, writeOnClash: true});
           // console.log(
           //   `Batch results: ${results.successful} successful, ${results.failed} failed`
           // );
@@ -113,10 +109,7 @@ export const restoreFromBackup = async ({
           } else if (!skipping && dbName.startsWith('data')) {
             const projectName = dbName.split('||')[1];
             // TODO: set up permissions for the databases
-            db = await initialiseDataDb({
-              projectId: projectName,
-              force: true,
-            });
+            db = await initialiseDataDb({projectId: projectName, force: true});
           } else {
             // don't try to restore anything we don't know about
             db = undefined;
@@ -125,10 +118,7 @@ export const restoreFromBackup = async ({
           // don't try to restore design documents as these will have been
           // created on the database initialisation
           // Minimal document copy
-          const docToWrite = {
-            _id: doc.doc._id,
-            ...doc.doc,
-          };
+          const docToWrite = {_id: doc.doc._id, ...doc.doc};
           // delete the _rev attribute so that we can put it into an empty db
           // if we were restoring into an existing db, we would need to be more
           // careful and check whether this _rev is present in the db already

@@ -78,11 +78,7 @@ type FieldEditorProps = {
   moveFieldCallback: (targetViewId: string) => void;
 };
 
-type ConflictError = {
-  title: string;
-  message: string;
-  conflicts: string[];
-};
+type ConflictError = {title: string; message: string; conflicts: string[]};
 
 export const FieldEditor = ({
   fieldName,
@@ -258,11 +254,7 @@ export const FieldEditor = ({
 
       dispatch({
         type: 'ui-specification/fieldMovedToSection',
-        payload: {
-          fieldName,
-          sourceViewId: viewId,
-          targetViewId,
-        },
+        payload: {fieldName, sourceViewId: viewId, targetViewId},
       });
       moveFieldCallback(targetViewId);
       handleCloseMoveDialog();
@@ -332,12 +324,8 @@ export const FieldEditor = ({
       elevation={0}
       sx={{
         border: '1px solid #CBCFCD',
-        '&:not(:nth-of-type(2))': {
-          borderTop: 0,
-        },
-        '&:before': {
-          display: 'none',
-        },
+        '&:not(:nth-of-type(2))': {borderTop: 0},
+        '&:before': {display: 'none'},
       }}
     >
       <AccordionSummary
@@ -348,9 +336,7 @@ export const FieldEditor = ({
           '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
             transform: 'rotate(90deg)',
           },
-          '& .MuiAccordionSummary-content': {
-            marginLeft: '10px',
-          },
+          '& .MuiAccordionSummary-content': {marginLeft: '10px'},
         }}
       >
         <Grid container rowGap={1} alignItems={'center'}>

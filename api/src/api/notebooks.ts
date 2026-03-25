@@ -139,9 +139,7 @@ api.get(
 api.post(
   '/',
   requireAuthenticationAPI,
-  processRequest({
-    body: PostCreateNotebookInputSchema,
-  }),
+  processRequest({body: PostCreateNotebookInputSchema}),
   isAllowedToMiddleware({
     getAction(req) {
       const body = req.body as PostCreateNotebookInput;
@@ -385,10 +383,7 @@ api.post(
 
     // compute hashes from our database for these records
     const recordIds = Object.getOwnPropertyNames(record_map);
-    const localHashes = await getRecordListAudit({
-      recordIds,
-      dataDb,
-    });
+    const localHashes = await getRecordListAudit({recordIds, dataDb});
     // compare these hashes with the payload
     const result: Record<string, boolean> = {};
     for (const recordId of recordIds) {
@@ -396,9 +391,7 @@ api.post(
       result[recordId] = record_map[recordId] === localHash;
     }
 
-    res.json({
-      status: result,
-    });
+    res.json({status: result});
   }
 );
 
@@ -412,9 +405,7 @@ api.get(
       return req.params.id;
     },
   }),
-  processRequest({
-    params: z.object({id: z.string()}),
-  }),
+  processRequest({params: z.object({id: z.string()})}),
   // TODO complete type annotations for this method
   async (req, res: Response<{records: any}>) => {
     if (!req.user) {
@@ -517,10 +508,7 @@ const generateDownloadToken = async ({
 }) => {
   const signingKey = await KEY_SERVICE.getSigningKey();
   const token = await new SignJWT(payload)
-    .setProtectedHeader({
-      alg: signingKey.alg,
-      kid: signingKey.kid,
-    })
+    .setProtectedHeader({alg: signingKey.alg, kid: signingKey.kid})
     .setSubject(user.user_id)
     .setIssuedAt()
     .setIssuer(signingKey.instanceName)
@@ -591,9 +579,7 @@ api.get(
       includeKML: z.string().optional().default('true'),
       includeMetadata: z.string().optional().default('true'),
     }),
-    params: z.object({
-      id: z.string(),
-    }),
+    params: z.object({id: z.string()}),
   }),
   async (req, res: Response<GetExportNotebookResponse>) => {
     if (!req.user) {
@@ -640,10 +626,7 @@ api.get(
     }
 
     // Build the download token
-    const jwt = await generateDownloadToken({
-      user: req.user,
-      payload: payload,
-    });
+    const jwt = await generateDownloadToken({user: req.user, payload: payload});
 
     // Return the url explicitly - rather than a redirect. Hard to carefully
     // handle the auto redirect while triggering export only once
@@ -698,10 +681,7 @@ api.get(
     };
 
     // Build the download token payload
-    const jwt = await generateDownloadToken({
-      user: req.user,
-      payload: payload,
-    });
+    const jwt = await generateDownloadToken({user: req.user, payload: payload});
     return res.redirect(`/api/notebooks/download/${jwt}`);
   }
 );
@@ -854,10 +834,7 @@ api.post(
 
     // Work out what action this is (specifically protected given role elevation
     // risks)
-    const actionNeeded = projectRoleToAction({
-      add: addRole,
-      role,
-    });
+    const actionNeeded = projectRoleToAction({add: addRole, role});
 
     if (
       !userCanDo({
@@ -891,11 +868,7 @@ api.post(
 
     if (addRole) {
       // Add project role to the user
-      addProjectRole({
-        user,
-        projectId: req.params.id,
-        role: role,
-      });
+      addProjectRole({user, projectId: req.params.id, role: role});
     } else {
       // Remove project role from the user
       removeProjectRole({user, projectId: notebookMetadata.project_id, role});

@@ -47,10 +47,7 @@ export async function getAllRecordsOfType(
 
   do {
     res = await dataDB.find({
-      selector: {
-        record_format_version: 1,
-        type: type,
-      },
+      selector: {record_format_version: 1, type: type},
       limit: BATCH_SIZE,
       skip: skip,
     });

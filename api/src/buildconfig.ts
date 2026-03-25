@@ -546,11 +546,7 @@ function getEmailConfig(): EmailConfig {
     };
   }
 
-  return {
-    fromEmail,
-    fromName,
-    replyTo,
-  };
+  return {fromEmail, fromName, replyTo};
 }
 
 /**
@@ -597,10 +593,7 @@ function getSMTPConfig(): SMTPEmailServiceConfig {
     host: host!,
     port,
     secure,
-    auth: {
-      user: user!,
-      pass: pass!,
-    },
+    auth: {user: user!, pass: pass!},
     cacheExpirySeconds,
   };
 }

@@ -25,9 +25,7 @@ export interface ServerUserMap {
 }
 
 export interface ServerMap {
-  [serverId: string]: {
-    users: ServerUserMap;
-  };
+  [serverId: string]: {users: ServerUserMap};
 }
 
 export interface ActiveUser {
@@ -259,10 +257,7 @@ export const selectAllServerUsers = createSelector(
   [(state: AuthStore) => state.auth.servers],
   (servers): ServerUserIdentity[] => {
     return Object.entries(servers).flatMap(([serverId, server]) =>
-      Object.keys(server.users).map(username => ({
-        serverId,
-        username,
-      }))
+      Object.keys(server.users).map(username => ({serverId, username}))
     );
   }
 );
@@ -397,10 +392,7 @@ export const refreshToken = createAsyncThunk<
 
   if (!isTokenRefreshable(connection)) {
     appDispatch(
-      addAlert({
-        message: 'No refresh token available.',
-        severity: 'warning',
-      })
+      addAlert({message: 'No refresh token available.', severity: 'warning'})
     );
   }
 
