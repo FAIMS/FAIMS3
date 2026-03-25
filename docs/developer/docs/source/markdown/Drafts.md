@@ -1,7 +1,7 @@
 # Draft Storage
 
 Drafts are created when you first create a new record or when you start
-editing an existing record.   A draft exists up to the point that you
+editing an existing record. A draft exists up to the point that you
 publish a record at which point it is deleted and the full record
 is stored in the dataDB.
 
@@ -15,7 +15,7 @@ understanding of how drafts work.
 ## Draft Creation
 
 To create a draft we call `newStagedData` with a link to an existing record which
-will be null if this is a new record.  The encoded draft (`EncodedDraft`) has
+will be null if this is a new record. The encoded draft (`EncodedDraft`) has
 no content initially (fields, annotations are empty).
 
 ## Draft Update
@@ -26,8 +26,8 @@ form values and with some special treatment for attachments. SetStagedData
 merges the new data with whatever was stored in the database for field values
 annotations and relationships.
 
-Attachments are handled specially.  Any field that holds files (Photos) has the
-values stored separately.  We note that the value of these fields can contain
+Attachments are handled specially. Any field that holds files (Photos) has the
+values stored separately. We note that the value of these fields can contain
 both files (just attached photos) and FAIMSAttachmentReference objects that refer
 to an existing stored attachment that may or may not be on-device. The process
 here takes any File object and stores it as an attachment to the draft record.

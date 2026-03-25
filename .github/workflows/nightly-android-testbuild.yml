@@ -123,7 +123,7 @@ jobs:
           pnpm run build
       # https://capacitorjs.com/docs/android
       # The bundle install shouldn't be necessary, but given we've got ios and android in...
-      - run: pnpm --filter=@faims3/app run app-update android 
+      - run: pnpm --filter=@faims3/app run app-update android
       - run: pnpm --filter=@faims3/app run webapp-sync -- --deployment android
       - name: Fastlane
         run: |

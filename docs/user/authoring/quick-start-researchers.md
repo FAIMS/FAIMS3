@@ -4,40 +4,40 @@ This guide helps researchers design effective digital data collection notebooks 
 
 ## Quick Reference: Selecting the Right Field Type
 
-| What You Want to Record | Field Type to Use | Example | Key Considerations |
-|------------------------|-------------------|---------|-------------------|
-| **Text & Identifiers** ||||
-| Short names or labels | Single-line text | "North wall", "Primary deposit" | Best for brief descriptors under 100 characters |
-| Detailed descriptions | Multi-line text | Context descriptions, habitat observations | Accommodates paragraphs and extended notes |
-| Email contacts | Email field | "pi@university.edu" | Validates email format automatically |
-| Physical addresses | Address field | Museum locations, site addresses | Provides structured address components |
-| Specimen barcodes | QR/Barcode scanner | "EXC2024-001" | Mobile devices only |
-| Record IDs | Templated String | "SITE1-2024-045" | Combines multiple fields automatically |
-| **Numbers & Measurements** ||||
-| Simple counts | Number field | Sherd count: 47 | Basic numeric entry |
-| Constrained measurements | Controlled number | pH (0–14): 7.2 | Enforces minimum/maximum values |
-| Sequential identifiers | Auto-incrementing | Context: 001, 002, 003... | Generates unique sequential numbers |
-| **Dates & Times** ||||
-| Collection dates | Date picker | 15/03/2024 | Date without time component |
-| Precise timestamps | DateTime picker | 15/03/2024 14:30 | Includes both date and time |
-| Quick timestamps | DateTime Now | One-tap current time | Captures current moment instantly |
-| Approximate dates | Month picker | March 2024 | When day precision unnecessary |
-| **Choices & Categories** ||||
-| Binary decisions | Checkbox | "Sample collected?" ✓ | Simple yes/no |
-| Single choice (few options) | Radio buttons | Preservation: Excellent/Good/Fair/Poor | Shows all options simultaneously |
-| Single choice (many options) | Dropdown | Species from extensive list | Conserves screen space |
-| Multiple selections | Multi-select | Materials present: Ceramic, Glass, Metal | Allows several choices |
-| Hierarchical categories | Hierarchical dropdown | Kingdom → Phylum → Species | Nested taxonomies |
-| **Location & Spatial** ||||
-| Point coordinates | Take GPS point | Lat: -33.8688, Long: 151.2093 | Single coordinate capture |
-| Boundaries and features | Map drawing | Polygons, lines, points | Visual feature creation on base maps |
-| **Media & Files** ||||
-| Field photographs | Take photo | Site images, specimen photos | Camera or gallery selection |
-| Document attachments | File upload | PDFs, spreadsheets, reports | Accepts any file type |
-| **Relationships** ||||
-| Record connections | Related records | Links between contexts, samples to sites | Creates data relationships |
-| **Instructions** ||||
-| Field guidance | Rich text | "Remember to photograph before excavating" | Display-only formatted text |
+| What You Want to Record      | Field Type to Use     | Example                                    | Key Considerations                              |
+| ---------------------------- | --------------------- | ------------------------------------------ | ----------------------------------------------- |
+| **Text & Identifiers**       |                       |                                            |                                                 |
+| Short names or labels        | Single-line text      | "North wall", "Primary deposit"            | Best for brief descriptors under 100 characters |
+| Detailed descriptions        | Multi-line text       | Context descriptions, habitat observations | Accommodates paragraphs and extended notes      |
+| Email contacts               | Email field           | "pi@university.edu"                        | Validates email format automatically            |
+| Physical addresses           | Address field         | Museum locations, site addresses           | Provides structured address components          |
+| Specimen barcodes            | QR/Barcode scanner    | "EXC2024-001"                              | Mobile devices only                             |
+| Record IDs                   | Templated String      | "SITE1-2024-045"                           | Combines multiple fields automatically          |
+| **Numbers & Measurements**   |                       |                                            |                                                 |
+| Simple counts                | Number field          | Sherd count: 47                            | Basic numeric entry                             |
+| Constrained measurements     | Controlled number     | pH (0–14): 7.2                             | Enforces minimum/maximum values                 |
+| Sequential identifiers       | Auto-incrementing     | Context: 001, 002, 003...                  | Generates unique sequential numbers             |
+| **Dates & Times**            |                       |                                            |                                                 |
+| Collection dates             | Date picker           | 15/03/2024                                 | Date without time component                     |
+| Precise timestamps           | DateTime picker       | 15/03/2024 14:30                           | Includes both date and time                     |
+| Quick timestamps             | DateTime Now          | One-tap current time                       | Captures current moment instantly               |
+| Approximate dates            | Month picker          | March 2024                                 | When day precision unnecessary                  |
+| **Choices & Categories**     |                       |                                            |                                                 |
+| Binary decisions             | Checkbox              | "Sample collected?" ✓                      | Simple yes/no                                   |
+| Single choice (few options)  | Radio buttons         | Preservation: Excellent/Good/Fair/Poor     | Shows all options simultaneously                |
+| Single choice (many options) | Dropdown              | Species from extensive list                | Conserves screen space                          |
+| Multiple selections          | Multi-select          | Materials present: Ceramic, Glass, Metal   | Allows several choices                          |
+| Hierarchical categories      | Hierarchical dropdown | Kingdom → Phylum → Species                 | Nested taxonomies                               |
+| **Location & Spatial**       |                       |                                            |                                                 |
+| Point coordinates            | Take GPS point        | Lat: -33.8688, Long: 151.2093              | Single coordinate capture                       |
+| Boundaries and features      | Map drawing           | Polygons, lines, points                    | Visual feature creation on base maps            |
+| **Media & Files**            |                       |                                            |                                                 |
+| Field photographs            | Take photo            | Site images, specimen photos               | Camera or gallery selection                     |
+| Document attachments         | File upload           | PDFs, spreadsheets, reports                | Accepts any file type                           |
+| **Relationships**            |                       |                                            |                                                 |
+| Record connections           | Related records       | Links between contexts, samples to sites   | Creates data relationships                      |
+| **Instructions**             |                       |                                            |                                                 |
+| Field guidance               | Rich text             | "Remember to photograph before excavating" | Display-only formatted text                     |
 
 ## Essential Patterns for Field Research
 
@@ -140,7 +140,7 @@ Different feature types require different information. A "Feature type" radio bu
 - Burial-specific fields for human remains protocols
 - Sampling fields for hearth features
 - Dimensional fields for postholes
-This ensures collectors see only relevant fields for their current context.
+  This ensures collectors see only relevant fields for their current context.
 
 ## Best Practices for Effective Notebooks
 

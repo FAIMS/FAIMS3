@@ -4,7 +4,7 @@
 
 ## How does it work?
 
-**{{FAIMS}}** runs on a web browser, Android and iOS and uses React, Ionic's Capacitor and PouchDB to create **custom {{notebook}}s**. Each **{{notebook}}** is a collection of forms that can be customised to collect structured, geospatial, instrument and multimedia data to suit any workflow. **{{notebook}}s** are shared from an online or offline server to registered users. Once a user has activated a {{notebook}} they can start collecting data. 
+**{{FAIMS}}** runs on a web browser, Android and iOS and uses React, Ionic's Capacitor and PouchDB to create **custom {{notebook}}s**. Each **{{notebook}}** is a collection of forms that can be customised to collect structured, geospatial, instrument and multimedia data to suit any workflow. **{{notebook}}s** are shared from an online or offline server to registered users. Once a user has activated a {{notebook}} they can start collecting data.
 
 ## Who can use it?
 
@@ -12,7 +12,7 @@
 
 ## Customising Notebooks
 
-**{{Notebook}}s** can be created in our Notebook Designer on the web. Once designed, {{notebook}}s can edited and adjusted (by authorised Users), even after deployment. Learn more about [Notebook Creation](../authoring/quick-start-researchers.md).   
+**{{Notebook}}s** can be created in our Notebook Designer on the web. Once designed, {{notebook}}s can edited and adjusted (by authorised Users), even after deployment. Learn more about [Notebook Creation](../authoring/quick-start-researchers.md).
 
 ## Collecting Data
 
@@ -24,7 +24,7 @@ While working online, or within range of an offline server, records will be **co
 
 ## Exporting Data
 
-Data can be exported from **{{FAIMS}}** into .csv, .kml, .json and other formats. Images, files and folders are renamed in accordance with the record's chosen identifier, saving time when you return from the field. Learn more about [Export](../data-export/export.md).    
+Data can be exported from **{{FAIMS}}** into .csv, .kml, .json and other formats. Images, files and folders are renamed in accordance with the record's chosen identifier, saving time when you return from the field. Learn more about [Export](../data-export/export.md).
 
 ## How can I access {{FAIMS}}?
 

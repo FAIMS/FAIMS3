@@ -1,7 +1,7 @@
 # Select Multiple
 
-*How to add and configure a Select Multiple field in the {{Notebook}}
-Editor.*
+_How to add and configure a Select Multiple field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -56,12 +56,12 @@ controls. Below the Markdown syntax info banner, you will find the
 **Add Option** input, the **Add "Other" Option** button, and a table
 listing all current options.
 
-| Setting | What It Does |
-| ------- | ------------ |
-| **Options list** | The choices available for selection. Each option appears as a row in the table. |
-| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected. |
+| Setting                | What It Does                                                                                                                      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **Options list**       | The choices available for selection. Each option appears as a row in the table.                                                   |
+| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                                    |
 | **Expanded checklist** | When enabled, displays all options as a visible checklist rather than a compact dropdown. Best for lists of ~10 or fewer options. |
-| **Exclusive** | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed"). |
+| **Exclusive**          | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed").       |
 
 **Note**: As per the banner, you can use Markdown syntax in
 option text (e.g., \*\*bold\*\* or \*italic\*) to add emphasis

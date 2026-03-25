@@ -227,9 +227,9 @@ export async function queryCouch<DocType extends {}>({
  * @throws Error if the specified record cannot be found in the database
  */
 export async function updateHeads({
-  newRevisionId: newRevisionId,
-  baseRevisionId: baseRevisionId,
-  recordId: recordId,
+  newRevisionId,
+  baseRevisionId,
+  recordId,
   dataDb,
 }: {
   dataDb: DataDbType;

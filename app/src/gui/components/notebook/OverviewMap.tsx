@@ -288,7 +288,10 @@ const createResetNorthControl = (map: Map): Control => {
   button.addEventListener('click', () => {
     const view = map.getView();
     const currentRotation = view.getRotation();
-    if (currentRotation !== undefined && Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD) {
+    if (
+      currentRotation !== undefined &&
+      Math.abs(currentRotation) >= ROTATION_NEAR_ZERO_THRESHOLD
+    ) {
       view.animate({rotation: 0, duration: 200});
     }
   });

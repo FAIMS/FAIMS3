@@ -1,6 +1,6 @@
 # Field Identity
 
-*The Label, Helper Text, and Field ID that every field shares.*
+_The Label, Helper Text, and Field ID that every field shares._
 
 ---
 
@@ -64,5 +64,5 @@ instructions.
   screen space is limited, and as export column headers where brevity
   aids readability.
 - **Use Helper Text for instructions, not titles** — the Label already
-  serves as the field's title. Use Helper Text to explain *how* to
-  fill in the field, not *what* the field is.
+  serves as the field's title. Use Helper Text to explain _how_ to
+  fill in the field, not _what_ the field is.

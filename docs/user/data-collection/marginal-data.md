@@ -8,25 +8,24 @@ These marginal notes and checkboxes are then available alongside the actual data
 
 ## Annotations
 
-An Annotation or marginal note is a text field that is paired with any other *Input* and *Structured Data* field. It is useful when you need to make additional notes about a controlled choice or number field. 
+An Annotation or marginal note is a text field that is paired with any other _Input_ and _Structured Data_ field. It is useful when you need to make additional notes about a controlled choice or number field.
 
-The label for Annotation can be customised to allow for 'General Notes' or something more targeted like 'Recording Conditions'. 
+The label for Annotation can be customised to allow for 'General Notes' or something more targeted like 'Recording Conditions'.
 
 ## Certainty Flags
 
-A Certainty Flag is a checkbox that is paried with any other *Input* and *Structured Data* field. This allows the user to 'flag' the value as questionable or uncertain in some way. 
+A Certainty Flag is a checkbox that is paried with any other _Input_ and _Structured Data_ field. This allows the user to 'flag' the value as questionable or uncertain in some way.
 
-This is the digital equivalent of adding a question mark to a value on a paper form. 
+This is the digital equivalent of adding a question mark to a value on a paper form.
 
-The label for the flag can be customised, so the *Notebook Editor* could include a general flag for 'Not Sure', something more specialised like 'Label obscured' or a call to action such as 'Please Review'. 
+The label for the flag can be customised, so the _Notebook Editor_ could include a general flag for 'Not Sure', something more specialised like 'Label obscured' or a call to action such as 'Please Review'.
 
 ## Accessing Annotation and Certainty Flags
 
-If the {{notebook}} field has been configured to allow Annotations or Certainty Flags, you see a small blue icon beside or below the field. 
+If the {{notebook}} field has been configured to allow Annotations or Certainty Flags, you see a small blue icon beside or below the field.
 
-Tap or click on the icon and the marginal data flyout will appear. 
+Tap or click on the icon and the marginal data flyout will appear.
 
-
-````{note}
+```{note}
 All *Input* and *Structured Data* fields can be configured to include an annotation or certainty flag in the [Notebook Editor](../authoring/quick-start-researchers.md).
-```` 
+```

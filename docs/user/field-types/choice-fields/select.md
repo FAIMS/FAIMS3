@@ -1,6 +1,6 @@
 # Select Field
 
-*How to add and configure a Select Field in the Notebook Editor.*
+_How to add and configure a Select Field in the Notebook Editor._
 
 ---
 
@@ -53,9 +53,9 @@ choices available in the dropdown. Below the Markdown syntax info banner,
 you will find the **Add Option** input, the **Add "Other" Option** button,
 and a table listing all current options.
 
-| Setting | What It Does |
-| ------- | ------------ |
-| **Options list** | The choices that appear in the dropdown. Each option is shown as a row in the table below. |
+| Setting                | What It Does                                                                                   |
+| ---------------------- | ---------------------------------------------------------------------------------------------- |
+| **Options list**       | The choices that appear in the dropdown. Each option is shown as a row in the table below.     |
 | **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected. |
 
 **Note**: As per the banner, you can use Markdown syntax in

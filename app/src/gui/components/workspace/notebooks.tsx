@@ -119,7 +119,9 @@ export default function NoteBooks() {
     },
     onError: err => {
       console.log(err);
-      notify.showError(`Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`);
+      notify.showError(
+        `Issue while refreshing ${NOTEBOOK_NAME_PLURAL_CAPITALIZED}.`
+      );
     },
   });
   const showRefreshButton = isOnline.isOnline;
@@ -200,9 +202,10 @@ export default function NoteBooks() {
 
   const notActivatedAdvice = (
     <>
-      You have {activatedProjects.length} {' '}
-      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME} currently {ACTIVATED_LABEL} on
-      this device. {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
+      You have {activatedProjects.length}{' '}
+      {activatedProjects.length !== 1 ? NOTEBOOK_NAME_PLURAL : NOTEBOOK_NAME}{' '}
+      currently {ACTIVATED_LABEL} on this device.{' '}
+      {NOTEBOOK_NAME_PLURAL_CAPITALIZED} in the{' '}
       {isTabs ? (
         <>{buildTabLink('not active')}</>
       ) : (

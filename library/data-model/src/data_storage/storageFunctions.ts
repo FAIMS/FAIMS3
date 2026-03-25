@@ -245,8 +245,8 @@ export async function listFAIMSProjectRevisions({
 }
 
 export async function deleteFAIMSDataForID({
-  recordId: recordId,
-  userId: userId,
+  recordId,
+  userId,
   dataDb,
 }: {
   dataDb: DataDbType;
