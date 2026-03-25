@@ -1,0 +1,53 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/cdk.out/**",
+    "**/.turbo/**",
+    "**/.next/**",
+    "**/.nuxt/**",
+    "**/coverage/**",
+    "**/.nyc_output/**",
+    "**/ios/**",
+    "**/android/**",
+    "**/public/pouchdb-*.min.js",
+    "**/web/src/routeTree.gen.ts"
+  ],
+  "rules": {
+    "typescript/no-explicit-any": "off",
+    "typescript/no-empty-interface": "off",
+    "typescript/no-wrapper-object-types": "off",
+    "no-constant-condition": "off",
+    "no-constant-binary-expression": "off",
+    "no-unused-expressions": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "oxc/const-comparisons": "off",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "(^_|error$|err$|e$)",
+        "caughtErrorsIgnorePattern": "(^_|error$|err$|e$)",
+        "varsIgnorePattern": "^_"
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.test.tsx"
+      ],
+      "rules": {
+        "no-unused-vars": [
+          "warn",
+          {
+            "argsIgnorePattern": "(^_|[iI]gnored)",
+            "varsIgnorePattern": "(^_|[iI]gnored)"
+          }
+        ]
+      }
+    }
+  ]
+}

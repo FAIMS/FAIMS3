@@ -15,8 +15,8 @@
     "config": "bash ./config.sh",
     "validate-config": "ts-node validateConfig.ts",
     "test": "jest",
-    "lint": "gts lint",
-    "fix": "gts fix"
+    "lint": "oxlint --config ../../.oxlintrc.json .",
+    "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

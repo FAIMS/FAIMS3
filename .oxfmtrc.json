@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all",
+  "printWidth": 80,
+  "ignorePatterns": [
+    "node_modules/**",
+    ".git/**",
+    ".turbo/**",
+    "build/**",
+    "dist/**",
+    "**/build/**",
+    "**/dist/**",
+    "**/cdk.out/**",
+    "**/coverage/**",
+    "app/android/**",
+    "app/ios/**",
+    "**/*.min.js",
+    "**/*.handlebars"
+  ]
+}
