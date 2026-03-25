@@ -4,6 +4,7 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
+/** Min/max bounds for `ControlledNumber` fields. */
 export const ControlledNumberFieldEditor = ({
   fieldName,
 }: {

@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Section header UI: rename, condition, reorder, duplicate, delete warnings.
+ */
+
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
@@ -77,6 +81,7 @@ type Props = {
   moveFieldCallback: (targetViewId: string) => void;
 };
 
+/** One section (`fview`): title, condition, duplicate/move/delete, and {@link FieldList}. */
 export const SectionEditor = ({
   viewSetId,
   viewId,

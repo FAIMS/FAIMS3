@@ -11,6 +11,11 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+/**
+ * @file Ordered field accordions for a section plus add-field dialog.
+ */
+
 import {Button, Stack, Typography} from '@mui/material';
 
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
@@ -29,6 +34,10 @@ type Props = {
   moveFieldCallback: (targetViewId: string) => void;
 };
 
+/**
+ * Lists visible and hidden fields for one section; dispatches `fieldAdded` and
+ * resets accordion state when `viewId` changes (different section).
+ */
 export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   const fView = useAppSelector(
     state => state.notebook['ui-specification'].present.fviews[viewId]

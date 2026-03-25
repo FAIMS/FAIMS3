@@ -12,9 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Sandboxed MDX editor with a fixed allow-list of mdast node types.
+ */
+
 import {Suspense, useMemo, useRef, useState} from 'react';
 
 import {Alert, Card} from '@mui/material';
+// Editor styles imported here (not only from App) so they load in both the standalone
+// designer shell and the embedded DesignerWidget.
 import '@mdxeditor/editor/style.css';
 import '../mdx-editor.css';
 
@@ -89,6 +95,7 @@ type Props = {
   handleChange: ((markdown: string) => void) | undefined;
 };
 
+/** Constrained MDX/Markdown editor for long-form metadata (toolbar + allowed mdast nodes). */
 export const MdxEditor = ({
   initialMarkdown,
   editorRef,

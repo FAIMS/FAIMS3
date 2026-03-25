@@ -49,6 +49,7 @@ type newState = {
   valueType: string;
 };
 
+/** Hierarchical option tree editor and value mode (`full` vs stored id) for `AdvancedSelect`. */
 export const AdvancedSelectEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]

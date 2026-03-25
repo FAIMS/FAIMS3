@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Per-field accordion in the section list: actions, conflicts, and type-specific editor.
+ */
+
 import ArrowDropDownRoundedIcon from '@mui/icons-material/ArrowDropDownRounded';
 import ArrowDropUpRoundedIcon from '@mui/icons-material/ArrowDropUpRounded';
 import ArrowForwardIosRoundedIcon from '@mui/icons-material/ArrowForwardIosRounded';
@@ -60,6 +64,10 @@ import {
   toggleFieldHidden,
 } from '../store/slices/uiSpec';
 
+/**
+ * Accordion row for one field: summary chips, move/duplicate/delete, visibility toggle,
+ * and the type-specific editor from `field-editor-registry`.
+ */
 type FieldEditorProps = {
   designerIdentifier: string;
   fieldName: string;
@@ -77,6 +85,7 @@ type ConflictError = {
   conflicts: string[];
 };
 
+/** Accordion UI for one field: move, duplicate, delete guards, type-specific inspector. */
 const FieldEditorComponent = ({
   designerIdentifier,
   fieldName,
@@ -295,6 +304,7 @@ const FieldEditorComponent = ({
     [selectedFormId, viewsets, viewId, allFviews]
   );
 
+  /** Toggles `component-parameters.hidden` without expanding the accordion. */
   const toggleHiddenState = (event: React.SyntheticEvent) => {
     event.stopPropagation();
     dispatch(toggleFieldHidden({fieldName, hidden: !isHidden}));
@@ -717,4 +727,5 @@ const FieldEditorComponent = ({
   );
 };
 
+/** Memoised {@link FieldEditorComponent} for stable props from parent lists. */
 export const FieldEditor = memo(FieldEditorComponent);

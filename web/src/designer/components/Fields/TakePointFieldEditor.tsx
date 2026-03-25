@@ -13,6 +13,9 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
+/**
+ * GPS capture field: custom “button label” plus standard {@link BaseFieldEditor} props.
+ */
 export const TakePointFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]

@@ -20,6 +20,7 @@ import {FieldType} from '../../state/initial';
 import {MdxEditor} from '../mdx-editor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 
+/** RichText display field: MDX body stored in `component-parameters.content`. */
 export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]

@@ -333,4 +333,5 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   );
 };
 
+/** Default export of {@link FormSettingsPanel}. */
 export default FormSettingsPanel;

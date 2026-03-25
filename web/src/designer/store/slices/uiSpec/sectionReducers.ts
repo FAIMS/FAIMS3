@@ -1,10 +1,27 @@
+// Copyright 2023 FAIMS Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import {PayloadAction} from '@reduxjs/toolkit';
 import {v4 as uuidv4} from 'uuid';
 import {ConditionType} from '../../../types/condition';
 import {FieldType, NotebookUISpec} from '../../../state/initial';
-import {slugify} from '../../../state/helpers/uiSpec-helpers';
+import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
+import {cloneField} from '@/designer/domain/notebook/fieldFactory';
 
+/** Section (fview) RTK reducers merged into `uiSpecificationReducer`. */
 export const sectionReducers = {
+  /** Update human-readable `fviews[viewId].label`. */
   sectionRenamed: (
     state: NotebookUISpec,
     action: PayloadAction<{viewId: string; label: string}>
@@ -18,6 +35,7 @@ export const sectionReducers = {
       );
     }
   },
+  /** Append empty section `{viewSetId}-{slug(sectionLabel)}` to form and `fviews`. */
   sectionAdded: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; sectionLabel: string}>
@@ -35,6 +53,7 @@ export const sectionReducers = {
       state.viewsets[viewSetId].views.push(sectionId);
     }
   },
+  /** Clone section fields with new ids; optional target form defaults to source form. */
   sectionDuplicated: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -43,7 +62,8 @@ export const sectionReducers = {
       newSectionLabel: string;
     }>
   ) => {
-    const {sourceViewId, destinationViewSetId, newSectionLabel} = action.payload;
+    const {sourceViewId, destinationViewSetId, newSectionLabel} =
+      action.payload;
 
     if (!(sourceViewId in state.fviews)) {
       throw new Error(`Source section ${sourceViewId} does not exist.`);
@@ -85,13 +105,11 @@ export const sectionReducers = {
       const baseLabel =
         originalField['component-parameters'].label || originalFieldName;
       const newFieldLabel = baseLabel;
-      let fieldSlug = slugify(newFieldLabel);
-      let N = 1;
-      while (fieldSlug in state.fields) {
-        fieldSlug = slugify(newFieldLabel + ' ' + N);
-        N++;
-      }
-      const newField: FieldType = JSON.parse(JSON.stringify(originalField));
+      let fieldSlug = buildUniqueFieldName(
+        newFieldLabel,
+        Object.keys(state.fields)
+      );
+      const newField = cloneField(originalField);
       newField['component-parameters'].label = newFieldLabel;
       newField['component-parameters'].name = fieldSlug;
       newField.designerIdentifier = uuidv4();
@@ -103,6 +121,7 @@ export const sectionReducers = {
     state.fviews[newSectionId] = newSection;
     state.viewsets[destViewSetId].views.push(newSectionId);
   },
+  /** Remove section and all its fields from `state.fields`. */
   sectionDeleted: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetID: string; viewID: string}>
@@ -123,6 +142,7 @@ export const sectionReducers = {
       state.viewsets[viewSetID].views = newViewSetViews;
     }
   },
+  /** Reparent section id from one viewset’s `views` list to another (fields unchanged). */
   sectionMovedToForm: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -137,6 +157,7 @@ export const sectionReducers = {
     state.viewsets[sourceViewSetId].views = newSourceViews;
     state.viewsets[targetViewSetId].views.push(viewId);
   },
+  /** Reorder section tabs within one form (`viewSetId`) left/right. */
   sectionMoved: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -167,6 +188,7 @@ export const sectionReducers = {
     }
     state.viewsets[viewSetId].views = viewList;
   },
+  /** Set or remove `fviews[viewId].condition` for section visibility. */
   sectionConditionChanged: (
     state: NotebookUISpec,
     action: PayloadAction<{viewId: string; condition: ConditionType | null}>

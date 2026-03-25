@@ -16,10 +16,20 @@ import {FieldType} from '../../state/initial';
 import {ConditionType, SelectableConditionOption} from '../../types/condition';
 import {
   findOptionReferences as findOptionReferencesDomain,
+  isFieldUsedInCondition as isFieldUsedInConditionDomain,
   updateConditionReferences as updateConditionReferencesDomain,
-} from '../../domain/conditions/references';
-import {isFieldUsedInCondition as isFieldUsedInConditionDomain} from '../../domain/conditions/traversal';
+} from '../../domain/conditions/conditionReferences';
 
+/**
+ * @file Designer-facing helpers for condition references, delete safety, and option renames.
+ */
+
+/**
+ * Display label for a field (`InputLabelProps.label` overrides `component-parameters.label`).
+ *
+ * @param f - Field definition from the UI spec.
+ * @returns Human-readable label string.
+ */
 export const getFieldLabel = (f: FieldType) => {
   return (
     (f['component-parameters'].InputLabelProps &&
@@ -28,7 +38,7 @@ export const getFieldLabel = (f: FieldType) => {
   );
 };
 
-// Recursively checks if a field is used in a single condition
+/** Re-export of `isFieldUsedInCondition` from `domain/conditions/conditionReferences`. */
 export const isFieldUsedInCondition = isFieldUsedInConditionDomain;
 
 type FieldMap = Record<string, FieldType>;
@@ -38,7 +48,8 @@ type ViewMap = Record<
 >;
 
 /**
- * Finds where a field is used in conditions or templated string fields
+ * Lists sections/fields/templated strings that reference `fieldName` (conditions or `{{fieldName}}`).
+ * @remarks Export name retains historical typo `Condtion` for call-site stability.
  */
 export const findFieldCondtionUsage = (
   fieldName: string,

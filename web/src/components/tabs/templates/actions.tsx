@@ -34,6 +34,7 @@ const TemplateActions = () => {
   const queryClient = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
 
+  // PUT template notebook JSON from the designer; react-query updates cache on success.
   const saveTemplateNotebook = useDesignerSaveMutation({
     resourceType: 'templates',
     apiResourceType: 'templates',
@@ -50,7 +51,7 @@ const TemplateActions = () => {
     setEditorOpen(false);
   };
 
-  // need to invalidate the project query after upload
+  // Invalidate template query after notebook file upload from elsewhere in the UI.
   const uploadTemplateCallback = () => {
     queryClient.invalidateQueries({queryKey: ['templates', templateId]});
   };

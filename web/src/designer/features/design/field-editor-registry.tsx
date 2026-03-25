@@ -1,3 +1,22 @@
+// Copyright 2023 FAIMS Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * Maps `component-name` strings to the property editor UI for that field type.
+ * Unknown types fall back to `BaseFieldEditor` in `renderFieldEditor`.
+ */
+
 import React from 'react';
 import {AddressFieldEditor} from '../../components/Fields/AddressFieldEditor';
 import {AdvancedSelectEditor} from '../../components/Fields/AdvancedSelectEditor';
@@ -16,12 +35,14 @@ import {TakePointFieldEditor} from '../../components/Fields/TakePointFieldEditor
 import {TemplatedStringFieldEditor} from '../../components/Fields/TemplatedStringFieldEditor';
 import {TextFieldEditor} from '../../components/Fields/TextFieldEditor';
 
+/** Identifiers passed into type-specific editors (e.g. HRID / related record context). */
 export type FieldEditorRenderContext = {
   fieldName: string;
   viewId: string;
   viewSetId: string;
 };
 
+/** Factory that renders the inspector panel for one field type. */
 export type FieldEditorRenderer = (
   context: FieldEditorRenderContext
 ) => React.ReactElement;
@@ -74,10 +95,21 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   ),
 };
 
+/**
+ * @param fieldComponent - Value of `FieldType['component-name']`.
+ * @returns Registered renderer, or undefined if unmapped.
+ */
 export const getFieldEditorRenderer = (
   fieldComponent: string
 ): FieldEditorRenderer | undefined => fieldEditorRegistry[fieldComponent];
 
+/**
+ * Renders the appropriate editor for `fieldComponent`, or `BaseFieldEditor` if unknown.
+ *
+ * @param fieldComponent - Notebook component name key.
+ * @param context - Current field / section / form ids.
+ * @returns React element for the accordion body.
+ */
 export const renderFieldEditor = ({
   fieldComponent,
   context,

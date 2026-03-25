@@ -1,6 +1,10 @@
+/**
+ * @file Integration-style tests for UI-spec reducers (fields, sections, viewsets).
+ */
+
 import {describe, expect, it} from 'vitest';
-import {getFieldSpec} from '../fields';
-import type {NotebookUISpec} from './initial';
+import {getFieldSpec} from '../../../fields';
+import type {NotebookUISpec} from '../../../state/initial';
 import {
   fieldAdded,
   fieldDeleted,
@@ -16,7 +20,7 @@ import {
   viewSetLayoutUpdated,
   viewSetPublishButtonBehaviourUpdated,
   viewSetSummaryFieldsUpdated,
-} from '../store/slices/uiSpec';
+} from '.';
 
 const createBaseUiSpec = (): NotebookUISpec => ({
   fields: {},

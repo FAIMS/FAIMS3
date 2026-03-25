@@ -1,3 +1,7 @@
+/**
+ * @file Tests for `fieldEditorRegistry` lookup and `renderFieldEditor` fallback.
+ */
+
 import {describe, expect, it} from 'vitest';
 import {
   getFieldEditorRenderer,

@@ -24,6 +24,7 @@ import {BaseFieldEditor} from './BaseFieldEditor';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 
+/** `DateTimeNow` field: optional auto-pick-current-time behaviour. */
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]

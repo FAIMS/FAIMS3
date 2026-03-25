@@ -19,6 +19,7 @@ import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
+/** Inspector for single-line text fields (initial value, HTML input type, wraps {@link BaseFieldEditor}). */
 export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]

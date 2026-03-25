@@ -55,6 +55,7 @@ type RelatedRecordConfig = {
   hideCreateAnotherButton: boolean;
 };
 
+/** Related record selector: target form, cardinality, relation type, linked vocab pairs. */
 export const RelatedRecordEditor = ({fieldName}: Props) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]

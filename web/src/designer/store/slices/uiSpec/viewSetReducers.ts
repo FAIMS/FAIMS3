@@ -1,8 +1,24 @@
+// Copyright 2023 FAIMS Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import {PayloadAction} from '@reduxjs/toolkit';
 import {NotebookUISpec} from '../../../state/initial';
-import {slugify} from '../../../state/helpers/uiSpec-helpers';
+import {slugify} from '../../../domain/notebook/ids';
 
+/** Form (viewset) RTK reducers merged into `uiSpecificationReducer`. */
 export const viewSetReducers = {
+  /** Create form with slug id, empty `views`, append id to `visible_types`. */
   viewSetAdded: (
     state: NotebookUISpec,
     action: PayloadAction<{formName: string}>
@@ -22,6 +38,7 @@ export const viewSetReducers = {
     }
   },
 
+  /** Delete form, its sections, their fields, and remove from `visible_types`. */
   viewSetDeleted: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string}>
@@ -48,6 +65,7 @@ export const viewSetReducers = {
       state.visible_types = newVisibleTypes;
     }
   },
+  /** Reorder `visible_types` (form tab order) left/right. */
   viewSetMoved: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; direction: 'left' | 'right'}>
@@ -75,6 +93,7 @@ export const viewSetReducers = {
     }
     state.visible_types = formsList;
   },
+  /** Update display label only (id unchanged). */
   viewSetRenamed: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; label: string}>
@@ -84,6 +103,7 @@ export const viewSetReducers = {
       state.viewsets[viewSetId].label = label;
     }
   },
+  /** Record list UI: which field ids appear in the form summary header. */
   viewSetSummaryFieldsUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; fields: string[]}>
@@ -93,6 +113,7 @@ export const viewSetReducers = {
       state.viewsets[viewSetId].summary_fields = fields;
     }
   },
+  /** Tabs vs inline layout for sections in this form. */
   viewSetLayoutUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; layout?: 'inline' | 'tabs'}>
@@ -102,6 +123,7 @@ export const viewSetReducers = {
       state.viewsets[viewSetId].layout = layout;
     }
   },
+  /** Human-readable record id source field for this form. */
   viewSetHridUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{viewSetId: string; hridField?: string}>
@@ -111,6 +133,7 @@ export const viewSetReducers = {
       state.viewsets[viewSetId].hridField = hridField;
     }
   },
+  /** Add/remove form id from `visible_types` when user toggles form in notebook chrome. */
   formVisibilityUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -130,6 +153,7 @@ export const viewSetReducers = {
       state.visible_types.splice(state.visible_types.length, 0, viewSetId);
     }
   },
+  /** When the publish/save button is shown in the field app for this form. */
   viewSetPublishButtonBehaviourUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{

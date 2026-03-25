@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Smoke tests for {@link InfoPanel} with Redux + theme providers.
+ */
+
 import {describe, expect, test} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {InfoPanel} from './info-panel';

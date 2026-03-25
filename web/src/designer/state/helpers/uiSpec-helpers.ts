@@ -1,30 +1,10 @@
-import {ConditionType} from '../../types/condition';
-import {replaceFieldInCondition as replaceFieldInConditionDomain} from '../../domain/conditions/traversal';
-import {NotebookUISpec} from '../initial';
-
 /**
- * Slugify a string, replacing special characters with less special ones
- * @param str input string
- * @returns url safe version of the string
- * https://ourcodeworld.com/articles/read/255/creating-url-slugs-properly-in-javascript-including-transliteration-for-utf-8
+ * @file Pure helpers for UI-spec ids, viewset membership, summary fields, and condition rewrites.
  */
-export const slugify = (str: string) => {
-  str = str.trim();
-  //str = str.toLowerCase();
-  // remove accents, swap ñ for n, etc
-  const from = 'ãàáäâáº½èéëêìíïîõòóöôùúüûñç·/_,:;';
-  const to = 'aaaaaeeeeeiiiiooooouuuunc------';
-  for (let i = 0, l = from.length; i < l; i++) {
-    str = str.replace(new RegExp(from.charAt(i), 'g'), to.charAt(i));
-  }
 
-  str = str
-    .replace(/[^A-Za-z0-9 -]/g, '') // remove invalid chars
-    .replace(/\s+/g, '-') // collapse whitespace and replace by -
-    .replace(/-+/g, '-'); // collapse dashes
-
-  return str;
-};
+import {ConditionType} from '../../types/condition';
+import {replaceFieldInCondition as replaceFieldInConditionDomain} from '../../domain/conditions/conditionReferences';
+import {NotebookUISpec} from '../initial';
 
 /**
  * Finds the ID of the viewset (form) that contains a given view (section).
@@ -114,6 +94,14 @@ export const getViewIDForField = (
   return null;
 };
 
+/**
+ * Re-exports domain traversal helper for reducers that should not import UI layers.
+ *
+ * @param condition - Condition subtree.
+ * @param oldId - Field id before rename.
+ * @param newId - Field id after rename.
+ * @returns Updated condition or undefined/null passthrough.
+ */
 export const replaceFieldInCondition = (
   condition: ConditionType | null | undefined,
   oldId: string,

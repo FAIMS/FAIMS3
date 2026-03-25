@@ -49,16 +49,32 @@ import {DesignPanel} from './components/design-panel';
 
 import {v4 as uuidv4} from 'uuid';
 
+/**
+ * @file Full-screen designer shell: migrate notebook, Redux, memory router, export without internal ids.
+ */
+
+/** Props for the full-screen notebook designer embedded in the main app. */
 export interface DesignerWidgetProps {
+  /** Initial notebook; undefined shows empty state until parent supplies data. */
   notebook?: NotebookWithHistory;
+  /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
+  /** Optional MUI theme merge or factory `(base) => theme` for host branding. */
   themeOverride?: Parameters<typeof ThemeProvider>[0]['theme'];
+  /** Log Redux actions to the console. */
   debug?: boolean;
+  /** Milliseconds to show the loading spinner before revealing the editor shell. */
   loadingDuration?: number;
+  /** Fade/scale transition duration for enter and exit (ms). */
   animationDuration?: number;
+  /** Scale factor when hidden (`scale(animationScale)` before fade-in). */
   animationScale?: number;
 }
 
+/**
+ * Standalone designer shell: migrates notebook data, mounts Redux + router, and
+ * serialises without `designerIdentifier` on save.
+ */
 export function DesignerWidget({
   notebook,
   onClose,
@@ -154,6 +170,7 @@ export function DesignerWidget({
 
   const doClose = (file: File | undefined) => onClose(file);
 
+  /** Serialise present notebook, strip internal ids, and return a downloadable JSON `File`. */
   const handleDone = () => {
     const actualNotebook: Notebook = toNotebook(store.getState().notebook);
 
@@ -175,6 +192,7 @@ export function DesignerWidget({
     window.setTimeout(() => doClose(file), animationDuration);
   };
 
+  /** Close without saving after user confirms cancel dialog. */
   const handleCancel = () => {
     setCancelDialogOpen(false);
     setAnimateOut(true);

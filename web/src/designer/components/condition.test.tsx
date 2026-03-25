@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Interaction tests for {@link ConditionControl} against a hydrated store.
+ */
+
 import {vi, describe, expect, test} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {ConditionControl} from './condition/ConditionControl';

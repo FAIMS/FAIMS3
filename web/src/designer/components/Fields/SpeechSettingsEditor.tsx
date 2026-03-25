@@ -165,4 +165,5 @@ export const SpeechSettingsEditor = ({
   );
 };
 
+/** Default export of {@link SpeechSettingsEditor}. */
 export default SpeechSettingsEditor;

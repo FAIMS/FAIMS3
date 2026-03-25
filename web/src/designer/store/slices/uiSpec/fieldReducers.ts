@@ -1,3 +1,17 @@
+// Copyright 2023 FAIMS Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import {PayloadAction} from '@reduxjs/toolkit';
 import {v4 as uuidv4} from 'uuid';
 import {ConditionType} from '../../../types/condition';
@@ -8,10 +22,13 @@ import {
   removeFieldFromSummary,
   removeFieldFromSummaryForViewset,
   replaceFieldInCondition,
-  slugify,
 } from '../../../state/helpers/uiSpec-helpers';
+import {buildUniqueFieldName, slugify} from '../../../domain/notebook/ids';
+import {cloneField} from '@/designer/domain/notebook/fieldFactory';
 
+/** Field-level RTK reducers merged into `uiSpecificationReducer`. */
 export const fieldReducers = {
+  /** Replace an existing field spec; throws if `fieldName` is not in `state.fields`. */
   fieldUpdated: (
     state: NotebookUISpec,
     action: PayloadAction<{fieldName: string; newField: FieldType}>
@@ -26,6 +43,7 @@ export const fieldReducers = {
       );
     }
   },
+  /** Set `component-parameters.protection`; un-hides field when switching to `protected`. */
   toggleFieldProtection: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -43,9 +61,12 @@ export const fieldReducers = {
         state.fields[fieldName]['component-parameters'].hidden = false;
       }
     } else {
-      throw new Error(`Cannot toggle protection for unknown field ${fieldName}`);
+      throw new Error(
+        `Cannot toggle protection for unknown field ${fieldName}`
+      );
     }
   },
+  /** Toggle `component-parameters.hidden` (blocked for unknown field ids). */
   toggleFieldHidden: (
     state: NotebookUISpec,
     action: PayloadAction<{fieldName: string; hidden: boolean}>
@@ -57,6 +78,7 @@ export const fieldReducers = {
       throw new Error(`Cannot toggle hidden for unknown field ${fieldName}`);
     }
   },
+  /** Swap field order within one section (`viewId`) by one step up/down. */
   fieldMoved: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -87,6 +109,7 @@ export const fieldReducers = {
     }
     state.fviews[viewId].fields = fieldList;
   },
+  /** Remove field from `sourceViewId` and append to `targetViewId`; cleans cross-form summary fields. */
   fieldMovedToSection: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -114,6 +137,7 @@ export const fieldReducers = {
       removeFieldFromSummaryForViewset(state, fieldName, sourceViewSetId);
     }
   },
+  /** Renames storage key and updates conditions, summaries, HRID, and `component-parameters.name`. */
   fieldRenamed: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -131,12 +155,10 @@ export const fieldReducers = {
 
     const field = state.fields[fieldName];
 
-    let fieldLabel = slugify(newFieldName);
-    let N = 1;
-    while (fieldLabel in state.fields) {
-      fieldLabel = slugify(newFieldName + ' ' + N);
-      N += 1;
-    }
+    let fieldLabel = buildUniqueFieldName(
+      newFieldName,
+      Object.keys(state.fields)
+    );
 
     field['component-parameters'].name = fieldLabel;
     state.fields[fieldLabel] = field;
@@ -186,6 +208,10 @@ export const fieldReducers = {
       }
     });
   },
+  /**
+   * Clones default spec from `getFieldSpec`, assigns unique slug, inserts after `addAfter` in section.
+   * Applies type-specific defaults (related record, autoincrement `form_id`, templated HRID id).
+   */
   fieldAdded: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -210,6 +236,7 @@ export const fieldReducers = {
     }
 
     if (fieldType === 'BasicAutoIncrementer') {
+      // Scope auto-increment to this section (form_id must match the view id).
       newField['component-parameters'].form_id = viewId;
     }
 
@@ -249,10 +276,7 @@ export const fieldReducers = {
     newField['component-parameters'].name = fieldLabel;
     state.fields[fieldLabel] = newField;
 
-    if (
-      addAfter === '' ||
-      state.fviews[viewId].fields.indexOf(addAfter) < 0
-    ) {
+    if (addAfter === '' || state.fviews[viewId].fields.indexOf(addAfter) < 0) {
       state.fviews[viewId].fields.push(fieldLabel);
     } else {
       const fields = state.fviews[viewId].fields;
@@ -263,6 +287,7 @@ export const fieldReducers = {
         .concat(fields.slice(position));
     }
   },
+  /** Removes field and strips from summaries; throws if field is `protected`. */
   fieldDeleted: (
     state: NotebookUISpec,
     action: PayloadAction<{fieldName: string; viewId: string}>
@@ -272,7 +297,9 @@ export const fieldReducers = {
       const protection =
         state.fields[fieldName]['component-parameters'].protection;
       if (protection === 'protected') {
-        throw new Error(`Field ${fieldName} is protected and cannot be deleted.`);
+        throw new Error(
+          `Field ${fieldName} is protected and cannot be deleted.`
+        );
       }
       delete state.fields[fieldName];
       state.fviews[viewId].fields = state.fviews[viewId].fields.filter(
@@ -285,6 +312,7 @@ export const fieldReducers = {
       );
     }
   },
+  /** Deep-clone field with new id/label inserted after the original in the same section. */
   fieldDuplicated: (
     state: NotebookUISpec,
     action: PayloadAction<{
@@ -302,7 +330,7 @@ export const fieldReducers = {
     }
 
     const originalField = state.fields[originalFieldName];
-    const newField: FieldType = JSON.parse(JSON.stringify(originalField));
+    const newField = cloneField(originalField);
     newField.designerIdentifier = uuidv4();
 
     let fieldLabel = slugify(newFieldName);
@@ -320,6 +348,7 @@ export const fieldReducers = {
     const position = state.fviews[viewId].fields.indexOf(originalFieldName) + 1;
     state.fviews[viewId].fields.splice(position, 0, fieldLabel);
   },
+  /** Set or clear `field.condition` for visibility rules. */
   fieldConditionChanged: (
     state: NotebookUISpec,
     action: PayloadAction<{

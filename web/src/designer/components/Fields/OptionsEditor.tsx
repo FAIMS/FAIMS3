@@ -349,6 +349,9 @@ type CombinedRow =
   | {id: string; type: 'option'; option: {label: string; value: string}}
   | {id: string; type: 'other'};
 
+/**
+ * Select / MultiSelect / Radio options table: reorder (dnd), edit, exclusive sets, condition ref updates.
+ */
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,

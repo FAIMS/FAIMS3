@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Recursive condition builder UI (boolean groups + leaf comparisons).
+ */
+
 import {
   Button,
   Checkbox,
@@ -41,10 +45,12 @@ import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import {getFieldLabel} from './utils';
 
+/** Options from a Select/Radio/Multi field usable as condition RHS values. */
 const getSelectableOptions = (fieldDef: FieldType): SelectableConditionOption[] =>
   (fieldDef['component-parameters']?.ElementProps?.options ??
     []) as SelectableConditionOption[];
 
+/** Root condition editor: boolean group (and/or) or single field comparison. */
 export const ConditionControl = (props: ConditionProps) => {
   const initial = props.initial || EMPTY_FIELD_CONDITION;
 
@@ -85,6 +91,7 @@ export const ConditionControl = (props: ConditionProps) => {
   }
 };
 
+/** Nested editor for AND/OR groups; each child is a recursive {@link ConditionControl}. */
 const BooleanConditionControl = (props: ConditionProps) => {
   const initial: ConditionType = useMemo(
     () => props.initial || EMPTY_BOOLEAN_CONDITION,
@@ -207,6 +214,7 @@ const BooleanConditionControl = (props: ConditionProps) => {
   else return <div></div>;
 };
 
+/** Leaf editor: pick compared field, operator, and value (with type-specific inputs). */
 export const FieldConditionControl = (props: ConditionProps) => {
   const initialValue = useMemo(
     () =>

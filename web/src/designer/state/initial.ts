@@ -12,16 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Core Redux state types for the notebook designer: metadata, UI specification,
+ * field definitions, and the undo-wrapped notebook shape used by the store.
+ */
+
 // eslint-disable-next-line n/no-extraneous-import
 import {StateWithHistory} from 'redux-undo';
 import {ConditionType} from '../types/condition';
 
+/** Top-level notebook metadata bag (name, descriptions, access, custom keys). */
 export type NotebookMetadata = PropertyMap;
 
+/** Arbitrary string-keyed metadata values (serialised with the notebook). */
 export type PropertyMap = {
   [key: string]: unknown;
 };
 
+/** Merged props for FAIMS form components (`component-parameters` in notebook JSON). */
 export type ComponentParameters = {
   fullWidth?: boolean;
   name?: string;
@@ -94,6 +102,7 @@ export type ComponentParameters = {
   allowFullAddressManualEntry?: boolean;
 };
 
+/** Single field definition: component binding, parameters, optional visibility condition. */
 export type FieldType = {
   'component-namespace': string;
   'component-name': string;
@@ -124,6 +133,7 @@ export type FieldType = {
   };
 };
 
+/** Editable notebook structure: fields map, sections (`fviews`), forms (`viewsets`), tab order. */
 export type NotebookUISpec = {
   fields: {[key: string]: FieldType};
   fviews: {
@@ -149,26 +159,30 @@ export type NotebookUISpec = {
   visible_types: string[];
 };
 
+/** Legacy shape (unused in current store; `modified` is a top-level boolean). */
 export type NotebookModified = {
   flag: boolean;
 };
 
+/** Root designer store: notebook slice + dirty flag for save prompts. */
 export type AppState = {
   modified: boolean;
   notebook: NotebookWithHistory;
 };
 
+/** Flat notebook as persisted/exported (no redux-undo wrapper). */
 export type Notebook = {
   metadata: NotebookMetadata;
   'ui-specification': NotebookUISpec;
 };
 
+/** Notebook with `ui-specification` wrapped for undo/redo in the designer. */
 export type NotebookWithHistory = {
   metadata: NotebookMetadata;
   'ui-specification': StateWithHistory<NotebookUISpec>;
 };
 
-// an empty notebook
+/** Default empty designer state (blank metadata and UI spec, empty undo stacks). */
 export const initialState: AppState = {
   modified: false,
   notebook: {

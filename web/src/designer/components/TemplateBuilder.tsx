@@ -1,3 +1,7 @@
+/**
+ * @file Visual Mustache template builder (blocks, preview) used by {@link TemplatedStringFieldEditor}.
+ */
+
 import {
   Add as AddIcon,
   Code as CodeIcon,

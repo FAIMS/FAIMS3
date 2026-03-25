@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Form tabs, add form, undo/redo, and routed `FormEditor` instances.
+ */
+
 import {Alert, Box, Button, Grid, Tab, Tabs, Snackbar} from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
@@ -28,6 +32,7 @@ import {shallowEqual} from 'react-redux';
 import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 
+/** Main designer surface: form tabs, undo/redo, snackbars, and `FormEditor` routes. */
 export const DesignPanel = () => {
   const navigate = useNavigate();
   const {pathname} = useLocation();

@@ -1,10 +1,62 @@
+/**
+ * @file Unit tests for condition traversal and option/field reference rewrites.
+ */
+
 import {describe, expect, it} from 'vitest';
 import {
   findOptionReferences,
+  isFieldUsedInCondition,
+  replaceFieldInCondition,
   updateConditionReferences,
-} from './references';
+} from './conditionReferences';
 import type {FieldType} from '../../state/initial';
 import type {ConditionType} from '../../types/condition';
+
+describe('conditionReferences — field usage and rename', () => {
+  it('detects field usage in nested boolean conditions', () => {
+    const condition: ConditionType = {
+      operator: 'and',
+      conditions: [
+        {operator: 'equal', field: 'field-a', value: 'x'},
+        {
+          operator: 'or',
+          conditions: [
+            {operator: 'equal', field: 'field-b', value: 'y'},
+            {operator: 'equal', field: 'field-c', value: 'z'},
+          ],
+        },
+      ],
+    };
+
+    expect(isFieldUsedInCondition(condition, 'field-b')).toBe(true);
+    expect(isFieldUsedInCondition(condition, 'field-missing')).toBe(false);
+  });
+
+  it('replaces field references recursively', () => {
+    const condition: ConditionType = {
+      operator: 'or',
+      conditions: [
+        {operator: 'equal', field: 'legacy-field', value: '1'},
+        {
+          operator: 'and',
+          conditions: [
+            {operator: 'greater', field: 'other', value: 2},
+            {operator: 'equal', field: 'legacy-field', value: '3'},
+          ],
+        },
+      ],
+    };
+
+    const updated = replaceFieldInCondition(
+      condition,
+      'legacy-field',
+      'new-field'
+    ) as ConditionType;
+
+    expect(isFieldUsedInCondition(updated, 'legacy-field')).toBe(false);
+    expect(isFieldUsedInCondition(updated, 'new-field')).toBe(true);
+  });
+});
 
 const selectField: FieldType = {
   'component-namespace': 'faims-custom',
@@ -29,7 +81,7 @@ const dependentField: FieldType = {
   condition: {operator: 'equal', field: 'choice', value: 'A'},
 };
 
-describe('condition reference helpers', () => {
+describe('conditionReferences — option value references', () => {
   it('finds option references in field and section conditions', () => {
     const fields: Record<string, FieldType> = {
       choice: selectField,

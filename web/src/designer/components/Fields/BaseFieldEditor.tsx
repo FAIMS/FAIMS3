@@ -34,28 +34,29 @@ import {
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-
-import {ConditionModal} from '../condition/ConditionModal';
-import {ConditionTranslation} from '../condition/ConditionTranslation';
-import {ConditionType} from '../../types/condition';
-
-import {getViewIDForField, slugify} from '../../state/helpers/uiSpec-helpers';
-import DebouncedTextField from '../debounced-text-field';
-import {MdxEditor} from '../mdx-editor';
-import SpeechSettingsEditor from './SpeechSettingsEditor';
 import {
   fieldConditionChanged,
   fieldRenamed,
   fieldUpdated,
 } from '../../store/slices/uiSpec';
+import {ConditionType} from '../../types/condition';
+import {ConditionModal} from '../condition/ConditionModal';
+import {ConditionTranslation} from '../condition/ConditionTranslation';
+import DebouncedTextField from '../debounced-text-field';
+import {MdxEditor} from '../mdx-editor';
+import SpeechSettingsEditor from './SpeechSettingsEditor';
+import {slugify} from '../../domain/notebook/ids';
 
+/** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
 export const SPEECH_ENABLED_FIELDS = [
   'faims-custom::FAIMSTextField',
   'formik-material-ui::MultipleTextField',
 ];
 
+/** True if {@link SPEECH_ENABLED_FIELDS} includes this field’s composite type key. */
 const checkSpeechEnabled = (field: FieldType) => {
   return SPEECH_ENABLED_FIELDS.includes(
     `${field['component-namespace']}::${field['component-name']}`
@@ -85,6 +86,10 @@ type StateType = {
   allowHiding: boolean;
 };
 
+/**
+ * Default property sheet: label, persistence, meta flags, visibility condition, template protection.
+ * Type-specific panels pass extra controls as `children`.
+ */
 export const BaseFieldEditor = ({
   fieldName,
   showExtraConfig = true,

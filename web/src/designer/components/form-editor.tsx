@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file One notebook form: sections, live preview, delete guards, visibility in tab bar.
+ */
+
 import {getMapConfig} from '@/constants';
 import {UISpecification} from '@faims3/data-model';
 import {PreviewFormManager} from '@faims3/forms';
@@ -69,8 +73,10 @@ import {
   viewSetRenamed,
 } from '../store/slices/uiSpec';
 
+// Default MUI theme for the live form preview (no custom palette).
 const defaultTheme = createTheme();
 
+/** Props for one form tab: reorder/delete, visibility toggle, section list, live preview. */
 type Props = {
   viewSetId: string;
   moveCallback: (viewSetID: string, moveDirection: 'left' | 'right') => void;
@@ -83,6 +89,7 @@ type Props = {
   setPreviewForm: (preview: boolean) => void;
 };
 
+/** Single form (`viewSet`): sections stepper, CRUD, optional `PreviewFormManager`, settings panel. */
 export const FormEditor = ({
   viewSetId,
   moveCallback,
@@ -228,9 +235,7 @@ export const FormEditor = ({
     viewId: string
   ) => {
     try {
-      dispatch(
-        sectionMovedToForm({sourceViewSetId, targetViewSetId, viewId})
-      );
+      dispatch(sectionMovedToForm({sourceViewSetId, targetViewSetId, viewId}));
 
       setAddAlertMessage('');
       // let sectionEditor component know a section was moved successfully
@@ -248,7 +253,9 @@ export const FormEditor = ({
     moveDirection: 'left' | 'right'
   ) => {
     if (moveDirection === 'left') {
-      dispatch(sectionMoved({viewSetId: viewSetID, viewId: viewID, direction: 'left'}));
+      dispatch(
+        sectionMoved({viewSetId: viewSetID, viewId: viewID, direction: 'left'})
+      );
       // making sure the stepper jumps a step backward intuitively
       setActiveStep(activeStep - 1);
     } else {

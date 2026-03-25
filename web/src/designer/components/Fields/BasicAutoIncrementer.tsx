@@ -10,6 +10,7 @@ type PropType = {
   viewId: string;
 };
 
+/** Digit width for auto-increment (scoped to `viewId` via reducer when field is created). */
 export const BasicAutoIncrementerEditor = ({fieldName, viewId}: PropType) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]

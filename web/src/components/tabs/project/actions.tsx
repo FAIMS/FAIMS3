@@ -50,6 +50,7 @@ const ProjectActions = (): JSX.Element => {
     return toDesignerNotebookWithHistory(data);
   }, [data]);
 
+  // PUT notebook JSON from the designer; react-query updates cache on success.
   const saveProjectNotebook = useDesignerSaveMutation({
     resourceType: 'projects',
     apiResourceType: 'notebooks',
