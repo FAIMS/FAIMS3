@@ -1,6 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {
-  GetListAllUsersResponse,
+  GetListAllUsersItem,
   Role,
   roleDetails,
   RoleScope,
@@ -21,11 +21,12 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 
+/** Columns for the admin user list (GET /api/users); each row is a {@link GetListAllUsersItem}. */
 export const useUsersColumns = ({
   onReset,
 }: {
   onReset: (id: string) => void;
-}): ColumnDef<GetListAllUsersResponse[number]>[] => {
+}): ColumnDef<GetListAllUsersItem>[] => {
   const {user} = useAuth();
   const queryClient = useQueryClient();
 

@@ -1,7 +1,7 @@
 /*
  * Styles for the MdxEditor component.
- * Imported directly by mdx-editor.tsx so they load in BOTH the standalone
- * designer app (App.tsx) AND the embedded widget (DesignerWidget.tsx).
+ * Imported directly by mdx-editor.tsx so styles load consistently in the
+ * embedded designer widget (DesignerWidget.tsx).
  */
 
 /*

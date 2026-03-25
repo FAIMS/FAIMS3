@@ -13,10 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Top-level designer chrome: Design vs Info routing tabs.
+ */
+
 import {TabContext, TabList} from '@mui/lab';
 import {Box, Stack, Tab} from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 
+/** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
 export const NotebookEditor = () => {
   const {pathname} = useLocation();
 

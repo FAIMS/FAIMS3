@@ -19,11 +19,18 @@ import {
   MenuItem,
   Select,
   Typography,
+  SelectChangeEvent,
 } from '@mui/material';
 import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import DebouncedTextField from './debounced-text-field';
+import {
+  viewSetHridUpdated,
+  viewSetLayoutUpdated,
+  viewSetPublishButtonBehaviourUpdated,
+  viewSetSummaryFieldsUpdated,
+} from '../store/slices/uiSpec';
 
 type ViewSetType = {
   views: string[];
@@ -86,7 +93,7 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   const [expanded, setExpanded] = React.useState(false);
 
   const [selectedPublishBehaviour, setSelectedPublishBehaviour] =
-    React.useState('always');
+    React.useState<'always' | 'visited' | 'noErrors'>('always');
 
   // Ensure selected value persists and is updated in the Redux store
   React.useEffect(() => {
@@ -98,17 +105,18 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   /**
    * Updates the Finish Button Behavior setting in Redux and persists it
    */
-  const handlePublishButtonBehaviourChange = (event: any) => {
-    const newValue = event.target.value;
+  const handlePublishButtonBehaviourChange = (
+    event: SelectChangeEvent<'always' | 'visited' | 'noErrors'>
+  ) => {
+    const newValue = event.target.value as 'always' | 'visited' | 'noErrors';
     setSelectedPublishBehaviour(newValue);
 
-    dispatch({
-      type: 'ui-specification/viewSetPublishButtonBehaviourUpdated',
-      payload: {
+    dispatch(
+      viewSetPublishButtonBehaviourUpdated({
         viewSetId,
-        publishButtonBehaviour: newValue as 'always' | 'visited' | 'noErrors',
-      },
-    });
+        publishButtonBehaviour: newValue,
+      })
+    );
   };
 
   /**
@@ -159,26 +167,25 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
    * Updates the selected summary fields
    */
   const handleSummaryFieldsChange = (
-    _: any,
+    _event: React.SyntheticEvent,
     newValue: Array<{label: string; value: string}>
   ) => {
-    dispatch({
-      type: 'ui-specification/viewSetSummaryFieldsUpdated',
-      payload: {viewSetId, fields: newValue.map(v => v.value)},
-    });
+    dispatch(
+      viewSetSummaryFieldsUpdated({
+        viewSetId,
+        fields: newValue.map(v => v.value),
+      })
+    );
   };
 
   /**
    * Updates or clears the HRID field selection
    */
   const handleHridFieldChange = (
-    _: any,
+    _event: React.SyntheticEvent,
     newValue: {label: string; value: string} | null
   ) => {
-    dispatch({
-      type: 'ui-specification/viewSetHridUpdated',
-      payload: {viewSetId, hridField: newValue?.value},
-    });
+    dispatch(viewSetHridUpdated({viewSetId, hridField: newValue?.value}));
   };
 
   const selectedFields = (viewSet.summary_fields || [])
@@ -255,13 +262,12 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
               fullWidth
               value={viewSet.layout || 'tabs'}
               onChange={event =>
-                dispatch({
-                  type: 'ui-specification/viewSetLayoutUpdated',
-                  payload: {
+                dispatch(
+                  viewSetLayoutUpdated({
                     viewSetId,
                     layout: event.target.value as 'inline' | 'tabs' | undefined,
-                  },
-                })
+                  })
+                )
               }
             >
               <MenuItem value="tabs">Tabs</MenuItem>
@@ -324,4 +330,5 @@ export const FormSettingsPanel = ({viewSetId}: {viewSetId: string}) => {
   );
 };
 
+/** Default export of {@link FormSettingsPanel}. */
 export default FormSettingsPanel;

@@ -12,19 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/**
+ * @file Interaction tests for {@link ConditionControl} against a hydrated store.
+ */
+
 import {vi, describe, expect, test} from 'vitest';
 import {act, fireEvent, render, screen} from '@testing-library/react';
 import {ConditionControl} from './condition/ConditionControl';
-import {ConditionType} from './condition/types';
+import {ConditionType} from '../types/condition';
 import {sampleNotebook} from '../test-notebook';
-import {store} from '../state/store';
+import {createDesignerStore} from '../createDesignerStore';
 import {Provider} from 'react-redux';
 import {ThemeProvider} from '@mui/material/styles';
 import globalTheme from '../theme/index';
 import {ReactNode} from 'react';
-import {migrateNotebook} from '../state/migrateNotebook';
+import {migrateNotebook} from '@faims3/data-model';
+import {ToolkitStore} from '@reduxjs/toolkit/dist/configureStore';
+import {AppState, NotebookUISpec} from '../state/initial';
+import {loaded} from '../store/slices/uiSpec';
 
-const WithProviders = ({children}: {children: ReactNode}) => (
+const WithProviders = ({
+  children,
+  store,
+}: {
+  children: ReactNode;
+  store: ToolkitStore<AppState>;
+}) => (
   <ThemeProvider theme={globalTheme}>
     <Provider store={store}>{children}</Provider>
   </ThemeProvider>
@@ -32,11 +45,9 @@ const WithProviders = ({children}: {children: ReactNode}) => (
 
 describe('ConditionControl', () => {
   test('render and interact with a field condition', () => {
-    const notebook = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
     const condition = {
       operator: 'equal',
       field: 'New-Text-Field',
@@ -45,7 +56,7 @@ describe('ConditionControl', () => {
 
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl initial={condition} onChange={onChangeFn} />
       </WithProviders>
     );
@@ -65,16 +76,6 @@ describe('ConditionControl', () => {
         .getByTestId('value-input')
         .querySelector('input');
       if (fieldInput !== null && valueInput !== null && opInput !== null) {
-        // TODO: fix this test!
-        // fireEvent.change(fieldInput, {target: {value: 'survey-note'}});
-        // expect(onChangeFn).toHaveBeenCalled();
-        // expect(onChangeFn.mock.lastCall).toStrictEqual([
-        //   {
-        //     field: 'survey-note',
-        //     operator: 'equal',
-        //     value: 'changed',
-        //   },
-        // ]);
         fireEvent.change(valueInput, {target: {value: 'Bobalooba'}});
         expect(onChangeFn.mock.lastCall).toStrictEqual([
           {
@@ -96,21 +97,21 @@ describe('ConditionControl', () => {
   });
 
   test('field condition omits field in select', () => {
-    const notebook = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
 
     const theField = 'New-Text-Field';
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl onChange={onChangeFn} field={theField} />
       </WithProviders>
     );
     const select = screen.getByTestId('field-input');
     expect(select).toBeDefined();
+    const opInput = screen.getByTestId('operator-input').querySelector('input');
+    expect(opInput?.value).toBe('');
 
     // would like to check for the options but they are not easy to find
     // since they don't render until the option button is clicked
@@ -124,22 +125,22 @@ describe('ConditionControl', () => {
   });
 
   test('field condition omits all view fields in select', () => {
-    const notebook = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
 
     const theView = 'Primary-New-Section';
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl onChange={onChangeFn} view={theView} />
       </WithProviders>
     );
 
     const select = screen.getByTestId('field-input');
     expect(select).toBeDefined();
+    const opInput = screen.getByTestId('operator-input').querySelector('input');
+    expect(opInput?.value).toBe('');
 
     // would like to check for the options but they are not easy to find
     // since they don't render until the option button is clicked
@@ -154,11 +155,9 @@ describe('ConditionControl', () => {
   });
 
   test('make a boolean condition from a field', () => {
-    const notebook = migrateNotebook(sampleNotebook);
-    store.dispatch({
-      type: 'ui-specification/loaded',
-      payload: notebook['ui-specification'],
-    });
+    const store = createDesignerStore();
+    const {migrated: notebook} = migrateNotebook(sampleNotebook);
+    store.dispatch(loaded(notebook['ui-specification'] as NotebookUISpec));
 
     const condition = {
       operator: 'equal',
@@ -168,7 +167,7 @@ describe('ConditionControl', () => {
 
     const onChangeFn = vi.fn();
     render(
-      <WithProviders>
+      <WithProviders store={store}>
         <ConditionControl initial={condition} onChange={onChangeFn} />
       </WithProviders>
     );

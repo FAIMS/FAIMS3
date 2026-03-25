@@ -6,11 +6,15 @@
 //
 //      http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law-abiding by applicable law or agreed to in writing, software
+// Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+/**
+ * @file Modal entry point for editing a visibility condition with save/cancel.
+ */
 
 import {
   Button,
@@ -21,9 +25,10 @@ import {
 } from '@mui/material';
 import {useCallback, useEffect, useState} from 'react';
 import {ConditionControl} from './ConditionControl';
-import {ConditionProps, ConditionType} from './types';
+import {ConditionProps, ConditionType} from '../../types/condition';
 import QuizIcon from '@mui/icons-material/Quiz';
 
+/** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
 export const ConditionModal = (props: ConditionProps & {label: string}) => {
   const [open, setOpen] = useState(false);
   // Local draft copy
