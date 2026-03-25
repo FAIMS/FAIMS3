@@ -187,13 +187,15 @@ export const BaseFieldEditor = ({
     allowHiding: allowHidingEnabled,
   };
 
-  // we'll offer to add advanced helper text if the existing value is not
-  // undefined in the field (meaning that the field supports this property)
-  const hasAdvancedSupport = cParams.advancedHelperText !== undefined;
+  // We show the advanced helper text as long as the field generally supports
+  // helper text
+  const hasAdvancedSupport = showHelperText;
 
   // by default, we'll show the advanced help text form if the value is not empty
   const [showAdvanced, setShowAdvanced] = useState(
-    hasAdvancedSupport && cParams.advancedHelperText !== ''
+    hasAdvancedSupport &&
+      !!cParams.advancedHelperText &&
+      cParams.advancedHelperText !== ''
   );
   const [expanded, setExpanded] = useState(true);
 
