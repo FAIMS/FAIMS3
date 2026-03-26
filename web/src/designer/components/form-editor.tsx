@@ -431,8 +431,16 @@ export const FormEditor = ({
                 spacing={2}
                 alignItems="center"
                 flexWrap="wrap"
+                rowGap={1}
+                columnGap={2}
               >
-                <Typography variant="subtitle1" fontWeight={600}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: 'text.primary',
+                    fontWeight: theme => theme.typography.fontWeightBold,
+                  }}
+                >
                   Form controls
                 </Typography>
 
