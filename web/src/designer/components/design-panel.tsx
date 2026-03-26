@@ -16,9 +16,20 @@
  * @file Form tabs, add form, undo/redo, and routed `FormEditor` instances.
  */
 
-import {Alert, Box, Button, Grid, Tab, Tabs, Snackbar} from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Grid,
+  Tab,
+  Tabs,
+  Snackbar,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 
@@ -292,11 +303,33 @@ export const DesignPanel = () => {
         message={toastMessage}
       />
       <TabContext value={tabIndex}>
-        <Alert severity="info" sx={{marginBottom: 2}}>
-          Define the user interface for your notebook here. Add one or more
-          forms to collect data from users. Each form can have one or more
-          sections. Each section has one or more form fields.
-        </Alert>
+        <Box sx={{mb: 1}}>
+          <Typography
+            variant="h5"
+            sx={{
+              color: 'text.primary',
+              fontWeight: theme => theme.typography.fontWeightBold,
+            }}
+          >
+            Forms
+          </Typography>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 0.5}}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: theme => theme.typography.fontWeightMedium,
+              }}
+            >
+              Define the user interface for your notebook here. Add one or more
+              forms to collect data from users. Each form can have one or more
+              sections. Each section has one or more form fields.
+            </Typography>
+            <Tooltip title="Add info text here.">
+              <InfoOutlinedIcon color="info" fontSize="small" />
+            </Tooltip>
+          </Box>
+        </Box>
 
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
           <Tabs
