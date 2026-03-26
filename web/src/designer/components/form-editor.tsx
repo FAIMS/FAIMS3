@@ -26,6 +26,8 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
   Alert,
   Button,
@@ -46,6 +48,8 @@ import {
   StepButton,
   Stepper,
   Switch,
+  useMediaQuery,
+  useTheme,
   ThemeProvider,
   Tooltip,
   Typography,
@@ -61,7 +65,7 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {findFormExternalUsage} from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
-import FormSettingsPanel from './form-settings';
+import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
 import {
   formVisibilityUpdated,
@@ -161,6 +165,9 @@ export const FormEditor = ({
   const [initialIndex, setInitialIndex] = useState(
     visibleTypes.indexOf(viewSetId)
   );
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const theme = useTheme();
+  const settingsFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
@@ -416,174 +423,230 @@ export const FormEditor = ({
   return (
     <Stack direction="row" spacing={2}>
       <Grid container spacing={2} pt={3}>
-        <Grid container item xs={12} spacing={0}>
-          <Grid item xs={12} md={2} sm={2.8}>
-            <Button
-              variant="text"
-              color="error"
-              size="medium"
-              startIcon={<DeleteRoundedIcon />}
-              onClick={deleteConfirmation}
-            >
-              Delete form
-            </Button>
-            <Dialog
-              open={open}
-              onClose={handleClose}
-              aria-labelledby="alert-dialog-title"
-              aria-describedby="alert-dialog-description"
-            >
-              <DialogTitle id="alert-dialog-title">
-                {deleteAlertTitle}
-              </DialogTitle>
-              <DialogContent>
-                <DialogContentText id="alert-dialog-description">
-                  {deleteAlertMessage}
-                </DialogContentText>
-              </DialogContent>
-              {preventDeleteDialog ? (
-                <DialogActions>
-                  <Button onClick={handleClose}>OK</Button>
-                </DialogActions>
-              ) : (
-                <DialogActions>
-                  <Button onClick={deleteForm}>Yes</Button>
-                  <Button onClick={handleClose}>No</Button>
-                </DialogActions>
-              )}
-            </Dialog>
-            <DeletionWarningDialog
-              open={showConditionAlert}
-              title="Form cannot be deleted due to active references"
-              references={conditionReferences}
-              onClose={() => setShowConditionAlert(false)}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={2} sm={2.825}>
-            <Button
-              variant="text"
-              size="medium"
-              startIcon={<EditRoundedIcon />}
-              onClick={() => setEditMode(true)}
-            >
-              Edit form name
-            </Button>
-            {editMode && (
-              <form
-                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                  e.preventDefault();
-                  setEditMode(false);
-                }}
+        <Grid item xs={12}>
+          <Card variant="outlined">
+            <Stack spacing={2} p={2}>
+              <Stack
+                direction="row"
+                spacing={2}
+                alignItems="center"
+                flexWrap="wrap"
               >
-                <DebouncedTextField
+                <Typography variant="subtitle1" fontWeight={600}>
+                  Form controls
+                </Typography>
+
+                <Button
+                  variant="text"
                   size="small"
-                  margin="dense"
-                  label="Form Name"
-                  name="label"
-                  data-testid="label"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Tooltip title="Done">
-                          <IconButton size="small" type="submit">
-                            <DoneRoundedIcon />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Close">
+                  startIcon={<EditRoundedIcon />}
+                  onClick={() => setEditMode(true)}
+                >
+                  Edit name
+                </Button>
+
+                <Stack direction="row" spacing={1} alignItems="center">
+                  {moveButtonsDisabled ? (
+                    <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
+                      <span>
+                        <IconButton disabled aria-label="left" size="small">
+                          <ArrowBackRoundedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton disabled aria-label="right" size="small">
+                          <ArrowForwardRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  ) : (
+                    <>
+                      <Tooltip title="Move form left">
+                        <span>
                           <IconButton
+                            disabled={visibleTypes.indexOf(viewSetId) === 0}
+                            onClick={() => moveForm(viewSetId, 'left')}
+                            aria-label="left"
                             size="small"
-                            onClick={() => setEditMode(false)}
                           >
-                            <CloseRoundedIcon />
+                            <ArrowBackRoundedIcon fontSize="small" />
                           </IconButton>
-                        </Tooltip>
-                      </InputAdornment>
-                    ),
-                  }}
-                  value={viewSet.label}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    updateFormLabel(event.target.value);
-                  }}
-                  sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
-                />
-              </form>
-            )}
-          </Grid>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Move form right">
+                        <span>
+                          <IconButton
+                            disabled={
+                              visibleTypes.indexOf(viewSetId) ===
+                              visibleTypes.length - 1
+                            }
+                            onClick={() => moveForm(viewSetId, 'right')}
+                            aria-label="right"
+                            size="small"
+                          >
+                            <ArrowForwardRoundedIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    </>
+                  )}
+                  <Typography variant="body2" color="text.secondary">
+                    Reorder
+                  </Typography>
+                </Stack>
 
-          {moveButtonsDisabled ? (
-            <Grid item xs={12} md={2} sm={2.5}>
-              <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
-                <span>
-                  <IconButton disabled={true} aria-label="left" size="medium">
-                    <ArrowBackRoundedIcon />
-                  </IconButton>
-                  <IconButton disabled={true} aria-label="right" size="medium">
-                    <ArrowForwardRoundedIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Grid>
-          ) : (
-            <Grid item sx={{margin: 'auto'}} xs={12} md={2} sm={2.5}>
-              <Tooltip title="Move form left">
-                <span>
-                  <IconButton
-                    disabled={visibleTypes.indexOf(viewSetId) === 0}
-                    onClick={() => moveForm(viewSetId, 'left')}
-                    aria-label="left"
-                    size="medium"
-                  >
-                    <ArrowBackRoundedIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-              <Tooltip title="Move form right">
-                <span>
-                  <IconButton
-                    disabled={
-                      visibleTypes.indexOf(viewSetId) ===
-                      visibleTypes.length - 1
-                    }
-                    onClick={() => moveForm(viewSetId, 'right')}
-                    aria-label="right"
-                    size="medium"
-                  >
-                    <ArrowForwardRoundedIcon />
-                  </IconButton>
-                </span>
-              </Tooltip>
-            </Grid>
-          )}
-
-          <Grid item xs={12} md={2} sm={3.5}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={visibleTypes.includes(viewSetId)}
+                <Button
+                  variant="text"
                   size="small"
-                  onChange={e => handleChange(e.target.checked)}
-                />
-              }
-              label={'Include "Add New Record" button'}
-            />
-            {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
-          </Grid>
+                  startIcon={<SettingsRoundedIcon />}
+                  onClick={() => setSettingsOpen(true)}
+                >
+                  Settings
+                </Button>
 
-          <Grid item xs={12} md={2} sm={2}>
-            <FormControlLabel
-              label={'Preview'}
-              control={
-                <Switch
-                  checked={previewForm}
-                  onChange={e => setPreviewForm(e.target.checked)}
+                <Button
+                  variant="text"
+                  color="error"
+                  size="small"
+                  startIcon={<DeleteRoundedIcon />}
+                  onClick={deleteConfirmation}
+                >
+                  Delete
+                </Button>
+
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={visibleTypes.includes(viewSetId)}
+                      size="small"
+                      onChange={e => handleChange(e.target.checked)}
+                    />
+                  }
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <Typography variant="body2">
+                        Include "Add New Record" button
+                      </Typography>
+                      <Tooltip title="Add info text here.">
+                        <InfoOutlinedIcon color="info" fontSize="small" />
+                      </Tooltip>
+                    </Stack>
+                  }
                 />
-              }
-            />
-          </Grid>
-        </Grid>
-        <Grid container item xs={12}>
-          <FormSettingsPanel viewSetId={viewSetId} />
+
+                <FormControlLabel
+                  label={'Preview'}
+                  control={
+                    <Switch
+                      checked={previewForm}
+                      onChange={e => setPreviewForm(e.target.checked)}
+                    />
+                  }
+                />
+              </Stack>
+
+              {editMode && (
+                <form
+                  onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                    e.preventDefault();
+                    setEditMode(false);
+                  }}
+                >
+                  <DebouncedTextField
+                    size="small"
+                    margin="dense"
+                    label="Form Name"
+                    name="label"
+                    data-testid="label"
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title="Done">
+                            <IconButton size="small" type="submit">
+                              <DoneRoundedIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Close">
+                            <IconButton
+                              size="small"
+                              onClick={() => setEditMode(false)}
+                            >
+                              <CloseRoundedIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    }}
+                    value={viewSet.label}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      updateFormLabel(event.target.value);
+                    }}
+                    sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+                  />
+                </form>
+              )}
+
+              {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
+            </Stack>
+          </Card>
+
+          <Dialog
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            maxWidth="sm"
+            fullWidth
+            fullScreen={settingsFullScreen}
+            PaperProps={{
+              sx: {
+                borderRadius: {xs: 0, sm: 2},
+                width: '100%',
+                m: {xs: 0, sm: 2},
+              },
+            }}
+          >
+            <DialogTitle>Form Settings</DialogTitle>
+            <DialogContent
+              dividers
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+              }}
+            >
+              <FormSettingsContent viewSetId={viewSetId} />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setSettingsOpen(false)}>Close</Button>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-dialog-title">{deleteAlertTitle}</DialogTitle>
+            <DialogContent>
+              <DialogContentText id="alert-dialog-description">
+                {deleteAlertMessage}
+              </DialogContentText>
+            </DialogContent>
+            {preventDeleteDialog ? (
+              <DialogActions>
+                <Button onClick={handleClose}>OK</Button>
+              </DialogActions>
+            ) : (
+              <DialogActions>
+                <Button onClick={deleteForm}>Yes</Button>
+                <Button onClick={handleClose}>No</Button>
+              </DialogActions>
+            )}
+          </Dialog>
+          <DeletionWarningDialog
+            open={showConditionAlert}
+            title="Form cannot be deleted due to active references"
+            references={conditionReferences}
+            onClose={() => setShowConditionAlert(false)}
+          />
         </Grid>
         <Grid item xs={12}>
           <Card variant="outlined">
