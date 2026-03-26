@@ -303,9 +303,9 @@ export const DesignPanel = () => {
         message={toastMessage}
       />
       <TabContext value={tabIndex}>
-        <Box sx={{mb: 1}}>
+        <Box sx={{mb: 1.5}}>
           <Typography
-            variant="h5"
+            variant="h4"
             sx={{
               color: 'text.primary',
               fontWeight: theme => theme.typography.fontWeightBold,
@@ -313,12 +313,22 @@ export const DesignPanel = () => {
           >
             Forms
           </Typography>
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 0.5}}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mt: 0.75,
+              flexWrap: 'wrap',
+            }}
+          >
             <Typography
-              variant="body2"
+              variant="body1"
               sx={{
                 color: 'text.secondary',
                 fontWeight: theme => theme.typography.fontWeightMedium,
+                lineHeight: 1.5,
+                maxWidth: 900,
               }}
             >
               Define the user interface for your notebook here. Add one or more
