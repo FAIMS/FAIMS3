@@ -39,6 +39,7 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   FormControlLabel,
   Grid,
   IconButton,
@@ -424,177 +425,199 @@ export const FormEditor = ({
     <Stack direction="row" spacing={2}>
       <Grid container spacing={2} pt={3}>
         <Grid item xs={12}>
-          <Card variant="outlined">
-            <Stack spacing={2} p={2}>
-              <Stack
-                direction="row"
-                spacing={2}
-                alignItems="center"
-                flexWrap="wrap"
-                rowGap={1}
-                columnGap={2}
+          <Divider sx={{borderColor: 'divider', borderWidth: 2}} />
+          <Stack spacing={2} py={2}>
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              flexWrap="wrap"
+              rowGap={1}
+              columnGap={2.5}
+            >
+              <Typography
+                variant="h5"
+                sx={{
+                  color: 'text.primary',
+                  fontWeight: theme => theme.typography.fontWeightBold,
+                }}
               >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: 'text.primary',
-                    fontWeight: theme => theme.typography.fontWeightBold,
-                  }}
-                >
-                  Form controls
-                </Typography>
+                Form controls
+              </Typography>
 
-                <Button
-                  variant="text"
-                  size="small"
-                  startIcon={<EditRoundedIcon />}
-                  onClick={() => setEditMode(true)}
-                >
-                  Edit name
-                </Button>
+              <Button
+                variant="text"
+                size="small"
+                color="inherit"
+                startIcon={<EditRoundedIcon />}
+                onClick={() => setEditMode(true)}
+                sx={{color: 'text.secondary', fontWeight: 600}}
+              >
+                Edit name
+              </Button>
 
-                <Stack direction="row" spacing={1} alignItems="center">
-                  {moveButtonsDisabled ? (
-                    <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
+              <Stack direction="row" spacing={1} alignItems="center">
+                {moveButtonsDisabled ? (
+                  <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
+                    <span>
+                      <IconButton disabled aria-label="left" size="small">
+                        <ArrowBackRoundedIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton disabled aria-label="right" size="small">
+                        <ArrowForwardRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <>
+                    <Tooltip title="Move form left">
                       <span>
-                        <IconButton disabled aria-label="left" size="small">
+                        <IconButton
+                          disabled={visibleTypes.indexOf(viewSetId) === 0}
+                          onClick={() => moveForm(viewSetId, 'left')}
+                          aria-label="left"
+                          size="small"
+                          sx={{color: 'text.secondary'}}
+                        >
                           <ArrowBackRoundedIcon fontSize="small" />
                         </IconButton>
-                        <IconButton disabled aria-label="right" size="small">
+                      </span>
+                    </Tooltip>
+                    <Tooltip title="Move form right">
+                      <span>
+                        <IconButton
+                          disabled={
+                            visibleTypes.indexOf(viewSetId) ===
+                            visibleTypes.length - 1
+                          }
+                          onClick={() => moveForm(viewSetId, 'right')}
+                          aria-label="right"
+                          size="small"
+                          sx={{color: 'text.secondary'}}
+                        >
                           <ArrowForwardRoundedIcon fontSize="small" />
                         </IconButton>
                       </span>
                     </Tooltip>
-                  ) : (
-                    <>
-                      <Tooltip title="Move form left">
-                        <span>
-                          <IconButton
-                            disabled={visibleTypes.indexOf(viewSetId) === 0}
-                            onClick={() => moveForm(viewSetId, 'left')}
-                            aria-label="left"
-                            size="small"
-                          >
-                            <ArrowBackRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title="Move form right">
-                        <span>
-                          <IconButton
-                            disabled={
-                              visibleTypes.indexOf(viewSetId) ===
-                              visibleTypes.length - 1
-                            }
-                            onClick={() => moveForm(viewSetId, 'right')}
-                            aria-label="right"
-                            size="small"
-                          >
-                            <ArrowForwardRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </>
-                  )}
-                  <Typography variant="body2" color="text.secondary">
-                    Reorder
-                  </Typography>
-                </Stack>
-
-                <Button
-                  variant="text"
-                  size="small"
-                  startIcon={<SettingsRoundedIcon />}
-                  onClick={() => setSettingsOpen(true)}
+                  </>
+                )}
+                <Typography
+                  variant="body2"
+                  sx={{color: 'text.secondary', fontWeight: 600}}
                 >
-                  Settings
-                </Button>
-
-                <Button
-                  variant="text"
-                  color="error"
-                  size="small"
-                  startIcon={<DeleteRoundedIcon />}
-                  onClick={deleteConfirmation}
-                >
-                  Delete
-                </Button>
-
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={visibleTypes.includes(viewSetId)}
-                      size="small"
-                      onChange={e => handleChange(e.target.checked)}
-                    />
-                  }
-                  label={
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Typography variant="body2">
-                        Include "Add New Record" button
-                      </Typography>
-                      <Tooltip title="Add info text here.">
-                        <InfoOutlinedIcon color="info" fontSize="small" />
-                      </Tooltip>
-                    </Stack>
-                  }
-                />
-
-                <FormControlLabel
-                  label={'Preview'}
-                  control={
-                    <Switch
-                      checked={previewForm}
-                      onChange={e => setPreviewForm(e.target.checked)}
-                    />
-                  }
-                />
+                  Reorder
+                </Typography>
               </Stack>
 
-              {editMode && (
-                <form
-                  onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                    e.preventDefault();
-                    setEditMode(false);
-                  }}
-                >
-                  <DebouncedTextField
-                    size="small"
-                    margin="dense"
-                    label="Form Name"
-                    name="label"
-                    data-testid="label"
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Tooltip title="Done">
-                            <IconButton size="small" type="submit">
-                              <DoneRoundedIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Close">
-                            <IconButton
-                              size="small"
-                              onClick={() => setEditMode(false)}
-                            >
-                              <CloseRoundedIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </InputAdornment>
-                      ),
-                    }}
-                    value={viewSet.label}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      updateFormLabel(event.target.value);
-                    }}
-                    sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
-                  />
-                </form>
-              )}
+              <Button
+                variant="text"
+                size="small"
+                color="inherit"
+                startIcon={<SettingsRoundedIcon />}
+                onClick={() => setSettingsOpen(true)}
+                sx={{color: 'text.secondary', fontWeight: 600}}
+              >
+                Settings
+              </Button>
 
-              {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
+              <Button
+                variant="text"
+                color="error"
+                size="small"
+                startIcon={<DeleteRoundedIcon />}
+                onClick={deleteConfirmation}
+                sx={{fontWeight: 700}}
+              >
+                Delete
+              </Button>
+
+              <FormControlLabel
+                sx={{
+                  '& .MuiFormControlLabel-label': {
+                    color: 'text.secondary',
+                    fontWeight: 600,
+                  },
+                }}
+                control={
+                  <Checkbox
+                    checked={visibleTypes.includes(viewSetId)}
+                    size="small"
+                    onChange={e => handleChange(e.target.checked)}
+                  />
+                }
+                label={
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Typography variant="body2">
+                      Include "Add New Record" button
+                    </Typography>
+                    <Tooltip title="Add info text here.">
+                      <InfoOutlinedIcon color="info" fontSize="small" />
+                    </Tooltip>
+                  </Stack>
+                }
+              />
+
+              <FormControlLabel
+                sx={{
+                  '& .MuiFormControlLabel-label': {
+                    color: 'text.secondary',
+                    fontWeight: 600,
+                  },
+                }}
+                label={'Preview'}
+                control={
+                  <Switch
+                    checked={previewForm}
+                    onChange={e => setPreviewForm(e.target.checked)}
+                  />
+                }
+              />
             </Stack>
-          </Card>
+
+            {editMode && (
+              <form
+                onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                  e.preventDefault();
+                  setEditMode(false);
+                }}
+              >
+                <DebouncedTextField
+                  size="small"
+                  margin="dense"
+                  label="Form Name"
+                  name="label"
+                  data-testid="label"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <Tooltip title="Done">
+                          <IconButton size="small" type="submit">
+                            <DoneRoundedIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Close">
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditMode(false)}
+                          >
+                            <CloseRoundedIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </InputAdornment>
+                    ),
+                  }}
+                  value={viewSet.label}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    updateFormLabel(event.target.value);
+                  }}
+                  sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+                />
+              </form>
+            )}
+
+            {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
+          </Stack>
+          <Divider sx={{borderColor: 'divider', borderWidth: 2}} />
 
           <Dialog
             open={settingsOpen}
