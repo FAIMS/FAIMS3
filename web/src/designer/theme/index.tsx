@@ -39,6 +39,7 @@ const theme = createTheme({
       primary: colors.blueGrey[900],
       secondary: colors.blueGrey[600],
     },
+    divider: colors.blueGrey[400],
   },
   typography: {
     fontFamily: "'Open Sans', sans-serif",
