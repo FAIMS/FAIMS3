@@ -275,7 +275,7 @@ export const DesignPanel = () => {
 
   return (
     <>
-      <Box sx={{display: 'flex', justifyContent: 'flex-end', marginBottom: 2}}>
+      <Box sx={{display: 'flex', justifyContent: 'flex-end', marginBottom: 1}}>
         <Button
           variant="contained"
           color="primary"
@@ -305,7 +305,7 @@ export const DesignPanel = () => {
       <TabContext value={tabIndex}>
         <Box sx={{mb: 1.5}}>
           <Typography
-            variant="h4"
+            variant="h3"
             sx={{
               color: 'text.primary',
               fontWeight: theme => theme.typography.fontWeightBold,
@@ -364,14 +364,18 @@ export const DesignPanel = () => {
                 sx={{
                   '&.MuiTab-root': {
                     backgroundColor: '#F9FAFB',
-                    border: '0.75px solid #669911',
+                    borderStyle: 'solid',
+                    borderWidth: '2px',
+                    borderColor: 'primary.main',
                     borderBottom: 'none',
                     borderTopLeftRadius: '10px',
                     borderTopRightRadius: '10px',
                     marginRight: '0.5em',
                   },
                   '&.Mui-selected': {
-                    border: '1px solid #669911',
+                    borderStyle: 'solid',
+                    borderWidth: '2px',
+                    borderColor: 'primary.main',
                     backgroundColor: '#F5FCE8',
                   },
                   '&:hover': {
@@ -391,23 +395,27 @@ export const DesignPanel = () => {
                   key={startIndex}
                   value={`${startIndex}`}
                   label={`Form: ${viewSets[form].label}`}
-                  sx={{
-                    '&.MuiTab-root': {
-                      backgroundColor: '#F9FAFB',
-                      border: '0.75px solid #E18200',
-                      borderBottom: 'none',
-                      borderTopLeftRadius: '10px',
-                      borderTopRightRadius: '10px',
-                      marginX: '0.25em',
-                    },
-                    '&.Mui-selected': {
-                      color: '#E18200',
-                      border: '1px solid #E18200',
-                      backgroundColor: '#FFF4E5',
-                    },
-                    '&:hover': {
-                      color: '#E18200',
-                      opacity: 1,
+                sx={{
+                  '&.MuiTab-root': {
+                    backgroundColor: '#F9FAFB',
+                    borderStyle: 'solid',
+                    borderWidth: '2px',
+                    borderColor: 'secondary.main',
+                    borderBottom: 'none',
+                    borderTopLeftRadius: '10px',
+                    borderTopRightRadius: '10px',
+                    marginX: '0.25em',
+                  },
+                  '&.Mui-selected': {
+                    color: '#E18200',
+                    borderStyle: 'solid',
+                    borderWidth: '2px',
+                    borderColor: 'secondary.main',
+                    backgroundColor: '#FFF4E5',
+                  },
+                  '&:hover': {
+                    color: '#E18200',
+                    opacity: 1,
                       backgroundColor: '#FFF4E5',
                     },
                   }}
@@ -423,7 +431,9 @@ export const DesignPanel = () => {
               sx={{
                 '&.MuiTab-root': {
                   backgroundColor: '#F9FAFB',
-                  border: '0.75px solid #669911',
+                  borderStyle: 'solid',
+                  borderWidth: '2px',
+                  borderColor: 'primary.main',
                   borderBottom: 'none',
                   borderTopLeftRadius: '10px',
                   borderTopRightRadius: '10px',
@@ -431,7 +441,9 @@ export const DesignPanel = () => {
                 },
                 '&.Mui-selected': {
                   color: '#669911',
-                  border: '1px solid #669911',
+                  borderStyle: 'solid',
+                  borderWidth: '2px',
+                  borderColor: 'primary.main',
                   backgroundColor: '#F5FCE8',
                 },
                 '&:hover': {
