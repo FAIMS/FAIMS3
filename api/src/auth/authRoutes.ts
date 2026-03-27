@@ -960,10 +960,14 @@ export function addAuthRoutes(
           );
         }
 
-        // Store into session (we are about to be redirected! Bye bye)
+        // Store into session (we are about to be redirected! Bye bye).
+        // All three fields are written unconditionally so that every new auth
+        // flow resets any stale values from a previous one. In particular, a
+        // stale inviteId from a prior register flow must not carry over into a
+        // subsequent plain login (the 1-year cookie makes this very likely).
         sessionData.redirect = redirect;
-        if (inviteId) sessionData.inviteId = inviteId;
-        if (action) sessionData.action = action;
+        sessionData.inviteId = inviteId;
+        sessionData.action = action;
 
         // passport authenticate route for this handler (bye bye)
         passport.authenticate(provider, {scope: handlerDetails.scope})(
@@ -1027,6 +1031,14 @@ export function addAuthRoutes(
 
           const errorRedirect =
             action === 'login' ? loginErrorRedirect : registerErrorRedirect;
+
+          // Clear one-time auth-flow fields from the session before redirecting.
+          // cookieSession serialises req.session into the Set-Cookie header of
+          // this response, so deleting here removes them from the browser cookie
+          // and prevents them persisting across future (unrelated) auth flows.
+          const sessionData = req.session as CustomSessionData;
+          delete sessionData.inviteId;
+          delete sessionData.action;
 
           return completePostAuth({
             dbUser: user,
