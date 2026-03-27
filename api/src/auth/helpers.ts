@@ -294,6 +294,9 @@ export async function lookupAndValidateInvite({
  * The user generation function (if provided) will only be used if the invite
  * appears valid, just in case it has side effects.
  *
+ * If the user object is provided, it will be updated in place and returned but will
+ * not be saved.
+ *
  * The resulting user will NOT be saved. Call saveCouchUser()
  *
  * @param dbUser - Optional. An existing user in the database. Either this or
@@ -338,7 +341,7 @@ export async function validateAndApplyInviteToUser({
     targetDbUser = await createUser!();
   }
 
-  // let's add the permission from the invite as well as the prof
+  // Comsume the invite to add the permission to the user
   try {
     await consumeInvite({invite, user: targetDbUser});
   } catch (e) {
@@ -473,6 +476,91 @@ export async function identifyUser(
   }
 }
 
+/**
+ * Completes a post-authentication flow by optionally applying an invite,
+ * saving the user, and redirecting with a token.
+ *
+ * This is the single shared post-auth step used by all login and register
+ * paths (local and SSO). Invite semantics differ by action:
+ *   - 'register': invite is mandatory; an invalid or missing invite is a hard
+ *     error that blocks the redirect.
+ *   - 'login': invite is optional; an invalid invite is logged and flashed as a
+ *     warning but does NOT block the login.
+ *
+ * @param dbUser - The authenticated/newly-created user document
+ * @param action - 'login' or 'register'
+ * @param inviteId - Optional invite code to consume
+ * @param redirect - Validated URL to redirect to on success
+ * @param res - Express response object
+ * @param errorRedirect - URL to redirect to on hard error (register only)
+ * @param flashFn - req.flash compatible function for flashing messages
+ * @returns The express response (either a redirect or error redirect)
+ */
+export async function completePostAuth({
+  dbUser,
+  action,
+  inviteId,
+  redirect,
+  res,
+  errorRedirect,
+  flashFn,
+}: {
+  dbUser: PeopleDBDocument;
+  action: AuthAction;
+  inviteId: string | undefined;
+  redirect: string;
+  res: Response;
+  errorRedirect: string;
+  flashFn: (type: string, message: any) => void;
+}) {
+  // Register always requires an invite
+  if (action === 'register' && !inviteId) {
+    flashFn('error', {
+      registrationError: {msg: 'No invite provided for registration.'},
+    });
+    return res.status(400).redirect(errorRedirect);
+  }
+
+  // Apply the invite if one was provided
+  if (inviteId) {
+    try {
+      const updatedUser = await validateAndApplyInviteToUser({
+        inviteCode: inviteId,
+        dbUser,
+      });
+      await saveCouchUser(updatedUser);
+      dbUser = updatedUser;
+    } catch (e) {
+      if (action === 'register') {
+        // Hard error for register — a bad invite must block registration
+        flashFn('error', {
+          registrationError: {
+            msg: 'Invite is not valid. Is it expired or has it been used too many times?',
+          },
+        });
+        return res.status(400).redirect(errorRedirect);
+      } else {
+        // Soft warning for login — do not block the user from logging in
+        console.warn(
+          `Invite '${inviteId}' could not be applied for user '${dbUser._id}' during login: ${e}`
+        );
+        flashFn('warning', {
+          inviteWarning: {
+            msg: 'The invite code could not be applied (it may be expired or already used), but you have been logged in.',
+          },
+        });
+      }
+    }
+  }
+
+  // Upgrade to express user (resolves resource roles) and redirect with token
+  return redirectWithToken({
+    res,
+    user: await upgradeCouchUserToExpressUser({dbUser}),
+    redirect,
+  });
+}
+
 // A type describing the things we expect to see in a generic
 // SSO profile for the purposes of our authentication helpers
 type GenericProfile = {
@@ -480,17 +568,21 @@ type GenericProfile = {
 };
 
 /**
- * A generic SSO verify function that handles both login and registration
- * flows. Used in OIDC/Google/SAML strategies.
+ * A generic SSO verify function that finds or creates a user from an SSO
+ * provider profile. Used in OIDC/Google/SAML strategies.
  *
- * @param param0 req - The Express request object containing session information
- * @param param0 strategyId - The identifier for the authentication strategy (e.g., 'google', 'saml')
- * @param param0 strategyName - The display name for the authentication strategy (used in error messages)
- * @param param0 profile - The user profile information returned from the SSO provider
- * @param param0 emails - A list of verified email addresses extracted from the SSO profile
- * @param param0 userDisplayName - A function to extract the display name from the profile for user creation
- * @param param0 done - Callback function to signal authentication success/failure
- * @returns A promise that resolves when the verification process is complete
+ * This function's sole responsibility is identity resolution: given a set of
+ * verified emails and a provider profile, return the matching or newly created
+ * PeopleDBDocument via `done`. Invite consumption and the final redirect are
+ * handled by `completePostAuth` in the route callback layer.
+ *
+ * @param req - The Express request object containing session information
+ * @param strategyId - The identifier for the authentication strategy (e.g., 'google', 'saml')
+ * @param strategyName - The display name for the strategy (used in error messages)
+ * @param profile - The user profile returned from the SSO provider
+ * @param emails - Verified email addresses extracted from the SSO profile
+ * @param userDisplayName - Function to derive a display name from the profile
+ * @param done - Passport callback to signal success or failure
  */
 export async function ssoVerify({
   req,
@@ -504,16 +596,15 @@ export async function ssoVerify({
   req: Express.Request;
   strategyId: string;
   strategyName: string;
-  profile: GenericProfile; // a profile
-  emails: string[]; // a list of verified emails we have pulled out of the profile
-  userDisplayName: (profile: GenericProfile) => string; // an optional function to pull a display name out of the profile
+  profile: GenericProfile;
+  emails: string[];
+  userDisplayName: (profile: GenericProfile) => string;
   done: (error: any, user?: any, info?: any) => void;
 }): Promise<void> {
-  // pull out session info (and type it - this route really doesn't want to
-  // accept our typing overrides in types.ts)
-  const {action, inviteId} = req.session as CustomSessionData;
+  const {action} = req.session as CustomSessionData;
 
-  // Action should always be defined
+  // Action should always be defined — it is written to session before the
+  // browser is redirected to the identity provider
   if (!action) {
     return done(
       new Error(
@@ -523,18 +614,8 @@ export async function ssoVerify({
     );
   }
 
-  // Registration requires an invite ID - but handling of the invite is not the
-  // responsibility of this module - see the success callback in authRoutes
-  if (action === 'register' && !inviteId) {
-    return done(
-      new Error(
-        'Trying to register a new account without an invitation - this is not authorised.'
-      ),
-      undefined
-    );
-  }
-
-  let matchedSingleUser: ExistingPeopleDBDocument | undefined;
+  // Identify whether this SSO user already has an account
+  let matchedSingleUser: PeopleDBDocument | undefined;
   try {
     matchedSingleUser = await identifyUser(emails, strategyName);
   } catch (e) {
@@ -542,15 +623,10 @@ export async function ssoVerify({
   }
 
   if (action === 'login') {
-    // LOGIN
-    // =====
-
-    // This is a situation where they do have a verified email address but none
-    // match
+    // LOGIN — find or provision the user; invite is applied by completePostAuth
     if (matchedSingleUser === undefined) {
-      // We apply the policy for unknown SSO users which may result in a
-      // new user or a rejection depending on the configuration
-
+      // No existing account — apply the server's provision policy for unknown
+      // SSO users (reject / general-user / own-team)
       try {
         const newDbUser = await applyProvisionPolicy({
           emails,
@@ -558,104 +634,57 @@ export async function ssoVerify({
           strategyId,
           userDisplayName,
         });
-
-        // persist the new user
-        saveCouchUser(newDbUser);
-
-        // return express user
-        return done(
-          null,
-          await upgradeCouchUserToExpressUser({dbUser: newDbUser})
-        );
+        await saveCouchUser(newDbUser);
+        return done(null, newDbUser);
       } catch (e) {
-        // generally here because the policy is 'reject' but catch other errors too
         return done(e as Error, undefined);
       }
     }
 
-    // We have precisely one matching email address, let's ensure that this
-    // account has the linked SSO profile, then return it (We can safely assert
-    // non-null here due to our previous filtering)
-    // const matchedSingleUser = matchingAccounts[0];
-
-    // Firstly - ensure they have the right profile linked
+    // Existing user — ensure the SSO profile is attached, then return
     if (!(strategyId in matchedSingleUser.profiles)) {
       matchedSingleUser.profiles[strategyId] = profile;
       await saveCouchUser(matchedSingleUser);
     }
 
-    // upgrade user and return login success - invite to be processed later if
-    // at all
-    return done(
-      null,
-      await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
-    );
+    return done(null, matchedSingleUser);
   } else {
-    // REGISTER
-    // ========
+    // REGISTER — find or create the user; invite is applied by completePostAuth
 
-    // Validate invite - always needed
-    try {
-      await lookupAndValidateInvite({inviteCode: inviteId!});
-    } catch (e) {
-      return done(
-        new Error('Invalid invite provided. Cannot register an account.'),
-        undefined
-      );
-    }
+    let targetUser: PeopleDBDocument;
 
-    // This is scenario where this user does not yet exist - so let's create
-    // them (checking invite is okay)
     if (matchedSingleUser === undefined) {
-      // So the invite is valid we should now start to setup the user
-
-      const newDbUser = await createAndAddNewUser({
+      // No existing account — create one from the SSO profile
+      targetUser = await createAndAddNewUser({
         emails,
         profile,
         strategyId,
         userDisplayName,
       });
-
-      saveCouchUser(newDbUser);
-
-      // return express user
-      return done(
-        null,
-        await upgradeCouchUserToExpressUser({dbUser: newDbUser})
-      );
+      await saveCouchUser(targetUser);
+    } else {
+      // Account already exists with a matching email — treat as the target
+      // (completePostAuth will apply the invite to grant additional roles)
+      targetUser = matchedSingleUser;
     }
 
-    // NOTE: This is the situation where you are trying to 'register' a new
-    // account but one already exists with SSO with matching email - we
-    // decide here to instead log them in - upgrading the potentially
-    // unconnected account
-
-    // We have precisely one matching email address, let's ensure that this
-    // account has the linked SSO profile, then return it (We can safely assert
-    // non-null here due to our previous filtering)
-
-    // Firstly - ensure they have the SSO profile linked
-    if (!(strategyId in matchedSingleUser.profiles)) {
-      matchedSingleUser.profiles[strategyId] = profile;
+    // Ensure the SSO profile is linked
+    if (!(strategyId in targetUser.profiles)) {
+      targetUser.profiles[strategyId] = profile;
     }
 
-    // add the other emails to the user emails array if necessary
+    // Merge any additional verified emails from the provider
     addEmails({
-      user: matchedSingleUser,
-      emails: emails.map(vEmail => {
-        // Mark as verified!
-        return {email: vEmail, verified: true} satisfies VerifiableEmail;
-      }),
+      user: targetUser,
+      emails: emails.map(
+        vEmail => ({email: vEmail, verified: true}) satisfies VerifiableEmail
+      ),
     });
 
-    await saveCouchUser(matchedSingleUser);
+    // Persist profile/email changes (invite consumption is done by completePostAuth)
+    await saveCouchUser(targetUser);
 
-    // upgrade user and return login success - invite to be processed later if
-    // at all
-    return done(
-      null,
-      await upgradeCouchUserToExpressUser({dbUser: matchedSingleUser})
-    );
+    return done(null, targetUser);
   }
 }
 
