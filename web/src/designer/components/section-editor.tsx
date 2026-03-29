@@ -371,14 +371,15 @@ export const SectionEditor = ({
           </Tooltip>
         </Grid>
 
-        <Grid item xs={12} sm={2.5}>
+        {/* Duplicate Section Button */}
+        <Grid item xs={12} sm={1.9}>
           <Button
             variant="text"
             size="small"
-            startIcon={<AddCircleOutlineRoundedIcon />}
-            onClick={() => setAddMode(true)}
+            startIcon={<ContentCopyRoundedIcon />}
+            onClick={() => setOpenDuplicateDialog(true)}
           >
-            Add new section
+            Duplicate section
           </Button>
           {addMode && (
             <form
