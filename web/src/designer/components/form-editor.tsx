@@ -566,7 +566,12 @@ export const FormEditor = ({
                 size="small"
                 startIcon={<DeleteRoundedIcon />}
                 onClick={deleteConfirmation}
-                sx={{fontWeight: 700, textTransform: 'none'}}
+                sx={{
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.03em',
+                }}
               >
                 Delete
               </Button>
@@ -575,6 +580,7 @@ export const FormEditor = ({
 
               <FormControlLabel
                 sx={{
+                  ml: 'auto',
                   '& .MuiFormControlLabel-label': {
                     color: 'text.secondary',
                     fontWeight: 600,

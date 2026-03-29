@@ -360,27 +360,12 @@ export const DesignPanel = () => {
               value={maxKeys.toString()}
               icon={<AddIcon />}
               sx={{
+                ...visibleTabSx,
                 '&.MuiTab-root': {
-                  backgroundColor: '#F9FAFB',
-                  borderStyle: 'solid',
-                  borderWidth: '2px',
-                  borderColor: 'primary.main',
-                  borderBottom: 'none',
-                  borderTopLeftRadius: '10px',
-                  borderTopRightRadius: '10px',
+                  ...visibleTabSx['&.MuiTab-root'],
+                  minWidth: 56,
+                  maxWidth: 56,
                   marginLeft: '0.5em',
-                },
-                '&.Mui-selected': {
-                  color: '#669911',
-                  borderStyle: 'solid',
-                  borderWidth: '2px',
-                  borderColor: 'primary.main',
-                  backgroundColor: '#F5FCE8',
-                },
-                '&:hover': {
-                  color: '#669911',
-                  opacity: 1,
-                  backgroundColor: '#F5FCE8',
                 },
               }}
             />
