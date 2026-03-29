@@ -502,7 +502,7 @@ export const FormEditor = ({
                           onClick={() => moveForm(viewSetId, 'left')}
                           aria-label="left"
                           size="small"
-                          sx={{color: 'text.secondary'}}
+                          sx={{color: 'text.secondary', p: 0.5}}
                         >
                           <ArrowBackRoundedIcon fontSize="small" />
                         </IconButton>
@@ -518,7 +518,7 @@ export const FormEditor = ({
                           onClick={() => moveForm(viewSetId, 'right')}
                           aria-label="right"
                           size="small"
-                          sx={{color: 'text.secondary'}}
+                          sx={{color: 'text.secondary', p: 0.5}}
                         >
                           <ArrowForwardRoundedIcon fontSize="small" />
                         </IconButton>

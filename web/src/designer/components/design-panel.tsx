@@ -334,30 +334,9 @@ export const DesignPanel = () => {
                 to={`${basePath}/${index}`}
                 key={index}
                 value={`${index}`}
-                label={`Form: ${viewSets[form].label}`}
-                sx={{
-                  '&.MuiTab-root': {
-                    backgroundColor: '#F9FAFB',
-                    borderStyle: 'solid',
-                    borderWidth: '2px',
-                    borderColor: 'primary.main',
-                    borderBottom: 'none',
-                    borderTopLeftRadius: '10px',
-                    borderTopRightRadius: '10px',
-                    marginRight: '0.5em',
-                  },
-                  '&.Mui-selected': {
-                    borderStyle: 'solid',
-                    borderWidth: '2px',
-                    borderColor: 'primary.main',
-                    backgroundColor: '#F5FCE8',
-                  },
-                  '&:hover': {
-                    color: '#669911',
-                    opacity: 1,
-                    backgroundColor: '#F5FCE8',
-                  },
-                }}
+                label={`Form: ${viewSets[form].label}`.toUpperCase()}
+                wrapped
+                sx={visibleTabSx}
               />
             ))}
             {untickedForms.map((form: string, index: number) => {
