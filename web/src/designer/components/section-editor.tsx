@@ -397,6 +397,7 @@ export const SectionEditor = ({
             size="small"
             startIcon={<MoveRoundedIcon />}
             onClick={() => setOpenMoveDialog(true)}
+            sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
           >
             Move section
           </Button>
@@ -461,6 +462,7 @@ export const SectionEditor = ({
             size="small"
             startIcon={<DeleteRoundedIcon />}
             onClick={deleteConfirmation}
+            sx={{fontWeight: 700, textTransform: 'none'}}
           >
             Delete section
           </Button>
