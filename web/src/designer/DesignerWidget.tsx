@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import React, {useMemo, useState, useEffect} from 'react';
+import React, {useMemo, useState, useEffect, useCallback} from 'react';
 import {Provider as ReduxProvider} from 'react-redux';
 import {
   ThemeProvider,
   ScopedCssBaseline,
   Box,
-  Button,
   Typography,
   AppBar,
   Toolbar,
@@ -123,28 +122,6 @@ export function DesignerWidget({
     [processedNotebook, debug]
   );
 
-  // 3. Build routes once
-  const routes: RouteObject[] = useMemo(
-    () => [
-      {
-        path: '/',
-        element: <NotebookEditor />,
-        children: [
-          {index: true, element: <Navigate to="/design/0" replace />},
-          {path: 'info', element: <InfoPanel />},
-          {path: 'design/*', element: <DesignPanel />},
-        ],
-      },
-    ],
-    []
-  );
-
-  // 4. Recreate router on notebook change to wipe any internal routing state
-  const memoryRouterInstance = useMemo(
-    () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
-    [notebook]
-  );
-
   // Local UI state
   const [loading, setLoading] = useState(true);
   const [animateIn, setAnimateIn] = useState(false);
@@ -168,10 +145,13 @@ export function DesignerWidget({
     return {...globalTheme, ...themeOverride};
   }, [themeOverride]);
 
-  const doClose = (file: File | undefined) => onClose(file);
+  const doClose = useCallback(
+    (file: File | undefined) => onClose(file),
+    [onClose]
+  );
 
   /** Serialise present notebook, strip internal ids, and return a downloadable JSON `File`. */
-  const handleDone = () => {
+  const handleDone = useCallback(() => {
     const actualNotebook: Notebook = toNotebook(store.getState().notebook);
 
     // Remove internal IDs before serialisation
@@ -190,15 +170,42 @@ export function DesignerWidget({
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(file), animationDuration);
-  };
+  }, [animationDuration, doClose, store]);
 
   /** Close without saving after user confirms cancel dialog. */
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setCancelDialogOpen(false);
     setAnimateOut(true);
     setAnimateIn(false);
     window.setTimeout(() => doClose(undefined), animationDuration);
-  };
+  }, [animationDuration, doClose]);
+
+  // 3. Build routes once
+  const routes: RouteObject[] = useMemo(
+    () => [
+      {
+        path: '/',
+        element: (
+          <NotebookEditor
+            onSave={handleDone}
+            onCancelRequest={() => setCancelDialogOpen(true)}
+          />
+        ),
+        children: [
+          {index: true, element: <Navigate to="/design/0" replace />},
+          {path: 'info', element: <InfoPanel />},
+          {path: 'design/*', element: <DesignPanel />},
+        ],
+      },
+    ],
+    [handleDone, setCancelDialogOpen]
+  );
+
+  // 4. Recreate router on notebook change to wipe any internal routing state
+  const memoryRouterInstance = useMemo(
+    () => createMemoryRouter(routes, {initialEntries: ['/design/0']}),
+    [notebook, routes]
+  );
 
   if (loading) {
     return (
@@ -239,14 +246,6 @@ export function DesignerWidget({
               <Typography variant="h6" fontWeight="bold">
                 Notebook Editor
               </Typography>
-              <Box>
-                <Button onClick={() => setCancelDialogOpen(true)} sx={{mr: 1}}>
-                  Cancel
-                </Button>
-                <Button variant="contained" onClick={handleDone}>
-                  Save
-                </Button>
-              </Box>
             </Toolbar>
           </AppBar>
 
@@ -269,10 +268,14 @@ export function DesignerWidget({
               </DialogContentText>
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setCancelDialogOpen(false)} autoFocus>
+              <Button
+                variant="contained"
+                onClick={() => setCancelDialogOpen(false)}
+                autoFocus
+              >
                 No, keep editing
               </Button>
-              <Button variant="contained" onClick={handleCancel}>
+              <Button onClick={handleCancel} color="inherit">
                 Yes, cancel
               </Button>
             </DialogActions>
