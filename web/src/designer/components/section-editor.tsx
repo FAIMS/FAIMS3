@@ -381,48 +381,51 @@ export const SectionEditor = ({
           >
             Duplicate section
           </Button>
-          {addMode && (
-            <form
-              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                addNewSection();
-              }}
-            >
-              <DebouncedTextField
-                required
+        </Grid>
+
+        <Grid item xs={12} sm={1.9}>
+          <Button
+            variant="text"
+            size="small"
+            startIcon={<MoveRoundedIcon />}
+            onClick={() => setOpenMoveDialog(true)}
+          >
+            Move section
+          </Button>
+          <Dialog
+            open={openMoveDialog}
+            onClose={handleCloseMoveDialog}
+            aria-labelledby="alert-move-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-move-dialog-title" textAlign="center">
+              Move Section
+            </DialogTitle>
+            <DialogContent>
+              <Typography
+                variant="body1"
+                sx={{mt: 0.5, mb: 1, fontWeight: 450}}
+              >
+                Destination Form
+              </Typography>
+              <Typography variant="body2" sx={{mb: 1}}>
+                Choose the form you want to move the section to.
+              </Typography>
+              <Autocomplete
                 fullWidth
-                size="small"
-                margin="dense"
-                label="New Section Name"
-                name="sectionName"
-                data-testid="sectionName"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Tooltip title="Add">
-                        <IconButton size="small" type="submit">
-                          <AddRoundedIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Close">
-                        <IconButton
-                          size="small"
-                          onClick={() => {
-                            setAddMode(false);
-                            setAddAlertMessage('');
-                          }}
-                        >
-                          <CloseRoundedIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </InputAdornment>
-                  ),
+                value={formValue}
+                onChange={(_event, newValue) => {
+                  setTargetViewSetId(newValue ? newValue.id : '');
                 }}
-                value={newSectionName}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setNewSectionName(event.target.value);
-                }}
-                sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+                options={formOptions}
+                getOptionLabel={option => option.label}
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                renderInput={params => (
+                  <DebouncedTextField
+                    {...params}
+                    onChange={event => setTargetViewSetId(event.target.value)}
+                  />
+                )}
               />
             </form>
           )}
