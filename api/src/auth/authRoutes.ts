@@ -200,7 +200,6 @@ const purgeLockoutStore = () => {
  * The list of handlers are the ids of the configured federated handlers (eg. ['google'])
  * routes will be set up for each of these for auth and registration
  * See `auth_providers/index.ts` for registration of providers.
- * 
  *
  * @param app Express router
  * @param socialProviders configuration details for social login providers
@@ -371,7 +370,7 @@ export function addAuthRoutes(
           // 400 error as this is an invalid request
           res.status(400);
           req.flash('error', {
-            registrationError: {msg: 'No invite provided for registration (1).'},
+            registrationError: {msg: 'No invite provided for registration.'},
           });
           // go back to auth homepage
           res.redirect('/auth');
@@ -955,7 +954,7 @@ export function addAuthRoutes(
         // authenticated with their identity provider.
         if (action === 'register' && !inviteId) {
           req.flash('error', {
-            registrationError: {msg: 'No invite provided for registration. (2)'},
+            registrationError: {msg: 'No invite provided for registration.'},
           });
           return res.redirect(
             `/register${buildQueryString({values: {redirect}})}`

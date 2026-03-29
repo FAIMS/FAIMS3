@@ -518,7 +518,7 @@ export async function completePostAuth({
   // Register always requires an invite
   if (action === 'register' && !inviteId) {
     flashFn('error', {
-      registrationError: {msg: 'No invite provided for registration. (3)'},
+      registrationError: {msg: 'No invite provided for registration.'},
     });
     return res.status(400).redirect(errorRedirect);
   }
