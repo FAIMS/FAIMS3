@@ -51,7 +51,7 @@ export const handleZodErrors = ({
   redirect,
 }: {
   error: unknown;
-  req: Request;
+  req: CustomRequest;
   res: Response;
   formData: Record<string, string>;
   redirect: string;
@@ -66,12 +66,12 @@ export const handleZodErrors = ({
       formattedErrors[field] = {msg: err.message};
     });
 
-    (req as unknown as CustomRequest).flash('error', formattedErrors);
+    req.flash('error', formattedErrors);
 
     // Flash back the form data to repopulate the form
     Object.entries(formData).forEach(([key, value]) => {
       if (value) {
-        (req as unknown as CustomRequest).flash(key, value);
+        req.flash(key, value);
       }
     });
 
@@ -501,6 +501,7 @@ export async function completePostAuth({
   action,
   inviteId,
   redirect,
+  req,
   res,
   errorRedirect,
   flashFn,
@@ -509,6 +510,7 @@ export async function completePostAuth({
   action: AuthAction;
   inviteId: string | undefined;
   redirect: string;
+  req: CustomRequest;
   res: Response;
   errorRedirect: string;
   flashFn: (type: string, message: any) => void;
@@ -516,7 +518,7 @@ export async function completePostAuth({
   // Register always requires an invite
   if (action === 'register' && !inviteId) {
     flashFn('error', {
-      registrationError: {msg: 'No invite provided for registration.'},
+      registrationError: {msg: 'No invite provided for registration. (3)'},
     });
     return res.status(400).redirect(errorRedirect);
   }
@@ -552,6 +554,14 @@ export async function completePostAuth({
       }
     }
   }
+
+  // Clear one-time auth-flow fields from the session before redirecting.
+  // cookieSession serialises req.session into the Set-Cookie header of
+  // this response, so deleting here removes them from the browser cookie
+  // and prevents them persisting across future (unrelated) auth flows.
+  const sessionData = req.session as CustomSessionData;
+  delete sessionData.inviteId;
+  delete sessionData.action;
 
   // Upgrade to express user (resolves resource roles) and redirect with token
   return redirectWithToken({

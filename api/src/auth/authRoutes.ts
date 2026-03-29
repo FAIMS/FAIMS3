@@ -56,7 +56,7 @@ import {
   UnauthorizedException,
 } from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
-import {AuthAction, CustomSessionData} from '../types';
+import {AuthAction, CustomRequest, CustomSessionData} from '../types';
 import {
   sendEmailVerificationChallenge,
   sendPasswordResetEmail,
@@ -246,7 +246,7 @@ export function addAuthRoutes(
           const handled = handleZodErrors({
             error: validationError,
             // type hacking here due to override not being picked up
-            req: req as unknown as Request,
+            req: req as unknown as CustomRequest,
             res,
             formData: {email: req.body.email, name: req.body.name},
             redirect: errorRedirect,
@@ -312,6 +312,7 @@ export function addAuthRoutes(
               action: 'login',
               inviteId: loginPayload.inviteId,
               redirect,
+              req: req as unknown as CustomRequest,
               res,
               errorRedirect,
               flashFn: req.flash.bind(req),
@@ -339,7 +340,7 @@ export function addAuthRoutes(
           const handled = handleZodErrors({
             error: validationError,
             // type hacking here due to override not being picked up
-            req: req as unknown as Request,
+            req: req as unknown as CustomRequest,
             res,
             formData: {email: req.body.email, name: req.body.name},
             redirect: errorRedirect,
@@ -370,7 +371,7 @@ export function addAuthRoutes(
           // 400 error as this is an invalid request
           res.status(400);
           req.flash('error', {
-            registrationError: {msg: 'No invite provided for registration.'},
+            registrationError: {msg: 'No invite provided for registration (1).'},
           });
           // go back to auth homepage
           res.redirect('/auth');
@@ -481,6 +482,7 @@ export function addAuthRoutes(
                 inviteId,
                 redirect,
                 res,
+                req: req as unknown as CustomRequest,
                 errorRedirect,
                 flashFn: req.flash.bind(req),
               });
@@ -547,7 +549,7 @@ export function addAuthRoutes(
       const handled = handleZodErrors({
         error: validationError,
         // type hacking here due to override not being picked up
-        req: req as unknown as Request,
+        req: req as unknown as CustomRequest,
         res,
         formData: {},
         redirect: errRedirect,
@@ -817,7 +819,7 @@ export function addAuthRoutes(
     } catch (validationError) {
       const handled = handleZodErrors({
         error: validationError,
-        req: req as unknown as Request,
+        req: req as unknown as CustomRequest,
         res,
         formData: {}, // No form data to preserve
         redirect: errRedirect,
@@ -953,7 +955,7 @@ export function addAuthRoutes(
         // authenticated with their identity provider.
         if (action === 'register' && !inviteId) {
           req.flash('error', {
-            registrationError: {msg: 'No invite provided for registration.'},
+            registrationError: {msg: 'No invite provided for registration. (2)'},
           });
           return res.redirect(
             `/register${buildQueryString({values: {redirect}})}`
@@ -1032,20 +1034,13 @@ export function addAuthRoutes(
           const errorRedirect =
             action === 'login' ? loginErrorRedirect : registerErrorRedirect;
 
-          // Clear one-time auth-flow fields from the session before redirecting.
-          // cookieSession serialises req.session into the Set-Cookie header of
-          // this response, so deleting here removes them from the browser cookie
-          // and prevents them persisting across future (unrelated) auth flows.
-          const sessionData = req.session as CustomSessionData;
-          delete sessionData.inviteId;
-          delete sessionData.action;
-
           return completePostAuth({
             dbUser: user,
             action: action ?? 'login',
             inviteId: (req.session as CustomSessionData).inviteId,
             redirect,
             res,
+            req: req as unknown as CustomRequest,
             errorRedirect,
             flashFn: req.flash.bind(req),
           });
