@@ -527,8 +527,13 @@ export const FormEditor = ({
                   </>
                 )}
                 <Typography
-                  variant="body2"
-                  sx={{color: 'text.secondary', fontWeight: 600}}
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}
                 >
                   Reorder
                 </Typography>
@@ -542,7 +547,13 @@ export const FormEditor = ({
                 color="inherit"
                 startIcon={<SettingsRoundedIcon />}
                 onClick={() => setSettingsOpen(true)}
-                sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.03em',
+                }}
               >
                 Settings
               </Button>
