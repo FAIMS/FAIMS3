@@ -271,7 +271,13 @@ export const SectionEditor = ({
         <Grid item xs={12} sm={12}>
           <Grid container alignItems="center" spacing={1.5}>
             <Grid item>
-              <Typography variant="h6" fontWeight={700}>
+              <Typography
+                variant="h5"
+                sx={{
+                  color: 'text.primary',
+                  fontWeight: theme => theme.typography.fontWeightBold,
+                }}
+              >
                 Section controls
               </Typography>
             </Grid>
@@ -295,6 +301,7 @@ export const SectionEditor = ({
             size="small"
             startIcon={<EditRoundedIcon />}
             onClick={() => setEditMode(true)}
+            sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
           >
             Edit section name
           </Button>

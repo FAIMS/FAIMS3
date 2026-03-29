@@ -175,7 +175,7 @@ export const FormEditor = ({
   // Refs for the scroll container and section steps.
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [showRightGradient, setShowRightGradient] = useState(true);
+  const [showRightGradient, setShowRightGradient] = useState(false);
 
   // needed for the form preview
   const queryClient = useQueryClient();
@@ -400,6 +400,10 @@ export const FormEditor = ({
   useEffect(() => {
     scrollActiveStepIntoView();
   }, [activeStep, scrollActiveStepIntoView]);
+
+  useEffect(() => {
+    handleScroll();
+  }, [sections.length]);
 
   useEffect(() => {
     window.addEventListener('resize', scrollActiveStepIntoView);
@@ -665,7 +669,7 @@ export const FormEditor = ({
 
           <Stack direction="row" alignItems="center" spacing={1} mt={2} mb={1}>
             <Typography
-              variant="h4"
+              variant="h5"
               sx={{
                 color: 'text.primary',
                 fontWeight: theme => theme.typography.fontWeightBold,
