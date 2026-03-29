@@ -163,6 +163,19 @@ export const NotebookEditor = ({
               <>
                 <Button
                   variant="contained"
+                  color="primary"
+                  onClick={onSave}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    boxShadow: 'none',
+                    minWidth: 92,
+                  }}
+                >
+                  Save
+                </Button>
+                <Button
+                  variant="contained"
                   color="inherit"
                   startIcon={<UndoIcon />}
                   onClick={handleUndo}
@@ -211,9 +224,11 @@ export const NotebookEditor = ({
             <Button onClick={onCancelRequest} color="primary">
               Cancel
             </Button>
-            <Button variant="contained" onClick={onSave}>
-              Save
-            </Button>
+            {!isDesignRoute && (
+              <Button variant="contained" onClick={onSave}>
+                Save
+              </Button>
+            )}
           </Stack>
         </Box>
         <Box px={3} pb={3} pt={1}>
