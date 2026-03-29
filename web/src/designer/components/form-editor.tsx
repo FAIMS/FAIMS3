@@ -432,11 +432,12 @@ export const FormEditor = ({
           <Stack spacing={2} py={2}>
             <Stack
               direction="row"
-              spacing={2}
+              spacing={1.5}
               alignItems="center"
               flexWrap="wrap"
               rowGap={1}
-              columnGap={2.5}
+              columnGap={1.5}
+              sx={{color: 'text.secondary'}}
             >
               <Typography
                 variant="h5"
@@ -448,16 +449,20 @@ export const FormEditor = ({
                 Form controls
               </Typography>
 
+              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
+
               <Button
                 variant="text"
                 size="small"
                 color="inherit"
                 startIcon={<EditRoundedIcon />}
                 onClick={() => setEditMode(true)}
-                sx={{color: 'text.secondary', fontWeight: 600}}
+                sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
               >
                 Edit name
               </Button>
+
+              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
 
               <Stack direction="row" spacing={1} alignItems="center">
                 {moveButtonsDisabled ? (
@@ -512,16 +517,20 @@ export const FormEditor = ({
                 </Typography>
               </Stack>
 
+              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
+
               <Button
                 variant="text"
                 size="small"
                 color="inherit"
                 startIcon={<SettingsRoundedIcon />}
                 onClick={() => setSettingsOpen(true)}
-                sx={{color: 'text.secondary', fontWeight: 600}}
+                sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
               >
                 Settings
               </Button>
+
+              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
 
               <Button
                 variant="text"
@@ -529,10 +538,12 @@ export const FormEditor = ({
                 size="small"
                 startIcon={<DeleteRoundedIcon />}
                 onClick={deleteConfirmation}
-                sx={{fontWeight: 700}}
+                sx={{fontWeight: 700, textTransform: 'none'}}
               >
                 Delete
               </Button>
+
+              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
 
               <FormControlLabel
                 sx={{
