@@ -23,25 +23,28 @@ import {
   Grid,
   Tab,
   Tabs,
-  Snackbar,
   Tooltip,
   Typography,
 } from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import UndoIcon from '@mui/icons-material/Undo';
-import RedoIcon from '@mui/icons-material/Redo';
 
 import {TabContext} from '@mui/lab';
-import {useState, useEffect, useCallback} from 'react';
-// eslint-disable-next-line n/no-extraneous-import
-import {ActionCreators} from 'redux-undo';
+import {useState, useEffect} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {shallowEqual} from 'react-redux';
-import {Link, Route, Routes, useLocation, useNavigate} from 'react-router-dom';
+import {
+  Link,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+} from 'react-router-dom';
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
+import type {PreviewOutletContext} from './notebook-editor';
 
 /** Main designer surface: form tabs, undo/redo, snackbars, and `FormEditor` routes. */
 export const DesignPanel = () => {
@@ -66,7 +69,8 @@ export const DesignPanel = () => {
     Object.keys(viewSets).filter(form => !visibleTypes.includes(form))
   );
 
-  const [previewForm, setPreviewForm] = useState<boolean>(false);
+  const {previewForm, setPreviewForm} =
+    useOutletContext<PreviewOutletContext>();
 
   const [newFormName, setNewFormName] = useState(
     () => `Form ${Object.keys(viewSets).length + 1}`
@@ -77,27 +81,6 @@ export const DesignPanel = () => {
   }, [viewSets]);
 
   const maxKeys = Object.keys(viewSets).length;
-
-  // State for toast notifications
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-
-  // Use redux-undo state to determine if there is something to undo/redo
-  const undoableState = useAppSelector(
-    state => state.notebook['ui-specification']
-  );
-  const canUndo = undoableState.past.length > 0;
-  const canRedo = undoableState.future.length > 0;
-
-  const handleToastClose = (
-    _event?: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setToastOpen(false);
-  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setIndexAndNavigate(newValue.toString());
@@ -222,97 +205,24 @@ export const DesignPanel = () => {
     }
   };
 
-  function handleUndo(): void {
-    if (!canUndo) {
-      setToastMessage('Nothing to undo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.undo());
-    setToastMessage('Undo complete');
-    setToastOpen(true);
-  }
-
-  function handleRedo(): void {
-    if (!canRedo) {
-      setToastMessage('Nothing to redo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.redo());
-    setToastMessage('Redo complete');
-    setToastOpen(true);
-  }
-
-  // Keyboard shortcuts for undo/redo
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (
-        (event.ctrlKey || event.metaKey) &&
-        !event.shiftKey &&
-        event.key.toLowerCase() === 'z'
-      ) {
-        event.preventDefault();
-        handleUndo();
-      } else if (
-        (event.ctrlKey || event.metaKey) &&
-        (event.key.toLowerCase() === 'y' ||
-          (event.shiftKey && event.key.toLowerCase() === 'z'))
-      ) {
-        event.preventDefault();
-        handleRedo();
-      }
-    },
-    [canUndo, canRedo]
-  );
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleKeyDown]);
-
   return (
     <>
-      <Box sx={{display: 'flex', justifyContent: 'flex-end', marginBottom: 1}}>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<UndoIcon />}
-          onClick={handleUndo}
-          disabled={!canUndo}
-          sx={{marginRight: 2}}
-        >
-          Undo
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<RedoIcon />}
-          onClick={handleRedo}
-          disabled={!canRedo}
-        >
-          Redo
-        </Button>
-      </Box>
-      <Snackbar
-        open={toastOpen}
-        autoHideDuration={3000}
-        onClose={handleToastClose}
-        message={toastMessage}
-      />
       <TabContext value={tabIndex}>
-        <Box sx={{mb: 1.5}}>
-          <Typography
-            variant="h3"
-            sx={{
-              color: 'text.primary',
-              fontWeight: theme => theme.typography.fontWeightBold,
-            }}
-          >
-            Forms
-          </Typography>
+        <Box sx={{mb: 1}}>
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+            <Typography
+              variant="h3"
+              sx={{
+                color: 'text.primary',
+                fontWeight: theme => theme.typography.fontWeightBold,
+              }}
+            >
+              Forms
+            </Typography>
+            <Tooltip title="Add info text here.">
+              <InfoOutlinedIcon color="info" fontSize="small" />
+            </Tooltip>
+          </Box>
           <Box
             sx={{
               display: 'flex',
@@ -335,9 +245,6 @@ export const DesignPanel = () => {
               forms to collect data from users. Each form can have one or more
               sections. Each section has one or more form fields.
             </Typography>
-            <Tooltip title="Add info text here.">
-              <InfoOutlinedIcon color="info" fontSize="small" />
-            </Tooltip>
           </Box>
         </Box>
 
