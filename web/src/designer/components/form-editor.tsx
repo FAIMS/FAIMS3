@@ -429,21 +429,22 @@ export const FormEditor = ({
       <Grid container spacing={2} pt={3}>
         <Grid item xs={12}>
           <Divider sx={{borderColor: 'divider', borderWidth: 2}} />
-          <Stack spacing={2} py={2}>
+          <Stack spacing={1.5} py={1.5}>
             <Stack
               direction="row"
-              spacing={1.5}
+              spacing={1}
               alignItems="center"
               flexWrap="wrap"
-              rowGap={1}
-              columnGap={1.5}
+              rowGap={0.5}
+              columnGap={1}
               sx={{color: 'text.secondary'}}
             >
               <Typography
-                variant="h5"
+                variant="subtitle1"
                 sx={{
                   color: 'text.primary',
-                  fontWeight: theme => theme.typography.fontWeightBold,
+                  fontWeight: 700,
+                  letterSpacing: '0.01em',
                 }}
               >
                 Form controls
@@ -457,7 +458,13 @@ export const FormEditor = ({
                 color="inherit"
                 startIcon={<EditRoundedIcon />}
                 onClick={() => setEditMode(true)}
-                sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.03em',
+                }}
               >
                 Edit name
               </Button>
@@ -468,10 +475,20 @@ export const FormEditor = ({
                 {moveButtonsDisabled ? (
                   <Tooltip title='Only forms with an "Add New Record" button can be re-ordered.'>
                     <span>
-                      <IconButton disabled aria-label="left" size="small">
+                      <IconButton
+                        disabled
+                        aria-label="left"
+                        size="small"
+                        sx={{color: 'text.secondary', p: 0.5}}
+                      >
                         <ArrowBackRoundedIcon fontSize="small" />
                       </IconButton>
-                      <IconButton disabled aria-label="right" size="small">
+                      <IconButton
+                        disabled
+                        aria-label="right"
+                        size="small"
+                        sx={{color: 'text.secondary', p: 0.5}}
+                      >
                         <ArrowForwardRoundedIcon fontSize="small" />
                       </IconButton>
                     </span>

@@ -82,6 +82,76 @@ export const DesignPanel = () => {
 
   const maxKeys = Object.keys(viewSets).length;
 
+  const visibleTabSx = {
+    '&.MuiTab-root': {
+      backgroundColor: '#FFFFFF',
+      borderStyle: 'solid',
+      borderWidth: '2px',
+      borderColor: '#E18200',
+      borderBottom: 'none',
+      borderTopLeftRadius: '10px',
+      borderTopRightRadius: '10px',
+      marginRight: '0.5em',
+      minHeight: 48,
+      minWidth: 160,
+      maxWidth: 260,
+      paddingX: 2,
+      paddingY: 1,
+      textTransform: 'uppercase',
+      fontWeight: 700,
+      fontSize: '0.75rem',
+      lineHeight: 1.2,
+      whiteSpace: 'normal',
+      textAlign: 'center',
+      color: 'text.secondary',
+    },
+    '&.Mui-selected': {
+      borderColor: '#6B9B1A',
+      color: '#6B9B1A',
+      backgroundColor: '#F5FCE8',
+    },
+    '&:hover': {
+      color: '#6B9B1A',
+      opacity: 1,
+      backgroundColor: '#F5FCE8',
+    },
+  } as const;
+
+  const untickedTabSx = {
+    '&.MuiTab-root': {
+      backgroundColor: '#FFFFFF',
+      borderStyle: 'solid',
+      borderWidth: '2px',
+      borderColor: '#E18200',
+      borderBottom: 'none',
+      borderTopLeftRadius: '10px',
+      borderTopRightRadius: '10px',
+      marginRight: '0.5em',
+      minHeight: 48,
+      minWidth: 160,
+      maxWidth: 260,
+      paddingX: 2,
+      paddingY: 1,
+      textTransform: 'uppercase',
+      fontWeight: 700,
+      fontSize: '0.75rem',
+      lineHeight: 1.2,
+      whiteSpace: 'normal',
+      textAlign: 'center',
+      color: 'text.secondary',
+    },
+    '&.Mui-selected': {
+      color: '#E18200',
+      borderColor: '#E18200',
+      backgroundColor: '#FFF4E5',
+    },
+    '&:hover': {
+      color: '#E18200',
+      opacity: 1,
+      backgroundColor: '#FFF4E5',
+    },
+  } as const;
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setIndexAndNavigate(newValue.toString());
   };
@@ -255,11 +325,8 @@ export const DesignPanel = () => {
             aria-label="form tabs"
             variant="scrollable"
             scrollButtons={false}
-            indicatorColor={
-              tabIndex >= `${visibleTypes.length}` && tabIndex < `${maxKeys}`
-                ? 'secondary'
-                : 'primary'
-            }
+            TabIndicatorProps={{sx: {display: 'none'}}}
+            sx={{minHeight: 48}}
           >
             {visibleTypes.map((form: string, index: number) => (
               <Tab
