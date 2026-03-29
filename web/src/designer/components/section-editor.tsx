@@ -35,9 +35,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Grid,
   IconButton,
   InputAdornment,
+  Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -266,102 +268,25 @@ export const SectionEditor = ({
   return (
     <>
       <Grid container spacing={1.75} mb={2}>
-        <Grid item xs={12} sm={1.9}>
-          <Button
-            variant="text"
-            color="error"
-            size="small"
-            startIcon={<DeleteRoundedIcon />}
-            onClick={deleteConfirmation}
-          >
-            Delete section
-          </Button>
-          <Dialog
-            open={openDeleteDialog}
-            onClose={handleCloseDeleteDialog}
-            aria-labelledby="alert-delete-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-delete-dialog-title">
-              Are you sure you want to delete this section?
-            </DialogTitle>
-            <DialogActions>
-              <Button onClick={deleteSection}>Yes</Button>
-              <Button onClick={handleCloseDeleteDialog}>No</Button>
-            </DialogActions>
-          </Dialog>
-          <DeletionWarningDialog
-            open={showConditionAlert}
-            title="Cannot delete this section"
-            references={conditionReferences}
-            onClose={handleCloseConditionAlert}
-          />
-        </Grid>
-
-        {/* Duplicate Section Button */}
-        <Grid item xs={12} sm={1.9}>
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<ContentCopyRoundedIcon />}
-            onClick={() => setOpenDuplicateDialog(true)}
-          >
-            Duplicate section
-          </Button>
-        </Grid>
-
-        <Grid item xs={12} sm={1.9}>
-          <Button
-            variant="text"
-            size="small"
-            startIcon={<MoveRoundedIcon />}
-            onClick={() => setOpenMoveDialog(true)}
-          >
-            Move section
-          </Button>
-          <Dialog
-            open={openMoveDialog}
-            onClose={handleCloseMoveDialog}
-            aria-labelledby="alert-move-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-move-dialog-title" textAlign="center">
-              Move Section
-            </DialogTitle>
-            <DialogContent>
-              <Typography
-                variant="body1"
-                sx={{mt: 0.5, mb: 1, fontWeight: 450}}
+        <Grid item xs={12} sm={12}>
+          <Grid container alignItems="center" spacing={1.5}>
+            <Grid item>
+              <Typography variant="h6" fontWeight={700}>
+                Section controls
+              </Typography>
+            </Grid>
+            <Grid item>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => setAddMode(true)}
+                sx={{textTransform: 'none', fontWeight: 700}}
               >
-                Destination Form
-              </Typography>
-              <Typography variant="body2" sx={{mb: 1}}>
-                Choose the form you want to move the section to.
-              </Typography>
-              <Autocomplete
-                fullWidth
-                value={formValue}
-                onChange={(_event, newValue) => {
-                  setTargetViewSetId(newValue ? newValue.id : '');
-                }}
-                options={formOptions}
-                getOptionLabel={option => option.label}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => (
-                  <DebouncedTextField
-                    {...params}
-                    onChange={event => setTargetViewSetId(event.target.value)}
-                  />
-                )}
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseMoveDialog}>Cancel</Button>
-              <Button onClick={moveSectionToForm} disabled={!targetViewSetId}>
-                Move
+                New Section
               </Button>
-            </DialogActions>
-          </Dialog>
+            </Grid>
+          </Grid>
         </Grid>
 
         <Grid item xs={12} sm={1.9}>
