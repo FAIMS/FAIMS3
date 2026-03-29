@@ -662,9 +662,24 @@ export const FormEditor = ({
             references={conditionReferences}
             onClose={() => setShowConditionAlert(false)}
           />
+
+          <Stack direction="row" alignItems="center" spacing={1} mt={2} mb={1}>
+            <Typography
+              variant="h4"
+              sx={{
+                color: 'text.primary',
+                fontWeight: theme => theme.typography.fontWeightBold,
+              }}
+            >
+              Sections
+            </Typography>
+            <Tooltip title="Add info text here.">
+              <InfoOutlinedIcon color="info" fontSize="small" />
+            </Tooltip>
+          </Stack>
         </Grid>
         <Grid item xs={12}>
-          <Card variant="outlined">
+          <Card variant="outlined" sx={{borderColor: 'divider', borderWidth: 2}}>
             <Grid container spacing={2} p={3}>
               <Grid item xs={12}>
                 <Box sx={{position: 'relative'}}>
