@@ -48,7 +48,6 @@ import {
   Step,
   StepButton,
   Stepper,
-  Switch,
   useMediaQuery,
   useTheme,
   ThemeProvider,
@@ -557,21 +556,6 @@ export const FormEditor = ({
                 }
               />
 
-              <FormControlLabel
-                sx={{
-                  '& .MuiFormControlLabel-label': {
-                    color: 'text.secondary',
-                    fontWeight: 600,
-                  },
-                }}
-                label={'Preview'}
-                control={
-                  <Switch
-                    checked={previewForm}
-                    onChange={e => setPreviewForm(e.target.checked)}
-                  />
-                }
-              />
             </Stack>
 
             {editMode && (
