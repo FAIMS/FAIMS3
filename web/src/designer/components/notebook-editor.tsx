@@ -175,6 +175,13 @@ export const NotebookEditor = ({
                   Save
                 </Button>
                 <Button
+                  onClick={onCancelRequest}
+                  color="primary"
+                  sx={{textTransform: 'uppercase', fontWeight: 700}}
+                >
+                  Cancel
+                </Button>
+                <Button
                   variant="contained"
                   color="inherit"
                   startIcon={<UndoIcon />}
@@ -221,9 +228,6 @@ export const NotebookEditor = ({
             )}
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Button onClick={onCancelRequest} color="primary">
-              Cancel
-            </Button>
             {!isDesignRoute && (
               <Button variant="contained" onClick={onSave}>
                 Save
@@ -231,7 +235,7 @@ export const NotebookEditor = ({
             )}
           </Stack>
         </Box>
-        <Box px={3} pb={3} pt={1}>
+        <Box px={3} pb={3} pt={2}>
           <Outlet context={{previewForm, setPreviewForm}} />
         </Box>
       </TabContext>
