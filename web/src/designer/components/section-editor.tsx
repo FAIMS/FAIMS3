@@ -427,9 +427,14 @@ export const SectionEditor = ({
                   />
                 )}
               />
-            </form>
-          )}
-          {addAlertMessage && <Alert severity="error">{addAlertMessage}</Alert>}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+              <Button onClick={moveSectionToForm} disabled={!targetViewSetId}>
+                Move
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Grid>
 
         <Grid item xs={12} sm={2}>
@@ -440,7 +445,95 @@ export const SectionEditor = ({
             view={viewId}
           />
         </Grid>
+
+        <Grid item xs={12} sm={1.9}>
+          <Button
+            variant="text"
+            color="error"
+            size="small"
+            startIcon={<DeleteRoundedIcon />}
+            onClick={deleteConfirmation}
+          >
+            Delete section
+          </Button>
+          <Dialog
+            open={openDeleteDialog}
+            onClose={handleCloseDeleteDialog}
+            aria-labelledby="alert-delete-dialog-title"
+            aria-describedby="alert-dialog-description"
+          >
+            <DialogTitle id="alert-delete-dialog-title">
+              Are you sure you want to delete this section?
+            </DialogTitle>
+            <DialogActions>
+              <Button onClick={deleteSection}>Yes</Button>
+              <Button onClick={handleCloseDeleteDialog}>No</Button>
+            </DialogActions>
+          </Dialog>
+          <DeletionWarningDialog
+            open={showConditionAlert}
+            title="Cannot delete this section"
+            references={conditionReferences}
+            onClose={handleCloseConditionAlert}
+          />
+        </Grid>
       </Grid>
+      <Divider sx={{borderColor: 'divider', borderWidth: 2, mb: 2}} />
+      {addMode && (
+        <form
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            addNewSection();
+          }}
+        >
+          <DebouncedTextField
+            required
+            fullWidth
+            size="small"
+            margin="dense"
+            label="New Section Name"
+            name="sectionName"
+            data-testid="sectionName"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title="Add">
+                    <IconButton size="small" type="submit">
+                      <AddRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Close">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setAddMode(false);
+                        setAddAlertMessage('');
+                      }}
+                    >
+                      <CloseRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+            value={newSectionName}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setNewSectionName(event.target.value);
+            }}
+            sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+          />
+        </form>
+      )}
+      {addAlertMessage && <Alert severity="error">{addAlertMessage}</Alert>}
+      <Stack direction="row" alignItems="center" spacing={1} mt={2} mb={1}>
+        <Typography variant="h5" fontWeight={700}>
+          Fields
+        </Typography>
+        <Tooltip title="Add info text here.">
+          <InfoOutlinedIcon color="info" fontSize="small" />
+        </Tooltip>
+      </Stack>
+      <Divider sx={{borderColor: 'divider', borderWidth: 2, mb: 2}} />
       <Dialog
         open={openDuplicateDialog}
         onClose={() => {
