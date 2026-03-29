@@ -691,9 +691,21 @@ export const FormEditor = ({
                   <Box
                     ref={scrollContainerRef}
                     sx={{
-                      overflowX: 'auto',
+                      overflowX: sections.length > 2 ? 'auto' : 'hidden',
                       display: 'flex',
                       justifyContent: 'center',
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: 'rgba(107, 114, 128, 0.9) transparent',
+                      '&::-webkit-scrollbar': {
+                        height: 6,
+                      },
+                      '&::-webkit-scrollbar-track': {
+                        backgroundColor: 'transparent',
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: 'rgba(107, 114, 128, 0.8)',
+                        borderRadius: 999,
+                      },
                     }}
                     onScroll={handleScroll}
                   >

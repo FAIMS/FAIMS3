@@ -385,6 +385,7 @@ export const SectionEditor = ({
             size="small"
             startIcon={<ContentCopyRoundedIcon />}
             onClick={() => setOpenDuplicateDialog(true)}
+            sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
           >
             Duplicate section
           </Button>
