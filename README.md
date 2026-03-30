@@ -54,7 +54,7 @@ This spins up four services:
   ```
 
 - **Clear database**: Use `--clear-db` flag to prune volumes and so clear
-any existing database content
+  any existing database content
 
   ```bash
   ./localdev.sh --all --clear-db
@@ -98,7 +98,7 @@ These three commands are bundled into `dev.sh` i.e.
 ./dev.sh
 ```
 
-## Manual Setup 
+## Manual Setup
 
 These steps are done by the `localdev.sh` script but in case you want to do them manually they are listed here.
 

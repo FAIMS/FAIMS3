@@ -1,7 +1,7 @@
 # Date time picker
 
-*How to add and configure a Date time picker field in the {{Notebook}}
-Editor.*
+_How to add and configure a Date time picker field in the {{Notebook}}
+Editor._
 
 ---
 

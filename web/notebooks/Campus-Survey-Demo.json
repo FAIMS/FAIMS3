@@ -1,11 +1,7 @@
 {
   "metadata": {
     "project_status": "",
-    "accesses": [
-      "admin",
-      "moderator",
-      "team"
-    ],
+    "accesses": ["admin", "moderator", "team"],
     "forms": {
       "FORM1": {
         "submitActionFORM1": "Save and New",
@@ -28,12 +24,8 @@
       "Group": "A"
     },
     "access": {
-      "accessFORM1": [
-        "admin"
-      ],
-      "accessFORM2": [
-        "admin"
-      ]
+      "accessFORM1": ["admin"],
+      "accessFORM2": ["admin"]
     },
     "ispublic": false,
     "isrequest": false,
@@ -60,24 +52,12 @@
           "variant": "outlined",
           "label": "Take GPS Starting Point"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "is_logic": {
-          "campus-zone": [
-            "Zone Alpha; ",
-            "Zone Charlie; "
-          ]
+          "campus-zone": ["Zone Alpha; ", "Zone Charlie; "]
         },
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -129,15 +109,9 @@
           "id": "campus-zone",
           "name": "campus-zone"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Other area",
           "annotation": true,
@@ -147,10 +121,7 @@
           }
         },
         "logic_select": {
-          "type": [
-            "field",
-            "view"
-          ]
+          "type": ["field", "view"]
         }
       },
       "survey-note": {
@@ -175,15 +146,9 @@
           "id": "survey-note",
           "name": "survey-note"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -205,24 +170,12 @@
           "variant": "outlined",
           "label": "Take GPS End Point"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "is_logic": {
-          "campus-zone": [
-            "Zone Alpha; ",
-            "Zone Charlie; "
-          ]
+          "campus-zone": ["Zone Alpha; ", "Zone Charlie; "]
         },
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -258,18 +211,9 @@
           "fieldselect11": "element-type",
           "fieldselect12": "autoincrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -292,18 +236,9 @@
           "form_id": "FORM2SECTION1",
           "label": "AutoIncrementer"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -379,15 +314,9 @@
           "id": "element-type",
           "name": "element-type"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Other",
           "annotation": true,
@@ -409,18 +338,9 @@
           "variant": "outlined",
           "label": "Take GPS Point"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -450,15 +370,9 @@
           "id": "asset-number",
           "name": "asset-number"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Difficulties",
           "annotation": true,
@@ -523,15 +437,9 @@
             "children": "Select an option for the overall condition of the landscape element. Add notes, if needed, in annotation."
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "1",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "Assessment note",
           "annotation": true,
@@ -563,15 +471,9 @@
           "id": "element-notes",
           "name": "element-notes"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -593,18 +495,9 @@
           "variant": "outlined",
           "label": "Take Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -632,15 +525,9 @@
           "id": "nearest-building",
           "name": "nearest-building"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -675,18 +562,9 @@
           "fieldselect11": "survey-area-nickname",
           "linked": "newfield757083da"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ],
-          [
-            "yup.required"
-          ]
-        ],
+        "validationSchema": [["yup.string"], ["yup.required"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -719,15 +597,9 @@
           "id": "landscape-elements",
           "name": "landscape-elements"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -757,15 +629,9 @@
           "id": "survey-area-nickname",
           "name": "survey-area-nickname"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -787,18 +653,9 @@
           "variant": "outlined",
           "label": "Take Photo"
         },
-        "validationSchema": [
-          [
-            "yup.object"
-          ],
-          [
-            "yup.nullable"
-          ]
-        ],
+        "validationSchema": [["yup.object"], ["yup.nullable"]],
         "initialValue": null,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -830,15 +687,9 @@
           "id": "journal",
           "name": "journal"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -864,15 +715,9 @@
             "children": "Selecting this box will alert maintenance (eventually)"
           }
         },
-        "validationSchema": [
-          [
-            "yup.bool"
-          ]
-        ],
+        "validationSchema": [["yup.bool"]],
         "initialValue": false,
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -898,15 +743,9 @@
             "children": "Survey Area Polygon"
           }
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": "1",
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": false,
@@ -939,32 +778,17 @@
           "id": "related-survey-area",
           "name": "related-survey-area",
           "relation_linked_vocabPair": [
-            [
-              "performe after",
-              "performed before"
-            ],
-            [
-              "is similiar to",
-              "is similiar to"
-            ],
-            [
-              "overlaps with",
-              "is overlapped by"
-            ]
+            ["performe after", "performed before"],
+            ["is similiar to", "is similiar to"],
+            ["overlaps with", "is overlapped by"]
           ],
           "related_type_label": "Area",
           "current_form": "FORM1",
           "current_form_label": "Area"
         },
-        "validationSchema": [
-          [
-            "yup.string"
-          ]
-        ],
+        "validationSchema": [["yup.string"]],
         "initialValue": [],
-        "access": [
-          "admin"
-        ],
+        "access": ["admin"],
         "meta": {
           "annotation_label": "annotation",
           "annotation": true,
@@ -1009,38 +833,24 @@
         "label": "Description"
       },
       "FORM1SECTION2": {
-        "fields": [
-          "take-photo-2",
-          "journal"
-        ],
+        "fields": ["take-photo-2", "journal"],
         "uidesign": "form",
         "label": "Journal",
         "is_logic": {
-          "campus-zone": [
-            "Zone Beta; ",
-            "Zone Charlie; "
-          ]
+          "campus-zone": ["Zone Beta; ", "Zone Charlie; "]
         }
       }
     },
     "viewsets": {
       "FORM1": {
-        "views": [
-          "FORM1SECTION1",
-          "FORM1SECTION2"
-        ],
+        "views": ["FORM1SECTION1", "FORM1SECTION2"],
         "label": "Survey Area"
       },
       "FORM2": {
-        "views": [
-          "FORM2SECTION1"
-        ],
+        "views": ["FORM2SECTION1"],
         "label": "Landscape Element"
       }
     },
-    "visible_types": [
-      "FORM1",
-      "FORM2"
-    ]
+    "visible_types": ["FORM1", "FORM2"]
   }
 }

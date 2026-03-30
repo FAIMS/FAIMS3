@@ -1,8 +1,10 @@
 {
   "name": "@faims3/forms",
-  "packageManager": "pnpm@10.7.0",
-  "private": true,
   "version": "1.4.3",
+  "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,12 +13,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
-  },
-  "files": [
-    "dist"
-  ],
-  "engines": {
-    "node": "22"
   },
   "scripts": {
     "dev": "vite",
@@ -84,5 +80,9 @@
     "@tanstack/react-query": "^5.62.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
-  }
+  },
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
 }

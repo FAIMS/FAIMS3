@@ -716,7 +716,8 @@ export const NOTEBOOK_LIST_TYPE = get_notebook_list_type();
 export const NOTEBOOK_NAME = get_notebook_name();
 export const NOTEBOOK_NAME_CAPITALIZED = get_notebook_name_capitalized();
 export const NOTEBOOK_NAME_PLURAL = get_notebook_name_plural();
-export const NOTEBOOK_NAME_PLURAL_CAPITALIZED = get_notebook_name_plural_capitalized();
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
+  get_notebook_name_plural_capitalized();
 export const APP_NAME = get_app_name();
 export const HEADING_APP_NAME = get_heading_app_name();
 export const APP_ID = get_app_id();

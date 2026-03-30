@@ -908,9 +908,9 @@ export function addAuthRoutes(
       app.get(`/auth/${provider}/metadata`, (req, res) => {
         let metadata = strategy.generateServiceProviderMetadata(
           handlerDetails.enableDecryptionPvk
-            ? handlerDetails.publicKey ?? null
+            ? (handlerDetails.publicKey ?? null)
             : null,
-          handlerDetails.privateKey ? handlerDetails.publicKey ?? null : null
+          handlerDetails.privateKey ? (handlerDetails.publicKey ?? null) : null
         );
 
         // Sign metadata if configured and private key is available

@@ -114,7 +114,7 @@ jobs:
           # upload sourcemaps to bugsnag (script is conditional on BUGSNAG_KEY)
           cd app
           ./bin/bugsnag-sourcemaps.sh ANDROID
-      - run: pnpm --filter=@faims3/app run app-update android 
+      - run: pnpm --filter=@faims3/app run app-update android
       - run: pnpm --filter=@faims3/app run webapp-sync -- --deployment android
       - name: Fastlane
         run: |

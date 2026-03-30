@@ -1,6 +1,6 @@
 # Number Input
 
-*How to add and configure a Number Input field in the Notebook Editor.*
+_How to add and configure a Number Input field in the Notebook Editor._
 
 ---
 
@@ -45,10 +45,10 @@ Field ID, and add any desired Helper Text.
 Below the identity fields, a **Number Type** setting controls the kind of
 numeric data the field accepts:
 
-| Number Type | What It Does |
-| ----------- | ------------ |
+| Number Type | What It Does                                                                              |
+| ----------- | ----------------------------------------------------------------------------------------- |
 | **Integer** | Accepts whole numbers only. Shows stepper controls (up/down arrows) for quick adjustment. |
-| **Decimal** | Accepts fractional values (e.g., 3.14, 0.001). This is the default. |
+| **Decimal** | Accepts fractional values (e.g., 3.14, 0.001). This is the default.                       |
 
 ### Shared Field Options
 

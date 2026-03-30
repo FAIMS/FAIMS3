@@ -10,20 +10,20 @@ From the `Actions` tab of the {{Notebook}} [{{dashboard}}](../admin/web.md), you
 6. Check the {{Notebook}} status
 
 ```{screenshot} dashboard/dashboard-actions.png
-:alt: {{Notebook}} {{dashboard}} showing the Actions tab 
+:alt: {{Notebook}} {{dashboard}} showing the Actions tab
 :align: right
 :width: 100%
 ```
 
 ## Edit your {{Notebook}}
 
-Click to open the {{Notebook}} design in the *{{FAIMS}} {{Notebook}} Editor*.
+Click to open the {{Notebook}} design in the _{{FAIMS}} {{Notebook}} Editor_.
 
 For more about editing {{Notebook}}s see [Getting Started as a {{Notebook}} Designer](../authoring/quick-start-researchers.md).
 
 ## Assign your {{Notebook}} to a Team
 
-Click to assign your {{Notebook}} to a different team: 
+Click to assign your {{Notebook}} to a different team:
 
 ```{screenshot} dashboard/dashboard-actions-assign-to-team.png
 :alt: Assign {{Notebook}} to a Team dialog showing Team selector field and Assign to Team button
@@ -35,15 +35,15 @@ The {{Notebook}} will then be available to members of the new team.
 
 ## Download your {{Notebook}} definition file
 
-Click to download a copy of your {{Notebook}}'s definition file in JSON format. 
+Click to download a copy of your {{Notebook}}'s definition file in JSON format.
 
 Downloaded JSON files can be uploaded to a different {{FAIMS}} Server at a future time.
 
 ## Replace the JSON file for the {{Notebook}}
 
-Use this option to replace the {{Notebook}}'s definition file with a new JSON file. 
+Use this option to replace the {{Notebook}}'s definition file with a new JSON file.
 
->**Caution!** Errors in the new JSON file may cause loss to data already captured in the {{Notebook}}. 
+> **Caution!** Errors in the new JSON file may cause loss to data already captured in the {{Notebook}}.
 
 ## Create a Template from this {{Notebook}}
 

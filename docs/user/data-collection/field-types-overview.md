@@ -9,8 +9,8 @@
 
 **TEXT** field types are for capturing text-based data, from short codes and labels to multi-line descriptions and email addresses.
 
-- **[FAIMS Text Field](../field-types/text-fields/faims-text-field.md)** — A single-line input for   brief, unconstrained text such as codes, identifiers, and short labels.
-- **[Multi-line Text Field](../field-types/text-fields/multiline-text-field.md)** — Extended text entry for narrative content and detailed observations, with internal scrolling   for longer passages.
+- **[FAIMS Text Field](../field-types/text-fields/faims-text-field.md)** — A single-line input for brief, unconstrained text such as codes, identifiers, and short labels.
+- **[Multi-line Text Field](../field-types/text-fields/multiline-text-field.md)** — Extended text entry for narrative content and detailed observations, with internal scrolling for longer passages.
 - **[Email](../field-types/text-fields/email-field.md)** — A single-line text input with built-in email format validation that opens the email keyboard on mobile devices.
 
 ## Choice Fields
@@ -42,7 +42,7 @@ The **NUMBERS** tab contains field types for numeric and sequential data.
 
 ### Special Number Fields
 
-- **[QR / Barcode Scanner](../field-types/text-fields/qr-barcode-scanner.md)** — Mobile-only barcode and QR code scanning, supporting multiple barcode formats. This feature can be used to scan preformatted record identifiers. 
+- **[QR / Barcode Scanner](../field-types/text-fields/qr-barcode-scanner.md)** — Mobile-only barcode and QR code scanning, supporting multiple barcode formats. This feature can be used to scan preformatted record identifiers.
 - **[Auto Incrementing Field](../field-types/number-fields/auto-incrementing-field.md)** — Generates sequential string identifiers such as specimen numbers and catalogue IDs.
 
 ## Date and Time Fields
@@ -80,7 +80,7 @@ map-based spatial data.
   returning a GeoJSON point with accuracy metadata.
 - **[Map field](../field-types/location-fields/map-input.md)** — Interactive map for drawing points, lines,
   and polygons on base map tiles.
-- **[Address](../field-types/text-fields/address.md)** — Structured address capture storing data in a   geocoding-compatible format. _(**Beta** feature.)_
+- **[Address](../field-types/text-fields/address.md)** — Structured address capture storing data in a geocoding-compatible format. _(**Beta** feature.)_
 
 ## Relationship Fields
 

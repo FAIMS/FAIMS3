@@ -111,11 +111,7 @@
   },
   "authProviders": {
     "disableLocalLogin": false,
-    "providers": [
-      "google",
-      "someOidcProvider",
-      "someSamlProvider"
-    ],
+    "providers": ["google", "someOidcProvider", "someSamlProvider"],
     "secretArn": "arn:aws:secretsmanager:region:account-id:secret:auth-providers-credentials-id",
     "config": {
       "google": {

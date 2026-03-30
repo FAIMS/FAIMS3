@@ -3,9 +3,6 @@
   "version": "1.4.3",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "22"
-  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "dev": "vite --port=3001",
@@ -17,9 +14,6 @@
     "compile": "tsc",
     "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
     "test": "vitest"
-  },
-  "overrides": {
-    "@radix-ui/react-focus-scope": "1.1.7"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",
@@ -107,5 +101,11 @@
     "vite": "^7.1.11",
     "vitest": "^3.2.4",
     "webdriverio": "^9.12.2"
+  },
+  "overrides": {
+    "@radix-ui/react-focus-scope": "1.1.7"
+  },
+  "engines": {
+    "node": "22"
   }
 }
