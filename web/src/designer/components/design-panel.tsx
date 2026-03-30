@@ -34,6 +34,11 @@ import {TabContext} from '@mui/lab';
 import {useState, useEffect} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
+import {
+  designerHeadingRowSx,
+  designerHeadingTextSx,
+  designerInfoIconSx,
+} from './designer-style';
 import {shallowEqual} from 'react-redux';
 import {
   Link,
@@ -82,24 +87,9 @@ export const DesignPanel = () => {
 
   const maxKeys = Object.keys(viewSets).length;
 
-  const headingRowSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-  } as const;
-
-  const headingTextSx = {
-    color: 'text.primary',
-    fontWeight: 700,
-  } as const;
-
-  const infoIconSx = {
-    color: '#1E88E5',
-  } as const;
-
   const subtitleSx = {
     color: 'text.secondary',
-    fontWeight: theme => theme.typography.fontWeightMedium,
+    fontWeight: 600,
     lineHeight: 1.5,
     maxWidth: 'none',
     whiteSpace: 'nowrap',
@@ -302,12 +292,12 @@ export const DesignPanel = () => {
     <>
       <TabContext value={tabIndex}>
         <Box sx={{mb: 1.5, mt: 0.5}}>
-          <Box sx={headingRowSx}>
-            <Typography variant="h5" sx={headingTextSx}>
+          <Box sx={designerHeadingRowSx}>
+            <Typography variant="h2" sx={designerHeadingTextSx}>
               Forms
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoIcon sx={infoIconSx} fontSize="small" />
+              <InfoIcon sx={designerInfoIconSx} fontSize="small" />
             </Tooltip>
           </Box>
           <Box
