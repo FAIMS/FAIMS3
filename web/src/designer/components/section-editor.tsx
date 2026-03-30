@@ -24,6 +24,7 @@ import ContentCopyRoundedIcon from '@mui/icons-material/ContentCopyRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import MoveRoundedIcon from '@mui/icons-material/DriveFileMoveRounded';
+import DeviceHubRoundedIcon from '@mui/icons-material/DeviceHubRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import InfoIcon from '@mui/icons-material/Info';
 
@@ -375,10 +376,12 @@ export const SectionEditor = ({
           <Typography sx={designerPipeSx}> | </Typography>
 
           <ConditionModal
-            label={fView.condition ? 'UPDATE CONDITION' : 'ADD CONDITION'}
+            label="Add conditions to section"
             initial={fView.condition}
             onChange={conditionChanged}
             view={viewId}
+            icon={<DeviceHubRoundedIcon />}
+            buttonSx={sectionControlLabelSx}
           />
 
           <Typography sx={designerPipeSx}> | </Typography>
@@ -389,7 +392,11 @@ export const SectionEditor = ({
             size="small"
             startIcon={<DeleteRoundedIcon />}
             onClick={deleteConfirmation}
-            sx={sectionControlLabelSx}
+            sx={{
+              ...sectionControlLabelSx,
+              color: 'error.main',
+              '& .MuiButton-startIcon': {color: 'error.main'},
+            }}
           >
             Delete
           </Button>
