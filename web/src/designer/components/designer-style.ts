@@ -8,7 +8,7 @@ export const designerHeadingRowSx: SxProps<Theme> = {
 
 export const designerHeadingTextSx: SxProps<Theme> = {
   color: 'text.primary',
-  fontWeight: 900,
+  fontWeight: 800,
   lineHeight: 1.1,
 };
 
@@ -33,4 +33,3 @@ export const designerPipeSx: SxProps<Theme> = {
   color: 'text.disabled',
   px: 0.1,
 };
-
