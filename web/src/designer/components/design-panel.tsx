@@ -29,6 +29,7 @@ import {
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import InfoIcon from '@mui/icons-material/Info';
+import KeyboardDoubleArrowRightRoundedIcon from '@mui/icons-material/KeyboardDoubleArrowRightRounded';
 
 import {TabContext} from '@mui/lab';
 import {useState, useEffect} from 'react';
@@ -86,6 +87,7 @@ export const DesignPanel = () => {
   }, [viewSets]);
 
   const maxKeys = Object.keys(viewSets).length;
+  const hasOverflowingTabs = maxKeys > 6;
 
   const subtitleSx = {
     color: 'text.secondary',
@@ -323,7 +325,8 @@ export const DesignPanel = () => {
             onChange={handleTabChange}
             aria-label="form tabs"
             variant="scrollable"
-            scrollButtons={false}
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             TabIndicatorProps={{sx: {display: 'none'}}}
             sx={{minHeight: 48}}
           >
@@ -370,6 +373,26 @@ export const DesignPanel = () => {
             />
           </Tabs>
         </Box>
+        {hasOverflowingTabs && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 0.4,
+              mt: 0.25,
+              mb: 0.75,
+              color: 'text.secondary',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+            }}
+          >
+            <KeyboardDoubleArrowRightRoundedIcon fontSize="small" />
+            <Typography variant="caption" sx={{fontWeight: 600}}>
+              Scroll right for more forms
+            </Typography>
+          </Box>
+        )}
 
         <Routes>
           {visibleTypes.map((form: string, index: number) => (
