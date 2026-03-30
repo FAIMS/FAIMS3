@@ -21,7 +21,7 @@
   "tags": [
     {
       "name": "Records",
-      "description": "Read-only REST helpers for notebook records: GET `/notebooks/{id}/records/metadata` (paginated metadata) and GET `/notebooks/{id}/records/{recordId}` (full form data). **Write operations** — POST create, POST fork revision, PUT update, DELETE soft-delete — are **not published** in the live API while `ENABLE_RECORDS_CRUD_MUTATIONS` is false in `api/src/api/records.ts`. They remain disabled until design work confirms modification operations are safe at the API boundary."
+      "description": "Notebook record metadata and full-record reads; mutating routes are omitted from this spec until records CRUD is enabled in the API."
     }
   ],
   "components": {
@@ -280,7 +280,7 @@
     "/notebooks/{id}/records/metadata": {
       "get": {
         "summary": "List record metadata (CRUD API)",
-        "description": "Returns minimal metadata for each record in the notebook that the caller may read. Supports pagination and optional filters. Deleted records are omitted by default. Distinct from GET `/notebooks/{id}/records`, which returns full export-shaped `{ records }` for legacy clients (export permission). This is the primary **read** listing for the Records API; write routes are off until `ENABLE_RECORDS_CRUD_MUTATIONS` is enabled (see Records tag description).",
+        "description": "Paginated metadata for records the caller may read (filters, soft-delete handling). For legacy export-shaped data use GET /notebooks/{id}/records instead.",
         "tags": ["Records"],
         "parameters": [
           {
@@ -358,7 +358,7 @@
     "/notebooks/{id}/records/{recordId}": {
       "get": {
         "summary": "Get record detail",
-        "description": "Returns full form data for one record. Optionally pin a specific revision with revisionId. **Write** variants of this path (PUT update, DELETE soft-delete) are not exposed while record mutations are disabled server-side.",
+        "description": "Full form data for one record; optional revisionId. PUT and DELETE are omitted while CRUD mutations are disabled.",
         "tags": ["Records"],
         "parameters": [
           {
