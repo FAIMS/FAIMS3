@@ -26,6 +26,7 @@ PouchDB.plugin(require('pouchdb-security-helper'));
 
 import {registerClient} from '@faims3/data-model';
 import {
+  BUGSNAG_ENABLED,
   CONDUCTOR_INTERNAL_PORT,
   CONDUCTOR_PUBLIC_URL,
   COUCHDB_INTERNAL_URL,
@@ -40,11 +41,15 @@ registerClient({
   shouldDisplayRecord: async () => true,
 });
 
-process.on('unhandledRejection', error => {
-  console.error('unhandledRejection');
-  console.error(error); // This prints error with stack included (as for normal errors)
-  // don't re-throw the error since we don't want to crash the server
-});
+// report unhandled rejections if bugsnat is not enabled
+// if it is enabled, it will take care of this
+if (!BUGSNAG_ENABLED) {
+  process.on('unhandledRejection', error => {
+    console.error('unhandledRejection');
+    console.error(error); // This prints error with stack included (as for normal errors)
+    // don't re-throw the error since we don't want to crash the server
+  });
+}
 
 // on startup, run a validation of the databases that can perform
 // any required migrations

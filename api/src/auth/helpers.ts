@@ -30,6 +30,7 @@ import {
   validatePasswordStrength,
   getPasswordErrorMessage,
 } from './passwordStrength';
+import {logError} from '../utils';
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {createTeamDocument} from '../couchdb/teams';
 
@@ -137,7 +138,7 @@ export function validateRedirect(
         }
       } catch (error) {
         // Skip invalid whitelist entries
-        console.error(`Invalid whitelist entry: ${whitelistedDomain}`, error);
+        logError(`Invalid whitelist entry: ${whitelistedDomain}`);
         continue;
       }
     }
@@ -146,7 +147,7 @@ export function validateRedirect(
     return fail();
   } catch (error) {
     // Any parsing errors or other issues, return the default redirect
-    console.error('Error validating redirect URL:', error);
+    logError(error);
     return fail();
   }
 }

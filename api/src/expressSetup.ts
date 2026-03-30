@@ -39,6 +39,7 @@ import {registerAuthProviders} from './auth/strategies/applyStrategies';
 import {
   API_VERSION,
   BUGSNAG_API_KEY,
+  BUGSNAG_ENABLED,
   COUCHDB_INTERNAL_URL,
 } from './buildconfig';
 import {
@@ -92,9 +93,7 @@ const IS_TEST = process.env.NODE_ENV === 'test';
 import Bugsnag from '@bugsnag/js';
 import BugsnagPluginExpress from '@bugsnag/plugin-express';
 
-const bugsnagEnabled = !!BUGSNAG_API_KEY;
-
-if (bugsnagEnabled) {
+if (BUGSNAG_ENABLED) {
   Bugsnag.start({
     apiKey: BUGSNAG_API_KEY!,
     plugins: [BugsnagPluginExpress],
@@ -109,7 +108,7 @@ export const app: express.Express = express();
 
 // Bugsnag comes first - passes through
 let bugsnagMiddleware = undefined;
-if (bugsnagEnabled) {
+if (BUGSNAG_ENABLED) {
   bugsnagMiddleware = Bugsnag.getPlugin('express');
   if (!bugsnagMiddleware) {
     throw new Error(
@@ -268,7 +267,7 @@ app.post('/fallback-initialise', async (req, res) => {
 });
 
 // Add the bugsnag error middleware (first - prior to other error middleware)
-if (bugsnagEnabled) {
+if (BUGSNAG_ENABLED) {
   if (bugsnagMiddleware) {
     app.use(bugsnagMiddleware.errorHandler);
   } else {

@@ -103,7 +103,7 @@ import {
   requireAuthenticationAPI,
   userCanDo,
 } from '../middleware';
-import {mockTokenContentsForUser} from '../utils';
+import {logError, mockTokenContentsForUser} from '../utils';
 import patch from '../utils/patchExpressAsync';
 
 // This must occur before express api is used
@@ -452,10 +452,8 @@ api.get(
                   }).viewSetId;
                   viewID = viewsetId;
                 } catch (e) {
-                  console.error(
-                    'missing viewset for field',
-                    fieldName,
-                    'falling back to type'
+                  logError(
+                    `missing viewset for field ${fieldName} in project ${projectId}`
                   );
                 }
                 const filename = generateFilenameForAttachment({
@@ -542,7 +540,7 @@ const validateDownloadToken = async ({
     });
     return DownloadTokenPayloadSchema.parse(result.payload);
   } catch {
-    console.log('invalid token');
+    logError(`Invalid download token '${token}'`);
     return null;
   }
 };

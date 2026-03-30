@@ -16,7 +16,7 @@ import {
 import {v4 as uuidv4} from 'uuid';
 import {getAuthDB} from '.';
 import {InternalSystemError, ItemNotFoundException} from '../exceptions';
-import {generateVerificationCode, hashChallengeCode} from '../utils';
+import {generateVerificationCode, hashChallengeCode, logError} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds - 24 hours by default
@@ -253,13 +253,7 @@ export const validateVerificationChallenge = async ({
       challenge,
     };
   } catch (error) {
-    console.error(
-      'Unhandled error validating verification challenge. Code: ',
-      code,
-      ' Error: ',
-      error,
-      console.trace()
-    );
+    logError(error);
     return {
       valid: false,
       validationError: 'Internal server error',

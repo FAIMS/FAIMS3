@@ -23,7 +23,7 @@ import {
   ItemNotFoundException,
   TooManyRequestsException,
 } from '../exceptions';
-import {generateVerificationCode, hashChallengeCode} from '../utils';
+import {generateVerificationCode, hashChallengeCode, logError} from '../utils';
 import {getCouchUserFromEmailOrUserId} from './users';
 
 // Expiry time in milliseconds
@@ -247,12 +247,8 @@ export const validateEmailCode = async (
 
     return {valid: true, user};
   } catch (error) {
-    console.error(
-      'Unhandled error validating email code. Code: ',
-      code,
-      ' Error: ',
-      error,
-      console.trace()
+    logError(
+      `Unhandled error validating email code. Code: ${code}. Error: ${error}`
     );
     return {valid: false, validationError: 'Internal server error'};
   }

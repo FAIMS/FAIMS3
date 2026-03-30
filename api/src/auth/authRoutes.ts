@@ -76,6 +76,7 @@ import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
 import {signSamlMetadata} from './strategies/samlStrategy';
+import {logError} from '../utils';
 
 patch();
 
@@ -251,7 +252,7 @@ export function addAuthRoutes(
             redirect: errorRedirect,
           });
           if (!handled) {
-            console.error('Auth error:', validationError);
+            logError(validationError);
             req.flash('error', 'An unexpected error occurred');
             res.status(500).redirect(errorRedirect);
             return;
@@ -638,7 +639,7 @@ export function addAuthRoutes(
       req.flash('success', 'Password changed successfully');
       return res.redirect(validatedRedirect);
     } catch (error) {
-      console.error('Password change error:', error);
+      logError(error);
       req.flash('error', {
         changePasswordError: {
           msg: 'An error occurred while changing password. Contact a system administrator.',
@@ -682,7 +683,6 @@ export function addAuthRoutes(
       try {
         await invalidateToken(refreshToken);
       } catch (e) {
-        console.error('Invalidation of token failed unexpectedly. Error: ', e);
         throw new InternalSystemError(
           'Unexpected failure to invalidate token.'
         );
@@ -772,7 +772,7 @@ export function addAuthRoutes(
             });
           } else {
             // For other errors, log but don't reveal details to user
-            console.error('Password reset error:', error);
+            logError(error);
             req.flash('error', {
               forgotPasswordError: {
                 msg: 'An error occurred while processing your request. Please try again later.',
@@ -783,7 +783,7 @@ export function addAuthRoutes(
 
         return res.redirect(errRedirect);
       } catch (error) {
-        console.error('Password reset error:', error);
+        logError(error);
         req.flash('error', {
           forgotPasswordError: {
             msg: 'An error occurred while processing your request. Please try again later.',
@@ -828,7 +828,7 @@ export function addAuthRoutes(
       });
 
       if (!handled) {
-        console.error('Reset password validation error:', validationError);
+        logError(validationError);
         req.flash('error', {
           resetPasswordError: {
             msg: 'An unexpected error occurred during validation',
@@ -886,7 +886,7 @@ export function addAuthRoutes(
         })}`
       );
     } catch (error) {
-      console.error('Password reset error:', error);
+      logError(error);
       req.flash('error', {
         resetPasswordError: {
           msg: 'An error occurred while resetting your password. Please try again.',

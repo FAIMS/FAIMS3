@@ -32,6 +32,7 @@ import {
   ROCrateMetadata,
 } from './types';
 import {slugifyLabel} from './utils';
+import {logError} from '../../utils';
 
 /**
  * Streams a full notebook export as a ZIP archive.
@@ -141,7 +142,7 @@ export const streamFullExport = async ({
         );
       } catch (err) {
         const message = `Failed to export CSVs: ${err instanceof Error ? err.message : 'Unknown error'}`;
-        console.error(`[FULL] ${message}`);
+        logError(`[FULL] ${message}`);
         metadata.warnings.push(message);
       }
     }
@@ -186,7 +187,7 @@ export const streamFullExport = async ({
         console.log(`[FULL] Attachments: ${attachmentStats.fileCount} files`);
       } catch (err) {
         const message = `Failed to export attachments: ${err instanceof Error ? err.message : 'Unknown error'}`;
-        console.error(`[FULL] ${message}`);
+        logError(`[FULL] ${message}`);
         metadata.warnings.push(message);
       }
     }
@@ -269,7 +270,7 @@ export const streamFullExport = async ({
         }
       } catch (err) {
         const message = `Failed to export spatial data: ${err instanceof Error ? err.message : 'Unknown error'}`;
-        console.error(`[FULL] ${message}`);
+        logError(`[FULL] ${message}`);
         metadata.warnings.push(message);
       }
     }
