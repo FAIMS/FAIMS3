@@ -124,6 +124,26 @@ export const SectionEditor = ({
   const [duplicateTargetViewSetId, setDuplicateTargetViewSetId] = useState('');
   const [duplicateAlertMessage, setDuplicateAlertMessage] = useState('');
 
+  const headingRowSx = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+  } as const;
+
+  const headingTextSx = {
+    color: 'text.primary',
+    fontWeight: 700,
+  } as const;
+
+  const infoIconSx = {
+    color: '#1E88E5',
+  } as const;
+
+  const dividerSx = {
+    borderColor: '#90A4AE',
+    borderWidth: 2,
+  } as const;
+
   useEffect(() => {
     if (fView) {
       setDuplicateSectionName(fView.label + ' copy');
@@ -273,10 +293,7 @@ export const SectionEditor = ({
             <Grid item>
               <Typography
                 variant="h5"
-                sx={{
-                  color: 'text.primary',
-                  fontWeight: 700,
-                }}
+                sx={headingTextSx}
               >
                 Section controls
               </Typography>
@@ -488,7 +505,7 @@ export const SectionEditor = ({
           />
         </Grid>
       </Grid>
-      <Divider sx={{borderColor: '#90A4AE', borderWidth: 2, mb: 2}} />
+      <Divider sx={{...dividerSx, mb: 2}} />
       {addMode && (
         <form
           onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
@@ -535,18 +552,22 @@ export const SectionEditor = ({
         </form>
       )}
       {addAlertMessage && <Alert severity="error">{addAlertMessage}</Alert>}
-      <Stack direction="row" alignItems="center" spacing={1} mt={2} mb={1}>
-        <Typography
-          variant="h5"
-          sx={{color: 'text.primary', fontWeight: 700}}
-        >
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={1}
+        mt={2}
+        mb={1}
+        sx={headingRowSx}
+      >
+        <Typography variant="h5" sx={headingTextSx}>
           Fields
         </Typography>
         <Tooltip title="Add info text here.">
-          <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
+          <InfoIcon sx={infoIconSx} fontSize="small" />
         </Tooltip>
       </Stack>
-      <Divider sx={{borderColor: '#90A4AE', borderWidth: 2, mb: 2}} />
+      <Divider sx={{...dividerSx, mb: 2}} />
       <Dialog
         open={openDuplicateDialog}
         onClose={() => {
