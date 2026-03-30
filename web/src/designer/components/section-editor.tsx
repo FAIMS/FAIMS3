@@ -275,7 +275,7 @@ export const SectionEditor = ({
                 variant="h5"
                 sx={{
                   color: 'text.primary',
-                  fontWeight: theme => theme.typography.fontWeightBold,
+                  fontWeight: 700,
                 }}
               >
                 Section controls

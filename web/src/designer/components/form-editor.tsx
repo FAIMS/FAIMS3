@@ -103,6 +103,7 @@ export const FormEditor = ({
   handleDeleteCallback,
   handleSectionMoveCallback,
   handleFieldMoveCallback,
+  handleAddFormCallback,
   previewForm,
   setPreviewForm,
 }: Props) => {
@@ -429,7 +430,6 @@ export const FormEditor = ({
     <Stack direction="row" spacing={2}>
       <Grid container spacing={2} pt={3}>
         <Grid item xs={12}>
-          <Divider sx={{borderColor: 'divider', borderWidth: 2}} />
           <Stack spacing={1.5} py={1.5}>
             <Stack
               direction="row"
@@ -451,7 +451,17 @@ export const FormEditor = ({
                 Form controls
               </Typography>
 
-              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<AddRoundedIcon />}
+                onClick={handleAddFormCallback}
+                sx={{textTransform: 'none', fontWeight: 700, boxShadow: 'none'}}
+              >
+                New Form
+              </Button>
+
+              <Typography sx={{color: 'text.disabled'}}> | </Typography>
 
               <Button
                 variant="text"

@@ -308,7 +308,8 @@ export const DesignPanel = () => {
                 color: 'text.secondary',
                 fontWeight: theme => theme.typography.fontWeightMedium,
                 lineHeight: 1.5,
-                maxWidth: 900,
+                maxWidth: 'none',
+                whiteSpace: 'nowrap',
               }}
             >
               Define the user interface for your notebook here. Add one or more
