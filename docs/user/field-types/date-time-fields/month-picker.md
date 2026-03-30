@@ -1,6 +1,6 @@
 # Month picker
 
-*How to add and configure a Month picker field in the Notebook Editor.*
+_How to add and configure a Month picker field in the Notebook Editor._
 
 ---
 

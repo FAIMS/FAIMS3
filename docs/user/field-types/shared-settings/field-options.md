@@ -1,6 +1,6 @@
 # Field Options
 
-*Shared options available on every field type in the Notebook Editor.*
+_Shared options available on every field type in the Notebook Editor._
 
 ---
 
@@ -67,7 +67,7 @@ conditions, or a site identifier.
 
 ### Display in child records
 
-*Planned feature.* When implemented, checking this option will display
+_Planned feature._ When implemented, checking this option will display
 this field's value (read-only) from the parent record when a collector
 is working in a related child record, providing context without
 requiring navigation back to the parent.

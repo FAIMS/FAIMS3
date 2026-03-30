@@ -23,8 +23,10 @@ import React, {
 import {TextField, TextFieldProps} from '@mui/material';
 import debounce from 'lodash/debounce';
 
-export interface DebouncedTextFieldProps
-  extends Omit<TextFieldProps, 'onChange'> {
+export interface DebouncedTextFieldProps extends Omit<
+  TextFieldProps,
+  'onChange'
+> {
   /**
    * Debounce delay in milliseconds (default is 200ms)
    */

@@ -245,11 +245,15 @@ export class FaimsFrontEnd extends Construct {
         : {}),
 
       // Address autosuggest configuration
-      ...(props.addressAutosuggest?.source && props.addressAutosuggest.source !== 'NONE'
+      ...(props.addressAutosuggest?.source &&
+      props.addressAutosuggest.source !== 'NONE'
         ? {
             VITE_AUTOSUGGEST_SOURCE: props.addressAutosuggest.source,
             ...(props.addressAutosuggest.mapboxKey
-              ? {VITE_AUTOSUGGEST_MAPBOX_KEY: props.addressAutosuggest.mapboxKey}
+              ? {
+                  VITE_AUTOSUGGEST_MAPBOX_KEY:
+                    props.addressAutosuggest.mapboxKey,
+                }
               : {}),
             ...(props.addressAutosuggest.mapboxAddressCountry
               ? {

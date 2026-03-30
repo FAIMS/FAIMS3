@@ -23,13 +23,13 @@ The system is configured in `expressSetup.ts` which initializes:
 Configuration settings allow enabling of either local email/password authentication or
 one or more federated identity providers. There is a custom implementation for
 Google authentication, a more general OIDC based provider and a custom SAML provider
-implementation.  Further SSO protocols could be supported via their passport
+implementation. Further SSO protocols could be supported via their passport
 implementations.
 
 The available
 providers are configured via environment variables using a pattern of variable
-names to encode an object structure.  Variables starting with `AUTH_` define
-the properties of different providers with the pattern `AUTH_{provider}_{property}`.   There are two kinds of provider: Google and OIDC.  These are configured
+names to encode an object structure. Variables starting with `AUTH_` define
+the properties of different providers with the pattern `AUTH_{provider}_{property}`. There are two kinds of provider: Google and OIDC. These are configured
 as follows:
 
 For a Google provider, the TYPE property should be `google` and the following
@@ -81,7 +81,7 @@ AUTH_SAML_CALLBACK_URL="https://your-app.example.com/auth/saml/callback"
 
 # NOTE: recommended these should never be stored in plaintext in production
 # environments - inject in on platform level using recommended secrets
-# management approach. E.g. on AWS - use Secret env variables. 
+# management approach. E.g. on AWS - use Secret env variables.
 
 # Private key: Your SP's private key for signing requests
 AUTH_SAML_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nYourPrivateKeyHere\n-----END RSA PRIVATE KEY-----"
@@ -457,8 +457,8 @@ Register path: find or create user by email → link SSO profile → `addEmails(
 ### User Provisioning Policy
 
 Based on the configuration setting `PROVISION_SSO_USERS_POLICY` the system can be configured to provision a new
-user account when an unknown user logs in via SSO.  This capability is not available via local login as account
-creation would be needed first.  It is intended for use in an enterprise environment where all valid users should
+user account when an unknown user logs in via SSO. This capability is not available via local login as account
+creation would be needed first. It is intended for use in an enterprise environment where all valid users should
 be able to make use of the system.
 
 `PROVISION_SSO_USERS_POLICY` can have three possible values:

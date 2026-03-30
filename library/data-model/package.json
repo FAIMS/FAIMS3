@@ -1,14 +1,21 @@
 {
   "name": "@faims3/data-model",
-  "packageManager": "pnpm@10.7.0",
   "version": "1.4.3",
   "description": "Database access layer for FAIMS3",
+  "license": "Apache",
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FAIMS/faims3-data-model"
+  },
+  "files": [
+    "build/src",
+    "build/esm",
+    "!build/**/*.tsbuildinfo"
+  ],
   "main": "./build/src/index.js",
   "module": "./build/esm/index.js",
   "types": "build/src/index.d.ts",
-  "engines": {
-    "node": "22"
-  },
   "exports": {
     ".": {
       "import": {
@@ -21,11 +28,6 @@
       }
     }
   },
-  "files": [
-    "build/src",
-    "build/esm",
-    "!build/**/*.tsbuildinfo"
-  ],
   "scripts": {
     "build": "pnpm run build:cjs && pnpm run build:esm",
     "build:cjs": "tsc -p tsconfig.json",
@@ -40,15 +42,6 @@
     "circular-dep-check": "madge -c --extensions ts src/",
     "lint": "pnpm run circular-dep-check && oxlint --config ../../.oxlintrc.json .",
     "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
-  },
-  "author": "",
-  "license": "Apache",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/FAIMS/faims3-data-model"
-  },
-  "peerDependencies": {
-    "pouchdb": "^9.0.0"
   },
   "dependencies": {
     "@types/pouchdb": "^6.4.2",
@@ -71,5 +64,12 @@
     "pouchdb-find": "^9.0.0",
     "ts-jest": "^29.0.5",
     "typescript": "^5.9.2"
-  }
+  },
+  "peerDependencies": {
+    "pouchdb": "^9.0.0"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
 }

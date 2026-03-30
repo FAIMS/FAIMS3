@@ -59,7 +59,7 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
       />
     ),
   },
-{
+  {
     accessorKey: 'metadata.pre_description',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Description" />
@@ -88,5 +88,5 @@ export const columns: ColumnDef<GetNotebookListResponse[number]>[] = [
         </TooltipProvider>
       );
     },
-  }
+  },
 ];

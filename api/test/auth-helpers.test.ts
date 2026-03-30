@@ -32,11 +32,8 @@ import sinon from 'sinon';
 // We import the modules themselves so sinon can stub their exported functions.
 // This works because ts-node compiles to CommonJS, making exports mutable.
 
-import * as usersModule from '../src/couchdb/users';
-import * as teamsModule from '../src/couchdb/teams';
 import * as keySigningModule from '../src/auth/keySigning/create';
 import * as buildconfig from '../src/buildconfig';
-import * as invitesModule from '../src/couchdb/invites';
 import * as teamsModule from '../src/couchdb/teams';
 import * as usersModule from '../src/couchdb/users';
 

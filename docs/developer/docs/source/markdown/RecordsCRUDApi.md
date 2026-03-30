@@ -65,12 +65,12 @@ Returns a permission-filtered list of minimal record metadata (no field values).
 
 **Query parameters**:
 
-| Parameter       | Type    | Required | Description                                                                 |
-|----------------|--------|----------|-----------------------------------------------------------------------------|
-| `formId`       | string | No       | Filter by record type (form/viewset ID).                                   |
-| `limit`        | number | No       | Max number of records (1–500).                                             |
-| `startKey`     | string | No       | Pagination cursor from a previous response.                                |
-| `filterDeleted`| string | No       | `"true"` (default) or `"false"`. If `"false"`, soft-deleted records are included. |
+| Parameter       | Type   | Required | Description                                                                       |
+| --------------- | ------ | -------- | --------------------------------------------------------------------------------- |
+| `formId`        | string | No       | Filter by record type (form/viewset ID).                                          |
+| `limit`         | number | No       | Max number of records (1–500).                                                    |
+| `startKey`      | string | No       | Pagination cursor from a previous response.                                       |
+| `filterDeleted` | string | No       | `"true"` (default) or `"false"`. If `"false"`, soft-deleted records are included. |
 
 **Response** (200 OK):
 
@@ -106,11 +106,11 @@ Creates a new record and its first (empty) revision. You can then update that re
 
 **Request body**:
 
-| Field        | Type   | Required | Description                                              |
-|-------------|--------|----------|----------------------------------------------------------|
-| `formId`    | string | Yes      | Form/viewset ID (e.g. `FORM1`, `FORM2`).                 |
-| `createdBy`| string | No       | User ID for the record creator. Defaults to the token user. |
-| `relationship` | object | No    | Optional parent/linked relationship (see below).         |
+| Field          | Type   | Required | Description                                                 |
+| -------------- | ------ | -------- | ----------------------------------------------------------- |
+| `formId`       | string | Yes      | Form/viewset ID (e.g. `FORM1`, `FORM2`).                    |
+| `createdBy`    | string | No       | User ID for the record creator. Defaults to the token user. |
+| `relationship` | object | No       | Optional parent/linked relationship (see below).            |
 
 **Example**:
 
@@ -160,9 +160,9 @@ Returns the full form data for a single record (the current head revision, or a 
 
 **Query parameters**:
 
-| Parameter   | Type   | Required | Description                                  |
-|------------|--------|----------|----------------------------------------------|
-| `revisionId` | string | No     | If provided, return this revision; otherwise the head is used. |
+| Parameter    | Type   | Required | Description                                                    |
+| ------------ | ------ | -------- | -------------------------------------------------------------- |
+| `revisionId` | string | No       | If provided, return this revision; otherwise the head is used. |
 
 **Response** (200 OK):
 
@@ -205,10 +205,10 @@ This is the same operation as `FormOperations.createRevision` in the data model:
 
 **Request body**:
 
-| Field        | Type   | Required | Description |
-|-------------|--------|----------|-------------|
-| `revisionId`| string | Yes      | Existing revision to fork from (must belong to `:recordId`). |
-| `createdBy`| string | No       | User ID stored on the new revision. Defaults to the token user. |
+| Field        | Type   | Required | Description                                                     |
+| ------------ | ------ | -------- | --------------------------------------------------------------- |
+| `revisionId` | string | Yes      | Existing revision to fork from (must belong to `:recordId`).    |
+| `createdBy`  | string | No       | User ID stored on the new revision. Defaults to the token user. |
 
 **Example**:
 
@@ -242,11 +242,11 @@ Updates the given revision by applying the provided field data. You can send **a
 
 **Request body**:
 
-| Field        | Type   | Required | Description                                                                 |
-|-------------|--------|----------|-----------------------------------------------------------------------------|
-| `revisionId`| string | Yes      | The revision to update (current head or a specific revision).               |
-| `update`    | object | Yes      | Map of field ID to `{ data, annotation?, attachments? }`. Only include fields you want to change. |
-| `mode`      | string | No       | `"new"` or `"parent"`. Default `"parent"`. Use `"new"` for the first update after create (revision has no parents). |
+| Field        | Type   | Required | Description                                                                                                         |
+| ------------ | ------ | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `revisionId` | string | Yes      | The revision to update (current head or a specific revision).                                                       |
+| `update`     | object | Yes      | Map of field ID to `{ data, annotation?, attachments? }`. Only include fields you want to change.                   |
+| `mode`       | string | No       | `"new"` or `"parent"`. Default `"parent"`. Use `"new"` for the first update after create (revision has no parents). |
 
 **Example (field-level update)**:
 
@@ -285,9 +285,9 @@ Marks the record as deleted by creating a new revision with `deleted: true`. Dat
 
 **Query parameters**:
 
-| Parameter   | Type   | Required | Description                    |
-|------------|--------|----------|--------------------------------|
-| `revisionId` | string | Yes    | Current head revision ID.      |
+| Parameter    | Type   | Required | Description               |
+| ------------ | ------ | -------- | ------------------------- |
+| `revisionId` | string | Yes      | Current head revision ID. |
 
 **Example**: `DELETE /api/notebooks/my-project-id/records/rec-abc123?revisionId=frev-def456`
 
@@ -297,13 +297,13 @@ Marks the record as deleted by creating a new revision with `deleted: true`. Dat
 
 ## Error responses
 
-| Status | Meaning |
-|--------|--------|
+| Status  | Meaning                                                                                                                                                  |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **400** | Bad request: invalid body, missing or invalid query (e.g. missing `revisionId` on delete), or invalid state (e.g. malformed parents, revision mismatch). |
-| **401** | Unauthorized: missing or invalid Bearer token. |
-| **403** | Forbidden: authenticated but not allowed to perform this action on this project or record (e.g. cannot edit another user's record with a guest role). |
-| **404** | Not found: project or record or revision does not exist. |
-| **409** | Conflict: record has multiple heads (concurrent updates). Retry with an explicit `revisionId` after resolving conflicts. |
+| **401** | Unauthorized: missing or invalid Bearer token.                                                                                                           |
+| **403** | Forbidden: authenticated but not allowed to perform this action on this project or record (e.g. cannot edit another user's record with a guest role).    |
+| **404** | Not found: project or record or revision does not exist.                                                                                                 |
+| **409** | Conflict: record has multiple heads (concurrent updates). Retry with an explicit `revisionId` after resolving conflicts.                                 |
 
 Error bodies are JSON, e.g.:
 
@@ -317,14 +317,14 @@ or a message string depending on the middleware.
 
 ## Summary table
 
-| Method | Path | Permission (project) | Record-level check | Description |
-|--------|------|----------------------|--------------------|-------------|
-| GET    | `/api/notebooks/:id/records/metadata` | READ_MY_PROJECT_RECORDS | Applied in filter | List record metadata |
-| POST   | `/api/notebooks/:id/records` | CREATE_PROJECT_RECORD   | — | Create record |
-| GET    | `/api/notebooks/:id/records/:recordId` | READ_* | Read this record | Get one record |
-| POST   | `/api/notebooks/:id/records/:recordId/revisions` | EDIT_MY_PROJECT_RECORDS | Edit this record | Fork revision (new head) |
-| PUT    | `/api/notebooks/:id/records/:recordId` | EDIT_MY_PROJECT_RECORDS | Edit this record | Update record |
-| DELETE | `/api/notebooks/:id/records/:recordId` | EDIT_MY_PROJECT_RECORDS | Delete this record | Soft-delete |
+| Method | Path                                             | Permission (project)    | Record-level check | Description              |
+| ------ | ------------------------------------------------ | ----------------------- | ------------------ | ------------------------ |
+| GET    | `/api/notebooks/:id/records/metadata`            | READ_MY_PROJECT_RECORDS | Applied in filter  | List record metadata     |
+| POST   | `/api/notebooks/:id/records`                     | CREATE_PROJECT_RECORD   | —                  | Create record            |
+| GET    | `/api/notebooks/:id/records/:recordId`           | READ\_\*                | Read this record   | Get one record           |
+| POST   | `/api/notebooks/:id/records/:recordId/revisions` | EDIT_MY_PROJECT_RECORDS | Edit this record   | Fork revision (new head) |
+| PUT    | `/api/notebooks/:id/records/:recordId`           | EDIT_MY_PROJECT_RECORDS | Edit this record   | Update record            |
+| DELETE | `/api/notebooks/:id/records/:recordId`           | EDIT_MY_PROJECT_RECORDS | Delete this record | Soft-delete              |
 
 ## Example: create and update a record
 
