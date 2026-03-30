@@ -336,7 +336,7 @@ export const SectionEditor = ({
                   size="small"
                   sx={{color: 'text.secondary', p: 0.5}}
                 >
-                  <ArrowBackRoundedIcon fontSize="small" />
+                  <ArrowBackRoundedIcon />
                 </IconButton>
               </span>
             </Tooltip>
@@ -349,7 +349,7 @@ export const SectionEditor = ({
                   size="small"
                   sx={{color: 'text.secondary', p: 0.5}}
                 >
-                  <ArrowForwardRoundedIcon fontSize="small" />
+                  <ArrowForwardRoundedIcon />
                 </IconButton>
               </span>
             </Tooltip>

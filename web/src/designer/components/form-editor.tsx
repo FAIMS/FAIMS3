@@ -504,7 +504,7 @@ export const FormEditor = ({
                         size="small"
                         sx={{color: 'text.secondary', p: 0.5}}
                       >
-                        <ArrowBackRoundedIcon fontSize="small" />
+                        <ArrowBackRoundedIcon />
                       </IconButton>
                       <IconButton
                         disabled
@@ -512,7 +512,7 @@ export const FormEditor = ({
                         size="small"
                         sx={{color: 'text.secondary', p: 0.5}}
                       >
-                        <ArrowForwardRoundedIcon fontSize="small" />
+                        <ArrowForwardRoundedIcon />
                       </IconButton>
                     </span>
                   </Tooltip>
@@ -527,7 +527,7 @@ export const FormEditor = ({
                           size="small"
                           sx={{color: 'text.secondary', p: 0.5}}
                         >
-                          <ArrowBackRoundedIcon fontSize="small" />
+                          <ArrowBackRoundedIcon />
                         </IconButton>
                       </span>
                     </Tooltip>
@@ -543,7 +543,7 @@ export const FormEditor = ({
                           size="small"
                           sx={{color: 'text.secondary', p: 0.5}}
                         >
-                          <ArrowForwardRoundedIcon fontSize="small" />
+                          <ArrowForwardRoundedIcon />
                         </IconButton>
                       </span>
                     </Tooltip>
@@ -738,7 +738,7 @@ export const FormEditor = ({
         </Grid>
         <Grid item xs={12}>
           <Box sx={{px: 0, py: 1}}>
-            <Grid container spacing={2} p={2}>
+            <Grid container spacing={2} p={0}>
               <Grid item xs={12}>
                 <Box sx={{position: 'relative'}}>
                   {/* outer scroll container */}

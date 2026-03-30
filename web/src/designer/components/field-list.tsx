@@ -18,10 +18,9 @@
 
 import {Button, Stack, Typography} from '@mui/material';
 
-import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
-import UnfoldLessDoubleRoundedIcon from '@mui/icons-material/UnfoldLessDoubleRounded';
-import UnfoldMoreDoubleRoundedIcon from '@mui/icons-material/UnfoldMoreDoubleRounded';
-
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
+import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
@@ -49,7 +48,6 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
 
   const dispatch = useAppDispatch();
 
-  const [hiddenExpanded, setHiddenExpanded] = useState(true);
   const hiddenFields = useMemo(
     () =>
       fView.fields.filter(
@@ -128,7 +126,6 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     // Do not depend on `allClosed` / field data: that object is recreated on every field
     // edit and would collapse open accordions whenever the spec updates.
     setIsExpanded({});
-    setHiddenExpanded(true);
     setShowCollapseButton(false);
   }, [viewId]);
 
@@ -147,41 +144,48 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
 
   return (
     <>
-      <Stack direction="row" spacing={1} mt={2}>
+      <Stack direction="row" spacing={1.5} alignItems="center" mt={1}>
+        <Typography variant="subtitle1" sx={{fontWeight: 700}}>
+          Field controls
+        </Typography>
         <Button
-          variant="outlined"
+          variant="contained"
           size="small"
           onClick={openDialog}
-          startIcon={<AddCircleOutlineRoundedIcon />}
+          startIcon={<AddRoundedIcon />}
+          sx={{textTransform: 'none', fontWeight: 700}}
         >
-          Add a Field
+          New Field
         </Button>
+      </Stack>
 
-        {showCollapseButton ? (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => {
-              setIsExpanded(allClosed);
-              setShowCollapseButton(false);
-            }}
-            startIcon={<UnfoldLessDoubleRoundedIcon />}
-          >
-            Collapse All Fields
-          </Button>
-        ) : (
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => {
-              setIsExpanded(allOpen);
-              setShowCollapseButton(true);
-            }}
-            startIcon={<UnfoldMoreDoubleRoundedIcon />}
-          >
-            Expand All Fields
-          </Button>
-        )}
+      <Stack direction="row" spacing={1} mt={1.25}>
+        <Button
+          variant="text"
+          size="small"
+          onClick={() => {
+            setIsExpanded(showCollapseButton ? allClosed : allOpen);
+            setShowCollapseButton(!showCollapseButton);
+          }}
+          startIcon={
+            showCollapseButton ? (
+              <ExpandCircleDownRoundedIcon
+                sx={{fontSize: '1.55rem', transform: 'rotate(180deg)'}}
+              />
+            ) : (
+              <ExpandCircleDownRoundedIcon sx={{fontSize: '1.55rem'}} />
+            )
+          }
+          sx={{
+            textTransform: 'none',
+            fontWeight: 700,
+            fontSize: '1.05rem',
+            color: 'text.secondary',
+            '& .MuiButton-startIcon': {mr: 1},
+          }}
+        >
+          {showCollapseButton ? 'Collapse all' : 'Expand all'}
+        </Button>
       </Stack>
 
       <Stack spacing={0} mt={2} mb={2}>
@@ -216,45 +220,26 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       </Typography>
       {hiddenFields.length > 0 ? (
         <>
-          <div style={{padding: '16px 0'}}>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setHiddenExpanded(!hiddenExpanded)}
-              startIcon={
-                hiddenExpanded ? (
-                  <UnfoldLessDoubleRoundedIcon />
-                ) : (
-                  <UnfoldMoreDoubleRoundedIcon />
-                )
-              }
-            >
-              {hiddenExpanded
-                ? 'Collapse Hidden Fields'
-                : 'Expand Hidden Fields'}
-            </Button>
-          </div>
-          {hiddenExpanded &&
-            hiddenFields.map((fieldName: string) => {
-              const field = fields[fieldName];
-              const designerIdentifier = field?.designerIdentifier;
+          {hiddenFields.map((fieldName: string) => {
+            const field = fields[fieldName];
+            const designerIdentifier = field?.designerIdentifier;
 
-              if (!field || !designerIdentifier) return null;
+            if (!field || !designerIdentifier) return null;
 
-              return (
-                <FieldEditor
-                  key={designerIdentifier}
-                  fieldName={fieldName}
-                  viewSetId={viewSetId}
-                  viewId={viewId}
-                  expanded={isExpanded[designerIdentifier] ?? false}
-                  addFieldCallback={addFieldAfterCallback}
-                  moveFieldCallback={moveFieldCallback}
-                  onExpandedChange={handleExpandedChange}
-                  designerIdentifier={designerIdentifier}
-                />
-              );
-            })}
+            return (
+              <FieldEditor
+                key={designerIdentifier}
+                fieldName={fieldName}
+                viewSetId={viewSetId}
+                viewId={viewId}
+                expanded={isExpanded[designerIdentifier] ?? false}
+                addFieldCallback={addFieldAfterCallback}
+                moveFieldCallback={moveFieldCallback}
+                onExpandedChange={handleExpandedChange}
+                designerIdentifier={designerIdentifier}
+              />
+            );
+          })}
         </>
       ) : (
         <Typography variant="body2" color="textSecondary">
