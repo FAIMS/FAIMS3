@@ -182,6 +182,38 @@ export const FormEditor = ({
   // needed for the form preview
   const queryClient = useQueryClient();
 
+  const headingRowSx = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+  } as const;
+
+  const headingTextSx = {
+    color: 'text.primary',
+    fontWeight: 700,
+  } as const;
+
+  const infoIconSx = {
+    color: '#1E88E5',
+  } as const;
+
+  const dividerSx = {
+    borderColor: '#90A4AE',
+    borderWidth: 2,
+  } as const;
+
+  const controlLabelSx = {
+    color: 'text.secondary',
+    fontWeight: 700,
+    textTransform: 'uppercase' as const,
+    fontSize: '0.75rem',
+    letterSpacing: '0.03em',
+  };
+
+  const pipeSx = {
+    color: 'text.disabled',
+  } as const;
+
   // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
   const handleScroll = () => {
     const container = scrollContainerRef.current;
@@ -428,7 +460,7 @@ export const FormEditor = ({
 
   return (
     <Stack direction="row" spacing={2}>
-      <Grid container spacing={2} pt={3}>
+      <Grid container rowSpacing={2} columnSpacing={0} pt={3}>
         <Grid item xs={12}>
           <Stack spacing={1.5} py={1.5}>
             <Stack
@@ -443,8 +475,7 @@ export const FormEditor = ({
               <Typography
                 variant="subtitle1"
                 sx={{
-                  color: 'text.primary',
-                  fontWeight: 700,
+                  ...headingTextSx,
                   letterSpacing: '0.01em',
                 }}
               >
@@ -461,7 +492,7 @@ export const FormEditor = ({
                 New Form
               </Button>
 
-              <Typography sx={{color: 'text.disabled'}}> | </Typography>
+              <Typography sx={pipeSx}> | </Typography>
 
               <Button
                 variant="text"
@@ -469,18 +500,12 @@ export const FormEditor = ({
                 color="inherit"
                 startIcon={<EditRoundedIcon />}
                 onClick={() => setEditMode(true)}
-                sx={{
-                  color: 'text.secondary',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.03em',
-                }}
+                sx={controlLabelSx}
               >
                 Edit name
               </Button>
 
-              <Typography sx={{color: 'text.disabled'}}> | </Typography>
+              <Typography sx={pipeSx}> | </Typography>
 
               <Stack direction="row" spacing={1} alignItems="center">
                 {moveButtonsDisabled ? (
@@ -539,18 +564,13 @@ export const FormEditor = ({
                 )}
                 <Typography
                   variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}
+                  sx={controlLabelSx}
                 >
                   Reorder
                 </Typography>
               </Stack>
 
-              <Typography sx={{color: 'text.disabled'}}> | </Typography>
+              <Typography sx={pipeSx}> | </Typography>
 
               <Button
                 variant="text"
@@ -558,18 +578,12 @@ export const FormEditor = ({
                 color="inherit"
                 startIcon={<SettingsRoundedIcon />}
                 onClick={() => setSettingsOpen(true)}
-                sx={{
-                  color: 'text.secondary',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.03em',
-                }}
+                sx={controlLabelSx}
               >
                 Settings
               </Button>
 
-              <Typography sx={{color: 'text.disabled'}}> | </Typography>
+              <Typography sx={pipeSx}> | </Typography>
 
               <Button
                 variant="text"
@@ -577,17 +591,12 @@ export const FormEditor = ({
                 size="small"
                 startIcon={<DeleteRoundedIcon />}
                 onClick={deleteConfirmation}
-                sx={{
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  fontSize: '0.75rem',
-                  letterSpacing: '0.03em',
-                }}
+                sx={controlLabelSx}
               >
                 Delete
               </Button>
 
-              <Typography sx={{color: 'text.disabled'}}> | </Typography>
+              <Typography sx={pipeSx}> | </Typography>
 
               <FormControlLabel
                 sx={{
@@ -610,7 +619,7 @@ export const FormEditor = ({
                       Include "Add New Record" button
                     </Typography>
                     <Tooltip title="Add info text here.">
-                      <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
+                      <InfoIcon sx={infoIconSx} fontSize="small" />
                     </Tooltip>
                   </Stack>
                 }
@@ -661,7 +670,7 @@ export const FormEditor = ({
 
             {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
           </Stack>
-          <Divider sx={{borderColor: '#90A4AE', borderWidth: 2}} />
+          <Divider sx={dividerSx} />
 
           <Dialog
             open={settingsOpen}
@@ -723,18 +732,19 @@ export const FormEditor = ({
             onClose={() => setShowConditionAlert(false)}
           />
 
-          <Stack direction="row" alignItems="center" spacing={1} mt={2} mb={1}>
-            <Typography
-              variant="h5"
-              sx={{
-                color: 'text.primary',
-                fontWeight: 700,
-              }}
-            >
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={1}
+            mt={2}
+            mb={1}
+            sx={headingRowSx}
+          >
+            <Typography variant="h5" sx={headingTextSx}>
               Sections
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
+              <InfoIcon sx={infoIconSx} fontSize="small" />
             </Tooltip>
           </Stack>
         </Grid>
