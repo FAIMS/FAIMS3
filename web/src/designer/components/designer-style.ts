@@ -8,7 +8,7 @@ export const designerHeadingRowSx: SxProps<Theme> = {
 
 export const designerHeadingTextSx: SxProps<Theme> = {
   color: 'text.primary',
-  fontWeight: 800,
+  fontWeight: 700,
   lineHeight: 1.1,
 };
 
@@ -25,8 +25,12 @@ export const designerControlLabelSx: SxProps<Theme> = {
   color: 'text.secondary',
   fontWeight: 700,
   textTransform: 'uppercase',
-  fontSize: '0.75rem',
-  letterSpacing: '0.03em',
+  fontSize: '0.9rem',
+  letterSpacing: '0.02em',
+  whiteSpace: 'nowrap',
+  '& .MuiSvgIcon-root': {
+    fontSize: '1.4rem',
+  },
 };
 
 export const designerPipeSx: SxProps<Theme> = {
