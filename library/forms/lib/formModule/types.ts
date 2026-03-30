@@ -1,11 +1,8 @@
-import type {FormAnnotation, FormDataEntry, FormUpdateData} from '@faims3/data-model';
+import {FormAnnotation, FormUpdateData} from '@faims3/data-model';
 import {useForm} from '@tanstack/react-form';
 import React from 'react';
 import {z} from 'zod';
 import {FormConfig} from './formManagers/types';
-
-/** Re-export persisted record field shapes from data-model (formDataEntrySchema / formUpdateDataSchema). */
-export type {FormAnnotation, FormDataEntry, FormUpdateData};
 
 export type FaimsFormData = FormUpdateData | undefined;
 

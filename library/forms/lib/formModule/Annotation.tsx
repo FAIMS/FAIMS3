@@ -1,3 +1,5 @@
+import {FormAnnotation} from '@faims3/data-model';
+import NoteIcon from '@mui/icons-material/Note';
 import {
   Box,
   Checkbox,
@@ -8,13 +10,8 @@ import {
   TextField,
 } from '@mui/material';
 import {grey} from '@mui/material/colors';
-import NoteIcon from '@mui/icons-material/Note';
 import {useState} from 'react';
-import {
-  FaimsFormFieldState,
-  FieldSpecificationMeta,
-  FormAnnotation,
-} from './types';
+import {FaimsFormFieldState, FieldSpecificationMeta} from './types';
 
 type FieldAnnotationProps = {
   config: FieldSpecificationMeta;

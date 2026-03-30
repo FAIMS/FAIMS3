@@ -1,5 +1,6 @@
 import {
   DataEngine,
+  FormDataEntry,
   FormRelationshipInstance,
   getViewsForViewSet,
   HydratedRevisionDocument,
@@ -7,7 +8,7 @@ import {
 } from '@faims3/data-model';
 import {getFieldInfo} from '../fieldRegistry';
 import {FieldVisibilityMap} from './formManagers/types';
-import {CompletionResult, FaimsFormData, FormDataEntry} from './types';
+import {CompletionResult, FaimsFormData} from './types';
 
 /** Deterministic field name generator for usage for navigations */
 export function getFieldId({fieldId}: {fieldId: string}): string {
