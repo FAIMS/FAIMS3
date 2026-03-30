@@ -387,6 +387,7 @@ export const DesignPanel = () => {
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
+                  handleAddFormCallback={addNewForm}
                   previewForm={previewForm}
                   setPreviewForm={setPreviewForm}
                 />
@@ -401,19 +402,20 @@ export const DesignPanel = () => {
                 key={startIndex}
                 path={`${startIndex}`}
                 element={
-                  <FormEditor
-                    viewSetId={form}
-                    moveCallback={moveForm}
-                    moveButtonsDisabled={true}
-                    handleChangeCallback={handleCheckboxTabChange}
-                    handleDeleteCallback={handleDeleteFormTabChange}
-                    handleSectionMoveCallback={handleSectionMove}
-                    handleFieldMoveCallback={handleFieldMove}
-                    previewForm={previewForm}
-                    setPreviewForm={setPreviewForm}
-                  />
-                }
-              />
+                <FormEditor
+                  viewSetId={form}
+                  moveCallback={moveForm}
+                  moveButtonsDisabled={true}
+                  handleChangeCallback={handleCheckboxTabChange}
+                  handleDeleteCallback={handleDeleteFormTabChange}
+                  handleSectionMoveCallback={handleSectionMove}
+                  handleFieldMoveCallback={handleFieldMove}
+                  handleAddFormCallback={addNewForm}
+                  previewForm={previewForm}
+                  setPreviewForm={setPreviewForm}
+                />
+              }
+            />
             );
           })}
 

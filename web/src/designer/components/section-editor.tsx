@@ -488,7 +488,7 @@ export const SectionEditor = ({
           />
         </Grid>
       </Grid>
-      <Divider sx={{borderColor: 'divider', borderWidth: 2, mb: 2}} />
+      <Divider sx={{borderColor: '#90A4AE', borderWidth: 2, mb: 2}} />
       {addMode && (
         <form
           onSubmit={(e: React.FormEvent<HTMLFormElement>) => {

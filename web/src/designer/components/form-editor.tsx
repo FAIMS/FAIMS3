@@ -480,7 +480,7 @@ export const FormEditor = ({
                 Edit name
               </Button>
 
-              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
+              <Typography sx={{color: 'text.disabled'}}> | </Typography>
 
               <Stack direction="row" spacing={1} alignItems="center">
                 {moveButtonsDisabled ? (
@@ -550,7 +550,7 @@ export const FormEditor = ({
                 </Typography>
               </Stack>
 
-              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
+              <Typography sx={{color: 'text.disabled'}}> | </Typography>
 
               <Button
                 variant="text"
@@ -569,7 +569,7 @@ export const FormEditor = ({
                 Settings
               </Button>
 
-              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
+              <Typography sx={{color: 'text.disabled'}}> | </Typography>
 
               <Button
                 variant="text"
