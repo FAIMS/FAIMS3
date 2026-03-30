@@ -746,7 +746,7 @@ export const FormEditor = ({
                     sx={{
                       overflowX: sections.length > 2 ? 'auto' : 'hidden',
                       display: 'flex',
-                      justifyContent: 'center',
+                      justifyContent: 'flex-start',
                       scrollbarWidth: 'thin',
                       scrollbarColor: 'rgba(107, 114, 128, 0.9) transparent',
                       '&::-webkit-scrollbar': {
@@ -774,23 +774,31 @@ export const FormEditor = ({
                       sx={{
                         display: 'flex',
                         flexWrap: 'nowrap',
-                        minWidth: '70%',
-                        width: '100%',
-                        justifyContent: 'space-between',
+                        minWidth: 'max-content',
+                        width: 'max-content',
+                        justifyContent: 'flex-start',
                       }}
                     >
                       <Stepper
                         nonLinear
                         activeStep={activeStep}
                         alternativeLabel
-                        sx={{my: 3, width: '100%'}}
+                        sx={{
+                          my: 3,
+                          width: 'max-content',
+                          '& .MuiStep-root': {
+                            flex: '0 0 auto',
+                            minWidth: 220,
+                            px: 0.75,
+                          },
+                          '& .MuiStepConnector-root': {
+                            left: 'calc(-50% + 18px)',
+                            right: 'calc(50% + 18px)',
+                          },
+                        }}
                       >
                         {sections.map((section: string, index: number) => (
-                          <Step
-                            key={section}
-                            // each step is flexible and has a minimum width.
-                            sx={{flex: '1 1 0', minWidth: '120px'}}
-                          >
+                          <Step key={section}>
                             <StepButton
                               color="inherit"
                               onClick={handleStep(index)}
