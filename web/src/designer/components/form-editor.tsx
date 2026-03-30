@@ -68,6 +68,7 @@ import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
 import {
   designerControlLabelSx,
+  designerControlHeadingSx,
   designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
@@ -447,10 +448,7 @@ export const FormEditor = ({
             >
               <Typography
                 variant="subtitle1"
-                sx={{
-                  ...designerHeadingTextSx,
-                  letterSpacing: '0.01em',
-                }}
+                sx={designerControlHeadingSx}
               >
                 Form controls
               </Typography>
@@ -591,7 +589,7 @@ export const FormEditor = ({
                   whiteSpace: 'nowrap',
                   '& .MuiFormControlLabel-label': {
                     color: 'text.secondary',
-                    fontWeight: 600,
+                    fontWeight: 700,
                   },
                 }}
                 control={
@@ -607,7 +605,7 @@ export const FormEditor = ({
                       Include "Add New Record" button
                     </Typography>
                     <Tooltip title="Add info text here.">
-                      <InfoIcon sx={designerInfoIconSx} fontSize="small" />
+                      <InfoIcon sx={designerInfoIconSx} />
                     </Tooltip>
                   </Stack>
                 }
@@ -725,14 +723,14 @@ export const FormEditor = ({
             alignItems="center"
             spacing={1}
             mt={2}
-            mb={1}
+            mb={1.5}
             sx={designerHeadingRowSx}
           >
             <Typography variant="h2" sx={designerHeadingTextSx}>
               Sections
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoIcon sx={designerInfoIconSx} fontSize="small" />
+              <InfoIcon sx={designerInfoIconSx} />
             </Tooltip>
           </Stack>
         </Grid>
@@ -804,7 +802,9 @@ export const FormEditor = ({
                               color="inherit"
                               onClick={handleStep(index)}
                             >
-                              <Typography>{views[section].label}</Typography>
+                              <Typography sx={{fontWeight: 700, fontSize: '1.5rem'}}>
+                                {views[section].label}
+                              </Typography>
                             </StepButton>
                           </Step>
                         ))}

@@ -57,6 +57,7 @@ import {ConditionType} from '../types/condition';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {
+  designerControlHeadingSx,
   designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
@@ -119,7 +120,7 @@ export const SectionEditor = ({
   const [openMoveDialog, setOpenMoveDialog] = useState(false);
   const [targetViewSetId, setTargetViewSetId] = useState('');
   const [editMode, setEditMode] = useState(false);
-  const [addMode, setAddMode] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('New Section');
   const [addAlertMessage, setAddAlertMessage] = useState('');
   const [showConditionAlert, setShowConditionAlert] = useState(false);
@@ -248,7 +249,7 @@ export const SectionEditor = ({
 
     // depending on addSuccess, set relevant state variables
     if (addSuccess) {
-      setAddMode(false);
+      setAddDialogOpen(false);
       setAddAlertMessage('');
     } else {
       // manually setting the error message
@@ -294,14 +295,14 @@ export const SectionEditor = ({
           spacing={1.5}
           sx={{overflowX: 'auto', pb: 0.25}}
         >
-          <Typography variant="subtitle1" sx={designerHeadingTextSx}>
+          <Typography variant="subtitle1" sx={designerControlHeadingSx}>
             Section controls
           </Typography>
           <Button
             variant="contained"
             size="small"
             startIcon={<AddRoundedIcon />}
-            onClick={() => setAddMode(true)}
+            onClick={() => setAddDialogOpen(true)}
             sx={{textTransform: 'none', fontWeight: 700, mt: -0.35}}
           >
             New Section
@@ -511,68 +512,66 @@ export const SectionEditor = ({
         references={conditionReferences}
         onClose={handleCloseConditionAlert}
       />
-      {addMode && (
-        <form
-          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-            e.preventDefault();
-            addNewSection();
-          }}
-        >
+      <Dialog
+        open={addDialogOpen}
+        onClose={() => {
+          setAddDialogOpen(false);
+          setAddAlertMessage('');
+        }}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Add New Section</DialogTitle>
+        <DialogContent>
           <DebouncedTextField
             required
             fullWidth
             size="small"
             margin="dense"
-            label="New Section Name"
+            label="Section Name"
             name="sectionName"
             data-testid="sectionName"
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <Tooltip title="Add">
-                    <IconButton size="small" type="submit">
-                      <AddRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Close">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setAddMode(false);
-                        setAddAlertMessage('');
-                      }}
-                    >
-                      <CloseRoundedIcon />
-                    </IconButton>
-                  </Tooltip>
-                </InputAdornment>
-              ),
-            }}
             value={newSectionName}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               setNewSectionName(event.target.value);
             }}
-            sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
+            sx={{mt: 1}}
           />
-        </form>
-      )}
-      {addAlertMessage && <Alert severity="error">{addAlertMessage}</Alert>}
+          {addAlertMessage && (
+            <Alert severity="error" sx={{mt: 1}}>
+              {addAlertMessage}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setAddDialogOpen(false);
+              setAddAlertMessage('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button variant="contained" onClick={addNewSection}>
+            Add Section
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Stack
         direction="row"
         alignItems="center"
         spacing={1}
         mt={2}
-        mb={1}
+        mb={1.5}
         sx={designerHeadingRowSx}
       >
         <Typography variant="h2" sx={designerHeadingTextSx}>
           Fields
         </Typography>
         <Tooltip title="Add info text here.">
-          <InfoIcon sx={designerInfoIconSx} fontSize="small" />
+          <InfoIcon sx={designerInfoIconSx} />
         </Tooltip>
       </Stack>
-      <Divider sx={{...designerDividerSx, mb: 2}} />
       <Dialog
         open={openDuplicateDialog}
         onClose={() => {

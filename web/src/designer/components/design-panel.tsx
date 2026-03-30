@@ -20,6 +20,11 @@ import {
   Alert,
   Box,
   Button,
+  Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Grid,
   Tab,
   Tabs,
@@ -36,9 +41,11 @@ import {useState, useEffect} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {
+  designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
   designerInfoIconSx,
+  designerSubheadingSx,
 } from './designer-style';
 import {shallowEqual} from 'react-redux';
 import {
@@ -81,6 +88,7 @@ export const DesignPanel = () => {
   const [newFormName, setNewFormName] = useState(
     () => `Form ${Object.keys(viewSets).length + 1}`
   );
+  const [addFormDialogOpen, setAddFormDialogOpen] = useState(false);
 
   useEffect(() => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
@@ -88,14 +96,6 @@ export const DesignPanel = () => {
 
   const maxKeys = Object.keys(viewSets).length;
   const hasOverflowingTabs = maxKeys > 6;
-
-  const subtitleSx = {
-    color: 'text.secondary',
-    fontWeight: 600,
-    lineHeight: 1.5,
-    maxWidth: 'none',
-    whiteSpace: 'nowrap',
-  } as const;
 
   const visibleTabSx = {
     '&.MuiTab-root': {
@@ -234,9 +234,17 @@ export const DesignPanel = () => {
       dispatch(viewSetAdded({formName: newFormName}));
       setIndexAndNavigate(`${visibleTypes.length}`);
       setAlertMessage('');
+      return true;
     } catch (error: unknown) {
       error instanceof Error && setAlertMessage(error.message);
     }
+    return false;
+  };
+
+  const openAddFormDialog = () => {
+    setAlertMessage('');
+    setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
+    setAddFormDialogOpen(true);
   };
 
   const moveForm = (viewSetID: string, moveDirection: 'left' | 'right') => {
@@ -293,13 +301,14 @@ export const DesignPanel = () => {
   return (
     <>
       <TabContext value={tabIndex}>
-        <Box sx={{mb: 1.5, mt: 0.5}}>
+        <Divider sx={{...designerDividerSx, mb: 1.5}} />
+        <Box sx={{mb: 1.75, mt: 0.5}}>
           <Box sx={designerHeadingRowSx}>
             <Typography variant="h2" sx={designerHeadingTextSx}>
               Forms
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoIcon sx={designerInfoIconSx} fontSize="small" />
+              <InfoIcon sx={designerInfoIconSx} />
             </Tooltip>
           </Box>
           <Box
@@ -311,7 +320,10 @@ export const DesignPanel = () => {
               flexWrap: 'wrap',
             }}
           >
-            <Typography variant="body1" sx={subtitleSx}>
+            <Typography
+              variant="body1"
+              sx={{...designerSubheadingSx, maxWidth: 980}}
+            >
               Define the user interface for your notebook here. Add one or more
               forms to collect data from users. Each form can have one or more
               sections. Each section has one or more form fields.
@@ -408,7 +420,7 @@ export const DesignPanel = () => {
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
-                  handleAddFormCallback={addNewForm}
+                  handleAddFormCallback={openAddFormDialog}
                   previewForm={previewForm}
                   setPreviewForm={setPreviewForm}
                 />
@@ -431,7 +443,7 @@ export const DesignPanel = () => {
                   handleDeleteCallback={handleDeleteFormTabChange}
                   handleSectionMoveCallback={handleSectionMove}
                   handleFieldMoveCallback={handleFieldMove}
-                  handleAddFormCallback={addNewForm}
+                  handleAddFormCallback={openAddFormDialog}
                   previewForm={previewForm}
                   setPreviewForm={setPreviewForm}
                 />
@@ -486,6 +498,47 @@ export const DesignPanel = () => {
           />
         </Routes>
       </TabContext>
+      <Dialog
+        open={addFormDialogOpen}
+        onClose={() => setAddFormDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Add New Form</DialogTitle>
+        <DialogContent>
+          <DebouncedTextField
+            fullWidth
+            required
+            label="Form Name"
+            helperText="Enter a name for the form."
+            name="formNameDialog"
+            data-testid="formNameDialog"
+            value={newFormName}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              setNewFormName(event.target.value);
+            }}
+            sx={{mt: 1}}
+          />
+          {alertMessage && (
+            <Alert severity="error" sx={{mt: 1}}>
+              {alertMessage}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddFormDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              if (addNewForm()) {
+                setAddFormDialogOpen(false);
+              }
+            }}
+          >
+            Add Form
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

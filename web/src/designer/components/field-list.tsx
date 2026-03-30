@@ -16,16 +16,23 @@
  * @file Ordered field accordions for a section plus add-field dialog.
  */
 
-import {Button, Stack, Typography} from '@mui/material';
+import {Button, Stack, Tooltip, Typography} from '@mui/material';
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
-import UnfoldLessRoundedIcon from '@mui/icons-material/UnfoldLessRounded';
+import InfoIcon from '@mui/icons-material/Info';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
 import {fieldAdded} from '../store/slices/uiSpec';
+import {
+  designerControlHeadingSx,
+  designerFieldSubHeadingSx,
+  designerHeadingRowSx,
+  designerInfoIconSx,
+  designerSubheadingSx,
+} from './designer-style';
 
 type Props = {
   viewSetId: string;
@@ -145,7 +152,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   return (
     <>
       <Stack direction="row" spacing={1.5} alignItems="center" mt={1}>
-        <Typography variant="subtitle1" sx={{fontWeight: 700}}>
+        <Typography variant="subtitle1" sx={designerControlHeadingSx}>
           Field controls
         </Typography>
         <Button
@@ -189,8 +196,13 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       </Stack>
 
       <Stack spacing={0} mt={2} mb={2}>
-        <Typography variant="h6">Visible Fields</Typography>
-        <Typography variant="body2" color="textSecondary">
+        <Stack sx={designerHeadingRowSx}>
+          <Typography sx={designerFieldSubHeadingSx}>Visible fields</Typography>
+          <Tooltip title="Add info text here.">
+            <InfoIcon sx={designerInfoIconSx} />
+          </Tooltip>
+        </Stack>
+        <Typography variant="body2" color="textSecondary" sx={designerSubheadingSx}>
           Visible fields will appear in the survey.
         </Typography>
       </Stack>
@@ -215,8 +227,14 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         );
       })}
 
-      <Typography variant="h6" mt={2}>
-        Hidden Fields
+      <Stack sx={{...designerHeadingRowSx, mt: 2}}>
+        <Typography sx={designerFieldSubHeadingSx}>Hidden fields</Typography>
+        <Tooltip title="Add info text here.">
+          <InfoIcon sx={designerInfoIconSx} />
+        </Tooltip>
+      </Stack>
+      <Typography variant="body2" color="textSecondary" sx={designerSubheadingSx}>
+        Hidden fields are available but do not appear in the survey.
       </Typography>
       {hiddenFields.length > 0 ? (
         <>

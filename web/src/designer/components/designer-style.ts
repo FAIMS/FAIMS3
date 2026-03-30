@@ -3,7 +3,7 @@ import {SxProps, Theme} from '@mui/material';
 export const designerHeadingRowSx: SxProps<Theme> = {
   display: 'flex',
   alignItems: 'center',
-  gap: 1,
+  gap: 0.5,
 };
 
 export const designerHeadingTextSx: SxProps<Theme> = {
@@ -14,6 +14,7 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 
 export const designerInfoIconSx: SxProps<Theme> = {
   color: '#1E88E5',
+  fontSize: '1.45rem',
 };
 
 export const designerDividerSx: SxProps<Theme> = {
@@ -24,13 +25,36 @@ export const designerDividerSx: SxProps<Theme> = {
 export const designerControlLabelSx: SxProps<Theme> = {
   color: 'text.secondary',
   fontWeight: 700,
-  textTransform: 'uppercase',
-  fontSize: '0.9rem',
-  letterSpacing: '0.02em',
+  textTransform: 'none',
+  fontSize: '1.05rem',
+  letterSpacing: '0.01em',
   whiteSpace: 'nowrap',
   '& .MuiSvgIcon-root': {
-    fontSize: '1.4rem',
+    fontSize: '1.55rem',
   },
+};
+
+export const designerControlHeadingSx: SxProps<Theme> = {
+  color: 'text.primary',
+  fontWeight: 700,
+  fontSize: '1.25rem',
+  lineHeight: 1.2,
+  whiteSpace: 'nowrap',
+};
+
+export const designerFieldSubHeadingSx: SxProps<Theme> = {
+  color: 'text.primary',
+  fontWeight: 700,
+  fontSize: '1.25rem',
+  lineHeight: 1.2,
+  textAlign: 'left',
+};
+
+export const designerSubheadingSx: SxProps<Theme> = {
+  color: 'text.secondary',
+  fontWeight: 600,
+  fontSize: '1rem',
+  lineHeight: 1.5,
 };
 
 export const designerPipeSx: SxProps<Theme> = {
