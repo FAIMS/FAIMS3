@@ -442,8 +442,8 @@ export const FormEditor = ({
               direction="row"
               spacing={1.5}
               alignItems="center"
-              flexWrap="wrap"
-              rowGap={1}
+              flexWrap="nowrap"
+              sx={{overflowX: 'auto', pb: 0.25}}
             >
               <Typography
                 variant="subtitle1"
@@ -465,6 +465,7 @@ export const FormEditor = ({
                   fontWeight: 700,
                   boxShadow: 'none',
                   mt: -0.25,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 New Form
@@ -475,10 +476,9 @@ export const FormEditor = ({
               direction="row"
               spacing={1}
               alignItems="center"
-              flexWrap="wrap"
-              rowGap={0.5}
+              flexWrap="nowrap"
               columnGap={1}
-              sx={{color: 'text.secondary'}}
+              sx={{color: 'text.secondary', overflowX: 'auto', pb: 0.25}}
             >
 
               <Button
@@ -587,7 +587,8 @@ export const FormEditor = ({
 
               <FormControlLabel
                 sx={{
-                  ml: 'auto',
+                  ml: 0.25,
+                  whiteSpace: 'nowrap',
                   '& .MuiFormControlLabel-label': {
                     color: 'text.secondary',
                     fontWeight: 600,
@@ -736,7 +737,7 @@ export const FormEditor = ({
           </Stack>
         </Grid>
         <Grid item xs={12}>
-          <Box sx={{px: 1.5, py: 1}}>
+          <Box sx={{px: 0, py: 1}}>
             <Grid container spacing={2} p={2}>
               <Grid item xs={12}>
                 <Box sx={{position: 'relative'}}>
