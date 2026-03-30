@@ -31,7 +31,6 @@ import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
   Button,
-  Card,
   Checkbox,
   createTheme,
   Dialog,
@@ -67,6 +66,14 @@ import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
+import {
+  designerControlLabelSx,
+  designerDividerSx,
+  designerHeadingRowSx,
+  designerHeadingTextSx,
+  designerInfoIconSx,
+  designerPipeSx,
+} from './designer-style';
 import {
   formVisibilityUpdated,
   sectionAdded,
@@ -181,38 +188,6 @@ export const FormEditor = ({
 
   // needed for the form preview
   const queryClient = useQueryClient();
-
-  const headingRowSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-  } as const;
-
-  const headingTextSx = {
-    color: 'text.primary',
-    fontWeight: 700,
-  } as const;
-
-  const infoIconSx = {
-    color: '#1E88E5',
-  } as const;
-
-  const dividerSx = {
-    borderColor: '#90A4AE',
-    borderWidth: 2,
-  } as const;
-
-  const controlLabelSx = {
-    color: 'text.secondary',
-    fontWeight: 700,
-    textTransform: 'uppercase' as const,
-    fontSize: '0.75rem',
-    letterSpacing: '0.03em',
-  };
-
-  const pipeSx = {
-    color: 'text.disabled',
-  } as const;
 
   // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
   const handleScroll = () => {
@@ -475,7 +450,7 @@ export const FormEditor = ({
               <Typography
                 variant="subtitle1"
                 sx={{
-                  ...headingTextSx,
+                  ...designerHeadingTextSx,
                   letterSpacing: '0.01em',
                 }}
               >
@@ -487,12 +462,17 @@ export const FormEditor = ({
                 size="small"
                 startIcon={<AddRoundedIcon />}
                 onClick={handleAddFormCallback}
-                sx={{textTransform: 'none', fontWeight: 700, boxShadow: 'none'}}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  boxShadow: 'none',
+                  mt: -0.35,
+                }}
               >
                 New Form
               </Button>
 
-              <Typography sx={pipeSx}> | </Typography>
+              <Typography sx={designerPipeSx}> | </Typography>
 
               <Button
                 variant="text"
@@ -500,12 +480,12 @@ export const FormEditor = ({
                 color="inherit"
                 startIcon={<EditRoundedIcon />}
                 onClick={() => setEditMode(true)}
-                sx={controlLabelSx}
+                sx={designerControlLabelSx}
               >
                 Edit name
               </Button>
 
-              <Typography sx={pipeSx}> | </Typography>
+              <Typography sx={designerPipeSx}> | </Typography>
 
               <Stack direction="row" spacing={1} alignItems="center">
                 {moveButtonsDisabled ? (
@@ -564,13 +544,13 @@ export const FormEditor = ({
                 )}
                 <Typography
                   variant="caption"
-                  sx={controlLabelSx}
+                  sx={designerControlLabelSx}
                 >
                   Reorder
                 </Typography>
               </Stack>
 
-              <Typography sx={pipeSx}> | </Typography>
+              <Typography sx={designerPipeSx}> | </Typography>
 
               <Button
                 variant="text"
@@ -578,12 +558,12 @@ export const FormEditor = ({
                 color="inherit"
                 startIcon={<SettingsRoundedIcon />}
                 onClick={() => setSettingsOpen(true)}
-                sx={controlLabelSx}
+                sx={designerControlLabelSx}
               >
                 Settings
               </Button>
 
-              <Typography sx={pipeSx}> | </Typography>
+              <Typography sx={designerPipeSx}> | </Typography>
 
               <Button
                 variant="text"
@@ -591,12 +571,12 @@ export const FormEditor = ({
                 size="small"
                 startIcon={<DeleteRoundedIcon />}
                 onClick={deleteConfirmation}
-                sx={controlLabelSx}
+                sx={designerControlLabelSx}
               >
                 Delete
               </Button>
 
-              <Typography sx={pipeSx}> | </Typography>
+              <Typography sx={designerPipeSx}> | </Typography>
 
               <FormControlLabel
                 sx={{
@@ -619,7 +599,7 @@ export const FormEditor = ({
                       Include "Add New Record" button
                     </Typography>
                     <Tooltip title="Add info text here.">
-                      <InfoIcon sx={infoIconSx} fontSize="small" />
+                      <InfoIcon sx={designerInfoIconSx} fontSize="small" />
                     </Tooltip>
                   </Stack>
                 }
@@ -670,7 +650,7 @@ export const FormEditor = ({
 
             {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
           </Stack>
-          <Divider sx={dividerSx} />
+          <Divider sx={designerDividerSx} />
 
           <Dialog
             open={settingsOpen}
@@ -738,19 +718,19 @@ export const FormEditor = ({
             spacing={1}
             mt={2}
             mb={1}
-            sx={headingRowSx}
+            sx={designerHeadingRowSx}
           >
-            <Typography variant="h5" sx={headingTextSx}>
+            <Typography variant="h2" sx={designerHeadingTextSx}>
               Sections
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoIcon sx={infoIconSx} fontSize="small" />
+              <InfoIcon sx={designerInfoIconSx} fontSize="small" />
             </Tooltip>
           </Stack>
         </Grid>
         <Grid item xs={12}>
-          <Card variant="outlined" sx={{borderColor: 'divider', borderWidth: 2}}>
-            <Grid container spacing={2} p={3}>
+          <Box sx={{px: 1.5, py: 1}}>
+            <Grid container spacing={2} p={2}>
               <Grid item xs={12}>
                 <Box sx={{position: 'relative'}}>
                   {/* outer scroll container */}
@@ -897,7 +877,7 @@ export const FormEditor = ({
                 </Grid>
               )}
             </Grid>
-          </Card>
+          </Box>
         </Grid>
       </Grid>
       {previewForm && uiSpecInternal && (
