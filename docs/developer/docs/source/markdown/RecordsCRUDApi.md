@@ -51,11 +51,13 @@ To obtain attachment **files** in bulk, use the notebook **export** API (for exa
 
 ## Endpoints
 
-### List records
+### List record metadata
 
-**GET** `/api/notebooks/:id/records`
+**GET** `/api/notebooks/:id/records/metadata`
 
 Returns a permission-filtered list of minimal record metadata (no field values). Only records the user is allowed to read (according to "my" vs "all" and project role) are included.
+
+**Note:** **GET** `/api/notebooks/:id/records/` (trailing slash) remains the **legacy** endpoint that returns full export-shaped records and requires `EXPORT_PROJECT_DATA`. Use `/records/metadata` for the lightweight listing above.
 
 **Required permission**: at least `READ_MY_PROJECT_RECORDS` on the project.
 
@@ -315,7 +317,7 @@ or a message string depending on the middleware.
 
 | Method | Path | Permission (project) | Record-level check | Description |
 |--------|------|----------------------|--------------------|-------------|
-| GET    | `/api/notebooks/:id/records` | READ_MY_PROJECT_RECORDS | Applied in filter | List records |
+| GET    | `/api/notebooks/:id/records/metadata` | READ_MY_PROJECT_RECORDS | Applied in filter | List record metadata |
 | POST   | `/api/notebooks/:id/records` | CREATE_PROJECT_RECORD   | — | Create record |
 | GET    | `/api/notebooks/:id/records/:recordId` | READ_* | Read this record | Get one record |
 | POST   | `/api/notebooks/:id/records/:recordId/revisions` | EDIT_MY_PROJECT_RECORDS | Edit this record | Fork revision (new head) |

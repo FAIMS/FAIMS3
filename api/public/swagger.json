@@ -232,19 +232,20 @@
     },
     "/notebooks/{id}/records": {
       "get": {
-        "summary": "Get a list of records",
-        "description": "Get a list of records for a notebook",
+        "summary": "List all records (legacy full export shape)",
+        "description": "Returns `{ records }` with full export-oriented payloads for every record in the notebook (internal regex listing). Requires export permission on the project. For paginated, permission-filtered **metadata** only, use GET `/notebooks/{id}/records/metadata` instead. For single-record CRUD, use GET `/notebooks/{id}/records/{recordId}`.",
         "tags": ["Notebooks"],
         "parameters": [
           {
             "name": "id",
             "in": "path",
-            "description": "Notebook identifier",
+            "description": "Notebook (project) identifier",
             "required": true,
-            "type": "string"
+            "schema": {
+              "type": "string"
+            }
           }
         ],
-        "produces": ["application/json"],
         "security": [
           {
             "Auth": []
@@ -253,12 +254,65 @@
         "responses": {
           "200": {
             "description": "successful operation",
-            "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/RecordList"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/RecordList"
+                }
               }
             }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "Notebook not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a record",
+        "description": "Creates a new empty record (initial revision) for the given form. Optional relationship metadata may be supplied.",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PostRecordsCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Record created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PostRecordsCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -266,10 +320,339 @@
         }
       }
     },
+    "/notebooks/{id}/records/metadata": {
+      "get": {
+        "summary": "List record metadata (CRUD API)",
+        "description": "Returns minimal metadata for each record in the notebook that the caller may read. Supports pagination and optional filters. Deleted records are omitted by default. Distinct from GET `/notebooks/{id}/records`, which returns full export-shaped `{ records }` for legacy clients (export permission).",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "formId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Restrict to records for this form / viewset id"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Page size (1–500, default server-chosen)"
+          },
+          {
+            "name": "startKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque pagination cursor from a previous response’s nextStartKey"
+          },
+          {
+            "name": "filterDeleted",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When false, include soft-deleted records (default true)"
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/RecordsCRUDListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/records/{recordId}/revisions": {
+      "post": {
+        "summary": "Fork a new revision",
+        "description": "Creates a new head revision from an existing revision (copies field values). Requires permission to edit the record.",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PostRecordsRevisionForkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Revision created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PostRecordsRevisionForkResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or revision state"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed to edit this record"
+          },
+          "404": {
+            "description": "Record or revision not found"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/records/{recordId}": {
+      "get": {
+        "summary": "Get record detail",
+        "description": "Returns full form data for one record. Optionally pin a specific revision with revisionId.",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Specific revision to load (defaults to current head)"
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/RecordsDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed to read this record"
+          },
+          "404": {
+            "description": "Record or revision not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update record fields",
+        "description": "Updates the record by creating a new revision from the given base revisionId. Use mode to control AVP linkage (new vs parent).",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PutRecordsUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PutRecordsUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or revision mismatch"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed to edit this record"
+          },
+          "404": {
+            "description": "Record or revision not found"
+          },
+          "409": {
+            "description": "Record conflict (e.g. multiple heads); resubmit with revisionId"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Soft-delete a record",
+        "description": "Marks the record as deleted from the given base revision. Query parameter revisionId is required.",
+        "tags": ["Records"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordId",
+            "in": "path",
+            "description": "Record identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "revisionId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Revision to base the delete on"
+          }
+        ],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Record deleted"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed to delete this record"
+          },
+          "404": {
+            "description": "Record or revision not found"
+          }
+        }
+      }
+    },
     "/notebooks/{id}/records/export": {
       "get": {
-        "summary": "Generate download token for notebook records export",
-        "description": "Generates a signed JWT token and redirects to download endpoint for exporting notebook records in specified format. Supports CSV, ZIP, GeoJSON, and KML formats and a FULL export containing all formats.",
+        "summary": "Request signed URL for notebook records export",
+        "description": "Builds a short-lived signed JWT and returns a JSON object with an absolute URL to `GET /notebooks/download/{token}`. Supports CSV, ZIP, GeoJSON, KML, and FULL (multi-part ZIP). CSV requires viewID. For format=full, optional boolean query flags (default true) select which parts are included: includeTabular, includeAttachments, includeGeoJSON, includeKML, includeMetadata.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -288,7 +671,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Form/view identifier (required for CSV format, optional for other formats.)"
+            "description": "Form/view identifier (required for CSV; optional for ZIP when scoping attachments)"
           },
           {
             "name": "format",
@@ -298,7 +681,57 @@
               "type": "string",
               "enum": ["csv", "zip", "geojson", "kml", "full"]
             },
-            "description": "Export format. CSV requires viewID parameter."
+            "description": "Export format. CSV requires viewID."
+          },
+          {
+            "name": "includeTabular",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include tabular CSV exports (default true)"
+          },
+          {
+            "name": "includeAttachments",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include attachment ZIP (default true)"
+          },
+          {
+            "name": "includeGeoJSON",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include GeoJSON (default true)"
+          },
+          {
+            "name": "includeKML",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include KML (default true)"
+          },
+          {
+            "name": "includeMetadata",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When format is full: include metadata (default true)"
           }
         ],
         "security": [
@@ -307,8 +740,18 @@
           }
         ],
         "responses": {
-          "302": {
-            "description": "Redirect to download endpoint with JWT token"
+          "200": {
+            "description": "Signed download URL (token expires in a few minutes)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/ExportNotebookSignedUrlResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or incomplete parameters"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -1330,6 +1773,232 @@
           "format": "date-time"
         }
       }
+    },
+    "FormRelationshipInstance": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string",
+          "description": "Related record id"
+        },
+        "fieldId": {
+          "type": "string",
+          "description": "Field id on the parent that defines the link"
+        },
+        "relationTypeVocabPair": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Vocabulary pair defining relationship type"
+        }
+      },
+      "required": ["recordId", "fieldId", "relationTypeVocabPair"]
+    },
+    "FormRelationship": {
+      "type": "object",
+      "properties": {
+        "parent": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FormRelationshipInstance"
+          }
+        },
+        "linked": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FormRelationshipInstance"
+          }
+        }
+      }
+    },
+    "PostRecordsCreateRequest": {
+      "type": "object",
+      "properties": {
+        "formId": {
+          "type": "string",
+          "description": "Form / viewset id for the new record"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Optional creator user id (defaults to authenticated user)"
+        },
+        "relationship": {
+          "$ref": "#/definitions/FormRelationship"
+        }
+      },
+      "required": ["formId"]
+    },
+    "PostRecordsCreateResponse": {
+      "type": "object",
+      "properties": {
+        "recordId": {
+          "type": "string"
+        },
+        "revisionId": {
+          "type": "string"
+        }
+      },
+      "required": ["recordId", "revisionId"]
+    },
+    "RecordsCRUDListItem": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "recordId": {
+          "type": "string"
+        },
+        "revisionId": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp"
+        },
+        "createdBy": {
+          "type": "string"
+        },
+        "updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp"
+        },
+        "updatedBy": {
+          "type": "string"
+        },
+        "conflicts": {
+          "type": "boolean"
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "type": {
+          "type": "string",
+          "description": "Form / viewset id"
+        },
+        "relationship": {
+          "$ref": "#/definitions/FormRelationship"
+        }
+      },
+      "required": [
+        "projectId",
+        "recordId",
+        "revisionId",
+        "created",
+        "createdBy",
+        "updated",
+        "updatedBy",
+        "conflicts",
+        "deleted",
+        "type"
+      ]
+    },
+    "RecordsCRUDListResponse": {
+      "type": "object",
+      "properties": {
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RecordsCRUDListItem"
+          }
+        },
+        "nextStartKey": {
+          "type": "string",
+          "description": "Present when more results exist; pass as startKey on the next request"
+        }
+      },
+      "required": ["records"]
+    },
+    "PutRecordsUpdateRequest": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string",
+          "description": "Base revision for the update"
+        },
+        "update": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Map of field id → value (and optional annotations) per data-model form update shape"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["new", "parent"],
+          "description": "AVP linkage mode (default parent)"
+        }
+      },
+      "required": ["revisionId", "update"]
+    },
+    "PutRecordsUpdateResponse": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string",
+          "description": "New revision id after update"
+        }
+      },
+      "required": ["revisionId"]
+    },
+    "PostRecordsRevisionForkRequest": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string",
+          "description": "Existing revision to fork from"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "Optional user id for the new revision (defaults to authenticated user)"
+        }
+      },
+      "required": ["revisionId"]
+    },
+    "PostRecordsRevisionForkResponse": {
+      "type": "object",
+      "properties": {
+        "revisionId": {
+          "type": "string"
+        }
+      },
+      "required": ["revisionId"]
+    },
+    "RecordsDetailResponse": {
+      "type": "object",
+      "description": "Shape matches GetRecordResponse in @faims3/data-model (revisionId, formId, data, context with hydrated record/revision)",
+      "properties": {
+        "revisionId": {
+          "type": "string"
+        },
+        "formId": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Includes hrid, record, and revision documents"
+        }
+      },
+      "required": ["revisionId", "formId", "data", "context"]
+    },
+    "ExportNotebookSignedUrlResponse": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Absolute URL for GET /api/notebooks/download/{token}"
+        }
+      },
+      "required": ["url"]
     },
     "UserList": {
       "type": "object",

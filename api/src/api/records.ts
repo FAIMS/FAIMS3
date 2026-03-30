@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Stateless CRUD API for record data under /api/notebooks/:id/records
- * (including POST …/records/:recordId/revisions to fork a revision).
+ * (including GET …/records/metadata for listing and POST …/records/:recordId/revisions).
  */
 
 import {
@@ -135,10 +135,11 @@ recordsRouter.post(
 );
 
 /**
- * GET /api/notebooks/:id/records - List records (permission-filtered)
+ * GET /api/notebooks/:id/records/metadata - List record metadata (permission-filtered).
+ * Kept off GET /records so the legacy full export JSON handler on the notebooks router still runs.
  */
 recordsRouter.get(
-  '/',
+  '/metadata',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.READ_MY_PROJECT_RECORDS,

@@ -822,7 +822,7 @@ export type PutConfirmEmailVerificationResponse = z.infer<
 // ==================
 // RECORDS API
 // ==================
-// Stateless CRUD for /api/notebooks/:id/records
+// Stateless CRUD for /api/notebooks/:id/records (list metadata: GET …/records/metadata)
 
 /** POST create record body (createdBy optional, filled server-side) */
 export const PostCreateRecordInputSchema = newFormRecordSchema.partial({

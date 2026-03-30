@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Fixtures, types, and path helpers for Records CRUD API tests.
+ * Fixtures and helpers for Records API tests.
  * Backup/form ids live here; request/response shapes match @faims3/data-model api types
  * (same as api/src/api/records.ts).
  */
@@ -37,30 +37,6 @@ export const BACKUP_FORM_IDS = {
 
 export type BackupFormId =
   (typeof BACKUP_FORM_IDS)[keyof typeof BACKUP_FORM_IDS];
-
-// ---------------------------------------------------------------------------
-// API path builders
-// ---------------------------------------------------------------------------
-
-const NOTEBOOKS_BASE = '/api/notebooks';
-
-/** Base path for records API: GET list, POST create */
-export function recordsBasePath(projectId: string): string {
-  return `${NOTEBOOKS_BASE}/${projectId}/records`;
-}
-
-/** Path for a single record: GET, PUT, DELETE */
-export function recordPath(projectId: string, recordId: string): string {
-  return `${recordsBasePath(projectId)}/${recordId}`;
-}
-
-/** POST createRevision (fork): same recordId segment as recordPath */
-export function recordRevisionsPath(
-  projectId: string,
-  recordId: string
-): string {
-  return `${recordPath(projectId, recordId)}/revisions`;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers

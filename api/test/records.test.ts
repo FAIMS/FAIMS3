@@ -14,7 +14,7 @@
  * limitations under the License.
  *
  * Integration tests for the stateless CRUD records API.
- * Uses test/fixtures/recordsApi for paths, types, and backup helpers.
+ * Uses test/fixtures/recordsApi for backup helpers and shared constants.
  */
 
 import PouchDB from 'pouchdb';
@@ -49,10 +49,7 @@ import {app} from '../src/expressSetup';
 import {
   BACKUP_FORM_IDS,
   RECORD_ID_PREFIX,
-  recordPath,
-  recordRevisionsPath,
   RECORDS_BACKUP_PROJECT_ID,
-  recordsBasePath,
   REVISION_ID_PREFIX,
   withRecordsBackup,
 } from './fixtures/recordsApi';
@@ -73,7 +70,7 @@ describe('Records CRUD API', () => {
     it('returns permission-filtered list after restore', async () => {
       await withRecordsBackup(async projectId => {
         const res = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId))
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
         ).expect(200);
 
         const body = res.body as GetListRecordsResponse;
@@ -93,7 +90,7 @@ describe('Records CRUD API', () => {
       await withRecordsBackup(async projectId => {
         await requestAuthAndType(
           request(app)
-            .get(recordsBasePath(projectId))
+            .get(`/api/notebooks/${projectId}/records/metadata`)
             .query({filterDeleted: 'true'})
         ).expect(200);
       });
@@ -103,7 +100,7 @@ describe('Records CRUD API', () => {
       await withRecordsBackup(async projectId => {
         const res = await requestAuthAndType(
           request(app)
-            .get(recordsBasePath(projectId))
+            .get(`/api/notebooks/${projectId}/records/metadata`)
             .query({formId: BACKUP_FORM_IDS.FORM2})
         ).expect(200);
         const body = res.body as GetListRecordsResponse;
@@ -117,7 +114,7 @@ describe('Records CRUD API', () => {
     it('applies limit when provided', async () => {
       await withRecordsBackup(async projectId => {
         const res = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId)).query({limit: 3})
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`).query({limit: 3})
         ).expect(200);
         const body = res.body as GetListRecordsResponse;
         expect(body.records.length).to.be.at.most(3);
@@ -127,7 +124,7 @@ describe('Records CRUD API', () => {
     it('returns 400 when limit is greater than 500', async () => {
       await withRecordsBackup(async projectId => {
         await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId)).query({limit: 501})
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`).query({limit: 501})
         ).expect(400);
       });
     });
@@ -135,14 +132,14 @@ describe('Records CRUD API', () => {
     it('applies startKey for pagination (returns records after cursor)', async () => {
       await withRecordsBackup(async projectId => {
         const full = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId)).query({limit: 5})
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`).query({limit: 5})
         ).expect(200);
         const fullBody = full.body as GetListRecordsResponse;
         if (fullBody.records.length < 2) return;
         const cursor = fullBody.records[1].recordId;
         const res = await requestAuthAndType(
           request(app)
-            .get(recordsBasePath(projectId))
+            .get(`/api/notebooks/${projectId}/records/metadata`)
             .query({limit: 10, startKey: cursor})
         ).expect(200);
         const body = res.body as GetListRecordsResponse;
@@ -155,7 +152,7 @@ describe('Records CRUD API', () => {
       await withRecordsBackup(async projectId => {
         const full = await requestAuthAndType(
           request(app)
-            .get(recordsBasePath(projectId))
+            .get(`/api/notebooks/${projectId}/records/metadata`)
             .query({formId: BACKUP_FORM_IDS.FORM2, limit: 5})
         ).expect(200);
         const fullBody = full.body as GetListRecordsResponse;
@@ -166,7 +163,7 @@ describe('Records CRUD API', () => {
         if (fullBody.records.length < 2) return;
         const cursor = fullBody.records[1].recordId;
         const page2 = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId)).query({
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`).query({
             formId: BACKUP_FORM_IDS.FORM2,
             limit: 2,
             startKey: cursor,
@@ -191,7 +188,7 @@ describe('Records CRUD API', () => {
         };
 
         const res = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send(body)
+          request(app).post(`/api/notebooks/${projectId}/records`).send(body)
         ).expect(201);
 
         const created = res.body as PostCreateRecordResponse;
@@ -201,7 +198,7 @@ describe('Records CRUD API', () => {
         );
 
         const getRes = await requestAuthAndType(
-          request(app).get(recordPath(projectId, created.recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${created.recordId}`)
         ).expect(200);
 
         const getBody = getRes.body as GetRecordResponse;
@@ -215,7 +212,7 @@ describe('Records CRUD API', () => {
       await withRecordsBackup(async projectId => {
         const res = await requestAuthAndType(
           request(app)
-            .post(recordsBasePath(projectId))
+            .post(`/api/notebooks/${projectId}/records`)
             .send({formId: BACKUP_FORM_IDS.FORM2})
         ).expect(201);
 
@@ -223,7 +220,7 @@ describe('Records CRUD API', () => {
         expect(created).to.have.property('recordId');
 
         const getRes = await requestAuthAndType(
-          request(app).get(recordPath(projectId, created.recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${created.recordId}`)
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
         expect(getBody.context.record).to.be.an('object');
@@ -233,7 +230,7 @@ describe('Records CRUD API', () => {
     it('returns 401 without auth', async () => {
       await withRecordsBackup(async projectId => {
         await request(app)
-          .post(recordsBasePath(projectId))
+          .post(`/api/notebooks/${projectId}/records`)
           .set('Content-Type', 'application/json')
           .send({formId: BACKUP_FORM_IDS.FORM2})
           .expect(401);
@@ -243,7 +240,7 @@ describe('Records CRUD API', () => {
     it('returns 400 when formId is missing', async () => {
       await withRecordsBackup(async projectId => {
         await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({})
+          request(app).post(`/api/notebooks/${projectId}/records`).send({})
         ).expect(400);
       });
     });
@@ -252,7 +249,7 @@ describe('Records CRUD API', () => {
       await withRecordsBackup(async projectId => {
         const parentRes = await requestAuthAndType(
           request(app)
-            .post(recordsBasePath(projectId))
+            .post(`/api/notebooks/${projectId}/records`)
             .send({formId: BACKUP_FORM_IDS.FORM2, createdBy: 'admin'})
         ).expect(201);
         const parent = parentRes.body as PostCreateRecordResponse;
@@ -271,12 +268,12 @@ describe('Records CRUD API', () => {
           },
         };
         const res = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send(body)
+          request(app).post(`/api/notebooks/${projectId}/records`).send(body)
         ).expect(201);
         const created = res.body as PostCreateRecordResponse;
         expect(created.recordId).to.match(new RegExp(`^${RECORD_ID_PREFIX}`));
         const getRes = await requestAuthAndType(
-          request(app).get(recordPath(projectId, created.recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${created.recordId}`)
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
         expect(getBody.context.record).to.be.an('object');
@@ -288,7 +285,7 @@ describe('Records CRUD API', () => {
     it('returns full form data for existing record', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -296,7 +293,7 @@ describe('Records CRUD API', () => {
         const {recordId} = createRes.body as PostCreateRecordResponse;
 
         const res = await requestAuthAndType(
-          request(app).get(recordPath(projectId, recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
 
         const body = res.body as GetRecordResponse;
@@ -311,7 +308,7 @@ describe('Records CRUD API', () => {
       await withRecordsBackup(async projectId => {
         await requestAuthAndType(
           request(app).get(
-            recordPath(projectId, 'rec-nonexistent-0000000000000000')
+            `/api/notebooks/${projectId}/records/rec-nonexistent-0000000000000000`
           )
         ).expect(404);
       });
@@ -319,14 +316,14 @@ describe('Records CRUD API', () => {
 
     it('returns 401 without auth', async () => {
       await withRecordsBackup(async projectId => {
-        await request(app).get(recordsBasePath(projectId)).expect(401);
+        await request(app).get(`/api/notebooks/${projectId}/records/metadata`).expect(401);
       });
     });
 
     it('returns specific revision when revisionId query provided', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -336,7 +333,7 @@ describe('Records CRUD API', () => {
 
         const updateRes = await requestAuthAndType(
           request(app)
-            .put(recordPath(projectId, recordId))
+            .put(`/api/notebooks/${projectId}/records/${recordId}`)
             .send({
               revisionId: rev1,
               update: {hridFORM2: {data: 'UpdatedValue', attachments: []}},
@@ -347,7 +344,7 @@ describe('Records CRUD API', () => {
           .revisionId;
 
         const getHead = await requestAuthAndType(
-          request(app).get(recordPath(projectId, recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
         const headBody = getHead.body as GetRecordResponse;
         expect(headBody.revisionId).to.equal(revisionId2);
@@ -355,7 +352,7 @@ describe('Records CRUD API', () => {
 
         const getRev1 = await requestAuthAndType(
           request(app)
-            .get(recordPath(projectId, recordId))
+            .get(`/api/notebooks/${projectId}/records/${recordId}`)
             .query({revisionId: rev1})
         ).expect(200);
         const bodyRev1 = getRev1.body as GetRecordResponse;
@@ -370,7 +367,7 @@ describe('Records CRUD API', () => {
     it('updates with partial field data (field-level)', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -390,7 +387,7 @@ describe('Records CRUD API', () => {
         };
 
         const updateRes = await requestAuthAndType(
-          request(app).put(recordPath(projectId, recordId)).send(updateBody)
+          request(app).put(`/api/notebooks/${projectId}/records/${recordId}`).send(updateBody)
         ).expect(200);
 
         const updated = updateRes.body as PatchUpdateRecordResponse;
@@ -399,7 +396,7 @@ describe('Records CRUD API', () => {
           new RegExp(`^${REVISION_ID_PREFIX}`)
         );
         const getRes = await requestAuthAndType(
-          request(app).get(recordPath(projectId, recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
         expect(getBody.data.hridFORM2?.data).to.equal('Element: Test-00001');
@@ -409,7 +406,7 @@ describe('Records CRUD API', () => {
     it('returns 401 when user has no project-level edit permission', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -423,7 +420,7 @@ describe('Records CRUD API', () => {
         };
 
         await requestAuthAndType(
-          request(app).put(recordPath(projectId, recordId)).send(updateBody),
+          request(app).put(`/api/notebooks/${projectId}/records/${recordId}`).send(updateBody),
           localUserToken
         ).expect(401);
       });
@@ -432,13 +429,13 @@ describe('Records CRUD API', () => {
     it('returns 400 when revisionId does not belong to record', async () => {
       await withRecordsBackup(async projectId => {
         const createA = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
         ).expect(201);
         const createB = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -449,7 +446,7 @@ describe('Records CRUD API', () => {
 
         await requestAuthAndType(
           request(app)
-            .put(recordPath(projectId, recordIdA))
+            .put(`/api/notebooks/${projectId}/records/${recordIdA}`)
             .send({
               revisionId: revisionIdB,
               update: {hridFORM2: {data: 'x', attachments: []}},
@@ -463,7 +460,7 @@ describe('Records CRUD API', () => {
     it('creates a new head revision copying AVPs from the given revision', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -473,7 +470,7 @@ describe('Records CRUD API', () => {
 
         const forkRes = await requestAuthAndType(
           request(app)
-            .post(recordRevisionsPath(projectId, recordId))
+            .post(`/api/notebooks/${projectId}/records/${recordId}/revisions`)
             .send({revisionId: baseRev} satisfies PostCreateRevisionInput)
         ).expect(201);
 
@@ -484,7 +481,7 @@ describe('Records CRUD API', () => {
         expect(forked.revisionId).to.not.equal(baseRev);
 
         const getRes = await requestAuthAndType(
-          request(app).get(recordPath(projectId, recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
         const getBody = getRes.body as GetRecordResponse;
         expect(getBody.revisionId).to.equal(forked.revisionId);
@@ -495,7 +492,7 @@ describe('Records CRUD API', () => {
     it('allows default PUT parent mode on the forked revision', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -505,7 +502,7 @@ describe('Records CRUD API', () => {
 
         const forkRes = await requestAuthAndType(
           request(app)
-            .post(recordRevisionsPath(projectId, recordId))
+            .post(`/api/notebooks/${projectId}/records/${recordId}/revisions`)
             .send({revisionId: baseRev})
         ).expect(201);
         const {revisionId: forkRev} =
@@ -513,7 +510,7 @@ describe('Records CRUD API', () => {
 
         await requestAuthAndType(
           request(app)
-            .put(recordPath(projectId, recordId))
+            .put(`/api/notebooks/${projectId}/records/${recordId}`)
             .send({
               revisionId: forkRev,
               update: {hridFORM2: {data: 'ForkedParentEdit', attachments: []}},
@@ -521,7 +518,7 @@ describe('Records CRUD API', () => {
         ).expect(200);
 
         const getRes = await requestAuthAndType(
-          request(app).get(recordPath(projectId, recordId))
+          request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(200);
         expect(
           (getRes.body as GetRecordResponse).data.hridFORM2?.data
@@ -532,7 +529,7 @@ describe('Records CRUD API', () => {
     it('returns 401 without auth', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -541,7 +538,7 @@ describe('Records CRUD API', () => {
           createRes.body as PostCreateRecordResponse;
 
         await request(app)
-          .post(recordRevisionsPath(projectId, recordId))
+          .post(`/api/notebooks/${projectId}/records/${recordId}/revisions`)
           .set('Content-Type', 'application/json')
           .send({revisionId})
           .expect(401);
@@ -551,7 +548,7 @@ describe('Records CRUD API', () => {
     it('returns 401 when user has no project-level edit permission', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -561,7 +558,7 @@ describe('Records CRUD API', () => {
 
         await requestAuthAndType(
           request(app)
-            .post(recordRevisionsPath(projectId, recordId))
+            .post(`/api/notebooks/${projectId}/records/${recordId}/revisions`)
             .send({revisionId}),
           localUserToken
         ).expect(401);
@@ -571,13 +568,13 @@ describe('Records CRUD API', () => {
     it('returns 400 when revision belongs to a different record', async () => {
       await withRecordsBackup(async projectId => {
         const createA = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
         ).expect(201);
         const createB = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -588,7 +585,7 @@ describe('Records CRUD API', () => {
 
         await requestAuthAndType(
           request(app)
-            .post(recordRevisionsPath(projectId, recordIdA))
+            .post(`/api/notebooks/${projectId}/records/${recordIdA}/revisions`)
             .send({revisionId: revisionIdB})
         ).expect(400);
       });
@@ -597,7 +594,7 @@ describe('Records CRUD API', () => {
     it('returns 400 when revisionId is missing from body', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -605,7 +602,7 @@ describe('Records CRUD API', () => {
         const {recordId} = createRes.body as PostCreateRecordResponse;
 
         await requestAuthAndType(
-          request(app).post(recordRevisionsPath(projectId, recordId)).send({})
+          request(app).post(`/api/notebooks/${projectId}/records/${recordId}/revisions`).send({})
         ).expect(400);
       });
     });
@@ -615,7 +612,7 @@ describe('Records CRUD API', () => {
     it('soft-deletes and returns 204', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -625,7 +622,7 @@ describe('Records CRUD API', () => {
 
         await requestAuthAndType(
           request(app)
-            .delete(recordPath(projectId, recordId))
+            .delete(`/api/notebooks/${projectId}/records/${recordId}`)
             .query({revisionId})
         ).expect(204);
       });
@@ -634,7 +631,7 @@ describe('Records CRUD API', () => {
     it('returns 400 when revisionId query missing', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -642,7 +639,7 @@ describe('Records CRUD API', () => {
         const {recordId} = createRes.body as PostCreateRecordResponse;
 
         await requestAuthAndType(
-          request(app).delete(recordPath(projectId, recordId))
+          request(app).delete(`/api/notebooks/${projectId}/records/${recordId}`)
         ).expect(400);
       });
     });
@@ -650,7 +647,7 @@ describe('Records CRUD API', () => {
     it('returns 401 when user has no project-level delete permission', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -660,7 +657,7 @@ describe('Records CRUD API', () => {
 
         await requestAuthAndType(
           request(app)
-            .delete(recordPath(projectId, recordId))
+            .delete(`/api/notebooks/${projectId}/records/${recordId}`)
             .query({revisionId}),
           localUserToken
         ).expect(401);
@@ -672,7 +669,7 @@ describe('Records CRUD API', () => {
         await requestAuthAndType(
           request(app)
             .delete(
-              recordPath(projectId, 'rec-00000000-0000-0000-0000-000000000000')
+              `/api/notebooks/${projectId}/records/rec-00000000-0000-0000-0000-000000000000`
             )
             .query({
               revisionId: 'frev-00000000-0000-0000-0000-000000000000',
@@ -686,7 +683,7 @@ describe('Records CRUD API', () => {
     it('excludes deleted records by default (filterDeleted true)', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -695,13 +692,13 @@ describe('Records CRUD API', () => {
           createRes.body as PostCreateRecordResponse;
         await requestAuthAndType(
           request(app)
-            .delete(recordPath(projectId, recordId))
+            .delete(`/api/notebooks/${projectId}/records/${recordId}`)
             .query({revisionId})
         ).expect(204);
 
         const listRes = await requestAuthAndType(
           request(app)
-            .get(recordsBasePath(projectId))
+            .get(`/api/notebooks/${projectId}/records/metadata`)
             .query({formId: BACKUP_FORM_IDS.FORM2})
         ).expect(200);
         const list = (listRes.body as GetListRecordsResponse).records;
@@ -715,7 +712,7 @@ describe('Records CRUD API', () => {
     it('includes deleted records when filterDeleted is false', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
-          request(app).post(recordsBasePath(projectId)).send({
+          request(app).post(`/api/notebooks/${projectId}/records`).send({
             formId: BACKUP_FORM_IDS.FORM2,
             createdBy: 'admin',
           })
@@ -724,13 +721,13 @@ describe('Records CRUD API', () => {
           createRes.body as PostCreateRecordResponse;
         await requestAuthAndType(
           request(app)
-            .delete(recordPath(projectId, recordId))
+            .delete(`/api/notebooks/${projectId}/records/${recordId}`)
             .query({revisionId})
         ).expect(204);
 
         const listRes = await requestAuthAndType(
           request(app)
-            .get(recordsBasePath(projectId))
+            .get(`/api/notebooks/${projectId}/records/metadata`)
             .query({formId: BACKUP_FORM_IDS.FORM2, filterDeleted: 'false'})
         ).expect(200);
         const list = (listRes.body as GetListRecordsResponse).records;
@@ -746,14 +743,14 @@ describe('Records CRUD API', () => {
   describe('authorization', () => {
     it('list returns 401 without token', async () => {
       await withRecordsBackup(async projectId => {
-        await request(app).get(recordsBasePath(projectId)).expect(401);
+        await request(app).get(`/api/notebooks/${projectId}/records/metadata`).expect(401);
       });
     });
 
     it('list returns 401 when user has no project-level read permission', async () => {
       await withRecordsBackup(async projectId => {
         await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId)),
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`),
           localUserToken
         ).expect(401);
       });
@@ -763,10 +760,7 @@ describe('Records CRUD API', () => {
       await withRecordsBackup(async projectId => {
         await request(app)
           .get(
-            recordPath(
-              projectId,
-              `${RECORD_ID_PREFIX}00000000-0000-0000-0000-000000000001`
-            )
+            `/api/notebooks/${projectId}/records/${RECORD_ID_PREFIX}00000000-0000-0000-0000-000000000001`
           )
           .expect(401);
       });
@@ -795,7 +789,7 @@ describe('Records CRUD API', () => {
         });
 
         const listAsAdmin = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId))
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
         ).expect(200);
         const records = (listAsAdmin.body as GetListRecordsResponse).records;
         const adminRecord = records.find(
@@ -804,7 +798,7 @@ describe('Records CRUD API', () => {
         if (!adminRecord) throw new Error('No admin record in backup');
 
         await request(app)
-          .get(recordPath(projectId, adminRecord.recordId))
+          .get(`/api/notebooks/${projectId}/records/${adminRecord.recordId}`)
           .set('Authorization', `Bearer ${guestToken}`)
           .set('Content-Type', 'application/json')
           .expect(403);
@@ -832,7 +826,7 @@ describe('Records CRUD API', () => {
         });
 
         const listAsAdmin = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId))
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
         ).expect(200);
         const records = (listAsAdmin.body as GetListRecordsResponse).records;
         const adminRecord = records.find(
@@ -841,7 +835,7 @@ describe('Records CRUD API', () => {
         if (!adminRecord) throw new Error('No admin record in backup');
 
         await request(app)
-          .put(recordPath(projectId, adminRecord.recordId))
+          .put(`/api/notebooks/${projectId}/records/${adminRecord.recordId}`)
           .set('Authorization', `Bearer ${guestToken}`)
           .set('Content-Type', 'application/json')
           .send({
@@ -873,7 +867,7 @@ describe('Records CRUD API', () => {
         });
 
         const listAsAdmin = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId))
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
         ).expect(200);
         const records = (listAsAdmin.body as GetListRecordsResponse).records;
         const adminRecord = records.find(
@@ -882,7 +876,7 @@ describe('Records CRUD API', () => {
         if (!adminRecord) throw new Error('No admin record in backup');
 
         await request(app)
-          .delete(recordPath(projectId, adminRecord.recordId))
+          .delete(`/api/notebooks/${projectId}/records/${adminRecord.recordId}`)
           .set('Authorization', `Bearer ${guestToken}`)
           .set('Content-Type', 'application/json')
           .query({revisionId: adminRecord.revisionId})
@@ -911,7 +905,7 @@ describe('Records CRUD API', () => {
         });
 
         const listAsAdmin = await requestAuthAndType(
-          request(app).get(recordsBasePath(projectId))
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
         ).expect(200);
         const records = (listAsAdmin.body as GetListRecordsResponse).records;
         const adminRecord = records.find(
@@ -920,7 +914,7 @@ describe('Records CRUD API', () => {
         if (!adminRecord) throw new Error('No admin record in backup');
 
         await request(app)
-          .post(recordRevisionsPath(projectId, adminRecord.recordId))
+          .post(`/api/notebooks/${projectId}/records/${adminRecord.recordId}/revisions`)
           .set('Authorization', `Bearer ${guestToken}`)
           .set('Content-Type', 'application/json')
           .send({revisionId: adminRecord.revisionId})
