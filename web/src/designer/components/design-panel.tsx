@@ -82,6 +82,29 @@ export const DesignPanel = () => {
 
   const maxKeys = Object.keys(viewSets).length;
 
+  const headingRowSx = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 1,
+  } as const;
+
+  const headingTextSx = {
+    color: 'text.primary',
+    fontWeight: 700,
+  } as const;
+
+  const infoIconSx = {
+    color: '#1E88E5',
+  } as const;
+
+  const subtitleSx = {
+    color: 'text.secondary',
+    fontWeight: theme => theme.typography.fontWeightMedium,
+    lineHeight: 1.5,
+    maxWidth: 'none',
+    whiteSpace: 'nowrap',
+  } as const;
+
   const visibleTabSx = {
     '&.MuiTab-root': {
       backgroundColor: '#FFFFFF',
@@ -279,18 +302,12 @@ export const DesignPanel = () => {
     <>
       <TabContext value={tabIndex}>
         <Box sx={{mb: 1.5, mt: 0.5}}>
-          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-            <Typography
-              variant="h5"
-              sx={{
-                color: 'text.primary',
-                fontWeight: 700,
-              }}
-            >
+          <Box sx={headingRowSx}>
+            <Typography variant="h5" sx={headingTextSx}>
               Forms
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
+              <InfoIcon sx={infoIconSx} fontSize="small" />
             </Tooltip>
           </Box>
           <Box
@@ -302,16 +319,7 @@ export const DesignPanel = () => {
               flexWrap: 'wrap',
             }}
           >
-            <Typography
-              variant="body1"
-              sx={{
-                color: 'text.secondary',
-                fontWeight: theme => theme.typography.fontWeightMedium,
-                lineHeight: 1.5,
-                maxWidth: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
+            <Typography variant="body1" sx={subtitleSx}>
               Define the user interface for your notebook here. Add one or more
               forms to collect data from users. Each form can have one or more
               sections. Each section has one or more form fields.
