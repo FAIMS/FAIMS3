@@ -55,6 +55,13 @@ import {ConditionType} from '../types/condition';
 
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
+import {
+  designerDividerSx,
+  designerHeadingRowSx,
+  designerHeadingTextSx,
+  designerInfoIconSx,
+  designerPipeSx,
+} from './designer-style';
 import {FieldList} from './field-list';
 
 type Props = {
@@ -124,24 +131,12 @@ export const SectionEditor = ({
   const [duplicateTargetViewSetId, setDuplicateTargetViewSetId] = useState('');
   const [duplicateAlertMessage, setDuplicateAlertMessage] = useState('');
 
-  const headingRowSx = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1,
-  } as const;
-
-  const headingTextSx = {
-    color: 'text.primary',
+  const sectionControlLabelSx = {
+    color: 'text.secondary',
     fontWeight: 700,
-  } as const;
-
-  const infoIconSx = {
-    color: '#1E88E5',
-  } as const;
-
-  const dividerSx = {
-    borderColor: '#90A4AE',
-    borderWidth: 2,
+    letterSpacing: '0.01em',
+    textTransform: 'none',
+    fontSize: '1rem',
   } as const;
 
   useEffect(() => {
@@ -287,225 +282,219 @@ export const SectionEditor = ({
 
   return (
     <>
-      <Grid container spacing={1.75} mb={2}>
-        <Grid item xs={12} sm={12}>
-          <Grid container alignItems="center" spacing={1.5}>
-            <Grid item>
-              <Typography
-                variant="h5"
-                sx={headingTextSx}
-              >
-                Section controls
-              </Typography>
-            </Grid>
-            <Grid item>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddRoundedIcon />}
-                onClick={() => setAddMode(true)}
-                sx={{textTransform: 'none', fontWeight: 700}}
-              >
-                New Section
-              </Button>
-            </Grid>
-          </Grid>
-        </Grid>
-
-        <Grid item xs={12} sm={1.9}>
+      <Stack spacing={1.5} mb={2}>
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+          <Typography variant="subtitle1" sx={designerHeadingTextSx}>
+            Section controls
+          </Typography>
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<AddRoundedIcon />}
+            onClick={() => setAddMode(true)}
+            sx={{textTransform: 'none', fontWeight: 700, mt: -0.35}}
+          >
+            New Section
+          </Button>
+        </Stack>
+        <Stack
+          direction="row"
+          alignItems="center"
+          flexWrap="wrap"
+          rowGap={0.5}
+          columnGap={1}
+        >
           <Button
             variant="text"
             size="small"
             startIcon={<EditRoundedIcon />}
             onClick={() => setEditMode(true)}
-            sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
+            sx={sectionControlLabelSx}
           >
-            Edit section name
+            Edit name
           </Button>
-          {editMode && (
-            <form
-              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                setEditMode(false);
-              }}
-            >
-              <DebouncedTextField
-                size="small"
-                margin="dense"
-                label="Section Name"
-                name="label"
-                data-testid="label"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Tooltip title="Done">
-                        <IconButton size="small" type="submit">
-                          <DoneRoundedIcon />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Close">
-                        <IconButton
-                          size="small"
-                          onClick={() => setEditMode(false)}
-                        >
-                          <CloseRoundedIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </InputAdornment>
-                  ),
-                }}
-                value={fView.label}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  updateSectionLabel(event.target.value);
-                }}
-                sx={{'& .MuiInputBase-root': {paddingRight: 0}}}
-              />
-            </form>
-          )}
-        </Grid>
 
-        <Grid item xs={12} sm={1.5}>
-          <Tooltip title="Move section left">
-            <span>
-              <IconButton
-                disabled={viewSet.views.indexOf(viewId) === 0 ? true : false}
-                onClick={() => moveSection('left')}
-                aria-label="left"
-                size="small"
-              >
-                <ArrowBackRoundedIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Move section right">
-            <span>
-              <IconButton
-                disabled={
-                  viewSet.views.indexOf(viewId) === viewSet.views.length - 1
-                    ? true
-                    : false
-                }
-                onClick={() => moveSection('right')}
-                aria-label="right"
-                size="small"
-              >
-                <ArrowForwardRoundedIcon />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Grid>
+          <Typography sx={designerPipeSx}> | </Typography>
 
-        {/* Duplicate Section Button */}
-        <Grid item xs={12} sm={1.9}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Tooltip title="Move section left">
+              <span>
+                <IconButton
+                  disabled={viewSet.views.indexOf(viewId) === 0}
+                  onClick={() => moveSection('left')}
+                  aria-label="left"
+                  size="small"
+                  sx={{color: 'text.secondary', p: 0.5}}
+                >
+                  <ArrowBackRoundedIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Move section right">
+              <span>
+                <IconButton
+                  disabled={viewSet.views.indexOf(viewId) === viewSet.views.length - 1}
+                  onClick={() => moveSection('right')}
+                  aria-label="right"
+                  size="small"
+                  sx={{color: 'text.secondary', p: 0.5}}
+                >
+                  <ArrowForwardRoundedIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Typography variant="caption" sx={sectionControlLabelSx}>
+              Reorder
+            </Typography>
+          </Stack>
+
+          <Typography sx={designerPipeSx}> | </Typography>
+
           <Button
             variant="text"
             size="small"
             startIcon={<ContentCopyRoundedIcon />}
             onClick={() => setOpenDuplicateDialog(true)}
-            sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
+            sx={sectionControlLabelSx}
           >
-            Duplicate section
+            Duplicate
           </Button>
-        </Grid>
 
-        <Grid item xs={12} sm={1.9}>
+          <Typography sx={designerPipeSx}> | </Typography>
+
           <Button
             variant="text"
             size="small"
             startIcon={<MoveRoundedIcon />}
             onClick={() => setOpenMoveDialog(true)}
-            sx={{color: 'text.secondary', fontWeight: 600, textTransform: 'none'}}
+            sx={sectionControlLabelSx}
           >
-            Move section
+            Move section to another Form
           </Button>
-          <Dialog
-            open={openMoveDialog}
-            onClose={handleCloseMoveDialog}
-            aria-labelledby="alert-move-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-move-dialog-title" textAlign="center">
-              Move Section
-            </DialogTitle>
-            <DialogContent>
-              <Typography
-                variant="body1"
-                sx={{mt: 0.5, mb: 1, fontWeight: 450}}
-              >
-                Destination Form
-              </Typography>
-              <Typography variant="body2" sx={{mb: 1}}>
-                Choose the form you want to move the section to.
-              </Typography>
-              <Autocomplete
-                fullWidth
-                value={formValue}
-                onChange={(_event, newValue) => {
-                  setTargetViewSetId(newValue ? newValue.id : '');
-                }}
-                options={formOptions}
-                getOptionLabel={option => option.label}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => (
-                  <DebouncedTextField
-                    {...params}
-                    onChange={event => setTargetViewSetId(event.target.value)}
-                  />
-                )}
-              />
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleCloseMoveDialog}>Cancel</Button>
-              <Button onClick={moveSectionToForm} disabled={!targetViewSetId}>
-                Move
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Grid>
 
-        <Grid item xs={12} sm={2}>
+          <Typography sx={designerPipeSx}> | </Typography>
+
           <ConditionModal
-            label={fView.condition ? 'Update Condition' : 'Add Condition'}
+            label={fView.condition ? 'UPDATE CONDITION' : 'ADD CONDITION'}
             initial={fView.condition}
             onChange={conditionChanged}
             view={viewId}
           />
-        </Grid>
 
-        <Grid item xs={12} sm={1.9}>
+          <Typography sx={designerPipeSx}> | </Typography>
+
           <Button
             variant="text"
             color="error"
             size="small"
             startIcon={<DeleteRoundedIcon />}
             onClick={deleteConfirmation}
-            sx={{fontWeight: 700, textTransform: 'none'}}
+            sx={sectionControlLabelSx}
           >
-            Delete section
+            Delete
           </Button>
-          <Dialog
-            open={openDeleteDialog}
-            onClose={handleCloseDeleteDialog}
-            aria-labelledby="alert-delete-dialog-title"
-            aria-describedby="alert-dialog-description"
-          >
-            <DialogTitle id="alert-delete-dialog-title">
-              Are you sure you want to delete this section?
-            </DialogTitle>
-            <DialogActions>
-              <Button onClick={deleteSection}>Yes</Button>
-              <Button onClick={handleCloseDeleteDialog}>No</Button>
-            </DialogActions>
-          </Dialog>
-          <DeletionWarningDialog
-            open={showConditionAlert}
-            title="Cannot delete this section"
-            references={conditionReferences}
-            onClose={handleCloseConditionAlert}
+        </Stack>
+      </Stack>
+      {editMode && (
+        <form
+          onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+            e.preventDefault();
+            setEditMode(false);
+          }}
+        >
+          <DebouncedTextField
+            size="small"
+            margin="dense"
+            label="Section Name"
+            name="label"
+            data-testid="label"
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Tooltip title="Done">
+                    <IconButton size="small" type="submit">
+                      <DoneRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Close">
+                    <IconButton size="small" onClick={() => setEditMode(false)}>
+                      <CloseRoundedIcon />
+                    </IconButton>
+                  </Tooltip>
+                </InputAdornment>
+              ),
+            }}
+            value={fView.label}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              updateSectionLabel(event.target.value);
+            }}
+            sx={{'& .MuiInputBase-root': {paddingRight: 0}, mb: 1}}
           />
-        </Grid>
-      </Grid>
-      <Divider sx={{...dividerSx, mb: 2}} />
+        </form>
+      )}
+      <Divider sx={{...designerDividerSx, mb: 2}} />
+
+      <Dialog
+        open={openMoveDialog}
+        onClose={handleCloseMoveDialog}
+        aria-labelledby="alert-move-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-move-dialog-title" textAlign="center">
+          Move Section
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{mt: 0.5, mb: 1, fontWeight: 450}}>
+            Destination Form
+          </Typography>
+          <Typography variant="body2" sx={{mb: 1}}>
+            Choose the form you want to move the section to.
+          </Typography>
+          <Autocomplete
+            fullWidth
+            value={formValue}
+            onChange={(_event, newValue) => {
+              setTargetViewSetId(newValue ? newValue.id : '');
+            }}
+            options={formOptions}
+            getOptionLabel={option => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={params => (
+              <DebouncedTextField
+                {...params}
+                onChange={event => setTargetViewSetId(event.target.value)}
+              />
+            )}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+          <Button onClick={moveSectionToForm} disabled={!targetViewSetId}>
+            Move
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        aria-labelledby="alert-delete-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-delete-dialog-title">
+          Are you sure you want to delete this section?
+        </DialogTitle>
+        <DialogActions>
+          <Button onClick={deleteSection}>Yes</Button>
+          <Button onClick={handleCloseDeleteDialog}>No</Button>
+        </DialogActions>
+      </Dialog>
+      <DeletionWarningDialog
+        open={showConditionAlert}
+        title="Cannot delete this section"
+        references={conditionReferences}
+        onClose={handleCloseConditionAlert}
+      />
       {addMode && (
         <form
           onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
@@ -558,16 +547,16 @@ export const SectionEditor = ({
         spacing={1}
         mt={2}
         mb={1}
-        sx={headingRowSx}
+        sx={designerHeadingRowSx}
       >
-        <Typography variant="h5" sx={headingTextSx}>
+        <Typography variant="h2" sx={designerHeadingTextSx}>
           Fields
         </Typography>
         <Tooltip title="Add info text here.">
-          <InfoIcon sx={infoIconSx} fontSize="small" />
+          <InfoIcon sx={designerInfoIconSx} fontSize="small" />
         </Tooltip>
       </Stack>
-      <Divider sx={{...dividerSx, mb: 2}} />
+      <Divider sx={{...designerDividerSx, mb: 2}} />
       <Dialog
         open={openDuplicateDialog}
         onClose={() => {
