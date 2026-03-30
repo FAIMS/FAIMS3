@@ -455,6 +455,19 @@ describe('ssoVerify', () => {
       expect(user).to.be.undefined;
     });
 
+    it('calls done with error when action is register but no inviteId', async () => {
+      await ssoVerify({
+        ...baseArgs,
+        req: buildReq({action: 'register'}),
+        done,
+      });
+
+      expect(done.calledOnce).to.be.true;
+      const [err, user] = done.firstCall.args;
+      expect(err).to.be.instanceOf(Error);
+      expect(user).to.be.undefined;
+    });
+
     it('calls done with error when identifyUser throws', async () => {
       getCouchUserStub.rejects(new Error('db connection failure'));
 

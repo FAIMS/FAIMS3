@@ -468,7 +468,12 @@ export function addAuthRoutes(
                 return res.redirect(errorRedirect);
               }
               if (!user) {
-                console.warn('User is false after local auth:', info);
+                // if user is false, info might have something useful
+                // the type of info is unconstrained (object | string | Array<string | undefined>) but
+                // from OIDC we get {message: '...'} with an error message on failure
+                // I think they don't use err here because this is a post-auth failure
+                // (the case I saw was mis-configuration of the endpoint)
+                console.warn('User is false after social auth:', info);
                 req.flash('error', {
                   registrationError: {msg: info?.message || 'Login failed'},
                 });
@@ -488,9 +493,7 @@ export function addAuthRoutes(
             }
           )(req, res, next);
         } else {
-          // At this point, we didn't have an existing user so we need to
-          // create one
-
+          // At this point, we didn't have an existing user so we need to create one
           let createdDbUser: PeopleDBDocument;
           try {
             // consume the invite and pass the user creation callback
@@ -998,6 +1001,9 @@ export function addAuthRoutes(
         provider,
         // custom success function which signs JWT and redirects
         async (err: Error | null, user: PeopleDBDocument, info: any) => {
+          // We have come back from EITHER login or registration. In either case
+          // we have either a newly minted user, or an updated existing one -
+          // now we just apply an invite if present
           const action = (req.session as CustomSessionData).action;
 
           // firstly throw error if needed (flash it out and redirect to the
@@ -1012,7 +1018,11 @@ export function addAuthRoutes(
             }
           }
           if (!user) {
-            // info may have something useful — from OIDC we get {message: '...'}
+            // if user is false, info might have something useful
+            // the type of info is unconstrained (object | string | Array<string | undefined>) but
+            // from OIDC we get {message: '...'} with an error message on failure
+            // I think they don't use err here because this is a post-auth failure
+            // (the case I saw was mis-configuration of the endpoint)
             console.warn('User is false after social auth:', info);
             const errorRedirect =
               action === 'login' ? loginErrorRedirect : registerErrorRedirect;

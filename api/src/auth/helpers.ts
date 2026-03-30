@@ -624,6 +624,15 @@ export async function ssoVerify({
     );
   }
 
+  // Early return if we don't have an invite for registration (although this should
+  // be caught sooner in the route callback, this is an extra guard just in case).
+  if (action === 'register' && !(req.session as CustomSessionData).inviteId) {
+    return done(
+      new Error('No invite present for registration - cannot proceed'),
+      undefined
+    );
+  }
+
   // Identify whether this SSO user already has an account
   let matchedSingleUser: PeopleDBDocument | undefined;
   try {
@@ -644,6 +653,7 @@ export async function ssoVerify({
           strategyId,
           userDisplayName,
         });
+        // persist the new user and return it
         await saveCouchUser(newDbUser);
         return done(null, newDbUser);
       } catch (e) {
@@ -678,7 +688,16 @@ export async function ssoVerify({
       targetUser = matchedSingleUser;
     }
 
-    // Ensure the SSO profile is linked
+    // NOTE: This is the situation where you are trying to 'register' a new
+    // account but one already exists with SSO with matching email - we
+    // decide here to instead log them in - upgrading the potentially
+    // unconnected account
+
+    // We have precisely one matching email address, let's ensure that this
+    // account has the linked SSO profile, then return it (We can safely assert
+    // non-null here due to our previous filtering)
+
+    // Firstly - ensure they have the SSO profile linked
     if (!(strategyId in targetUser.profiles)) {
       targetUser.profiles[strategyId] = profile;
     }
