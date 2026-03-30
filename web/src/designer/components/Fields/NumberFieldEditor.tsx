@@ -7,21 +7,16 @@ import {
   RadioGroup,
 } from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
+/** Integer vs floating `numberType` and HTML input binding for `NumberField`. */
 export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
-
-  const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
-  };
 
   const numberType =
     (field['component-parameters'].numberType as 'integer' | 'floating') ||
@@ -30,11 +25,12 @@ export const NumberFieldEditor = ({fieldName}: {fieldName: string}) => {
   const handleNumberTypeChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['component-parameters'].numberType = event.target.value as
-      | 'integer'
-      | 'floating';
-    updateField(fieldName, newField);
+    const newField = withUpdatedField(field, nextField => {
+      nextField['component-parameters'].numberType = event.target.value as
+        | 'integer'
+        | 'floating';
+    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

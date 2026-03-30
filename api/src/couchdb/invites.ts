@@ -230,17 +230,18 @@ export async function getInvite({
 }
 
 /**
- * Record usage of an invite by a user.
+ * Record usage of an invite by a user and update the user's roles accordingly.
  *
  * Also checks for validity (though you should do this prior to calling this
  * function)
  *
  * NOTE: DOES NOT save the user - that is the responsibility of the caller - so as to
- * enable efficiently managing this save point/transaction
+ * enable efficiently managing this save point/transaction.  User object is updated
+ * in place but is not saved.
  *
  * @param {Object} params - The parameters for recording invite usage
  * @param {ExistingInvitesDBDocument} params.invite - The invite document
- * @param {string} params.userId - ID of the user using the invite
+ * @param {PeopleDBDocument} params.user - The user using the invite, object is updated in place with the new role but not saved
  * @returns {Promise<ExistingInvitesDBDocument>} The updated invite document
  * @throws {Error} If the invite has expired or exceeded usage limits
  */

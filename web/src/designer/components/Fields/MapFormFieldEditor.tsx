@@ -27,6 +27,7 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 
 type FieldState = {
   featureType: string;
@@ -35,6 +36,7 @@ type FieldState = {
   buttonLabelText: string;
 };
 
+/** Map geometry type, zoom, GeoTIFF path, and “use current point” toggle for `MapFormField`. */
 export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -49,10 +51,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
     field['component-parameters'].buttonLabelText ?? '';
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const state: FieldState = {

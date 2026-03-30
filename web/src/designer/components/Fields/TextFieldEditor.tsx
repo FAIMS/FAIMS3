@@ -14,10 +14,12 @@
 
 import {Card, Grid} from '@mui/material';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
-import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
+import {withUpdatedField} from '../../features/fields/shared/updateField';
+import {fieldUpdated} from '../../store/slices/uiSpec';
 import {BaseFieldEditor} from './BaseFieldEditor';
 
+/** Inspector for single-line text fields (initial value, HTML input type, wraps {@link BaseFieldEditor}). */
 export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -28,12 +30,10 @@ export const TextFieldEditor = ({fieldName}: {fieldName: string}) => {
   const subType = field['component-parameters'].InputProps?.type || '';
 
   const updateDefault = (value: string | number | null) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    newField['initialValue'] = value;
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
+    const newField = withUpdatedField(field, nextField => {
+      nextField['initialValue'] = value;
     });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   return (

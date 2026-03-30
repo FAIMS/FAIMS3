@@ -12,8 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import {FieldType} from './state/initial';
+/**
+ * @file Canonical default {@link FieldType} templates keyed by internal type name (`component-name`).
+ * Used by the field chooser and `fieldAdded` reducer via {@link getFieldSpec}.
+ */
+
 import {CategoryKey} from './field-categories';
+import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
   FAIMSTextField: {
@@ -218,7 +223,7 @@ const fields: {[key: string]: FieldType} = {
         multiple: true,
       },
       ElementProps: {
-        expandedChecklist: false,
+        expandedChecklist: true,
         enableOtherOption: false,
         options: [
           {value: 'Default', label: 'Default'},
@@ -531,11 +536,17 @@ const fields: {[key: string]: FieldType} = {
   },
 };
 
+/** All registered field type keys (chooser + factory). */
 export const getFieldNames = () => {
   return Object.keys(fields);
 };
 
-// Return a copy of the spec for this field type
+/**
+ * Deep-clone the default {@link FieldType} for a template key.
+ *
+ * @param fieldType - Key in the `fields` map (e.g. `FAIMSTextField`).
+ * @returns Clone of the template; invalid keys produce a clone of `undefined` (callers should validate).
+ */
 export const getFieldSpec = (fieldType: string) => {
   return JSON.parse(JSON.stringify(fields[fieldType])) as FieldType;
 };

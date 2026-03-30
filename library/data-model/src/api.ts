@@ -125,6 +125,9 @@ export type GetListAllUsersResponse = z.infer<
   typeof GetListAllUsersResponseSchema
 >;
 
+/** One row from GET /api/users (admin list). Includes `profiles`; unlike {@link GetCurrentUserResponse}. */
+export type GetListAllUsersItem = GetListAllUsersResponse[number];
+
 // Information about users and roles for a notebook
 export const NotebookAuthSummarySchema = z.object({
   // What roles does the notebook have

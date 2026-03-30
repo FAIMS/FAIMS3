@@ -1,3 +1,7 @@
+/**
+ * @file Visual Mustache template builder (blocks, preview) used by {@link TemplatedStringFieldEditor}.
+ */
+
 import {
   Add as AddIcon,
   Code as CodeIcon,
@@ -148,7 +152,11 @@ const parseTemplate = (
 /**
  * Converts a Mustache AST token into our TemplateBlock format
  */
-const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
+type MustacheToken = [string, string, ...unknown[]];
+
+const convertMustacheTokenToBlock = (
+  token: MustacheToken
+): TemplateBlock | null => {
   const [tokenType, content, ...rest] = token;
 
   try {
@@ -167,21 +175,29 @@ const convertMustacheTokenToBlock = (token: any): TemplateBlock | null => {
           content: content,
         };
 
-      case '#':
+      case '#': {
+        const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
         return {
           id: generateBlockId(),
           type: 'if',
           content: content,
-          children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
+          children: childTokens
+            .map(convertMustacheTokenToBlock)
+            .filter(isTemplateBlock),
         };
+      }
 
-      case '^':
+      case '^': {
+        const childTokens = (rest[2] as MustacheToken[] | undefined) ?? [];
         return {
           id: generateBlockId(),
           type: 'unless',
           content: content,
-          children: rest[2].map(convertMustacheTokenToBlock).filter(Boolean),
+          children: childTokens
+            .map(convertMustacheTokenToBlock)
+            .filter(isTemplateBlock),
         };
+      }
 
       default:
         return null;
@@ -401,7 +417,9 @@ const TemplatePreview: React.FC<{
   systemVariables: Variable[];
   onTemplateError?: (error: string | null) => void;
 }> = ({template, variables, systemVariables, onTemplateError}) => {
-  const [previewValues, setPreviewValues] = useState<Record<string, any>>({});
+  const [previewValues, setPreviewValues] = useState<Record<string, unknown>>(
+    {}
+  );
   const [previewError, setPreviewError] = useState<string | null>(null);
   const allVariables = [...variables, ...systemVariables];
 

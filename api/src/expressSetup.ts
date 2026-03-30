@@ -151,8 +151,9 @@ app.use(
   cookieSession({
     name: 'session',
     secret: COOKIE_SECRET,
-    // TODO ascertain appropriate max age
-    maxAge: 24 * 60 * 60 * 1000 * 365, // BBS 20220831 changed to 1 year
+    // cookie is used for login flow, only short lifetime needed
+    // and reduces risk of stale sessions lingering around
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
   })
 );
 
