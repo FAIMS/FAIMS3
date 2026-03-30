@@ -18,6 +18,12 @@
       "url": "/api"
     }
   ],
+  "tags": [
+    {
+      "name": "Records",
+      "description": "Read-only REST helpers for notebook records: GET `/notebooks/{id}/records/metadata` (paginated metadata) and GET `/notebooks/{id}/records/{recordId}` (full form data). **Write operations** — POST create, POST fork revision, PUT update, DELETE soft-delete — are **not published** in the live API while `ENABLE_RECORDS_CRUD_MUTATIONS` is false in `api/src/api/records.ts`. They remain disabled until design work confirms modification operations are safe at the API boundary."
+    }
+  ],
   "components": {
     "securitySchemes": {
       "Auth": {
@@ -269,61 +275,12 @@
             "description": "Notebook not found"
           }
         }
-      },
-      "post": {
-        "summary": "Create a record",
-        "description": "Creates a new empty record (initial revision) for the given form. Optional relationship metadata may be supplied.",
-        "tags": ["Records"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Notebook (project) identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostRecordsCreateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Record created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostRecordsCreateResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body"
-          },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          }
-        }
       }
     },
     "/notebooks/{id}/records/metadata": {
       "get": {
         "summary": "List record metadata (CRUD API)",
-        "description": "Returns minimal metadata for each record in the notebook that the caller may read. Supports pagination and optional filters. Deleted records are omitted by default. Distinct from GET `/notebooks/{id}/records`, which returns full export-shaped `{ records }` for legacy clients (export permission).",
+        "description": "Returns minimal metadata for each record in the notebook that the caller may read. Supports pagination and optional filters. Deleted records are omitted by default. Distinct from GET `/notebooks/{id}/records`, which returns full export-shaped `{ records }` for legacy clients (export permission). This is the primary **read** listing for the Records API; write routes are off until `ENABLE_RECORDS_CRUD_MUTATIONS` is enabled (see Records tag description).",
         "tags": ["Records"],
         "parameters": [
           {
@@ -398,76 +355,10 @@
         }
       }
     },
-    "/notebooks/{id}/records/{recordId}/revisions": {
-      "post": {
-        "summary": "Fork a new revision",
-        "description": "Creates a new head revision from an existing revision (copies field values). Requires permission to edit the record.",
-        "tags": ["Records"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Notebook (project) identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "recordId",
-            "in": "path",
-            "description": "Record identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PostRecordsRevisionForkRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Revision created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PostRecordsRevisionForkResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request or revision state"
-          },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          },
-          "403": {
-            "description": "Not allowed to edit this record"
-          },
-          "404": {
-            "description": "Record or revision not found"
-          }
-        }
-      }
-    },
     "/notebooks/{id}/records/{recordId}": {
       "get": {
         "summary": "Get record detail",
-        "description": "Returns full form data for one record. Optionally pin a specific revision with revisionId.",
+        "description": "Returns full form data for one record. Optionally pin a specific revision with revisionId. **Write** variants of this path (PUT update, DELETE soft-delete) are not exposed while record mutations are disabled server-side.",
         "tags": ["Records"],
         "parameters": [
           {
@@ -519,129 +410,6 @@
           },
           "403": {
             "description": "Not allowed to read this record"
-          },
-          "404": {
-            "description": "Record or revision not found"
-          }
-        }
-      },
-      "put": {
-        "summary": "Update record fields",
-        "description": "Updates the record by creating a new revision from the given base revisionId. Use mode to control AVP linkage (new vs parent).",
-        "tags": ["Records"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Notebook (project) identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "recordId",
-            "in": "path",
-            "description": "Record identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/definitions/PutRecordsUpdateRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "successful operation",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/definitions/PutRecordsUpdateResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or revision mismatch"
-          },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          },
-          "403": {
-            "description": "Not allowed to edit this record"
-          },
-          "404": {
-            "description": "Record or revision not found"
-          },
-          "409": {
-            "description": "Record conflict (e.g. multiple heads); resubmit with revisionId"
-          }
-        }
-      },
-      "delete": {
-        "summary": "Soft-delete a record",
-        "description": "Marks the record as deleted from the given base revision. Query parameter revisionId is required.",
-        "tags": ["Records"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Notebook (project) identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "recordId",
-            "in": "path",
-            "description": "Record identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "revisionId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Revision to base the delete on"
-          }
-        ],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Record deleted"
-          },
-          "400": {
-            "description": "Invalid request"
-          },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          },
-          "403": {
-            "description": "Not allowed to delete this record"
           },
           "404": {
             "description": "Record or revision not found"

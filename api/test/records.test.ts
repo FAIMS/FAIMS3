@@ -15,6 +15,9 @@
  *
  * Integration tests for the stateless CRUD records API.
  * Uses test/fixtures/recordsApi for backup helpers and shared constants.
+ *
+ * Mutation suites use describeMutations so they run only when
+ * ENABLE_RECORDS_CRUD_MUTATIONS is true in the application under test.
  */
 
 import PouchDB from 'pouchdb';
@@ -45,6 +48,7 @@ import {
   getExpressUserFromEmailOrUserId,
   saveCouchUser,
 } from '../src/couchdb/users';
+import {ENABLE_RECORDS_CRUD_MUTATIONS} from '../src/api/records';
 import {app} from '../src/expressSetup';
 import {
   BACKUP_FORM_IDS,
@@ -53,6 +57,11 @@ import {
   REVISION_ID_PREFIX,
   withRecordsBackup,
 } from './fixtures/recordsApi';
+
+/** Wraps mutation-related describes; skipped while the API ships read-only. */
+const describeMutations = ENABLE_RECORDS_CRUD_MUTATIONS
+  ? describe
+  : describe.skip;
 import {callbackObject} from './mocks';
 import {
   beforeApiTests,
@@ -179,7 +188,7 @@ describe('Records CRUD API', () => {
     });
   });
 
-  describe('create record', () => {
+  describeMutations('create record', () => {
     it('creates record and returns recordId and revisionId', async () => {
       await withRecordsBackup(async projectId => {
         const body: PostCreateRecordInput = {
@@ -284,13 +293,13 @@ describe('Records CRUD API', () => {
   describe('get one record', () => {
     it('returns full form data for existing record', async () => {
       await withRecordsBackup(async projectId => {
-        const createRes = await requestAuthAndType(
-          request(app).post(`/api/notebooks/${projectId}/records`).send({
-            formId: BACKUP_FORM_IDS.FORM2,
-            createdBy: 'admin',
-          })
-        ).expect(201);
-        const {recordId} = createRes.body as PostCreateRecordResponse;
+        const listRes = await requestAuthAndType(
+          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
+        ).expect(200);
+        const records = (listRes.body as GetListRecordsResponse).records;
+        const sample = records.find((r: ListRecordsItem) => r.createdBy === 'admin');
+        if (!sample) throw new Error('expected an admin-owned record in backup');
+        const {recordId} = sample;
 
         const res = await requestAuthAndType(
           request(app).get(`/api/notebooks/${projectId}/records/${recordId}`)
@@ -320,6 +329,9 @@ describe('Records CRUD API', () => {
       });
     });
 
+  });
+
+  describeMutations('get one record (revision pinning via update)', () => {
     it('returns specific revision when revisionId query provided', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
@@ -363,7 +375,7 @@ describe('Records CRUD API', () => {
     });
   });
 
-  describe('update record', () => {
+  describeMutations('update record', () => {
     it('updates with partial field data (field-level)', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
@@ -456,7 +468,7 @@ describe('Records CRUD API', () => {
     });
   });
 
-  describe('create revision (fork)', () => {
+  describeMutations('create revision (fork)', () => {
     it('creates a new head revision copying AVPs from the given revision', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
@@ -608,7 +620,7 @@ describe('Records CRUD API', () => {
     });
   });
 
-  describe('delete record', () => {
+  describeMutations('delete record', () => {
     it('soft-deletes and returns 204', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
@@ -679,7 +691,7 @@ describe('Records CRUD API', () => {
     });
   });
 
-  describe('list filterDeleted', () => {
+  describeMutations('list filterDeleted', () => {
     it('excludes deleted records by default (filterDeleted true)', async () => {
       await withRecordsBackup(async projectId => {
         const createRes = await requestAuthAndType(
@@ -805,7 +817,8 @@ describe('Records CRUD API', () => {
       });
     });
 
-    it('returns 403 when GUEST tries to update another user record', async () => {
+    describeMutations('mutating operations on another user record', () => {
+      it('returns 403 when GUEST tries to update another user record', async () => {
       await withRecordsBackup(async projectId => {
         const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
         if (!couchUser) throw new Error('Local user not found');
@@ -844,82 +857,98 @@ describe('Records CRUD API', () => {
           })
           .expect(403);
       });
-    });
-
-    it('returns 403 when GUEST tries to delete another user record', async () => {
-      await withRecordsBackup(async projectId => {
-        const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
-        if (!couchUser) throw new Error('Local user not found');
-        addProjectRole({
-          user: couchUser,
-          projectId: RECORDS_BACKUP_PROJECT_ID,
-          role: Role.PROJECT_GUEST,
-        });
-        await saveCouchUser(couchUser);
-
-        const expressUser =
-          await getExpressUserFromEmailOrUserId(localUserName);
-        if (!expressUser) throw new Error('Local user not found');
-        const signingKey = await KEY_SERVICE.getSigningKey();
-        const guestToken = await generateJwtFromUser({
-          user: expressUser,
-          signingKey,
-        });
-
-        const listAsAdmin = await requestAuthAndType(
-          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
-        ).expect(200);
-        const records = (listAsAdmin.body as GetListRecordsResponse).records;
-        const adminRecord = records.find(
-          (r: ListRecordsItem) => r.createdBy === 'admin'
-        );
-        if (!adminRecord) throw new Error('No admin record in backup');
-
-        await request(app)
-          .delete(`/api/notebooks/${projectId}/records/${adminRecord.recordId}`)
-          .set('Authorization', `Bearer ${guestToken}`)
-          .set('Content-Type', 'application/json')
-          .query({revisionId: adminRecord.revisionId})
-          .expect(403);
       });
-    });
 
-    it('returns 403 when GUEST tries to fork revision on another user record', async () => {
-      await withRecordsBackup(async projectId => {
-        const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
-        if (!couchUser) throw new Error('Local user not found');
-        addProjectRole({
-          user: couchUser,
-          projectId: RECORDS_BACKUP_PROJECT_ID,
-          role: Role.PROJECT_GUEST,
+      it('returns 403 when GUEST tries to delete another user record', async () => {
+        await withRecordsBackup(async projectId => {
+          const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+          if (!couchUser) throw new Error('Local user not found');
+          addProjectRole({
+            user: couchUser,
+            projectId: RECORDS_BACKUP_PROJECT_ID,
+            role: Role.PROJECT_GUEST,
+          });
+          await saveCouchUser(couchUser);
+
+          const expressUser =
+            await getExpressUserFromEmailOrUserId(localUserName);
+          if (!expressUser) throw new Error('Local user not found');
+          const signingKey = await KEY_SERVICE.getSigningKey();
+          const guestToken = await generateJwtFromUser({
+            user: expressUser,
+            signingKey,
+          });
+
+          const listAsAdmin = await requestAuthAndType(
+            request(app).get(`/api/notebooks/${projectId}/records/metadata`)
+          ).expect(200);
+          const records = (listAsAdmin.body as GetListRecordsResponse).records;
+          const adminRecord = records.find(
+            (r: ListRecordsItem) => r.createdBy === 'admin'
+          );
+          if (!adminRecord) throw new Error('No admin record in backup');
+
+          await request(app)
+            .delete(`/api/notebooks/${projectId}/records/${adminRecord.recordId}`)
+            .set('Authorization', `Bearer ${guestToken}`)
+            .set('Content-Type', 'application/json')
+            .query({revisionId: adminRecord.revisionId})
+            .expect(403);
         });
-        await saveCouchUser(couchUser);
+      });
 
-        const expressUser =
-          await getExpressUserFromEmailOrUserId(localUserName);
-        if (!expressUser) throw new Error('Local user not found');
-        const signingKey = await KEY_SERVICE.getSigningKey();
-        const guestToken = await generateJwtFromUser({
-          user: expressUser,
-          signingKey,
+      it('returns 403 when GUEST tries to fork revision on another user record', async () => {
+        await withRecordsBackup(async projectId => {
+          const couchUser = await getCouchUserFromEmailOrUserId(localUserName);
+          if (!couchUser) throw new Error('Local user not found');
+          addProjectRole({
+            user: couchUser,
+            projectId: RECORDS_BACKUP_PROJECT_ID,
+            role: Role.PROJECT_GUEST,
+          });
+          await saveCouchUser(couchUser);
+
+          const expressUser =
+            await getExpressUserFromEmailOrUserId(localUserName);
+          if (!expressUser) throw new Error('Local user not found');
+          const signingKey = await KEY_SERVICE.getSigningKey();
+          const guestToken = await generateJwtFromUser({
+            user: expressUser,
+            signingKey,
+          });
+
+          const listAsAdmin = await requestAuthAndType(
+            request(app).get(`/api/notebooks/${projectId}/records/metadata`)
+          ).expect(200);
+          const records = (listAsAdmin.body as GetListRecordsResponse).records;
+          const adminRecord = records.find(
+            (r: ListRecordsItem) => r.createdBy === 'admin'
+          );
+          if (!adminRecord) throw new Error('No admin record in backup');
+
+          await request(app)
+            .post(`/api/notebooks/${projectId}/records/${adminRecord.recordId}/revisions`)
+            .set('Authorization', `Bearer ${guestToken}`)
+            .set('Content-Type', 'application/json')
+            .send({revisionId: adminRecord.revisionId})
+            .expect(403);
         });
-
-        const listAsAdmin = await requestAuthAndType(
-          request(app).get(`/api/notebooks/${projectId}/records/metadata`)
-        ).expect(200);
-        const records = (listAsAdmin.body as GetListRecordsResponse).records;
-        const adminRecord = records.find(
-          (r: ListRecordsItem) => r.createdBy === 'admin'
-        );
-        if (!adminRecord) throw new Error('No admin record in backup');
-
-        await request(app)
-          .post(`/api/notebooks/${projectId}/records/${adminRecord.recordId}/revisions`)
-          .set('Authorization', `Bearer ${guestToken}`)
-          .set('Content-Type', 'application/json')
-          .send({revisionId: adminRecord.revisionId})
-          .expect(403);
       });
     });
   });
+
+  (ENABLE_RECORDS_CRUD_MUTATIONS ? describe.skip : describe)(
+    'record mutations disabled',
+    () => {
+      it('POST create returns 404', async () => {
+        await withRecordsBackup(async projectId => {
+          await requestAuthAndType(
+            request(app)
+              .post(`/api/notebooks/${projectId}/records`)
+              .send({formId: BACKUP_FORM_IDS.FORM2})
+          ).expect(404);
+        });
+      });
+    }
+  );
 });

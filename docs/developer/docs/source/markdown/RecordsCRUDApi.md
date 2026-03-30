@@ -1,5 +1,7 @@
 # Records CRUD API
 
+> **Current availability:** The running Conductor API exposes **read-only** record routes: **GET** `/api/notebooks/:id/records/metadata` (list metadata) and **GET** `/api/notebooks/:id/records/:recordId` (single record). **Create** (POST), **fork revision** (POST `…/revisions`), **update** (PUT), and **delete** are **not enabled** until `ENABLE_RECORDS_CRUD_MUTATIONS` is set to `true` in `api/src/api/records.ts`. They are gated off while we finish design work so modification operations are **safe and well-defined at the API boundary** (validation, conflicts, attachments, and related semantics). The sections below describe the intended contract once those routes are turned on.
+
 ## Overview
 
 The Records CRUD API provides a **stateless REST interface** for reading and writing notebook (project) record data. It is an alternative to the default architecture where mobile and desktop apps replicate the remote database via the PouchDB/CouchDB sync protocol. Use this API when you need:
