@@ -47,7 +47,6 @@ import {getTokenByToken, invalidateToken} from '../couchdb/refreshTokens';
 import {
   getCouchUserFromEmailOrUserId,
   saveCouchUser,
-  saveExpressUser,
   updateUserPassword,
 } from '../couchdb/users';
 import {createVerificationChallenge} from '../couchdb/verificationChallenges';
@@ -57,7 +56,7 @@ import {
   UnauthorizedException,
 } from '../exceptions';
 import {requireAuthenticationAPI} from '../middleware';
-import {AuthAction, CustomSessionData} from '../types';
+import {AuthAction, CustomRequest, CustomSessionData} from '../types';
 import {
   sendEmailVerificationChallenge,
   sendPasswordResetEmail,
@@ -65,6 +64,7 @@ import {
 import patch from '../utils/patchExpressAsync';
 import {
   buildQueryString,
+  completePostAuth,
   handleZodErrors,
   redirectWithToken,
   registerLocalUser,
@@ -245,7 +245,7 @@ export function addAuthRoutes(
           const handled = handleZodErrors({
             error: validationError,
             // type hacking here due to override not being picked up
-            req: req as unknown as Request,
+            req: req as unknown as CustomRequest,
             res,
             formData: {email: req.body.email, name: req.body.name},
             redirect: errorRedirect,
@@ -305,12 +305,16 @@ export function addAuthRoutes(
             }
             // reset any failed login attempts
             resetFailedLoginAttempts(req.body.email);
-            // Always upgrade prior to returning token to ensure we have latest
-            // token
-            return redirectWithToken({
-              res,
-              user: await upgradeCouchUserToExpressUser({dbUser: user}),
+            // Apply invite (if present) then redirect with token
+            return completePostAuth({
+              dbUser: user,
+              action: 'login',
+              inviteId: loginPayload.inviteId,
               redirect,
+              req: req as unknown as CustomRequest,
+              res,
+              errorRedirect,
+              flashFn: req.flash.bind(req),
             });
           }
         )(req, res, next);
@@ -335,7 +339,7 @@ export function addAuthRoutes(
           const handled = handleZodErrors({
             error: validationError,
             // type hacking here due to override not being picked up
-            req: req as unknown as Request,
+            req: req as unknown as CustomRequest,
             res,
             formData: {email: req.body.email, name: req.body.name},
             redirect: errorRedirect,
@@ -475,61 +479,57 @@ export function addAuthRoutes(
                 });
                 return res.redirect(errorRedirect);
               }
-              // We have logged in - do we also want to consume an invite?
-              if (inviteId) {
-                // We have an invite to consume - go ahead and use it
-                await validateAndApplyInviteToUser({
-                  inviteCode: inviteId,
-                  dbUser: user,
-                });
-                // avoid saving unwanted details here
-                await saveExpressUser(user);
-              }
-              // No longer login user with session - now redirect straight back with
-              // token
-              return redirectWithToken({
-                res,
-                user: await upgradeCouchUserToExpressUser({dbUser: user}),
+              // User authenticated — apply the invite and redirect
+              return completePostAuth({
+                dbUser: user,
+                action: 'register',
+                inviteId,
                 redirect,
+                res,
+                req: req as unknown as CustomRequest,
+                errorRedirect,
+                flashFn: req.flash.bind(req),
               });
             }
           )(req, res, next);
-        }
+        } else {
+          // At this point, we didn't have an existing user so we need to create one
+          let createdDbUser: PeopleDBDocument;
+          try {
+            // consume the invite and pass the user creation callback
+            createdDbUser = await validateAndApplyInviteToUser({
+              // We don't have this yet
+              dbUser: undefined,
+              // instead we generate it once invite is OK
+              createUser,
+              // Pass in the invite - it's all validated
+              inviteCode: inviteId,
+            });
+            await saveCouchUser(createdDbUser);
+          } catch (e) {
+            res.status(400);
+            req.flash('error', {
+              registrationError: {
+                msg: 'Invite is not valid for registration! Is it expired, or has been used too many times?',
+              },
+            });
+            res.redirect(errorRedirect);
+            return;
+          }
 
-        let createdDbUser: PeopleDBDocument;
-        try {
-          createdDbUser = await validateAndApplyInviteToUser({
-            // We don't have this yet
-            dbUser: undefined,
-            // instead we generate it once invite is OK
-            createUser,
-            // Pass in the invite - it's all validated
-            inviteCode: inviteId,
+          req.flash('message', 'Registration successful');
+
+          // Upgrade to express.User by drilling permissions/associations
+          const expressUser = await upgradeCouchUserToExpressUser({
+            dbUser: createdDbUser,
           });
-          await saveCouchUser(createdDbUser);
-        } catch (e) {
-          res.status(400);
-          req.flash('error', {
-            registrationError: {
-              msg: 'Invite is not valid for registration! Is it expired, or has been used too many times?',
-            },
+
+          return redirectWithToken({
+            res,
+            user: expressUser,
+            redirect,
           });
-          res.redirect(errorRedirect);
-          return;
         }
-
-        req.flash('message', 'Registration successful');
-
-        // Upgrade to express.User by drilling permissions/associations
-        const expressUser = await upgradeCouchUserToExpressUser({
-          dbUser: createdDbUser,
-        });
-
-        return redirectWithToken({
-          res,
-          user: expressUser,
-          redirect,
-        });
       }
     });
   }
@@ -551,7 +551,7 @@ export function addAuthRoutes(
       const handled = handleZodErrors({
         error: validationError,
         // type hacking here due to override not being picked up
-        req: req as unknown as Request,
+        req: req as unknown as CustomRequest,
         res,
         formData: {},
         redirect: errRedirect,
@@ -821,7 +821,7 @@ export function addAuthRoutes(
     } catch (validationError) {
       const handled = handleZodErrors({
         error: validationError,
-        req: req as unknown as Request,
+        req: req as unknown as CustomRequest,
         res,
         formData: {}, // No form data to preserve
         redirect: errRedirect,
@@ -952,10 +952,26 @@ export function addAuthRoutes(
         const inviteId = req.query.inviteId;
         const action = req.query.action;
 
-        // Store into session (we are about to be redirected! Bye bye)
+        // Guard: registration always requires an invite. Catch this before the
+        // SSO round-trip to avoid a confusing failure after the user has
+        // authenticated with their identity provider.
+        if (action === 'register' && !inviteId) {
+          req.flash('error', {
+            registrationError: {msg: 'No invite provided for registration.'},
+          });
+          return res.redirect(
+            `/register${buildQueryString({values: {redirect}})}`
+          );
+        }
+
+        // Store into session (we are about to be redirected! Bye bye).
+        // All three fields are written unconditionally so that every new auth
+        // flow resets any stale values from a previous one. In particular, a
+        // stale inviteId from a prior register flow must not carry over into a
+        // subsequent plain login (the 1-year cookie makes this very likely).
         sessionData.redirect = redirect;
-        if (inviteId) sessionData.inviteId = inviteId;
-        if (action) sessionData.action = action;
+        sessionData.inviteId = inviteId;
+        sessionData.action = action;
 
         // passport authenticate route for this handler (bye bye)
         passport.authenticate(provider, {scope: handlerDetails.scope})(
@@ -984,15 +1000,16 @@ export function addAuthRoutes(
       passport.authenticate(
         provider,
         // custom success function which signs JWT and redirects
-        async (err: Error | null, user: Express.User, info: any) => {
+        async (err: Error | null, user: PeopleDBDocument, info: any) => {
           // We have come back from EITHER login or registration. In either case
           // we have either a newly minted user, or an updated existing one -
           // now we just apply an invite if present
+          const action = (req.session as CustomSessionData).action;
 
           // firstly throw error if needed (flash it out and redirect to the
           // right place returning with full context for another attempt)
           if (err) {
-            if ((req.session as CustomSessionData).action === 'login') {
+            if (action === 'login') {
               req.flash('error', {loginError: {msg: err.message}});
               return res.redirect(loginErrorRedirect);
             } else {
@@ -1007,24 +1024,14 @@ export function addAuthRoutes(
             // I think they don't use err here because this is a post-auth failure
             // (the case I saw was mis-configuration of the endpoint)
             console.warn('User is false after social auth:', info);
+            const errorRedirect =
+              action === 'login' ? loginErrorRedirect : registerErrorRedirect;
             req.flash('error', {
-              registrationError: {msg: info?.message || 'Login failed'},
+              loginError: {msg: info?.message || 'Login failed'},
             });
-            return res.redirect(registerErrorRedirect);
-          }
-          const inviteId = (req.session as CustomSessionData).inviteId;
-          const updatedUser = user;
-          if (inviteId) {
-            // apply invite
-            const updatedUser = await validateAndApplyInviteToUser({
-              inviteCode: inviteId,
-              dbUser: user,
-            });
-            // save
-            await saveCouchUser(updatedUser);
+            return res.redirect(errorRedirect);
           }
 
-          // Are we redirecting?
           const {valid, redirect} = validateRedirect(
             (req.session as CustomSessionData)?.redirect || DEFAULT_REDIRECT_URL
           );
@@ -1033,10 +1040,18 @@ export function addAuthRoutes(
             return res.render('redirect-error', {redirect});
           }
 
-          return redirectWithToken({
-            res,
-            user: await upgradeCouchUserToExpressUser({dbUser: updatedUser}),
+          const errorRedirect =
+            action === 'login' ? loginErrorRedirect : registerErrorRedirect;
+
+          return completePostAuth({
+            dbUser: user,
+            action: action ?? 'login',
+            inviteId: (req.session as CustomSessionData).inviteId,
             redirect,
+            res,
+            req: req as unknown as CustomRequest,
+            errorRedirect,
+            flashFn: req.flash.bind(req),
           });
         }
       )(req, res, next);
