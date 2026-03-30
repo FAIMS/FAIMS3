@@ -131,6 +131,27 @@ export const NotebookEditor = ({
     };
   }, [handleKeyDown]);
 
+  const toolbarSx = {
+    borderBottom: 1,
+    borderColor: 'divider',
+    px: 3,
+    py: 1.25,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 2,
+    flexWrap: 'wrap',
+  } as const;
+
+  const contentSx = {
+    px: 3,
+    pb: 3,
+    pt: 2,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 1.5,
+  } as const;
+
   return (
     <>
       <TabContext value={pathname}>
@@ -145,19 +166,7 @@ export const NotebookEditor = ({
             <Tab label="Info" component={Link} to="/info" value="/info" />
           </TabList>
         </Box>
-        <Box
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            px: 3,
-            py: 1.25,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 2,
-            flexWrap: 'wrap',
-          }}
-        >
+        <Box sx={toolbarSx}>
           <Stack direction="row" spacing={1.5} alignItems="center">
             {isDesignRoute && (
               <>
@@ -235,7 +244,7 @@ export const NotebookEditor = ({
             )}
           </Stack>
         </Box>
-        <Box px={3} pb={3} pt={2}>
+        <Box sx={contentSx}>
           <Outlet context={{previewForm, setPreviewForm}} />
         </Box>
       </TabContext>
