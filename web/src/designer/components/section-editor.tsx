@@ -536,14 +536,17 @@ export const SectionEditor = ({
       )}
       {addAlertMessage && <Alert severity="error">{addAlertMessage}</Alert>}
       <Stack direction="row" alignItems="center" spacing={1} mt={2} mb={1}>
-        <Typography variant="h5" fontWeight={700}>
+        <Typography
+          variant="h5"
+          sx={{color: 'text.primary', fontWeight: 700}}
+        >
           Fields
         </Typography>
         <Tooltip title="Add info text here.">
-          <InfoOutlinedIcon color="info" fontSize="small" />
+          <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
         </Tooltip>
       </Stack>
-      <Divider sx={{borderColor: 'divider', borderWidth: 2, mb: 2}} />
+      <Divider sx={{borderColor: '#90A4AE', borderWidth: 2, mb: 2}} />
       <Dialog
         open={openDuplicateDialog}
         onClose={() => {

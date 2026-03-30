@@ -587,7 +587,7 @@ export const FormEditor = ({
                 Delete
               </Button>
 
-              <Divider orientation="vertical" flexItem sx={{mx: 0.5}} />
+              <Typography sx={{color: 'text.disabled'}}> | </Typography>
 
               <FormControlLabel
                 sx={{
@@ -610,7 +610,7 @@ export const FormEditor = ({
                       Include "Add New Record" button
                     </Typography>
                     <Tooltip title="Add info text here.">
-                      <InfoOutlinedIcon color="info" fontSize="small" />
+                      <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
                     </Tooltip>
                   </Stack>
                 }
@@ -661,7 +661,7 @@ export const FormEditor = ({
 
             {alertMessage && <Alert severity="error">{alertMessage}</Alert>}
           </Stack>
-          <Divider sx={{borderColor: 'divider', borderWidth: 2}} />
+          <Divider sx={{borderColor: '#90A4AE', borderWidth: 2}} />
 
           <Dialog
             open={settingsOpen}
@@ -728,13 +728,13 @@ export const FormEditor = ({
               variant="h5"
               sx={{
                 color: 'text.primary',
-                fontWeight: theme => theme.typography.fontWeightBold,
+                fontWeight: 700,
               }}
             >
               Sections
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoOutlinedIcon color="info" fontSize="small" />
+              <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
             </Tooltip>
           </Stack>
         </Grid>
