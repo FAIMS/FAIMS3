@@ -1,4 +1,11 @@
 import {z} from 'zod';
+import {
+  formRelationshipSchema,
+  formUpdateDataSchema,
+  hydratedRecordDocumentSchema,
+  hydratedRevisionDocumentSchema,
+  newFormRecordSchema,
+} from './databaseEngine';
 import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
 import {
   ExistingTemplateDocumentSchema,
@@ -814,6 +821,128 @@ export const PutConfirmEmailVerificationResponseSchema = z.object({
 export type PutConfirmEmailVerificationResponse = z.infer<
   typeof PutConfirmEmailVerificationResponseSchema
 >;
+
+// ==================
+// RECORDS API
+// ==================
+// Stateless CRUD for /api/notebooks/:id/records (list metadata: GET …/records/metadata)
+
+/** POST create record body (createdBy optional, filled server-side) */
+export const PostCreateRecordInputSchema = newFormRecordSchema.partial({
+  createdBy: true,
+});
+export type PostCreateRecordInput = z.infer<typeof PostCreateRecordInputSchema>;
+
+/** POST create record response */
+export const PostCreateRecordResponseSchema = z.object({
+  recordId: z.string(),
+  revisionId: z.string(),
+});
+export type PostCreateRecordResponse = z.infer<
+  typeof PostCreateRecordResponseSchema
+>;
+
+/** GET list records query (all values are strings from query string) */
+export const GetListRecordsQuerySchema = z
+  .object({
+    formId: z.string().optional(),
+    limit: z.string().optional(),
+    startKey: z.string().optional(),
+    filterDeleted: z.enum(['true', 'false']).optional(),
+  })
+  .refine(
+    data => {
+      if (data.limit === undefined || data.limit === '') return true;
+      const n = parseInt(data.limit, 10);
+      return !Number.isNaN(n) && n >= 1 && n <= 500;
+    },
+    {message: 'limit must be between 1 and 500'}
+  );
+export type GetListRecordsQuery = z.infer<typeof GetListRecordsQuerySchema>;
+
+/** Single record entry in list response (dates as ISO strings) */
+export const ListRecordsItemSchema = z.object({
+  projectId: z.string(),
+  recordId: z.string(),
+  revisionId: z.string(),
+  created: z.string(),
+  createdBy: z.string(),
+  updated: z.string(),
+  updatedBy: z.string(),
+  conflicts: z.boolean(),
+  deleted: z.boolean(),
+  type: z.string(),
+  relationship: formRelationshipSchema.optional(),
+});
+export type ListRecordsItem = z.infer<typeof ListRecordsItemSchema>;
+
+/** GET list records response */
+export const GetListRecordsResponseSchema = z.object({
+  records: z.array(ListRecordsItemSchema),
+});
+export type GetListRecordsResponse = z.infer<
+  typeof GetListRecordsResponseSchema
+>;
+
+/** GET one record query (revisionId for specific revision) */
+export const GetRecordQuerySchema = z.object({
+  revisionId: z.string().optional(),
+});
+export type GetRecordQuery = z.infer<typeof GetRecordQuerySchema>;
+
+/** GET one record response (existing form data) */
+export const GetRecordResponseSchema = z.object({
+  revisionId: z.string(),
+  formId: z.string(),
+  data: formUpdateDataSchema,
+  context: z.object({
+    hrid: z.string(),
+    record: hydratedRecordDocumentSchema,
+    revision: hydratedRevisionDocumentSchema,
+  }),
+});
+export type GetRecordResponse = z.infer<typeof GetRecordResponseSchema>;
+
+/** PATCH update record body */
+export const PatchUpdateRecordInputSchema = z.object({
+  revisionId: z.string(),
+  update: formUpdateDataSchema,
+  mode: z.enum(['new', 'parent']).optional(),
+});
+export type PatchUpdateRecordInput = z.infer<
+  typeof PatchUpdateRecordInputSchema
+>;
+
+/** PATCH update record response */
+export const PatchUpdateRecordResponseSchema = z.object({
+  revisionId: z.string(),
+});
+export type PatchUpdateRecordResponse = z.infer<
+  typeof PatchUpdateRecordResponseSchema
+>;
+
+/** POST fork revision body (parent revision to copy AVPs from) */
+export const PostCreateRevisionInputSchema = z.object({
+  revisionId: z.string(),
+  createdBy: z.string().optional(),
+});
+export type PostCreateRevisionInput = z.infer<
+  typeof PostCreateRevisionInputSchema
+>;
+
+/** POST fork revision response */
+export const PostCreateRevisionResponseSchema = z.object({
+  revisionId: z.string(),
+});
+export type PostCreateRevisionResponse = z.infer<
+  typeof PostCreateRevisionResponseSchema
+>;
+
+/** DELETE record query (revisionId required) */
+export const DeleteRecordQuerySchema = z.object({
+  revisionId: z.string(),
+});
+export type DeleteRecordQuery = z.infer<typeof DeleteRecordQuerySchema>;
 
 // ============================
 // LONG LIVED TOKENS API ROUTES

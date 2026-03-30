@@ -41,7 +41,6 @@ import {useMutation} from '@tanstack/react-query';
 import {useState} from 'react';
 import {
   CAPACITOR_PLATFORM,
-  IS_WEB_PLATFORM,
   NOTEBOOK_LIST_TYPE,
   NOTEBOOK_NAME,
   NOTEBOOK_NAME_CAPITALIZED,
@@ -58,13 +57,13 @@ import {
 } from '../../../context/slices/projectSlice';
 import {useAppDispatch, useAppSelector} from '../../../context/store';
 import {useIsOnline} from '../../../utils/customHooks';
-import NotebookSyncSwitch from '../notebook/settings/sync_switch';
-import HeadingProjectGrid from '../ui/heading-grid';
-import Tabs from '../ui/tab-grid';
 import {
   QRCodeButtonOnly,
   ShortCodeOnlyComponent,
 } from '../authentication/shortCodeOnly';
+import NotebookSyncSwitch from '../notebook/settings/sync_switch';
+import HeadingProjectGrid from '../ui/heading-grid';
+import Tabs from '../ui/tab-grid';
 
 // Survey status naming conventions
 
