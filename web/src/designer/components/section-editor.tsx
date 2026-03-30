@@ -137,7 +137,11 @@ export const SectionEditor = ({
     fontWeight: 700,
     letterSpacing: '0.01em',
     textTransform: 'none',
-    fontSize: '1rem',
+    fontSize: '0.95rem',
+    whiteSpace: 'nowrap',
+    '& .MuiSvgIcon-root': {
+      fontSize: '1.45rem',
+    },
   } as const;
 
   useEffect(() => {
@@ -284,7 +288,12 @@ export const SectionEditor = ({
   return (
     <>
       <Stack spacing={1.5} mb={2}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={1.5}
+          sx={{overflowX: 'auto', pb: 0.25}}
+        >
           <Typography variant="subtitle1" sx={designerHeadingTextSx}>
             Section controls
           </Typography>
@@ -301,9 +310,9 @@ export const SectionEditor = ({
         <Stack
           direction="row"
           alignItems="center"
-          flexWrap="wrap"
-          rowGap={0.5}
+          flexWrap="nowrap"
           columnGap={1}
+          sx={{overflowX: 'auto', pb: 0.25}}
         >
           <Button
             variant="text"
