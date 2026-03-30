@@ -440,12 +440,10 @@ export const FormEditor = ({
           <Stack spacing={1.5} py={1.5}>
             <Stack
               direction="row"
-              spacing={1}
+              spacing={1.5}
               alignItems="center"
               flexWrap="wrap"
-              rowGap={0.5}
-              columnGap={1}
-              sx={{color: 'text.secondary'}}
+              rowGap={1}
             >
               <Typography
                 variant="subtitle1"
@@ -466,13 +464,22 @@ export const FormEditor = ({
                   textTransform: 'none',
                   fontWeight: 700,
                   boxShadow: 'none',
-                  mt: -0.35,
+                  mt: -0.25,
                 }}
               >
                 New Form
               </Button>
+            </Stack>
 
-              <Typography sx={designerPipeSx}> | </Typography>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              flexWrap="wrap"
+              rowGap={0.5}
+              columnGap={1}
+              sx={{color: 'text.secondary'}}
+            >
 
               <Button
                 variant="text"
@@ -571,7 +578,7 @@ export const FormEditor = ({
                 size="small"
                 startIcon={<DeleteRoundedIcon />}
                 onClick={deleteConfirmation}
-                sx={designerControlLabelSx}
+                sx={{...designerControlLabelSx, color: 'error.main'}}
               >
                 Delete
               </Button>
