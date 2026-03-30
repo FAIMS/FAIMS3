@@ -28,7 +28,7 @@ import {
 } from '@mui/material';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoIcon from '@mui/icons-material/Info';
 
 import {TabContext} from '@mui/lab';
 import {useState, useEffect} from 'react';
@@ -278,19 +278,19 @@ export const DesignPanel = () => {
   return (
     <>
       <TabContext value={tabIndex}>
-        <Box sx={{mb: 1}}>
+        <Box sx={{mb: 1.5, mt: 0.5}}>
           <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
             <Typography
-              variant="h3"
+              variant="h5"
               sx={{
                 color: 'text.primary',
-                fontWeight: theme => theme.typography.fontWeightBold,
+                fontWeight: 700,
               }}
             >
               Forms
             </Typography>
             <Tooltip title="Add info text here.">
-              <InfoOutlinedIcon color="info" fontSize="small" />
+              <InfoIcon sx={{color: '#1E88E5'}} fontSize="small" />
             </Tooltip>
           </Box>
           <Box

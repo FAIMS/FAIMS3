@@ -27,7 +27,7 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
   Button,
@@ -89,6 +89,7 @@ type Props = {
   handleDeleteCallback: (viewSetID: string) => void;
   handleSectionMoveCallback: (targetViewSetId: string) => void;
   handleFieldMoveCallback: (targetViewId: string) => void;
+  handleAddFormCallback: () => void;
   previewForm: boolean;
   setPreviewForm: (preview: boolean) => void;
 };
