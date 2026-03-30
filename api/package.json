@@ -8,11 +8,11 @@
     "node": "22"
   },
   "scripts": {
-    "lint": "gts lint",
+    "lint": "oxlint -c ../.oxlintrc.json .",
     "clean": "gts clean",
     "compile": "tsc",
     "build": "tsc && copyfiles views/* views/**/* public/* public/**/* build/src",
-    "fix": "gts fix",
+    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt .",
     "prestart": "pnpm run-script compile",
     "start": "node --expose-gc --max-old-space-size=4096  .",
     "start:prod": "node --expose-gc --max-old-space-size=4096 build/src/index.js",

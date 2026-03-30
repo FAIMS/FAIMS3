@@ -38,8 +38,8 @@
     "test:watch": "NODE_ENV=test jest --watchAll=true",
     "coverage": "NODE_ENV=test jest --coverage --watchAll=false",
     "circular-dep-check": "madge -c --extensions ts src/",
-    "lint": "pnpm run circular-dep-check && gts lint",
-    "fix": "gts fix"
+    "lint": "pnpm run circular-dep-check && oxlint --config ../../.oxlintrc.json .",
+    "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
   },
   "author": "",
   "license": "Apache",
