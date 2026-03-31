@@ -4,10 +4,10 @@
 
 The module provides two distinct rendering paths:
 
-| Engine | Purpose | Entry Point | Field Source |
-|--------|---------|-------------|--------------|
-| **Form Engine** | Data entry | `FormManager` | `FieldInfo.component` |
-| **View Engine** | Read-only display | `DataView` | `FieldInfo.view.component` |
+| Engine          | Purpose           | Entry Point   | Field Source               |
+| --------------- | ----------------- | ------------- | -------------------------- |
+| **Form Engine** | Data entry        | `FormManager` | `FieldInfo.component`      |
+| **View Engine** | Read-only display | `DataView`    | `FieldInfo.view.component` |
 
 ```mermaid
 flowchart TB
@@ -17,14 +17,14 @@ flowchart TB
         F --> FR[Field Registry]
         FR -->|component| FC[Edit Component]
     end
-    
+
     subgraph "View Engine (Read-only)"
         DV[DataView] --> DVS[DataViewSection]
         DVS --> DVF[DataViewField]
         DVF --> FR2[Field Registry]
         FR2 -->|view.component| VC[View Component]
     end
-    
+
     UI[UISpec] --> FM
     UI --> DV
     Data[Record Data] --> FM
@@ -36,6 +36,7 @@ flowchart TB
 ### Purpose
 
 Interactive data entry with:
+
 - Two-way binding via TanStack Form
 - Validation feedback
 - Attachment handling
@@ -58,14 +59,16 @@ const Component = fieldInfo?.component;
 ```typescript
 interface FormFieldContextProps {
   fieldId: string;
-  state: FaimsFormFieldState;           // TanStack field state
-  setFieldData: (value: any) => void;   // Update data portion
-  setFieldAnnotation: (value) => void;  // Update annotation
+  state: FaimsFormFieldState; // TanStack field state
+  setFieldData:
+    | ((value: any) => void) // Replace data
+    | ((updater: (prev: any) => any) => void); // Update based on previous value
+  setFieldAnnotation: (value) => void; // Update annotation
   addAttachment: (params) => Promise<string>;
   removeAttachment: (params) => Promise<void>;
-  handleBlur: () => void;               // Touch tracking
-  config: FormConfig;                   // Mode context
-  trigger: { commit: () => Promise<void> };
+  handleBlur: () => void; // Touch tracking
+  config: FormConfig; // Mode context
+  trigger: {commit: () => Promise<void>};
 }
 ```
 
@@ -75,8 +78,8 @@ Each field's state contains:
 
 ```typescript
 interface FormDataEntry {
-  data?: any;                    // Field value
-  annotation?: FormAnnotation;   // User notes
+  data?: any; // Field value
+  annotation?: FormAnnotation; // User notes
   attachments?: FaimsAttachments; // File references
 }
 ```
@@ -86,6 +89,7 @@ interface FormDataEntry {
 ### Purpose
 
 Read-only display of submitted records:
+
 - No editing capability
 - Optimised for presentation
 - Supports nested record expansion (RelatedRecords)
@@ -94,7 +98,7 @@ Read-only display of submitted records:
 
 ```typescript
 // DataView resolves from same registry, different property
-const fieldInfo = getFieldInfo({ namespace, name });
+const fieldInfo = getFieldInfo({namespace, name});
 const ViewComponent = fieldInfo?.view.component;
 ```
 
@@ -102,9 +106,9 @@ const ViewComponent = fieldInfo?.view.component;
 
 ```typescript
 interface DataViewFieldRenderProps {
-  value: any;                           // The data value
-  annotation?: FormAnnotation;          // User annotations
-  attachments: FaimsAttachments;        // Attachment metadata
+  value: any; // The data value
+  annotation?: FormAnnotation; // User annotations
+  attachments: FaimsAttachments; // Attachment metadata
   config: DataViewFieldRenderConfiguration;
   renderContext: DataViewFieldRenderContext;
 }
@@ -117,11 +121,11 @@ interface DataViewFieldRenderContext {
   viewsetId: string;
   viewId: string;
   fieldId: string;
-  hrid: string;                         // Human-readable record ID
+  hrid: string; // Human-readable record ID
   record: HydratedRecordDocument;
   uiSpecification: ProjectUIModel;
-  trace: DataViewTraceEntry[];          // Nesting history
-  tools: DataViewTools;                 // Navigation, services
+  trace: DataViewTraceEntry[]; // Nesting history
+  tools: DataViewTools; // Navigation, services
   formData: FormUpdateData;
   fieldName: string;
   fieldNamespace: string;
@@ -149,19 +153,19 @@ const textFieldSpec: FieldInfo = {
   namespace: 'formio-core',
   name: 'textfield',
   returns: 'faims-core::String',
-  
+
   // Edit mode component
   component: TextFieldComponent,
-  
+
   // View mode component
   view: {
     component: TextFieldRenderer,
     config: {},
-    attributes: { singleColumn: false }
+    attributes: {singleColumn: false},
   },
-  
+
   fieldPropsSchema: textFieldPropsSchema,
-  fieldDataSchemaFunction: (props) => z.string(),
+  fieldDataSchemaFunction: props => z.string(),
 };
 ```
 
@@ -171,15 +175,15 @@ Control view rendering behaviour:
 
 ```typescript
 interface DataViewFieldRenderAttributes {
-  bypassNullChecks?: boolean;  // Render even if value is null
-  singleColumn?: boolean;      // Force full-width layout
+  bypassNullChecks?: boolean; // Render even if value is null
+  singleColumn?: boolean; // Force full-width layout
 }
 ```
 
-| Attribute | Default | Effect |
-|-----------|---------|--------|
+| Attribute          | Default | Effect                                |
+| ------------------ | ------- | ------------------------------------- |
 | `bypassNullChecks` | `false` | Skip rendering if value is null/empty |
-| `singleColumn` | `false` | Use two-column grid layout |
+| `singleColumn`     | `false` | Use two-column grid layout            |
 
 ## Visibility Handling
 
@@ -188,7 +192,7 @@ Both engines respect conditional visibility from UISpec:
 ```typescript
 // Form Engine
 const visibleMap = currentlyVisibleMap({
-  values: formDataExtractor({ fullData: initialData }),
+  values: formDataExtractor({fullData: initialData}),
   uiSpec: dataEngine.uiSpec,
   viewsetId: formId,
 });
@@ -196,7 +200,7 @@ const visibleMap = currentlyVisibleMap({
 // View Engine
 const visibleFields = currentlyVisibleFields({
   uiSpec: props.uiSpecification,
-  values: formDataExtractor({ fullData: props.formData }),
+  values: formDataExtractor({fullData: props.formData}),
   viewsetId: props.viewsetId,
 });
 ```
@@ -205,10 +209,10 @@ const visibleFields = currentlyVisibleFields({
 
 ### Form Engine Layouts
 
-| Layout | Sections | Navigation |
-|--------|----------|------------|
-| `tabs` | One visible at a time | Tab bar / stepper |
-| `inline` | All visible | Vertical scroll |
+| Layout   | Sections              | Navigation        |
+| -------- | --------------------- | ----------------- |
+| `tabs`   | One visible at a time | Tab bar / stepper |
+| `inline` | All visible           | Vertical scroll   |
 
 ### View Engine Layout
 
@@ -219,7 +223,7 @@ flowchart TD
     DV[DataView] --> S1[Section 1 Accordion]
     DV --> S2[Section 2 Accordion]
     DV --> S3[Section 3 Accordion]
-    
+
     S1 --> F1[Field Grid]
     F1 --> F1a[Field]
     F1 --> F1b[Field]
@@ -240,6 +244,7 @@ interface DataViewTraceEntry {
 ```
 
 Prevents infinite loops with:
+
 1. **Depth limit**: `RENDER_NEST_LIMIT = 2`
 2. **Cycle detection**: Checks if record ID exists in ancestor trace
 

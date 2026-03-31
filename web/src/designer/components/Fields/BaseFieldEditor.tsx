@@ -34,26 +34,29 @@ import {
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
+import {getViewIDForField} from '../../state/helpers/uiSpec-helpers';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-
+import {
+  fieldConditionChanged,
+  fieldRenamed,
+  fieldUpdated,
+} from '../../store/slices/uiSpec';
+import {ConditionType} from '../../types/condition';
 import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
-import {ConditionType} from '../condition/types';
-
-import {
-  getViewIDForField,
-  slugify,
-} from '@/designer/state/helpers/uiSpec-helpers';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
 import SpeechSettingsEditor from './SpeechSettingsEditor';
+import {slugify} from '../../domain/notebook/ids';
 
+/** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
 export const SPEECH_ENABLED_FIELDS = [
   'faims-custom::FAIMSTextField',
   'formik-material-ui::MultipleTextField',
 ];
 
+/** True if {@link SPEECH_ENABLED_FIELDS} includes this field’s composite type key. */
 const checkSpeechEnabled = (field: FieldType) => {
   return SPEECH_ENABLED_FIELDS.includes(
     `${field['component-namespace']}::${field['component-name']}`
@@ -83,6 +86,10 @@ type StateType = {
   allowHiding: boolean;
 };
 
+/**
+ * Default property sheet: label, persistence, meta flags, visibility condition, template protection.
+ * Type-specific panels pass extra controls as `children`.
+ */
 export const BaseFieldEditor = ({
   fieldName,
   showExtraConfig = true,
@@ -106,14 +113,13 @@ export const BaseFieldEditor = ({
     debounce((newFieldName: string) => {
       const viewId = getViewIDForField(uiSpec, fieldName);
       if (viewId && newFieldName.trim() && newFieldName.trim() !== fieldName) {
-        dispatch({
-          type: 'ui-specification/fieldRenamed',
-          payload: {
+        dispatch(
+          fieldRenamed({
             viewId,
             fieldName,
             newFieldName: newFieldName.trim(),
-          },
-        });
+          })
+        );
       }
     }, 500),
     [dispatch, uiSpec, fieldName]
@@ -130,10 +136,7 @@ export const BaseFieldEditor = ({
     const viewId = getViewIDForField(uiSpec, fieldName);
     if (viewId && desired && desired !== fieldName) {
       setLocalFieldName(desired);
-      dispatch({
-        type: 'ui-specification/fieldRenamed',
-        payload: {viewId, fieldName, newFieldName: desired},
-      });
+      dispatch(fieldRenamed({viewId, fieldName, newFieldName: desired}));
     }
   };
 
@@ -159,10 +162,7 @@ export const BaseFieldEditor = ({
   };
 
   const updateField = (fieldName: string, newField: FieldType) => {
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   const cParams = field['component-parameters'];
@@ -187,13 +187,15 @@ export const BaseFieldEditor = ({
     allowHiding: allowHidingEnabled,
   };
 
-  // we'll offer to add advanced helper text if the existing value is not
-  // undefined in the field (meaning that the field supports this property)
-  const hasAdvancedSupport = cParams.advancedHelperText !== undefined;
+  // We show the advanced helper text as long as the field generally supports
+  // helper text
+  const hasAdvancedSupport = showHelperText;
 
   // by default, we'll show the advanced help text form if the value is not empty
   const [showAdvanced, setShowAdvanced] = useState(
-    hasAdvancedSupport && cParams.advancedHelperText !== ''
+    hasAdvancedSupport &&
+      !!cParams.advancedHelperText &&
+      cParams.advancedHelperText !== ''
   );
   const [expanded, setExpanded] = useState(true);
 
@@ -240,10 +242,7 @@ export const BaseFieldEditor = ({
   };
 
   const conditionChanged = (condition: ConditionType | null) => {
-    dispatch({
-      type: 'ui-specification/fieldConditionChanged',
-      payload: {fieldName, condition},
-    });
+    dispatch(fieldConditionChanged({fieldName, condition}));
   };
 
   return (
@@ -330,7 +329,7 @@ export const BaseFieldEditor = ({
                         </Box>
 
                         <Collapse in={expanded}>
-                          <Box mt={2} sx={{maxHeight: 300, overflowY: 'auto'}}>
+                          <Box mt={2}>
                             <MdxEditor
                               initialMarkdown={state.advancedHelperText}
                               handleChange={debounce(

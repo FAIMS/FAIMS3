@@ -1,7 +1,7 @@
 # Select Multiple
 
-*How to add and configure a Select Multiple field in the {{Notebook}}
-Editor.*
+_How to add and configure a Select Multiple field in the {{Notebook}}
+Editor._
 
 ---
 
@@ -9,9 +9,10 @@ Editor.*
 
 A Select Multiple field lets users pick one or more options from a list,
 returning an array of the selected values. It provides two display
-modes: an expanded checklist (where all options are visible) or a
-compact dropdown. Use it when items are not mutually exclusive — multiple
-materials present, multiple features observed, multiple conditions noted
+modes: an expanded checklist (where all options are visible) and a
+compact dropdown. By default, it displays as an expanded checklist.
+Use it when items are not mutually exclusive — multiple materials
+present, multiple features observed, multiple conditions noted
 simultaneously — such as "damage types", "associated materials", or
 "site formation processes".
 
@@ -56,12 +57,12 @@ controls. Below the Markdown syntax info banner, you will find the
 **Add Option** input, the **Add "Other" Option** button, and a table
 listing all current options.
 
-| Setting | What It Does |
-| ------- | ------------ |
-| **Options list** | The choices available for selection. Each option appears as a row in the table. |
-| **Add "Other" Option** | Adds a special "Other" choice that prompts the collector to type a custom value when selected. |
-| **Expanded checklist** | When enabled, displays all options as a visible checklist rather than a compact dropdown. Best for lists of ~10 or fewer options. |
-| **Exclusive** | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed"). |
+| Setting                 | What It Does                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **Options list**        | The choices available for selection. Each option appears as a row in the table.                                                        |
+| **Add "Other" Option**  | Adds a special "Other" choice that prompts the collector to type a custom value when selected.                                         |
+| **Display as dropdown** | When enabled, shows a compact dropdown instead of the default expanded checklist. Best for longer lists where screen space is limited. |
+| **Exclusive**           | A per-option checkbox that marks an option as exclusive — selecting it clears all other selections (e.g., "None observed").            |
 
 **Note**: As per the banner, you can use Markdown syntax in
 option text (e.g., \*\*bold\*\* or \*italic\*) to add emphasis
@@ -101,10 +102,10 @@ and Display in child records — see
 
 ## Tips
 
-- **For fewer than ~8–10 options, use expanded checklist
-  mode** so all choices are visible at once — faster than
-  opening a dropdown. For longer lists, use the default
-  dropdown mode to conserve screen space.
+- **For fewer than ~8–10 options, keep the default expanded
+  checklist** so all choices are visible at once — faster than
+  opening a dropdown. For longer lists, enable the dropdown
+  display to conserve screen space.
 - **Configure exclusive options** when certain choices invalidate
   others. For example, selecting "None observed" should clear all other
   selections. Tick the Exclusive checkbox on that option's row.

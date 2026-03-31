@@ -61,15 +61,11 @@ import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
+import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
 import {
   findOptionReferences,
   updateConditionReferences,
-} from '../condition/utils';
-
-import {
-  fieldUpdated,
-  sectionConditionChanged,
-} from '../../state/uiSpec-reducer';
+} from '../../domain/conditions/conditionReferences';
 
 /**
  * OptionsEditor is a component for managing a list of options for radio buttons or multi-select fields.
@@ -349,6 +345,9 @@ type CombinedRow =
   | {id: string; type: 'option'; option: {label: string; value: string}}
   | {id: string; type: 'other'};
 
+/**
+ * Select / MultiSelect / Radio options table: reorder (dnd), edit, exclusive sets, condition ref updates.
+ */
 export const OptionsEditor = ({
   fieldName,
   showExpandedChecklist,
@@ -379,7 +378,8 @@ export const OptionsEditor = ({
 
   // Component state
   const isShowExpandedList =
-    field['component-parameters'].ElementProps?.expandedChecklist ?? false;
+    field['component-parameters'].ElementProps?.expandedChecklist ?? true;
+  const isDropdownMode = !isShowExpandedList;
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -730,20 +730,19 @@ export const OptionsEditor = ({
   };
 
   /**
-   * Toggles expanded checklist view
+   * Toggles dropdown mode for multi-select fields.
+   * Checked means dropdown, unchecked means expanded checklist.
    */
-  const toggleShowExpanded = () => {
+  const toggleDropdownMode = (
+    _event: React.ChangeEvent<HTMLInputElement>,
+    checked: boolean
+  ) => {
     const newField = JSON.parse(JSON.stringify(field)) as FieldType;
-    const newValue =
-      !field['component-parameters'].ElementProps?.expandedChecklist;
     newField['component-parameters'].ElementProps = {
       ...(newField['component-parameters'].ElementProps ?? {}),
-      expandedChecklist: newValue,
+      expandedChecklist: !checked,
     };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -760,10 +759,7 @@ export const OptionsEditor = ({
       otherOptionPosition: newValue ? options.length : undefined,
     };
 
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -775,10 +771,7 @@ export const OptionsEditor = ({
       ...(newField['component-parameters'].ElementProps ?? {}),
       otherOptionPosition: newPosition,
     };
-    dispatch({
-      type: 'ui-specification/fieldUpdated',
-      payload: {fieldName, newField},
-    });
+    dispatch(fieldUpdated({fieldName, newField}));
   };
 
   /**
@@ -857,20 +850,20 @@ export const OptionsEditor = ({
               </Alert>
             )}
 
-            {/* Expanded checklist toggle (restored usage of isShowExpandedList/showExpandedCheckListControl) */}
+            {/* Multi-select display mode toggle */}
             {showExpandedCheckListControl && (
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={isShowExpandedList}
-                    onChange={toggleShowExpanded}
+                    checked={isDropdownMode}
+                    onChange={toggleDropdownMode}
                     size="small"
                   />
                 }
                 label={
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <p>Display multi-select as an expanded checklist?</p>
-                    <Tooltip title="This option changes the multi-select from a dropdown menu, to a pre-expanded checklist of items. This takes up more space on the user's screen, but requires less clicks to interact with.">
+                    <p>Display multi-select as a dropdown?</p>
+                    <Tooltip title="By default, multi-select displays as an expanded checklist. Enable this option to switch to a compact dropdown menu.">
                       <InfoIcon color="action" fontSize="small" />
                     </Tooltip>
                   </Stack>

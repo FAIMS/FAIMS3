@@ -1,6 +1,6 @@
 # Upload a file
 
-*How to add and configure an Upload a file field in the Notebook Editor.*
+_How to add and configure an Upload a file field in the Notebook Editor._
 
 ---
 

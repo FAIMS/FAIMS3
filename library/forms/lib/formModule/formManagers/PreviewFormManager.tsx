@@ -13,7 +13,7 @@ import {onChangeTemplatedFields} from './templatedFields';
 import {PreviewFormConfig} from './types';
 import {MapConfig} from '../../components/maps/types';
 import {FormManager} from './FormManager';
-import { logInfo } from '../../logging';
+import {logInfo} from '../../logging';
 const queryClient = new QueryClient();
 
 /**

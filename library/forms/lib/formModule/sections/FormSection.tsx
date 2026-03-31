@@ -3,7 +3,7 @@ import {FORCE_IGNORED_FIELDS} from '../../fieldRegistry';
 import {Field} from '../Field';
 import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
 import {FaimsForm} from '../types';
-import { logWarn } from '../../logging';
+import {logWarn} from '../../logging';
 
 interface FormSectionProps {
   uiSpec: ProjectUIModel;

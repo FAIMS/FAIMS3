@@ -1,11 +1,8 @@
 {
   "name": "@faims3/web",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "22"
-  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "dev": "vite --port=3001",
@@ -13,13 +10,10 @@
     "serve": "vite preview",
     "start": "vite",
     "clean": "gts clean",
-    "lint": "gts lint",
+    "lint": "oxlint -c ../.oxlintrc.json .",
     "compile": "tsc",
-    "fix": "gts fix",
+    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt -c ../.oxfmtrc.json .",
     "test": "vitest"
-  },
-  "overrides": {
-    "@radix-ui/react-focus-scope": "1.1.7"
   },
   "dependencies": {
     "@bugsnag/js": "^7.20.2",
@@ -100,9 +94,6 @@
     "@vitejs/plugin-react-swc": "^4.0.1",
     "@vitest/browser": "^3.2.4",
     "autoprefixer": "^10.4.20",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.3",
     "jsdom": "^22.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
@@ -110,5 +101,11 @@
     "vite": "^7.1.11",
     "vitest": "^3.2.4",
     "webdriverio": "^9.12.2"
+  },
+  "overrides": {
+    "@radix-ui/react-focus-scope": "1.1.7"
+  },
+  "engines": {
+    "node": "22"
   }
 }

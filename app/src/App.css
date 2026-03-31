@@ -5,33 +5,35 @@
 
 /* add safe area padding default 20px to allow for camera notch on some phones */
 body {
-    padding: env(safe-area-inset-top) env(safe-area-inset-right)
-      env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
- 
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
 .recordstepper::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
-.support-link{
-    color:black;
-    text-decoration:none;
+.support-link {
+  color: black;
+  text-decoration: none;
 }
-.bg-primary-gradient{
-    background: linear-gradient(#5C5A5A, #EDEEEB);
+.bg-primary-gradient {
+  background: linear-gradient(#5c5a5a, #edeeeb);
 }
 
 /* class for conflict warnings */
-.bg-warning{
-    background-color: #FDF4E7;
+.bg-warning {
+  background-color: #fdf4e7;
 }
 
 /* MUI datagrid pagination: bold for total row count emphasis */
-.MuiTablePagination-displayedRows {font-weight: 600}
+.MuiTablePagination-displayedRows {
+  font-weight: 600;
+}
 
 /* Record links table header*/
-.faims-record-link--header{
-    background-color: #e0e0e0;
-    font-weight:700
+.faims-record-link--header {
+  background-color: #e0e0e0;
+  font-weight: 700;
 }
 
 /* Shared control box styles */
@@ -56,7 +58,9 @@ body {
   border-radius: 6px;
   border: none;
   cursor: pointer;
-  transition: opacity 0.2s, background-color 0.2s;
+  transition:
+    opacity 0.2s,
+    background-color 0.2s;
 }
 
 .ol-custom-control-button:hover:not(:disabled) {
@@ -71,6 +75,11 @@ body {
 /* Position-specific styles */
 .ol-center-box {
   bottom: 128px;
+}
+
+.ol-compass-box {
+  right: 76px;
+  bottom: 10px;
 }
 
 .ol-layer-toggle-box {

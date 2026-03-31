@@ -20,14 +20,16 @@ The system is configured in `expressSetup.ts` which initializes:
 2. Authentication handlebar **pages** via `addAuthPages`
 3. Authentication API **routes** via `addAuthRoutes`
 
-Local password authentication is always available and if configured, one or
-more identity providers can also be used. There is a custom implementation for
-Google authentication and a more general OIDC based provider.  
+Configuration settings allow enabling of either local email/password authentication or
+one or more federated identity providers. There is a custom implementation for
+Google authentication, a more general OIDC based provider and a custom SAML provider
+implementation. Further SSO protocols could be supported via their passport
+implementations.
 
 The available
 providers are configured via environment variables using a pattern of variable
-names to encode an object structure.  Variables starting with `AUTH_` define
-the properties of different providers with the pattern `AUTH_{provider}_{property}`.   There are two kinds of provider: Google and OIDC.  These are configured
+names to encode an object structure. Variables starting with `AUTH_` define
+the properties of different providers with the pattern `AUTH_{provider}_{property}`. There are two kinds of provider: Google and OIDC. These are configured
 as follows:
 
 For a Google provider, the TYPE property should be `google` and the following
@@ -43,7 +45,7 @@ AUTH_GOOGLE_CLIENT_SECRET="google client secret"
 AUTH_GOOGLE_SCOPE="profile,email,https://www.googleapis.com/auth/plus.login"
 ```
 
-For an OIDC provider, the `TYPE` property should be `oidc` and the following 
+For an OIDC provider, the `TYPE` property should be `oidc` and the following
 properties should be defined:
 
 ```shell
@@ -60,11 +62,60 @@ AUTH_AAF_CLIENT_SECRET="aaf client secret"
 AUTH_AAF_SCOPE="profile,email"
 ```
 
-Note that another provider of the same type can be configured, eg. you 
+For a SAML provider there are more options.
+
+```shell
+# A SAML based provider example
+AUTH_SAML_TYPE="saml"
+AUTH_SAML_INDEX=3
+AUTH_SAML_DISPLAY_NAME="Example SAML"
+AUTH_SAML_HELPER_TEXT="Log in with your SAML account"
+AUTH_SAML_SCOPE="profile,email"
+
+# Required SAML settings
+AUTH_SAML_ENTRY_POINT="https://example.authentication.gov/saml/authenticate"
+AUTH_SAML_ISSUER="https://your-app.example.com"
+AUTH_SAML_CALLBACK_URL="https://your-app.example.com/auth/saml/callback"
+
+# SAML keys (PEM format - use \n for newlines in env vars)
+
+# NOTE: recommended these should never be stored in plaintext in production
+# environments - inject in on platform level using recommended secrets
+# management approach. E.g. on AWS - use Secret env variables.
+
+# Private key: Your SP's private key for signing requests
+AUTH_SAML_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nYourPrivateKeyHere\n-----END RSA PRIVATE KEY-----"
+# Public key: The IdP's certificate for verifying signatures (from IdP metadata)
+AUTH_SAML_PUBLIC_KEY="-----BEGIN CERTIFICATE-----\nIdPCertificateHere\n-----END CERTIFICATE-----"
+# IDP Public key: The IdP's public key for encrypting assertions (from IdP metadata)
+AUTH_SAML_IDP_PUBLIC_KEY=abcd1234
+# Sign the SAML metadata document? Requires private key
+AUTH_SAML_SIGN_METADATA=true
+
+# Optional SAML settings
+AUTH_SAML_SIGNATURE_ALGORITHM="sha256"
+AUTH_SAML_WANT_ASSERTIONS_SIGNED="true"
+AUTH_SAML_IDENTIFIER_FORMAT="urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
+
+# Additional optional SAML settings (include as needed)
+AUTH_SAML_ACCEPTED_CLOCK_SKEW_MS="0"
+AUTH_SAML_MAX_ASSERTION_AGE_MS="3600000"
+AUTH_SAML_VALIDATE_IN_RESPONSE_TO="true"
+AUTH_SAML_REQUEST_ID_EXPIRATION_PERIOD_MS="28800000"
+AUTH_SAML_FORCE_AUTHN="false"
+AUTH_SAML_DISABLE_REQUESTED_AUTHN_CONTEXT="false"
+AUTH_SAML_AUTHN_CONTEXT="urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport"
+AUTH_SAML_LOGOUT_URL="https://thirdparty.authentication.business.gov.au/fas/v3.1/saml20/logout"
+AUTH_SAML_LOGOUT_CALLBACK_URL="https://your-app.example.com/auth/saml/logout/callback"
+AUTH_SAML_IDP_ISSUER="https://thirdparty.authentication.business.gov.au"
+AUTH_SAML_AUDIENCE="https://your-app.example.com"
+```
+
+Note that another provider of the same type can be configured, eg. you
 could configure `AUTH_FOOBAR_TYPE="oidc"` and supply the other `AUTH_FOOBAR_*`
 properties as well.
 
-The `DISPLAY_NAME` field is used to label the login button _"Continue with XXX"_. 
+The `DISPLAY_NAME` field is used to label the login button _"Continue with XXX"_.
 The `HELPER_TEXT` field is optional and is displayed below the login button
 if provided. The `INDEX` field is optional but if present, defines the ordering
 of buttons on the login page.
@@ -76,7 +127,7 @@ of buttons on the login page.
 - `strategies/applyStrategies.ts`: Configures Passport.js strategies
 - `strategies/localStrategy.ts`: Local authentication strategy
 - `strategies/googleStrategy.ts`: Google OAuth strategy
-- `helpers.ts`: Utility functions for authentication
+- `helpers.ts`: Utility functions for authentication including `completePostAuth` (shared post-authentication handler for all flows) and `ssoVerify` (Passport verify callback for all SSO strategies)
 
 ## Token Exchange System
 
@@ -139,13 +190,8 @@ sequenceDiagram
         alt Valid password
             Passport-->>Server: Return user
 
-            alt Has inviteId
-                Server->>CouchDB: validateAndApplyInviteToUser()
-                CouchDB-->>Server: Updated user
-                Server->>CouchDB: saveExpressUser()
-            end
-
-            Server->>Server: Generate exchange token via redirectWithToken()
+            Server->>Server: completePostAuth(dbUser, action="login", inviteId?)
+            Note over Server: If inviteId present: validateAndApplyInviteToUser() + saveCouchUser()<br/>On invite failure: soft warning only — login is not blocked<br/>Clears session.inviteId and session.action<br/>upgradeCouchUserToExpressUser() + redirectWithToken()
             Server-->>Browser: Redirect to redirect_url?exchangeToken=TOKEN&serverId=ID
 
             Browser->>Server: POST /api/auth/exchange
@@ -205,10 +251,8 @@ sequenceDiagram
 
                 alt Authentication successful
                     Passport-->>Server: Return user
-                    Server->>CouchDB: validateAndApplyInviteToUser()
-                    CouchDB-->>Server: Updated user
-                    Server->>CouchDB: saveExpressUser()
-                    Server->>Server: Generate exchange token
+                    Server->>Server: completePostAuth(dbUser, action="register", inviteId)
+                    Note over Server: validateAndApplyInviteToUser() + saveCouchUser()<br/>Hard error if invite invalid (flash + redirect to /register)<br/>Clears session.inviteId and session.action<br/>upgradeCouchUserToExpressUser() + redirectWithToken()
                     Server->>Browser: Redirect to redirect_url?exchangeToken=TOKEN&serverId=ID
 
                     Browser->>Server: POST /api/auth/exchange
@@ -224,9 +268,10 @@ sequenceDiagram
                     Server->>Browser: Flash error and redirect to /register with query params
                 end
             else User doesn't exist
-                Server->>CouchDB: validateAndApplyInviteToUser() with createUser function
-                CouchDB-->>Server: Created user with invite applied
-                Server->>Server: Generate exchange token
+                Note over Server: completePostAuth is NOT used here — user creation is deferred<br/>via a createUser closure to avoid phantom accounts if the invite is invalid
+                Server->>CouchDB: validateAndApplyInviteToUser(createUser, inviteCode)
+                CouchDB-->>Server: Created and saved user with invite applied
+                Server->>Server: upgradeCouchUserToExpressUser() + redirectWithToken()
                 Server->>Browser: Redirect to redirect_url?exchangeToken=TOKEN&serverId=ID
 
                 Browser->>Server: POST /api/auth/exchange
@@ -256,10 +301,11 @@ sequenceDiagram
     User->>Browser: Click Google login on /login page
     Browser->>Server: GET /auth/google?action=login&redirect=URL&inviteId=CODE
 
-    Server->>Server: Store auth context in session
+    Server->>Server: Write auth context to session (unconditional — clears stale values from prior flows)
     Note over Server: session.redirect = redirect
-    Note over Server: session.inviteId = inviteId
+    Note over Server: session.inviteId = inviteId (or undefined if absent)
     Note over Server: session.action = "login"
+    Note over Server: All three fields written unconditionally. A stale inviteId from a<br/>prior registration would otherwise persist in the 1-year cookie.
 
     Server->>Passport: authenticate('google')
     Passport->>Google: Redirect to Google OAuth
@@ -272,25 +318,24 @@ sequenceDiagram
     Passport->>Google: Exchange auth code for tokens
     Google-->>Passport: Return tokens and profile
 
+    Note over Passport,CouchDB: ssoVerify — identity resolution only, no invite handling
     Passport->>CouchDB: Check for matching email in users
     CouchDB-->>Passport: Return matching user(s) or null
 
-    alt No matching emails
-        Passport-->>Server: Return error (no account exists) unless SSO provisioning is configured
+    alt Multiple matching emails
+        Passport-->>Server: done(error — ambiguous match)
         Server->>Browser: Flash error, redirect to login page
-    else One matching email
-        Passport->>CouchDB: Ensure Google profile is linked to user
-        CouchDB-->>Passport: Updated user
-        Passport-->>Server: Return user
+    else No matching emails and no SSO provision policy configured
+        Passport-->>Server: done(error — no account found)
+        Server->>Browser: Flash error, redirect to login page
+    else User resolved (one match, or new user created via SSO provision policy)
+        Passport->>CouchDB: Ensure/create user and link SSO profile
+        CouchDB-->>Passport: User saved
+        Passport-->>Server: done(null, dbUser)
 
-        alt Has inviteId in session
-            Server->>CouchDB: validateAndApplyInviteToUser()
-            CouchDB-->>Server: Updated user
-            Server->>CouchDB: saveCouchUser()
-        end
-
-        Server->>Server: Generate exchange token
-        Server->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
+        Server->>Server: completePostAuth(dbUser, action="login", session.inviteId)
+        Note over Server: If session.inviteId present: validateAndApplyInviteToUser() + saveCouchUser()<br/>On invite failure: soft warning only — login is not blocked<br/>Clears session.inviteId and session.action<br/>upgradeCouchUserToExpressUser() + redirectWithToken()
+        Server-->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
 
         Browser->>Server: POST /api/auth/exchange
         Note over Browser,Server: Body: {exchangeToken: TOKEN}
@@ -300,9 +345,6 @@ sequenceDiagram
 
         Server->>Server: Generate JWT token
         Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
-    else Multiple matching emails
-        Passport-->>Server: Return error (ambiguous match)
-        Server->>Browser: Flash error, redirect to login page
     end
 ```
 
@@ -320,48 +362,44 @@ sequenceDiagram
     User->>Browser: Click Google signup on /register page
     Browser->>Server: GET /auth/google?action=register&redirect=URL&inviteId=CODE
 
-    Server->>Server: Store auth context in session
-    Note over Server: session.redirect = redirect
-    Note over Server: session.inviteId = inviteId
-    Note over Server: session.action = "register"
-
-    Server->>Passport: authenticate('google')
-    Passport->>Google: Redirect to Google OAuth
-    Google->>User: Display Google login page
-    User->>Google: Authenticate with Google
-    Google->>Browser: Redirect to callback URL with auth code
-
-    Browser->>Server: GET /auth-return/google
-    Server->>Passport: authenticate('google')
-    Passport->>Google: Exchange auth code for tokens
-    Google-->>Passport: Return tokens and profile
-
-    alt No inviteId in session
-        Passport-->>Server: Return error (no invite for registration)
-        Server->>Browser: Flash error, redirect to /register
+    alt No inviteId provided
+        Server->>Browser: Flash error, redirect to /register immediately
+        Note over Server,Browser: Registration without an invite is rejected before the SSO<br/>round-trip to avoid a confusing post-authentication failure
     else Has inviteId
-        Passport->>CouchDB: lookupAndValidateInvite()
+        Server->>Server: Write auth context to session (unconditional — clears stale values from prior flows)
+        Note over Server: session.redirect = redirect
+        Note over Server: session.inviteId = inviteId
+        Note over Server: session.action = "register"
 
-        alt Invalid invite
-            CouchDB-->>Passport: Invalid invite
-            Passport-->>Server: Return error
+        Server->>Passport: authenticate('google')
+        Passport->>Google: Redirect to Google OAuth
+        Google->>User: Display Google login page
+        User->>Google: Authenticate with Google
+        Google->>Browser: Redirect to callback URL with auth code
+
+        Browser->>Server: GET /auth-return/google
+        Server->>Passport: authenticate('google')
+        Passport->>Google: Exchange auth code for tokens
+        Google-->>Passport: Return tokens and profile
+
+        Note over Passport,CouchDB: ssoVerify — identity resolution only, no invite validation
+        Passport->>CouchDB: Check for matching email in users
+        CouchDB-->>Passport: Return matching user(s) or null
+
+        alt Multiple matching emails
+            Passport-->>Server: done(error — ambiguous match)
             Server->>Browser: Flash error, redirect to /register
-        else Valid invite
-            CouchDB-->>Passport: Valid invite
-            Passport->>CouchDB: Check for matching email in users
-            CouchDB-->>Passport: Return matching user(s) or null
+        else User resolved (one match or new user)
+            Passport->>CouchDB: Find or create user and link SSO profile
+            CouchDB-->>Passport: User saved
+            Passport-->>Server: done(null, dbUser)
 
-            alt No matching emails
-                Passport->>CouchDB: Create new user with Google profile
-                Passport->>CouchDB: Add all verified emails to user
-                CouchDB-->>Passport: Return new user
-                Passport-->>Server: Return user
-
-                Server->>CouchDB: validateAndApplyInviteToUser()
-                CouchDB-->>Server: Updated user
-                Server->>CouchDB: saveCouchUser()
-                Server->>Server: Generate exchange token
-                Server->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
+            Server->>Server: completePostAuth(dbUser, action="register", session.inviteId)
+            alt Invite invalid or already consumed
+                Server->>Browser: Flash error, redirect to /register (hard error — registration blocked)
+            else Invite valid
+                Note over Server: validateAndApplyInviteToUser() + saveCouchUser()<br/>Clears session.inviteId and session.action<br/>upgradeCouchUserToExpressUser() + redirectWithToken()
+                Server-->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
 
                 Browser->>Server: POST /api/auth/exchange
                 Note over Browser,Server: Body: {exchangeToken: TOKEN}
@@ -371,28 +409,6 @@ sequenceDiagram
 
                 Server->>Server: Generate JWT token
                 Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
-            else One matching email
-                Passport->>CouchDB: Ensure Google profile is linked to user
-                CouchDB-->>Passport: Updated user
-                Passport-->>Server: Return user
-
-                Server->>CouchDB: validateAndApplyInviteToUser()
-                CouchDB-->>Server: Updated user
-                Server->>CouchDB: saveCouchUser()
-                Server->>Server: Generate exchange token
-                Server->>Browser: Redirect to session.redirect?exchangeToken=TOKEN&serverId=ID
-
-                Browser->>Server: POST /api/auth/exchange
-                Note over Browser,Server: Body: {exchangeToken: TOKEN}
-
-                Server->>CouchDB: consumeExchangeTokenForRefreshToken()
-                CouchDB-->>Server: {valid: true, user, refreshDocument}
-
-                Server->>Server: Generate JWT token
-                Server-->>Browser: Return {accessToken: JWT, refreshToken: REFRESH}
-            else Multiple matching emails
-                Passport-->>Server: Return error (ambiguous match)
-                Server->>Browser: Flash error, redirect to /register
             end
         end
     end
@@ -413,13 +429,60 @@ The authentication context is passed between routes using query parameters and s
 }
 ```
 
+### `completePostAuth`
+
+`completePostAuth` is a shared post-authentication helper used by the local login handler, local register Branch A (existing user), and all SSO callback handlers. It centralises the steps that are common to all successful authentication flows:
+
+1. **Registration without invite** — returns a 400 response with a flash error and redirects to `errorRedirect`. Login without an invite continues normally.
+2. **Invite application** (if `inviteId` present) — calls `validateAndApplyInviteToUser()` and `saveCouchUser()`.
+   - For `register`: invite failure is a **hard error** — flash error + redirect to `errorRedirect`.
+   - For `login`: invite failure is a **soft warning** — logged, flashed, but authentication continues.
+3. **Session cleanup** — deletes `session.inviteId` and `session.action` to prevent stale values bleeding into future auth flows.
+4. **Token generation** — calls `upgradeCouchUserToExpressUser()` then `redirectWithToken()`.
+
+### `ssoVerify`
+
+`ssoVerify` is the Passport verify callback registered for all SSO strategies (Google, OIDC, SAML). Its sole responsibility is **identity resolution**: finding or creating a `PeopleDBDocument` for the authenticated SSO user and returning it via `done(null, dbUser)`.
+
+Key characteristics:
+
+- Returns a raw `PeopleDBDocument` via `done()`, not an `Express.User`. The upgrade to `Express.User` (adding `resourceRoles`) happens later inside `completePostAuth`.
+- **No invite handling** — invite validation and application are deliberately excluded and centralised in `completePostAuth`. This keeps `ssoVerify` focused and independently testable.
+- Contains a **defence-in-depth guard**: if `action === 'register' && !inviteId`, it returns `done(error)` as a safeguard below the route-level guard that checks this first.
+
+Login path: `identifyUser()` to find matching email(s) → if found, ensure SSO profile is linked; if not found, apply SSO provision policy (create account if configured, otherwise error).
+
+Register path: find or create user by email → link SSO profile → `addEmails()` → `saveCouchUser()`.
+
+### User Provisioning Policy
+
+Based on the configuration setting `PROVISION_SSO_USERS_POLICY` the system can be configured to provision a new
+user account when an unknown user logs in via SSO. This capability is not available via local login as account
+creation would be needed first. It is intended for use in an enterprise environment where all valid users should
+be able to make use of the system.
+
+`PROVISION_SSO_USERS_POLICY` can have three possible values:
+
+- `reject` will reject an unknown user and is the default
+- `general-user` will create a new user account and give them the `GENERAL_USER` role
+- `own-team` will create a new team and give the user the `TEAM_MANAGER` for that team
+
+New policy could be implemented by updating `applyProvisionPolicy` in `helpers.ts`.
+
 ### Invite System
 
-Invitations are used for registration and to grant access to resources:
+Invitations are used for registration and optionally for login:
 
-1. Invites are validated with `isInviteValid()`
+- **Register**: an invite is **mandatory**. A missing or invalid invite causes a hard error — the user is redirected back to `/register` and authentication does not complete.
+- **Login**: an invite is **optional**. If present, it is applied as an additional resource grant. On failure (e.g. already consumed, not found) a warning is logged and flashed, but the user is **not blocked** from logging in.
+
+Invite lifecycle (handled inside `completePostAuth` for login, register Branch A, and all SSO flows):
+
+1. Validated with `isInviteValid()`
 2. Applied to users with `validateAndApplyInviteToUser()`
-3. Consumed with `consumeInvite()`
+3. Consumed internally by `validateAndApplyInviteToUser()`
+
+For local register Branch B (new user), invite validation uses a deferred `createUser` closure passed directly to `validateAndApplyInviteToUser()` to avoid creating phantom accounts if the invite turns out to be invalid.
 
 ### Token Generation and Exchange
 
@@ -474,3 +537,4 @@ To add a new authentication provider:
 - Multiple emails can be associated with a single user account
 - The system enforces unique email addresses across all users
 - Exchange tokens are one-time use and stored as hashes for security
+- SSO session fields (`inviteId`, `action`, `redirect`) are written unconditionally on every auth initiation. This prevents stale values from a prior auth flow (e.g. a completed registration's `inviteId`) bleeding into a new one. Cookie session max age is now one day so this is less of a concern than it was when we used one year.

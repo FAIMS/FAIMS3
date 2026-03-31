@@ -1,10 +1,11 @@
 {
   "name": "faims3",
-  "version": "1.4.2",
+  "version": "1.4.3",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
   "main": "index.js",
-  "engines": {
-    "node": "22"
-  },
   "scripts": {
     "build-app": "pnpm --filter=app run build",
     "build-api": "pnpm --filter=api run build",
@@ -30,34 +31,30 @@
     "build-web": "turbo build --filter @faims3/web",
     "dev": "turbo dev --filter=@faims3/app --filter=@faims3/web --filter=@faims3/api --filter=@faims3/data-model --parallel",
     "lint": "turbo lint",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "clean": "turbo clean",
     "build": "turbo build",
     "knip": "knip"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "dependencies": {
+    "@capacitor-community/exif": "^7.0.0",
+    "env-cmd": "^10.1.0",
+    "esbuild": "^0.25.0"
+  },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.1.0",
-    "@eslint/js": "^9.9.0",
     "@types/node": "^22.13.14",
-    "eslint-plugin-n": "^17.23.1",
-    "eslint-plugin-prettier": "^5.2.1",
     "gts": "^5.3.1",
     "knip": "^5.75.1",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
     "turbo": "^2.0.11",
     "typescript": "^5.9.2"
   },
-  "packageManager": "pnpm@10.7.0",
-  "dependencies": {
-    "@capacitor-community/exif": "^7.0.0",
-    "@typescript-eslint/eslint-plugin": "^5.62.0",
-    "@typescript-eslint/parser": "^5.62.0",
-    "env-cmd": "^10.1.0",
-    "esbuild": "^0.25.0",
-    "eslint": "^8.57.0"
+  "engines": {
+    "node": "22"
   },
+  "packageManager": "pnpm@10.7.0",
   "pnpm": {
     "overrides": {
       "@mui/base": "5.0.0-beta.40"

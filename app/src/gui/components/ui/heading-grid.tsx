@@ -5,7 +5,10 @@ import {
   GridEventListener,
   GridPaginationModel,
 } from '@mui/x-data-grid';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
+import {
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '../../../buildconfig';
 import {useNavigate} from 'react-router';
 import * as ROUTES from '../../../constants/routes';
 import {useEffect, useState} from 'react';
@@ -99,7 +102,7 @@ export default function HeadingProjectGrid({
         slots={{
           noRowsOverlay: () => (
             <Stack height="100%" alignItems="center" justifyContent="center">
-              No {NOTEBOOK_NAME_CAPITALIZED}s have been activated yet.
+              No {NOTEBOOK_NAME_PLURAL_CAPITALIZED} have been activated yet.
             </Stack>
           ),
         }}
@@ -141,7 +144,7 @@ export default function HeadingProjectGrid({
         slots={{
           noRowsOverlay: () => (
             <Stack height="100%" alignItems="center" justifyContent="center">
-              You don't have any unactivated {NOTEBOOK_NAME}s.
+              You don't have any unactivated {NOTEBOOK_NAME_PLURAL}.
             </Stack>
           ),
         }}

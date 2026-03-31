@@ -1,5 +1,5 @@
 import {useAuth} from '@/context/auth-provider';
-import {getColumns, useUsersColumns} from '@/components/tables/users';
+import {useUsersColumns} from '@/components/tables/users';
 import {DataTable} from '@/components/data-table/data-table';
 import {useGetUsers} from '@/hooks/queries';
 import {useState} from 'react';

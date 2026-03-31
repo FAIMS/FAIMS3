@@ -41,6 +41,7 @@ import {migrateNotebook} from '@faims3/data-model';
 import {createDesignerStore} from './createDesignerStore';
 import globalTheme from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
+import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
@@ -48,29 +49,32 @@ import {DesignPanel} from './components/design-panel';
 
 import {v4 as uuidv4} from 'uuid';
 
+/**
+ * @file Full-screen designer shell: migrate notebook, Redux, memory router, export without internal ids.
+ */
+
+/** Props for the full-screen notebook designer embedded in the main app. */
 export interface DesignerWidgetProps {
+  /** Initial notebook; undefined shows empty state until parent supplies data. */
   notebook?: NotebookWithHistory;
+  /** Called with exported JSON `File` on Done, or undefined on cancel. */
   onClose: (notebookJsonFile: File | undefined) => void;
+  /** Optional MUI theme merge or factory `(base) => theme` for host branding. */
   themeOverride?: Parameters<typeof ThemeProvider>[0]['theme'];
+  /** Log Redux actions to the console. */
   debug?: boolean;
+  /** Milliseconds to show the loading spinner before revealing the editor shell. */
   loadingDuration?: number;
+  /** Fade/scale transition duration for enter and exit (ms). */
   animationDuration?: number;
+  /** Scale factor when hidden (`scale(animationScale)` before fade-in). */
   animationScale?: number;
 }
 
 /**
- * Remove designerIdentifier keys just before export,
- * so the external schema remains clean.
+ * Standalone designer shell: migrates notebook data, mounts Redux + router, and
+ * serialises without `designerIdentifier` on save.
  */
-const stripDesignerIdentifiers = (notebook: Notebook): Notebook => {
-  const clone = JSON.parse(JSON.stringify(notebook)) as Notebook;
-  const fields = clone['ui-specification']?.fields ?? {};
-  Object.keys(fields).forEach(fieldName => {
-    delete fields[fieldName].designerIdentifier;
-  });
-  return clone;
-};
-
 export function DesignerWidget({
   notebook,
   onClose,
@@ -91,18 +95,22 @@ export function DesignerWidget({
     };
     // migrate the notebook - update any out of date fields or structures
     const {migrated} = migrateNotebook(flat);
+    const migratedUiSpec = migrated[
+      'ui-specification'
+    ] as Notebook['ui-specification'];
+    const migratedMetadata = migrated.metadata as Notebook['metadata'];
 
     // Inject in-memory designerIdentifier if missing
-    Object.values(migrated['ui-specification'].fields).forEach(field => {
+    Object.values(migratedUiSpec.fields).forEach(field => {
       if (!field.designerIdentifier) {
         field.designerIdentifier = uuidv4();
       }
     });
 
     return {
-      metadata: migrated.metadata,
+      metadata: migratedMetadata,
       'ui-specification': {
-        present: migrated['ui-specification'],
+        present: migratedUiSpec,
         past: [],
         future: [],
       },
@@ -111,7 +119,7 @@ export function DesignerWidget({
 
   // 2. Create a fresh Redux store whenever processedNotebook or debug flag changes
   const store = useMemo(
-    () => createDesignerStore(processedNotebook),
+    () => createDesignerStore(processedNotebook, debug),
     [processedNotebook, debug]
   );
 
@@ -162,14 +170,9 @@ export function DesignerWidget({
 
   const doClose = (file: File | undefined) => onClose(file);
 
+  /** Serialise present notebook, strip internal ids, and return a downloadable JSON `File`. */
   const handleDone = () => {
-    const {metadata, 'ui-specification': historyState} =
-      store.getState().notebook;
-
-    const actualNotebook: Notebook = {
-      metadata,
-      'ui-specification': historyState.present,
-    };
+    const actualNotebook: Notebook = toNotebook(store.getState().notebook);
 
     // Remove internal IDs before serialisation
     const exportNotebook = stripDesignerIdentifiers(actualNotebook);
@@ -189,6 +192,7 @@ export function DesignerWidget({
     window.setTimeout(() => doClose(file), animationDuration);
   };
 
+  /** Close without saving after user confirms cancel dialog. */
   const handleCancel = () => {
     setCancelDialogOpen(false);
     setAnimateOut(true);

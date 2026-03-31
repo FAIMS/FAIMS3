@@ -20,11 +20,15 @@ import {
 import {useStore} from '@tanstack/react-form';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useElementWidth} from '../../hooks/useElementWidth';
-import {FieldVisibilityMap, FormManagerConfig} from '../formManagers/types';
+import {logError} from '../../logging';
+import {
+  FieldVisibilityMap,
+  FormManagerConfig,
+  FullFormManagerConfig,
+} from '../formManagers/types';
 import {FaimsForm} from '../types';
 import {getFieldId} from '../utils';
 import {FormSection} from './FormSection';
-import {logError} from '../../logging';
 
 // ============================================================================
 // Constants
@@ -536,6 +540,8 @@ interface MobileNavigationStepperProps {
     label: string;
     onClick: () => void;
   };
+  /** When true, navigation is blocked (e.g. photo saving); buttons are disabled */
+  navigationBlocked?: boolean;
 }
 
 /**
@@ -554,8 +560,19 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
   activeStep,
   onStep,
   onCompleteHandler,
+  navigationBlocked = false,
 }) => {
   const isLastStep = activeStep === totalSteps - 1;
+  const blockedSx = navigationBlocked
+    ? {
+        '@keyframes blockedPulse': {
+          '0%': {opacity: 1},
+          '50%': {opacity: 0.35},
+          '100%': {opacity: 1},
+        },
+        animation: 'blockedPulse 0.9s ease-in-out infinite',
+      }
+    : undefined;
 
   return (
     <MobileStepper
@@ -568,7 +585,8 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
           <Button
             size="small"
             onClick={onCompleteHandler.onClick}
-            sx={{fontWeight: 'bold', color: 'success'}}
+            disabled={navigationBlocked}
+            sx={{fontWeight: 'bold', color: 'success', ...(blockedSx as any)}}
           >
             {onCompleteHandler.label}
           </Button>
@@ -576,8 +594,8 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
           <Button
             size="small"
             onClick={() => onStep('next')}
-            disabled={isLastStep}
-            sx={{fontWeight: 'bold'}}
+            disabled={isLastStep || navigationBlocked}
+            sx={{fontWeight: 'bold', ...(blockedSx as any)}}
           >
             Next
           </Button>
@@ -587,8 +605,8 @@ const MobileNavigationStepper: React.FC<MobileNavigationStepperProps> = ({
         <Button
           size="small"
           onClick={() => onStep('back')}
-          disabled={activeStep === 0}
-          sx={{fontWeight: 'bold'}}
+          disabled={activeStep === 0 || navigationBlocked}
+          sx={{fontWeight: 'bold', ...(blockedSx as any)}}
         >
           Back
         </Button>
@@ -729,6 +747,11 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
   // Use mobile view if either condition is met
   const showMobileView = isSmallScreen || isTooDense;
 
+  // Block section navigation while a photo/file is being saved to PouchDB (prevents data loss)
+  const isNavigationBlocked =
+    config.mode === 'full' &&
+    (config as FullFormManagerConfig).attachmentSaving?.isSaving() === true;
+
   // Handle initial navigation context - scroll to field if specified
   useEffect(() => {
     if (config.mode === 'full') {
@@ -813,9 +836,12 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
    *
    * If the field is in the current section, scrolls to it immediately.
    * If in another section, navigates to that section first.
+   * Does nothing while attachment saving is in progress.
    */
   const handleNavigateToField = useCallback(
     (sectionId: string, fieldName: string) => {
+      if (isNavigationBlocked) return;
+
       if (sectionId === activeSection) {
         // Same section - just scroll to the field
         scrollToField(fieldName);
@@ -831,14 +857,17 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         });
       }
     },
-    [activeSection, handleSectionExit]
+    [activeSection, handleSectionExit, isNavigationBlocked]
   );
 
   /**
    * Handles navigation to a different section without targeting a specific field.
+   * Does nothing while attachment saving is in progress.
    */
   const handleNavigateToSection = useCallback(
     (sectionId: string) => {
+      if (isNavigationBlocked) return;
+
       if (sectionId !== activeSection) {
         handleSectionExit();
         setActiveSection(sectionId);
@@ -850,13 +879,16 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         }
       }
     },
-    [activeSection, handleSectionExit]
+    [activeSection, handleSectionExit, isNavigationBlocked]
   );
 
   /**
    * Handles tab change in desktop view.
+   * No-op while attachment saving is in progress.
    */
   const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
+    if (isNavigationBlocked) return;
+
     handleSectionExit();
     setActiveSection(newValue);
   };
@@ -866,9 +898,12 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
    *
    * After changing sections, scrolls the viewport to bring the top
    * navigation header into view for better user orientation.
+   * Does nothing while attachment saving is in progress (photo/file not yet in PouchDB).
    */
   const handleStep = useCallback(
     (direction: 'next' | 'back') => {
+      if (isNavigationBlocked) return;
+
       handleSectionExit();
 
       const nextIndex =
@@ -884,7 +919,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
         });
       }
     },
-    [activeIndex, handleSectionExit, visibleSections]
+    [activeIndex, handleSectionExit, visibleSections, isNavigationBlocked]
   );
 
   // Check if the active section should be displayed
@@ -914,6 +949,8 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
               allowScrollButtonsMobile
               sx={{
                 overflowY: 'hidden',
+                pointerEvents: isNavigationBlocked ? 'none' : 'auto',
+                opacity: isNavigationBlocked ? 0.6 : 1,
                 '& .MuiTabs-flexContainer': {
                   alignItems: 'flex-start',
                 },
@@ -940,6 +977,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
                     key={sectionId}
                     value={sectionId}
                     disableRipple
+                    disabled={isNavigationBlocked}
                     label={
                       <Box
                         sx={{
@@ -1029,6 +1067,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
               activeStep={activeIndex}
               onStep={handleStep}
               onCompleteHandler={onCompleteHandler}
+              navigationBlocked={isNavigationBlocked}
             />
           </Box>
 
@@ -1092,6 +1131,7 @@ export const TabbedSectionDisplay: React.FC<TabbedSectionDisplayProps> = ({
             activeStep={activeIndex}
             onStep={handleStep}
             onCompleteHandler={onCompleteHandler}
+            navigationBlocked={isNavigationBlocked}
           />
         </Box>
       )}

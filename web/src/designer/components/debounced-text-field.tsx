@@ -23,8 +23,10 @@ import React, {
 import {TextField, TextFieldProps} from '@mui/material';
 import debounce from 'lodash/debounce';
 
-export interface DebouncedTextFieldProps
-  extends Omit<TextFieldProps, 'onChange'> {
+export interface DebouncedTextFieldProps extends Omit<
+  TextFieldProps,
+  'onChange'
+> {
   /**
    * Debounce delay in milliseconds (default is 200ms)
    */
@@ -35,6 +37,9 @@ export interface DebouncedTextFieldProps
 
 const DEFAULT_DEBOUNCE_MS = 200;
 
+/**
+ * MUI `TextField` that debounces `onChange` and flushes pending input on blur/unmount.
+ */
 const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
   value,
   onChange,
@@ -89,4 +94,5 @@ const DebouncedTextField: React.FC<DebouncedTextFieldProps> = ({
   );
 };
 
+/** Default export (same component as the `DebouncedTextField` implementation above). */
 export default DebouncedTextField;

@@ -1,8 +1,10 @@
 {
   "name": "@faims3/forms",
-  "packageManager": "pnpm@10.7.0",
+  "version": "1.4.3",
   "private": true,
-  "version": "1.4.2",
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,12 +14,6 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
-  "engines": {
-    "node": "22"
-  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --p ./tsconfig-build.json && vite build",
@@ -25,8 +21,8 @@
     "watch:types": "tsc --p ./tsconfig-build.json --watch",
     "watch:build": "vite build --watch",
     "circular-dep-check": "madge -c --extensions ts lib/",
-    "lint": "(pnpm run circular-dep-check || exit 0) && eslint .",
-    "fix": "gts fix",
+    "lint": "(pnpm run circular-dep-check || exit 0) && oxlint --config ../../.oxlintrc.json .",
+    "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json .",
     "preview": "vite preview",
     "test": "vitest"
   },
@@ -59,7 +55,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -70,14 +65,10 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react-swc": "^4.0.1",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react": "^7.32.2",
-    "globals": "^16.4.0",
     "madge": "^8.0.0",
     "ol": "^10.3.1",
     "ol-mapbox-style": "^12.5.0",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.45.0",
     "vite": "^7.1.7",
     "vitest": "^4.0.6"
   },
@@ -89,5 +80,9 @@
     "@tanstack/react-query": "^5.62.16",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
-  }
+  },
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
 }

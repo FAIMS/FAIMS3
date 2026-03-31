@@ -1,7 +1,7 @@
 # Deploy Fieldmark to Digital Ocean via Terraform
 
 This folder contains two Terraform modules to configure and deploy both CouchDB
-and the Conductor server to Digital Ocean.   It also contains an example deployment
+and the Conductor server to Digital Ocean. It also contains an example deployment
 project that can be used as a template for an individual deployment.
 
 ## CouchDB
@@ -21,6 +21,6 @@ cluster.
 ## Example Deployment
 
 The `example` folder contains a Terraform configuration that uses the two modules
-above to deploy a full FAIMS3 server configuration.  To manage a deployment, create
-a private repository and copy the `example` folder to it.  Further instructions
+above to deploy a full FAIMS3 server configuration. To manage a deployment, create
+a private repository and copy the `example` folder to it. Further instructions
 are in the README.md file in the `example` folder.

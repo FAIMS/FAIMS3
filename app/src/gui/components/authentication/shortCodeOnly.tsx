@@ -22,13 +22,19 @@ import {replaceOrAppendRedirect} from '../../../utils/helpers';
 import {Server} from '../../../context/slices/projectSlice';
 import {QRCodeButton} from '@faims3/forms';
 
+interface QRCodeButtonOnlyProps {
+  servers: Server[];
+  /** Called when scan is initiated (e.g. to close a parent dialog) */
+  onScanStart?: () => void;
+}
+
 /**
  * Component to register a button for scanning a QR code to register
  * for a notebook
  * @param props Component properties include only `servers`
  * @returns component content
  */
-export function QRCodeButtonOnly(props: {servers: Server[]}) {
+export function QRCodeButtonOnly(props: QRCodeButtonOnlyProps) {
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const handleRegister = async (url: string) => {
@@ -63,6 +69,7 @@ export function QRCodeButtonOnly(props: {servers: Server[]}) {
     <QRCodeButton
       label={'Scan QR Code'}
       onScanResult={handleRegister}
+      onScanStart={props.onScanStart}
       buttonProps={{
         variant: 'outlined',
         fullWidth: true,

@@ -229,7 +229,6 @@ we'll need it to be updated.
 - `vars.APP_CONTACT_URL` - URL for the 'Contact' link in the app footer
 - `vars.POUCH_BATCH_SIZE` - batch size for pouchdb replication, defaults to 10 to ensure reliable sync of large files
 
-
 ## Note on Development Team
 
 The setting `APP_STORE_CONNECT_TEAM_ID` is required in the build and must match
@@ -253,12 +252,10 @@ Once your build is uploaded to App Store Connect via Fastlane or Xcode, follow t
 2. Go to **My Apps → [Your App] → iOS App Version** (e.g., 1.2.0)
 
 3. Under the **Previews and Screenshots** section:
-
    - Upload at least 3 screenshots for the required devices (6.5” and 6.9” iPhones)
    - These will appear in your App Store listing.
 
 4. Fill in:
-
    - **Promotional Text**
    - **Description** of the app (clear, concise, informative)
    - **Keywords** (comma-separated list)
@@ -267,22 +264,18 @@ Once your build is uploaded to App Store Connect via Fastlane or Xcode, follow t
    - **Version Number** (must match the one in Xcode/Fastlane build)
 
 5. Under **App Review Information**:
-
    - Provide **login credentials** if your app requires authentication
    - Add **Contact Name**, **Phone**, and **Email**
 
 6. Under **App Privacy**:
-
    - Add your **Privacy Policy URL**
    - Choose **Data types** collected and **how they’re linked** (if at all)
 
 7. Under **Build Section**:
-
    - Select the correct uploaded build (e.g., 202506160659)
    - Wait for the build to finish processing if it hasn’t yet
 
 8. Under **App Store Version Release**:
-
    - Choose **Manual** or **Automatic** release after approval
 
 9. **Submit for Review** at the top right

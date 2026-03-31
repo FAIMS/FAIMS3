@@ -1,6 +1,6 @@
 # Email
 
-*How to add and configure an Email field in the Notebook Editor.*
+_How to add and configure an Email field in the Notebook Editor._
 
 ---
 

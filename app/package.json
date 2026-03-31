@@ -1,24 +1,8 @@
 {
   "name": "@faims3/app",
-  "packageManager": "pnpm@10.7.0",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "private": true,
   "type": "module",
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "engines": {
-    "node": "22"
-  },
   "scripts": {
     "prestart": "pnpm run runconfig",
     "start": "vite",
@@ -43,10 +27,10 @@
     "webapp-build": "cap copy",
     "webapp-sync": "cap sync",
     "app-update": "cap update",
-    "lint": "gts lint",
+    "lint": "oxlint -c ../.oxlintrc.json .",
     "clean": "gts clean",
     "compile": "tsc",
-    "fix": "gts fix",
+    "fix": "oxlint -c ../.oxlintrc.json --fix . && oxfmt .",
     "doc": "jsdoc -c ./jsdoc.config.json",
     "runconfig": "env-cmd --no-override --silent --use-shell ./bin/prebuildConfig.sh",
     "configIOSbuild": "env-cmd --no-override --silent ./bin/prebuildIOS.sh"
@@ -106,6 +90,7 @@
     "moment": "2.29.4",
     "ol": "^10.3.1",
     "ol-mapbox-style": "^12.5.0",
+    "pluralize": "^8.0.0",
     "pouchdb-adapter-memory": "^9.0.0",
     "pouchdb-browser": "^9.0.0",
     "pouchdb-debug": "^7.2.1",
@@ -132,13 +117,13 @@
     "@testing-library/jest-dom": "6.4.6",
     "@testing-library/react": "^15.0.7",
     "@testing-library/user-event": "^14.6.1",
+    "@types/pluralize": "^0.0.33",
     "@types/pouchdb": "^6.4.2",
     "@types/pouchdb-adapter-memory": "^6.1.6",
     "@types/pouchdb-browser": "^6.1.5",
     "@vitejs/plugin-react-swc": "^4.0.1",
     "@vitest/coverage-v8": "^2.1.8",
     "esbuild": "^0.25.0",
-    "eslint-plugin-react": "^7.32.2",
     "fast-check": "2.25.0",
     "gts": "^5.3.1",
     "jsdoc": "^4.0.2",
@@ -152,5 +137,21 @@
     "vite-plugin-svgr": "^4.3.0",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^2.1.8"
-  }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
 }

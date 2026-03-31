@@ -1,3 +1,7 @@
+export * from './addressTypes';
+export * from './addressAutosuggest/types';
+export * from './addressAutosuggest/mapbox';
+export * from './addressAutosuggest/maptiler';
 export * from './formModule';
 export * from './fieldRegistry';
 export * from './rendering';

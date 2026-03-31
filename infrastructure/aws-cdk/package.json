@@ -1,10 +1,6 @@
 {
   "name": "@faims3/infra-aws-cdk",
-  "packageManager": "pnpm@10.7.0",
   "version": "0.1.0",
-  "engines": {
-    "node": "22"
-  },
   "scripts": {
     "build": "tsc",
     "build-src": "cd src && pnpm install && pnpm run build",
@@ -14,8 +10,16 @@
     "cdk": "cdk",
     "config": "bash ./config.sh",
     "validate-config": "ts-node validateConfig.ts",
-    "lint": "gts lint",
-    "fix": "gts fix"
+    "test": "jest",
+    "lint": "oxlint --config ../../.oxlintrc.json .",
+    "fix": "oxlint --config ../../.oxlintrc.json --fix . && oxfmt --config ../../.oxfmtrc.json ."
+  },
+  "dependencies": {
+    "@cloudcomponents/cdk-static-website": "^2.0.0",
+    "aws-cdk-lib": "^2.189.0",
+    "constructs": "^10.0.0",
+    "source-map-support": "^0.5.21",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -26,11 +30,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   },
-  "dependencies": {
-    "@cloudcomponents/cdk-static-website": "^2.0.0",
-    "aws-cdk-lib": "^2.189.0",
-    "constructs": "^10.0.0",
-    "source-map-support": "^0.5.21",
-    "zod": "^3.24.1"
-  }
+  "engines": {
+    "node": "22"
+  },
+  "packageManager": "pnpm@10.7.0"
 }
