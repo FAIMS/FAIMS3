@@ -28,9 +28,11 @@ import {
   Grid,
   Tab,
   Tabs,
+  Theme,
   Tooltip,
   Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import InfoIcon from '@mui/icons-material/Info';
@@ -97,12 +99,12 @@ export const DesignPanel = () => {
   const maxKeys = Object.keys(viewSets).length;
   const hasOverflowingTabs = maxKeys > 6;
 
-  const visibleTabSx = {
+  const baseTabRootSx = {
     '&.MuiTab-root': {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: 'background.paper',
       borderStyle: 'solid',
       borderWidth: '2px',
-      borderColor: '#E18200',
+      borderColor: 'secondary.main',
       borderBottom: 'none',
       borderTopLeftRadius: '10px',
       borderTopRightRadius: '10px',
@@ -120,50 +122,37 @@ export const DesignPanel = () => {
       textAlign: 'center',
       color: 'text.secondary',
     },
+  } as const;
+
+  const visibleTabSx = {
+    ...baseTabRootSx,
     '&.Mui-selected': {
-      borderColor: '#6B9B1A',
-      color: '#6B9B1A',
-      backgroundColor: '#F5FCE8',
+      borderColor: 'primary.main',
+      color: 'primary.main',
+      backgroundColor: (theme: Theme) =>
+        alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
     },
     '&:hover': {
-      color: '#6B9B1A',
+      color: 'primary.main',
       opacity: 1,
-      backgroundColor: '#F5FCE8',
+      backgroundColor: (theme: Theme) =>
+        alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.16 : 0.08),
     },
   } as const;
 
   const untickedTabSx = {
-    '&.MuiTab-root': {
-      backgroundColor: '#FFFFFF',
-      borderStyle: 'solid',
-      borderWidth: '2px',
-      borderColor: '#E18200',
-      borderBottom: 'none',
-      borderTopLeftRadius: '10px',
-      borderTopRightRadius: '10px',
-      marginRight: '0.5em',
-      minHeight: 48,
-      minWidth: 160,
-      maxWidth: 260,
-      paddingX: 2,
-      paddingY: 1,
-      textTransform: 'uppercase',
-      fontWeight: 700,
-      fontSize: '0.75rem',
-      lineHeight: 1.2,
-      whiteSpace: 'normal',
-      textAlign: 'center',
-      color: 'text.secondary',
-    },
+    ...baseTabRootSx,
     '&.Mui-selected': {
-      color: '#E18200',
-      borderColor: '#E18200',
-      backgroundColor: '#FFF4E5',
+      color: 'secondary.main',
+      borderColor: 'secondary.main',
+      backgroundColor: (theme: Theme) =>
+        alpha(theme.palette.secondary.main, theme.palette.mode === 'dark' ? 0.25 : 0.14),
     },
     '&:hover': {
-      color: '#E18200',
+      color: 'secondary.main',
       opacity: 1,
-      backgroundColor: '#FFF4E5',
+      backgroundColor: (theme: Theme) =>
+        alpha(theme.palette.secondary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
     },
   } as const;
 
@@ -307,7 +296,7 @@ export const DesignPanel = () => {
             <Typography variant="h2" sx={designerHeadingTextSx}>
               Forms
             </Typography>
-            <Tooltip title="Add info text here.">
+            <Tooltip title="Forms are top-level data entry pages in your notebook.">
               <InfoIcon sx={designerInfoIconSx} />
             </Tooltip>
           </Box>
