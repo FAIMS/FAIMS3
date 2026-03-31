@@ -54,6 +54,16 @@
     --secondary-foreground: 0 0% 98%;
   }
 
+  .theme-dass {
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 200 97% 53%;
+    --secondary-foreground: 0 0% 98%;
+    --ring: 200 97% 53%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 98%;
+  }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
