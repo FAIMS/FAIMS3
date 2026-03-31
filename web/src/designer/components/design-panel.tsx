@@ -31,12 +31,15 @@ import {
   Theme,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
 import InfoIcon from '@mui/icons-material/Info';
 import KeyboardDoubleArrowRightRoundedIcon from '@mui/icons-material/KeyboardDoubleArrowRightRounded';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
 
 import {TabContext} from '@mui/lab';
 import {useState, useEffect} from 'react';
@@ -91,6 +94,8 @@ export const DesignPanel = () => {
     () => `Form ${Object.keys(viewSets).length + 1}`
   );
   const [addFormDialogOpen, setAddFormDialogOpen] = useState(false);
+  const theme = useTheme();
+  const addFormDialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
@@ -220,7 +225,12 @@ export const DesignPanel = () => {
   const addNewForm = () => {
     setAlertMessage('');
     try {
-      dispatch(viewSetAdded({formName: newFormName}));
+      const formName = newFormName.trim();
+      if (!formName) {
+        setAlertMessage('Please enter a form name.');
+        return false;
+      }
+      dispatch(viewSetAdded({formName}));
       setIndexAndNavigate(`${visibleTypes.length}`);
       setAlertMessage('');
       return true;
@@ -489,17 +499,47 @@ export const DesignPanel = () => {
       </TabContext>
       <Dialog
         open={addFormDialogOpen}
-        onClose={() => setAddFormDialogOpen(false)}
+        onClose={() => {
+          setAddFormDialogOpen(false);
+          setAlertMessage('');
+        }}
         fullWidth
         maxWidth="sm"
+        fullScreen={addFormDialogFullScreen}
+        PaperProps={{
+          sx: {
+            borderRadius: {xs: 0, sm: 2},
+            boxShadow: {xs: 'none', sm: theme.shadows[12]},
+            overflow: 'hidden',
+          },
+        }}
       >
-        <DialogTitle>Add New Form</DialogTitle>
-        <DialogContent>
+        <DialogTitle
+          sx={{
+            py: 2,
+            px: {xs: 2, sm: 3},
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            backgroundColor: theme =>
+              alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.08),
+          }}
+        >
+          <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+            <AddRoundedIcon color="primary" />
+            <Typography variant="h6" sx={{fontWeight: 800}}>
+              Add New Form
+            </Typography>
+          </Box>
+          <Typography variant="body2" sx={{mt: 0.5, color: 'text.secondary'}}>
+            Create a clear form name so editors can find it quickly.
+          </Typography>
+        </DialogTitle>
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
           <DebouncedTextField
             fullWidth
             required
             label="Form Name"
-            helperText="Enter a name for the form."
+            helperText="Use a short descriptive name, for example: Household Details."
             name="formNameDialog"
             data-testid="formNameDialog"
             value={newFormName}
@@ -509,15 +549,35 @@ export const DesignPanel = () => {
             sx={{mt: 1}}
           />
           {alertMessage && (
-            <Alert severity="error" sx={{mt: 1}}>
+            <Alert severity="error" sx={{mt: 2}}>
               {alertMessage}
             </Alert>
           )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAddFormDialogOpen(false)}>Cancel</Button>
+        <DialogActions
+          sx={{
+            px: {xs: 2, sm: 3},
+            pb: {xs: 2, sm: 2.5},
+            pt: 1.5,
+            gap: 1,
+            flexDirection: {xs: 'column-reverse', sm: 'row'},
+            alignItems: 'stretch',
+          }}
+        >
+          <Button
+            onClick={() => {
+              setAddFormDialogOpen(false);
+              setAlertMessage('');
+            }}
+            fullWidth={addFormDialogFullScreen}
+          >
+            Cancel
+          </Button>
           <Button
             variant="contained"
+            startIcon={<AddRoundedIcon />}
+            fullWidth={addFormDialogFullScreen}
+            disabled={!newFormName.trim()}
             onClick={() => {
               if (addNewForm()) {
                 setAddFormDialogOpen(false);

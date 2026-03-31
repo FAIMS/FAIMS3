@@ -206,6 +206,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         }}
       >
         <Stack
+          direction="row"
           sx={{
             ...designerHeadingRowSx,
             justifyContent: 'flex-start',
@@ -250,6 +251,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       })}
 
       <Stack
+        direction="row"
         sx={{
           ...designerHeadingRowSx,
           mt: 2,
