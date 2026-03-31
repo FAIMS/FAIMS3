@@ -39,9 +39,10 @@ import {
 import {migrateNotebook} from '@faims3/data-model';
 
 import {createDesignerStore} from './createDesignerStore';
-import globalTheme from './theme';
+import {createDesignerTheme} from './theme';
 import type {Notebook, NotebookWithHistory} from './state/initial';
 import {stripDesignerIdentifiers, toNotebook} from './domain/notebook/adapters';
+import {THEME} from '../lib/theme';
 
 import {NotebookEditor} from './components/notebook-editor';
 import {InfoPanel} from './components/info-panel';
@@ -84,6 +85,8 @@ export function DesignerWidget({
   animationDuration = 300,
   animationScale = 0.95,
 }: DesignerWidgetProps) {
+  const baseTheme = useMemo(() => createDesignerTheme(THEME), []);
+
   // 1. Migrate + inject designerIdentifiers + reset undo history on each new notebook
   const processedNotebook = useMemo<NotebookWithHistory | undefined>(() => {
     // check that we have an actual notebook
@@ -141,10 +144,10 @@ export function DesignerWidget({
   // Merge external theme override
   const mergedTheme = useMemo(() => {
     if (typeof themeOverride === 'function') {
-      return themeOverride(globalTheme);
+      return themeOverride(baseTheme);
     }
-    return {...globalTheme, ...themeOverride};
-  }, [themeOverride]);
+    return {...baseTheme, ...themeOverride};
+  }, [baseTheme, themeOverride]);
 
   const doClose = useCallback(
     (file: File | undefined) => onClose(file),
