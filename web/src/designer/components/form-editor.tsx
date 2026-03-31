@@ -67,13 +67,17 @@ import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
 import {
+  designerControlActionRowSx,
   designerControlLabelSx,
   designerControlHeadingSx,
   designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
   designerInfoIconSx,
+  designerIconControlButtonSx,
   designerPipeSx,
+  designerPrimaryActionButtonSx,
+  designerScrollableControlRowSx,
 } from './designer-style';
 import {
   formVisibilityUpdated,
@@ -444,7 +448,7 @@ export const FormEditor = ({
               spacing={1.5}
               alignItems="center"
               flexWrap="nowrap"
-              sx={{overflowX: 'auto', pb: 0.25}}
+              sx={designerScrollableControlRowSx}
             >
               <Typography
                 variant="subtitle1"
@@ -459,8 +463,7 @@ export const FormEditor = ({
                 startIcon={<AddRoundedIcon />}
                 onClick={handleAddFormCallback}
                 sx={{
-                  textTransform: 'none',
-                  fontWeight: 700,
+                  ...designerPrimaryActionButtonSx,
                   boxShadow: 'none',
                   mt: -0.25,
                   whiteSpace: 'nowrap',
@@ -476,7 +479,7 @@ export const FormEditor = ({
               alignItems="center"
               flexWrap="nowrap"
               columnGap={1}
-              sx={{color: 'text.secondary', overflowX: 'auto', pb: 0.25, mt: 0.5}}
+              sx={{...designerControlActionRowSx, color: 'text.secondary'}}
             >
 
               <Button
@@ -500,7 +503,7 @@ export const FormEditor = ({
                         disabled
                         aria-label="left"
                         size="small"
-                        sx={{color: 'text.secondary', p: 0.5}}
+                        sx={designerIconControlButtonSx}
                       >
                         <ArrowBackRoundedIcon />
                       </IconButton>
@@ -508,7 +511,7 @@ export const FormEditor = ({
                         disabled
                         aria-label="right"
                         size="small"
-                        sx={{color: 'text.secondary', p: 0.5}}
+                        sx={designerIconControlButtonSx}
                       >
                         <ArrowForwardRoundedIcon />
                       </IconButton>
@@ -523,7 +526,7 @@ export const FormEditor = ({
                           onClick={() => moveForm(viewSetId, 'left')}
                           aria-label="left"
                           size="small"
-                          sx={{color: 'text.secondary', p: 0.5}}
+                          sx={designerIconControlButtonSx}
                         >
                           <ArrowBackRoundedIcon />
                         </IconButton>
@@ -539,7 +542,7 @@ export const FormEditor = ({
                           onClick={() => moveForm(viewSetId, 'right')}
                           aria-label="right"
                           size="small"
-                          sx={{color: 'text.secondary', p: 0.5}}
+                          sx={designerIconControlButtonSx}
                         >
                           <ArrowForwardRoundedIcon />
                         </IconButton>

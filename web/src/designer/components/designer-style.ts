@@ -35,6 +35,26 @@ export const designerControlLabelSx: SxProps<Theme> = {
   },
 };
 
+export const designerScrollableControlRowSx: SxProps<Theme> = {
+  overflowX: 'auto',
+  pb: 0.25,
+};
+
+export const designerControlActionRowSx: SxProps<Theme> = {
+  ...designerScrollableControlRowSx,
+  mt: 0.5,
+};
+
+export const designerIconControlButtonSx: SxProps<Theme> = {
+  color: 'text.secondary',
+  p: 0.5,
+};
+
+export const designerPrimaryActionButtonSx: SxProps<Theme> = {
+  textTransform: 'none',
+  fontWeight: 700,
+};
+
 export const designerControlHeadingSx: SxProps<Theme> = {
   color: 'text.primary',
   fontWeight: 700,

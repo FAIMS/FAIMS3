@@ -57,12 +57,17 @@ import {ConditionType} from '../types/condition';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {
+  designerControlActionRowSx,
+  designerControlLabelSx,
   designerControlHeadingSx,
   designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
   designerInfoIconSx,
+  designerIconControlButtonSx,
   designerPipeSx,
+  designerPrimaryActionButtonSx,
+  designerScrollableControlRowSx,
 } from './designer-style';
 import {FieldList} from './field-list';
 
@@ -132,18 +137,6 @@ export const SectionEditor = ({
   );
   const [duplicateTargetViewSetId, setDuplicateTargetViewSetId] = useState('');
   const [duplicateAlertMessage, setDuplicateAlertMessage] = useState('');
-
-  const sectionControlLabelSx = {
-    color: 'text.secondary',
-    fontWeight: 700,
-    letterSpacing: '0.01em',
-    textTransform: 'none',
-    fontSize: '1.05rem',
-    whiteSpace: 'nowrap',
-    '& .MuiSvgIcon-root': {
-      fontSize: '1.55rem',
-    },
-  } as const;
 
   useEffect(() => {
     if (fView) {
@@ -293,7 +286,7 @@ export const SectionEditor = ({
           direction="row"
           alignItems="center"
           spacing={1.5}
-          sx={{overflowX: 'auto', pb: 0.25}}
+          sx={designerScrollableControlRowSx}
         >
           <Typography variant="subtitle1" sx={designerControlHeadingSx}>
             Section controls
@@ -303,7 +296,7 @@ export const SectionEditor = ({
             size="small"
             startIcon={<AddRoundedIcon />}
             onClick={() => setAddDialogOpen(true)}
-            sx={{textTransform: 'none', fontWeight: 700, mt: -0.35}}
+            sx={{...designerPrimaryActionButtonSx, mt: -0.35}}
           >
             New Section
           </Button>
@@ -313,14 +306,14 @@ export const SectionEditor = ({
           alignItems="center"
           flexWrap="nowrap"
           columnGap={1}
-          sx={{overflowX: 'auto', pb: 0.25, mt: 0.5}}
+          sx={designerControlActionRowSx}
         >
           <Button
             variant="text"
             size="small"
             startIcon={<EditRoundedIcon />}
             onClick={() => setEditMode(true)}
-            sx={sectionControlLabelSx}
+            sx={designerControlLabelSx}
           >
             Edit name
           </Button>
@@ -335,7 +328,7 @@ export const SectionEditor = ({
                   onClick={() => moveSection('left')}
                   aria-label="left"
                   size="small"
-                  sx={{color: 'text.secondary', p: 0.5}}
+                  sx={designerIconControlButtonSx}
                 >
                   <ArrowBackRoundedIcon />
                 </IconButton>
@@ -348,13 +341,13 @@ export const SectionEditor = ({
                   onClick={() => moveSection('right')}
                   aria-label="right"
                   size="small"
-                  sx={{color: 'text.secondary', p: 0.5}}
+                  sx={designerIconControlButtonSx}
                 >
                   <ArrowForwardRoundedIcon />
                 </IconButton>
               </span>
             </Tooltip>
-            <Typography variant="caption" sx={sectionControlLabelSx}>
+            <Typography variant="caption" sx={designerControlLabelSx}>
               Reorder
             </Typography>
           </Stack>
@@ -366,7 +359,7 @@ export const SectionEditor = ({
             size="small"
             startIcon={<ContentCopyRoundedIcon />}
             onClick={() => setOpenDuplicateDialog(true)}
-            sx={sectionControlLabelSx}
+            sx={designerControlLabelSx}
           >
             Duplicate
           </Button>
@@ -378,7 +371,7 @@ export const SectionEditor = ({
             size="small"
             startIcon={<MoveRoundedIcon />}
             onClick={() => setOpenMoveDialog(true)}
-            sx={sectionControlLabelSx}
+            sx={designerControlLabelSx}
           >
             Move section to another Form
           </Button>
@@ -391,7 +384,7 @@ export const SectionEditor = ({
             onChange={conditionChanged}
             view={viewId}
             icon={<DeviceHubRoundedIcon />}
-            buttonSx={sectionControlLabelSx}
+            buttonSx={designerControlLabelSx}
           />
 
           <Typography sx={designerPipeSx}> | </Typography>
@@ -403,7 +396,7 @@ export const SectionEditor = ({
             startIcon={<DeleteRoundedIcon />}
             onClick={deleteConfirmation}
             sx={{
-              ...sectionControlLabelSx,
+              ...designerControlLabelSx,
               color: 'error.main',
               '& .MuiButton-startIcon': {color: 'error.main'},
             }}

@@ -27,10 +27,13 @@ import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
 import {fieldAdded} from '../store/slices/uiSpec';
 import {
+  designerControlActionRowSx,
   designerControlHeadingSx,
+  designerControlLabelSx,
   designerFieldSubHeadingSx,
   designerHeadingRowSx,
   designerInfoIconSx,
+  designerPrimaryActionButtonSx,
   designerSubheadingSx,
 } from './designer-style';
 
@@ -160,13 +163,13 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           size="small"
           onClick={openDialog}
           startIcon={<AddRoundedIcon />}
-          sx={{textTransform: 'none', fontWeight: 700}}
+          sx={designerPrimaryActionButtonSx}
         >
           New Field
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={1} mt={1.5}>
+      <Stack direction="row" spacing={1} sx={designerControlActionRowSx}>
         <Button
           variant="text"
           size="small"
@@ -184,10 +187,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
             )
           }
           sx={{
-            textTransform: 'none',
-            fontWeight: 700,
-            fontSize: '1.05rem',
-            color: 'text.secondary',
+            ...designerControlLabelSx,
             '& .MuiButton-startIcon': {mr: 1},
           }}
         >
