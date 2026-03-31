@@ -166,7 +166,7 @@ PYEOF
 }
 
 # ---------------------------------------------------------------------------
-# Shared: bump version in all package files
+# Shared: bump version in all package files and add to git staging (but don't commit)
 # ---------------------------------------------------------------------------
 bump_versions() {
   local package_files=(
@@ -186,6 +186,7 @@ bump_versions() {
         jq --arg v "$NEW_VERSION" '.version = $v' "$file" > "tmp.$$.json" \
           && mv "tmp.$$.json" "$file"
         info "Updated $file"
+        git add "$file"
       fi
     else
       warn "$file does not exist, skipping."
@@ -199,6 +200,7 @@ bump_versions() {
       sed -e "s/release = \".*\"/release = \"$NEW_VERSION\"/" docs/user/conf.py \
         > "tmp.$$.py" && mv "tmp.$$.py" docs/user/conf.py
       info "Updated docs/user/conf.py"
+      git add "docs/user/conf.py"
     fi
   else
     warn "docs/user/conf.py does not exist, skipping."
@@ -341,7 +343,7 @@ cmd_prepare() {
 
   # ---- Commit --------------------------------------------------------------
   info "--- Committing release changes ---"
-  run git add -A
+  run git add CHANGELOG.md
   run git commit -m "Release $NEW_TAG"
 
   # ---- Push branch and open draft PR ---------------------------------------
