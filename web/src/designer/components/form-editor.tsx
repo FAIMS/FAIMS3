@@ -607,7 +607,7 @@ export const FormEditor = ({
                     <Typography variant="body2" sx={{fontWeight: 700}}>
                       Include "Add New Record" button
                     </Typography>
-                    <Tooltip title="Add info text here.">
+                    <Tooltip title='Controls whether users can create records from this form via "Add New Record".'>
                       <InfoIcon sx={designerInfoIconSx} />
                     </Tooltip>
                   </Stack>
@@ -732,7 +732,7 @@ export const FormEditor = ({
             <Typography variant="h2" sx={designerHeadingTextSx}>
               Sections
             </Typography>
-            <Tooltip title="Add info text here.">
+            <Tooltip title="Sections break a form into logical groups of fields.">
               <InfoIcon sx={designerInfoIconSx} />
             </Tooltip>
           </Stack>
