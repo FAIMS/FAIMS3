@@ -138,10 +138,10 @@ export const SectionEditor = ({
     fontWeight: 700,
     letterSpacing: '0.01em',
     textTransform: 'none',
-    fontSize: '0.95rem',
+    fontSize: '1.05rem',
     whiteSpace: 'nowrap',
     '& .MuiSvgIcon-root': {
-      fontSize: '1.45rem',
+      fontSize: '1.55rem',
     },
   } as const;
 
@@ -313,7 +313,7 @@ export const SectionEditor = ({
           alignItems="center"
           flexWrap="nowrap"
           columnGap={1}
-          sx={{overflowX: 'auto', pb: 0.25}}
+          sx={{overflowX: 'auto', pb: 0.25, mt: 0.5}}
         >
           <Button
             variant="text"
