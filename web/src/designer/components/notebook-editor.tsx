@@ -132,8 +132,6 @@ export const NotebookEditor = ({
   }, [handleKeyDown]);
 
   const toolbarSx = {
-    borderBottom: 1,
-    borderColor: 'divider',
     px: 3,
     py: 1.25,
     display: 'flex',
@@ -146,17 +144,23 @@ export const NotebookEditor = ({
   const contentSx = {
     px: 3,
     pb: 3,
-    pt: 2,
+    pt: 1.25,
     display: 'flex',
     flexDirection: 'column',
-    gap: 1.5,
+    gap: 1,
   } as const;
 
   return (
     <>
       <TabContext value={pathname}>
-        <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
-          <TabList aria-label="lab API tabs example">
+        <Box>
+          <TabList
+            aria-label="lab API tabs example"
+            sx={{
+              width: 'fit-content',
+              '& .MuiTabs-indicator': {height: 2},
+            }}
+          >
             <Tab
               label="Design"
               component={Link}
