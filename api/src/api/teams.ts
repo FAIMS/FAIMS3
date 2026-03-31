@@ -283,8 +283,9 @@ api.post(
       );
     }
 
-    // Cannot modify your own roles as protection
-    if (targetUser.user_id === req.user.user_id) {
+    // Cannot modify your own roles as protection unless you have specific permission
+    if (targetUser.user_id === req.user.user_id && 
+        !userCanDo({user: req.user, action: Action.CHANGE_OWN_ROLE_IN_TEAM, resourceId: teamId})) {
       throw new Exceptions.ForbiddenException(
         'You cannot change your own role within a team.'
       );
