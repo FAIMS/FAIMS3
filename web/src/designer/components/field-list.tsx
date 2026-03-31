@@ -216,7 +216,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           }}
         >
           <Typography sx={designerFieldSubHeadingSx}>Visible fields</Typography>
-          <Tooltip title="Add info text here.">
+          <Tooltip title="Visible fields are shown to users in this section.">
             <InfoIcon sx={designerInfoIconSx} />
           </Tooltip>
         </Stack>
@@ -260,7 +260,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         }}
       >
         <Typography sx={designerFieldSubHeadingSx}>Hidden fields</Typography>
-        <Tooltip title="Add info text here.">
+        <Tooltip title="Hidden fields stay in the schema but are not shown to users.">
           <InfoIcon sx={designerInfoIconSx} />
         </Tooltip>
       </Stack>
