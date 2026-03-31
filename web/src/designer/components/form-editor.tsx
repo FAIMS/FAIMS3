@@ -436,9 +436,9 @@ export const FormEditor = ({
 
   return (
     <Stack direction="row" spacing={2}>
-      <Grid container rowSpacing={2} columnSpacing={0} pt={3}>
+      <Grid container rowSpacing={1.25} columnSpacing={0} pt={1.25}>
         <Grid item xs={12}>
-          <Stack spacing={1.5} py={1.5}>
+          <Stack spacing={1.5} py={0.75}>
             <Stack
               direction="row"
               spacing={1.5}
@@ -476,7 +476,7 @@ export const FormEditor = ({
               alignItems="center"
               flexWrap="nowrap"
               columnGap={1}
-              sx={{color: 'text.secondary', overflowX: 'auto', pb: 0.25}}
+              sx={{color: 'text.secondary', overflowX: 'auto', pb: 0.25, mt: 0.5}}
             >
 
               <Button
@@ -601,7 +601,7 @@ export const FormEditor = ({
                 }
                 label={
                   <Stack direction="row" alignItems="center" spacing={1}>
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{fontWeight: 700}}>
                       Include "Add New Record" button
                     </Typography>
                     <Tooltip title="Add info text here.">
