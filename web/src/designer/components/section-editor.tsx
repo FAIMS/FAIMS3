@@ -561,7 +561,7 @@ export const SectionEditor = ({
         <Typography variant="h2" sx={designerHeadingTextSx}>
           Fields
         </Typography>
-        <Tooltip title="Add info text here.">
+        <Tooltip title="Fields are the individual inputs that collect data in this section.">
           <InfoIcon sx={designerInfoIconSx} />
         </Tooltip>
       </Stack>
