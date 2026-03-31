@@ -16,7 +16,7 @@
  * @file Ordered field accordions for a section plus add-field dialog.
  */
 
-import {Button, Stack, Tooltip, Typography} from '@mui/material';
+import {Box, Button, Stack, Tooltip, Typography} from '@mui/material';
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
@@ -166,7 +166,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         </Button>
       </Stack>
 
-      <Stack direction="row" spacing={1} mt={1.25}>
+      <Stack direction="row" spacing={1} mt={1.5}>
         <Button
           variant="text"
           size="small"
@@ -195,17 +195,39 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         </Button>
       </Stack>
 
-      <Stack spacing={0} mt={2} mb={2}>
-        <Stack sx={designerHeadingRowSx}>
+      <Box
+        sx={{
+          width: '100%',
+          mt: 2,
+          mb: 2,
+          ml: 0,
+          mr: 'auto',
+          textAlign: 'left',
+        }}
+      >
+        <Stack
+          sx={{
+            ...designerHeadingRowSx,
+            justifyContent: 'flex-start',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            width: '100%',
+            textAlign: 'left',
+          }}
+        >
           <Typography sx={designerFieldSubHeadingSx}>Visible fields</Typography>
           <Tooltip title="Add info text here.">
             <InfoIcon sx={designerInfoIconSx} />
           </Tooltip>
         </Stack>
-        <Typography variant="body2" color="textSecondary" sx={designerSubheadingSx}>
+        <Typography
+          variant="body2"
+          color="textSecondary"
+          sx={{...designerSubheadingSx, textAlign: 'left'}}
+        >
           Visible fields will appear in the survey.
         </Typography>
-      </Stack>
+      </Box>
       {visibleFields.map((fieldName: string) => {
         const field = fields[fieldName];
         const designerIdentifier = field?.designerIdentifier;
@@ -227,13 +249,26 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         );
       })}
 
-      <Stack sx={{...designerHeadingRowSx, mt: 2}}>
+      <Stack
+        sx={{
+          ...designerHeadingRowSx,
+          mt: 2,
+          justifyContent: 'flex-start',
+          alignSelf: 'flex-start',
+          width: '100%',
+          textAlign: 'left',
+        }}
+      >
         <Typography sx={designerFieldSubHeadingSx}>Hidden fields</Typography>
         <Tooltip title="Add info text here.">
           <InfoIcon sx={designerInfoIconSx} />
         </Tooltip>
       </Stack>
-      <Typography variant="body2" color="textSecondary" sx={designerSubheadingSx}>
+      <Typography
+        variant="body2"
+        color="textSecondary"
+        sx={{...designerSubheadingSx, textAlign: 'left'}}
+      >
         Hidden fields are available but do not appear in the survey.
       </Typography>
       {hiddenFields.length > 0 ? (
