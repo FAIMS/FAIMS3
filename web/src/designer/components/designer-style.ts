@@ -14,12 +14,13 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 
 export const designerInfoIconSx: SxProps<Theme> = {
   color: '#1E88E5',
-  fontSize: '1.45rem',
+  fontSize: '1.2rem',
 };
 
 export const designerDividerSx: SxProps<Theme> = {
   borderColor: '#90A4AE',
   borderWidth: 2,
+  mx: -3,
 };
 
 export const designerControlLabelSx: SxProps<Theme> = {

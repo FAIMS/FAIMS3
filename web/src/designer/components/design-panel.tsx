@@ -302,7 +302,7 @@ export const DesignPanel = () => {
     <>
       <TabContext value={tabIndex}>
         <Divider sx={{...designerDividerSx, mb: 1.5}} />
-        <Box sx={{mb: 1.75, mt: 0.5}}>
+        <Box sx={{mb: 1.25, mt: 0.5}}>
           <Box sx={designerHeadingRowSx}>
             <Typography variant="h2" sx={designerHeadingTextSx}>
               Forms
