@@ -98,7 +98,7 @@ These three commands are bundled into `dev.sh` i.e.
 ./dev.sh
 ```
 
-## Manual Setup 
+## Manual Setup
 
 These steps are done by the `localdev.sh` script but in case you want to do them manually they are listed here.
 
@@ -363,4 +363,35 @@ I would not recommend using this script for local work, it is predominately to h
 #   json_dump_path: Path to the directory containing package.json files
 #   source_path: Path to the source directory containing files to be copied
 #   output_path: Path to the output directory where files will be copied
+```
+
+## Creating a Release
+
+The release process is automated with the script `scripts/release.sh` which has
+two options:
+
+`prepare` (run from main before any review):
+
+- Creates and checks out release/v1.5.0
+- Bumps all version files
+- Generates the CHANGELOG section
+- Opens $EDITOR for you to review/edit the changelog — script waits
+- Commits, pushes the branch, opens a draft PR via gh with instructions in the PR body
+
+`finalize` (run from main after the PR is merged):
+
+- Strict pre-flight — always requires clean main (no dry-run relaxation)
+- Checks via gh that a PR from release/v1.5.0 → main is actually merged
+- Creates the annotated tag
+- Pushes it if --push is passed
+
+```bash
+# Step 1 — kick off the release
+./scripts/release.sh prepare 1.5.0
+
+# Step 2 — review, approve, and merge the PR on GitHub
+
+# Step 3 — git pull, then tag
+git pull
+./scripts/release.sh finalize 1.5.0 --push
 ```
