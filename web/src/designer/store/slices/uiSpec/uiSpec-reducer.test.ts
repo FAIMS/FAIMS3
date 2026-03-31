@@ -175,7 +175,7 @@ describe('uiSpecificationReducer', () => {
     expect(deleted.viewsets.formB.views).toEqual(['sectionB']);
   });
 
-  it('updates viewset visibility and presentation settings', () => {
+  it('updates viewset visibility and display settings', () => {
     const initial = createBaseUiSpec();
 
     const summaryUpdated = uiSpecificationReducer.reducer(
@@ -196,25 +196,28 @@ describe('uiSpecificationReducer', () => {
     );
     expect(layoutUpdated.viewsets.formA.layout).toBe('tabs');
 
-    const hidden = uiSpecificationReducer.reducer(
-      publishUpdated,
-      formVisibilityUpdated({
-        viewSetId: 'formA',
-        ticked: false,
-        initialIndex: 0,
-      })
-    );
-    expect(hidden.visible_types).toEqual(['formB']);
+    expect(layoutUpdated.visible_types).toEqual(['formA', 'formB']);
 
     const shown = uiSpecificationReducer.reducer(
-      hidden,
+      layoutUpdated,
       formVisibilityUpdated({
         viewSetId: 'formA',
         ticked: true,
         initialIndex: 0,
       })
     );
-    expect(shown.visible_types).toEqual(['formB', 'formA']);
+    expect(shown.visible_types).toEqual(['formA', 'formB']);
+
+    const hidden = uiSpecificationReducer.reducer(
+      layoutUpdated,
+      formVisibilityUpdated({
+        viewSetId: 'formB',
+        ticked: false,
+        initialIndex: 0,
+      })
+    );
+    expect(hidden.visible_types).toEqual(['formA']);
+
   });
 
   it('deletes viewset with its sections and fields', () => {

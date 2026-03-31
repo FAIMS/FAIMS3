@@ -148,7 +148,8 @@ export const viewSetReducers = {
         visibleType => visibleType !== viewSetId
       );
       state.visible_types = newVisibleTypes;
-    } else {
+    } else if (!state.visible_types.includes(viewSetId)) {
+      // insert if not already present
       state.visible_types.splice(state.visible_types.length, 0, viewSetId);
     }
   },
