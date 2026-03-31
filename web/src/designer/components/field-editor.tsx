@@ -48,6 +48,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import React, {memo, useCallback, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
@@ -330,7 +331,8 @@ const FieldEditorComponent = ({
       square
       elevation={0}
       sx={{
-        border: '1px solid #CBCFCD',
+        border: '1px solid',
+        borderColor: 'divider',
         '&:not(:nth-of-type(2))': {
           borderTop: 0,
         },
@@ -342,7 +344,7 @@ const FieldEditorComponent = ({
       <AccordionSummary
         expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
         sx={{
-          backgroundColor: '#EEF1F0',
+          backgroundColor: theme => alpha(theme.palette.text.primary, 0.05),
           flexDirection: 'row-reverse',
           '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
             transform: 'rotate(90deg)',
@@ -379,9 +381,10 @@ const FieldEditorComponent = ({
                   variant="outlined"
                   sx={{
                     '&.MuiChip-outlined': {
-                      background: '#f9fafb',
-                      color: '#546e7a',
-                      borderColor: '#546e7a',
+                      background: theme =>
+                        alpha(theme.palette.text.primary, 0.02),
+                      color: 'text.secondary',
+                      borderColor: 'text.secondary',
                     },
                   }}
                 />
@@ -667,7 +670,12 @@ const FieldEditorComponent = ({
       </Dialog>
 
       {expanded && (
-        <AccordionDetails sx={{padding: 3, backgroundColor: '#00804004'}}>
+        <AccordionDetails
+          sx={{
+            padding: 3,
+            backgroundColor: theme => alpha(theme.palette.primary.main, 0.03),
+          }}
+        >
           {(protection === 'protected' || protection === 'allow-hiding') && (
             <Stack
               direction="column"
@@ -680,15 +688,16 @@ const FieldEditorComponent = ({
                 marginBottom: 2,
                 backgroundColor: 'rgba(255, 255, 255, 0.8)',
                 borderRadius: 1,
-                border: '1px solid #546e7a',
+                border: '1px solid',
+                borderColor: 'text.secondary',
                 boxSizing: 'border-box',
                 textAlign: 'center',
               }}
             >
-              <LockRounded sx={{color: '#546e7a', fontSize: 24}} />
+              <LockRounded sx={{color: 'text.secondary', fontSize: 24}} />
               <Typography
                 variant="body2"
-                sx={{fontWeight: 500, color: '#546e7a'}}
+                sx={{fontWeight: 500, color: 'text.secondary'}}
               >
                 {protectionMessage}
               </Typography>
