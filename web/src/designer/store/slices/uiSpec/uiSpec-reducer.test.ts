@@ -18,7 +18,6 @@ import {
   viewSetDeleted,
   viewSetHridUpdated,
   viewSetLayoutUpdated,
-  viewSetPublishButtonBehaviourUpdated,
   viewSetSummaryFieldsUpdated,
 } from '.';
 
@@ -38,13 +37,11 @@ const createBaseUiSpec = (): NotebookUISpec => ({
     formA: {
       label: 'Form A',
       views: ['sectionA'],
-      publishButtonBehaviour: 'always',
       summary_fields: [],
     },
     formB: {
       label: 'Form B',
       views: ['sectionB'],
-      publishButtonBehaviour: 'always',
     },
   },
   visible_types: ['formA', 'formB'],
@@ -198,17 +195,6 @@ describe('uiSpecificationReducer', () => {
       viewSetLayoutUpdated({viewSetId: 'formA', layout: 'tabs'})
     );
     expect(layoutUpdated.viewsets.formA.layout).toBe('tabs');
-
-    const publishUpdated = uiSpecificationReducer.reducer(
-      layoutUpdated,
-      viewSetPublishButtonBehaviourUpdated({
-        viewSetId: 'formA',
-        publishButtonBehaviour: 'noErrors',
-      })
-    );
-    expect(publishUpdated.viewsets.formA.publishButtonBehaviour).toBe(
-      'noErrors'
-    );
 
     const hidden = uiSpecificationReducer.reducer(
       publishUpdated,

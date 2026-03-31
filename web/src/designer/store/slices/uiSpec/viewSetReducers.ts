@@ -27,7 +27,6 @@ export const viewSetReducers = {
     const newViewSet = {
       label: formName,
       views: [],
-      publishButtonBehaviour: 'always' as 'always' | 'visited' | 'noErrors',
     };
     const formID = slugify(formName);
     if (formID in state.viewsets) {
@@ -151,19 +150,6 @@ export const viewSetReducers = {
       state.visible_types = newVisibleTypes;
     } else {
       state.visible_types.splice(state.visible_types.length, 0, viewSetId);
-    }
-  },
-  /** When the publish/save button is shown in the field app for this form. */
-  viewSetPublishButtonBehaviourUpdated: (
-    state: NotebookUISpec,
-    action: PayloadAction<{
-      viewSetId: string;
-      publishButtonBehaviour: 'always' | 'visited' | 'noErrors';
-    }>
-  ) => {
-    const {viewSetId, publishButtonBehaviour} = action.payload;
-    if (viewSetId in state.viewsets) {
-      state.viewsets[viewSetId].publishButtonBehaviour = publishButtonBehaviour;
     }
   },
 };
