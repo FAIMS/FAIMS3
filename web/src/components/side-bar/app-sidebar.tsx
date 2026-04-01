@@ -1,3 +1,4 @@
+import {ARCHIVE_TAB_VALUES, type ArchiveTab} from '@/archive/archive-tabs';
 import {NavItem, NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
 import {
@@ -13,7 +14,13 @@ import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
 import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
-import {House, LayoutTemplate, LetterText, Users} from 'lucide-react';
+import {
+  ArchiveRestore,
+  House,
+  LayoutTemplate,
+  LetterText,
+  Users,
+} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
 
@@ -104,6 +111,31 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               url: `/teams/${_id}`,
             }))
           : [{id: 'no-teams', title: 'No teams...'}],
+    });
+  }
+
+  if (canSeeTemplates) {
+    const archiveTabTitles: Record<ArchiveTab, string> = {
+      surveys: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+      templates: 'Templates',
+      users: 'Users',
+      teams: 'Teams',
+    };
+    const archiveSubItems: NonNullable<NavItem['items']> =
+      ARCHIVE_TAB_VALUES.map(tabKey => ({
+        id: `archive-${tabKey}`,
+        title: archiveTabTitles[tabKey],
+        url: '/archive',
+        search: {tab: tabKey},
+      }));
+
+    bottomSectionNavItems.push({
+      title: 'Archive',
+      url: '/archive',
+      icon: ArchiveRestore,
+      isActive: pathname.startsWith('/archive'),
+      linkSearch: {tab: 'templates'},
+      items: archiveSubItems,
     });
   }
 

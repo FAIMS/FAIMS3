@@ -34,6 +34,7 @@ import {
   PostCreateNotebookResponseSchema,
   PostCreateTemplateInput,
   PostCreateTemplateResponseSchema,
+  PostRestoreTemplateResponseSchema,
   PutUpdateTemplateInput,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
@@ -114,10 +115,12 @@ const createSampleTemplate = async (
 // list and see the new template
 export const listTemplates = async (
   app: Express,
-  token: string = adminToken
+  token: string = adminToken,
+  query?: {includeArchived?: boolean}
 ): Promise<GetListTemplatesResponse> => {
+  const qs = query?.includeArchived === true ? '?includeArchived=true' : '';
   return await requestAuthAndType(
-    request(app).get(`${TEMPLATE_API_BASE}`),
+    request(app).get(`${TEMPLATE_API_BASE}${qs}`),
     token
   )
     .expect(200)
@@ -170,6 +173,33 @@ const deleteATemplate = async (
     .expect(200);
 };
 
+const setTemplateArchived = async (
+  app: Express,
+  templateId: string,
+  archive: boolean,
+  token: string = adminToken
+) => {
+  return await requestAuthAndType(
+    request(app)
+      .put(`${TEMPLATE_API_BASE}/${templateId}/archive`)
+      .send({archive}),
+    token
+  ).expect(200);
+};
+
+const restoreTemplateFromArchive = async (
+  app: Express,
+  templateId: string,
+  token: string = adminToken
+) => {
+  return await requestAuthAndType(
+    request(app).post(`${TEMPLATE_API_BASE}/${templateId}/restore`).send({}),
+    token
+  )
+    .expect(200)
+    .then(res => PostRestoreTemplateResponseSchema.parse(res.body));
+};
+
 /**
  * Fetches a given template by ID
  * @param app The express app
@@ -198,6 +228,82 @@ describe('template API tests', () => {
 
   //======= TEMPLATES ===========
   //=============================
+
+  it('excludes archived templates by default; includeArchived lists archived only', async () => {
+    const {template: activeTpl} = await createSampleTemplate(app, {
+      name: 'active-template',
+    });
+    const {template: archivedTpl} = await createSampleTemplate(app, {
+      name: 'archived-template',
+    });
+    await setTemplateArchived(app, archivedTpl._id, true);
+
+    const defaultList = await listTemplates(app);
+    const defaultIds = defaultList.templates.map(t => t._id).sort();
+    expect(defaultIds).to.deep.equal([activeTpl._id].sort());
+
+    const archivedOnly = await listTemplates(app, adminToken, {
+      includeArchived: true,
+    });
+    const archivedIds = archivedOnly.templates.map(t => t._id).sort();
+    expect(archivedIds).to.deep.equal([archivedTpl._id].sort());
+
+    await deleteATemplate(app, activeTpl._id);
+    await deleteATemplate(app, archivedTpl._id);
+  });
+
+  it('PUT archive removes template from default list; POST restore returns active document and lists update', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'archive-restore-cycle',
+    });
+    const id = template._id;
+
+    let defaultList = await listTemplates(app);
+    expect(defaultList.templates.map(t => t._id)).to.include(id);
+
+    await setTemplateArchived(app, id, true);
+    await getATemplate(app, id).then(doc => {
+      expect(doc.metadata.project_status).to.equal('archived');
+    });
+
+    defaultList = await listTemplates(app);
+    expect(defaultList.templates.map(t => t._id)).to.not.include(id);
+    const archivedOnly = await listTemplates(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedOnly.templates.map(t => t._id)).to.include(id);
+
+    const restored = await restoreTemplateFromArchive(app, id);
+    expect(restored.metadata.project_status).to.equal('active');
+    expect(restored._id).to.equal(id);
+
+    defaultList = await listTemplates(app);
+    expect(defaultList.templates.map(t => t._id)).to.include(id);
+    const archivedAfter = await listTemplates(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedAfter.templates.map(t => t._id)).to.not.include(id);
+
+    await deleteATemplate(app, id);
+  });
+
+  it('POST restore rejects when template is not archived', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'not-archived',
+    });
+    const response = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}/${template._id}/restore`)
+        .send({}),
+      adminToken
+    );
+    expect(response.status).to.equal(400);
+    expect(response.body.error.message).to.equal(
+      'Only archived templates can be restored.'
+    );
+
+    await deleteATemplate(app, template._id);
+  });
 
   it('create, list, get, delete', async () => {
     const name = 'test 123 template';

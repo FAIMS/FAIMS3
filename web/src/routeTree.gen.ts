@@ -16,6 +16,7 @@ import { Route as ProtectedTemplatesIndexRouteImport } from './routes/_protected
 import { Route as ProtectedTeamsIndexRouteImport } from './routes/_protected/teams/index'
 import { Route as ProtectedProjectsIndexRouteImport } from './routes/_protected/projects/index'
 import { Route as ProtectedProfileIndexRouteImport } from './routes/_protected/profile/index'
+import { Route as ProtectedArchiveIndexRouteImport } from './routes/_protected/archive/index'
 import { Route as ProtectedTemplatesTemplateIdRouteImport } from './routes/_protected/templates/$templateId'
 import { Route as ProtectedTeamsTeamIdRouteImport } from './routes/_protected/teams/$teamId'
 import { Route as ProtectedProjectsProjectIdRouteImport } from './routes/_protected/projects/$projectId'
@@ -55,6 +56,11 @@ const ProtectedProfileIndexRoute = ProtectedProfileIndexRouteImport.update({
   path: '/profile/',
   getParentRoute: () => ProtectedRoute,
 } as any)
+const ProtectedArchiveIndexRoute = ProtectedArchiveIndexRouteImport.update({
+  id: '/archive/',
+  path: '/archive/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
 const ProtectedTemplatesTemplateIdRoute =
   ProtectedTemplatesTemplateIdRouteImport.update({
     id: '/templates/$templateId',
@@ -91,6 +97,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/archive': typeof ProtectedArchiveIndexRoute
   '/profile': typeof ProtectedProfileIndexRoute
   '/projects': typeof ProtectedProjectsIndexRoute
   '/teams': typeof ProtectedTeamsIndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/archive': typeof ProtectedArchiveIndexRoute
   '/profile': typeof ProtectedProfileIndexRoute
   '/projects': typeof ProtectedProjectsIndexRoute
   '/teams': typeof ProtectedTeamsIndexRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/_protected/projects/$projectId': typeof ProtectedProjectsProjectIdRoute
   '/_protected/teams/$teamId': typeof ProtectedTeamsTeamIdRoute
   '/_protected/templates/$templateId': typeof ProtectedTemplatesTemplateIdRoute
+  '/_protected/archive/': typeof ProtectedArchiveIndexRoute
   '/_protected/profile/': typeof ProtectedProfileIndexRoute
   '/_protected/projects/': typeof ProtectedProjectsIndexRoute
   '/_protected/teams/': typeof ProtectedTeamsIndexRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/teams/$teamId'
     | '/templates/$templateId'
+    | '/archive'
     | '/profile'
     | '/projects'
     | '/teams'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId'
     | '/teams/$teamId'
     | '/templates/$templateId'
+    | '/archive'
     | '/profile'
     | '/projects'
     | '/teams'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
     | '/_protected/projects/$projectId'
     | '/_protected/teams/$teamId'
     | '/_protected/templates/$templateId'
+    | '/_protected/archive/'
     | '/_protected/profile/'
     | '/_protected/projects/'
     | '/_protected/teams/'
@@ -219,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProtectedProfileIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
+    '/_protected/archive/': {
+      id: '/_protected/archive/'
+      path: '/archive'
+      fullPath: '/archive'
+      preLoaderRoute: typeof ProtectedArchiveIndexRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
     '/_protected/templates/$templateId': {
       id: '/_protected/templates/$templateId'
       path: '/templates/$templateId'
@@ -276,6 +295,7 @@ interface ProtectedRouteChildren {
   ProtectedProjectsProjectIdRoute: typeof ProtectedProjectsProjectIdRoute
   ProtectedTeamsTeamIdRoute: typeof ProtectedTeamsTeamIdRoute
   ProtectedTemplatesTemplateIdRoute: typeof ProtectedTemplatesTemplateIdRoute
+  ProtectedArchiveIndexRoute: typeof ProtectedArchiveIndexRoute
   ProtectedProfileIndexRoute: typeof ProtectedProfileIndexRoute
   ProtectedProjectsIndexRoute: typeof ProtectedProjectsIndexRoute
   ProtectedTeamsIndexRoute: typeof ProtectedTeamsIndexRoute
@@ -289,6 +309,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedProjectsProjectIdRoute: ProtectedProjectsProjectIdRoute,
   ProtectedTeamsTeamIdRoute: ProtectedTeamsTeamIdRoute,
   ProtectedTemplatesTemplateIdRoute: ProtectedTemplatesTemplateIdRoute,
+  ProtectedArchiveIndexRoute: ProtectedArchiveIndexRoute,
   ProtectedProfileIndexRoute: ProtectedProfileIndexRoute,
   ProtectedProjectsIndexRoute: ProtectedProjectsIndexRoute,
   ProtectedTeamsIndexRoute: ProtectedTeamsIndexRoute,
