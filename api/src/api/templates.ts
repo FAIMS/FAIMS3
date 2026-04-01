@@ -206,7 +206,7 @@ api.post(
 /**
  * PUT update existing template Updates an existing template. The payload is
  * validated by Zod before reaching this function. Expects a document as the
- * response JSON. Requires cluster admin privileges.
+ * response JSON. Requires {@link Action.UPDATE_TEMPLATE_DETAILS} on the template.
  *
  * TODO distinguish between the different types of template updates permission
  * wise. Right now we look for just the update content action.
@@ -258,8 +258,9 @@ api.post(
 
 /**
  * POST delete existing template
- * Deletes latest revision of an existing template. Requires cluster admin
- * privileges.
+ * Deletes latest revision of an existing template. Requires
+ * {@link Action.DELETE_TEMPLATE} on the template; the template must already
+ * be archived.
  */
 api.post(
   '/:id/delete',

@@ -121,10 +121,10 @@ export enum Action {
   // Update the UI specification
   UPDATE_TEMPLATE_UISPEC = 'UPDATE_TEMPLATE_UISPEC',
 
-  // Change open/closed status
+  /** Archive or restore template */
   CHANGE_TEMPLATE_STATUS = 'CHANGE_TEMPLATE_STATUS',
 
-  // Delete the project
+  /** Permanently remove a template document (API requires it to be archived first). */
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
 
   // ============================================================
@@ -680,13 +680,15 @@ export const actionDetails: Record<Action, ActionDetails> = {
   },
   [Action.CHANGE_TEMPLATE_STATUS]: {
     name: 'Change Template Status',
-    description: 'Modify the status of a template (draft, published, etc.)',
+    description:
+      'Archive or restore a template',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
   [Action.DELETE_TEMPLATE]: {
     name: 'Delete Template',
-    description: 'Permanently remove a template from the system',
+    description:
+      'Permanently remove an archived template from the system (hard delete)',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },

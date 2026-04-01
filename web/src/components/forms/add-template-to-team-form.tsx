@@ -26,9 +26,9 @@ export function AddTemplateToTeamForm({
   const QueryClient = useQueryClient();
   const teams = useGetTeams({user});
 
-  // can we add a user to the team?
+  /** Matches PUT /api/templates/:id (metadata update including teamId). */
   const canAddTemplateToTeam = useIsAuthorisedTo({
-    action: Action.CHANGE_TEMPLATE_STATUS,
+    action: Action.UPDATE_TEMPLATE_DETAILS,
     resourceId: templateId,
   });
 
