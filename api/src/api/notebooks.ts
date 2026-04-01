@@ -431,6 +431,12 @@ api.post(
       // Now we use the template to get details needed to instantiate a new notebook
       const template = await getTemplate(req.body.template_id);
 
+      if (template.archived === true) {
+        throw new Exceptions.InvalidRequestException(
+          'Cannot create a notebook from an archived template.'
+        );
+      }
+
       // Pull out values needed to create a new notebook
       metadata = template.metadata;
       uiSpec = template['ui-specification'];

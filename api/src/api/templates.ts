@@ -86,7 +86,7 @@ api.get(
     const includeArchived = req.query.includeArchived === 'true';
 
     const filteredByArchive = templatesRaw.filter(t => {
-      const archived = t.metadata?.project_status === 'archived';
+      const archived = t.archived === true;
       return includeArchived ? archived : !archived;
     });
 
@@ -213,7 +213,7 @@ api.put(
 );
 
 /**
- * POST restore archived template (sets project_status to active).
+ * POST restore archived template (clears top-level archived flag).
  */
 api.post(
   '/:id/restore',

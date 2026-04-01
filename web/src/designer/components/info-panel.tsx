@@ -69,7 +69,6 @@ export const InfoPanel = () => {
       'ispublic',
       'isrequest',
       'sections',
-      'project_status',
       'schema_version',
       'notebook_version',
     ];

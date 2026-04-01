@@ -83,19 +83,21 @@ export const archivedTemplateColumns: ColumnDef<ArchivedTemplateRow>[] = [
     },
   },
   {
-    accessorKey: 'metadata.project_status',
+    id: 'archiveStatus',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
+    accessorFn: (row: ArchivedTemplateRow) =>
+      row.archived === true ? 'archived' : 'active',
     cell: ({
-      row: {
-        original: {
-          metadata: {project_status},
-        },
-      },
+      row: {original},
     }: {
       row: {original: ArchivedTemplateRow};
-    }) => <span className="capitalize">{project_status}</span>,
+    }) => (
+      <span className="capitalize">
+        {original.archived === true ? 'archived' : 'active'}
+      </span>
+    ),
   },
   {
     accessorKey: 'metadata.project_lead',
