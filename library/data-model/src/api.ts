@@ -463,6 +463,16 @@ export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
 >;
 
+/** POST /api/templates/:id/restore — un-archive; body optional (empty JSON allowed). */
+export const PostRestoreTemplateRequestSchema = z.object({}).strict();
+export type PostRestoreTemplateRequest = z.infer<
+  typeof PostRestoreTemplateRequestSchema
+>;
+export const PostRestoreTemplateResponseSchema = ExistingTemplateDocumentSchema;
+export type PostRestoreTemplateResponse = z.infer<
+  typeof PostRestoreTemplateResponseSchema
+>;
+
 // EMAIL RESET
 
 // POST /reset request schema

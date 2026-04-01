@@ -327,3 +327,16 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
     );
   }
 };
+
+/**
+ * Restores an archived template (project_status active). No-op rejected if not archived.
+ */
+export const restoreTemplateFromArchive = async (id: string) => {
+  const template = await getTemplate(id);
+  if (template.metadata?.project_status !== 'archived') {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived templates can be restored.'
+    );
+  }
+  return archiveTemplate(id, false);
+};

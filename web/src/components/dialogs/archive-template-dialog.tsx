@@ -9,8 +9,10 @@ import {
 import {Button} from '../ui/button';
 import {useAuth} from '@/context/auth-provider';
 import {Route} from '@/routes/_protected/templates/$templateId';
+import {useNavigate} from '@tanstack/react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {useState} from 'react';
+import {toast} from 'sonner';
 import {NOTEBOOK_NAME} from '@/constants';
 
 /**
@@ -23,11 +25,13 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
   const {user} = useAuth();
   const {templateId} = Route.useParams();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
   const onClick = async () => {
+    const willArchive = !archived;
     try {
-      await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_API_URL}/api/templates/${templateId}/archive`,
         {
           method: 'PUT',
@@ -36,15 +40,36 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
             Authorization: `Bearer ${user?.token}`,
           },
           body: JSON.stringify({
-            archive: !archived,
+            archive: willArchive,
           }),
         }
       );
 
-      queryClient.invalidateQueries({queryKey: ['templates', undefined]});
+      if (!response.ok) {
+        let message = response.statusText;
+        try {
+          const body = (await response.json()) as {
+            error?: {message?: string};
+          };
+          if (body?.error?.message) message = body.error.message;
+        } catch {
+          /* use statusText */
+        }
+        toast.error(message);
+        return;
+      }
+
+      queryClient.invalidateQueries({queryKey: ['templates']});
       queryClient.invalidateQueries({queryKey: ['templates', templateId]});
+      queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
       setOpen(false);
+
+      if (willArchive) {
+        toast.success('Successfully archived');
+        await navigate({to: '/templates'});
+      }
     } catch (e) {
+      toast.error('Something went wrong. Please try again.');
       console.log(e);
     }
   };

@@ -187,7 +187,10 @@ export const useGetTemplatesForTeam = ({
   useQuery({
     queryKey: ['templatesbyteam', user?.token, teamId],
     queryFn: async () =>
-      get<GetListTemplatesResponse>(`/api/templates?teamId=${teamId}`, user),
+      get<GetListTemplatesResponse>(
+        `/api/templates?teamId=${encodeURIComponent(teamId)}`,
+        user
+      ),
     enabled: !!user,
   });
 
@@ -251,6 +254,7 @@ export const useGetTeams = ({
 
 /**
  * useGetTemplates hook returns a query for fetching templates.
+ * By default archived templates are excluded. Pass includeArchived: true for the Archive section.
  *
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching templates.
@@ -258,14 +262,25 @@ export const useGetTeams = ({
 export const useGetTemplates = ({
   user,
   enabled = true,
+  includeArchived = false,
 }: {
   user: User | null;
   enabled?: boolean;
+  /** When true, lists only archived templates (requires includeArchived=true on the API). */
+  includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['templates', user?.token],
+    queryKey: [
+      'templates',
+      user?.token,
+      includeArchived ? 'archived' : 'active',
+    ],
     queryFn: async () => {
-      const data = await get<GetListTemplatesResponse>('/api/templates/', user);
+      const qs = includeArchived ? '?includeArchived=true' : '';
+      const data = await get<GetListTemplatesResponse>(
+        `/api/templates/${qs}`,
+        user
+      );
       return data.templates;
     },
     enabled: !!user && enabled,

@@ -26,6 +26,7 @@ import {
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
+  PostRestoreTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   Role,
@@ -39,6 +40,7 @@ import {
   deleteExistingTemplate,
   getTemplate,
   getTemplates,
+  restoreTemplateFromArchive,
   updateExistingTemplate,
 } from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
@@ -66,14 +68,30 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
-  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
+  processRequest({
+    query: z.object({
+      teamId: z.string().min(1).optional(),
+      // Query strings only: omit (default) or includeArchived=true|false
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
 
+    const templatesRaw = await getTemplates({
+      teamId: req.query.teamId,
+    });
+    const includeArchived = req.query.includeArchived === 'true';
+
+    const filteredByArchive = templatesRaw.filter(t => {
+      const archived = t.metadata?.project_status === 'archived';
+      return includeArchived ? archived : !archived;
+    });
+
     res.json({
-      templates: (await getTemplates({teamId: req.query.teamId})).filter(t =>
+      templates: filteredByArchive.filter(t =>
         userCanDo({
           action: Action.READ_TEMPLATE_DETAILS,
           user: req.user!,
@@ -191,6 +209,27 @@ api.put(
     // And respond with fulfilled document after updating
     const updatedTemplate = await updateExistingTemplate(templateId, req.body);
     res.json(updatedTemplate);
+  }
+);
+
+/**
+ * POST restore archived template (sets project_status to active).
+ */
+api.post(
+  '/:id/restore',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res: Response<PostRestoreTemplateResponse>) => {
+    const updated = await restoreTemplateFromArchive(req.params.id);
+    res.json(updated);
   }
 );
 
