@@ -81,8 +81,8 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     issuer: z.string(),
     // Callback configuration
     /** Full callback URL for SAML responses */
-    callbackUrl: z.string().optional(),
-    /** Callback path if callbackUrl not specified (default: /saml/callback) */
+    callbackURL: z.string().optional(),
+    /** Callback path if callbackURL not specified (default: /saml/callback) */
     path: z.string().optional(),
     /** Sign the metadata document with PK? */
     signMetadata: z
@@ -128,9 +128,9 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     requestIdExpirationPeriodMs: z.number().optional(),
     // Logout
     /** IdP logout URL (defaults to entryPoint) */
-    logoutUrl: z.string().optional(),
+    logoutURL: z.string().optional(),
     /** SP logout callback URL */
-    logoutCallbackUrl: z.string().optional(),
+    logoutCallbackURL: z.string().optional(),
     // IdP validation
     /** Expected IdP issuer for logout validation */
     idpIssuer: z.string().optional(),
@@ -140,14 +140,14 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
      * If set, used as SPSSODescriptor @errorURL in SAML metadata instead of the
      * default Conductor URL for this provider's SSO error page.
      */
-    metadataErrorUrl: z.string().optional(),
+    metadataErrorURL: z.string().optional(),
     /** Optional overrides for the per-provider SSO error page (`/auth/{id}/sso-error`) */
     ssoErrorPageTitle: z.string().optional(),
     ssoErrorPageHeading: z.string().optional(),
     ssoErrorPageLead: z.string().optional(),
     /** Optional Markdown body (rendered with the markdown helper) */
     ssoErrorPageDetailMarkdown: z.string().optional(),
-    ssoErrorPageReturnUrl: z.string().optional(),
+    ssoErrorPageReturnURL: z.string().optional(),
     ssoErrorPageReturnLabel: z.string().optional(),
   }
 );

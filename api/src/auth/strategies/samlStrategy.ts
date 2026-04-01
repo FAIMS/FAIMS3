@@ -151,7 +151,7 @@ export const samlStrategyGenerator = (
       cert: options.idpPublicKey,
       // Callback URL
       callbackUrl:
-        options.callbackUrl ||
+        options.callbackURL ||
         CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl(options.id),
       path: options.path,
       // SP signing/decryption keys
@@ -178,8 +178,8 @@ export const samlStrategyGenerator = (
       validateInResponseTo: options.validateInResponseTo,
       requestIdExpirationPeriodMs: options.requestIdExpirationPeriodMs,
       // Logout
-      logoutUrl: options.logoutUrl,
-      logoutCallbackUrl: options.logoutCallbackUrl,
+      logoutUrl: options.logoutURL,
+      logoutCallbackUrl: options.logoutCallbackURL,
       // IdP validation
       idpIssuer: options.idpIssuer,
       audience: options.audience,
@@ -243,9 +243,9 @@ export const signSamlMetadata = (
  */
 export const buildSamlMetadataErrorUrl = (
   providerId: string,
-  metadataErrorUrlOverride?: string
+  metadataErrorURLOverride?: string
 ): string => {
-  const trimmed = metadataErrorUrlOverride?.trim();
+  const trimmed = metadataErrorURLOverride?.trim();
   if (trimmed) {
     return trimmed;
   }

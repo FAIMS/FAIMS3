@@ -558,11 +558,13 @@ schema documentation available in `SAMLAuthProviderConfigSchema` in the CDK conf
 | Field                          | Description                                                                                          |
 | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
 | `signMetadata`                 | Sign the metadata endpoint document using the provided privateKey? 'true' or 'false'. Default false. |
-| `callbackUrl`                  | Full callback URL for SAML responses. If not specified, the system generates one automatically.      |
+| `callbackURL`                  | Full callback URL for SAML responses. If not specified, the system generates one automatically.      |
+| `metadataErrorURL`             | Optional absolute URL for SPSSODescriptor `errorURL` in SAML metadata (default: Conductor `/auth/{provider}/sso-error`). |
+| `ssoErrorPageReturnURL`        | Primary button URL on the per-provider SSO error page (default: web app public URL).                 |
 | `disableRequestedAuthnContext` | Set to `true` for ADFS compatibility                                                                 |
 | `forceAuthn`                   | Set to `true` to force re-authentication even with a valid IdP session                               |
 | `acceptedClockSkewMs`          | Allowed clock drift in milliseconds between SP and IdP (default: `0`, use `-1` to disable)           |
-| `logoutUrl`                    | IdP's logout URL for single logout support                                                           |
+| `logoutURL`                    | IdP's logout URL for single logout support                                                           |
 | `audience`                     | Expected audience value in SAML responses (for additional validation)                                |
 | `idpIssuer`                    | Expected issuer value from IdP (for logout validation)                                               |
 
