@@ -1,7 +1,6 @@
 import InfoIcon from '@mui/icons-material/Info';
-import {Theme, Tooltip, Typography} from '@mui/material';
+import {Tooltip, Typography} from '@mui/material';
 import Box from '@mui/material/Box';
-import {SystemStyleObject} from '@mui/system';
 import {
   designerHeadingRowSx,
   designerHeadingTextSx,
@@ -12,9 +11,9 @@ type HeadingWithInfoProps = {
   title: string;
   tooltip: string;
   variant?: 'h2' | 'subtitle1' | 'body1' | 'body2';
-  titleSx?: SystemStyleObject<Theme>;
-  containerSx?: SystemStyleObject<Theme>;
-  iconSx?: SystemStyleObject<Theme>;
+  titleSx?: Record<string, unknown>;
+  containerSx?: Record<string, unknown>;
+  iconSx?: Record<string, unknown>;
 };
 
 export const HeadingWithInfo = ({
@@ -28,14 +27,14 @@ export const HeadingWithInfo = ({
   return (
     <Box
       sx={{
-        ...(designerHeadingRowSx as SystemStyleObject<Theme>),
+        ...(designerHeadingRowSx as Record<string, unknown>),
         ...(containerSx ?? {}),
       }}
     >
       <Typography
         variant={variant}
         sx={{
-          ...(designerHeadingTextSx as SystemStyleObject<Theme>),
+          ...(designerHeadingTextSx as Record<string, unknown>),
           ...(titleSx ?? {}),
         }}
       >
@@ -44,7 +43,7 @@ export const HeadingWithInfo = ({
       <Tooltip title={tooltip}>
         <InfoIcon
           sx={{
-            ...(designerInfoIconSx as SystemStyleObject<Theme>),
+            ...(designerInfoIconSx as Record<string, unknown>),
             ...(iconSx ?? {}),
           }}
         />
