@@ -583,19 +583,6 @@ export const FormEditor = ({
 
               <Typography sx={designerPipeSx}> | </Typography>
 
-              <Button
-                variant="text"
-                color="error"
-                size="small"
-                startIcon={<DeleteRoundedIcon />}
-                onClick={deleteConfirmation}
-                sx={{...designerControlLabelSx, color: 'error.main'}}
-              >
-                Delete
-              </Button>
-
-              <Typography sx={designerPipeSx}> | </Typography>
-
               <FormControlLabel
                 sx={{
                   ml: 0.25,
@@ -623,6 +610,19 @@ export const FormEditor = ({
                   </Stack>
                 }
               />
+
+              <Typography sx={designerPipeSx}> | </Typography>
+
+              <Button
+                variant="text"
+                color="error"
+                size="small"
+                startIcon={<DeleteRoundedIcon />}
+                onClick={deleteConfirmation}
+                sx={{...designerControlLabelSx, color: 'error.main'}}
+              >
+                Delete
+              </Button>
 
             </Stack>
 
