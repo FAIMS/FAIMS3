@@ -281,7 +281,7 @@ export const SectionEditor = ({
 
   return (
     <>
-      <Stack spacing={1.5} mb={2}>
+      <Stack spacing={1.5} mt={0.75} mb={2}>
         <Stack
           direction="row"
           alignItems="center"

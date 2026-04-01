@@ -739,7 +739,7 @@ export const FormEditor = ({
           </Box>
         </Grid>
         <Grid item xs={12}>
-          <Box sx={{px: 0, py: 1}}>
+          <Box sx={{px: 0, pt: 1.5, pb: 2}}>
             <Grid container spacing={2} p={0}>
               <Grid item xs={12}>
                 <Box sx={{position: 'relative'}}>
@@ -787,7 +787,7 @@ export const FormEditor = ({
                         activeStep={activeStep}
                         alternativeLabel
                         sx={{
-                          my: 3,
+                          my: 3.5,
                           width: 'max-content',
                           '& .MuiStep-root': {
                             flex: '0 0 auto',
@@ -806,7 +806,13 @@ export const FormEditor = ({
                               color="inherit"
                               onClick={handleStep(index)}
                             >
-                              <Typography sx={{fontWeight: 700, fontSize: '1.5rem'}}>
+                              <Typography
+                                sx={{
+                                  fontWeight: 700,
+                                  fontSize: {xs: '1.15rem', sm: '1.3rem'},
+                                  lineHeight: 1.2,
+                                }}
+                              >
                                 {views[section].label}
                               </Typography>
                             </StepButton>
