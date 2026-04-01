@@ -136,6 +136,19 @@ export const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend(
     idpIssuer: z.string().optional(),
     /** Expected SAML response Audience */
     audience: z.string().optional(),
+    /**
+     * If set, used as SPSSODescriptor @errorURL in SAML metadata instead of the
+     * default Conductor URL for this provider's SSO error page.
+     */
+    metadataErrorUrl: z.string().optional(),
+    /** Optional overrides for the per-provider SSO error page (`/auth/{id}/sso-error`) */
+    ssoErrorPageTitle: z.string().optional(),
+    ssoErrorPageHeading: z.string().optional(),
+    ssoErrorPageLead: z.string().optional(),
+    /** Optional Markdown body (rendered with the markdown helper) */
+    ssoErrorPageDetailMarkdown: z.string().optional(),
+    ssoErrorPageReturnUrl: z.string().optional(),
+    ssoErrorPageReturnLabel: z.string().optional(),
   }
 );
 

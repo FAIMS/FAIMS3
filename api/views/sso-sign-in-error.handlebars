@@ -1,0 +1,23 @@
+<div class='auth-header'>
+  <h2>{{heading}}</h2>
+  <p>{{leadMessage}}</p>
+</div>
+{{#if messages.error.ssoSignInError}}
+  <div class='alert alert-danger' role='alert'>
+    {{messages.error.ssoSignInError.msg}}
+  </div>
+{{/if}}
+{{#if detailMarkdown}}
+  <div class='mb-3' style='font-size: 0.9rem;'>
+    {{{markdown detailMarkdown}}}
+  </div>
+{{/if}}
+<p style='font-size: 0.85rem; color: #666; margin-bottom: 1rem;'>
+  Provider:
+  <strong>{{displayName}}</strong>
+  {{#if providerId}}
+    <span class='text-muted'>({{providerId}})</span>
+  {{/if}}
+</p>
+<a href='{{returnUrl}}' class='auth-button'>{{returnLabel}}</a>
+<a href='/login' class='auth-button-outline' style='margin-top: 0.5rem;'>Back to sign-in</a>
