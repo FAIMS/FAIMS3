@@ -23,7 +23,6 @@ import {initialState, NotebookMetadata} from './initial';
 /** Keys managed by the platform or notebook structure — not editable via `propertyUpdated`. */
 const protectedFields = [
   'meta',
-  'project_status',
   'access',
   'accesses',
   'forms',

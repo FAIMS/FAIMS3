@@ -27,6 +27,7 @@ import {
 import {
   TemplateV1Fields,
   TemplateV2Fields,
+  TemplateV3Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
 
@@ -360,6 +361,126 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         }
       }
       return true;
+    },
+  },
+];
+
+const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV2toV3Migration - archived sentinel to top-level flag',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-arch',
+      _rev: '1-rev',
+      version: 3,
+      name: 'Archived tpl',
+      metadata: {
+        name: 'Archived tpl',
+        project_status: 'archived',
+        pre_description: 'x',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team-a',
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-arch',
+        _rev: '1-rev',
+        version: 3,
+        name: 'Archived tpl',
+        metadata: {
+          name: 'Archived tpl',
+          pre_description: 'x',
+        },
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team-a',
+        archived: true,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - active sentinel stripped',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-act',
+      _rev: '2-rev',
+      version: 1,
+      name: 'Active',
+      metadata: {project_status: 'active', notebook_version: '1'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-act',
+        _rev: '2-rev',
+        version: 1,
+        name: 'Active',
+        metadata: {notebook_version: '1'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - New status preserved in metadata',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-new',
+      _rev: '3-rev',
+      version: 1,
+      name: 'Demo',
+      metadata: {name: 'Demo', project_status: 'New'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-new',
+        _rev: '3-rev',
+        version: 1,
+        name: 'Demo',
+        metadata: {name: 'Demo', project_status: 'New'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
     },
   },
 ];
@@ -1652,6 +1773,7 @@ MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
 

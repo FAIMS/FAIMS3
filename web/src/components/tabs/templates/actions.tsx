@@ -180,7 +180,7 @@ const TemplateActions = () => {
         )}
         <Card>
           <List>
-            {data?.metadata.project_status === 'archived' ? (
+            {data?.archived === true ? (
               <ListItem>
                 <ListLabel>Un-archive Template</ListLabel>
                 <ListDescription>
@@ -193,9 +193,7 @@ const TemplateActions = () => {
                 <ListDescription>Archive the current template.</ListDescription>
               </ListItem>
             )}
-            <ArchiveTemplateDialog
-              archived={data?.metadata.project_status === 'archived'}
-            />
+            <ArchiveTemplateDialog archived={data?.archived === true} />
           </List>
         </Card>
       </div>

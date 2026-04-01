@@ -263,7 +263,7 @@ describe('template API tests', () => {
 
     await setTemplateArchived(app, id, true);
     await getATemplate(app, id).then(doc => {
-      expect(doc.metadata.project_status).to.equal('archived');
+      expect(doc.archived).to.equal(true);
     });
 
     defaultList = await listTemplates(app);
@@ -274,7 +274,7 @@ describe('template API tests', () => {
     expect(archivedOnly.templates.map(t => t._id)).to.include(id);
 
     const restored = await restoreTemplateFromArchive(app, id);
-    expect(restored.metadata.project_status).to.equal('active');
+    expect(restored.archived).to.equal(false);
     expect(restored._id).to.equal(id);
 
     defaultList = await listTemplates(app);

@@ -20,7 +20,11 @@ import {
   PeopleV4Document,
 } from '../peopleDB';
 import {ProjectStatus, ProjectV1Fields, ProjectV2Fields} from '../projectsDB';
-import {TemplateV1Fields, TemplateV2Fields} from '../templatesDB/types';
+import {
+  TemplateV1Fields,
+  TemplateV2Fields,
+  TemplateV3Fields,
+} from '../templatesDB/types';
 import {
   DBTargetVersions,
   DatabaseType,
@@ -363,6 +367,34 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
 };
 
 /**
+ * Promotes template archive state from metadata.project_status to top-level `archived`.
+ * Removes archive workflow sentinels ('archived' | 'active') from metadata only.
+ */
+export const templatesV2toV3Migration: MigrationFunc = doc => {
+  const inputDoc =
+    doc as unknown as PouchDB.Core.ExistingDocument<TemplateV2Fields>;
+  const meta = {...(inputDoc.metadata ?? {})};
+  const ps = meta.project_status;
+  const archived = ps === 'archived';
+  if (ps === 'archived' || ps === 'active') {
+    delete meta.project_status;
+  }
+
+  const outputDoc: PouchDB.Core.ExistingDocument<TemplateV3Fields> = {
+    _id: inputDoc._id,
+    _rev: inputDoc._rev,
+    name: inputDoc.name,
+    version: inputDoc.version,
+    metadata: meta,
+    'ui-specification': inputDoc['ui-specification'],
+    ownedByTeamId: inputDoc.ownedByTeamId,
+    archived,
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
  * Adds the exchange token (fatuous) to mimic new format
  */
 export const authV1toV2Migration: MigrationFunc = doc => {
@@ -419,7 +451,7 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 4},
   // projects v2
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 2},
-  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 2},
+  [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 3},
   [DatabaseType.TEAMS]: {defaultVersion: 1, targetVersion: 1},
 };
 
@@ -477,6 +509,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds the name property to the template document (from the metadata)',
     migrationFunction: templatesV1toV2Migration,
+  },
+  {
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    description:
+      'Adds top-level archived flag; removes archive workflow project_status from metadata',
+    migrationFunction: templatesV2toV3Migration,
   },
   {
     dbType: DatabaseType.AUTH,

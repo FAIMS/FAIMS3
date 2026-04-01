@@ -1,5 +1,8 @@
 import {EncodedNotebook} from '../../../types';
 import {migrateToV2} from './migrateV2';
+import {migrateToV3} from './migrateV3';
+
+export {migrateToV3} from './migrateV3';
 
 /**
  * Migrate a notebook to the latest version, validating as we go.
@@ -8,17 +11,22 @@ import {migrateToV2} from './migrateV2';
  * @returns {changed: boolean, migrated: EncodedNotebook} the migrated notebook, and whether it was changed
  */
 export const migrateNotebook = (notebook: any) => {
-  const schemaVersion = notebook?.metadata?.schema_version;
   let result = notebook;
   let changed = false;
 
+  const schemaVersion = result?.metadata?.schema_version;
   // check the schema version, migrate if not present or version 1.0
   if (
     schemaVersion === undefined ||
     schemaVersion === null ||
     schemaVersion === '1.0'
   ) {
-    result = migrateToV2(notebook);
+    result = migrateToV2(result);
+    changed = true;
+  }
+
+  if (result?.metadata?.schema_version === '2.0') {
+    result = migrateToV3(result);
     changed = true;
   }
 
