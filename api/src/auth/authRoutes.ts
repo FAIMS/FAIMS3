@@ -913,9 +913,24 @@ export function addAuthRoutes(
           handlerDetails.privateKey ? (handlerDetails.publicKey ?? null) : null
         );
 
-        // Sign metadata if configured and private key is available
+        // Sign metadata if configured; private + public cert are required so KeyInfo
+        // (X509Certificate) is embedded inside Signature (VANguard / xmldsig expectations).
         if (handlerDetails.signMetadata && handlerDetails.privateKey) {
-          metadata = signSamlMetadata(metadata, handlerDetails.privateKey);
+          if (!handlerDetails.publicKey?.trim()) {
+            res
+              .status(500)
+              .type('text/plain')
+              .send(
+                'SAML signMetadata is enabled but publicKey is missing. ' +
+                  'The signing certificate must be configured so metadata signatures include KeyInfo/X509Certificate.'
+              );
+            return;
+          }
+          metadata = signSamlMetadata(
+            metadata,
+            handlerDetails.privateKey,
+            handlerDetails.publicKey
+          );
         }
 
         res.type('application/xml');

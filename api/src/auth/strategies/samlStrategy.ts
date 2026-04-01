@@ -196,14 +196,19 @@ export const samlStrategyGenerator = (
 };
 
 /**
- * Signs SAML metadata XML using the SP's private key
+ * Signs SAML metadata XML using the SP's private key.
+ * The public certificate must be supplied so xml-crypto emits KeyInfo with X509Data /
+ * X509Certificate inside the Signature element (required e.g. by VANguard).
+ *
  * @param metadataXml - The unsigned metadata XML string
  * @param privateKey - PEM-encoded private key
+ * @param publicCert - PEM-encoded service provider certificate (same keypair as privateKey)
  * @returns Signed metadata XML string
  */
 export const signSamlMetadata = (
   metadataXml: string,
-  privateKey: string
+  privateKey: string,
+  publicCert: string
 ): string => {
   const sig = new SignedXml();
 
@@ -220,6 +225,7 @@ export const signSamlMetadata = (
   });
 
   sig.privateKey = privateKey;
+  sig.publicCert = publicCert;
 
   sig.computeSignature(metadataXml, {
     location: {
