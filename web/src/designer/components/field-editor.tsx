@@ -360,6 +360,8 @@ const FieldEditorComponent = ({
               <Typography
                 variant="subtitle2"
                 sx={{
+                  color: 'text.primary',
+                  fontWeight: 500,
                   width: '100%',
                   minWidth: 0,
                   overflowWrap: 'anywhere',
@@ -392,11 +394,18 @@ const FieldEditorComponent = ({
               {field['component-parameters'].helperText && (
                 <Typography
                   variant="body2"
-                  fontSize={12}
+                  fontSize={13}
                   fontWeight={400}
                   fontStyle="italic"
                   sx={{
-                    mt: 1.5,
+                    mt: 1.25,
+                    px: 1,
+                    py: 0.5,
+                    color: 'text.disabled',
+                    borderLeft: '2px solid',
+                    borderColor: theme => alpha(theme.palette.text.secondary, 0.35),
+                    backgroundColor: theme => alpha(theme.palette.text.primary, 0.03),
+                    borderRadius: 0.75,
                     display: '-webkit-box',
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: 'vertical',

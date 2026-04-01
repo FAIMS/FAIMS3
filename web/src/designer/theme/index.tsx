@@ -29,6 +29,7 @@ type ThemeTokens = {
   primaryLight: string;
   primaryDark: string;
   secondaryMain: string;
+  helperTextColor: string;
   appBarBackground: string;
   appBarColor: string;
   tabSelectedBackground: string;
@@ -41,6 +42,7 @@ const faimsTokens: ThemeTokens = {
   primaryLight: '#a7e938',
   primaryDark: '#141E03',
   secondaryMain: '#E18200',
+  helperTextColor: colors.blueGrey[500],
   appBarBackground: '#edeeeb',
   appBarColor: '#324C08',
   tabSelectedBackground: '#DA9449',
@@ -54,6 +56,7 @@ const dassTokens: ThemeTokens = {
   primaryLight: '#FFFFFF',
   primaryDark: '#000000',
   secondaryMain: '#12B0FB',
+  helperTextColor: colors.blueGrey[500],
   appBarBackground: '#FFFFFF',
   appBarColor: '#000000',
   tabSelectedBackground: '#000000',
@@ -92,6 +95,7 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
       text: {
         primary: colors.blueGrey[900],
         secondary: colors.blueGrey[600],
+        disabled: tokens.helperTextColor,
       },
       divider: '#D3D1D1FF',
     },
