@@ -3,7 +3,7 @@ import {SxProps, Theme} from '@mui/material';
 export const designerHeadingRowSx: SxProps<Theme> = {
   display: 'flex',
   alignItems: 'center',
-  gap: 0.5,
+  gap: 0.35,
 };
 
 export const designerHeadingTextSx: SxProps<Theme> = {
@@ -14,12 +14,13 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 
 export const designerInfoIconSx: SxProps<Theme> = {
   color: 'secondary.main',
-  fontSize: '1.2rem',
+  fontSize: '1.35rem',
+  ml: 0.1,
 };
 
 export const designerDividerSx: SxProps<Theme> = {
   borderColor: 'divider',
-  borderWidth: 2,
+  borderWidth: 1.25,
   mx: -3,
 };
 
