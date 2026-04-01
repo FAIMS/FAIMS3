@@ -19,6 +19,7 @@ import * as Exceptions from '../exceptions';
 import {generateRandomString} from '../utils';
 import {clearTemplateIdFromProjectsReferencingTemplate} from './notebooks';
 import {getTeamById} from './teams';
+import {stripTemplateRolesForTemplateId} from './users';
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
@@ -295,6 +296,7 @@ export const deleteExistingTemplate = async (templateId: string) => {
   }
 
   await clearTemplateIdFromProjectsReferencingTemplate(templateId);
+  await stripTemplateRolesForTemplateId(templateId);
 
   try {
     await templatesDb.remove(existingTemplate);

@@ -368,7 +368,9 @@ export const templatesV1toV2Migration: MigrationFunc = doc => {
 
 /**
  * Promotes template archive state from metadata.project_status to top-level `archived`.
- * Removes archive workflow sentinels ('archived' | 'active') from metadata only.
+ * Strips `project_status` from metadata entirely. Only the literal `'archived'`
+ * maps to `archived: true`; any other value (including `'active'`, `'New'`, etc.)
+ * becomes `archived: false`.
  */
 export const templatesV2toV3Migration: MigrationFunc = doc => {
   const inputDoc =
@@ -376,7 +378,7 @@ export const templatesV2toV3Migration: MigrationFunc = doc => {
   const meta = {...(inputDoc.metadata ?? {})};
   const ps = meta.project_status;
   const archived = ps === 'archived';
-  if (ps === 'archived' || ps === 'active') {
+  if ('project_status' in meta) {
     delete meta.project_status;
   }
 
@@ -515,7 +517,7 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     from: 2,
     to: 3,
     description:
-      'Adds top-level archived flag; removes archive workflow project_status from metadata',
+      'Adds top-level archived flag; removes metadata.project_status (any value)',
     migrationFunction: templatesV2toV3Migration,
   },
   {

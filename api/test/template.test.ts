@@ -48,8 +48,10 @@ import fs from 'fs';
 import request from 'supertest';
 import {app} from '../src/expressSetup';
 import {getProjectById} from '../src/couchdb/notebooks';
+import {getCouchUserFromEmailOrUserId} from '../src/couchdb/users';
 import {
   adminToken,
+  adminUserName,
   beforeApiTests,
   localUserToken,
   requestAuthAndType,
@@ -570,6 +572,26 @@ describe('template API tests', () => {
     expect(response.body.error.message).to.equal(
       'The specified team ID does not exist.'
     );
+  });
+
+  it('removes template roles from people DB when template is deleted', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'role-cleanup-template',
+    });
+    const admin = await getCouchUserFromEmailOrUserId(adminUserName);
+    expect(admin).to.not.equal(null);
+    expect(
+      admin!.templateRoles.some(r => r.resourceId === template._id)
+    ).to.equal(true);
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+
+    const adminAfter = await getCouchUserFromEmailOrUserId(adminUserName);
+    expect(adminAfter).to.not.equal(null);
+    expect(
+      adminAfter!.templateRoles.some(r => r.resourceId === template._id)
+    ).to.equal(false);
   });
 
   it('rejects permanent delete when template is not archived', async () => {
