@@ -127,6 +127,73 @@ export const putProjectDoc = async (doc: ProjectDocument) => {
 };
 
 /**
+ * Returns project (survey) IDs whose directory document references the given
+ * template (`templateId` on the project document).
+ */
+export const getProjectIdsReferencingTemplate = async (
+  templateId: string
+): Promise<string[]> => {
+  const projectsDb = localGetProjectsDb();
+  const res = await projectsDb.allDocs<ProjectDocument>({
+    include_docs: true,
+  });
+  const ids: string[] = [];
+  for (const row of res.rows) {
+    const doc = row.doc;
+    if (!doc || row.id.startsWith('_')) {
+      continue;
+    }
+    if (doc.templateId === templateId) {
+      ids.push(doc._id);
+    }
+  }
+  return ids;
+};
+
+/**
+ * Clears `templateId` on all project documents that reference the template.
+ * Used when permanently deleting a template so surveys do not keep stale
+ * references.
+ */
+/**
+ * Drops the per-field metadata doc for `template_id` if it exists (see
+ * `writeProjectMetadata`), so notebook details no longer cite the template.
+ */
+export const removeTemplateIdFromNotebookMetadata = async (
+  projectId: string
+): Promise<void> => {
+  try {
+    const metaDB = await getMetadataDb(projectId);
+    const docId = `${PROJECT_METADATA_PREFIX}-template_id`;
+    try {
+      const doc = await metaDB.get(docId);
+      await metaDB.remove(doc);
+    } catch {
+      // Field doc missing — nothing to do
+    }
+  } catch {
+    // Metadata DB unavailable
+  }
+};
+
+export const clearTemplateIdFromProjectsReferencingTemplate = async (
+  templateId: string
+): Promise<void> => {
+  const projectIds = await getProjectIdsReferencingTemplate(templateId);
+  const projectsDb = localGetProjectsDb();
+  for (const projectId of projectIds) {
+    const doc = await projectsDb.get(projectId);
+    if (doc.templateId !== templateId) {
+      continue;
+    }
+    const updated: ProjectDocument = {...doc};
+    delete updated.templateId;
+    await putProjectDoc(updated);
+    await removeTemplateIdFromNotebookMetadata(projectId);
+  }
+};
+
+/**
  * getAllProjects - get the internal project documents that reference
  * the project databases that the front end will connnect to
  */

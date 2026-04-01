@@ -9,7 +9,11 @@ import {
   TooltipTrigger,
 } from '../ui/tooltip';
 import {RestoreTemplateDialog} from '../dialogs/restore-template-dialog';
-import {GetListTemplatesResponse} from '@faims3/data-model';
+import {DeleteArchivedTemplateDialog} from '../dialogs/delete-archived-template-dialog';
+import {Action, GetListTemplatesResponse} from '@faims3/data-model';
+import {useAuth} from '@/context/auth-provider';
+import {userCanDo} from '@/hooks/auth-hooks';
+import {templateDeleteDialogLabels} from '@/archive/template-delete-warnings';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +27,17 @@ import {useState} from 'react';
 export type ArchivedTemplateRow = GetListTemplatesResponse['templates'][number];
 
 function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
+  const {user} = useAuth();
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const canDelete =
+    !!user &&
+    userCanDo({
+      user,
+      action: Action.DELETE_TEMPLATE,
+      resourceId: row._id,
+    });
 
   return (
     <>
@@ -47,6 +61,16 @@ function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
           >
             Restore
           </DropdownMenuItem>
+          {canDelete ? (
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onSelect={() => {
+                setDeleteOpen(true);
+              }}
+            >
+              {templateDeleteDialogLabels.menuItem}
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
       <RestoreTemplateDialog
@@ -54,6 +78,12 @@ function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
         templateName={row.name}
         open={restoreOpen}
         onOpenChange={setRestoreOpen}
+      />
+      <DeleteArchivedTemplateDialog
+        templateId={row._id}
+        templateName={row.name}
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
       />
     </>
   );

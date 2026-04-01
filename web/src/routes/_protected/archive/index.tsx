@@ -91,7 +91,6 @@ function RouteComponent() {
             columns={archivedTemplateColumns}
             data={data}
             loading={isPending}
-            onRowClick={row => navigate({to: `/templates/${row._id}`})}
           />
         </TabsContent>
 

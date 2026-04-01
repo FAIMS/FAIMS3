@@ -1,4 +1,9 @@
-/** URL/search keys and values for /archive — keep in sync with sidebar + route validateSearch. */
+/**
+ * URL/search keys and values for /archive — keep in sync with sidebar + route validateSearch.
+ *
+ * Template archive row actions (restore, delete) and copy for delete confirmations:
+ * see `archived-templates.tsx` and `template-delete-warnings.ts` in this folder.
+ */
 export const ARCHIVE_TAB_VALUES = [
   'surveys',
   'templates',
