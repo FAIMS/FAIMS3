@@ -926,7 +926,7 @@ export function addAuthRoutes(
             `We had a problem while signing you in with ${displayName}.`,
           detailMarkdown: samlConfig.ssoErrorPageDetailMarkdown,
           returnUrl:
-            samlConfig.ssoErrorPageReturnUrl ?? WEBAPP_PUBLIC_URL,
+            samlConfig.ssoErrorPageReturnURL ?? WEBAPP_PUBLIC_URL,
           returnLabel: samlConfig.ssoErrorPageReturnLabel ?? 'Return to app',
           providerId: provider,
           displayName,
@@ -944,7 +944,7 @@ export function addAuthRoutes(
 
         const errorUrl = buildSamlMetadataErrorUrl(
           provider,
-          samlConfig.metadataErrorUrl
+          samlConfig.metadataErrorURL
         );
         metadata = injectSpSsoDescriptorErrorUrl(metadata, errorUrl);
 
