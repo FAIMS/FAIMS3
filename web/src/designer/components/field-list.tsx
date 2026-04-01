@@ -16,11 +16,10 @@
  * @file Ordered field accordions for a section plus add-field dialog.
  */
 
-import {Box, Button, Stack, Tooltip, Typography} from '@mui/material';
+import {Box, Button, Stack, Typography} from '@mui/material';
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
-import InfoIcon from '@mui/icons-material/Info';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
@@ -31,11 +30,10 @@ import {
   designerControlHeadingSx,
   designerControlLabelSx,
   designerFieldSubHeadingSx,
-  designerHeadingRowSx,
-  designerInfoIconSx,
   designerPrimaryActionButtonSx,
   designerSubheadingSx,
 } from './designer-style';
+import {HeadingWithInfo} from './heading-with-info';
 
 type Props = {
   viewSetId: string;
@@ -205,22 +203,19 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           textAlign: 'left',
         }}
       >
-        <Stack
-          direction="row"
-          sx={{
-            ...designerHeadingRowSx,
+        <HeadingWithInfo
+          title="Visible fields"
+          variant="subtitle1"
+          tooltip="Visible fields are shown to users in this section."
+          titleSx={designerFieldSubHeadingSx}
+          containerSx={{
             justifyContent: 'flex-start',
             alignItems: 'center',
             alignSelf: 'flex-start',
             width: '100%',
             textAlign: 'left',
           }}
-        >
-          <Typography sx={designerFieldSubHeadingSx}>Visible fields</Typography>
-          <Tooltip title="Visible fields are shown to users in this section.">
-            <InfoIcon sx={designerInfoIconSx} />
-          </Tooltip>
-        </Stack>
+        />
         <Typography
           variant="body2"
           color="textSecondary"
@@ -250,22 +245,20 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
         );
       })}
 
-      <Stack
-        direction="row"
-        sx={{
-          ...designerHeadingRowSx,
-          mt: 2,
-          justifyContent: 'flex-start',
-          alignSelf: 'flex-start',
-          width: '100%',
-          textAlign: 'left',
-        }}
-      >
-        <Typography sx={designerFieldSubHeadingSx}>Hidden fields</Typography>
-        <Tooltip title="Hidden fields stay in the schema but are not shown to users.">
-          <InfoIcon sx={designerInfoIconSx} />
-        </Tooltip>
-      </Stack>
+      <Box mt={2}>
+        <HeadingWithInfo
+          title="Hidden fields"
+          variant="subtitle1"
+          tooltip="Hidden fields stay in the schema but are not shown to users."
+          titleSx={designerFieldSubHeadingSx}
+          containerSx={{
+            justifyContent: 'flex-start',
+            alignSelf: 'flex-start',
+            width: '100%',
+            textAlign: 'left',
+          }}
+        />
+      </Box>
       <Typography
         variant="body2"
         color="textSecondary"
