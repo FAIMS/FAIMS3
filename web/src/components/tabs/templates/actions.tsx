@@ -67,6 +67,11 @@ const TemplateActions = () => {
     resourceId: templateId,
   });
 
+  const canChangeTemplateArchiveStatus = useIsAuthorisedTo({
+    action: Action.CHANGE_TEMPLATE_STATUS,
+    resourceId: templateId,
+  });
+
   const canCreateProject = useIsAuthorisedTo({
     action: Action.CREATE_PROJECT,
   });
@@ -207,24 +212,28 @@ const TemplateActions = () => {
             </List>
           </Card>
         )}
-        <Card>
-          <List>
-            {data?.archived === true ? (
-              <ListItem>
-                <ListLabel>Un-archive Template</ListLabel>
-                <ListDescription>
-                  Un-archive the current template.
-                </ListDescription>
-              </ListItem>
-            ) : (
-              <ListItem>
-                <ListLabel>Archive Template</ListLabel>
-                <ListDescription>Archive the current template.</ListDescription>
-              </ListItem>
-            )}
-            <ArchiveTemplateDialog archived={data?.archived === true} />
-          </List>
-        </Card>
+        {canChangeTemplateArchiveStatus ? (
+          <Card>
+            <List>
+              {data?.archived === true ? (
+                <ListItem>
+                  <ListLabel>Un-archive Template</ListLabel>
+                  <ListDescription>
+                    Un-archive the current template.
+                  </ListDescription>
+                </ListItem>
+              ) : (
+                <ListItem>
+                  <ListLabel>Archive Template</ListLabel>
+                  <ListDescription>
+                    Archive the current template.
+                  </ListDescription>
+                </ListItem>
+              )}
+              <ArchiveTemplateDialog archived={data?.archived === true} />
+            </List>
+          </Card>
+        ) : null}
       </div>
       <DesignerDialog
         open={editorOpen && !archived}

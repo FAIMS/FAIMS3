@@ -59,7 +59,9 @@ function RouteComponent() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Archive</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Archived resources. Only items you can access are listed.
+          Resources which have been archived are visible below. Archived items
+          can be restored or deleted. Please proceed with caution as deletion
+          operations may be irreversible.
         </p>
       </div>
 

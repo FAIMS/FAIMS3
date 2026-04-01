@@ -31,6 +31,14 @@ function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const canRestore =
+    !!user &&
+    userCanDo({
+      user,
+      action: Action.CHANGE_TEMPLATE_STATUS,
+      resourceId: row._id,
+    });
+
   const canDelete =
     !!user &&
     userCanDo({
@@ -39,46 +47,54 @@ function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
       resourceId: row._id,
     });
 
+  const hasRowActions = canRestore || canDelete;
+
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-9 w-9 shrink-0 rounded-md p-0 text-foreground hover:bg-muted/90 hover:text-foreground [&_svg]:!size-6 [&_svg]:shrink-0"
-            aria-label="Row actions"
-            onClick={e => e.stopPropagation()}
-          >
-            <MoreVertical aria-hidden strokeWidth={2.25} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[9rem]">
-          <DropdownMenuItem
-            onSelect={() => {
-              setRestoreOpen(true);
-            }}
-          >
-            Restore
-          </DropdownMenuItem>
-          {canDelete ? (
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onSelect={() => {
-                setDeleteOpen(true);
-              }}
+      {hasRowActions ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-9 w-9 shrink-0 rounded-md p-0 text-foreground hover:bg-muted/90 hover:text-foreground [&_svg]:!size-6 [&_svg]:shrink-0"
+              aria-label="Row actions"
+              onClick={e => e.stopPropagation()}
             >
-              {templateDeleteDialogLabels.menuItem}
-            </DropdownMenuItem>
-          ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <RestoreTemplateDialog
-        templateId={row._id}
-        templateName={row.name}
-        open={restoreOpen}
-        onOpenChange={setRestoreOpen}
-      />
+              <MoreVertical aria-hidden strokeWidth={2.25} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="min-w-[9rem]">
+            {canRestore ? (
+              <DropdownMenuItem
+                onSelect={() => {
+                  setRestoreOpen(true);
+                }}
+              >
+                Restore
+              </DropdownMenuItem>
+            ) : null}
+            {canDelete ? (
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => {
+                  setDeleteOpen(true);
+                }}
+              >
+                {templateDeleteDialogLabels.menuItem}
+              </DropdownMenuItem>
+            ) : null}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : null}
+      {canRestore ? (
+        <RestoreTemplateDialog
+          templateId={row._id}
+          templateName={row.name}
+          open={restoreOpen}
+          onOpenChange={setRestoreOpen}
+        />
+      ) : null}
       <DeleteArchivedTemplateDialog
         templateId={row._id}
         templateName={row.name}
