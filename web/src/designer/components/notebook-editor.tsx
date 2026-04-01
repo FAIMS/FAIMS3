@@ -26,6 +26,8 @@ import {
   Stack,
   Switch,
   Tab,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 import {useCallback, useEffect, useState} from 'react';
@@ -150,6 +152,34 @@ export const NotebookEditor = ({
     gap: 1,
   } as const;
 
+  const historyButtonSx = (enabled: boolean) =>
+    ({
+      textTransform: 'none',
+      fontWeight: 700,
+      minWidth: 108,
+      borderRadius: 1.2,
+      boxShadow: 'none',
+      border: '1px solid',
+      borderColor: enabled ? 'primary.main' : 'divider',
+      color: enabled ? 'primary.contrastText' : 'text.disabled',
+      backgroundColor: enabled ? 'primary.main' : 'background.paper',
+      '& .MuiButton-startIcon': {color: 'inherit'},
+      '&:hover': enabled
+        ? {
+            backgroundColor: 'primary.dark',
+            borderColor: 'primary.dark',
+            boxShadow: 'none',
+          }
+        : {
+            backgroundColor: 'action.hover',
+          },
+      '&.Mui-disabled': {
+        color: 'text.disabled',
+        borderColor: 'divider',
+        backgroundColor: 'background.paper',
+      },
+    }) as const;
+
   return (
     <>
       <TabContext value={pathname}>
@@ -194,34 +224,42 @@ export const NotebookEditor = ({
                 >
                   Cancel
                 </Button>
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  startIcon={<UndoIcon />}
-                  onClick={handleUndo}
-                  disabled={!canUndo}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    boxShadow: 'none',
-                  }}
+                <Tooltip
+                  title={
+                    canUndo ? 'Undo last change (Ctrl/Cmd+Z)' : 'No changes to undo'
+                  }
                 >
-                  Undo
-                </Button>
-                <Button
-                  variant="contained"
-                  color="inherit"
-                  startIcon={<RedoIcon />}
-                  onClick={handleRedo}
-                  disabled={!canRedo}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    boxShadow: 'none',
-                  }}
+                  <span>
+                    <Button
+                      variant={canUndo ? 'contained' : 'outlined'}
+                      startIcon={<UndoIcon />}
+                      onClick={handleUndo}
+                      disabled={!canUndo}
+                      sx={historyButtonSx(canUndo)}
+                    >
+                      Undo
+                    </Button>
+                  </span>
+                </Tooltip>
+                <Tooltip
+                  title={
+                    canRedo
+                      ? 'Redo last undone change (Ctrl/Cmd+Y)'
+                      : 'No changes to redo'
+                  }
                 >
-                  Redo
-                </Button>
+                  <span>
+                    <Button
+                      variant={canRedo ? 'contained' : 'outlined'}
+                      startIcon={<RedoIcon />}
+                      onClick={handleRedo}
+                      disabled={!canRedo}
+                      sx={historyButtonSx(canRedo)}
+                    >
+                      Redo
+                    </Button>
+                  </span>
+                </Tooltip>
                 <FormControlLabel
                   sx={{
                     '& .MuiFormControlLabel-label': {
@@ -229,7 +267,19 @@ export const NotebookEditor = ({
                       fontWeight: 600,
                     },
                   }}
-                  label="Preview"
+                  label={
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      spacing={0.75}
+                      sx={{userSelect: 'none'}}
+                    >
+                      <Typography>Preview</Typography>
+                      <Typography variant="caption" sx={{color: 'text.disabled'}}>
+                        {previewForm ? 'On' : 'Off'}
+                      </Typography>
+                    </Stack>
+                  }
                   control={
                     <Switch
                       checked={previewForm}
