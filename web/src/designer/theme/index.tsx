@@ -49,7 +49,6 @@ const faimsTokens: ThemeTokens = {
   tabSelectedText: '#FFFFFF',
 };
 
-// DASS is intentionally aligned with the BSS app palette so it is easy to tune later.
 const dassTokens: ThemeTokens = {
   backgroundDefault: '#FAFAFB',
   primaryMain: '#000000',
