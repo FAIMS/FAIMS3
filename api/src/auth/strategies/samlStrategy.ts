@@ -236,3 +236,21 @@ export const signSamlMetadata = (
 
   return sig.getSignedXml();
 };
+
+/**
+ * Absolute URL advertised in SAML metadata (SPSSODescriptor errorURL).
+ * IdPs may send users here when authentication cannot be completed.
+ */
+export const buildSamlMetadataErrorUrl = (
+  providerId: string,
+  metadataErrorUrlOverride?: string
+): string => {
+  const trimmed = metadataErrorUrlOverride?.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  const base = CONDUCTOR_PUBLIC_URL.replace(/\/$/, '');
+  return `${base}/auth/${encodeURIComponent(providerId)}/sso-error`;
+};
+
+export {injectSpSsoDescriptorErrorUrl} from './samlMetadataXml';

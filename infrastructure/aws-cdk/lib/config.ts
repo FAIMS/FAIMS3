@@ -214,6 +214,18 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .optional()
     .describe('Expected IdP issuer for logout validation'),
   audience: z.string().optional().describe('Expected SAML response Audience'),
+  metadataErrorUrl: z
+    .string()
+    .optional()
+    .describe(
+      'Optional absolute URL for SPSSODescriptor errorURL in SAML metadata (default: Conductor /auth/{provider}/sso-error)'
+    ),
+  ssoErrorPageTitle: z.string().optional(),
+  ssoErrorPageHeading: z.string().optional(),
+  ssoErrorPageLead: z.string().optional(),
+  ssoErrorPageDetailMarkdown: z.string().optional(),
+  ssoErrorPageReturnUrl: z.string().optional(),
+  ssoErrorPageReturnLabel: z.string().optional(),
 });
 
 const AuthProvidersConfigSchema = z

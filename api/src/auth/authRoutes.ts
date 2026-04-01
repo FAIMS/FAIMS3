@@ -75,7 +75,9 @@ import {
 import {upgradeCouchUserToExpressUser} from './keySigning/create';
 import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
-import {signSamlMetadata} from './strategies/samlStrategy';
+import {SAMLAuthProviderConfig} from './strategies/strategyTypes';
+import {injectSpSsoDescriptorErrorUrl} from './strategies/samlMetadataXml';
+import {buildSamlMetadataErrorUrl, signSamlMetadata} from './strategies/samlStrategy';
 
 patch();
 
@@ -89,6 +91,11 @@ export const providerAuthUrl = (provider: string) => {
 };
 export const providerAuthReturnUrl = (provider: string) => {
   return `/auth-return/${provider}`;
+};
+
+/** HTML error page path for SAML (and future SSO) sign-in failures; used in metadata errorURL. */
+export const providerSsoErrorPath = (provider: string) => {
+  return `/auth/${provider}/sso-error`;
 };
 
 // we will implement progressive delays on failed login attempts
@@ -901,9 +908,31 @@ export function addAuthRoutes(
     const handlerDetails = socialProviders[provider].config;
     const handlerStrategy = socialProviders[provider].strategy;
 
-    // If SAML - we expose a metadata endpoint, optionally signed
+    // If SAML - we expose a metadata endpoint, optionally signed, and an SSO error page
     if (handlerDetails.type === 'saml') {
       const strategy = handlerStrategy as SamlStrategy;
+      const samlConfig = handlerDetails as SAMLAuthProviderConfig;
+
+      app.get(`/auth/${provider}/sso-error`, (req, res) => {
+        const messages = req.flash();
+        const displayName = samlConfig.displayName;
+        return res.render('sso-sign-in-error', {
+          layout: 'main',
+          pageTitle: samlConfig.ssoErrorPageTitle ?? 'Sign-in problem',
+          heading:
+            samlConfig.ssoErrorPageHeading ?? 'We could not complete sign-in',
+          leadMessage:
+            samlConfig.ssoErrorPageLead ??
+            `We had a problem while signing you in with ${displayName}.`,
+          detailMarkdown: samlConfig.ssoErrorPageDetailMarkdown,
+          returnUrl:
+            samlConfig.ssoErrorPageReturnUrl ?? WEBAPP_PUBLIC_URL,
+          returnLabel: samlConfig.ssoErrorPageReturnLabel ?? 'Return to app',
+          providerId: provider,
+          displayName,
+          messages,
+        });
+      });
 
       app.get(`/auth/${provider}/metadata`, (req, res) => {
         let metadata = strategy.generateServiceProviderMetadata(
@@ -912,6 +941,12 @@ export function addAuthRoutes(
             : null,
           handlerDetails.privateKey ? (handlerDetails.publicKey ?? null) : null
         );
+
+        const errorUrl = buildSamlMetadataErrorUrl(
+          provider,
+          samlConfig.metadataErrorUrl
+        );
+        metadata = injectSpSsoDescriptorErrorUrl(metadata, errorUrl);
 
         // Sign metadata if configured; private + public cert are required so KeyInfo
         // (X509Certificate) is embedded inside Signature (VANguard / xmldsig expectations).
@@ -1011,6 +1046,8 @@ export function addAuthRoutes(
       const registerErrorRedirect = `/register${buildQueryString({
         values: redirectValues,
       })}`;
+      const isSaml = handlerDetails.type === 'saml';
+      const ssoErrorRedirect = providerSsoErrorPath(provider);
       // authenticate using the associated validate function
       passport.authenticate(
         provider,
@@ -1024,6 +1061,10 @@ export function addAuthRoutes(
           // firstly throw error if needed (flash it out and redirect to the
           // right place returning with full context for another attempt)
           if (err) {
+            if (isSaml) {
+              req.flash('error', {ssoSignInError: {msg: err.message}});
+              return res.redirect(ssoErrorRedirect);
+            }
             if (action === 'login') {
               req.flash('error', {loginError: {msg: err.message}});
               return res.redirect(loginErrorRedirect);
@@ -1039,6 +1080,12 @@ export function addAuthRoutes(
             // I think they don't use err here because this is a post-auth failure
             // (the case I saw was mis-configuration of the endpoint)
             console.warn('User is false after social auth:', info);
+            if (isSaml) {
+              req.flash('error', {
+                ssoSignInError: {msg: info?.message || 'Login failed'},
+              });
+              return res.redirect(ssoErrorRedirect);
+            }
             const errorRedirect =
               action === 'login' ? loginErrorRedirect : registerErrorRedirect;
             req.flash('error', {
