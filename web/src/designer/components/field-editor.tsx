@@ -360,13 +360,10 @@ const FieldEditorComponent = ({
               <Typography
                 variant="subtitle2"
                 sx={{
-                  minWidth: 210,
-                  maxWidth: 210,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  width: '100%',
+                  minWidth: 0,
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
                   whiteSpace: 'normal',
                 }}
               >
