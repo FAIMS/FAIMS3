@@ -334,11 +334,18 @@ export const DesignPanel = () => {
             TabIndicatorProps={{sx: {display: 'none'}}}
             sx={{
               minHeight: 48,
+              ml: 0,
               '& .MuiTabs-scroller': {
                 overflowX: 'auto !important',
                 overflowY: 'hidden',
                 scrollbarWidth: 'thin',
                 scrollbarColor: `${alpha(theme.palette.text.primary, 0.45)} transparent`,
+              },
+              '& .MuiTabs-flexContainer': {
+                ml: 0,
+              },
+              '& .MuiTabs-scrollButtons.Mui-disabled': {
+                display: 'none',
               },
               '& .MuiTabs-scroller::-webkit-scrollbar': {
                 height: 8,
@@ -361,7 +368,7 @@ export const DesignPanel = () => {
                 to={`${basePath}/${index}`}
                 key={index}
                 value={`${index}`}
-                label={`Form: ${viewSets[form].label}`.toUpperCase()}
+                label={viewSets[form].label.toUpperCase()}
                 wrapped
                 sx={visibleTabSx}
               />
@@ -374,7 +381,7 @@ export const DesignPanel = () => {
                   to={`${basePath}/${startIndex}`}
                   key={startIndex}
                   value={`${startIndex}`}
-                  label={`Form: ${viewSets[form].label}`.toUpperCase()}
+                  label={viewSets[form].label.toUpperCase()}
                   wrapped
                   sx={untickedTabSx}
                 />
