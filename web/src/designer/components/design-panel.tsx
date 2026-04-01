@@ -25,7 +25,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
   Tab,
   Tabs,
   Theme,
@@ -96,6 +95,7 @@ export const DesignPanel = () => {
   const [addFormDialogOpen, setAddFormDialogOpen] = useState(false);
   const theme = useTheme();
   const addFormDialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const compactAddTab = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
@@ -336,10 +336,32 @@ export const DesignPanel = () => {
             onChange={handleTabChange}
             aria-label="form tabs"
             variant="scrollable"
+            visibleScrollbar
             scrollButtons="auto"
             allowScrollButtonsMobile
             TabIndicatorProps={{sx: {display: 'none'}}}
-            sx={{minHeight: 48}}
+            sx={{
+              minHeight: 48,
+              '& .MuiTabs-scroller': {
+                overflowX: 'auto !important',
+                overflowY: 'hidden',
+                scrollbarWidth: 'thin',
+                scrollbarColor: `${alpha(theme.palette.text.primary, 0.45)} transparent`,
+              },
+              '& .MuiTabs-scroller::-webkit-scrollbar': {
+                height: 8,
+              },
+              '& .MuiTabs-scroller::-webkit-scrollbar-track': {
+                backgroundColor: 'transparent',
+              },
+              '& .MuiTabs-scroller::-webkit-scrollbar-thumb': {
+                backgroundColor: alpha(theme.palette.text.primary, 0.35),
+                borderRadius: 999,
+              },
+              '& .MuiTabs-scroller::-webkit-scrollbar-thumb:hover': {
+                backgroundColor: alpha(theme.palette.text.primary, 0.5),
+              },
+            }}
           >
             {visibleTypes.map((form: string, index: number) => (
               <Tab
@@ -367,18 +389,33 @@ export const DesignPanel = () => {
               );
             })}
             <Tab
-              component={Link}
-              to={`${basePath}/${maxKeys}`}
               key={maxKeys}
               value={maxKeys.toString()}
               icon={<AddIcon />}
+              iconPosition="start"
+              label={compactAddTab ? '' : 'New Form'}
+              onClick={e => {
+                e.preventDefault();
+                openAddFormDialog();
+              }}
               sx={{
-                ...visibleTabSx,
+                ...baseTabRootSx,
                 '&.MuiTab-root': {
-                  ...visibleTabSx['&.MuiTab-root'],
-                  minWidth: 56,
-                  maxWidth: 56,
+                  ...baseTabRootSx['&.MuiTab-root'],
+                  minWidth: compactAddTab ? 56 : 142,
+                  maxWidth: compactAddTab ? 56 : 142,
                   marginLeft: '0.5em',
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  borderColor: 'primary.main',
+                  textTransform: 'none',
+                  boxShadow: theme.shadows[2],
+                },
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                  borderColor: 'primary.dark',
+                  color: 'primary.contrastText',
+                  opacity: 1,
                 },
               }}
             />
@@ -451,50 +488,6 @@ export const DesignPanel = () => {
             );
           })}
 
-          <Route
-            path={maxKeys.toString()}
-            element={
-              <Grid container spacing={2} pt={3}>
-                <Grid item xs={12} sm={6}>
-                  <form
-                    onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-                      e.preventDefault();
-                      addNewForm();
-                    }}
-                  >
-                    <DebouncedTextField
-                      fullWidth
-                      required
-                      label="Form Name"
-                      helperText="Enter a name for the form."
-                      name="formName"
-                      data-testid="formName"
-                      value={newFormName}
-                      onChange={(
-                        event: React.ChangeEvent<HTMLInputElement>
-                      ) => {
-                        setNewFormName(event.target.value);
-                      }}
-                    />
-                  </form>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={addNewForm}
-                  >
-                    Add New Form
-                  </Button>
-                </Grid>
-                <Grid item xs={12}>
-                  {alertMessage && (
-                    <Alert severity="error">{alertMessage}</Alert>
-                  )}
-                </Grid>
-              </Grid>
-            }
-          />
         </Routes>
       </TabContext>
       <Dialog
