@@ -124,18 +124,6 @@ export const MetadataDisplayComponent = (
               <TableBody>
                 <TableRow>
                   <TableCell>
-                    <Typography variant={'overline'}>Status</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <MetadataRenderer
-                      project_id={props.project.projectId}
-                      metadata_key={'project_status'}
-                      chips={false}
-                    />
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>
                     <Typography variant={'overline'}>
                       Lead Institution
                     </Typography>

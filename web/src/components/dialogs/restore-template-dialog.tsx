@@ -18,7 +18,7 @@ type RestoreTemplateDialogProps = {
 };
 
 /**
- * Confirmation dialog for restoring an archived template (mutation is stubbed until API exists).
+ * Confirmation dialog for restoring an archived template via POST /api/templates/:id/restore.
  */
 export function RestoreTemplateDialog({
   templateId,

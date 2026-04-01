@@ -448,7 +448,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
     },
   },
   {
-    name: 'templatesV2toV3Migration - New status preserved in metadata',
+    name: 'templatesV2toV3Migration - legacy New (and any non-archived) stripped from metadata',
     dbType: DatabaseType.TEMPLATES,
     from: 2,
     to: 3,
@@ -472,7 +472,7 @@ const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _rev: '3-rev',
         version: 1,
         name: 'Demo',
-        metadata: {name: 'Demo', project_status: 'New'},
+        metadata: {name: 'Demo'},
         'ui-specification': {
           fields: {},
           fviews: {},
