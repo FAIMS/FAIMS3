@@ -77,7 +77,10 @@ import {RegisteredAuthProviders} from './strategies/applyStrategies';
 import {verifyUserCredentials} from './strategies/localStrategy';
 import {SAMLAuthProviderConfig} from './strategies/strategyTypes';
 import {injectSpSsoDescriptorErrorUrl} from './strategies/samlMetadataXml';
-import {buildSamlMetadataErrorUrl, signSamlMetadata} from './strategies/samlStrategy';
+import {
+  buildSamlMetadataErrorUrl,
+  signSamlMetadata,
+} from './strategies/samlStrategy';
 
 patch();
 
@@ -925,8 +928,7 @@ export function addAuthRoutes(
             samlConfig.ssoErrorPageLead ??
             `We had a problem while signing you in with ${displayName}.`,
           detailMarkdown: samlConfig.ssoErrorPageDetailMarkdown,
-          returnUrl:
-            samlConfig.ssoErrorPageReturnURL ?? WEBAPP_PUBLIC_URL,
+          returnUrl: samlConfig.ssoErrorPageReturnURL ?? WEBAPP_PUBLIC_URL,
           returnLabel: samlConfig.ssoErrorPageReturnLabel ?? 'Return to app',
           providerId: provider,
           displayName,

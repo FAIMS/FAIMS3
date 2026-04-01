@@ -10,7 +10,9 @@ describe('SAML metadata XML helpers', () => {
         xml,
         'https://conduct.example/auth/vanguard/sso-error'
       );
-      expect(out).to.include('errorURL="https://conduct.example/auth/vanguard/sso-error"');
+      expect(out).to.include(
+        'errorURL="https://conduct.example/auth/vanguard/sso-error"'
+      );
       expect(out).to.include('<SPSSODescriptor errorURL=');
     });
 
@@ -28,7 +30,9 @@ describe('SAML metadata XML helpers', () => {
     it('is idempotent when errorURL already present', () => {
       const xml =
         '<SPSSODescriptor errorURL="https://already.set/" protocolSupportEnumeration="x">';
-      expect(injectSpSsoDescriptorErrorUrl(xml, 'https://other/')).to.equal(xml);
+      expect(injectSpSsoDescriptorErrorUrl(xml, 'https://other/')).to.equal(
+        xml
+      );
     });
   });
 });
