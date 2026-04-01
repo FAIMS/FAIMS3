@@ -93,7 +93,7 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         primary: colors.blueGrey[900],
         secondary: colors.blueGrey[600],
       },
-      divider: colors.blueGrey[400],
+      divider: '#D3D1D1FF',
     },
     typography: {
       fontFamily: "'Noto Sans', 'Open Sans', sans-serif",
