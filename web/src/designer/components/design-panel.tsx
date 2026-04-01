@@ -28,7 +28,6 @@ import {
   Tab,
   Tabs,
   Theme,
-  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -36,7 +35,6 @@ import {
 import {alpha} from '@mui/material/styles';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
-import InfoIcon from '@mui/icons-material/Info';
 import KeyboardDoubleArrowRightRoundedIcon from '@mui/icons-material/KeyboardDoubleArrowRightRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 
@@ -46,11 +44,9 @@ import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {
   designerDividerSx,
-  designerHeadingRowSx,
-  designerHeadingTextSx,
-  designerInfoIconSx,
   designerSubheadingSx,
 } from './designer-style';
+import {HeadingWithInfo} from './heading-with-info';
 import {shallowEqual} from 'react-redux';
 import {
   Link,
@@ -302,14 +298,10 @@ export const DesignPanel = () => {
       <TabContext value={tabIndex}>
         <Divider sx={{...designerDividerSx, mb: 1.5}} />
         <Box sx={{mb: 1.25, mt: 0.5}}>
-          <Box sx={designerHeadingRowSx}>
-            <Typography variant="h2" sx={designerHeadingTextSx}>
-              Forms
-            </Typography>
-            <Tooltip title="Forms are top-level data entry pages in your notebook.">
-              <InfoIcon sx={designerInfoIconSx} />
-            </Tooltip>
-          </Box>
+          <HeadingWithInfo
+            title="Forms"
+            tooltip="Forms are top-level data entry pages in your notebook."
+          />
           <Box
             sx={{
               display: 'flex',
