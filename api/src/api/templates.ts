@@ -23,6 +23,7 @@ import {
   addTemplateRole,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
+  GetTemplateSurveyReferencesResponse,
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
@@ -34,6 +35,7 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
+import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
   createTemplate,
@@ -121,6 +123,27 @@ api.get(
   async (req, res: Response<GetTemplateByIdResponse>) => {
     const template = await getTemplate(req.params.id);
     res.json(template);
+  }
+);
+
+/**
+ * GET count of surveys (projects) that still reference this template id.
+ */
+api.get(
+  '/:id/survey-references',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res: Response<GetTemplateSurveyReferencesResponse>) => {
+    const ids = await getProjectIdsReferencingTemplate(req.params.id);
+    res.json({surveyCount: ids.length});
   }
 );
 

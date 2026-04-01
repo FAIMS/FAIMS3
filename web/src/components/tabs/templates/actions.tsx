@@ -16,6 +16,12 @@ import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team-dialog';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
 } from '@/designer/integration';
@@ -82,6 +88,8 @@ const TemplateActions = () => {
     action: Action.CREATE_TEMPLATE,
   });
 
+  const archived = data?.archived === true;
+
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -95,13 +103,31 @@ const TemplateActions = () => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <Button
-                  variant="outline"
-                  disabled={isLoading}
-                  onClick={() => setEditorOpen(true)}
-                >
-                  Open in Editor
-                </Button>
+                {archived ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-block w-fit">
+                          <Button variant="outline" disabled>
+                            Open in Editor
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-balance">
+                        Archived templates cannot be opened in the editor.
+                        Un-archive the template first.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <Button
+                    variant="outline"
+                    disabled={isLoading}
+                    onClick={() => setEditorOpen(true)}
+                  >
+                    Open in Editor
+                  </Button>
+                )}
               </ListItem>
             </List>
           </Card>
@@ -117,7 +143,10 @@ const TemplateActions = () => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <AddTemplateToTeamDialog templateId={templateId} />
+                <AddTemplateToTeamDialog
+                  templateId={templateId}
+                  disabled={archived}
+                />
               </ListItem>
             </List>
           </Card>
@@ -198,7 +227,7 @@ const TemplateActions = () => {
         </Card>
       </div>
       <DesignerDialog
-        open={editorOpen}
+        open={editorOpen && !archived}
         notebook={initialNotebook}
         onClose={handleEditorClose}
       />

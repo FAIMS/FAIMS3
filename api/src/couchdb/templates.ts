@@ -17,6 +17,7 @@ import {
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
 import {generateRandomString} from '../utils';
+import {clearTemplateIdFromProjectsReferencingTemplate} from './notebooks';
 import {getTeamById} from './teams';
 
 /**
@@ -286,6 +287,14 @@ export const deleteExistingTemplate = async (templateId: string) => {
       'An error occurred while trying to fetch an existing template in order to remove it. Are you sure the ID is correct?'
     );
   }
+
+  if (existingTemplate.archived !== true) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived templates can be permanently deleted. Archive the template first, then delete it from the Archive view.'
+    );
+  }
+
+  await clearTemplateIdFromProjectsReferencingTemplate(templateId);
 
   try {
     await templatesDb.remove(existingTemplate);
