@@ -207,7 +207,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           title="Visible fields"
           variant="subtitle1"
           tooltip="Visible fields are shown to users in this section."
-          titleSx={designerFieldSubHeadingSx}
+          titleSx={designerFieldSubHeadingSx as Record<string, unknown>}
           containerSx={{
             justifyContent: 'flex-start',
             alignItems: 'center',
@@ -250,7 +250,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           title="Hidden fields"
           variant="subtitle1"
           tooltip="Hidden fields stay in the schema but are not shown to users."
-          titleSx={designerFieldSubHeadingSx}
+          titleSx={designerFieldSubHeadingSx as Record<string, unknown>}
           containerSx={{
             justifyContent: 'flex-start',
             alignSelf: 'flex-start',
