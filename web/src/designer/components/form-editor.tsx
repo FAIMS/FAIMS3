@@ -27,7 +27,6 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
   Button,
@@ -71,14 +70,13 @@ import {
   designerControlLabelSx,
   designerControlHeadingSx,
   designerDividerSx,
-  designerHeadingRowSx,
-  designerHeadingTextSx,
   designerInfoIconSx,
   designerIconControlButtonSx,
   designerPipeSx,
   designerPrimaryActionButtonSx,
   designerScrollableControlRowSx,
 } from './designer-style';
+import {HeadingWithInfo} from './heading-with-info';
 import {
   formVisibilityUpdated,
   sectionAdded,
@@ -439,8 +437,19 @@ export const FormEditor = ({
   }, [sectionParam, sections.length]);
 
   return (
-    <Stack direction="row" spacing={2}>
-      <Grid container rowSpacing={1.25} columnSpacing={0} pt={1.25}>
+    <Stack
+      direction={{xs: 'column', xl: 'row'}}
+      spacing={2}
+      alignItems="stretch"
+      sx={{width: '100%'}}
+    >
+      <Grid
+        container
+        rowSpacing={1.25}
+        columnSpacing={0}
+        pt={1.25}
+        sx={{flex: 1, minWidth: 0}}
+      >
         <Grid item xs={12}>
           <Stack spacing={1.5} py={0.75}>
             <Stack
@@ -721,21 +730,12 @@ export const FormEditor = ({
             onClose={() => setShowConditionAlert(false)}
           />
 
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
-            mt={2}
-            mb={1.5}
-            sx={designerHeadingRowSx}
-          >
-            <Typography variant="h2" sx={designerHeadingTextSx}>
-              Sections
-            </Typography>
-            <Tooltip title="Sections break a form into logical groups of fields.">
-              <InfoIcon sx={designerInfoIconSx} />
-            </Tooltip>
-          </Stack>
+          <Box mt={2} mb={1.25}>
+            <HeadingWithInfo
+              title="Sections"
+              tooltip="Sections break a form into logical groups of fields."
+            />
+          </Box>
         </Grid>
         <Grid item xs={12}>
           <Box sx={{px: 0, py: 1}}>
@@ -900,8 +900,26 @@ export const FormEditor = ({
         </Grid>
       </Grid>
       {previewForm && uiSpecInternal && (
-        <Grid container item sx={{minWidth: '300px'}} xs={6}>
-          <Box sx={{width: '100%'}}>
+        <Box
+          sx={{
+            width: {xs: '100%', xl: '42%'},
+            minWidth: {xl: 340},
+            maxWidth: {xl: 560},
+            flexShrink: 0,
+          }}
+        >
+          <Box
+            sx={{
+              width: '100%',
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1.25,
+              p: {xs: 1, sm: 1.25},
+              backgroundColor: 'background.paper',
+              overflow: 'auto',
+              maxHeight: {xl: 'calc(100vh - 210px)'},
+            }}
+          >
             <ThemeProvider theme={defaultTheme}>
               {/* resets CSS baseline within this scope */}
               <CssBaseline />
@@ -915,7 +933,7 @@ export const FormEditor = ({
               />
             </ThemeProvider>
           </Box>
-        </Grid>
+        </Box>
       )}
     </Stack>
   );
