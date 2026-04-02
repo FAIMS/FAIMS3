@@ -151,7 +151,7 @@ export const samlStrategyGenerator = (
       cert: options.idpPublicKey,
       // Callback URL
       callbackUrl:
-        options.callbackUrl ||
+        options.callbackURL ||
         CONDUCTOR_PUBLIC_URL + providerAuthReturnUrl(options.id),
       path: options.path,
       // SP signing/decryption keys
@@ -178,8 +178,8 @@ export const samlStrategyGenerator = (
       validateInResponseTo: options.validateInResponseTo,
       requestIdExpirationPeriodMs: options.requestIdExpirationPeriodMs,
       // Logout
-      logoutUrl: options.logoutUrl,
-      logoutCallbackUrl: options.logoutCallbackUrl,
+      logoutUrl: options.logoutURL,
+      logoutCallbackUrl: options.logoutCallbackURL,
       // IdP validation
       idpIssuer: options.idpIssuer,
       audience: options.audience,
@@ -196,14 +196,19 @@ export const samlStrategyGenerator = (
 };
 
 /**
- * Signs SAML metadata XML using the SP's private key
+ * Signs SAML metadata XML using the SP's private key.
+ * The public certificate must be supplied so xml-crypto emits KeyInfo with X509Data /
+ * X509Certificate inside the Signature element (required e.g. by VANguard).
+ *
  * @param metadataXml - The unsigned metadata XML string
  * @param privateKey - PEM-encoded private key
+ * @param publicCert - PEM-encoded service provider certificate (same keypair as privateKey)
  * @returns Signed metadata XML string
  */
 export const signSamlMetadata = (
   metadataXml: string,
-  privateKey: string
+  privateKey: string,
+  publicCert: string
 ): string => {
   const sig = new SignedXml();
 
@@ -220,6 +225,7 @@ export const signSamlMetadata = (
   });
 
   sig.privateKey = privateKey;
+  sig.publicCert = publicCert;
 
   sig.computeSignature(metadataXml, {
     location: {
@@ -230,3 +236,21 @@ export const signSamlMetadata = (
 
   return sig.getSignedXml();
 };
+
+/**
+ * Absolute URL advertised in SAML metadata (SPSSODescriptor errorURL).
+ * IdPs may send users here when authentication cannot be completed.
+ */
+export const buildSamlMetadataErrorUrl = (
+  providerId: string,
+  metadataErrorURLOverride?: string
+): string => {
+  const trimmed = metadataErrorURLOverride?.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  const base = CONDUCTOR_PUBLIC_URL.replace(/\/$/, '');
+  return `${base}/auth/${encodeURIComponent(providerId)}/sso-error`;
+};
+
+export {injectSpSsoDescriptorErrorUrl} from './samlMetadataXml';
