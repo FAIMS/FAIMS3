@@ -227,7 +227,7 @@ gather_pr_entries() {
   fi
 
   merged_pr_numbers=$(echo "$merge_log" \
-    | grep -oE 'Merge pull request #[0-9]+' \
+    | grep -oE '#[0-9]+' \
     | grep -oE '[0-9]+$' \
     | sort -rn \
     || echo "")
