@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.4] - 2026-04-05
+
+### Changes
+
+[release] Previous tag: v1.4.3
+[release] Found 11 merged PR(s) since v1.4.3.
+[release] Fetching PR details from GitHub...
+- fix(saml): embed X509 KeyInfo in signed SP metadata for VANguard ([#2031](https://github.com/FAIMS/FAIMS3/pull/2031))
+- Chore: automate release script ([#2028](https://github.com/FAIMS/FAIMS3/pull/2028))
+- chore: format ([#2026](https://github.com/FAIMS/FAIMS3/pull/2026))
+- Fix: stale invites interfere with SSO login ([#2024](https://github.com/FAIMS/FAIMS3/pull/2024))
+- chore: migrate lint and format tooling to oxc ([#2008](https://github.com/FAIMS/FAIMS3/pull/2008))
+- Origin/feat/multi select improvements ([#2007](https://github.com/FAIMS/FAIMS3/pull/2007))
+- feat: ai-lead designer code quality refactor ([#2006](https://github.com/FAIMS/FAIMS3/pull/2006))
+- feat: truncate long descriptions in survey and template list tables (… ([#2005](https://github.com/FAIMS/FAIMS3/pull/2005))
+- feat: use pluralize library for proper noun pluralisation (#1870) ([#2001](https://github.com/FAIMS/FAIMS3/pull/2001))
+- feat: data access APIs ([#1999](https://github.com/FAIMS/FAIMS3/pull/1999))
+- Pull request #1870 (title unavailable — fetch manually)
+
 ## [1.4.3] - 2026-3-20
 
 - added zoom to photos in read only view to be tested well in phone ([#1985](https://github.com/FAIMS/FAIMS3/pull/1985))
