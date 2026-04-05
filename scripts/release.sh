@@ -344,7 +344,7 @@ cmd_prepare() {
   # ---- Commit --------------------------------------------------------------
   info "--- Committing release changes ---"
   run git add CHANGELOG.md
-  run git commit -m "Release $NEW_TAG"
+  run git commit --signoff -m "Release $NEW_TAG"
 
   # ---- Push branch and open draft PR ---------------------------------------
   info "--- Pushing branch and opening draft PR ---"
