@@ -465,7 +465,7 @@ const AppSupportLinksSchema = z.object({
 export const UiConfiguration = z
   .object({
     /** The UI Theme for the app */
-    uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
+    uiTheme: z.enum(['bubble', 'default', 'bssTheme', 'fieldmark']),
     /** The notebook list type for the app */
     notebookListType: z.enum(['tabs', 'headings']),
     /** The display name for notebooks e.g. survey, notebook */
