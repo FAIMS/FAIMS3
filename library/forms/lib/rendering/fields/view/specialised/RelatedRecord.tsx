@@ -1,5 +1,6 @@
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import type {FC} from 'react';
 import {
   Accordion,
   AccordionDetails,
@@ -90,6 +91,16 @@ export const RENDER_NEST_LIMIT = 2;
  */
 const INVALID_REFERENCES_MESSAGE =
   'Invalid references. Contact an administrator.';
+
+type RelatedRecordQueryData =
+  | {kind: 'deleted'}
+  | {
+      kind: 'link';
+      hrid: string;
+      recordId: string;
+      EditButton?: FC<{recordId: string}>;
+    }
+  | {kind: 'nested'; formRendererProps: DataViewProps};
 
 // ============================================================================
 // Utility Functions
@@ -408,27 +419,52 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   const isDepthLimitReached = trace.length >= RENDER_NEST_LIMIT;
   const isMobile = useMediaQuery(useTheme().breakpoints.down('sm'));
 
-  // Fetch and hydrate related records
-  // Note: We still fetch on mobile to get HRID and EditButton, even though we won't nest
+  // Always hydrate so we can omit soft-deleted targets (no link, no nested preview).
   const relatedRecordQueries = useQueries({
-    queries: relatedRecords.map(({record_id}) => {
-      // 2. DECISION LOGIC
-      // If the target record exists in our ancestry, it's a cycle.
-      const isCycle = ancestorIds.has(record_id);
-
-      // We fetch unless it's a cycle or we've hit the depth limit
-      // Mobile still fetches to get hydrated data for the compact view
-      const shouldFetch = !isCycle && !isDepthLimitReached;
-
-      return {
-        queryKey: ['related-hydration', record_id, 'nest'],
-        queryFn: async () => {
-          const engine = props.renderContext.tools.getDataEngine();
-          const hydratedRecord = await engine.form.getExistingFormData({
-            recordId: record_id,
-          });
-
+    queries: relatedRecords.map(({record_id}) => ({
+      queryKey: [
+        'related-hydration',
+        record_id,
+        'nest',
+        isMobile,
+        isDepthLimitReached,
+        record._id,
+        fieldId,
+        viewId,
+        viewsetId,
+      ],
+      queryFn: async (): Promise<RelatedRecordQueryData> => {
+        const engine = props.renderContext.tools.getDataEngine();
+        const hQuick = await engine.hydrated.getHydratedRecord({
+          recordId: record_id,
+          config: {conflictBehaviour: 'pickLast'},
+        });
+        if (hQuick.revision.deleted) {
+          return {kind: 'deleted'};
+        }
+        const isCycle = ancestorIds.has(record_id);
+        const forceLinkMode = isDepthLimitReached || isCycle;
+        if (forceLinkMode) {
           return {
+            kind: 'link',
+            hrid: hQuick.hrid,
+            recordId: record_id,
+          };
+        }
+        if (isMobile) {
+          return {
+            kind: 'link',
+            hrid: hQuick.hrid,
+            recordId: record_id,
+            EditButton: props.renderContext.tools.editRecordButtonComponent,
+          };
+        }
+        const hydratedRecord = await engine.form.getExistingFormData({
+          recordId: record_id,
+        });
+        return {
+          kind: 'nested',
+          formRendererProps: {
             viewsetId: hydratedRecord.formId,
             formData: hydratedRecord.data,
             hydratedRecord: hydratedRecord.context.record,
@@ -438,7 +474,6 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
               {
                 callType: 'relatedRecord' as const,
                 fieldId,
-                // Pass the CURRENT record ID as the parent for the next trace
                 recordId: record._id,
                 viewId,
                 viewsetId,
@@ -447,83 +482,69 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
             uiSpecification,
             config: props.config,
             tools: props.renderContext.tools,
-          } satisfies DataViewProps;
-        },
-        networkMode: 'always' as const,
-        // 3. STOP THE LOOP
-        // Setting enabled: false prevents the fetch and the subsequent infinite
-        //loop
-        enabled: shouldFetch,
-      };
-    }),
+          },
+        };
+      },
+      networkMode: 'always' as const,
+    })),
   });
 
   if (relatedRecords.length === 0) {
     return <EmptyState />;
   }
 
+  const allFinished = relatedRecordQueries.every(q => !q.isPending);
+  const visibleCount = relatedRecordQueries.filter(
+    q => q.isSuccess && q.data && q.data.kind !== 'deleted'
+  ).length;
+
+  if (allFinished && visibleCount === 0) {
+    return <EmptyState />;
+  }
+
+  const headerCount = allFinished ? visibleCount : relatedRecords.length;
+
   return (
     <Box sx={{mt: 2, mb: 2}}>
-      <RelatedRecordsHeader count={relatedRecords.length} />
+      <RelatedRecordsHeader count={headerCount} />
 
       {relatedRecordQueries.map((query, index) => {
         const recordInfo = relatedRecords[index];
         const key = recordInfo.record_id;
 
-        // Recalculate logic for rendering decision
-        const isCycle = ancestorIds.has(key);
-        // Force link mode if we are too deep OR if a cycle is detected
-        // Mobile uses link mode but may have hydrated data available
-        const forceLinkMode = isDepthLimitReached || isCycle;
-        const useLinkModeForMobile = isMobile && !forceLinkMode;
-
-        // 4. RENDER LOGIC
-        // If we forced link mode due to depth/cycle, the query was disabled
-        if (forceLinkMode) {
-          return (
-            <LinkedRecordItem
-              key={key}
-              recordLabel={recordInfo.record_label || recordInfo.record_id}
-              recordId={recordInfo.record_id}
-              hrid={query?.data?.hrid ?? recordInfo.record_id}
-              tools={props.renderContext.tools}
-            />
-          );
-        }
-
-        // Handle loading state
         if (query.isPending) {
           return <LoadingRecordItem key={key} recordId={key} />;
         }
 
-        // Handle error state
         if (query.isError) {
           return (
             <ErrorRecordItem key={key} recordId={key} error={query.error} />
           );
         }
 
-        // Mobile with hydrated data: show compact link view with Edit button
-        if (useLinkModeForMobile && query.data) {
-          const EditButton = query.data.tools.editRecordButtonComponent;
+        const data = query.data;
+        if (!data || data.kind === 'deleted') {
+          return null;
+        }
+
+        if (data.kind === 'link') {
           return (
             <LinkedRecordItem
               key={key}
               recordLabel={recordInfo.record_label || recordInfo.record_id}
-              recordId={recordInfo.record_id}
-              hrid={query.data.hrid ?? recordInfo.record_id}
+              recordId={data.recordId}
+              hrid={data.hrid}
               tools={props.renderContext.tools}
-              EditButton={EditButton}
+              EditButton={data.EditButton}
             />
           );
         }
 
-        // Desktop: show full nested accordion view
         return (
           <NestedRecordItem
             key={key}
             recordInfo={recordInfo}
-            formRendererProps={query.data}
+            formRendererProps={data.formRendererProps}
           />
         );
       })}

@@ -18,6 +18,7 @@ import {
 } from '@faims3/forms';
 import {
   Alert,
+  Button,
   CircularProgress,
   Snackbar,
   Stack,
@@ -235,6 +236,8 @@ export const EditRecordPage = () => {
         platform: CAPACITOR_PLATFORM,
         appName: APP_NAME,
         recordId,
+        projectId,
+        decodedToken: activeUser.parsedToken,
         recordMode: mode,
         dataEngine,
         attachmentEngine,
@@ -337,6 +340,7 @@ export const EditRecordPage = () => {
       recordId,
       mode,
       activeUser.username,
+      activeUser.parsedToken,
       relevantUiSpec.data,
       isOnline,
     ]
@@ -379,6 +383,30 @@ export const EditRecordPage = () => {
               {error?.message ?? 'unknown'}.
             </p>
           </div>
+        ) : formData?.context.revision.deleted ? (
+          <Stack spacing={2} sx={{p: 2}}>
+            <Alert severity="warning">
+              This record has been deleted and cannot be edited.
+            </Alert>
+            <Button
+              variant="outlined"
+              onClick={() =>
+                navigate(
+                  getViewRecordRoute({projectId, recordId: recordId!, serverId})
+                )
+              }
+            >
+              Open read-only view
+            </Button>
+            <Button
+              variant="text"
+              onClick={() =>
+                navigate(getNotebookRoute({serverId, projectId}))
+              }
+            >
+              Back to notebook
+            </Button>
+          </Stack>
         ) : (
           <>
             {resolvingAutoIncrementer !== null && (

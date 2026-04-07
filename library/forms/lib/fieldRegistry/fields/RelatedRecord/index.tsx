@@ -1,4 +1,6 @@
 import {
+  canDeleteProjectRecord,
+  canEditProjectRecord,
   FormRelationship,
   FormRelationshipInstance,
   HydratedRecord,
@@ -6,6 +8,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
 import {
   Alert,
@@ -16,12 +19,15 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   InputAdornment,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Menu,
+  MenuItem,
   Paper,
   Skeleton,
   TextField,
@@ -32,6 +38,7 @@ import {
   useInfiniteQuery,
   useMutation,
   useQueries,
+  useQueryClient,
   UseQueryResult,
 } from '@tanstack/react-query';
 import {useMemo, useState} from 'react';
@@ -58,12 +65,14 @@ interface RelatedRecordListItemProps {
   link: FieldValueEntry;
   queryResult: UseQueryResult<HydratedRecord | undefined, Error>;
   onNavigate: (recordId: string) => void;
+  onOpenActionsMenu?: (anchor: HTMLElement, link: FieldValueEntry) => void;
 }
 
 const RelatedRecordListItem = ({
   link,
   queryResult,
   onNavigate,
+  onOpenActionsMenu,
 }: RelatedRecordListItemProps) => {
   const {data, isLoading, isError, error} = queryResult;
 
@@ -109,9 +118,31 @@ const RelatedRecordListItem = ({
     );
   }
 
+  if (data.record.deleted || data.revision.deleted) {
+    return null;
+  }
+
   // 3. Success State: Hydrated Data
   return (
-    <ListItem disablePadding divider>
+    <ListItem
+      disablePadding
+      divider
+      secondaryAction={
+        onOpenActionsMenu ? (
+          <IconButton
+            edge="end"
+            aria-label="Related record actions"
+            size="small"
+            onClick={e => {
+              e.stopPropagation();
+              onOpenActionsMenu(e.currentTarget, link);
+            }}
+          >
+            <MoreVertIcon fontSize="small" />
+          </IconButton>
+        ) : undefined
+      }
+    >
       <ListItemButton
         onClick={() => onNavigate(link.record_id)}
         title="Click to view record"
@@ -203,6 +234,8 @@ const LinkExistingDialog = ({
     return allRecords.filter(recordHydrationResult => {
       // Successful records only
       if (!recordHydrationResult.success) return false;
+
+      if (recordHydrationResult.record.revision.deleted) return false;
 
       // Exclude records we've already linked to from this field
       if (excludedSet.has(recordHydrationResult.record.record._id))
@@ -441,6 +474,16 @@ const RelatedRecordFieldPreview = (
 
 const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [actionMenu, setActionMenu] = useState<{
+    anchorEl: HTMLElement;
+    link: FieldValueEntry;
+  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FieldValueEntry | null>(
+    null
+  );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const queryClient = useQueryClient();
 
   const rawValue = props.state.value?.data || undefined;
 
@@ -597,11 +640,137 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     });
   };
 
+  const handleDetachLink = async (link: FieldValueEntry) => {
+    const engine = props.config.dataEngine();
+    const peer = await engine.hydrated.getHydratedRecord({
+      recordId: link.record_id,
+      config: {conflictBehaviour: 'pickLast'},
+    });
+    if (
+      !canEditProjectRecord({
+        decodedToken: props.config.decodedToken,
+        projectId: props.config.projectId,
+        recordCreatedBy: peer.record.createdBy,
+        actingUserId: props.config.user,
+      })
+    ) {
+      return;
+    }
+    const rel = peer.revision.relationship;
+    const linked = rel?.linked ?? [];
+    const newLinked = linked.filter(
+      inst =>
+        !(
+          inst.recordId === props.config.recordId &&
+          inst.fieldId === props.fieldId
+        )
+    );
+    await engine.hydrated.updateRevision({
+      ...peer.revision,
+      relationship: {
+        ...(rel ?? {}),
+        linked: newLinked,
+      },
+    });
+    const remaining = normalizedLinks.filter(
+      l => l.record_id !== link.record_id
+    );
+    const next: RelatedFieldValue | undefined =
+      remaining.length === 0
+        ? undefined
+        : props.multiple
+          ? remaining
+          : remaining[0];
+    props.setFieldData(next as RelatedFieldValue);
+    await props.config.trigger.commit();
+    await queryClient.invalidateQueries({queryKey: ['related-hydration']});
+  };
+
+  const handleConfirmDeleteRelated = async () => {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    try {
+      const engine = props.config.dataEngine();
+      const peer = await engine.hydrated.getHydratedRecord({
+        recordId: deleteTarget.record_id,
+        config: {conflictBehaviour: 'pickLast'},
+      });
+      if (
+        !canDeleteProjectRecord({
+          decodedToken: props.config.decodedToken,
+          projectId: props.config.projectId,
+          recordCreatedBy: peer.record.createdBy,
+          actingUserId: props.config.user,
+        })
+      ) {
+        setDeleteError('You do not have permission to delete this record.');
+        return;
+      }
+      await engine.deleteRecord({
+        recordId: deleteTarget.record_id,
+        baseRevisionId: peer.revision._id,
+        userId: props.config.user,
+      });
+      await queryClient.invalidateQueries({queryKey: ['related-hydration']});
+      setDeleteTarget(null);
+    } catch (e) {
+      setDeleteError(
+        e instanceof Error ? e.message : 'Could not delete this record.'
+      );
+    }
+  };
+
   // Extract already-linked record IDs for filtering
   const linkedRecordIds = useMemo(
     () => normalizedLinks.map(link => link.record_id),
     [normalizedLinks]
   );
+
+  const allRelatedHydrationDone = relatedRecordQueries.every(q => !q.isPending);
+  const allRelatedHydrationSucceeded = relatedRecordQueries.every(q => q.isSuccess);
+  const visibleRelatedLinkCount = relatedRecordQueries.reduce((n, q) => {
+    const d = q.data;
+    if (!d || d.record.deleted || d.revision.deleted) {
+      return n;
+    }
+    return n + 1;
+  }, 0);
+  const showOnlyDeletedLinksHint =
+    normalizedLinks.length > 0 &&
+    allRelatedHydrationDone &&
+    allRelatedHydrationSucceeded &&
+    visibleRelatedLinkCount === 0;
+
+  const linkHasDestructiveActions = (index: number): boolean => {
+    const d = relatedRecordQueries[index]?.data;
+    if (!d || d.record.deleted || d.revision.deleted) {
+      return false;
+    }
+    const {decodedToken, projectId, user} = props.config;
+    const createdBy = d.record.createdBy;
+    const canDel = canDeleteProjectRecord({
+      decodedToken,
+      projectId,
+      recordCreatedBy: createdBy,
+      actingUserId: user,
+    });
+    const canEditPeer = canEditProjectRecord({
+      decodedToken,
+      projectId,
+      recordCreatedBy: createdBy,
+      actingUserId: user,
+    });
+    const canDetach =
+      props.relation_type === 'faims-core::Linked' && canEditPeer;
+    return canDel || canDetach;
+  };
+
+  const menuPeerIndex =
+    actionMenu === null
+      ? -1
+      : normalizedLinks.findIndex(l => l.record_id === actionMenu.link.record_id);
+  const menuPeerRecord =
+    menuPeerIndex >= 0 ? relatedRecordQueries[menuPeerIndex]?.data : undefined;
 
   return (
     <>
@@ -660,23 +829,123 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
       {/* Linked Records List */}
       {normalizedLinks.length > 0 ? (
-        <Paper variant="outlined">
-          <List dense disablePadding>
-            {normalizedLinks.map((link, index) => (
-              <RelatedRecordListItem
-                key={link.record_id}
-                link={link}
-                queryResult={relatedRecordQueries[index]}
-                onNavigate={handleLinkClick}
-              />
-            ))}
-          </List>
-        </Paper>
+        <>
+          <Paper variant="outlined">
+            <List dense disablePadding>
+              {normalizedLinks.map((link, index) => (
+                <RelatedRecordListItem
+                  key={link.record_id}
+                  link={link}
+                  queryResult={relatedRecordQueries[index]}
+                  onNavigate={handleLinkClick}
+                  onOpenActionsMenu={
+                    linkHasDestructiveActions(index)
+                      ? (anchorEl, l) =>
+                          setActionMenu({anchorEl, link: l})
+                      : undefined
+                  }
+                />
+              ))}
+            </List>
+          </Paper>
+          {showOnlyDeletedLinksHint && (
+            <Typography
+              variant="caption"
+              display="block"
+              color="text.secondary"
+              sx={{mt: 1}}
+            >
+              Linked records are not shown because they have been deleted. Links
+              are kept if a record is restored.
+            </Typography>
+          )}
+        </>
       ) : (
         <Typography variant="caption" display="block" color="text.secondary">
           No records linked.
         </Typography>
       )}
+
+      <Menu
+        anchorEl={actionMenu?.anchorEl ?? null}
+        open={Boolean(actionMenu)}
+        onClose={() => setActionMenu(null)}
+      >
+        {props.relation_type === 'faims-core::Linked' &&
+          menuPeerRecord &&
+          canEditProjectRecord({
+            decodedToken: props.config.decodedToken,
+            projectId: props.config.projectId,
+            recordCreatedBy: menuPeerRecord.record.createdBy,
+            actingUserId: props.config.user,
+          }) && (
+            <MenuItem
+              onClick={() => {
+                const target = actionMenu?.link;
+                setActionMenu(null);
+                if (target) void handleDetachLink(target);
+              }}
+            >
+              Detach link
+            </MenuItem>
+          )}
+        {menuPeerRecord &&
+          canDeleteProjectRecord({
+            decodedToken: props.config.decodedToken,
+            projectId: props.config.projectId,
+            recordCreatedBy: menuPeerRecord.record.createdBy,
+            actingUserId: props.config.user,
+          }) && (
+            <MenuItem
+              onClick={() => {
+                if (actionMenu) {
+                  setDeleteTarget(actionMenu.link);
+                }
+                setActionMenu(null);
+              }}
+            >
+              Delete record…
+            </MenuItem>
+          )}
+      </Menu>
+
+      <Dialog
+        open={Boolean(deleteTarget)}
+        onClose={() => {
+          setDeleteTarget(null);
+          setDeleteError(null);
+        }}
+      >
+        <DialogTitle>Delete related record?</DialogTitle>
+        <DialogContent>
+          {deleteError && (
+            <Alert severity="error" sx={{mb: 1}}>
+              {deleteError}
+            </Alert>
+          )}
+          <Typography variant="body2">
+            This deletes the linked record (soft delete), the same as deleting it
+            from its own record page. Links from this record are kept so the
+            record can be restored if needed.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeleteTarget(null);
+              setDeleteError(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            color="error"
+            onClick={() => void handleConfirmDeleteRelated()}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

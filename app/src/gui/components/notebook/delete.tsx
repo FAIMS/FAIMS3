@@ -19,6 +19,7 @@
  */
 
 import {
+  canDeleteProjectRecord,
   ProjectID,
   RecordID,
   RevisionID,
@@ -44,6 +45,8 @@ import {theme} from '../../themes';
 
 type RecordDeleteProps = {
   projectId: ProjectID;
+  /** Record document owner (`created_by`), for delete-my vs delete-all permission. */
+  recordCreatedBy: string;
   serverId: string;
   recordId: RecordID;
   hrid?: string;
@@ -76,7 +79,7 @@ async function deleteFromDB({
 
 export default function RecordDelete(props: RecordDeleteProps) {
   //console.debug('Delete props', props);
-  const {projectId, serverId, recordId, revisionId} = props;
+  const {projectId, serverId, recordId, revisionId, recordCreatedBy} = props;
   const [open, setOpen] = React.useState(false);
   const history = useNavigate();
   const dispatch = useAppDispatch();
@@ -84,6 +87,19 @@ export default function RecordDelete(props: RecordDeleteProps) {
     setOpen(true);
   };
   const activeUser = useAppSelector(selectActiveUser)!;
+
+  const allowedToDelete =
+    activeUser &&
+    canDeleteProjectRecord({
+      decodedToken: activeUser.parsedToken,
+      projectId,
+      recordCreatedBy,
+      actingUserId: activeUser.username,
+    });
+
+  if (!allowedToDelete) {
+    return null;
+  }
 
   const handleClose = () => {
     setOpen(false);

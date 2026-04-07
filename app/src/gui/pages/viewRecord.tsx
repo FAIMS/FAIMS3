@@ -30,11 +30,13 @@ import {
   ImpliedRelationship,
   StaticFormProgress,
 } from '@faims3/forms';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import TabContext from '@mui/lab/TabContext';
 import TabList from '@mui/lab/TabList';
 import TabPanel from '@mui/lab/TabPanel';
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
@@ -128,6 +130,8 @@ interface InfoTabContentProps {
   hrid: string;
   revisionId: string;
   dataEngine: DataEngine;
+  isDeleted: boolean;
+  recordCreatedBy: string;
 }
 
 /**
@@ -140,6 +144,8 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
   dataEngine,
   revisionId,
   hrid,
+  isDeleted,
+  recordCreatedBy,
 }) => {
   const nav = useNavigate();
 
@@ -157,45 +163,50 @@ const InfoTabContent: React.FC<InfoTabContentProps> = ({
         record_id={recordId}
         revision_id={revisionId}
       />
-      <Box>
-        <RecordDelete
-          projectId={projectId}
-          hrid={hrid}
-          recordId={recordId}
-          revisionId={revisionId}
-          serverId={serverId}
-          showLabel={true}
-          handleRefresh={handleRefresh}
-        />
-      </Box>
-      <Stack spacing={1}>
-        <Typography variant="h5">Report content</Typography>
-        <Typography variant="subtitle1">
-          If you believe this record contains inappropriate or objectionable
-          content, you can flag it here.
-        </Typography>
-        <UGCReport
-          handleUGCReport={async (val: string | null) => {
-            if (val === null) {
-              return;
-            }
-            // Fetch hydrated revision
-            const rev = await dataEngine.hydrated.getHydratedRecord({
-              recordId,
-              revisionId,
-            });
-            console.log(rev);
-            // get the rev
-            const updated = rev.revision;
-            // set or append
-            updated.ugcComment = updated.ugcComment
-              ? `${updated.ugcComment};${val}`
-              : val;
-            // save the update
-            await dataEngine.hydrated.updateRevision(updated);
-          }}
-        />
-      </Stack>
+      {!isDeleted && (
+        <Box>
+          <RecordDelete
+            projectId={projectId}
+            recordCreatedBy={recordCreatedBy}
+            hrid={hrid}
+            recordId={recordId}
+            revisionId={revisionId}
+            serverId={serverId}
+            showLabel={true}
+            handleRefresh={handleRefresh}
+          />
+        </Box>
+      )}
+      {!isDeleted && (
+        <Stack spacing={1}>
+          <Typography variant="h5">Report content</Typography>
+          <Typography variant="subtitle1">
+            If you believe this record contains inappropriate or objectionable
+            content, you can flag it here.
+          </Typography>
+          <UGCReport
+            handleUGCReport={async (val: string | null) => {
+              if (val === null) {
+                return;
+              }
+              // Fetch hydrated revision
+              const rev = await dataEngine.hydrated.getHydratedRecord({
+                recordId,
+                revisionId,
+              });
+              console.log(rev);
+              // get the rev
+              const updated = rev.revision;
+              // set or append
+              updated.ugcComment = updated.ugcComment
+                ? `${updated.ugcComment};${val}`
+                : val;
+              // save the update
+              await dataEngine.hydrated.updateRevision(updated);
+            }}
+          />
+        </Stack>
+      )}
     </Stack>
   );
 };
@@ -214,6 +225,7 @@ interface ViewTabContentProps {
   getDataEngine: () => DataEngine;
   getAttachmentService: () => ReturnType<typeof createProjectAttachmentService>;
   onEditRecord: () => void;
+  isDeleted: boolean;
 }
 
 /**
@@ -228,28 +240,31 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
   impliedRelationships,
   getDataEngine,
   getAttachmentService,
+  isDeleted,
 }) => {
   const nav = useNavigate();
 
-  const nestedEditButton: React.FC<{recordId: string}> = props => (
-    <Button
-      variant="outlined"
-      startIcon={<EditIcon />}
-      onClick={() => {
-        nav(
-          getEditRecordRoute({
-            projectId,
-            recordId: props.recordId,
-            serverId,
-            mode: 'parent',
-          })
-        );
-      }}
-      sx={{flexShrink: 0}}
-    >
-      Edit record
-    </Button>
-  );
+  const nestedEditButton: React.FC<{recordId: string}> = isDeleted
+    ? () => null
+    : props => (
+        <Button
+          variant="outlined"
+          startIcon={<EditIcon />}
+          onClick={() => {
+            nav(
+              getEditRecordRoute({
+                projectId,
+                recordId: props.recordId,
+                serverId,
+                mode: 'parent',
+              })
+            );
+          }}
+          sx={{flexShrink: 0}}
+        >
+          Edit record
+        </Button>
+      );
 
   const dataViewProps: DataViewProps = {
     viewsetId: formData.formId,
@@ -323,14 +338,16 @@ const ViewTabContent: React.FC<ViewTabContentProps> = ({
       {
         // Edit button below progress bar
       }
-      <Button
-        variant="outlined"
-        startIcon={<EditIcon />}
-        onClick={onEditRecord}
-        sx={{flexShrink: 0}}
-      >
-        Edit record
-      </Button>
+      {!isDeleted && (
+        <Button
+          variant="outlined"
+          startIcon={<EditIcon />}
+          onClick={onEditRecord}
+          sx={{flexShrink: 0}}
+        >
+          Edit record
+        </Button>
+      )}
       {
         // Actual data view
       }
@@ -481,6 +498,8 @@ export const ViewRecordPage: React.FC = () => {
 
   const formLabel = uiSpec.viewsets[formData.formId]?.label ?? formData.formId;
 
+  const isDeleted = Boolean(formData.context.revision.deleted);
+
   return (
     <Stack gap={2}>
       {/* Header */}
@@ -496,6 +515,17 @@ export const ViewRecordPage: React.FC = () => {
           {formData.context.hrid}
         </Typography>
       </Stack>
+
+      {isDeleted && (
+        <Alert
+          severity="warning"
+          variant="outlined"
+          icon={<DeleteOutlineIcon fontSize="inherit" />}
+        >
+          This record has been deleted. You can still review its saved contents
+          below, but it cannot be edited.
+        </Alert>
+      )}
 
       {/* Tab Navigation */}
       <TabContext value={activeTab}>
@@ -525,6 +555,7 @@ export const ViewRecordPage: React.FC = () => {
             impliedRelationships={impliedRelationships}
             getDataEngine={getDataEngine}
             getAttachmentService={getAttachmentService}
+            isDeleted={isDeleted}
           />
         </TabPanel>
 
@@ -537,6 +568,8 @@ export const ViewRecordPage: React.FC = () => {
               recordId={recordId}
               serverId={serverId}
               revisionId={revisionId}
+              isDeleted={isDeleted}
+              recordCreatedBy={formData.context.record.createdBy}
             />
           ) : (
             <CircularProgress />

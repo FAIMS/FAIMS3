@@ -60,10 +60,13 @@ export async function getImpliedNavigationRelationships(
   const hydrateRelationship = async (
     rel: FormRelationshipInstance,
     type: 'parent' | 'linked'
-  ): Promise<ImpliedRelationship> => {
+  ): Promise<ImpliedRelationship | null> => {
     const hydrated = await engine.hydrated.getHydratedRecord({
       recordId: rel.recordId,
     });
+    if (hydrated.revision.deleted) {
+      return null;
+    }
     const formLabel =
       uiSpec.viewsets[hydrated.record.formId]?.label ?? hydrated.record.formId;
 
@@ -87,7 +90,9 @@ export async function getImpliedNavigationRelationships(
         hydrateRelationship(rel, 'parent')
       )
     );
-    results.push(...parentResults);
+    results.push(
+      ...parentResults.filter((r): r is ImpliedRelationship => r !== null)
+    );
   }
 
   // Process all linked relationships in parallel
@@ -100,7 +105,9 @@ export async function getImpliedNavigationRelationships(
         hydrateRelationship(rel, 'linked')
       )
     );
-    results.push(...linkedResults);
+    results.push(
+      ...linkedResults.filter((r): r is ImpliedRelationship => r !== null)
+    );
   }
 
   return results;
