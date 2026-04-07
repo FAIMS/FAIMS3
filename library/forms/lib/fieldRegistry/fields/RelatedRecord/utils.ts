@@ -2,7 +2,7 @@
 // Utility Functions
 // ============================================================================
 
-import {RelatedType} from './types';
+import type {RelatedType} from '@faims3/data-model';
 
 export function relationTypeToPair(type: RelatedType): [string, string] {
   if (type === 'faims-core::Child') {

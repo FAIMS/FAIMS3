@@ -25,6 +25,7 @@ import {expect, vi, test} from 'vitest';
 
 const testDeleteData = {
   projectId: 'test-id',
+  recordCreatedBy: 'testuser',
   recordId: 'test-record-id',
   revisionId: 'test-revision-id',
   showLabel: true,

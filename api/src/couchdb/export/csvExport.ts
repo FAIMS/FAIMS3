@@ -1,4 +1,6 @@
 import {
+  DatabaseInterface,
+  DataDocument,
   FieldSummary,
   getNotebookFieldTypes,
   HydratedDataRecord,
@@ -11,6 +13,7 @@ import {Stringifier, stringify} from 'csv-stringify';
 import {PassThrough} from 'stream';
 import {getDataDb} from '..';
 import {getProjectUIModel} from '../notebooks';
+import {stripDeletedRelatedRefsFromRecordData} from './stripDeletedRelatedRefs';
 import {
   convertDataForOutput,
   MAX_CSV_FILENAME_LENGTH,
@@ -289,9 +292,17 @@ export const appendAllCSVsToArchive = async ({
         const hrid = record.hrid || record.record_id;
         const row = [...generateRecordPrefixInformation(record)];
 
+        const rowData = {...record.data} as Record<string, unknown>;
+        await stripDeletedRelatedRefsFromRecordData({
+          fields: viewState.fields,
+          data: rowData,
+          dataDb: dataDb as DatabaseInterface<DataDocument>,
+          uiSpecification,
+        });
+
         const outputData = convertDataForOutput(
           viewState.fields,
-          record.data,
+          rowData,
           record.annotations,
           hrid,
           viewState.filenames,
@@ -456,9 +467,17 @@ export const appendCSVToArchive = async ({
       const hrid = record.hrid || record.record_id;
       const row = [...generateRecordPrefixInformation(record)];
 
+      const rowData = {...record.data} as Record<string, unknown>;
+      await stripDeletedRelatedRefsFromRecordData({
+        fields,
+        data: rowData,
+        dataDb: dataDb as DatabaseInterface<DataDocument>,
+        uiSpecification,
+      });
+
       const outputData = convertDataForOutput(
         fields,
-        record.data,
+        rowData,
         record.annotations,
         hrid,
         filenames,
@@ -557,10 +576,18 @@ export const streamNotebookRecordsAsCSV = async (
       // Start by generating the general record info
       const row = [...generateRecordPrefixInformation(record)];
 
+      const rowData = {...record.data} as Record<string, unknown>;
+      await stripDeletedRelatedRefsFromRecordData({
+        fields,
+        data: rowData,
+        dataDb: dataDb as DatabaseInterface<DataDocument>,
+        uiSpecification,
+      });
+
       // Then ask each field to dump out its data
       const outputData = convertDataForOutput(
         fields,
-        record.data,
+        rowData,
         record.annotations,
         hrid,
         filenames,

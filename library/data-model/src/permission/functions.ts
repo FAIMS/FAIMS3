@@ -113,6 +113,64 @@ export function isAuthorized({
 }
 
 /**
+ * Record owner comes from the record document's `created_by` / hydrated `createdBy`
+ * — same identifier space as API `user_id` and JWT `sub` / app username.
+ */
+export function canReadProjectRecord({
+  decodedToken,
+  projectId,
+  recordCreatedBy,
+  actingUserId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  projectId: string;
+  recordCreatedBy: string;
+  actingUserId: string;
+}): boolean {
+  const isMine = recordCreatedBy === actingUserId;
+  const action = isMine
+    ? Action.READ_MY_PROJECT_RECORDS
+    : Action.READ_ALL_PROJECT_RECORDS;
+  return isAuthorized({decodedToken, action, resourceId: projectId});
+}
+
+export function canEditProjectRecord({
+  decodedToken,
+  projectId,
+  recordCreatedBy,
+  actingUserId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  projectId: string;
+  recordCreatedBy: string;
+  actingUserId: string;
+}): boolean {
+  const isMine = recordCreatedBy === actingUserId;
+  const action = isMine
+    ? Action.EDIT_MY_PROJECT_RECORDS
+    : Action.EDIT_ALL_PROJECT_RECORDS;
+  return isAuthorized({decodedToken, action, resourceId: projectId});
+}
+
+export function canDeleteProjectRecord({
+  decodedToken,
+  projectId,
+  recordCreatedBy,
+  actingUserId,
+}: {
+  decodedToken: DecodedTokenPermissions;
+  projectId: string;
+  recordCreatedBy: string;
+  actingUserId: string;
+}): boolean {
+  const isMine = recordCreatedBy === actingUserId;
+  const action = isMine
+    ? Action.DELETE_MY_PROJECT_RECORDS
+    : Action.DELETE_ALL_PROJECT_RECORDS;
+  return isAuthorized({decodedToken, action, resourceId: projectId});
+}
+
+/**
  * What resources does this user have permission for with a resource-specific
  * action?
  */

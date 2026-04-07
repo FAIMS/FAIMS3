@@ -23,12 +23,15 @@ import {
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
+  DatabaseInterface,
+  DataDocument,
   EncodedProjectUIModel,
   GetExportNotebookResponse,
   getIdsByFieldName,
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getNotebookFieldTypes,
   getRecordListAudit,
   getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
@@ -41,6 +44,7 @@ import {
   PostRecordStatusResponse,
   projectRoleToAction,
   ProjectUIModel,
+  RecordMetadata,
   PutChangeNotebookStatusInputSchema,
   PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookInputSchema,
@@ -50,6 +54,7 @@ import {
   slugify,
   userHasProjectRole,
 } from '@faims3/data-model';
+import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
@@ -668,10 +673,35 @@ api.get(
     if (records) {
       const filenames: string[] = [];
       // Process any file fields to give the file name in the zip download
-      records.forEach(record => {
+      for (const record of records) {
+        if (record.data) {
+          try {
+            const fields = getNotebookFieldTypes({
+              uiSpecification,
+              viewID: record.type,
+            });
+            const dataCopy = {...record.data} as Record<string, unknown>;
+            await stripDeletedRelatedRefsFromRecordData({
+              fields,
+              data: dataCopy,
+              dataDb: dataDb as DatabaseInterface<DataDocument>,
+              uiSpecification,
+            });
+            record.data = dataCopy as RecordMetadata['data'];
+          } catch (e) {
+            console.error(
+              'Failed to strip deleted related record refs for export',
+              e
+            );
+          }
+        }
+        const exportData = record.data;
+        if (!exportData) {
+          continue;
+        }
         const hrid = record.hrid || record.record_id;
-        for (const fieldName in record.data) {
-          const values = record.data[fieldName];
+        for (const fieldName in exportData) {
+          const values = exportData[fieldName];
           if (values instanceof Array) {
             const names = values.map((v: any) => {
               if (v instanceof File) {
@@ -704,11 +734,11 @@ api.get(
               }
             });
             if (names.length > 0) {
-              record.data[fieldName] = names;
+              exportData[fieldName] = names;
             }
           }
         }
-      });
+      }
       res.json({records});
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
