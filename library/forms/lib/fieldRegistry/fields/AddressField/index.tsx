@@ -586,6 +586,23 @@ const valueSchema = (props: AddressFieldProps) => {
   return AddressValueNullableSchema;
 };
 
+function addressValueForTemplate(value: unknown): string {
+  if (value == null || typeof value !== 'object') {
+    return '';
+  }
+  const v = value as {
+    display_name?: unknown;
+    manuallyEnteredAddress?: unknown;
+  };
+  const display =
+    typeof v.display_name === 'string' ? v.display_name.trim() : '';
+  const manual =
+    typeof v.manuallyEnteredAddress === 'string'
+      ? v.manuallyEnteredAddress.trim()
+      : '';
+  return display || manual || '';
+}
+
 export const addressFieldSpec: FieldInfo<AddressFieldFullProps> = {
   namespace: 'faims-custom',
   name: 'AddressField',
@@ -593,6 +610,7 @@ export const addressFieldSpec: FieldInfo<AddressFieldFullProps> = {
   component: AddressField,
   fieldPropsSchema: AddressFieldPropsSchema,
   fieldDataSchemaFunction: valueSchema,
+  templateFunction: addressValueForTemplate,
   view: {
     component: AddressFieldRenderer,
     config: {},
