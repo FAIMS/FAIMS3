@@ -256,24 +256,47 @@ export const FieldConditionControl = (props: ConditionProps) => {
     );
   };
 
-  const updateField = (value: string) => {
-    const newFieldDef = allFields[value] ?? null;
+  const isNumberOrDateField = (fieldDef: FieldType | null): boolean => {
+    if (!fieldDef) return false;
+    // list our current number/date fields
+    // note that dates are stored as strings but we can still do greater/less comparisons on them
+    return ['NumberField', 'DateTimePicker', 'DatePicker', 'MonthPicker', 'DateTimeNow']
+      .includes(fieldDef['component-name']);
+  };
 
-    const allowedOperators = newFieldDef
+
+  // Get the allowed operators for a field based on its type and parameters
+  const getAllowedOperatorsForField = (fieldDef: FieldType | null): string[] => {
+
+    return fieldDef
       ? (() => {
-          const cName = newFieldDef['component-name'];
+          const cName = fieldDef['component-name'];
           if (cName === 'MultiSelect')
+            // these are the array operators
             return [
               'contains-one-of',
               'does-not-contain-any-of',
               'contains-all-of',
               'does-not-contain-all-of',
             ];
+          // Checkbox is true/false so only equal makes sense
           if (cName === 'Checkbox') return ['equal'];
-          if (isPredefinedOptions(newFieldDef)) return ['equal', 'not-equal'];
-          return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
+          // String valued fields with options, only equality comparisons make sense
+          if (isPredefinedOptions(fieldDef)) return ['equal', 'not-equal'];
+          // Fields we can compare order for (numbers, dates) get greater/less as well
+          if (isNumberOrDateField(fieldDef)) return ['equal', 'not-equal', 'greater', 'less'];
+          // otherwise use all string valued operators
+          return ['equal', 'not-equal', 'greater', 'less', 'string-contains', 'regex'];
         })()
       : [];
+  }
+
+
+      
+  const updateField = (value: string) => {
+    const newFieldDef = allFields[value] ?? null;
+
+    const allowedOperators = getAllowedOperatorsForField(newFieldDef);
 
     let newOperator = condition.operator;
     if (
@@ -534,21 +557,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
   };
 
   const valueMismatch = !isValueValidForField();
-  const allowedOperators = targetFieldDef
-    ? (() => {
-        const cName = targetFieldDef['component-name'];
-        if (cName === 'MultiSelect')
-          return [
-            'contains-one-of',
-            'does-not-contain-any-of',
-            'contains-all-of',
-            'does-not-contain-all-of',
-          ];
-        if (cName === 'Checkbox') return ['equal'];
-        if (isPredefinedOptions(targetFieldDef)) return ['equal', 'not-equal'];
-        return ['equal', 'not-equal', 'greater', 'less', 'contains', 'regex'];
-      })()
-    : [];
+  const allowedOperators = getAllowedOperatorsForField(targetFieldDef);
 
   return (
     <Grid container>
