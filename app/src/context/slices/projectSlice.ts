@@ -1,4 +1,5 @@
 import {
+  APINotebookProjectDocument,
   couchInitialiser,
   initDataDB,
   ProjectDataObject,
@@ -13,7 +14,7 @@ import {
   createSlice,
   PayloadAction,
 } from '@reduxjs/toolkit';
-import {CONDUCTOR_URLS} from '../../buildconfig';
+import {CONDUCTOR_URLS, FORCE_REMOTE_DELETION} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
@@ -31,6 +32,92 @@ import {
 import {databaseService} from './helpers/databaseService';
 import {PouchDBWrapper} from './helpers/pouchDBWrapper';
 import {syncStateService} from './helpers/syncStateService';
+
+/**
+ * Per server+project: consecutive successful directory responses where the server
+ * indicates the survey should not be kept as an active local copy: either the id
+ * is absent (deleted / no access) or the project is archived.
+ */
+const directoryAbsentStreak = new Map<string, number>();
+/**
+ * Successful directory responses where an id is absent (deleted / revoked).
+ * Require this many before local cleanup — transient empty listings are unlikely
+ * to repeat, so we confirm by automatically re-querying (see
+ * {@link scheduleAbsentDirectoryRetry}).
+ */
+const DIRECTORY_ABSENT_STREAK_THRESHOLD = 3;
+/** Archived rows are explicit in the directory — one successful read is enough. */
+const DIRECTORY_ARCHIVED_STREAK_THRESHOLD = 1;
+/** Delay before the next directory poll while confirming an absent id. */
+const DIRECTORY_ABSENT_RETRY_DELAY_MS = 900;
+
+function createAsyncMutex() {
+  let mutex = Promise.resolve();
+  return async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const prev = mutex;
+    let resolveNext!: () => void;
+    mutex = new Promise<void>(r => {
+      resolveNext = r;
+    });
+    await prev.catch(() => {});
+    try {
+      return await fn();
+    } finally {
+      resolveNext();
+    }
+  };
+}
+
+const initialiseProjectsMutexByServer = new Map<
+  string,
+  ReturnType<typeof createAsyncMutex>
+>();
+
+function withInitialiseProjectsLock<T>(
+  serverId: string,
+  fn: () => Promise<T>
+): Promise<T> {
+  let m = initialiseProjectsMutexByServer.get(serverId);
+  if (!m) {
+    m = createAsyncMutex();
+    initialiseProjectsMutexByServer.set(serverId, m);
+  }
+  return m(fn);
+}
+
+const pendingAbsentDirectoryRetryTimer = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
+
+function clearAbsentDirectoryRetry(serverId: string) {
+  const t = pendingAbsentDirectoryRetryTimer.get(serverId);
+  if (t !== undefined) {
+    clearTimeout(t);
+    pendingAbsentDirectoryRetryTimer.delete(serverId);
+  }
+}
+
+function projectDocIsArchivedOnServer(doc: APINotebookProjectDocument): boolean {
+  if (doc.archived === true) {
+    return true;
+  }
+  const s = doc.status as ProjectStatus | string;
+  return s === ProjectStatus.ARCHIVED || s === 'ARCHIVED';
+}
+
+/**
+ * True when local data for this id should count toward remote cleanup streak:
+ * missing from the listing, or present with archived lifecycle.
+ */
+function shouldAccumulateRemoteCleanupStreak(
+  directoryEntry: APINotebookProjectDocument | undefined
+): boolean {
+  if (directoryEntry === undefined) {
+    return true;
+  }
+  return projectDocIsArchivedOnServer(directoryEntry);
+}
 
 // TYPES
 // =====
@@ -378,15 +465,11 @@ const projectsSlice = createSlice({
     },
 
     /**
-     * Remove a project. This involves
+     * Remove a project from the store after the server signals archived/deleted
+     * with {@link FORCE_REMOTE_DELETION} === `allow` only.
      *
-     * - remove and close sync
-     * - remove and close remote db (pouchDB reference to remote)
-     * - destroy, close and remove local db (pouchDB local DB containing data)
-     * - deregister compiled spec
-     * - remove entry in store
-     *
-     * NOTE: currently there is no protection against data loss here.
+     * Stops sync and remote Pouch handles, then **destroys** the local Pouch DB
+     * (IndexedDB) so no survey data remains on device.
      *
      */
     removeProject: (state, action: PayloadAction<ProjectIdentity>) => {
@@ -429,20 +512,15 @@ const projectsSlice = createSlice({
             }
           }
 
-          // Close and clean local database
+          // Security: fully destroy local storage (not just close) when policy allows removal
           const localDatabaseId = project.database.localDbId;
           if (localDatabaseId) {
-            // NOTE that this is an async operation, the deletion will not
-            // happen immediately
-            databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
-            // For the time being - don't clean up deactivated databases as a last
-            // resort data recovery mechanism
-            // databaseService.destroyLocalDatabase(localDatabaseId);
-            // TODO determine a more suitable approach for validating data is synced to allow true cleanup
+            void databaseService.destroyLocalDatabase(localDatabaseId);
           }
         }
+      }
 
-        // Remove compiled spec from service
+      if (project.uiSpecificationId) {
         compiledSpecService.removeSpec(project.uiSpecificationId);
       }
 
@@ -450,6 +528,55 @@ const projectsSlice = createSlice({
       syncStateService.removeSyncState(payload.serverId, payload.projectId);
 
       // Remove the project from the server's projects map
+      delete server.projects[payload.projectId];
+    },
+
+    /**
+     * Same resource teardown as manual {@link deactivateProject} (sync off, remote
+     * closed, local Pouch **closed** but not destroyed), then remove the project
+     * from the store. Used when the server archived/deleted the survey but
+     * {@link FORCE_REMOTE_DELETION} is not `allow` — leaves IndexedDB recoverable.
+     */
+    detachProjectRetainLocalData: (
+      state,
+      action: PayloadAction<ProjectIdentity>
+    ) => {
+      const payload = action.payload;
+      const server = serverById(state, payload.serverId);
+      if (!server) {
+        throw new Error(
+          `Cannot detach project: missing server ${payload.serverId}.`
+        );
+      }
+      const project = projectByIdentity(state, payload);
+      if (!project) {
+        throw new Error(
+          `Cannot detach project that does not exist. Server: ${payload.serverId}, project: ${payload.projectId}`
+        );
+      }
+
+      if (project.isActivated && project.database) {
+        if (project.database.remote) {
+          const syncId = project.database.remote.syncId;
+          if (syncId) {
+            databaseService.closeAndRemoveSync(syncId);
+          }
+          const remoteDatabaseId = project.database.remote.remoteDbId;
+          if (remoteDatabaseId) {
+            databaseService.closeAndRemoveRemoteDatabase(remoteDatabaseId);
+          }
+        }
+        const localDatabaseId = project.database.localDbId;
+        if (localDatabaseId) {
+          void databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
+        }
+      }
+
+      if (project.uiSpecificationId) {
+        compiledSpecService.removeSpec(project.uiSpecificationId);
+      }
+
+      syncStateService.removeSyncState(payload.serverId, payload.projectId);
       delete server.projects[payload.projectId];
     },
 
@@ -1610,12 +1737,16 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       return;
     }
 
-    // Fetch the directory (which lists projects)
-    const response = await fetch(`${server.serverUrl}/api/directory`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    await withInitialiseProjectsLock(serverId, async () => {
+    // Include archived so a missing id means deleted/revoked, not merely archived.
+    const response = await fetch(
+      `${server.serverUrl}/api/directory?includeArchived=true`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(
@@ -1623,7 +1754,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       );
     }
 
-    const directoryResults = (await response.json()) as ProjectDocument[];
+    const directoryResults = (await response.json()) as APINotebookProjectDocument[];
 
     // Fetch all project metadata in parallel
     const metadataResults = await Promise.allSettled(
@@ -1767,8 +1898,86 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
     for (const action of actions) {
       appDispatch(action);
     }
+
+    const stateAfterDirectory = getState() as RootState;
+    const streakKey = (projectId: string) => `${serverId}:${projectId}`;
+    const directoryByProjectId = new Map(
+      directoryResults.map(d => [d._id, d])
+    );
+    const localProjectIds = Object.keys(
+      stateAfterDirectory.projects.servers[serverId]?.projects ?? {}
+    );
+
+    let needsAbsentConfirmationRetry = false;
+
+    for (const projectId of localProjectIds) {
+      const entry = directoryByProjectId.get(projectId);
+      if (!shouldAccumulateRemoteCleanupStreak(entry)) {
+        directoryAbsentStreak.delete(streakKey(projectId));
+        continue;
+      }
+      const k = streakKey(projectId);
+      const n = (directoryAbsentStreak.get(k) ?? 0) + 1;
+      directoryAbsentStreak.set(k, n);
+      const streakThreshold =
+        entry === undefined
+          ? DIRECTORY_ABSENT_STREAK_THRESHOLD
+          : DIRECTORY_ARCHIVED_STREAK_THRESHOLD;
+      if (n < streakThreshold) {
+        if (entry === undefined) {
+          needsAbsentConfirmationRetry = true;
+        }
+        continue;
+      }
+      directoryAbsentStreak.delete(k);
+
+      const proj = projectByIdentity(stateAfterDirectory.projects, {
+        serverId,
+        projectId,
+      });
+      if (!proj) {
+        continue;
+      }
+
+      if (FORCE_REMOTE_DELETION === 'allow') {
+        appDispatch(removeProject({serverId, projectId}));
+      } else {
+        appDispatch(detachProjectRetainLocalData({serverId, projectId}));
+      }
+    }
+
+    if (needsAbsentConfirmationRetry) {
+      scheduleAbsentDirectoryRetry(serverId, appDispatch);
+    } else {
+      clearAbsentDirectoryRetry(serverId);
+    }
+    });
   }
 );
+
+/**
+ * After a successful directory where a local id is still absent, schedule another
+ * poll so the absent streak can reach {@link DIRECTORY_ABSENT_STREAK_THRESHOLD}
+ * without requiring the user to refresh manually.
+ */
+function scheduleAbsentDirectoryRetry(
+  serverId: string,
+  appDispatch: AppDispatch
+) {
+  clearAbsentDirectoryRetry(serverId);
+  const t = setTimeout(() => {
+    pendingAbsentDirectoryRetryTimer.delete(serverId);
+    void appDispatch(initialiseProjects({serverId}))
+      .unwrap()
+      .catch(err => {
+        console.warn(
+          `Directory retry (absent id confirmation) failed for ${serverId}:`,
+          err
+        );
+      });
+  }, DIRECTORY_ABSENT_RETRY_DELAY_MS);
+  pendingAbsentDirectoryRetryTimer.set(serverId, t);
+}
 
 /**
  * Helper to find a valid token for a server
@@ -2159,6 +2368,7 @@ export const {
   startSyncingAttachments,
   stopSyncingAttachments,
   removeProject,
+  detachProjectRetainLocalData,
   updateDatabaseAuthSuccess,
   updateProjectDetails,
   updateServerDetails,

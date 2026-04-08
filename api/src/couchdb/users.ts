@@ -217,6 +217,25 @@ export async function stripTemplateRolesForTemplateId(
 }
 
 /**
+ * Removes every `projectRoles` entry for the given project id (permanent survey
+ * deletion). Uses the same by-resource index as {@link getUsersForResource}.
+ */
+export async function stripProjectRolesForProjectId(
+  projectId: string
+): Promise<void> {
+  const users = await getUsersForResource({resourceId: projectId});
+  for (const user of users) {
+    const roles = user.projectRoles ?? [];
+    const next = roles.filter(r => r.resourceId !== projectId);
+    if (next.length === roles.length) {
+      continue;
+    }
+    user.projectRoles = next;
+    await saveCouchUser(user);
+  }
+}
+
+/**
  * Gets users from the people db by team ID
  */
 export async function getUsersForTeam({

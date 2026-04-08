@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import {useAuth} from '@/context/auth-provider';
 import {ListItem, ListLabel, ListDescription} from '@/components/ui/list';
 import {Skeleton} from '@/components/ui/skeleton';
@@ -5,6 +6,7 @@ import {List} from '@/components/ui/list';
 import {Card} from '@/components/ui/card';
 import {useGetProject} from '@/hooks/queries';
 import {TeamCellComponent} from '@/components/tables/cells/team-cell';
+import type {GetNotebookResponse} from '@faims3/data-model';
 import {ProjectStatus} from '@faims3/data-model';
 
 const detailsFields = [
@@ -42,6 +44,13 @@ const detailsFields = [
             <span className="text-sm text-muted-foreground">Closed</span>
           </div>
         );
+      } else if (status === ProjectStatus.ARCHIVED) {
+        return (
+          <div className="flex items-center gap-1.5">
+            <div className="h-2 w-2 rounded-full bg-amber-600/80"></div>
+            <span className="text-sm text-muted-foreground">Archived</span>
+          </div>
+        );
       } else {
         return (
           <div className="flex items-center gap-1.5">
@@ -72,9 +81,20 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
     <Card>
       <List>
         {detailsFields.map(({field, label, render, isMetadata = true}) => {
+          const d = data as GetNotebookResponse | undefined;
           const cellData = isMetadata
             ? data?.metadata[field]
-            : (data as any | undefined)?.[field];
+            : field === 'status' && d
+              ? d.status === ProjectStatus.ARCHIVED || d.archived === true
+                ? ProjectStatus.ARCHIVED
+                : d.status
+              : field === 'name'
+                ? d?.name
+                : field === 'ownedByTeamId'
+                  ? d?.ownedByTeamId
+                  : field === 'recordCount'
+                    ? d?.recordCount
+                    : undefined;
           return (
             <ListItem key={field}>
               <ListLabel>{label}</ListLabel>
@@ -82,7 +102,9 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
                 <Skeleton />
               ) : (
                 <ListDescription>
-                  {render ? render(cellData) : cellData}
+                  {render
+                    ? render(cellData as string | undefined)
+                    : (cellData as ReactNode)}
                 </ListDescription>
               )}
             </ListItem>

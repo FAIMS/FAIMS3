@@ -122,13 +122,22 @@ export const useGetProject = ({
 export const useGetProjects = ({
   user,
   enabled = true,
+  includeArchived = false,
 }: {
   user: User | null;
   enabled?: boolean;
+  /** When true, lists archived surveys too (directory-style sync uses this). */
+  includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['projects', user?.token],
-    queryFn: () => get<GetNotebookListResponse>('/api/notebooks/', user),
+    queryKey: ['projects', user?.token, includeArchived],
+    queryFn: () =>
+      get<GetNotebookListResponse>(
+        includeArchived
+          ? '/api/notebooks/?includeArchived=true'
+          : '/api/notebooks/',
+        user
+      ),
     enabled: !!user && enabled,
   });
 

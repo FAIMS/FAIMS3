@@ -12,7 +12,15 @@ import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {
+  Action,
+  getUserResourcesForAction,
+  ProjectStatus,
+} from '@faims3/data-model';
+import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
+import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
+import {RestoreArchivedProjectDialog} from '@/components/dialogs/restore-archived-project-dialog';
+import {DeleteArchivedProjectDialog} from '@/components/dialogs/delete-archived-project-dialog';
 import {useQueryClient} from '@tanstack/react-query';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {NotebookWithHistory} from '@/designer/state/initial';
@@ -90,6 +98,20 @@ const ProjectActions = (): JSX.Element => {
       action: Action.CREATE_TEMPLATE_IN_TEAM,
     }).length > 0;
 
+  const isArchived =
+    data?.status === ProjectStatus.ARCHIVED || data?.archived === true;
+  const surveyIsClosed = data?.status === ProjectStatus.CLOSED;
+
+  const canChangeArchive = useIsAuthorisedTo({
+    action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
+    resourceId: projectId,
+  });
+
+  const canDestroyProject = useIsAuthorisedTo({
+    action: Action.DELETE_PROJECT,
+    resourceId: projectId,
+  });
+
   const handleCreateTestRecords = async () => {
     if (user)
       await generateTestRecordsForProject({
@@ -102,7 +124,18 @@ const ProjectActions = (): JSX.Element => {
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
-        {DEVELOPER_MODE && (
+        {isArchived && (
+          <Alert>
+            <AlertTitle>This {NOTEBOOK_NAME} is archived</AlertTitle>
+            <AlertDescription>
+              It is hidden from normal lists. Editing and open/close controls
+              are unavailable until you restore it from the Archive section or
+              from the actions below.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {DEVELOPER_MODE && !isArchived && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
@@ -129,13 +162,14 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canEditProject && (
+        {canEditProject && !isArchived && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
                 <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
                 <ListDescription>
-                  Edit this {NOTEBOOK_NAME} in the Notebook Editor.
+                  Edit this {NOTEBOOK_NAME} in the {NOTEBOOK_NAME_CAPITALIZED}{' '}
+                  Editor.
                 </ListDescription>
               </ListItem>
               <ListItem>
@@ -151,7 +185,7 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canAddProjectToTeam && (
+        {canAddProjectToTeam && !isArchived && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
@@ -193,7 +227,7 @@ const ProjectActions = (): JSX.Element => {
           </List>
         </Card>
 
-        {canEditProject && (
+        {canEditProject && !isArchived && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
@@ -211,7 +245,7 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canCreateTemplateInTeam && (
+        {canCreateTemplateInTeam && !isArchived && (
           <Card className="flex-1">
             <List className="flex flex-col gap-4">
               <ListItem>
@@ -231,9 +265,65 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canChangeProjectStatus && (
+        {canChangeProjectStatus && !isArchived && (
           <Card className="flex-1">
             <ProjectStatusDialog projectId={projectId} />
+          </Card>
+        )}
+
+        {!isArchived && canChangeArchive && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              <ListItem>
+                <ListLabel>Archive {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
+                {surveyIsClosed ? (
+                  <>
+                    <ListDescription>
+                      Hide this {NOTEBOOK_NAME} from normal lists. Depending on
+                      deployment, archiving may also clear local data on field
+                      devices after sync.
+                    </ListDescription>
+                    <ArchiveProjectDialog projectId={projectId} />
+                  </>
+                ) : (
+                  <ListDescription>
+                    Only closed {NOTEBOOK_NAME_CAPITALIZED}s can be archived. Set
+                    status to closed first using the open/closed control above if
+                    you have access, or ask a project administrator.
+                  </ListDescription>
+                )}
+              </ListItem>
+            </List>
+          </Card>
+        )}
+
+        {isArchived && (canChangeArchive || canDestroyProject) && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-4">
+              {canChangeArchive ? (
+                <ListItem>
+                  <ListLabel>Restore from archive</ListLabel>
+                  <ListDescription>
+                    Returns the {NOTEBOOK_NAME} to the closed state (not open for
+                    new activations).
+                  </ListDescription>
+                  <RestoreArchivedProjectDialog projectId={projectId} />
+                </ListItem>
+              ) : null}
+              {canDestroyProject && data?.name ? (
+                <ListItem>
+                  <ListLabel>Permanent deletion</ListLabel>
+                  <ListDescription>
+                    Destroy all server-side records and references. This cannot
+                    be undone.
+                  </ListDescription>
+                  <DeleteArchivedProjectDialog
+                    projectId={projectId}
+                    surveyName={data.name}
+                  />
+                </ListItem>
+              ) : null}
+            </List>
           </Card>
         )}
       </div>

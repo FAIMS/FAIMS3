@@ -39,6 +39,7 @@ import {
   DEBUG_APP,
   getAddressAutosuggestService,
   getMapConfig,
+  NOTEBOOK_NAME,
 } from '../../buildconfig';
 import {
   getEditRecordRoute,
@@ -404,7 +405,7 @@ export const EditRecordPage = () => {
                 navigate(getNotebookRoute({serverId, projectId}))
               }
             >
-              Back to notebook
+              {`Back to ${NOTEBOOK_NAME}`}
             </Button>
           </Stack>
         ) : (

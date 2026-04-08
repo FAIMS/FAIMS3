@@ -16,6 +16,7 @@
  * @file Ordered field accordions for a section plus add-field dialog.
  */
 
+import {NOTEBOOK_NAME} from '@/constants';
 import {Button, Stack, Typography} from '@mui/material';
 
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
@@ -187,7 +188,7 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       <Stack spacing={0} mt={2} mb={2}>
         <Typography variant="h6">Visible Fields</Typography>
         <Typography variant="body2" color="textSecondary">
-          Visible fields will appear in the survey.
+          {`Visible fields will appear in the ${NOTEBOOK_NAME}.`}
         </Typography>
       </Stack>
       {visibleFields.map((fieldName: string) => {

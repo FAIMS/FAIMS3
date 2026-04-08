@@ -104,7 +104,7 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Edit Template</ListLabel>
                 <ListDescription>
-                  Edit this template in the Notebook Editor.
+                  Edit this template in the {NOTEBOOK_NAME_CAPITALIZED} Editor.
                 </ListDescription>
               </ListItem>
               <ListItem>

@@ -20,6 +20,7 @@
 
 import {
   Action,
+  APINotebookProjectDocument,
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
@@ -38,6 +39,7 @@ import {
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
   PostCreateNotebookResponse,
+  PostDestroyNotebookInputSchema,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
   PostRecordStatusInputSchema,
@@ -80,6 +82,7 @@ import {
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
 import {FullExportConfigSchema} from '../couchdb/export/types';
+import {deleteAllInvitesForProject} from '../couchdb/invites';
 import {
   changeNotebookStatus,
   changeNotebookTeam,
@@ -92,8 +95,11 @@ import {
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
+  restoreNotebookFromArchive,
+  setNotebookArchived,
   updateNotebook,
 } from '../couchdb/notebooks';
+import {stripProjectRolesForProjectId} from '../couchdb/users';
 import {getTemplate} from '../couchdb/templates';
 import {
   getCouchUserFromEmailOrUserId,
@@ -347,13 +353,23 @@ api.use('/:id/records', recordsRouter);
 api.get(
   '/',
   requireAuthenticationAPI,
-  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
+  processRequest({
+    query: z.object({
+      teamId: z.string().min(1).optional(),
+      /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res: Response<GetNotebookListResponse>) => {
-    // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
+    const includeArchived = req.query.includeArchived === 'true';
+    const notebooks = await getUserProjectsDetailed(
+      req.user,
+      req.query.teamId,
+      includeArchived
+    );
     res.json(notebooks);
   }
 );
@@ -506,6 +522,7 @@ api.get(
     const uiSpec = await getEncodedNotebookUISpec(projectId);
 
     if (metadata && uiSpec) {
+      const doc = project as APINotebookProjectDocument;
       res.json({
         // include name
         name: project.name,
@@ -515,6 +532,7 @@ api.get(
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
         ownedByTeamId: project.ownedByTeamId,
         status: project.status,
+        archived: doc.archived === true,
         recordCount: await countRecordsInNotebook(projectId),
       } satisfies GetNotebookResponse);
     } else {
@@ -596,6 +614,43 @@ api.put(
     await changeNotebookTeam({projectId, teamId});
     res.sendStatus(200);
     return;
+  }
+);
+
+/** Archive or un-archive a survey (`archive: true` sets {@link ProjectStatus.ARCHIVED}). */
+api.put(
+  '/:id/archive',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+    body: z.object({archive: z.boolean()}),
+  }),
+  async ({params: {id}, body: {archive}}, res) => {
+    await setNotebookArchived({projectId: id, archive});
+    res.sendStatus(200);
+  }
+);
+
+/** Restore an archived survey to closed (not open). */
+api.post(
+  '/:id/restore',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({params: z.object({id: z.string()})}),
+  async ({params: {id}}, res) => {
+    await restoreNotebookFromArchive(id);
+    res.sendStatus(200);
   }
 );
 
@@ -947,7 +1002,10 @@ api.post(
   }
 );
 
-/** Deletes a given notebook by ID */
+/**
+ * Permanently destroys survey server data (invites, people roles, Couch DBs).
+ * Requires archive first and operations-level permission.
+ */
 api.post(
   '/:notebookId/delete',
   requireAuthenticationAPI,
@@ -957,12 +1015,22 @@ api.post(
       return req.params.notebookId;
     },
   }),
-  processRequest({params: z.object({notebookId: z.string()})}),
+  processRequest({
+    params: z.object({notebookId: z.string()}),
+    body: PostDestroyNotebookInputSchema,
+  }),
   async (req, res) => {
-    // Delete the notebook
-    await deleteNotebook(req.params.notebookId);
-
-    // 200 OK indicating successful deletion
+    const {notebookId} = req.params;
+    const {confirmName} = req.body;
+    const project = await getProjectById(notebookId);
+    if (project.name.trim() !== confirmName.trim()) {
+      throw new Exceptions.InvalidRequestException(
+        'Confirmation name must match the survey name exactly.'
+      );
+    }
+    await deleteAllInvitesForProject(notebookId);
+    await stripProjectRolesForProjectId(notebookId);
+    await deleteNotebook(notebookId);
     res.status(200).end();
   }
 );

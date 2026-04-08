@@ -65,8 +65,8 @@ export function NavMain({title, items}: NavMainProps) {
   const {pathname} = useLocation();
   const locationSearch = useRouterState({
     select: s => {
-      const raw = s.location.search;
-      if (raw && typeof raw === 'object') {
+      const raw = s.location.search as unknown;
+      if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
         return raw as Record<string, unknown>;
       }
       if (typeof raw === 'string' && raw.length > 0) {

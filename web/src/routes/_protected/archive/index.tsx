@@ -8,9 +8,11 @@ import {archivedTemplateColumns} from '@/components/tables/archived-templates';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
-import {useGetTemplates} from '@/hooks/queries';
+import {archivedProjectColumns} from '@/components/tables/archived-projects';
+import {useGetProjects, useGetTemplates} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
+import {ProjectStatus} from '@faims3/data-model';
 import {useMemo} from 'react';
 
 export const Route = createFileRoute('/_protected/archive/')({
@@ -45,6 +47,24 @@ function RouteComponent() {
     includeArchived: true,
     enabled: !!user,
   });
+
+  const {
+    isPending: projectsLoading,
+    data: projectsData,
+  } = useGetProjects({
+    user,
+    includeArchived: true,
+    enabled: !!user,
+  });
+
+  const archivedSurveys = useMemo(
+    () =>
+      (projectsData ?? []).filter(
+        p =>
+          p.status === ProjectStatus.ARCHIVED || p.archived === true
+      ),
+    [projectsData]
+  );
 
   const setTab = (value: string) => {
     if (!ARCHIVE_TAB_VALUES.includes(value as ArchiveTab)) return;
@@ -82,9 +102,10 @@ function RouteComponent() {
         </TabsList>
 
         <TabsContent value="surveys" className="mt-4">
-          <PlaceholderArchivePanel
-            title={`Archived ${NOTEBOOK_NAME_CAPITALIZED}s`}
-            description={`${NOTEBOOK_NAME_CAPITALIZED} archive listing will appear here. Restored ${NOTEBOOK_NAME}s may remain closed until reopened.`}
+          <DataTable
+            columns={archivedProjectColumns}
+            data={archivedSurveys}
+            loading={projectsLoading}
           />
         </TabsContent>
 

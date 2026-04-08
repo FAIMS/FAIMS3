@@ -27,6 +27,7 @@ PouchDB.plugin(SecurityPlugin);
 import {
   Action,
   APINotebookList,
+  APINotebookProjectDocument,
   CouchProjectUIModel,
   DatabaseInterface,
   decodeUiSpec,
@@ -224,15 +225,22 @@ export const getAllProjectsDirectory = async (): Promise<ProjectDocument[]> => {
  * @param user - only return projects visible to this user
  */
 export const getUserProjectsDirectory = async (
-  user: Express.User
+  user: Express.User,
+  includeArchived = false
 ): Promise<ProjectDocument[]> => {
-  return (await getAllProjectsDirectory()).filter(p =>
-    userCanDo({
+  return (await getAllProjectsDirectory()).filter(p => {
+    if (
+      !includeArchived &&
+      (p as APINotebookProjectDocument).archived === true
+    ) {
+      return false;
+    }
+    return userCanDo({
       user,
       action: Action.READ_PROJECT_METADATA,
       resourceId: p._id,
-    })
-  );
+    });
+  });
 };
 
 /**
@@ -242,7 +250,8 @@ export const getUserProjectsDirectory = async (
  */
 export const getUserProjectsDetailed = async (
   user: Express.User,
-  teamId: string | undefined = undefined
+  teamId: string | undefined = undefined,
+  includeArchived = false
 ): Promise<APINotebookList[]> => {
   // Get projects DB
   const projectsDb = localGetProjectsDb();
@@ -264,13 +273,19 @@ export const getUserProjectsDetailed = async (
   const userProjects = allDocs.rows
     .map(r => r.doc)
     .filter(d => d !== undefined && !d._id.startsWith('_'))
-    .filter(p =>
-      userCanDo({
+    .filter(p => {
+      if (
+        !includeArchived &&
+        (p! as APINotebookProjectDocument).archived === true
+      ) {
+        return false;
+      }
+      return userCanDo({
         action: Action.READ_PROJECT_METADATA,
         resourceId: p!._id,
         user,
-      })
-    );
+      });
+    });
 
   // Process all projects in parallel using Promise.all
   const output = await Promise.all(
@@ -291,6 +306,8 @@ export const getUserProjectsDetailed = async (
           metadata: projectMeta,
           ownedByTeamId: project!.ownedByTeamId,
           status: project!.status,
+          archived:
+            (project! as APINotebookProjectDocument).archived === true,
         } satisfies GetNotebookListResponse[number];
       } catch (e) {
         console.error('Error occurred during detailed notebook listing');
@@ -533,11 +550,58 @@ export const changeNotebookStatus = async ({
   // get existing project record
   const project = await getProjectById(projectId);
 
+  if (
+    status === ProjectStatus.OPEN &&
+    ((project as APINotebookProjectDocument).archived === true ||
+      project.status === ProjectStatus.ARCHIVED)
+  ) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot open an archived survey. Restore it from the archive first.'
+    );
+  }
+
   // update status
   const updated = {...project, status};
 
   // write it back
   await putProjectDoc(updated);
+};
+
+/**
+ * Archive (hide from default listings) or unarchive.
+ * Archiving sets {@link ProjectStatus.ARCHIVED}; unarchiving sets closed.
+ */
+export const setNotebookArchived = async ({
+  projectId,
+  archive,
+}: {
+  projectId: string;
+  archive: boolean;
+}) => {
+  const project = await getProjectById(projectId);
+  const updated: APINotebookProjectDocument = {
+    ...project,
+    archived: archive,
+    status: archive
+      ? ProjectStatus.ARCHIVED
+      : ProjectStatus.CLOSED,
+  };
+  await putProjectDoc(updated as ProjectDocument);
+};
+
+/**
+ * Restore an archived survey to closed (non-archived) state.
+ */
+export const restoreNotebookFromArchive = async (
+  projectId: string
+): Promise<void> => {
+  const project = await getProjectById(projectId);
+  const updated: APINotebookProjectDocument = {
+    ...project,
+    archived: false,
+    status: ProjectStatus.CLOSED,
+  };
+  await putProjectDoc(updated as ProjectDocument);
 };
 
 /**
