@@ -33,4 +33,11 @@ export interface FieldInfo<T extends FullFieldProps = FullFieldProps> {
 
   // progress checking - defaults to using basic non-empty/null check
   isCompleteFunction?: (formData: FormDataEntry) => boolean;
+
+  /**
+   * When set, used when expanding Mustache templates (templated string fields)
+   * to turn the field's stored value into a display string. Otherwise values
+   * are passed through to Mustache as today (objects may stringify poorly).
+   */
+  templateFunction?: (value: unknown) => string;
 }
