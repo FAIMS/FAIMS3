@@ -50,6 +50,7 @@ import {
   removeProjectRole,
   Role,
   slugify,
+  isPeopleUserAccountDisabled,
   userHasProjectRole,
 } from '@faims3/data-model';
 import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
@@ -98,6 +99,7 @@ import {
 import {stripProjectRolesForProjectId} from '../couchdb/users';
 import {getTemplate} from '../couchdb/templates';
 import {
+  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUserInfoForProject,
   getUsers,
@@ -901,7 +903,7 @@ api.get(
   }),
   processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookUsersResponse>) => {
-    const users = await getUsers();
+    const users = filterPeopleUsersForList(await getUsers(), false);
     const allRoles = getRolesForNotebook().map(r => r.role);
     res.json({
       roles: allRoles,
@@ -966,6 +968,12 @@ api.post(
     if (!user) {
       throw new Exceptions.ItemNotFoundException(
         'The username provided cannot be found in the user database.'
+      );
+    }
+
+    if (addRole && isPeopleUserAccountDisabled(user)) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot assign project roles to a disabled user account.'
       );
     }
 

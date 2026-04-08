@@ -10,6 +10,7 @@ import {
   AUTH_RECORD_ID_PREFIXES,
   ExistingPeopleDBDocument,
   GetRefreshTokenIndex,
+  isPeopleUserAccountDisabled,
   RefreshRecordExistingDocument,
   RefreshRecordFields,
   safeWriteDocument,
@@ -171,6 +172,13 @@ export const consumeExchangeTokenForRefreshToken = async ({
       };
     }
 
+    if (isPeopleUserAccountDisabled(user)) {
+      return {
+        valid: false,
+        validationError: 'User account is disabled.',
+      };
+    }
+
     // consume the exchange token
     tokenDoc.exchangeTokenUsed = true;
     await getAuthDB().put(tokenDoc);
@@ -239,6 +247,13 @@ export const validateRefreshToken = async (
         valid: false,
         validationError:
           'While token appears valid, could not find associated user.',
+      };
+    }
+
+    if (isPeopleUserAccountDisabled(user)) {
+      return {
+        valid: false,
+        validationError: 'User account is disabled.',
       };
     }
 

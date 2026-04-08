@@ -185,6 +185,10 @@ export enum Action {
   RESET_USER_PASSWORD = 'RESET_USER_PASSWORD',
   // Delete a user
   DELETE_USER = 'DELETE_USER',
+  // Disable a user account (soft-off; preserves history)
+  DISABLE_USER_ACCOUNT = 'DISABLE_USER_ACCOUNT',
+  // Re-enable a previously disabled user account
+  ENABLE_USER_ACCOUNT = 'ENABLE_USER_ACCOUNT',
 
   // ============================================================
   // LONG LIVED TOKEN ACTIONS
@@ -734,6 +738,19 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.USER,
   },
+  [Action.DISABLE_USER_ACCOUNT]: {
+    name: 'Disable user account',
+    description:
+      'Disable a user account so they cannot authenticate; data and history are kept',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
+  [Action.ENABLE_USER_ACCOUNT]: {
+    name: 'Enable user account',
+    description: 'Re-enable a previously disabled user account',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
 
   // ============================================================
   // GLOBAL ACTIONS
@@ -1146,6 +1163,8 @@ export const roleActions: Record<
       Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
       Action.RESET_USER_PASSWORD,
       Action.DELETE_USER,
+      Action.DISABLE_USER_ACCOUNT,
+      Action.ENABLE_USER_ACCOUNT,
 
       // Irreversible survey destruction (not granted to project admins)
       Action.DELETE_PROJECT,

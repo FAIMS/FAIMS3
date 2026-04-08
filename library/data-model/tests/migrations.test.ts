@@ -13,6 +13,7 @@ import {
   PeopleV2Document,
   PeopleV3Document,
   PeopleV4Document,
+  PeopleV5Document,
   ProjectStatus,
   ProjectStatusV2,
   ProjectV1Fields,
@@ -1632,6 +1633,44 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+const PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'peopleV4toV5Migration - adds disabled false',
+    dbType: DatabaseType.PEOPLE,
+    from: 4,
+    to: 5,
+    inputDoc: {
+      _id: 'user_v4',
+      _rev: '1-abc',
+      user_id: 'user_v4',
+      name: 'Test User',
+      emails: [{email: 't@example.com', verified: true}],
+      profiles: {},
+      projectRoles: [],
+      teamRoles: [],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER],
+    } satisfies PeopleV4Document,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'user_v4',
+        _rev: '1-abc',
+        user_id: 'user_v4',
+        name: 'Test User',
+        emails: [{email: 't@example.com', verified: true}],
+        profiles: {},
+        projectRoles: [],
+        teamRoles: [],
+        templateRoles: [],
+        globalRoles: [Role.GENERAL_USER],
+        disabled: false,
+      } satisfies PeopleV5Document,
+    },
+    equalityFunction: areDocsEqual,
+  },
+];
+
 // Test cases for authV2toV3Migration
 const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // Test case 1: Refresh token should remain unchanged
@@ -1834,6 +1873,7 @@ MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**

@@ -10,6 +10,7 @@ import {ColumnDef} from '@tanstack/react-table';
 import {KeyRound} from 'lucide-react';
 import {toast} from 'sonner';
 import {DataTableColumnHeader} from '../data-table/column-header';
+import {DisableUserDialog} from '../dialogs/disable-user';
 import {RemoveUserDialog} from '../dialogs/remove-user';
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {Button} from '../ui/button';
@@ -154,6 +155,17 @@ export const useUsersColumns = ({
       },
       header: () => (
         <div className="flex justify-center items-center">Reset Password</div>
+      ),
+    },
+    {
+      id: 'disable',
+      cell: ({row: {original}}) => (
+        <div className="flex justify-center items-center -my-2">
+          <DisableUserDialog rowUser={original} />
+        </div>
+      ),
+      header: () => (
+        <div className="flex justify-center items-center">Disable</div>
       ),
     },
     {

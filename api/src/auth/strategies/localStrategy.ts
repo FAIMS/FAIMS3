@@ -21,7 +21,7 @@
 import {pbkdf2Sync} from 'crypto';
 import {Strategy, VerifyFunction} from 'passport-local';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {PeopleDBDocument} from '@faims3/data-model';
+import {isPeopleUserAccountDisabled, PeopleDBDocument} from '@faims3/data-model';
 import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 
 /**
@@ -68,6 +68,13 @@ export const verifyUserCredentials = async ({
 
   // Handle case where user doesn't exist
   if (!dbUser) {
+    return {
+      success: false,
+      error: ambiguousErrorMessage,
+    };
+  }
+
+  if (isPeopleUserAccountDisabled(dbUser)) {
     return {
       success: false,
       error: ambiguousErrorMessage,
