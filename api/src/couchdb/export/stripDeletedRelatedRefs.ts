@@ -1,14 +1,19 @@
 import {
+  DataDbType,
   DatabaseInterface,
   DataDocument,
   DataEngine,
   FieldSummary,
-  ProjectDataObject,
   ProjectUIModel,
   relatedRecordFieldAvpValueSchema,
   relatedRecordSelectorComponentParamsSchema,
   UISpecification,
 } from '@faims3/data-model';
+
+/** Couch data DB as returned by {@link getDataDb} or test fakes typed as {@link DataDocument}. */
+export type StripRelatedRefsDataDb =
+  | DataDbType
+  | DatabaseInterface<DataDocument>;
 
 const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
 
@@ -28,11 +33,11 @@ export async function stripDeletedRelatedRefsFromRecordData({
 }: {
   fields: FieldSummary[];
   data: Record<string, unknown>;
-  dataDb: DatabaseInterface<DataDocument>;
+  dataDb: StripRelatedRefsDataDb;
   uiSpecification: ProjectUIModel;
 }): Promise<void> {
   const engine = new DataEngine({
-    dataDb,
+    dataDb: dataDb as DatabaseInterface<DataDocument>,
     uiSpec: uiSpecification as UISpecification,
   });
 
@@ -104,7 +109,7 @@ export async function buildExportReadyDataCopy({
   viewsetId: string;
   data: Record<string, unknown>;
   viewFieldsMap: Record<string, FieldSummary[]>;
-  dataDb: DatabaseInterface<ProjectDataObject>;
+  dataDb: StripRelatedRefsDataDb;
   uiSpecification: ProjectUIModel;
 }): Promise<Record<string, unknown>> {
   const copy: Record<string, unknown> = {...data};
@@ -113,7 +118,7 @@ export async function buildExportReadyDataCopy({
     await stripDeletedRelatedRefsFromRecordData({
       fields,
       data: copy,
-      dataDb: dataDb as DatabaseInterface<DataDocument>,
+      dataDb,
       uiSpecification,
     });
   }

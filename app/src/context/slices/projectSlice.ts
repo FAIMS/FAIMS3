@@ -1,5 +1,4 @@
 import {
-  APINotebookProjectDocument,
   couchInitialiser,
   initDataDB,
   ProjectDataObject,
@@ -98,10 +97,7 @@ function clearAbsentDirectoryRetry(serverId: string) {
   }
 }
 
-function projectDocIsArchivedOnServer(doc: APINotebookProjectDocument): boolean {
-  if (doc.archived === true) {
-    return true;
-  }
+function projectDocIsArchivedOnServer(doc: ProjectDocument): boolean {
   const s = doc.status as ProjectStatus | string;
   return s === ProjectStatus.ARCHIVED || s === 'ARCHIVED';
 }
@@ -111,7 +107,7 @@ function projectDocIsArchivedOnServer(doc: APINotebookProjectDocument): boolean 
  * missing from the listing, or present with archived lifecycle.
  */
 function shouldAccumulateRemoteCleanupStreak(
-  directoryEntry: APINotebookProjectDocument | undefined
+  directoryEntry: ProjectDocument | undefined
 ): boolean {
   if (directoryEntry === undefined) {
     return true;
@@ -1754,7 +1750,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
       );
     }
 
-    const directoryResults = (await response.json()) as APINotebookProjectDocument[];
+    const directoryResults = (await response.json()) as ProjectDocument[];
 
     // Fetch all project metadata in parallel
     const metadataResults = await Promise.allSettled(

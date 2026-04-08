@@ -27,7 +27,6 @@ PouchDB.plugin(SecurityPlugin);
 import {
   Action,
   APINotebookList,
-  APINotebookProjectDocument,
   CouchProjectUIModel,
   DatabaseInterface,
   decodeUiSpec,
@@ -229,10 +228,7 @@ export const getUserProjectsDirectory = async (
   includeArchived = false
 ): Promise<ProjectDocument[]> => {
   return (await getAllProjectsDirectory()).filter(p => {
-    if (
-      !includeArchived &&
-      (p as APINotebookProjectDocument).archived === true
-    ) {
+    if (!includeArchived && p.status === ProjectStatus.ARCHIVED) {
       return false;
     }
     return userCanDo({
@@ -274,10 +270,7 @@ export const getUserProjectsDetailed = async (
     .map(r => r.doc)
     .filter(d => d !== undefined && !d._id.startsWith('_'))
     .filter(p => {
-      if (
-        !includeArchived &&
-        (p! as APINotebookProjectDocument).archived === true
-      ) {
+      if (!includeArchived && p!.status === ProjectStatus.ARCHIVED) {
         return false;
       }
       return userCanDo({
@@ -306,8 +299,6 @@ export const getUserProjectsDetailed = async (
           metadata: projectMeta,
           ownedByTeamId: project!.ownedByTeamId,
           status: project!.status,
-          archived:
-            (project! as APINotebookProjectDocument).archived === true,
         } satisfies GetNotebookListResponse[number];
       } catch (e) {
         console.error('Error occurred during detailed notebook listing');
@@ -550,11 +541,7 @@ export const changeNotebookStatus = async ({
   // get existing project record
   const project = await getProjectById(projectId);
 
-  if (
-    status === ProjectStatus.OPEN &&
-    ((project as APINotebookProjectDocument).archived === true ||
-      project.status === ProjectStatus.ARCHIVED)
-  ) {
+  if (status === ProjectStatus.OPEN && project.status === ProjectStatus.ARCHIVED) {
     throw new Exceptions.InvalidRequestException(
       'Cannot open an archived survey. Restore it from the archive first.'
     );
@@ -579,14 +566,11 @@ export const setNotebookArchived = async ({
   archive: boolean;
 }) => {
   const project = await getProjectById(projectId);
-  const updated: APINotebookProjectDocument = {
+  const updated: ProjectDocument = {
     ...project,
-    archived: archive,
-    status: archive
-      ? ProjectStatus.ARCHIVED
-      : ProjectStatus.CLOSED,
+    status: archive ? ProjectStatus.ARCHIVED : ProjectStatus.CLOSED,
   };
-  await putProjectDoc(updated as ProjectDocument);
+  await putProjectDoc(updated);
 };
 
 /**
@@ -596,12 +580,11 @@ export const restoreNotebookFromArchive = async (
   projectId: string
 ): Promise<void> => {
   const project = await getProjectById(projectId);
-  const updated: APINotebookProjectDocument = {
+  const updated: ProjectDocument = {
     ...project,
-    archived: false,
     status: ProjectStatus.CLOSED,
   };
-  await putProjectDoc(updated as ProjectDocument);
+  await putProjectDoc(updated);
 };
 
 /**
