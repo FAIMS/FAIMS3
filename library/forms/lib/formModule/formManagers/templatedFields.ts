@@ -5,6 +5,7 @@ import {
   ValuesObject,
 } from '@faims3/data-model';
 import Mustache from 'mustache';
+import {getFieldInfo} from '../../fieldRegistry/registry';
 import {formDataExtractor} from '../../utils';
 import {FaimsForm} from '../types';
 import {logWarn} from '../../logging';
@@ -176,6 +177,45 @@ function contextToTemplate(context: RecordContext): ValuesObject {
 }
 
 /**
+ * If the field is registered with a templateFunction, run it to produce the
+ * string Mustache sees; otherwise return the raw value (existing behaviour).
+ */
+function valueForTemplateExpansion({
+  fieldName,
+  value,
+  uiSpecification,
+}: {
+  fieldName: string;
+  value: unknown;
+  uiSpecification: UISpecification;
+}): unknown {
+  const fieldDetails = uiSpecification.fields[fieldName];
+  if (!fieldDetails) {
+    return value;
+  }
+  const namespace = fieldDetails['component-namespace'];
+  const componentName = fieldDetails['component-name'];
+  if (typeof namespace !== 'string' || typeof componentName !== 'string') {
+    return value;
+  }
+  const {fieldInfo} = getFieldInfo({namespace, name: componentName});
+  const fn = fieldInfo.templateFunction;
+  if (!fn) {
+    return value;
+  }
+  try {
+    const out = fn(value);
+    return typeof out === 'string' ? out : '';
+  } catch (e) {
+    logWarn(
+      `templateFunction failed for field "${fieldName}" (${namespace}::${componentName}):`,
+      e
+    );
+    return '';
+  }
+}
+
+/**
  * Renders a mustache template into a string
  * @param template The template string
  * @param values The form values to use in replacmeent
@@ -187,11 +227,13 @@ function renderTemplate({
   values,
   context,
   excludedFields,
+  uiSpecification,
 }: {
   template: string;
   values: ValuesObject;
   context: RecordContext;
   excludedFields: string[];
+  uiSpecification: UISpecification;
 }): string {
   // generate context vars from record context
   const contextVars = contextToTemplate(context);
@@ -199,7 +241,15 @@ function renderTemplate({
   for (const [k, v] of Object.entries({...values, ...contextVars})) {
     if (!excludedFields.includes(k)) {
       // Filter out any excluded fields
-      filteredValues[k] = v;
+      const isInjectedContextKey =
+        k === CREATOR_NAME_ID || k === CREATED_TIME_ID;
+      filteredValues[k] = isInjectedContextKey
+        ? v
+        : valueForTemplateExpansion({
+            fieldName: k,
+            value: v,
+            uiSpecification,
+          });
     }
   }
 
@@ -275,6 +325,7 @@ export function recomputeDerivedFields({
       template,
       values,
       excludedFields: filterFields,
+      uiSpecification,
     });
     // Update the value if it's changed
     const previousFieldValue = values[fieldName];

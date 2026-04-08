@@ -1,6 +1,6 @@
 {
   "name": "@faims3/web",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -58,7 +58,7 @@
     "esbuild": "^0.25.0",
     "jwt-decode": "^4.0.0",
     "lexical": "^0.12.4",
-    "lodash": "^4.17.23",
+    "lodash": "^4.18.1",
     "lucide-react": "^0.468.0",
     "mdi-material-ui": "^7.7.0",
     "mustache": "^4.2.0",
@@ -98,7 +98,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.9.2",
-    "vite": "^7.1.11",
+    "vite": "^7.3.2",
     "vitest": "^3.2.4",
     "webdriverio": "^9.12.2"
   },

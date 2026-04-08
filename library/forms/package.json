@@ -1,6 +1,6 @@
 {
   "name": "@faims3/forms",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "private": true,
   "files": [
     "dist"
@@ -44,7 +44,7 @@
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
     "dompurify": "^3.2.4",
-    "lodash": "^4.17.23",
+    "lodash": "^4.18.1",
     "markdown-it": "^14.1.1",
     "mustache": "^4.2.0",
     "proj4": "^2.9.0",
@@ -69,7 +69,7 @@
     "ol": "^10.3.1",
     "ol-mapbox-style": "^12.5.0",
     "typescript": "^5.9.2",
-    "vite": "^7.1.7",
+    "vite": "^7.3.2",
     "vitest": "^4.0.6"
   },
   "peerDependencies": {

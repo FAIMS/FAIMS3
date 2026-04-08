@@ -131,7 +131,7 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
       'Service Provider entity ID - identifies your application to the IdP'
     ),
   // Callback configuration (at least one needed)
-  callbackUrl: z
+  callbackURL: z
     .string()
     .optional()
     .describe(
@@ -141,7 +141,7 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .string()
     .optional()
     .default('/saml/callback')
-    .describe('Callback path if callbackUrl not specified'),
+    .describe('Callback path if callbackURL not specified'),
   // If you want the metadata document signed using your PK
   signMetadata: z.boolean().optional().default(false),
   // IdP certificate for verifying signatures (can also be in secrets)
@@ -203,17 +203,29 @@ const SAMLAuthProviderConfigSchema = BaseAuthProviderConfigSchema.extend({
     .default(28800000)
     .describe('How long request IDs are valid (default 8 hours)'),
   // Logout
-  logoutUrl: z
+  logoutURL: z
     .string()
     .optional()
     .describe('IdP logout URL (defaults to entryPoint)'),
-  logoutCallbackUrl: z.string().optional().describe('SP logout callback URL'),
+  logoutCallbackURL: z.string().optional().describe('SP logout callback URL'),
   // IdP validation
   idpIssuer: z
     .string()
     .optional()
     .describe('Expected IdP issuer for logout validation'),
   audience: z.string().optional().describe('Expected SAML response Audience'),
+  metadataErrorURL: z
+    .string()
+    .optional()
+    .describe(
+      'Optional absolute URL for SPSSODescriptor errorURL in SAML metadata (default: Conductor /auth/{provider}/sso-error)'
+    ),
+  ssoErrorPageTitle: z.string().optional(),
+  ssoErrorPageHeading: z.string().optional(),
+  ssoErrorPageLead: z.string().optional(),
+  ssoErrorPageDetailMarkdown: z.string().optional(),
+  ssoErrorPageReturnURL: z.string().optional(),
+  ssoErrorPageReturnLabel: z.string().optional(),
 });
 
 const AuthProvidersConfigSchema = z
