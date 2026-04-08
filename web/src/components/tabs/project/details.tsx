@@ -85,9 +85,7 @@ const ProjectDetails = ({projectId}: {projectId: string}) => {
           const cellData = isMetadata
             ? data?.metadata[field]
             : field === 'status' && d
-              ? d.status === ProjectStatus.ARCHIVED || d.archived === true
-                ? ProjectStatus.ARCHIVED
-                : d.status
+              ? d.status
               : field === 'name'
                 ? d?.name
                 : field === 'ownedByTeamId'

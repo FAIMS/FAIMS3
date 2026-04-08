@@ -99,7 +99,7 @@ const ProjectActions = (): JSX.Element => {
     }).length > 0;
 
   const isArchived =
-    data?.status === ProjectStatus.ARCHIVED || data?.archived === true;
+    data?.status === ProjectStatus.ARCHIVED;
   const surveyIsClosed = data?.status === ProjectStatus.CLOSED;
 
   const canChangeArchive = useIsAuthorisedTo({

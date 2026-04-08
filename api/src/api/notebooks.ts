@@ -20,12 +20,9 @@
 
 import {
   Action,
-  APINotebookProjectDocument,
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
-  DatabaseInterface,
-  DataDocument,
   EncodedProjectUIModel,
   GetExportNotebookResponse,
   getIdsByFieldName,
@@ -46,7 +43,6 @@ import {
   PostRecordStatusResponse,
   projectRoleToAction,
   ProjectUIModel,
-  RecordMetadata,
   PutChangeNotebookStatusInputSchema,
   PutChangeNotebookTeamInputSchema,
   PutUpdateNotebookInputSchema,
@@ -522,7 +518,6 @@ api.get(
     const uiSpec = await getEncodedNotebookUISpec(projectId);
 
     if (metadata && uiSpec) {
-      const doc = project as APINotebookProjectDocument;
       res.json({
         // include name
         name: project.name,
@@ -532,7 +527,6 @@ api.get(
         'ui-specification': uiSpec as unknown as Record<string, unknown>,
         ownedByTeamId: project.ownedByTeamId,
         status: project.status,
-        archived: doc.archived === true,
         recordCount: await countRecordsInNotebook(projectId),
       } satisfies GetNotebookResponse);
     } else {
@@ -735,14 +729,14 @@ api.get(
               uiSpecification,
               viewID: record.type,
             });
-            const dataCopy = {...record.data} as Record<string, unknown>;
+            const dataCopy = {...record.data};
             await stripDeletedRelatedRefsFromRecordData({
               fields,
               data: dataCopy,
-              dataDb: dataDb as DatabaseInterface<DataDocument>,
+              dataDb,
               uiSpecification,
             });
-            record.data = dataCopy as RecordMetadata['data'];
+            record.data = dataCopy;
           } catch (e) {
             console.error(
               'Failed to strip deleted related record refs for export',

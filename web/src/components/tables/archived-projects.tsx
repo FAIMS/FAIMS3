@@ -150,7 +150,7 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
       row: {original: ArchivedProjectRow};
     }) => (
       <span className="capitalize">
-        {original.status === ProjectStatus.ARCHIVED || original.archived === true
+        {original.status === ProjectStatus.ARCHIVED
           ? 'archived'
           : original.status}
       </span>

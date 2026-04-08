@@ -60,8 +60,7 @@ function RouteComponent() {
   const archivedSurveys = useMemo(
     () =>
       (projectsData ?? []).filter(
-        p =>
-          p.status === ProjectStatus.ARCHIVED || p.archived === true
+        p => p.status === ProjectStatus.ARCHIVED
       ),
     [projectsData]
   );
