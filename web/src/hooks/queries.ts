@@ -2,6 +2,7 @@ import {buildRegisterUrl} from '@/constants';
 import {User} from '@/context/auth-provider';
 import type {
   GetCurrentUserResponse,
+  GetListAllUsersResponse,
   GetLongLivedTokensResponse,
   GetNotebookListResponse,
   GetTemplateByIdResponse,
@@ -297,6 +298,7 @@ export const useGetTemplates = ({
 
 /**
  * useGetUsers hook returns a query for fetching users.
+ * Disabled accounts are omitted unless `includeArchived` is true (matches API `includeArchived` query param).
  *
  * @param {User} user - The user object.
  * @returns {Query} A query for fetching users.
@@ -304,13 +306,18 @@ export const useGetTemplates = ({
 export const useGetUsers = ({
   user,
   enabled = true,
+  includeArchived = false,
 }: {
   user: User | null;
   enabled?: boolean;
+  includeArchived?: boolean;
 }) =>
   useQuery({
-    queryKey: ['users'],
-    queryFn: () => get<PeopleDBDocument[]>('/api/users', user),
+    queryKey: ['users', includeArchived],
+    queryFn: () => {
+      const qs = includeArchived ? '?includeArchived=true' : '';
+      return get<GetListAllUsersResponse>(`/api/users${qs}`, user);
+    },
     enabled: !!user && enabled,
   });
 

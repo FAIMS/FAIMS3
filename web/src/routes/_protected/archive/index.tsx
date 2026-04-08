@@ -4,12 +4,13 @@ import {
   parseArchiveTab,
 } from '@/archive/archive-tabs';
 import {DataTable} from '@/components/data-table/data-table';
+import {archivedDisabledUserColumns} from '@/components/tables/archived-disabled-users';
 import {archivedTemplateColumns} from '@/components/tables/archived-templates';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {archivedProjectColumns} from '@/components/tables/archived-projects';
-import {useGetProjects, useGetTemplates} from '@/hooks/queries';
+import {useGetProjects, useGetTemplates, useGetUsers} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {createFileRoute, useNavigate} from '@tanstack/react-router';
 import {ProjectStatus} from '@faims3/data-model';
@@ -56,6 +57,21 @@ function RouteComponent() {
     includeArchived: true,
     enabled: !!user,
   });
+
+  const {
+    isPending: disabledUsersLoading,
+    data: allUsersForArchive,
+  } = useGetUsers({
+    user,
+    includeArchived: true,
+    enabled: !!user,
+  });
+
+  const disabledUsers = useMemo(
+    () =>
+      (allUsersForArchive ?? []).filter(u => u.disabled === true),
+    [allUsersForArchive]
+  );
 
   const archivedSurveys = useMemo(
     () =>
@@ -117,10 +133,17 @@ function RouteComponent() {
         </TabsContent>
 
         <TabsContent value="users" className="mt-4">
-          <PlaceholderArchivePanel
-            title="Archived users"
-            description="User archive listing will appear here. Restored users may need to be re-invited."
-          />
+          <div className="rounded-md border bg-card p-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              Disabled accounts cannot sign in; survey and record history is
+              unchanged. Use Re-enable to restore access.
+            </p>
+            <DataTable
+              columns={archivedDisabledUserColumns}
+              data={disabledUsers}
+              loading={disabledUsersLoading}
+            />
+          </div>
         </TabsContent>
 
         <TabsContent value="teams" className="mt-4">
@@ -148,3 +171,4 @@ function PlaceholderArchivePanel({
     </div>
   );
 }
+

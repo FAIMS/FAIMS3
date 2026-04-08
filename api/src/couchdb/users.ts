@@ -22,6 +22,7 @@ import {
   addGlobalRole,
   CouchDBUsername,
   ExistingPeopleDBDocument,
+  isPeopleUserAccountDisabled,
   NotebookAuthSummary,
   PeopleDBDocument,
   PeopleDBFields,
@@ -65,8 +66,22 @@ export const generateInitialUser = ({
     // Profiles are injected later
     profiles: {},
     teamRoles: [],
+    disabled: false,
   };
 };
+
+/**
+ * @param includeArchived When true, returns all people; when false, omits disabled accounts.
+ */
+export function filterPeopleUsersForList(
+  users: ExistingPeopleDBDocument[],
+  includeArchived: boolean
+): ExistingPeopleDBDocument[] {
+  if (includeArchived) {
+    return users;
+  }
+  return users.filter(u => !isPeopleUserAccountDisabled(u));
+}
 
 /**
  * Registers the admin user into the people DB
@@ -382,7 +397,7 @@ export async function getUserInfoForProject({
   const roles = roleDetails.map(r => r.role);
 
   // TODO filter this better?
-  const allUsers = await getUsers();
+  const allUsers = filterPeopleUsersForList(await getUsers(), false);
 
   const userList: NotebookAuthSummary = {
     // What roles does the notebook have

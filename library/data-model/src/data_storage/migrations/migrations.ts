@@ -18,6 +18,7 @@ import {
   PeopleV2Document,
   PeopleV3Document,
   PeopleV4Document,
+  PeopleV5Document,
 } from '../peopleDB';
 import {
   ProjectStatus,
@@ -144,6 +145,21 @@ export const peopleV3toV4Migration: MigrationFunc = doc => {
   const outputDoc: PeopleV4Document = {
     ...inputDoc,
     emails: inputDoc.emails.map(email => ({email, verified: false})),
+  };
+
+  return {action: 'update', updatedRecord: outputDoc};
+};
+
+/**
+ * Adds `disabled` for account soft-off; existing users default to active.
+ */
+export const peopleV4toV5Migration: MigrationFunc = doc => {
+  const inputDoc = doc as unknown as PeopleV4Document;
+
+  const outputDoc: PeopleV5Document = {
+    ...inputDoc,
+    // All pre-v5 accounts are active; disabling is applied only via the API after migration.
+    disabled: false,
   };
 
   return {action: 'update', updatedRecord: outputDoc};
@@ -486,8 +502,8 @@ export const DB_TARGET_VERSIONS: DBTargetVersions = {
   // invites v3
   [DatabaseType.INVITES]: {defaultVersion: 1, targetVersion: 4},
   [DatabaseType.METADATA]: {defaultVersion: 1, targetVersion: 1},
-  // people v3
-  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 4},
+  // people v5 (disabled flag)
+  [DatabaseType.PEOPLE]: {defaultVersion: 1, targetVersion: 5},
   // projects v3 (ARCHIVED status; v2→v3 model tracking migration)
   [DatabaseType.PROJECTS]: {defaultVersion: 1, targetVersion: 3},
   [DatabaseType.TEMPLATES]: {defaultVersion: 1, targetVersion: 3},
@@ -516,6 +532,14 @@ export const DB_MIGRATIONS: MigrationDetails[] = [
     description:
       'Adds email verification field for emails - defaulting to false',
     migrationFunction: peopleV3toV4Migration,
+  },
+  {
+    dbType: DatabaseType.PEOPLE,
+    from: 4,
+    to: 5,
+    description:
+      'Adds optional disabled flag for user accounts (defaults existing to active)',
+    migrationFunction: peopleV4toV5Migration,
   },
   {
     dbType: DatabaseType.INVITES,

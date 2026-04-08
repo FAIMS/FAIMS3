@@ -107,6 +107,7 @@ export const GetListAllUsersResponseSchema = z.array(
     name: true,
     user_id: true,
     profiles: true,
+    disabled: true,
   })
     // configure to strip not fail for extra fields
     .strip()
