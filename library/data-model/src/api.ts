@@ -6,7 +6,11 @@ import {
   hydratedRevisionDocumentSchema,
   newFormRecordSchema,
 } from './databaseEngine';
-import {PeopleDBDocumentSchema, ProjectStatus} from './data_storage';
+import {
+  PeopleDBDocumentSchema,
+  ProjectDocument,
+  ProjectStatus,
+} from './data_storage';
 import {
   ExistingTemplateDocumentSchema,
   TemplateDBFieldsSchema,
@@ -231,6 +235,13 @@ export type PostExchangeTokenResponse = z.infer<
 // TODO make this better, currently there is no real explanation for this
 // structure
 
+/** Optional lifecycle fields on project payloads in HTTP/directory (not on {@link ProjectDocument}). */
+export const APINotebookProjectLifecycleFieldsSchema = z.object({
+  archived: z.boolean().optional(),
+});
+export type APINotebookProjectDocument = ProjectDocument &
+  z.infer<typeof APINotebookProjectLifecycleFieldsSchema>;
+
 // This is returned from the list project endpoints
 export const APINotebookListSchema = z.object({
   name: z.string(),
@@ -242,6 +253,7 @@ export const APINotebookListSchema = z.object({
   metadata: z.record(z.unknown()).optional().nullable(),
   ownedByTeamId: z.string().min(1).optional(),
   status: z.nativeEnum(ProjectStatus),
+  archived: z.boolean().optional(),
 });
 export type APINotebookList = z.infer<typeof APINotebookListSchema>;
 
@@ -252,6 +264,8 @@ export const APINotebookGetSchema = z.object({
   'ui-specification': z.record(z.unknown()),
   ownedByTeamId: z.string().min(1).optional(),
   status: z.nativeEnum(ProjectStatus),
+  /** Mirrors projects DB; use with status for legacy rows (e.g. closed + archived flag). */
+  archived: z.boolean().optional(),
   // Name of the notebook!
   name: z.string(),
   // optional count of number of records
@@ -324,6 +338,14 @@ export const PutChangeNotebookTeamInputSchema = z.object({
 
 export type PutChangeNotebookTeamInput = z.infer<
   typeof PutChangeNotebookTeamInputSchema
+>;
+
+/** Body for POST /api/notebooks/:id/delete — must match project name exactly. */
+export const PostDestroyNotebookInputSchema = z.object({
+  confirmName: z.string().min(1),
+});
+export type PostDestroyNotebookInput = z.infer<
+  typeof PostDestroyNotebookInputSchema
 >;
 
 // POST create new notebook from template response

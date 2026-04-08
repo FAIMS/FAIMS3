@@ -33,6 +33,7 @@ import {PropertyMap} from '../state/initial';
 import {MdxEditor} from './mdx-editor';
 import {MDXEditorMethods} from '@mdxeditor/editor';
 
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {VITE_TEMPLATE_PROTECTIONS} from '../buildconfig';
 import {propertyUpdated} from '../state/metadata-reducer';
 
@@ -119,8 +120,8 @@ export const InfoPanel = () => {
           sx={{mt: 1}}
           data-testid="derived-from-info"
         >
-          This notebook is derived from <i>{derivedFrom}</i>. Some fields may be
-          protected.
+          This {NOTEBOOK_NAME} is derived from <i>{derivedFrom}</i>. Some fields
+          may be protected.
         </Typography>
       )}
 
@@ -215,7 +216,7 @@ export const InfoPanel = () => {
                 <Grid item xs={12} sm={10}>
                   <DebouncedTextField
                     fullWidth
-                    label="Notebook Version"
+                    label={`${NOTEBOOK_NAME_CAPITALIZED} version`}
                     name="notebook_version"
                     value={metadata.notebook_version}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -223,8 +224,8 @@ export const InfoPanel = () => {
                     }}
                   />
                   <FormHelperText>
-                    Use this field to differentiate between versions of this
-                    notebook; e.g. 1.0, 1.1 and so on.
+                    Use this field to differentiate between versions of this{' '}
+                    {NOTEBOOK_NAME}; e.g. 1.0, 1.1 and so on.
                   </FormHelperText>
                 </Grid>
               </Grid>

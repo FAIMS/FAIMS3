@@ -60,10 +60,16 @@ export enum Action {
   // Change open/closed status
   CHANGE_PROJECT_STATUS = 'CHANGE_PROJECT_STATUS',
 
+  /** Archive a survey or restore from archive (returns to closed). */
+  CHANGE_PROJECT_ARCHIVE_STATUS = 'CHANGE_PROJECT_ARCHIVE_STATUS',
+
   // Change team of a project
   CHANGE_PROJECT_TEAM = 'CHANGE_PROJECT_TEAM',
 
-  // Delete the project
+  /**
+   * Permanently destroy survey data on the server (requires archive first).
+   * Intentionally not granted to project admins — operations staff only.
+   */
   DELETE_PROJECT = 'DELETE_PROJECT',
 
   // Data export
@@ -348,6 +354,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
+  [Action.CHANGE_PROJECT_ARCHIVE_STATUS]: {
+    name: 'Archive or Restore Project',
+    description:
+      'Archive a survey (hide from default lists) or restore an archived survey to closed state',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
   [Action.CHANGE_PROJECT_TEAM]: {
     name: 'Change Project Team',
     description: 'Change the team associated with a project',
@@ -355,8 +368,9 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resource: Resource.PROJECT,
   },
   [Action.DELETE_PROJECT]: {
-    name: 'Delete Project',
-    description: 'Permanently remove a project from the system',
+    name: 'Permanently Destroy Project Data',
+    description:
+      'Irreversibly delete all server-side survey data (requires archive first). Not for routine project admins.',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -1084,7 +1098,7 @@ export const roleActions: Record<
       Action.CREATE_ADMIN_PROJECT_INVITE,
       Action.EDIT_ADMIN_PROJECT_INVITE,
       Action.DELETE_ADMIN_PROJECT_INVITE,
-      Action.DELETE_PROJECT,
+      Action.CHANGE_PROJECT_ARCHIVE_STATUS,
       Action.ADD_ADMIN_TO_PROJECT,
       Action.REMOVE_ADMIN_FROM_PROJECT,
       Action.GENERATE_RANDOM_PROJECT_RECORDS,
@@ -1132,6 +1146,9 @@ export const roleActions: Record<
       Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
       Action.RESET_USER_PASSWORD,
       Action.DELETE_USER,
+
+      // Irreversible survey destruction (not granted to project admins)
+      Action.DELETE_PROJECT,
 
       // System operations
       Action.INITIALISE_SYSTEM_API,

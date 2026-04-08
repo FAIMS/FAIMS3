@@ -231,6 +231,8 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_RECORD_SUMMARY_COUNTS: 'true',
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
+      // Default: do not wipe local survey data when absent from directory (see app buildconfig)
+      VITE_FORCE_REMOTE_DELETION: 'never',
       VITE_TAG: 'CDKDeployment',
 
       // offline maps configuration

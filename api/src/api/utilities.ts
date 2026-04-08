@@ -31,6 +31,7 @@ import {
 import express, {Response} from 'express';
 import multer from 'multer';
 import {processRequest} from 'zod-express-middleware';
+import {z} from 'zod';
 import {
   generateUserToken,
   upgradeCouchUserToExpressUser,
@@ -123,12 +124,18 @@ api.get(
   '/directory/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_PROJECTS}),
+  processRequest({
+    query: z.object({
+      /** When `"true"`, includes surveys with status ARCHIVED. Default excludes them. */
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res) => {
-    // get the directory of notebooks on this server
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const projects = await getUserProjectsDirectory(req.user);
+    const includeArchived = req.query.includeArchived === 'true';
+    const projects = await getUserProjectsDirectory(req.user, includeArchived);
     res.json(projects);
   }
 );

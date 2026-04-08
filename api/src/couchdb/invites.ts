@@ -332,6 +332,21 @@ export async function getInvitesForResource({
 }
 
 /**
+ * Deletes every invite document targeting a project (survey).
+ */
+export async function deleteAllInvitesForProject(
+  projectId: string
+): Promise<void> {
+  const invites = await getInvitesForResource({
+    resourceType: Resource.PROJECT,
+    resourceId: projectId,
+  });
+  for (const invite of invites) {
+    await deleteInvite({invite});
+  }
+}
+
+/**
  * Get all global invites
  *
  * @returns {Promise<ExistingInvitesDBDocument[]>} Array of invite documents

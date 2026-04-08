@@ -502,6 +502,33 @@ function migrateOldDatabases(): boolean {
   );
 }
 
+/**
+ * When the directory lists a survey as archived or the id is absent, the app
+ * may drop that survey from the device after successful directory responses.
+ * - `allow`: stop sync and remote handles, then **destroy** the local Pouch DB
+ *   (IndexedDB) so no survey data remains — security.
+ * - `never` (default): same teardown as manual deactivate (sync off, remote and
+ *   local Pouch **closed** but not destroyed), then remove from the app list so
+ *   on-disk data can be recovered if needed.
+ * Absent ids: the app confirms deletion with several consecutive successful
+ * directory responses (automatic re-polls); archived rows need one response.
+ * Set via VITE_FORCE_REMOTE_DELETION in .env / CDK; default is never.
+ */
+export type ForceRemoteDeletionMode = 'allow' | 'never';
+
+function forceRemoteDeletion(): ForceRemoteDeletionMode {
+  const v = import.meta.env.VITE_FORCE_REMOTE_DELETION as string | undefined;
+  if (v === 'allow') {
+    return 'allow';
+  }
+  if (v !== undefined && v !== '' && v !== 'never') {
+    logError(
+      `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
+    );
+  }
+  return 'never';
+}
+
 // Attachment service configuration
 
 /**
@@ -732,6 +759,7 @@ export const SUPPORT_EMAIL = get_support_email();
 export const PRIVACY_POLICY_URL = get_app_privacy_policy_url();
 export const CONTACT_URL = get_app_contact_url();
 export const MIGRATE_OLD_DATABASES = migrateOldDatabases();
+export const FORCE_REMOTE_DELETION = forceRemoteDeletion();
 export const CAPACITOR_PLATFORM = Capacitor.getPlatform() as
   | 'ios'
   | 'android'

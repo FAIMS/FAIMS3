@@ -1,4 +1,4 @@
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 
 /** Central strings for the archived-template delete dialog — edit here only. */
 export const templateDeleteDialogLabels = {
@@ -59,8 +59,8 @@ export function getTemplateDeleteDialogBody({
     nameLabel,
     introAfter: '. This cannot be undone.',
     bullets: [
-      `${countLabel} still reference this template. Those references will be removed from the survey records.`,
-      'Survey data (records, attachments) is not deleted, but the link to this template will be cleared.',
+      `${countLabel} still reference this template. Those references will be removed from the ${NOTEBOOK_NAME} records.`,
+      `${NOTEBOOK_NAME_CAPITALIZED} data (records, attachments) is not deleted, but the link to this template will be cleared.`,
     ],
     footerNote: 'This action is irreversible.',
   };
