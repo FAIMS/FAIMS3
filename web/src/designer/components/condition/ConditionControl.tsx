@@ -35,7 +35,11 @@ import Autocomplete from '@mui/material/Autocomplete';
 import {useMemo, useState} from 'react';
 import {useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
-import {EMPTY_BOOLEAN_CONDITION, EMPTY_FIELD_CONDITION} from './constants';
+import {
+  allOperators,
+  EMPTY_BOOLEAN_CONDITION,
+  EMPTY_FIELD_CONDITION,
+} from './constants';
 import {
   ConditionProps,
   ConditionType,
@@ -260,14 +264,19 @@ export const FieldConditionControl = (props: ConditionProps) => {
     if (!fieldDef) return false;
     // list our current number/date fields
     // note that dates are stored as strings but we can still do greater/less comparisons on them
-    return ['NumberField', 'DateTimePicker', 'DatePicker', 'MonthPicker', 'DateTimeNow']
-      .includes(fieldDef['component-name']);
+    return [
+      'NumberField',
+      'DateTimePicker',
+      'DatePicker',
+      'MonthPicker',
+      'DateTimeNow',
+    ].includes(fieldDef['component-name']);
   };
 
-
   // Get the allowed operators for a field based on its type and parameters
-  const getAllowedOperatorsForField = (fieldDef: FieldType | null): string[] => {
-
+  const getAllowedOperatorsForField = (
+    fieldDef: FieldType | null
+  ): string[] => {
     return fieldDef
       ? (() => {
           const cName = fieldDef['component-name'];
@@ -278,21 +287,30 @@ export const FieldConditionControl = (props: ConditionProps) => {
               'does-not-contain-any-of',
               'contains-all-of',
               'does-not-contain-all-of',
+              'contains-regex',
+              'does-not-contain-regex',
             ];
           // Checkbox is true/false so only equal makes sense
           if (cName === 'Checkbox') return ['equal'];
           // String valued fields with options, only equality comparisons make sense
           if (isPredefinedOptions(fieldDef)) return ['equal', 'not-equal'];
           // Fields we can compare order for (numbers, dates) get greater/less as well
-          if (isNumberOrDateField(fieldDef)) return ['equal', 'not-equal', 'greater', 'less'];
+          if (isNumberOrDateField(fieldDef))
+            return ['equal', 'not-equal', 'greater', 'less'];
           // otherwise use all string valued operators
-          return ['equal', 'not-equal', 'greater', 'less', 'string-contains', 'regex'];
+          return [
+            'equal',
+            'not-equal',
+            'greater',
+            'less',
+            'string-contains',
+            'string-does-not-contain',
+            'regex',
+          ];
         })()
       : [];
-  }
+  };
 
-
-      
   const updateField = (value: string) => {
     const newFieldDef = allFields[value] ?? null;
 
@@ -601,7 +619,7 @@ export const FieldConditionControl = (props: ConditionProps) => {
           >
             {allowedOperators.map(op => (
               <MenuItem key={op} value={op}>
-                {op}
+                {allOperators.get(op)?.toLowerCase() ?? op}
               </MenuItem>
             ))}
           </Select>
