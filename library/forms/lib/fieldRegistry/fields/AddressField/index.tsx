@@ -27,6 +27,7 @@ import {
 } from '../../../formModule/types';
 import {EmptyResponsePlaceholder} from '../../../rendering/fields/view/wrappers/PrimitiveWrappers';
 import {DataViewFieldRender} from '../../../rendering/types';
+import {logWarn} from '../../../logging';
 import {FieldInfo} from '../../types';
 import FieldWrapper from '../wrappers/FieldWrapper';
 
@@ -586,21 +587,20 @@ const valueSchema = (props: AddressFieldProps) => {
   return AddressValueNullableSchema;
 };
 
+/** Template expansion: parse with AddressValueNullableSchema, then return `display_name`. */
 function addressValueForTemplate(value: unknown): string {
-  if (value == null || typeof value !== 'object') {
+  const parsed = AddressValueNullableSchema.safeParse(value);
+  if (!parsed.success) {
+    logWarn(
+      'AddressField templateFunction: value did not match AddressValueNullableSchema:',
+      parsed.error.format()
+    );
     return '';
   }
-  const v = value as {
-    display_name?: unknown;
-    manuallyEnteredAddress?: unknown;
-  };
-  const display =
-    typeof v.display_name === 'string' ? v.display_name.trim() : '';
-  const manual =
-    typeof v.manuallyEnteredAddress === 'string'
-      ? v.manuallyEnteredAddress.trim()
-      : '';
-  return display || manual || '';
+  if (parsed.data === null) {
+    return '';
+  }
+  return parsed.data.display_name.trim();
 }
 
 export const addressFieldSpec: FieldInfo<AddressFieldFullProps> = {

@@ -78,12 +78,12 @@ describe('recomputeDerivedFields (templateFunction)', () => {
     expect(updates.derived).toBe('At: 123 Main St');
   });
 
-  it('uses manuallyEnteredAddress when display_name is empty', () => {
+  it('uses display_name from schema-valid address value', () => {
     const uiSpecification = makeAddressTemplateSpec();
     const {updates} = recomputeDerivedFields({
       values: {
         addr: {
-          display_name: '',
+          display_name: 'PO Box 1',
           manuallyEnteredAddress: 'PO Box 1',
         },
       },
