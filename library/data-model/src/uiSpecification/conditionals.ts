@@ -128,6 +128,22 @@ registerCompiler('less-equal', (expression: ConditionalExpression) => {
   };
 });
 
+registerCompiler('string-contains', (expression: ConditionalExpression) => {
+  return (values: RecordValues) => {
+    if (expression.field && expression.field in values) {
+      return values[expression.field].includes(expression.value);
+    } else return false;
+  };
+});
+
+registerCompiler('string-does-not-contain', (expression: ConditionalExpression) => {
+  return (values: RecordValues) => {
+    if (expression.field && expression.field in values) {
+      return !values[expression.field].includes(expression.value);
+    } else return false;
+  };
+});
+
 registerCompiler('regex', (expression: ConditionalExpression) => {
   return (values: RecordValues) => {
     if (expression.field && expression.field in values) {
