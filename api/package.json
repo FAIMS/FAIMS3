@@ -46,7 +46,7 @@
     "jose": "^4.15.5",
     "markdown-it": "^14.1.1",
     "morgan": "^1.10.1",
-    "multer": "^2.0.2",
+    "multer": "^2.1.1",
     "node-cache": "^5.1.2",
     "nodemailer": "^7.0.11",
     "nyc": "^15.1.0",
