@@ -99,6 +99,7 @@ The **Operations Administrator** role handles routine system management without 
 - View all system users and their roles
 - Add or remove system roles
 - Create new teams
+- Assign a role for yourself in a team
 - Assign Team Administrator roles
 
 **Cannot do (by design):**
@@ -113,7 +114,7 @@ The **Operations Administrator** role handles routine system management without 
 During onboarding, enterprise users are typically assigned:
 
 - **Content Creator** system role — they can create {{notebooks}} and templates
-- **Team Administrator** of their assigned team — they have full control over their team
+- **Team Administrator** of their assigned team — they have full control over their team (but they can't change their own role in the team)
 
 These roles are granted through invites created by an Operations Administrator or Super User (see "How Users Are Created" below). Once onboarded, a typical user can immediately:
 
