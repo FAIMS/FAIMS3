@@ -1344,14 +1344,14 @@ describe('Team integration with templates and projects', () => {
       })
     ).to.be.false;
 
-    // Check admin permissions
+    // Permanent destroy is not granted to team/project admins (operations only).
     expect(
       userCanDo({
         user: upgradedAdmin,
         action: Action.DELETE_PROJECT,
         resourceId: projectId,
       })
-    ).to.be.true;
+    ).to.be.false;
 
     expect(
       userCanDo({
@@ -1480,14 +1480,14 @@ describe('Team integration with templates and projects', () => {
     // Upgrade user
     const upgradedUser = await upgradeCouchUserToExpressUser({dbUser: user});
 
-    // Test permissions on team 1 resources (should have admin access)
+    // Team admin has project/template admin virtual roles, not DELETE_PROJECT (ops-only).
     expect(
       userCanDo({
         user: upgradedUser,
         action: Action.DELETE_PROJECT,
         resourceId: project1a,
       })
-    ).to.be.true;
+    ).to.be.false;
 
     expect(
       userCanDo({

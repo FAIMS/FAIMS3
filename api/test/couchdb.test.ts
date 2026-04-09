@@ -160,13 +160,14 @@ describe('notebook api', () => {
         })
       ).to.equal(false);
 
+      // Permanent survey destroy is operations-level; PROJECT_ADMIN does not grant it.
       expect(
         userCanDo({
           user: bobalooba,
           resourceId: nb2,
           action: Action.DELETE_PROJECT,
         })
-      ).to.equal(true);
+      ).to.equal(false);
 
       // check role inheritance too
       expect(
@@ -201,7 +202,7 @@ describe('notebook api', () => {
           resourceId: nb2,
           action: Action.DELETE_PROJECT,
         })
-      ).to.equal(true);
+      ).to.equal(false);
     }
   });
 
