@@ -64,7 +64,6 @@ export const {
   viewSetMoved,
   viewSetRenamed,
   formVisibilityUpdated,
-  viewSetPublishButtonBehaviourUpdated,
   viewSetLayoutUpdated,
   viewSetSummaryFieldsUpdated,
   viewSetHridUpdated,

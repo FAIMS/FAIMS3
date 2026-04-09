@@ -274,13 +274,11 @@
     "viewsets": {
       "A": {
         "label": "A",
-        "views": ["A-A", "A-B"],
-        "publishButtonBehaviour": "always"
+        "views": ["A-A", "A-B"]
       },
       "B": {
         "label": "B",
-        "views": ["B-A", "B-B"],
-        "publishButtonBehaviour": "always"
+        "views": ["B-A", "B-B"]
       }
     },
     "visible_types": ["A", "B"]
