@@ -192,7 +192,6 @@ export const TestWrapper: React.FC<{children: React.ReactNode}> = ({
           <Provider store={testStore}>
             <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
           </Provider>
-          ;
         </QueryClientProvider>
       </NotificationContext.Provider>
     </Router>

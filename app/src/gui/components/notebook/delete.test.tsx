@@ -18,10 +18,21 @@
  *   TODO
  */
 
+import {expect, test, vi} from 'vitest';
+
+// Stub permission check so we exercise dialog UX; TestWrapper’s token/setup
+// does not yield canDeleteProjectRecord === true with the real permission code.
+vi.mock('@faims3/data-model', async importOriginal => {
+  const mod = await importOriginal<typeof import('@faims3/data-model')>();
+  return {
+    ...mod,
+    canDeleteProjectRecord: vi.fn(() => true),
+  };
+});
+
 import {TestWrapper} from '../../testUtils';
 import RecordDelete from './delete';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {expect, vi, test} from 'vitest';
 
 const testDeleteData = {
   projectId: 'test-id',

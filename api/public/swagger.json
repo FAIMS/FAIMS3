@@ -93,15 +93,80 @@
         }
       }
     },
+    "/directory/": {
+      "get": {
+        "summary": "List surveys visible to the caller (directory)",
+        "description": "Returns project (survey) documents from the directory that the authenticated user may read metadata for (`LIST_PROJECTS`). By default, surveys with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them.",
+        "tags": ["Utilities"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, includes archived surveys. Default excludes `ARCHIVED`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ProjectDirectoryEntry"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
     "/notebooks/": {
       "get": {
         "summary": "Get a list of notebooks",
-        "description": "Get a list of the notebooks managed by this server",
+        "description": "Returns surveys (projects) the caller can access. Optional `teamId` filters by team. By default, surveys with status `ARCHIVED` are omitted; pass `includeArchived=true` to include archived surveys alongside others.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
           {
             "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, restrict to surveys owned by this team"
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, includes surveys with status `ARCHIVED`. Default excludes them."
           }
         ],
         "responses": {
@@ -236,10 +301,145 @@
         }
       }
     },
+    "/notebooks/{id}/archive": {
+      "put": {
+        "summary": "Archive or un-archive a survey",
+        "description": "Sets survey status to `ARCHIVED` when `archive` is true, or clears archive when false. Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "archive": {
+                    "type": "boolean",
+                    "description": "True to archive the survey; false to un-archive"
+                  }
+                },
+                "required": ["archive"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status updated"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed to change archive status"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/restore": {
+      "post": {
+        "summary": "Restore an archived survey",
+        "description": "Moves an archived survey back to closed (not open). Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Survey restored from archive"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          }
+        }
+      }
+    },
+    "/notebooks/{id}/delete": {
+      "post": {
+        "summary": "Permanently destroy survey server data",
+        "description": "Irreversibly removes CouchDB project databases, invites, and people-db project roles for this survey. The survey must already be archived; requires operations-level permission. Request body must include `confirmName` exactly matching the survey name (trimmed).",
+        "tags": ["Notebooks"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Notebook (project) identifier",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/PostDestroyNotebookInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Survey destroyed"
+          },
+          "400": {
+            "description": "Confirmation name does not match, or survey not in a state that allows deletion"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          }
+        }
+      }
+    },
     "/notebooks/{id}/records": {
       "get": {
         "summary": "List all records (legacy full export shape)",
-        "description": "Returns `{ records }` with full export-oriented payloads for every record in the notebook (internal regex listing). Requires export permission on the project. For paginated, permission-filtered **metadata** only, use GET `/notebooks/{id}/records/metadata` instead. For single-record CRUD, use GET `/notebooks/{id}/records/{recordId}`.",
+        "description": "Returns `{ records }` with full export-oriented payloads for every record in the notebook (internal regex listing). Requires export permission on the project. Related-record fields omit references to soft-deleted records when building the export payload. For paginated, permission-filtered **metadata** only, use GET `/notebooks/{id}/records/metadata` instead. For single-record CRUD, use GET `/notebooks/{id}/records/{recordId}`.",
         "tags": ["Notebooks"],
         "parameters": [
           {
@@ -654,7 +854,7 @@
     "/notebooks/{id}/users": {
       "get": {
         "summary": "Get users for a notebook",
-        "description": "Get a list of users with access to a notebook",
+        "description": "Returns roles and users who may be assigned for this notebook. Disabled user accounts are omitted from the selectable user list.",
         "tags": ["Users"],
         "parameters": [
           {
@@ -688,7 +888,7 @@
       },
       "post": {
         "summary": "Add a user to a notebook",
-        "description": "Add a user to a notebook",
+        "description": "Add or remove a project role for a user (`addrole`). Project roles cannot be assigned to disabled user accounts.",
         "tags": ["Users"],
         "parameters": [
           {
@@ -736,6 +936,9 @@
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed (e.g. assigning a role to a disabled account)"
           }
         }
       }
@@ -743,7 +946,7 @@
     "/notebooks/template": {
       "post": {
         "summary": "Create a new notebook from an existing template",
-        "description": "Creates a new notebook based on an existing template. Requires permission to create notebooks.",
+        "description": "Creates a new notebook based on an existing template. Requires permission to create notebooks. Returns an error if the template is archived (`archived: true`).",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -782,10 +985,126 @@
         }
       }
     },
+    "/users/": {
+      "get": {
+        "summary": "List all user accounts",
+        "description": "Returns people-db user documents (sanitized) for admins with `VIEW_USER_LIST`. Disabled accounts are omitted by default; pass `includeArchived=true` to include users with `disabled: true`.",
+        "tags": ["Users"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, includes disabled user accounts in the list."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetListAllUsersResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/users/{id}/disable": {
+      "post": {
+        "summary": "Disable a user account",
+        "description": "Sets `disabled: true` on the target user. Cannot disable yourself or a cluster admin. Requires `DISABLE_USER_ACCOUNT` on the target user id.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User id or email identifying the account",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account disabled"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed (e.g. self, cluster admin)"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/users/{id}/enable": {
+      "post": {
+        "summary": "Re-enable a user account",
+        "description": "Sets `disabled: false` on the target user. Requires `ENABLE_USER_ACCOUNT` on the target user id.",
+        "tags": ["Users"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "User id or email identifying the account",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account enabled"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
     "/users/{id}/admin": {
       "post": {
         "summary": "Set server admin status for a user",
-        "description": "Set server cluster-admin status for a user. Requires cluster-admin role.",
+        "description": "Set server cluster-admin status for a user. Requires cluster-admin role. Disabled accounts cannot have global roles changed until they are re-enabled.",
         "tags": ["Users"],
         "parameters": [
           {
@@ -845,12 +1164,34 @@
     "/templates/": {
       "get": {
         "summary": "Get a list of templates",
-        "description": "Gets a list of templates from the templates DB.",
+        "description": "Lists templates the caller may see. By default only non-archived templates are returned. Pass `includeArchived=true` to list archived templates (still subject to `READ_TEMPLATE_DETAILS`). Optional `teamId` scopes to a team.",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
           {
             "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "teamId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "When set, only templates associated with this team"
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            },
+            "description": "When `true`, returns archived templates only; when omitted or `false`, returns non-archived templates only."
           }
         ],
         "responses": {
@@ -947,7 +1288,7 @@
       },
       "put": {
         "summary": "Update an existing template",
-        "description": "Updates an existing template. The payload is validated before processing. Requires appropriate permissions.",
+        "description": "Updates an existing template. The payload is validated before processing. Requires `UPDATE_TEMPLATE_DETAILS` on the template resource.",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -994,10 +1335,91 @@
         }
       }
     },
+    "/templates/{id}/survey-references": {
+      "get": {
+        "summary": "Count surveys referencing this template",
+        "description": "Returns how many surveys (projects) still reference this template id. Requires `READ_TEMPLATE_DETAILS` on the template.",
+        "tags": ["Templates"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/GetTemplateSurveyReferencesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/templates/{id}/restore": {
+      "post": {
+        "summary": "Restore an archived template",
+        "description": "Clears the template’s archived flag. Requires `CHANGE_TEMPLATE_STATUS` on the template. Returns the updated template document.",
+        "tags": ["Templates"],
+        "produces": ["application/json"],
+        "security": [
+          {
+            "Auth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Template id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/definitions/PostRestoreTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Not allowed"
+          }
+        }
+      }
+    },
     "/templates/{id}/delete": {
       "post": {
         "summary": "Delete an existing template",
-        "description": "Deletes the latest revision of an existing template. Requires appropriate permissions.",
+        "description": "Deletes the latest revision of an existing template. The template must already be archived. Requires `DELETE_TEMPLATE` on the template.",
         "tags": ["Templates"],
         "parameters": [
           {
@@ -1462,14 +1884,137 @@
     },
     "NotebookMeta": {
       "type": "object",
+      "description": "Notebook list row (see GET /notebooks/). Prefer `project_id` over legacy `id`.",
       "properties": {
         "id": {
+          "type": "string",
+          "description": "Legacy alias; responses use `project_id`"
+        },
+        "project_id": {
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "is_admin": {
+          "type": "boolean",
+          "description": "True when the caller has project admin on this survey"
+        },
+        "status": {
+          "type": "string",
+          "description": "Project lifecycle status (e.g. OPEN, CLOSED, ARCHIVED)"
+        },
+        "template_id": {
+          "type": "string"
+        },
+        "ownedByTeamId": {
+          "type": "string"
+        },
+        "last_updated": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
         }
       }
+    },
+    "PostDestroyNotebookInput": {
+      "type": "object",
+      "properties": {
+        "confirmName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Must match the survey display name exactly (trimmed)"
+        }
+      },
+      "required": ["confirmName"]
+    },
+    "ProjectDirectoryEntry": {
+      "type": "object",
+      "description": "Project (survey) document as stored in the projects database; fields vary by version.",
+      "additionalProperties": true
+    },
+    "PeopleUserListItem": {
+      "type": "object",
+      "description": "Sanitized people-db user row from GET /users/",
+      "properties": {
+        "_id": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "emails": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "globalRoles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "projectRoles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "teamRoles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "templateRoles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "boolean"
+          }
+        },
+        "disabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "GetListAllUsersResponse": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/PeopleUserListItem"
+      }
+    },
+    "GetTemplateSurveyReferencesResponse": {
+      "type": "object",
+      "properties": {
+        "surveyCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of surveys whose directory still references this template id"
+        }
+      },
+      "required": ["surveyCount"]
+    },
+    "PostRestoreTemplateResponse": {
+      "$ref": "#/definitions/TemplateDocument"
     },
     "Notebook": {
       "type": "object",
@@ -1911,6 +2456,10 @@
         "version": {
           "type": "number",
           "default": 1
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "When true, the template is archived and cannot be used to create new surveys until restored"
         }
       }
     },
