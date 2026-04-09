@@ -92,6 +92,7 @@ export const RENDER_NEST_LIMIT = 2;
 const INVALID_REFERENCES_MESSAGE =
   'Invalid references. Contact an administrator.';
 
+/** Result of hydrating one related record: omit deleted rows, else link vs nested preview. */
 type RelatedRecordQueryData =
   | {kind: 'deleted'}
   | {
@@ -388,9 +389,10 @@ const ErrorRecordItem = ({
  * The component:
  * 1. Validates the input value against the expected schema (supports both
  *    singleton and array inputs, normalizing to array format)
- * 2. Fetches and hydrates each related record
- * 3. Determines display behavior based on nesting depth
- * 4. Renders either nested accordions or link cards accordingly
+ * 2. Fetches and hydrates each related record (including quick hydrate to skip
+ *    soft-deleted targets)
+ * 3. Determines display behavior based on nesting depth, cycles, and viewport
+ * 4. Renders nested accordions, compact link rows (mobile or depth/cycle), or omits deleted refs
  *
  * @param props - RenderFunctionComponent props containing value and context
  * @returns JSX for displaying related records or appropriate fallback
@@ -419,7 +421,9 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
   const isDepthLimitReached = trace.length >= RENDER_NEST_LIMIT;
   const isMobile = useMediaQuery(useTheme().breakpoints.down('sm'));
 
-  // Always hydrate so we can omit soft-deleted targets (no link, no nested preview).
+  // Fetch and hydrate related records. We always run the query (no `enabled: false`) so we can
+  // detect soft-deleted targets and omit them, and so mobile still gets HRID and EditButton
+  // even though we do not nest the full form on small screens.
   const relatedRecordQueries = useQueries({
     queries: relatedRecords.map(({record_id}) => ({
       queryKey: [
@@ -435,6 +439,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
       ],
       queryFn: async (): Promise<RelatedRecordQueryData> => {
         const engine = props.renderContext.tools.getDataEngine();
+        // Quick hydrate first: revision + HRID without loading full form data.
         const hQuick = await engine.hydrated.getHydratedRecord({
           recordId: record_id,
           config: {conflictBehaviour: 'pickLast'},
@@ -442,7 +447,9 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
         if (hQuick.revision.deleted) {
           return {kind: 'deleted'};
         }
+        // 2. DECISION LOGIC — if the target appears in our ancestry, it is a cycle.
         const isCycle = ancestorIds.has(record_id);
+        // Depth limit or cycle: show link card only (no nested preview / no infinite loop).
         const forceLinkMode = isDepthLimitReached || isCycle;
         if (forceLinkMode) {
           return {
@@ -451,6 +458,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
             recordId: record_id,
           };
         }
+        // Mobile: compact link row with optional Edit; still uses hydrated HRID from above.
         if (isMobile) {
           return {
             kind: 'link',
@@ -459,6 +467,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
             EditButton: props.renderContext.tools.editRecordButtonComponent,
           };
         }
+        // Desktop: full nested accordion — load complete form data.
         const hydratedRecord = await engine.form.getExistingFormData({
           recordId: record_id,
         });
@@ -474,6 +483,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
               {
                 callType: 'relatedRecord' as const,
                 fieldId,
+                // Pass the CURRENT record ID as the parent for the next trace.
                 recordId: record._id,
                 viewId,
                 viewsetId,
@@ -493,6 +503,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
     return <EmptyState />;
   }
 
+  // While queries are in flight, show the raw list length; once settled, count only non-deleted.
   const allFinished = relatedRecordQueries.every(q => !q.isPending);
   const visibleCount = relatedRecordQueries.filter(
     q => q.isSuccess && q.data && q.data.kind !== 'deleted'
@@ -512,10 +523,14 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
         const recordInfo = relatedRecords[index];
         const key = recordInfo.record_id;
 
+        // 4. RENDER LOGIC — `query.data` tells us link (cycle/depth/mobile) vs nested vs deleted.
+
+        // Handle loading state
         if (query.isPending) {
           return <LoadingRecordItem key={key} recordId={key} />;
         }
 
+        // Handle error state
         if (query.isError) {
           return (
             <ErrorRecordItem key={key} recordId={key} error={query.error} />
@@ -527,6 +542,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
           return null;
         }
 
+        // Link mode: depth/cycle constraint, or mobile compact row with optional Edit button.
         if (data.kind === 'link') {
           return (
             <LinkedRecordItem
@@ -540,6 +556,7 @@ export const RelatedRecordRenderer: DataViewFieldRender = props => {
           );
         }
 
+        // Desktop: full nested accordion view
         return (
           <NestedRecordItem
             key={key}

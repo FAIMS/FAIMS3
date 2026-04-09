@@ -6,7 +6,6 @@ import type {
   GetLongLivedTokensResponse,
   GetNotebookListResponse,
   GetTemplateByIdResponse,
-  PeopleDBDocument,
   PostCreateLongLivedTokenRequest,
   PostCreateLongLivedTokenResponse,
   PostRequestEmailVerificationRequest,
@@ -25,6 +24,7 @@ import {
   GetTeamInvitesResponse,
   GetTeamMembersResponse,
 } from '@faims3/data-model';
+import {getTemplateSurveyReferences} from '@/hooks/template-hooks';
 import {useMutation, useQuery} from '@tanstack/react-query';
 import QRCode from 'qrcode';
 
@@ -160,6 +160,29 @@ export const useGetTemplate = ({
     queryKey: ['templates', templateId],
     queryFn: () =>
       get<GetTemplateByIdResponse>(`/api/templates/${templateId}`, user),
+  });
+
+/**
+ * Survey reference counts for delete-confirmation copy (archived template flow).
+ */
+export const useTemplateSurveyReferences = ({
+  user,
+  templateId,
+  enabled = true,
+}: {
+  user: User | null;
+  templateId: string;
+  enabled?: boolean;
+}) =>
+  useQuery({
+    queryKey: ['templates', templateId, 'survey-references'],
+    queryFn: async () => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      return getTemplateSurveyReferences({user, templateId});
+    },
+    enabled: !!user && !!templateId && enabled,
   });
 
 /**

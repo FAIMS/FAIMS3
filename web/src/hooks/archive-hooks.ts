@@ -1,5 +1,11 @@
 import {useAuth} from '@/context/auth-provider';
 import {
+  postDeleteArchivedNotebook,
+  postRestoreArchivedNotebook,
+  putNotebookArchive,
+} from '@/hooks/project-hooks';
+import {postDeleteArchivedTemplate} from '@/hooks/template-hooks';
+import {
   PostRestoreTemplateResponseSchema,
   type PostRestoreTemplateResponse,
 } from '@faims3/data-model';
@@ -40,6 +46,103 @@ async function postRestoreTemplateRequest({
     throw new Error(message);
   }
   return PostRestoreTemplateResponseSchema.parse(json);
+}
+
+type ArchiveProjectArgs = {
+  projectId: string;
+};
+
+type DeleteArchivedProjectArgs = {
+  projectId: string;
+  confirmName: string;
+};
+
+/**
+ * Permanently deletes an archived notebook via POST /api/notebooks/:id/delete.
+ */
+export function useDeleteArchivedProject() {
+  const queryClient = useQueryClient();
+  const {user} = useAuth();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      confirmName,
+    }: DeleteArchivedProjectArgs) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      await postDeleteArchivedNotebook({user, projectId, confirmName});
+    },
+    onSuccess: (_data, {projectId}) => {
+      queryClient.invalidateQueries({queryKey: ['projects']});
+      queryClient.removeQueries({queryKey: ['projects', projectId]});
+    },
+  });
+}
+
+/**
+ * Restores an archived notebook via POST /api/notebooks/:id/restore.
+ */
+export function useRestoreArchivedProject() {
+  const queryClient = useQueryClient();
+  const {user} = useAuth();
+
+  return useMutation({
+    mutationFn: async ({projectId}: {projectId: string}) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      await postRestoreArchivedNotebook({user, projectId});
+    },
+    onSuccess: (_data, {projectId}) => {
+      queryClient.invalidateQueries({queryKey: ['projects']});
+      queryClient.invalidateQueries({queryKey: ['projects', projectId]});
+    },
+  });
+}
+
+/**
+ * Archives a notebook via PUT /api/notebooks/:id/archive.
+ */
+export function useArchiveProject() {
+  const queryClient = useQueryClient();
+  const {user} = useAuth();
+
+  return useMutation({
+    mutationFn: async ({projectId}: ArchiveProjectArgs) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      await putNotebookArchive({user, projectId, archive: true});
+    },
+    onSuccess: (_data, {projectId}) => {
+      queryClient.invalidateQueries({queryKey: ['projects']});
+      queryClient.invalidateQueries({queryKey: ['projects', projectId]});
+    },
+  });
+}
+
+/**
+ * Permanently deletes an archived template via POST /api/templates/:id/delete.
+ */
+export function useDeleteArchivedTemplate() {
+  const queryClient = useQueryClient();
+  const {user} = useAuth();
+
+  return useMutation({
+    mutationFn: async ({templateId}: {templateId: string}) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+      await postDeleteArchivedTemplate({user, templateId});
+    },
+    onSuccess: (_data, {templateId}) => {
+      queryClient.invalidateQueries({queryKey: ['templates']});
+      queryClient.invalidateQueries({queryKey: ['templates', templateId]});
+      queryClient.invalidateQueries({queryKey: ['templatesbyteam']});
+    },
+  });
 }
 
 /**

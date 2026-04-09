@@ -85,6 +85,12 @@ export interface FaimsFrontEndProps {
 
   /** Bugsnag key - enables app monitoring if desired */
   bugsnagKey?: string;
+
+  /**
+   * Mobile app directory cleanup for archived surveys (`allow` | `never`).
+   * Passed to app and web VITE_FORCE_REMOTE_DELETION; default never.
+   */
+  forceRemoteDeletion?: 'allow' | 'never';
 }
 
 export class FaimsFrontEnd extends Construct {
@@ -231,8 +237,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_SHOW_RECORD_SUMMARY_COUNTS: 'true',
       // Conductor API URL
       VITE_CONDUCTOR_URL: props.conductorUrl,
-      // Default: do not wipe local survey data when absent from directory (see app buildconfig)
-      VITE_FORCE_REMOTE_DELETION: 'never',
+      VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
       VITE_TAG: 'CDKDeployment',
 
       // offline maps configuration
@@ -433,6 +438,7 @@ export class FaimsFrontEnd extends Construct {
         : {}),
       VITE_MAXIMUM_LONG_LIVED_DURATION_DAYS:
         props.maximumLongLivedDurationDays?.toString() ?? 'infinite',
+      VITE_FORCE_REMOTE_DELETION: props.forceRemoteDeletion ?? 'never',
       // Monitoring
       ...(props.bugsnagKey ? {VITE_BUGSNAG_API_KEY: props.bugsnagKey} : {}),
     };

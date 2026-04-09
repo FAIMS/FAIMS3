@@ -1,5 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useDisableUserAccount} from '@/hooks/user-hooks';
 import {
   Dialog,
   DialogContent,
@@ -11,8 +12,9 @@ import {
 import {Button} from '../ui/button';
 import {useState} from 'react';
 import {UserX} from 'lucide-react';
-import {useQueryClient} from '@tanstack/react-query';
 import {Action, type GetListAllUsersItem, Role} from '@faims3/data-model';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {toast} from 'sonner';
 
 /**
  * Opens a confirmation to disable a user account (soft-off; data retained).
@@ -20,7 +22,7 @@ import {Action, type GetListAllUsersItem, Role} from '@faims3/data-model';
 export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
   const [open, setOpen] = useState(false);
   const {user} = useAuth();
-  const queryClient = useQueryClient();
+  const disableUser = useDisableUserAccount();
   const canDisable = useIsAuthorisedTo({
     action: Action.DISABLE_USER_ACCOUNT,
     resourceId: rowUser._id,
@@ -46,35 +48,30 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
           <DialogTitle>Disable user account</DialogTitle>
           <DialogDescription>
             {rowUser.name} ({rowUser._id}) will no longer be able to sign in or
-            use the API. Surveys and records they contributed stay unchanged.
+            use the API. {NOTEBOOK_NAME_CAPITALIZED}s and records they
+            contributed stay unchanged.
           </DialogDescription>
         </DialogHeader>
         <Button
           className="w-full"
           variant="destructive"
-          onClick={async () => {
-            try {
-              const res = await fetch(
-                `${import.meta.env.VITE_API_URL}/api/users/${encodeURIComponent(rowUser._id)}/disable`,
-                {
-                  method: 'POST',
-                  headers: {
-                    Authorization: `Bearer ${user?.token}`,
-                  },
-                }
-              );
-              if (!res.ok) {
-                console.error('Disable user failed', res.status);
-                return;
+          disabled={disableUser.isPending}
+          onClick={() =>
+            disableUser.mutate(
+              {targetUserId: rowUser._id},
+              {
+                onSuccess: () => setOpen(false),
+                onError: e => {
+                  console.error(e);
+                  toast.error(
+                    e instanceof Error ? e.message : 'Failed to disable account'
+                  );
+                },
               }
-              await queryClient.invalidateQueries({queryKey: ['users']});
-              setOpen(false);
-            } catch (e) {
-              console.error(e);
-            }
-          }}
+            )
+          }
         >
-          Disable account
+          {disableUser.isPending ? 'Disabling…' : 'Disable account'}
         </Button>
       </DialogContent>
     </Dialog>

@@ -31,7 +31,8 @@
     },
     "addressAutosuggest": {
       "source": "NONE"
-    }
+    },
+    "forceRemoteDeletion": "never"
   },
   "supportLinks": {
     "supportEmail": "support@your-domain.com",

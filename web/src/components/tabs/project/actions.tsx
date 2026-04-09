@@ -29,6 +29,7 @@ import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
 import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
 import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
+import {getArchiveProjectActionsDescription} from '@/project-archive/project-lifecycle-copy';
 import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
@@ -279,9 +280,7 @@ const ProjectActions = (): JSX.Element => {
                 {surveyIsClosed ? (
                   <>
                     <ListDescription>
-                      Hide this {NOTEBOOK_NAME} from normal lists. Depending on
-                      deployment, archiving may also clear local data on field
-                      devices after sync.
+                      {getArchiveProjectActionsDescription()}
                     </ListDescription>
                     <ArchiveProjectDialog projectId={projectId} />
                   </>

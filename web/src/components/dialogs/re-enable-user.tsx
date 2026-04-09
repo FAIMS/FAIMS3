@@ -1,13 +1,12 @@
-import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
+import {useEnableUserAccount} from '@/hooks/user-hooks';
 import {Button} from '../ui/button';
-import {useQueryClient} from '@tanstack/react-query';
 import {Action} from '@faims3/data-model';
 import {RotateCcw} from 'lucide-react';
+import {toast} from 'sonner';
 
 export function ReEnableUserButton({userId}: {userId: string}) {
-  const {user} = useAuth();
-  const queryClient = useQueryClient();
+  const enableUser = useEnableUserAccount();
   const canEnable = useIsAuthorisedTo({
     action: Action.ENABLE_USER_ACCOUNT,
     resourceId: userId,
@@ -22,29 +21,23 @@ export function ReEnableUserButton({userId}: {userId: string}) {
       variant="outline"
       size="sm"
       className="gap-1"
-      onClick={async () => {
-        try {
-          const res = await fetch(
-            `${import.meta.env.VITE_API_URL}/api/users/${encodeURIComponent(userId)}/enable`,
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${user?.token}`,
-              },
-            }
-          );
-          if (!res.ok) {
-            console.error('Re-enable user failed', res.status);
-            return;
+      disabled={enableUser.isPending}
+      onClick={() =>
+        enableUser.mutate(
+          {targetUserId: userId},
+          {
+            onError: e => {
+              console.error(e);
+              toast.error(
+                e instanceof Error ? e.message : 'Failed to re-enable account'
+              );
+            },
           }
-          await queryClient.invalidateQueries({queryKey: ['users']});
-        } catch (e) {
-          console.error(e);
-        }
-      }}
+        )
+      }
     >
       <RotateCcw className="h-3.5 w-3.5" />
-      Re-enable
+      {enableUser.isPending ? 'Re-enabling…' : 'Re-enable'}
     </Button>
   );
 }

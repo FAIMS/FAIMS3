@@ -7,7 +7,7 @@ import {DataTable} from '@/components/data-table/data-table';
 import {archivedDisabledUserColumns} from '@/components/tables/archived-disabled-users';
 import {archivedTemplateColumns} from '@/components/tables/archived-templates';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {archivedProjectColumns} from '@/components/tables/archived-projects';
 import {useGetProjects, useGetTemplates, useGetUsers} from '@/hooks/queries';
@@ -135,8 +135,8 @@ function RouteComponent() {
         <TabsContent value="users" className="mt-4">
           <div className="rounded-md border bg-card p-4">
             <p className="text-sm text-muted-foreground mb-4">
-              Disabled accounts cannot sign in; survey and record history is
-              unchanged. Use Re-enable to restore access.
+              Disabled accounts cannot sign in; {NOTEBOOK_NAME_CAPITALIZED} and
+              record history is unchanged. Use Re-enable to restore access.
             </p>
             <DataTable
               columns={archivedDisabledUserColumns}

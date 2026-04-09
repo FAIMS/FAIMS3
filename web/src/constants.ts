@@ -26,6 +26,28 @@ export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
 
 export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
 
+/**
+ * When the directory lists a survey as archived (or id absent), the mobile app
+ * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).
+ * Set via VITE_FORCE_REMOTE_DELETION; must match the Field Mark app build for accurate web copy.
+ */
+export type ForceRemoteDeletionMode = 'allow' | 'never';
+
+function parseForceRemoteDeletion(): ForceRemoteDeletionMode {
+  const v = import.meta.env.VITE_FORCE_REMOTE_DELETION as string | undefined;
+  if (v === 'allow') {
+    return 'allow';
+  }
+  if (v !== undefined && v !== '' && v !== 'never') {
+    console.warn(
+      `VITE_FORCE_REMOTE_DELETION invalid (${v}); use allow or never. Assuming never.`
+    );
+  }
+  return 'never';
+}
+
+export const FORCE_REMOTE_DELETION = parseForceRemoteDeletion();
+
 export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
 
 // this is where the /app will accept a ?token query string

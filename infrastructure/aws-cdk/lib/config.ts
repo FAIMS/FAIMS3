@@ -482,6 +482,11 @@ export const UiConfiguration = z
     addressAutosuggest: AddressAutosuggestConfigSchema.optional().default({
       source: 'NONE',
     }),
+    /**
+     * Mobile app directory cleanup when a survey is archived (`allow` = wipe local DB after sync;
+     * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
+     */
+    forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
   })
   .refine(
     data => {

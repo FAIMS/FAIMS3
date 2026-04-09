@@ -128,3 +128,96 @@ export const generateTestRecordsForProject = async ({
     throw new Error(`Save failed: ${res.status} ${err}`);
   }
 };
+
+async function messageFromFailedNotebookResponse(
+  response: Response
+): Promise<string> {
+  let message = response.statusText;
+  try {
+    const body = (await response.json()) as {error?: {message?: string}};
+    if (body?.error?.message) message = body.error.message;
+  } catch {
+    /* ignore */
+  }
+  return message;
+}
+
+/**
+ * PUT /api/notebooks/:projectId/archive — set notebook archive status.
+ */
+export const putNotebookArchive = async ({
+  user,
+  projectId,
+  archive,
+}: {
+  user: User;
+  projectId: string;
+  archive: boolean;
+}) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/archive`,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({archive}),
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await messageFromFailedNotebookResponse(response));
+  }
+};
+
+/**
+ * POST /api/notebooks/:projectId/restore — restore an archived notebook (e.g. to closed state).
+ */
+export const postRestoreArchivedNotebook = async ({
+  user,
+  projectId,
+}: {
+  user: User;
+  projectId: string;
+}) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/restore`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await messageFromFailedNotebookResponse(response));
+  }
+};
+
+/**
+ * POST /api/notebooks/:projectId/delete — permanently delete an archived notebook.
+ */
+export const postDeleteArchivedNotebook = async ({
+  user,
+  projectId,
+  confirmName,
+}: {
+  user: User;
+  projectId: string;
+  confirmName: string;
+}) => {
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/delete`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({confirmName}),
+    }
+  );
+  if (!response.ok) {
+    throw new Error(await messageFromFailedNotebookResponse(response));
+  }
+};

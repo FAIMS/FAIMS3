@@ -10,11 +10,14 @@ import {
 import {Button} from '@/components/ui/button';
 import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {useAuth} from '@/context/auth-provider';
-import {useQueryClient} from '@tanstack/react-query';
+import {useArchiveProject} from '@/hooks/archive-hooks';
 import {useState} from 'react';
 import {toast} from 'sonner';
 import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {getArchiveProjectDialogBody} from '@/project-archive/project-lifecycle-copy';
+import {
+  getArchiveProjectDialogBody,
+  getArchiveProjectUnsyncedAlertDescription,
+} from '@/project-archive/project-lifecycle-copy';
 import {AlertTriangle} from 'lucide-react';
 
 type ArchiveProjectDialogProps = {
@@ -23,46 +26,24 @@ type ArchiveProjectDialogProps = {
 
 export function ArchiveProjectDialog({projectId}: ArchiveProjectDialogProps) {
   const {user} = useAuth();
-  const queryClient = useQueryClient();
+  const {mutate, isPending} = useArchiveProject();
   const [open, setOpen] = useState(false);
-  const [pending, setPending] = useState(false);
 
-  const onConfirm = async () => {
+  const onConfirm = () => {
     if (!user) return;
-    setPending(true);
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/archive`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${user.token}`,
-          },
-          body: JSON.stringify({archive: true}),
-        }
-      );
-      if (!response.ok) {
-        let message = response.statusText;
-        try {
-          const body = (await response.json()) as {error?: {message?: string}};
-          if (body?.error?.message) message = body.error.message;
-        } catch {
-          /* ignore */
-        }
-        toast.error(message);
-        return;
+    mutate(
+      {projectId},
+      {
+        onSuccess: () => {
+          toast.success(`${NOTEBOOK_NAME_CAPITALIZED} archived`);
+          setOpen(false);
+        },
+        onError: e => {
+          console.error(e);
+          toast.error(e instanceof Error ? e.message : 'Request failed');
+        },
       }
-      toast.success(`${NOTEBOOK_NAME_CAPITALIZED} archived`);
-      queryClient.invalidateQueries({queryKey: ['projects']});
-      queryClient.invalidateQueries({queryKey: ['projects', projectId]});
-      setOpen(false);
-    } catch (e) {
-      console.error(e);
-      toast.error('Request failed');
-    } finally {
-      setPending(false);
-    }
+    );
   };
 
   return (
@@ -83,16 +64,15 @@ export function ArchiveProjectDialog({projectId}: ArchiveProjectDialogProps) {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Unsynced data risk</AlertTitle>
           <AlertDescription>
-            Surveyors should sync before archiving if your deployment can remove
-            local data from devices.
+            {getArchiveProjectUnsyncedAlertDescription()}
           </AlertDescription>
         </Alert>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button variant="destructive" disabled={pending} onClick={onConfirm}>
-            {pending ? 'Archiving…' : 'Archive'}
+          <Button variant="destructive" disabled={isPending} onClick={onConfirm}>
+            {isPending ? 'Archiving…' : 'Archive'}
           </Button>
         </DialogFooter>
       </DialogContent>
