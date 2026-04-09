@@ -188,14 +188,13 @@ export const initialState: AppState = {
   notebook: {
     metadata: {
       notebook_version: '1.0',
-      schema_version: '2.0',
+      schema_version: '3.0',
       name: '',
       filenames: [],
       lead_institution: '',
       showQRCodeButton: false,
       pre_description: '',
       project_lead: '',
-      project_status: 'New',
       sections: {},
     },
     'ui-specification': {

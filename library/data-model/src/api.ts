@@ -107,6 +107,7 @@ export const GetListAllUsersResponseSchema = z.array(
     name: true,
     user_id: true,
     profiles: true,
+    disabled: true,
   })
     // configure to strip not fail for extra fields
     .strip()
@@ -326,6 +327,14 @@ export type PutChangeNotebookTeamInput = z.infer<
   typeof PutChangeNotebookTeamInputSchema
 >;
 
+/** Body for POST /api/notebooks/:id/delete — must match project name exactly. */
+export const PostDestroyNotebookInputSchema = z.object({
+  confirmName: z.string().min(1),
+});
+export type PostDestroyNotebookInput = z.infer<
+  typeof PostDestroyNotebookInputSchema
+>;
+
 // POST create new notebook from template response
 export const PostCreateNotebookResponseSchema = z.object({
   notebook: z.string(),
@@ -461,6 +470,24 @@ export type GetListTemplatesResponse = z.infer<
 export const GetTemplateByIdResponseSchema = ExistingTemplateDocumentSchema;
 export type GetTemplateByIdResponse = z.infer<
   typeof GetTemplateByIdResponseSchema
+>;
+
+/** POST /api/templates/:id/restore — un-archive; body optional (empty JSON allowed). */
+export const PostRestoreTemplateRequestSchema = z.object({}).strict();
+export type PostRestoreTemplateRequest = z.infer<
+  typeof PostRestoreTemplateRequestSchema
+>;
+export const PostRestoreTemplateResponseSchema = ExistingTemplateDocumentSchema;
+export type PostRestoreTemplateResponse = z.infer<
+  typeof PostRestoreTemplateResponseSchema
+>;
+
+/** GET /api/templates/:id/survey-references — how many surveys reference this template. */
+export const GetTemplateSurveyReferencesResponseSchema = z.object({
+  surveyCount: z.number().int().nonnegative(),
+});
+export type GetTemplateSurveyReferencesResponse = z.infer<
+  typeof GetTemplateSurveyReferencesResponseSchema
 >;
 
 // EMAIL RESET

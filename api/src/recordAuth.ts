@@ -17,12 +17,22 @@
  * Mirrors CouchDB validate_doc_update and app shouldDisplayRecord logic.
  */
 
-import {Action} from '@faims3/data-model';
-import {userCanDo} from './middleware';
+import {
+  canDeleteProjectRecord,
+  canEditProjectRecord,
+  canReadProjectRecord,
+} from '@faims3/data-model';
+
+function decodedTokenFromUser(user: globalThis.Express.User) {
+  return {
+    globalRoles: user.globalRoles,
+    resourceRoles: user.resourceRoles,
+  };
+}
 
 /**
  * Returns true if the user can read the record.
- * "My" record (created_by === user_id) requires READ_MY_PROJECT_RECORDS;
+ * "My" record {@code created_by === user_id} requires READ_MY_PROJECT_RECORDS;
  * others require READ_ALL_PROJECT_RECORDS.
  */
 export function canReadRecord({
@@ -34,14 +44,11 @@ export function canReadRecord({
   projectId: string;
   createdBy: string;
 }): boolean {
-  const isMine = createdBy === user.user_id;
-  const action = isMine
-    ? Action.READ_MY_PROJECT_RECORDS
-    : Action.READ_ALL_PROJECT_RECORDS;
-  return userCanDo({
-    user,
-    action,
-    resourceId: projectId,
+  return canReadProjectRecord({
+    decodedToken: decodedTokenFromUser(user),
+    projectId,
+    recordCreatedBy: createdBy,
+    actingUserId: user.user_id,
   });
 }
 
@@ -58,14 +65,11 @@ export function canEditRecord({
   projectId: string;
   createdBy: string;
 }): boolean {
-  const isMine = createdBy === user.user_id;
-  const action = isMine
-    ? Action.EDIT_MY_PROJECT_RECORDS
-    : Action.EDIT_ALL_PROJECT_RECORDS;
-  return userCanDo({
-    user,
-    action,
-    resourceId: projectId,
+  return canEditProjectRecord({
+    decodedToken: decodedTokenFromUser(user),
+    projectId,
+    recordCreatedBy: createdBy,
+    actingUserId: user.user_id,
   });
 }
 
@@ -82,13 +86,10 @@ export function canDeleteRecord({
   projectId: string;
   createdBy: string;
 }): boolean {
-  const isMine = createdBy === user.user_id;
-  const action = isMine
-    ? Action.DELETE_MY_PROJECT_RECORDS
-    : Action.DELETE_ALL_PROJECT_RECORDS;
-  return userCanDo({
-    user,
-    action,
-    resourceId: projectId,
+  return canDeleteProjectRecord({
+    decodedToken: decodedTokenFromUser(user),
+    projectId,
+    recordCreatedBy: createdBy,
+    actingUserId: user.user_id,
   });
 }

@@ -12,7 +12,12 @@ import {useGetProject} from '@/hooks/queries';
 import {Route} from '@/routes/_protected/projects/$projectId';
 import {ProjectStatusDialog} from '@/components/dialogs/change-project-status-dialog';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
-import {Action, getUserResourcesForAction} from '@faims3/data-model';
+import {
+  Action,
+  getUserResourcesForAction,
+  ProjectStatus,
+} from '@faims3/data-model';
+import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
 import {useQueryClient} from '@tanstack/react-query';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {NotebookWithHistory} from '@/designer/state/initial';
@@ -90,6 +95,13 @@ const ProjectActions = (): JSX.Element => {
       action: Action.CREATE_TEMPLATE_IN_TEAM,
     }).length > 0;
 
+  const projectIsClosed = data?.status === ProjectStatus.CLOSED;
+
+  const canChangeArchive = useIsAuthorisedTo({
+    action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
+    resourceId: projectId,
+  });
+
   const handleCreateTestRecords = async () => {
     if (user)
       await generateTestRecordsForProject({
@@ -104,14 +116,11 @@ const ProjectActions = (): JSX.Element => {
       <div className="flex flex-col gap-2 justify-between">
         {DEVELOPER_MODE && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Generate Test Records</ListLabel>
-                <ListDescription>
-                  Generate test records for this {NOTEBOOK_NAME}
-                </ListDescription>
               </ListItem>
-              <ListItem>
+              <ListItem className="flex flex-wrap items-center gap-2">
                 <Input
                   type="number"
                   value={generateCount}
@@ -131,12 +140,9 @@ const ProjectActions = (): JSX.Element => {
 
         {canEditProject && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-                <ListDescription>
-                  Edit this {NOTEBOOK_NAME} in the Notebook Editor.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <Button
@@ -153,12 +159,9 @@ const ProjectActions = (): JSX.Element => {
 
         {canAddProjectToTeam && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
-                <ListDescription>
-                  Assign this {NOTEBOOK_NAME} to a team.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <AddProjectToTeamDialog projectId={projectId} />
@@ -168,12 +171,9 @@ const ProjectActions = (): JSX.Element => {
         )}
 
         <Card className="flex-1">
-          <List className="flex flex-col gap-4">
+          <List className="flex flex-col gap-2 space-y-0">
             <ListItem>
               <ListLabel>Download JSON</ListLabel>
-              <ListDescription>
-                Download the JSON file for this {NOTEBOOK_NAME_CAPITALIZED}.
-              </ListDescription>
             </ListItem>
             <ListItem>
               <Button variant="outline">
@@ -195,14 +195,11 @@ const ProjectActions = (): JSX.Element => {
 
         {canEditProject && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
                   Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
                 </ListLabel>
-                <ListDescription>
-                  Replace the {NOTEBOOK_NAME} JSON file.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <EditProjectDialog onSuccess={uploadProjectCallback} />
@@ -213,16 +210,11 @@ const ProjectActions = (): JSX.Element => {
 
         {canCreateTemplateInTeam && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
                   Create Template from this {NOTEBOOK_NAME_CAPITALIZED}
                 </ListLabel>
-                <ListDescription>
-                  Create a new template from the current {NOTEBOOK_NAME}. You
-                  will then be able to create copies of this {NOTEBOOK_NAME}{' '}
-                  from the template.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <CreateTemplateFromProjectDialog projectId={projectId} />
@@ -234,6 +226,27 @@ const ProjectActions = (): JSX.Element => {
         {canChangeProjectStatus && (
           <Card className="flex-1">
             <ProjectStatusDialog projectId={projectId} />
+          </Card>
+        )}
+
+        {canChangeArchive && (
+          <Card className="flex-1">
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem className="flex flex-col items-start gap-2">
+                <ListLabel className="block">
+                  Archive {NOTEBOOK_NAME_CAPITALIZED}
+                </ListLabel>
+                {!projectIsClosed && (
+                  <ListDescription>
+                    To archive, you must close the {NOTEBOOK_NAME} first
+                  </ListDescription>
+                )}
+                <ArchiveProjectDialog
+                  projectId={projectId}
+                  disabled={!projectIsClosed}
+                />
+              </ListItem>
+            </List>
           </Card>
         )}
       </div>

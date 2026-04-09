@@ -36,8 +36,8 @@ export const AddProjectToTeamDialog = ({projectId}: {projectId: string}) => {
         <DialogHeader>
           <DialogTitle>Assign {NOTEBOOK_NAME_CAPITALIZED} to Team</DialogTitle>
           <DialogDescription>
-            Assign this {NOTEBOOK_NAME} to a different team. The notebook will
-            then be available to members of the new team.
+            Assign this {NOTEBOOK_NAME} to a different team. The {NOTEBOOK_NAME}{' '}
+            will then be available to members of the new team.
           </DialogDescription>
         </DialogHeader>
         <AddProjectToTeamForm setDialogOpen={setOpen} projectId={projectId} />

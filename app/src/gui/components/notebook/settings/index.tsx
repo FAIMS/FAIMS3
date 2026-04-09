@@ -22,20 +22,24 @@ import {ProjectID, ProjectUIModel} from '@faims3/data-model';
 import {
   Box,
   Button,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
-  DialogContentText,
   DialogTitle,
   FormControlLabel,
   Grid,
   Paper,
+  Stack,
   Switch,
   Typography,
 } from '@mui/material';
 import React from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {NOTEBOOK_NAME_CAPITALIZED} from '../../../../buildconfig';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+} from '../../../../buildconfig';
 import {NOTEBOOK_LIST_ROUTE} from '../../../../constants/routes';
 import {addAlert} from '../../../../context/slices/alertSlice';
 import {
@@ -63,8 +67,11 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
 
   const isSyncingAttachments = project.database?.isSyncingAttachments ?? false;
   const [openDeactivateDialog, setOpenDeactivateDialog] = React.useState(false);
+  const [deactivateSyncAcknowledged, setDeactivateSyncAcknowledged] =
+    React.useState(false);
 
   const handleDeactivateClick = () => {
+    setDeactivateSyncAcknowledged(false);
     setOpenDeactivateDialog(true);
   };
 
@@ -76,11 +83,13 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
       })
     );
     setOpenDeactivateDialog(false);
+    setDeactivateSyncAcknowledged(false);
     nav(NOTEBOOK_LIST_ROUTE);
   };
 
   const handleDeactivateCancel = () => {
     setOpenDeactivateDialog(false);
+    setDeactivateSyncAcknowledged(false);
   };
 
   return (
@@ -180,10 +189,9 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             </Typography>
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
-                {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME_CAPITALIZED} will
-                remove it from your active notebooks list. Make sure all your
-                data has been synced to the server before{' '}
-                {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()}.
+                {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME} will remove it
+                from your device. Ensure all your records have a green sync
+                status before {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()}.
               </Typography>
               <Button
                 variant={'outlined'}
@@ -209,16 +217,32 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
           {DE_ACTIVATE_VERB} {NOTEBOOK_NAME_CAPITALIZED}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} this{' '}
-            {NOTEBOOK_NAME_CAPITALIZED}? {DE_ACTIVATE_ACTIVE_VERB} may result in
-            unintended data loss if your records have not been uploaded to the
-            server.
-          </DialogContentText>
+          <Stack spacing={2}>
+            <Typography variant="body1">
+              Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} the{' '}
+              {NOTEBOOK_NAME}?
+            </Typography>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={deactivateSyncAcknowledged}
+                  onChange={(_, checked) =>
+                    setDeactivateSyncAcknowledged(checked)
+                  }
+                  color="primary"
+                />
+              }
+              label="I have checked that all records have a green sync status."
+            />
+          </Stack>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeactivateCancel}>Cancel</Button>
-          <Button onClick={handleDeactivateConfirm} color="error">
+          <Button
+            onClick={handleDeactivateConfirm}
+            color="error"
+            disabled={!deactivateSyncAcknowledged}
+          >
             {DE_ACTIVATE_VERB}
           </Button>
         </DialogActions>

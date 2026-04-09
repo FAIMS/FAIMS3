@@ -1,7 +1,7 @@
 import {DataTable} from '@/components/data-table/data-table';
 import {CreateProjectDialog} from '@/components/dialogs/create-project-dialog';
 import {columns} from '@/components/tables/projects';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useGetProjects} from '@/hooks/queries';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
@@ -30,7 +30,7 @@ export function ProjectsRouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: NOTEBOOK_NAME_CAPITALIZED + 's',
+        label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
       },
     ],
     [pathname, isLoading]
@@ -44,12 +44,17 @@ export function ProjectsRouteComponent() {
   const navigate = useNavigate();
 
   return (
-    <DataTable
-      columns={columns}
-      data={data || []}
-      loading={isLoading}
-      onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
-      button={<CreateProjectDialog />}
-    />
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">
+        {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
+      </h1>
+      <DataTable
+        columns={columns}
+        data={data || []}
+        loading={isLoading}
+        onRowClick={({project_id}) => navigate({to: `/projects/${project_id}`})}
+        button={<CreateProjectDialog />}
+      />
+    </div>
   );
 }

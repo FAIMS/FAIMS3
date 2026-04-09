@@ -13,9 +13,12 @@ import {
   PeopleV2Document,
   PeopleV3Document,
   PeopleV4Document,
+  PeopleV5Document,
   ProjectStatus,
+  ProjectStatusV2,
   ProjectV1Fields,
   ProjectV2Fields,
+  ProjectV3Fields,
   RefreshRecordV1ExistingDocument,
   RefreshRecordV2ExistingDocument,
   RefreshRecordV3ExistingDocument,
@@ -27,6 +30,7 @@ import {
 import {
   TemplateV1Fields,
   TemplateV2Fields,
+  TemplateV3Fields,
 } from '../src/data_storage/templatesDB/types';
 import {areDocsEqual} from './utils';
 
@@ -364,6 +368,126 @@ const TEMPLATE_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+const TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'templatesV2toV3Migration - archived sentinel to top-level flag',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-arch',
+      _rev: '1-rev',
+      version: 3,
+      name: 'Archived tpl',
+      metadata: {
+        name: 'Archived tpl',
+        project_status: 'archived',
+        pre_description: 'x',
+      },
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+      ownedByTeamId: 'team-a',
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-arch',
+        _rev: '1-rev',
+        version: 3,
+        name: 'Archived tpl',
+        metadata: {
+          name: 'Archived tpl',
+          pre_description: 'x',
+        },
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        ownedByTeamId: 'team-a',
+        archived: true,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - active sentinel stripped',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-act',
+      _rev: '2-rev',
+      version: 1,
+      name: 'Active',
+      metadata: {project_status: 'active', notebook_version: '1'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-act',
+        _rev: '2-rev',
+        version: 1,
+        name: 'Active',
+        metadata: {notebook_version: '1'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+  {
+    name: 'templatesV2toV3Migration - legacy New (and any non-archived) stripped from metadata',
+    dbType: DatabaseType.TEMPLATES,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'tpl-new',
+      _rev: '3-rev',
+      version: 1,
+      name: 'Demo',
+      metadata: {name: 'Demo', project_status: 'New'},
+      'ui-specification': {
+        fields: {},
+        fviews: {},
+        viewsets: {},
+        visible_types: [],
+      } satisfies EncodedProjectUIModel,
+    } as PouchDB.Core.ExistingDocument<TemplateV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'tpl-new',
+        _rev: '3-rev',
+        version: 1,
+        name: 'Demo',
+        metadata: {name: 'Demo'},
+        'ui-specification': {
+          fields: {},
+          fviews: {},
+          viewsets: {},
+          visible_types: [],
+        } satisfies EncodedProjectUIModel,
+        archived: false,
+      } as PouchDB.Core.ExistingDocument<TemplateV3Fields>,
+    },
+  },
+];
+
 // New test cases for projectsV1toV2Migration
 const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // Basic migration with all fields
@@ -401,7 +525,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_123',
         _rev: '1-abc123',
         name: 'Research Project Alpha',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -450,7 +574,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_456',
         _rev: '1-def456',
         name: 'Minimal Project',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -501,7 +625,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_789',
         _rev: '1-ghi789',
         name: 'Personal Project',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -556,7 +680,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_complex',
         _rev: '1-complex',
         name: 'Complex Connection Project',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -603,7 +727,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         db_name: 'meta_status',
         port: 443,
       },
-      status: 'archived', // This should be replaced by ProjectStatus.OPEN
+      status: 'archived', // Replaced by ProjectStatusV2.OPEN regardless of v1 string
     } as PouchDB.Core.ExistingDocument<ProjectV1Fields>,
     expectedResult: {
       action: 'update',
@@ -611,7 +735,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_status',
         _rev: '1-status',
         name: 'Status Override Project',
-        status: ProjectStatus.OPEN, // The status should always be set to OPEN regardless of previous value
+        status: ProjectStatusV2.OPEN, // Always OPEN from v1 migration regardless of previous value
         dataDb: {
           host: 'example.com',
           proto: 'https',
@@ -650,7 +774,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_missing_dbs',
         _rev: '1-missing',
         name: 'Project With Missing DBs',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: undefined, // Migration preserves undefined values
         metadataDb: undefined,
         ownedByTeamId: undefined,
@@ -684,7 +808,7 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
         _id: 'project_extra',
         _rev: '1-extra',
         name: 'Project With Extra Fields',
-        status: ProjectStatus.OPEN,
+        status: ProjectStatusV2.OPEN,
         dataDb: {url: 'https://example.com/db/data_extra'},
         metadataDb: {url: 'https://example.com/db/meta_extra'},
         templateId: undefined,
@@ -709,6 +833,61 @@ const PROJECT_MIGRATION_TEST_CASES: MigrationTestCase[] = [
       }
       return true;
     },
+  },
+];
+
+const PROJECT_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'projectsV2toV3Migration - OPEN to v3 OPEN',
+    dbType: DatabaseType.PROJECTS,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'proj_v3_1',
+      _rev: '1-a',
+      name: 'Survey A',
+      status: ProjectStatusV2.OPEN,
+      dataDb: {db_name: 'data-proj_v3_1'},
+      metadataDb: {db_name: 'metadata-proj_v3_1'},
+    } satisfies PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'proj_v3_1',
+        _rev: '1-a',
+        name: 'Survey A',
+        status: ProjectStatus.OPEN,
+        dataDb: {db_name: 'data-proj_v3_1'},
+        metadataDb: {db_name: 'metadata-proj_v3_1'},
+      } as PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    },
+    equalityFunction: areDocsEqual,
+  },
+  {
+    name: 'projectsV2toV3Migration - CLOSED to v3 CLOSED',
+    dbType: DatabaseType.PROJECTS,
+    from: 2,
+    to: 3,
+    inputDoc: {
+      _id: 'proj_v3_2',
+      _rev: '1-b',
+      name: 'Survey B',
+      status: ProjectStatusV2.CLOSED,
+      dataDb: {db_name: 'data-proj_v3_2'},
+      metadataDb: {db_name: 'metadata-proj_v3_2'},
+    } satisfies PouchDB.Core.ExistingDocument<ProjectV2Fields>,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'proj_v3_2',
+        _rev: '1-b',
+        name: 'Survey B',
+        status: ProjectStatus.CLOSED,
+        dataDb: {db_name: 'data-proj_v3_2'},
+        metadataDb: {db_name: 'metadata-proj_v3_2'},
+      } as PouchDB.Core.ExistingDocument<ProjectV3Fields>,
+    },
+    equalityFunction: areDocsEqual,
   },
 ];
 
@@ -1454,6 +1633,44 @@ const PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   },
 ];
 
+const PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES: MigrationTestCase[] = [
+  {
+    name: 'peopleV4toV5Migration - adds disabled false',
+    dbType: DatabaseType.PEOPLE,
+    from: 4,
+    to: 5,
+    inputDoc: {
+      _id: 'user_v4',
+      _rev: '1-abc',
+      user_id: 'user_v4',
+      name: 'Test User',
+      emails: [{email: 't@example.com', verified: true}],
+      profiles: {},
+      projectRoles: [],
+      teamRoles: [],
+      templateRoles: [],
+      globalRoles: [Role.GENERAL_USER],
+    } satisfies PeopleV4Document,
+    expectedResult: {
+      action: 'update',
+      updatedRecord: {
+        _id: 'user_v4',
+        _rev: '1-abc',
+        user_id: 'user_v4',
+        name: 'Test User',
+        emails: [{email: 't@example.com', verified: true}],
+        profiles: {},
+        projectRoles: [],
+        teamRoles: [],
+        templateRoles: [],
+        globalRoles: [Role.GENERAL_USER],
+        disabled: false,
+      } satisfies PeopleV5Document,
+    },
+    equalityFunction: areDocsEqual,
+  },
+];
+
 // Test cases for authV2toV3Migration
 const AUTH_V2_TO_V3_MIGRATION_TEST_CASES: MigrationTestCase[] = [
   // Test case 1: Refresh token should remain unchanged
@@ -1650,10 +1867,13 @@ const AUTH_V3_TO_V4_MIGRATION_TEST_CASES: MigrationTestCase[] = [
 MIGRATION_TEST_CASES.push(...AUTH_V3_TO_V4_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PROJECT_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PROJECT_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...INVITES_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...TEMPLATE_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...TEMPLATE_V2_TO_V3_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...AUTH_MIGRATION_TEST_CASES);
 MIGRATION_TEST_CASES.push(...PEOPLE_V3_TO_V4_MIGRATION_TEST_CASES);
+MIGRATION_TEST_CASES.push(...PEOPLE_V4_TO_V5_MIGRATION_TEST_CASES);
 
 describe('Migration Specific Tests', () => {
   /**

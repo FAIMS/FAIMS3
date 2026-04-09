@@ -10,7 +10,7 @@ import {ColumnDef} from '@tanstack/react-table';
 import {KeyRound} from 'lucide-react';
 import {toast} from 'sonner';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {RemoveUserDialog} from '../dialogs/remove-user';
+import {DisableUserDialog} from '../dialogs/disable-user';
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
@@ -157,21 +157,14 @@ export const useUsersColumns = ({
       ),
     },
     {
-      id: 'remove',
-      cell: ({
-        row: {
-          original: {_id, _id: userId},
-        },
-      }: any) => (
+      id: 'disable',
+      cell: ({row: {original}}) => (
         <div className="flex justify-center items-center -my-2">
-          <RemoveUserDialog
-            userId={_id}
-            disabled={!_id || userId === user?.user.id}
-          />
+          <DisableUserDialog rowUser={original} />
         </div>
       ),
       header: () => (
-        <div className="flex justify-center items-center">Remove</div>
+        <div className="flex justify-center items-center">Disable</div>
       ),
     },
   ];

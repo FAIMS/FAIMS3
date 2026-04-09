@@ -29,7 +29,7 @@ export const MAX_CSV_FILENAME_LENGTH = 40;
 export const HASH_SUFFIX_LENGTH = 6;
 
 /** Build the full component key used for serialization lookup (namespace::name). */
-function getComponentKey(namespace: string, name: string): string {
+export function getComponentKey(namespace: string, name: string): string {
   return namespace ? `${namespace}::${name}` : name;
 }
 

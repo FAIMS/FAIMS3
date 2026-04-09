@@ -53,14 +53,17 @@ function RouteComponent() {
   });
 
   return (
-    <DataTable
-      columns={columns}
-      data={data}
-      loading={isPending}
-      onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
-      button={
-        (canCreateGlobally || canCreateInSomeTeam) && <CreateTemplateDialog />
-      }
-    />
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Templates</h1>
+      <DataTable
+        columns={columns}
+        data={data}
+        loading={isPending}
+        onRowClick={({_id}) => navigate({to: `/templates/${_id}`})}
+        button={
+          (canCreateGlobally || canCreateInSomeTeam) && <CreateTemplateDialog />
+        }
+      />
+    </div>
   );
 }

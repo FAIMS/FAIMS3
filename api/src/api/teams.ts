@@ -33,6 +33,7 @@ import {
   Resource,
   Role,
   roleDetails,
+  isPeopleUserAccountDisabled,
   TeamMembershipInputSchema,
 } from '@faims3/data-model';
 import express, {Response} from 'express';
@@ -46,6 +47,7 @@ import {
   updateTeam,
 } from '../couchdb/teams';
 import {
+  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUsersForTeam,
   saveCouchUser,
@@ -224,7 +226,10 @@ api.get(
     await getTeamById(teamId);
 
     // Get all users who have roles for this team
-    const teamUsers = await getUsersForTeam({teamId});
+    const teamUsers = filterPeopleUsersForList(
+      await getUsersForTeam({teamId}),
+      false
+    );
 
     // Define available team roles
     const availableRoles = Object.entries(roleDetails)
@@ -280,6 +285,12 @@ api.post(
     if (!targetUser) {
       throw new Exceptions.ItemNotFoundException(
         'User not found. Please check the username or email address.'
+      );
+    }
+
+    if (action === 'ADD_ROLE' && isPeopleUserAccountDisabled(targetUser)) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot assign team roles to a disabled user account.'
       );
     }
 

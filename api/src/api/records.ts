@@ -43,6 +43,7 @@ import {
   PostCreateRevisionInputSchema,
   PostCreateRevisionResponse,
   RecordConflictError,
+  RecordDeletedError,
   RevisionMismatchError,
   setRecordAsDeleted,
 } from '@faims3/data-model';
@@ -85,6 +86,9 @@ function projectIdFromReq(req: express.Request): string {
  * Any unrecognized error is rethrown unchanged.
  */
 function mapDataModelError(err: unknown): never {
+  if (err instanceof RecordDeletedError) {
+    throw new Exceptions.InvalidRequestException(err.message);
+  }
   if (err instanceof DocumentNotFoundError) {
     throw new Exceptions.ItemNotFoundException(err.message);
   }

@@ -23,9 +23,11 @@ import {
   addTemplateRole,
   GetListTemplatesResponse,
   GetTemplateByIdResponse,
+  GetTemplateSurveyReferencesResponse,
   PostCreateTemplateInput,
   PostCreateTemplateInputSchema,
   PostCreateTemplateResponse,
+  PostRestoreTemplateResponse,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
   Role,
@@ -33,12 +35,14 @@ import {
 import express, {Response} from 'express';
 import {z} from 'zod';
 import {processRequest} from 'zod-express-middleware';
+import {getProjectIdsReferencingTemplate} from '../couchdb/notebooks';
 import {
   archiveTemplate,
   createTemplate,
   deleteExistingTemplate,
   getTemplate,
   getTemplates,
+  restoreTemplateFromArchive,
   updateExistingTemplate,
 } from '../couchdb/templates';
 import * as Exceptions from '../exceptions';
@@ -66,14 +70,30 @@ api.get(
   '/',
   requireAuthenticationAPI,
   isAllowedToMiddleware({action: Action.LIST_TEMPLATES}),
-  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
+  processRequest({
+    query: z.object({
+      teamId: z.string().min(1).optional(),
+      // Query strings only: omit (default) or includeArchived=true|false
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res: Response<GetListTemplatesResponse>) => {
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
 
+    const templatesRaw = await getTemplates({
+      teamId: req.query.teamId,
+    });
+    const includeArchived = req.query.includeArchived === 'true';
+
+    const filteredByArchive = templatesRaw.filter(t => {
+      const archived = t.archived === true;
+      return includeArchived ? archived : !archived;
+    });
+
     res.json({
-      templates: (await getTemplates({teamId: req.query.teamId})).filter(t =>
+      templates: filteredByArchive.filter(t =>
         userCanDo({
           action: Action.READ_TEMPLATE_DETAILS,
           user: req.user!,
@@ -103,6 +123,27 @@ api.get(
   async (req, res: Response<GetTemplateByIdResponse>) => {
     const template = await getTemplate(req.params.id);
     res.json(template);
+  }
+);
+
+/**
+ * GET count of surveys (projects) that still reference this template id.
+ */
+api.get(
+  '/:id/survey-references',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.READ_TEMPLATE_DETAILS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res: Response<GetTemplateSurveyReferencesResponse>) => {
+    const ids = await getProjectIdsReferencingTemplate(req.params.id);
+    res.json({surveyCount: ids.length});
   }
 );
 
@@ -165,7 +206,7 @@ api.post(
 /**
  * PUT update existing template Updates an existing template. The payload is
  * validated by Zod before reaching this function. Expects a document as the
- * response JSON. Requires cluster admin privileges.
+ * response JSON. Requires {@link Action.UPDATE_TEMPLATE_DETAILS} on the template.
  *
  * TODO distinguish between the different types of template updates permission
  * wise. Right now we look for just the update content action.
@@ -195,9 +236,31 @@ api.put(
 );
 
 /**
+ * POST restore archived template (clears top-level archived flag).
+ */
+api.post(
+  '/:id/restore',
+  requireAuthenticationAPI,
+  isAllowedToMiddleware({
+    action: Action.CHANGE_TEMPLATE_STATUS,
+    getResourceId(req) {
+      return req.params.id;
+    },
+  }),
+  processRequest({
+    params: z.object({id: z.string()}),
+  }),
+  async (req, res: Response<PostRestoreTemplateResponse>) => {
+    const updated = await restoreTemplateFromArchive(req.params.id);
+    res.json(updated);
+  }
+);
+
+/**
  * POST delete existing template
- * Deletes latest revision of an existing template. Requires cluster admin
- * privileges.
+ * Deletes latest revision of an existing template. Requires
+ * {@link Action.DELETE_TEMPLATE} on the template; the template must already
+ * be archived.
  */
 api.post(
   '/:id/delete',

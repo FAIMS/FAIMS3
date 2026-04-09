@@ -36,17 +36,16 @@ export const columns: ColumnDef<Column>[] = [
     },
   },
   {
-    accessorKey: 'metadata.project_status',
+    id: 'status',
     header: ({column}) => (
       <DataTableColumnHeader column={column} title="Status" />
     ),
-    cell: ({
-      row: {
-        original: {
-          metadata: {project_status},
-        },
-      },
-    }: any) => <RoleCard>{project_status}</RoleCard>,
+    accessorFn: (row: Column & {archived?: boolean}) =>
+      row.archived === true ? 'Archived' : 'Active',
+    cell: ({row}: {row: {original: Column & {archived?: boolean}}}) => {
+      const label = row.original.archived === true ? 'Archived' : 'Active';
+      return <RoleCard>{label}</RoleCard>;
+    },
   },
   {
     accessorKey: 'metadata.project_lead',

@@ -17,7 +17,9 @@ import {
 import {getTemplatesDb} from '.';
 import * as Exceptions from '../exceptions';
 import {generateRandomString} from '../utils';
+import {clearTemplateIdFromProjectsReferencingTemplate} from './notebooks';
 import {getTeamById} from './teams';
+import {stripTemplateRolesForTemplateId} from './users';
 
 /**
  * Lists all documents in the templates DB. Returns as TemplateDbDocument. TODO
@@ -160,11 +162,9 @@ export const createTemplate = async ({
   const templateDoc: TemplateDocument = {
     _id: templateId,
     version: 1,
+    archived: false,
     'ui-specification': payload['ui-specification'],
-    metadata: {
-      ...payload.metadata,
-      project_status: 'active',
-    },
+    metadata: payload.metadata,
     ownedByTeamId: payload.teamId,
     name: payload.name,
   };
@@ -227,7 +227,8 @@ export const updateExistingTemplate = async (
 
   // ditto for the template name
   const name = payload.name || existingTemplate.name;
-  const metadata = payload.metadata || existingTemplate.metadata;
+  const metadata = (payload.metadata ||
+    existingTemplate.metadata) as TemplateDocument['metadata'];
   const uiSpecification =
     payload['ui-specification'] || existingTemplate['ui-specification'];
 
@@ -239,9 +240,12 @@ export const updateExistingTemplate = async (
   // TODO see BSS-343
   metadata.template_id = templateId;
 
+  const archived = existingTemplate.archived ?? false;
+
   const newDocument = {
     metadata: metadata,
     'ui-specification': uiSpecification,
+    archived,
     // explicitly retain these details!
     _id: templateId,
     _rev: existingTemplate._rev,
@@ -285,6 +289,15 @@ export const deleteExistingTemplate = async (templateId: string) => {
     );
   }
 
+  if (existingTemplate.archived !== true) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived templates can be permanently deleted. Archive the template first, then delete it from the Archive view.'
+    );
+  }
+
+  await clearTemplateIdFromProjectsReferencingTemplate(templateId);
+  await stripTemplateRolesForTemplateId(templateId);
+
   try {
     await templatesDb.remove(existingTemplate);
   } catch (e) {
@@ -295,7 +308,7 @@ export const deleteExistingTemplate = async (templateId: string) => {
 };
 
 /**
- * Archives a template by incrementing the version and setting the project_status to archived.
+ * Archives or un-archives a template (top-level `archived` flag).
  * @param id The ID of the template to archive.
  * @returns The updated template document.
  */
@@ -307,10 +320,7 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
     await put({
       ...template,
       version: template.version + 1,
-      metadata: {
-        ...template.metadata,
-        project_status: archive ? 'archived' : 'active',
-      },
+      archived: archive,
     });
   } catch (e) {
     throw new Exceptions.InternalSystemError(
@@ -326,4 +336,17 @@ export const archiveTemplate = async (id: string, archive: boolean) => {
       'An unexpected error occurred while trying to fetch the updated template.'
     );
   }
+};
+
+/**
+ * Restores an archived template (sets archived to false). Rejected if not archived.
+ */
+export const restoreTemplateFromArchive = async (id: string) => {
+  const template = await getTemplate(id);
+  if (template.archived !== true) {
+    throw new Exceptions.InvalidRequestException(
+      'Only archived templates can be restored.'
+    );
+  }
+  return archiveTemplate(id, false);
 };

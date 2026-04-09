@@ -1344,7 +1344,7 @@ describe('Team integration with templates and projects', () => {
       })
     ).to.be.false;
 
-    // Check admin permissions
+    // Team admin has virtual PROJECT_ADMIN on team projects — may permanently destroy.
     expect(
       userCanDo({
         user: upgradedAdmin,
@@ -1480,7 +1480,7 @@ describe('Team integration with templates and projects', () => {
     // Upgrade user
     const upgradedUser = await upgradeCouchUserToExpressUser({dbUser: user});
 
-    // Test permissions on team 1 resources (should have admin access)
+    // Team admin has virtual PROJECT_ADMIN on team-owned surveys — may delete permanently.
     expect(
       userCanDo({
         user: upgradedUser,

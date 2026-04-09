@@ -53,12 +53,15 @@ export function RouteComponent() {
   const navigate = useNavigate();
 
   return (
-    <DataTable
-      columns={columns}
-      data={data ? data?.teams : []}
-      loading={isPending}
-      onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
-      button={canCreateTeam && <CreateTeamDialog />}
-    />
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Teams</h1>
+      <DataTable
+        columns={columns}
+        data={data ? data?.teams : []}
+        loading={isPending}
+        onRowClick={({_id}) => navigate({to: `/teams/${_id}`})}
+        button={canCreateTeam && <CreateTeamDialog />}
+      />
+    </div>
   );
 }

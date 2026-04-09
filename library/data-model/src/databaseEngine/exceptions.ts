@@ -101,3 +101,15 @@ export class MalformedParentsError extends Error {
     this.name = 'MalformedParentsError';
   }
 }
+
+/**
+ * Thrown when a mutation targets a record whose head revision is soft-deleted.
+ */
+export class RecordDeletedError extends Error {
+  constructor(recordId: string) {
+    super(
+      `Record "${recordId}" has been deleted and cannot be edited until restored.`
+    );
+    this.name = 'RecordDeletedError';
+  }
+}

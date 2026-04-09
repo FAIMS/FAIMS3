@@ -397,6 +397,7 @@ describe('API tests', () => {
       .post('/api/notebooks/' + project_id + '/delete')
       .set('Authorization', `Bearer ${adminToken}`)
       .set('Content-Type', 'application/json')
+      .send({confirmName: 'test-notebook'})
       .expect(200);
     notebooks = await getUserProjectsDetailed(adminUser);
     expect(notebooks).to.be.empty;

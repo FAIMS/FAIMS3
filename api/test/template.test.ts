@@ -31,9 +31,12 @@ import {
   GetListTemplatesResponseSchema,
   GetTemplateByIdResponse,
   GetTemplateByIdResponseSchema,
+  GetTemplateSurveyReferencesResponse,
+  GetTemplateSurveyReferencesResponseSchema,
   PostCreateNotebookResponseSchema,
   PostCreateTemplateInput,
   PostCreateTemplateResponseSchema,
+  PostRestoreTemplateResponseSchema,
   PutUpdateTemplateInput,
   PutUpdateTemplateInputSchema,
   PutUpdateTemplateResponse,
@@ -44,14 +47,18 @@ import {Express} from 'express';
 import fs from 'fs';
 import request from 'supertest';
 import {app} from '../src/expressSetup';
-import {NOTEBOOKS_API_BASE} from './api.test';
+import {getProjectById} from '../src/couchdb/notebooks';
+import {getCouchUserFromEmailOrUserId} from '../src/couchdb/users';
 import {
   adminToken,
+  adminUserName,
   beforeApiTests,
   localUserToken,
   requestAuthAndType,
 } from './utils';
 import {createSampleTeam} from './teams.test';
+
+const NOTEBOOKS_API_BASE = '/api/notebooks';
 
 const EMPTY_UI_SPEC = {
   fields: {},
@@ -114,10 +121,12 @@ const createSampleTemplate = async (
 // list and see the new template
 export const listTemplates = async (
   app: Express,
-  token: string = adminToken
+  token: string = adminToken,
+  query?: {includeArchived?: boolean}
 ): Promise<GetListTemplatesResponse> => {
+  const qs = query?.includeArchived === true ? '?includeArchived=true' : '';
   return await requestAuthAndType(
-    request(app).get(`${TEMPLATE_API_BASE}`),
+    request(app).get(`${TEMPLATE_API_BASE}${qs}`),
     token
   )
     .expect(200)
@@ -170,6 +179,46 @@ const deleteATemplate = async (
     .expect(200);
 };
 
+const getTemplateSurveyReferences = async (
+  app: Express,
+  templateId: string,
+  token: string = adminToken
+): Promise<GetTemplateSurveyReferencesResponse> => {
+  return await requestAuthAndType(
+    request(app).get(`${TEMPLATE_API_BASE}/${templateId}/survey-references`),
+    token
+  )
+    .expect(200)
+    .then(res => GetTemplateSurveyReferencesResponseSchema.parse(res.body));
+};
+
+const setTemplateArchived = async (
+  app: Express,
+  templateId: string,
+  archive: boolean,
+  token: string = adminToken
+) => {
+  return await requestAuthAndType(
+    request(app)
+      .put(`${TEMPLATE_API_BASE}/${templateId}/archive`)
+      .send({archive}),
+    token
+  ).expect(200);
+};
+
+const restoreTemplateFromArchive = async (
+  app: Express,
+  templateId: string,
+  token: string = adminToken
+) => {
+  return await requestAuthAndType(
+    request(app).post(`${TEMPLATE_API_BASE}/${templateId}/restore`).send({}),
+    token
+  )
+    .expect(200)
+    .then(res => PostRestoreTemplateResponseSchema.parse(res.body));
+};
+
 /**
  * Fetches a given template by ID
  * @param app The express app
@@ -198,6 +247,85 @@ describe('template API tests', () => {
 
   //======= TEMPLATES ===========
   //=============================
+
+  it('excludes archived templates by default; includeArchived lists archived only', async () => {
+    const {template: activeTpl} = await createSampleTemplate(app, {
+      name: 'active-template',
+    });
+    const {template: archivedTpl} = await createSampleTemplate(app, {
+      name: 'archived-template',
+    });
+    await setTemplateArchived(app, archivedTpl._id, true);
+
+    const defaultList = await listTemplates(app);
+    const defaultIds = defaultList.templates.map(t => t._id).sort();
+    expect(defaultIds).to.deep.equal([activeTpl._id].sort());
+
+    const archivedOnly = await listTemplates(app, adminToken, {
+      includeArchived: true,
+    });
+    const archivedIds = archivedOnly.templates.map(t => t._id).sort();
+    expect(archivedIds).to.deep.equal([archivedTpl._id].sort());
+
+    await setTemplateArchived(app, activeTpl._id, true);
+    await deleteATemplate(app, activeTpl._id);
+    await deleteATemplate(app, archivedTpl._id);
+  });
+
+  it('PUT archive removes template from default list; POST restore returns active document and lists update', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'archive-restore-cycle',
+    });
+    const id = template._id;
+
+    let defaultList = await listTemplates(app);
+    expect(defaultList.templates.map(t => t._id)).to.include(id);
+
+    await setTemplateArchived(app, id, true);
+    await getATemplate(app, id).then(doc => {
+      expect(doc.archived).to.equal(true);
+    });
+
+    defaultList = await listTemplates(app);
+    expect(defaultList.templates.map(t => t._id)).to.not.include(id);
+    const archivedOnly = await listTemplates(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedOnly.templates.map(t => t._id)).to.include(id);
+
+    const restored = await restoreTemplateFromArchive(app, id);
+    expect(restored.archived).to.equal(false);
+    expect(restored._id).to.equal(id);
+
+    defaultList = await listTemplates(app);
+    expect(defaultList.templates.map(t => t._id)).to.include(id);
+    const archivedAfter = await listTemplates(app, adminToken, {
+      includeArchived: true,
+    });
+    expect(archivedAfter.templates.map(t => t._id)).to.not.include(id);
+
+    await setTemplateArchived(app, id, true);
+    await deleteATemplate(app, id);
+  });
+
+  it('POST restore rejects when template is not archived', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'not-archived',
+    });
+    const response = await requestAuthAndType(
+      request(app)
+        .post(`${TEMPLATE_API_BASE}/${template._id}/restore`)
+        .send({}),
+      adminToken
+    );
+    expect(response.status).to.equal(400);
+    expect(response.body.error.message).to.equal(
+      'Only archived templates can be restored.'
+    );
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+  });
 
   it('create, list, get, delete', async () => {
     const name = 'test 123 template';
@@ -285,7 +413,8 @@ describe('template API tests', () => {
       expect(template.version).to.equal(1);
     });
 
-    // Now delete template 2 and check list again
+    // Now delete template 2 and check list again (archive-before-delete)
+    await setTemplateArchived(app, templateId2, true);
     await deleteATemplate(app, templateId2);
 
     // List again
@@ -299,6 +428,7 @@ describe('template API tests', () => {
     });
 
     // Now delete template 1 and check list again
+    await setTemplateArchived(app, templateId1, true);
     await deleteATemplate(app, templateId1);
 
     // List again
@@ -442,6 +572,78 @@ describe('template API tests', () => {
     expect(response.body.error.message).to.equal(
       'The specified team ID does not exist.'
     );
+  });
+
+  it('removes template roles from people DB when template is deleted', async () => {
+    const {template} = await createSampleTemplate(app, {
+      name: 'role-cleanup-template',
+    });
+    const admin = await getCouchUserFromEmailOrUserId(adminUserName);
+    expect(admin).to.not.equal(null);
+    expect(
+      admin!.templateRoles.some(r => r.resourceId === template._id)
+    ).to.equal(true);
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+
+    const adminAfter = await getCouchUserFromEmailOrUserId(adminUserName);
+    expect(adminAfter).to.not.equal(null);
+    expect(
+      adminAfter!.templateRoles.some(r => r.resourceId === template._id)
+    ).to.equal(false);
+  });
+
+  it('rejects permanent delete when template is not archived', async () => {
+    const {template} = await createSampleTemplate(app, {name: 'not-archived'});
+    const res = await requestAuthAndType(
+      request(app).post(`${TEMPLATE_API_BASE}/${template._id}/delete`)
+    ).send();
+    expect(res.status).to.equal(400);
+    expect(res.body.error.message).to.include('Only archived templates');
+  });
+
+  it('reports survey reference count and clears templateId on projects when deleted', async () => {
+    const {template} = await createSampleTemplate(app, {});
+    await getTemplateSurveyReferences(app, template._id).then(r =>
+      expect(r.surveyCount).to.equal(0)
+    );
+
+    const notebookId = await requestAuthAndType(
+      request(app)
+        .post(`${NOTEBOOKS_API_BASE}`)
+        .send({
+          name: 'survey linked to template',
+          template_id: template._id,
+        } satisfies CreateNotebookFromTemplate)
+    )
+      .expect(200)
+      .then(res => PostCreateNotebookResponseSchema.parse(res.body).notebook);
+
+    const withRef = await getProjectById(notebookId);
+    expect(withRef.templateId).to.equal(template._id);
+
+    await getTemplateSurveyReferences(app, template._id).then(r =>
+      expect(r.surveyCount).to.equal(1)
+    );
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+
+    const afterDelete = await getProjectById(notebookId);
+    expect(afterDelete.templateId).to.equal(undefined);
+
+    await requestAuthAndType(
+      request(app).get(`${NOTEBOOKS_API_BASE}/${notebookId}`)
+    )
+      .expect(200)
+      .then(res => {
+        expect(res.body.metadata?.template_id).to.equal(undefined);
+      });
+
+    await requestAuthAndType(
+      request(app).get(`${TEMPLATE_API_BASE}/${template._id}`)
+    ).expect(404);
   });
 
   it('create notebook from template', async () => {

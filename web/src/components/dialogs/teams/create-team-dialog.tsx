@@ -6,7 +6,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
 import {useState} from 'react';
 import {CreateTeamForm} from '../../forms/teams/create-team-form';
 import {Button} from '../../ui/button';
@@ -31,7 +31,7 @@ export const CreateTeamDialog = () => {
           <DialogTitle>Create Team</DialogTitle>
           <DialogDescription>
             Create a new team to help manage users and share access to{' '}
-            {NOTEBOOK_NAME_CAPITALIZED}s and Templates.
+            {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and Templates.
           </DialogDescription>
         </DialogHeader>
         <CreateTeamForm setDialogOpen={setOpen} />

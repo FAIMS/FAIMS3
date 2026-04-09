@@ -65,24 +65,24 @@ import NotebookSyncSwitch from '../notebook/settings/sync_switch';
 import HeadingProjectGrid from '../ui/heading-grid';
 import Tabs from '../ui/tab-grid';
 
-// Survey status naming conventions
+// Notebook status naming conventions (labels are fixed English; surrounding UI uses NOTEBOOK_NAME* from build config).
 
-// E.g. "This survey is not active"
+// E.g. "This notebook is not active"
 export const NOT_ACTIVATED_LABEL = 'Not Active';
 
-// E.g. "This survey is active"
+// E.g. "This notebook is active"
 export const ACTIVATED_LABEL = 'Active';
 
-// E.g. "This survey has been activated"
+// E.g. "This notebook has been activated"
 export const ACTIVATED_VERB_PAST = 'Activated';
 
-// E.g. "Please activate this survey"
+// E.g. "Please activate this notebook"
 export const ACTIVATE_VERB_LABEL = 'Activate';
 
-// E.g. "This survey is currently activating" or "Before activating, consider ..."
+// E.g. "This notebook is currently activating" or "Before activating, consider ..."
 export const ACTIVATE_ACTIVE_VERB_LABEL = 'Activating';
 
-// E.g. "You cannot currently de-activate a survey"
+// E.g. "You cannot currently de-activate a notebook"
 export const DE_ACTIVATE_VERB = 'De-activate';
 export const DE_ACTIVATE_ACTIVE_VERB = 'De-activating';
 
@@ -103,7 +103,7 @@ export default function NoteBooks() {
   const projects = useAppSelector(state =>
     selectProjectsByServerId(state, activeServerId)
   ).filter(
-    // don't show de-activated closed surveys
+    // don't show de-activated closed notebooks
     project =>
       !(!project.isActivated && project.status === ProjectStatus.CLOSED)
   );

@@ -86,8 +86,14 @@ export function DataTable<TData, TValue>({
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(header => {
+                  const headerMeta = header.column.columnDef.meta as
+                    | {headerClassName?: string}
+                    | undefined;
                   return (
-                    <TableHead key={header.id}>
+                    <TableHead
+                      key={header.id}
+                      className={headerMeta?.headerClassName}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -104,11 +110,19 @@ export function DataTable<TData, TValue>({
             {loading ? (
               [...Array(1).keys()].map(key => (
                 <TableRow key={key}>
-                  {table.getAllColumns().map(column => (
-                    <TableCell key={column.id}>
-                      <Skeleton className="w-full h-[20px] rounded-full" />
-                    </TableCell>
-                  ))}
+                  {table.getAllColumns().map(column => {
+                    const cellMeta = column.columnDef.meta as
+                      | {cellClassName?: string}
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={column.id}
+                        className={cellMeta?.cellClassName}
+                      >
+                        <Skeleton className="w-full h-[20px] rounded-full" />
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : table.getRowModel().rows?.length ? (
@@ -119,14 +133,22 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && 'selected'}
                   onClick={() => onRowClick && onRowClick(row.original)}
                 >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map(cell => {
+                    const cellMeta = cell.column.columnDef.meta as
+                      | {cellClassName?: string}
+                      | undefined;
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cellMeta?.cellClassName}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             ) : (

@@ -60,10 +60,16 @@ export enum Action {
   // Change open/closed status
   CHANGE_PROJECT_STATUS = 'CHANGE_PROJECT_STATUS',
 
+  /** Archive a survey or restore from archive (returns to closed). */
+  CHANGE_PROJECT_ARCHIVE_STATUS = 'CHANGE_PROJECT_ARCHIVE_STATUS',
+
   // Change team of a project
   CHANGE_PROJECT_TEAM = 'CHANGE_PROJECT_TEAM',
 
-  // Delete the project
+  /**
+   * Permanently destroy survey data on the server (requires archive first).
+   * Granted to survey administrators (PROJECT_ADMIN) for that survey and to operations staff.
+   */
   DELETE_PROJECT = 'DELETE_PROJECT',
 
   // Data export
@@ -121,10 +127,10 @@ export enum Action {
   // Update the UI specification
   UPDATE_TEMPLATE_UISPEC = 'UPDATE_TEMPLATE_UISPEC',
 
-  // Change open/closed status
+  /** Archive or restore template */
   CHANGE_TEMPLATE_STATUS = 'CHANGE_TEMPLATE_STATUS',
 
-  // Delete the project
+  /** Permanently remove a template document (API requires it to be archived first). */
   DELETE_TEMPLATE = 'DELETE_TEMPLATE',
 
   // ============================================================
@@ -179,6 +185,10 @@ export enum Action {
   RESET_USER_PASSWORD = 'RESET_USER_PASSWORD',
   // Delete a user
   DELETE_USER = 'DELETE_USER',
+  // Disable a user account (soft-off; preserves history)
+  DISABLE_USER_ACCOUNT = 'DISABLE_USER_ACCOUNT',
+  // Re-enable a previously disabled user account
+  ENABLE_USER_ACCOUNT = 'ENABLE_USER_ACCOUNT',
 
   // ============================================================
   // LONG LIVED TOKEN ACTIONS
@@ -348,6 +358,13 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
+  [Action.CHANGE_PROJECT_ARCHIVE_STATUS]: {
+    name: 'Archive or Restore Project',
+    description:
+      'Archive a survey (hide from default lists) or restore an archived survey to closed state',
+    resourceSpecific: true,
+    resource: Resource.PROJECT,
+  },
   [Action.CHANGE_PROJECT_TEAM]: {
     name: 'Change Project Team',
     description: 'Change the team associated with a project',
@@ -355,8 +372,9 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resource: Resource.PROJECT,
   },
   [Action.DELETE_PROJECT]: {
-    name: 'Delete Project',
-    description: 'Permanently remove a project from the system',
+    name: 'Permanently Destroy Project Data',
+    description:
+      'Irreversibly delete all server-side survey data (requires archive first). Survey administrators may delete their own surveys.',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -680,13 +698,14 @@ export const actionDetails: Record<Action, ActionDetails> = {
   },
   [Action.CHANGE_TEMPLATE_STATUS]: {
     name: 'Change Template Status',
-    description: 'Modify the status of a template (draft, published, etc.)',
+    description: 'Archive or restore a template',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
   [Action.DELETE_TEMPLATE]: {
     name: 'Delete Template',
-    description: 'Permanently remove a template from the system',
+    description:
+      'Permanently remove an archived template from the system (hard delete)',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },
@@ -715,6 +734,19 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.DELETE_USER]: {
     name: 'Delete User',
     description: 'Permanently remove a user from the system',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
+  [Action.DISABLE_USER_ACCOUNT]: {
+    name: 'Disable user account',
+    description:
+      'Disable a user account so they cannot authenticate; data and history are kept',
+    resourceSpecific: true,
+    resource: Resource.USER,
+  },
+  [Action.ENABLE_USER_ACCOUNT]: {
+    name: 'Enable user account',
+    description: 'Re-enable a previously disabled user account',
     resourceSpecific: true,
     resource: Resource.USER,
   },
@@ -1082,10 +1114,11 @@ export const roleActions: Record<
       Action.CREATE_ADMIN_PROJECT_INVITE,
       Action.EDIT_ADMIN_PROJECT_INVITE,
       Action.DELETE_ADMIN_PROJECT_INVITE,
-      Action.DELETE_PROJECT,
+      Action.CHANGE_PROJECT_ARCHIVE_STATUS,
       Action.ADD_ADMIN_TO_PROJECT,
       Action.REMOVE_ADMIN_FROM_PROJECT,
       Action.GENERATE_RANDOM_PROJECT_RECORDS,
+      Action.DELETE_PROJECT,
     ],
     inheritedRoles: [Role.PROJECT_MANAGER],
   },
@@ -1130,6 +1163,11 @@ export const roleActions: Record<
       Action.ADD_OR_REMOVE_GLOBAL_USER_ROLE,
       Action.RESET_USER_PASSWORD,
       Action.DELETE_USER,
+      Action.DISABLE_USER_ACCOUNT,
+      Action.ENABLE_USER_ACCOUNT,
+
+      // Irreversible survey destruction (also on PROJECT_ADMIN for owned surveys)
+      Action.DELETE_PROJECT,
 
       // System operations
       Action.INITIALISE_SYSTEM_API,

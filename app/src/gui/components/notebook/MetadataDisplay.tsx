@@ -9,6 +9,7 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import {NOTEBOOK_NAME_CAPITALIZED} from '../../../buildconfig';
 import {Project} from '../../../context/slices/projectSlice';
 import MetadataRenderer from '../metadataRenderer';
 
@@ -45,7 +46,7 @@ export const MetadataDisplayComponent = (
             flexGrow: 1,
           }}
         >
-          Survey Details
+          {NOTEBOOK_NAME_CAPITALIZED} Details
         </Typography>
       </Box>
 
@@ -122,18 +123,6 @@ export const MetadataDisplayComponent = (
             </Typography>
             <Table size={'small'}>
               <TableBody>
-                <TableRow>
-                  <TableCell>
-                    <Typography variant={'overline'}>Status</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <MetadataRenderer
-                      project_id={props.project.projectId}
-                      metadata_key={'project_status'}
-                      chips={false}
-                    />
-                  </TableCell>
-                </TableRow>
                 <TableRow>
                   <TableCell>
                     <Typography variant={'overline'}>
