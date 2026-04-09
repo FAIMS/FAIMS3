@@ -1028,7 +1028,7 @@ api.post(
 
 /**
  * Permanently destroys survey server data (invites, people roles, Couch DBs).
- * Requires archive first and operations-level permission.
+ * Requires archive first. Allowed for survey administrators (or operations staff).
  */
 api.post(
   '/:notebookId/delete',

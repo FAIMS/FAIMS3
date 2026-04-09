@@ -127,7 +127,7 @@ export const useGetProjects = ({
 }: {
   user: User | null;
   enabled?: boolean;
-  /** When true, lists archived surveys too (directory-style sync uses this). */
+  /** When true, lists archived notebooks/projects too (directory-style sync uses this). */
   includeArchived?: boolean;
 }) =>
   useQuery({
@@ -163,7 +163,7 @@ export const useGetTemplate = ({
   });
 
 /**
- * Survey reference counts for delete-confirmation copy (archived template flow).
+ * Notebook reference counts for delete-confirmation copy (archived template flow).
  */
 export const useTemplateSurveyReferences = ({
   user,

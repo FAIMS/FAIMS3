@@ -1,4 +1,8 @@
-import {ARCHIVE_TAB_VALUES, type ArchiveTab} from '@/archive/archive-tabs';
+import {
+  ARCHIVE_TAB_VALUES,
+  DEFAULT_ARCHIVE_TAB,
+  type ArchiveTab,
+} from '@/archive/archive-tabs';
 import {NavItem, NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
 import {
@@ -8,7 +12,10 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
@@ -55,7 +62,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   if (canSeeProjects) {
     topSectionNavItems.push({
-      title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+      title: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
       url: '/projects',
       icon: LetterText,
       isActive: pathname.startsWith('/projects') || pathname === '/',
@@ -66,7 +73,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: name,
               url: `/projects/${project_id}`,
             }))
-          : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME}s...`}],
+          : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME_PLURAL}...`}],
     });
   }
 
@@ -116,7 +123,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   if (canSeeTemplates) {
     const archiveTabTitles: Record<ArchiveTab, string> = {
-      surveys: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+      [NOTEBOOK_NAME_PLURAL]: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
       templates: 'Templates',
       users: 'Users',
       teams: 'Teams',
@@ -134,7 +141,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       url: '/archive',
       icon: ArchiveRestore,
       isActive: pathname.startsWith('/archive'),
-      linkSearch: {tab: 'templates'},
+      linkSearch: {tab: DEFAULT_ARCHIVE_TAB},
       items: archiveSubItems,
     });
   }

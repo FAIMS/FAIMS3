@@ -182,6 +182,7 @@ export class FaimsInfraStack extends cdk.Stack {
         config.security.maximumLongLivedTokenDurationDays,
       bugsnagKey: config.bugMonitoring.bugsnagKey,
       forceRemoteDeletion: config.uiConfiguration.forceRemoteDeletion ?? 'never',
+      deleteOnDeactivation: config.uiConfiguration.deleteOnDeactivation,
     });
 
     // Backup setup

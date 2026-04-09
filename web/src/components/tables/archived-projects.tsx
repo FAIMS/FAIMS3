@@ -22,8 +22,6 @@ import {
 import {Button} from '@/components/ui/button';
 import {MoreVertical} from 'lucide-react';
 import {useState} from 'react';
-import {Link} from '@tanstack/react-router';
-
 export type ArchivedProjectRow = GetNotebookListResponse[number];
 
 function ArchivedProjectRowActions({row}: {row: ArchivedProjectRow}) {
@@ -97,7 +95,7 @@ function ArchivedProjectRowActions({row}: {row: ArchivedProjectRow}) {
       {canDelete ? (
         <DeleteArchivedProjectDialog
           projectId={row.project_id}
-          surveyName={row.name}
+          projectDisplayName={row.name}
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
         />
@@ -113,13 +111,7 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
       <DataTableColumnHeader column={column} title="Name" />
     ),
     cell: ({row}) => (
-      <Link
-        to="/projects/$projectId"
-        params={{projectId: row.original.project_id}}
-        className="font-medium text-primary hover:underline"
-      >
-        {row.original.name}
-      </Link>
+      <span className="font-medium text-card-foreground">{row.original.name}</span>
     ),
   },
   {

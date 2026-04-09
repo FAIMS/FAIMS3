@@ -18,6 +18,7 @@
  *   TODO
  */
 
+import {RecordDeleteConfirmDialog} from '@faims3/forms';
 import {
   canDeleteProjectRecord,
   ProjectID,
@@ -26,14 +27,7 @@ import {
   setRecordAsDeleted,
 } from '@faims3/data-model';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {
-  Alert,
-  AlertTitle,
-  Button,
-  Dialog,
-  DialogActions,
-  IconButton,
-} from '@mui/material';
+import {Button, IconButton} from '@mui/material';
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
 import * as ROUTES from '../../../constants/routes';
@@ -81,6 +75,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
   //console.debug('Delete props', props);
   const {projectId, serverId, recordId, revisionId, recordCreatedBy} = props;
   const [open, setOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
   const history = useNavigate();
   const dispatch = useAppDispatch();
   const handleClickOpen = () => {
@@ -106,6 +101,7 @@ export default function RecordDelete(props: RecordDeleteProps) {
   };
 
   const handleDelete = () => {
+    setDeleting(true);
     deleteFromDB({
       projectId,
       recordId,
@@ -134,8 +130,11 @@ export default function RecordDelete(props: RecordDeleteProps) {
           })
         );
         handleClose();
-      });
+      })
+      .finally(() => setDeleting(false));
   };
+
+  const recordHrid = props.hrid ?? recordId;
 
   return (
     <div>
@@ -170,34 +169,13 @@ export default function RecordDelete(props: RecordDeleteProps) {
         </IconButton>
       )}
 
-      <Dialog
+      <RecordDeleteConfirmDialog
         open={open}
         onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <Alert severity="error">
-          <AlertTitle>
-            Are you sure you want to delete this record?{' '}
-            {props.hrid && `HRID: ${props.hrid} `}ID: ${recordId}
-          </AlertTitle>
-          You cannot reverse this action! Be sure you wish to proceed.
-        </Alert>
-        <DialogActions style={{justifyContent: 'space-between'}}>
-          <Button onClick={handleClose} color="primary">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDelete}
-            color="error"
-            disableElevation
-            variant={'contained'}
-            data-testid="confirm-delete"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+        recordHrid={recordHrid}
+        onConfirm={handleDelete}
+        confirmLoading={deleting}
+      />
     </div>
   );
 }

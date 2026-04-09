@@ -1,9 +1,15 @@
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '@/constants';
 
 /** Central strings for the archived-template delete dialog — edit here only. */
 export const templateDeleteDialogLabels = {
   menuItem: 'Delete permanently',
-  title: 'Delete template permanently?',
+  title: 'Permanently delete template',
+  introBefore: 'Are you sure you want to permanently delete ',
+  introAfter: '. This cannot be undone.',
   cancel: 'Cancel',
   confirm: 'Delete permanently',
   loadingReferences: `Loading ${NOTEBOOK_NAME_CAPITALIZED} references…`,
@@ -11,57 +17,39 @@ export const templateDeleteDialogLabels = {
 } as const;
 
 /**
- * Body copy and layout hints from the number of surveys still linked to the template.
+ * Body copy from the number of notebooks still linked to the template.
+ * When `linkedWarningText` is set, show it in the red warning panel.
  */
 export function getTemplateDeleteDialogBody({
   templateName,
-  referencingSurveyCount,
+  referencingNotebookCount,
 }: {
   templateName: string;
-  referencingSurveyCount: number;
+  referencingNotebookCount: number;
 }): {
-  /** When true, show a prominent warning panel (destructive). */
-  showStrongWarning: boolean;
-  /** Text before the highlighted template name. */
-  introBefore: string;
-  /** Shown in monospace / pill styling between introBefore and introAfter. */
   nameLabel: string;
-  /** Text after the highlighted name (starts with punctuation if needed). */
-  introAfter: string;
-  bullets: string[];
-  footerNote: string;
+  linkedWarningText: string | null;
 } {
   const nameLabel = templateName.trim() || 'this template';
+  const nbCap = NOTEBOOK_NAME_CAPITALIZED;
+  const nbPlural = NOTEBOOK_NAME_PLURAL;
+  const nbPluralCap = NOTEBOOK_NAME_PLURAL_CAPITALIZED;
 
-  if (referencingSurveyCount === 0) {
-    return {
-      showStrongWarning: false,
-      introBefore: 'You are about to permanently delete ',
-      nameLabel,
-      introAfter: '. This cannot be undone.',
-      bullets: [
-        'The template definition will be removed from the system.',
-        `No ${NOTEBOOK_NAME_CAPITALIZED.toLowerCase()}s reference this template, so nothing else will be changed.`,
-      ],
-      footerNote:
-        'If you might need this template again, restore it from the archive instead of deleting.',
-    };
+  if (referencingNotebookCount === 0) {
+    return {nameLabel, linkedWarningText: null};
   }
 
-  const countLabel =
-    referencingSurveyCount === 1
-      ? `1 ${NOTEBOOK_NAME_CAPITALIZED}`
-      : `${referencingSurveyCount} ${NOTEBOOK_NAME_CAPITALIZED}s`;
+  const n = referencingNotebookCount;
+  const countPhrase =
+    n === 1 ? `one ${nbCap}` : `${n} ${nbPlural}`;
+  const isAre = n === 1 ? 'is' : 'are';
 
-  return {
-    showStrongWarning: true,
-    introBefore: 'You are about to permanently delete ',
-    nameLabel,
-    introAfter: '. This cannot be undone.',
-    bullets: [
-      `${countLabel} still reference this template. Those references will be removed from the ${NOTEBOOK_NAME} records.`,
-      `${NOTEBOOK_NAME_CAPITALIZED} data (records, attachments) is not deleted, but the link to this template will be cleared.`,
-    ],
-    footerNote: 'This action is irreversible.',
-  };
+  const consequence =
+    n === 1
+      ? `The ${nbCap} and its data will not be deleted; the link between the ${nbCap} and this template will be removed, which means you will not be able to track which template the ${nbCap} was created from.`
+      : `The ${nbPluralCap} and their data will not be deleted; the links between the ${nbPluralCap} and this template will be removed, which means you will not be able to track which template the ${nbPluralCap} were created from.`;
+
+  const linkedWarningText = `Please note ${countPhrase} ${isAre} linked to this template. ${consequence}`;
+
+  return {nameLabel, linkedWarningText};
 }

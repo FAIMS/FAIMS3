@@ -11,7 +11,6 @@ import {KeyRound} from 'lucide-react';
 import {toast} from 'sonner';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {DisableUserDialog} from '../dialogs/disable-user';
-import {RemoveUserDialog} from '../dialogs/remove-user';
 import {AddRolePopover} from '../popovers/add-role-popover';
 import {Button} from '../ui/button';
 import {RoleCard} from '../ui/role-card';
@@ -166,24 +165,6 @@ export const useUsersColumns = ({
       ),
       header: () => (
         <div className="flex justify-center items-center">Disable</div>
-      ),
-    },
-    {
-      id: 'remove',
-      cell: ({
-        row: {
-          original: {_id, _id: userId},
-        },
-      }: any) => (
-        <div className="flex justify-center items-center -my-2">
-          <RemoveUserDialog
-            userId={_id}
-            disabled={!_id || userId === user?.user.id}
-          />
-        </div>
-      ),
-      header: () => (
-        <div className="flex justify-center items-center">Remove</div>
       ),
     },
   ];

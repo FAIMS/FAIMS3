@@ -10,6 +10,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import LinkIcon from '@mui/icons-material/Link';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import SearchIcon from '@mui/icons-material/Search';
+import {RecordDeleteConfirmDialog} from '../../../components/RecordDeleteConfirmDialog';
 import {
   Alert,
   Box,
@@ -470,10 +471,6 @@ const RelatedRecordFieldPreview = (
           </Button>
         )}
       </div>
-
-      <Typography variant="caption" display="block" color="text.secondary">
-        No records linked.
-      </Typography>
     </FieldWrapper>
   );
 };
@@ -494,6 +491,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     null
   );
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -711,6 +709,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   const handleConfirmDeleteRelated = async () => {
     if (!deleteTarget) return;
     setDeleteError(null);
+    setDeletePending(true);
     try {
       const engine = props.config.dataEngine();
       const peer = await engine.hydrated.getHydratedRecord({
@@ -739,8 +738,22 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
       setDeleteError(
         e instanceof Error ? e.message : 'Could not delete this record.'
       );
+    } finally {
+      setDeletePending(false);
     }
   };
+
+  const deleteTargetIndex =
+    deleteTarget === null
+      ? -1
+      : normalizedLinks.findIndex(l => l.record_id === deleteTarget.record_id);
+  const deleteTargetHydrated =
+    deleteTargetIndex >= 0
+      ? relatedRecordQueries[deleteTargetIndex]?.data
+      : undefined;
+  /** HR ID of the linked record being deleted (not the parent form record). */
+  const deleteTargetHrid =
+    deleteTargetHydrated?.hrid ?? deleteTarget?.record_id ?? '';
 
   // Extract already-linked record IDs for filtering
   const linkedRecordIds = useMemo(
@@ -748,12 +761,6 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     [normalizedLinks]
   );
 
-  // After loads settle: if every link points at a deleted record, show the
-  // caption instead of an empty list.
-  const allRelatedHydrationDone = relatedRecordQueries.every(q => !q.isPending);
-  const allRelatedHydrationSucceeded = relatedRecordQueries.every(
-    q => q.isSuccess
-  );
   const visibleRelatedLinkCount = relatedRecordQueries.reduce((n, q) => {
     const d = q.data;
     if (!d || d.record.deleted || d.revision.deleted) {
@@ -761,11 +768,10 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     }
     return n + 1;
   }, 0);
-  const showOnlyDeletedLinksHint =
-    normalizedLinks.length > 0 &&
-    allRelatedHydrationDone &&
-    allRelatedHydrationSucceeded &&
-    visibleRelatedLinkCount === 0;
+  /** Show list UI only when there is something to show (incl. loading/errors), not when every link is deleted. */
+  const hasRelatedListContent =
+    relatedRecordQueries.some(q => q.isPending || q.isError) ||
+    visibleRelatedLinkCount > 0;
 
   // Kebab menu: only when the user may delete the peer and/or detach (Linked +
   // edit peer).
@@ -859,43 +865,25 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         />
       )}
 
-      {/* Linked Records List */}
-      {normalizedLinks.length > 0 ? (
-        <>
-          <Paper variant="outlined">
-            <List dense disablePadding>
-              {normalizedLinks.map((link, index) => (
-                <RelatedRecordListItem
-                  key={link.record_id}
-                  link={link}
-                  queryResult={relatedRecordQueries[index]}
-                  onNavigate={handleLinkClick}
-                  onOpenActionsMenu={
-                    linkHasDestructiveActions(index)
-                      ? (anchorEl, l) => setActionMenu({anchorEl, link: l})
-                      : undefined
-                  }
-                />
-              ))}
-            </List>
-          </Paper>
-          {showOnlyDeletedLinksHint && (
-            <Typography
-              variant="caption"
-              display="block"
-              color="text.secondary"
-              sx={{mt: 1}}
-            >
-              These links point to records that have been deleted, so they are
-              hidden. If a record is restored, it will appear in this list
-              again.
-            </Typography>
-          )}
-        </>
-      ) : (
-        <Typography variant="caption" display="block" color="text.secondary">
-          No records linked.
-        </Typography>
+      {/* Linked records list (omit when empty or all linked rows are deleted) */}
+      {normalizedLinks.length > 0 && hasRelatedListContent && (
+        <Paper variant="outlined">
+          <List dense disablePadding>
+            {normalizedLinks.map((link, index) => (
+              <RelatedRecordListItem
+                key={link.record_id}
+                link={link}
+                queryResult={relatedRecordQueries[index]}
+                onNavigate={handleLinkClick}
+                onOpenActionsMenu={
+                  linkHasDestructiveActions(index)
+                    ? (anchorEl, l) => setActionMenu({anchorEl, link: l})
+                    : undefined
+                }
+              />
+            ))}
+          </List>
+        </Paper>
       )}
 
       <Menu
@@ -941,42 +929,18 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           )}
       </Menu>
 
-      <Dialog
+      <RecordDeleteConfirmDialog
         open={Boolean(deleteTarget)}
         onClose={() => {
+          if (deletePending) return;
           setDeleteTarget(null);
           setDeleteError(null);
         }}
-      >
-        <DialogTitle>Delete linked record?</DialogTitle>
-        <DialogContent>
-          {deleteError && (
-            <Alert severity="error" sx={{mb: 1}}>
-              {deleteError}
-            </Alert>
-          )}
-          <Typography variant="body2">
-            This removes the linked record. This is the same as if you opened
-            that record and deleted it there.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setDeleteTarget(null);
-              setDeleteError(null);
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            color="error"
-            onClick={() => void handleConfirmDeleteRelated()}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+        recordHrid={deleteTargetHrid}
+        onConfirm={() => void handleConfirmDeleteRelated()}
+        errorMessage={deleteError}
+        confirmLoading={deletePending}
+      />
     </>
   );
 };

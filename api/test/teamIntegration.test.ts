@@ -1344,14 +1344,14 @@ describe('Team integration with templates and projects', () => {
       })
     ).to.be.false;
 
-    // Permanent destroy is not granted to team/project admins (operations only).
+    // Team admin has virtual PROJECT_ADMIN on team projects — may permanently destroy.
     expect(
       userCanDo({
         user: upgradedAdmin,
         action: Action.DELETE_PROJECT,
         resourceId: projectId,
       })
-    ).to.be.false;
+    ).to.be.true;
 
     expect(
       userCanDo({
@@ -1480,14 +1480,14 @@ describe('Team integration with templates and projects', () => {
     // Upgrade user
     const upgradedUser = await upgradeCouchUserToExpressUser({dbUser: user});
 
-    // Team admin has project/template admin virtual roles, not DELETE_PROJECT (ops-only).
+    // Team admin has virtual PROJECT_ADMIN on team-owned surveys — may delete permanently.
     expect(
       userCanDo({
         user: upgradedUser,
         action: Action.DELETE_PROJECT,
         resourceId: project1a,
       })
-    ).to.be.false;
+    ).to.be.true;
 
     expect(
       userCanDo({

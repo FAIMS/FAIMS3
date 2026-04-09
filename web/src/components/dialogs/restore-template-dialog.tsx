@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
 import {useRestoreTemplateFromArchive} from '@/hooks/archive-hooks';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
 
 type RestoreTemplateDialogProps = {
   templateId: string;
@@ -22,7 +22,7 @@ type RestoreTemplateDialogProps = {
  */
 export function RestoreTemplateDialog({
   templateId,
-  templateName,
+  templateName: _templateName,
   open,
   onOpenChange,
 }: RestoreTemplateDialogProps) {
@@ -30,24 +30,17 @@ export function RestoreTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onClick={e => e.stopPropagation()}>
+      <DialogContent
+        onClick={e => e.stopPropagation()}
+        className="text-black"
+      >
         <DialogHeader>
-          <DialogTitle>Restore template</DialogTitle>
+          <DialogTitle className="text-black">Restore template</DialogTitle>
           <DialogDescription asChild>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>
-                Restore{' '}
-                <span className="font-medium text-foreground">
-                  {templateName}
-                </span>{' '}
-                to active status? It can be edited again and used to create new{' '}
-                {NOTEBOOK_NAME_CAPITALIZED}s.
-              </p>
-              <p>
-                Existing {NOTEBOOK_NAME_CAPITALIZED}s created from this template
-                are not changed.
-              </p>
-            </div>
+            <p className="text-sm leading-relaxed text-black">
+              Restoring this template will unarchive it. You will be able to edit
+              the template and create new {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from it.
+            </p>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">

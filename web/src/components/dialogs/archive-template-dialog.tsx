@@ -101,8 +101,8 @@ export const ArchiveTemplateDialog = ({archived}: {archived: boolean}) => {
         <DialogHeader>
           <DialogTitle>Archive Template</DialogTitle>
           <DialogDescription>
-            Archive the current template. This make the template read-only and
-            prevent new {NOTEBOOK_NAME}s from being created from it.
+            This makes the template read-only and prevents new {NOTEBOOK_NAME}s
+            from being created from it.
           </DialogDescription>
         </DialogHeader>
         <Button variant="destructive" className="w-full" onClick={onClick}>

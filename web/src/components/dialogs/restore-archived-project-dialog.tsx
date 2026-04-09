@@ -12,7 +12,11 @@ import {useAuth} from '@/context/auth-provider';
 import {useRestoreArchivedProject} from '@/hooks/archive-hooks';
 import {useState} from 'react';
 import {toast} from 'sonner';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  NOTEBOOK_NAME,
+  NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '@/constants';
 
 type RestoreArchivedProjectDialogProps = {
   projectId: string;
@@ -61,13 +65,19 @@ export function RestoreArchivedProjectDialog({
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent>
+      <DialogContent className="text-black dark:text-foreground">
         <DialogHeader>
-          <DialogTitle>Restore this {NOTEBOOK_NAME_CAPITALIZED}?</DialogTitle>
-          <DialogDescription className="text-left">
-            This {NOTEBOOK_NAME} will return to the <strong>closed</strong>{' '}
-            state (not open for new activations). You can change open/closed
-            status afterwards if you have permission.
+          <DialogTitle className="text-black dark:text-foreground">
+            Restore this {NOTEBOOK_NAME_CAPITALIZED}?
+          </DialogTitle>
+          <DialogDescription asChild>
+            <p className="text-left text-sm leading-relaxed !text-black dark:!text-foreground [&_strong]:text-inherit">
+              When restored, this {NOTEBOOK_NAME} will be{' '}
+              <strong>&apos;closed&apos;</strong>. You can{' '}
+              <strong>&apos;reopen&apos;</strong> this {NOTEBOOK_NAME} by going
+              to the {NOTEBOOK_NAME_PLURAL_CAPITALIZED}/
+              <strong>&apos;Actions&apos;</strong> tab.
+            </p>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">

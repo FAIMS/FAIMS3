@@ -239,10 +239,9 @@ export default function NotebookComponent({project}: NotebookComponentProps) {
       {project.status === ProjectStatus.CLOSED && (
         <Alert variant="standard" severity="warning" sx={{mb: 1}}>
           <AlertTitle>{NOTEBOOK_NAME_CAPITALIZED} is closed</AlertTitle>
-          This {NOTEBOOK_NAME} is <b>closed</b>. Your existing records can be
-          uploaded, but no additional data can be collected. It is recommended
-          to {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} in the
-          settings tab below.
+          Ensure your records have a green sync status and then{' '}
+          {DE_ACTIVATE_VERB.toLowerCase()} this {NOTEBOOK_NAME} via the settings
+          tab. No additional data can be collected for this {NOTEBOOK_NAME}.
         </Alert>
       )}
       <Box>

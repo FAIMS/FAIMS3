@@ -107,7 +107,11 @@ function RouteComponent() {
   }, [data?.tokens, showRevoked, showExpired]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">
+        Manage API Tokens
+      </h1>
+      <div className="space-y-4">
       {/* Information Card */}
       <Card className="border-slate-200 bg-slate-50/30 p-1">
         <CardHeader className="pb-4">
@@ -267,6 +271,7 @@ function RouteComponent() {
         defaultRowsPerPage={15}
         button={canCreateToken && <CreateLongLivedTokenDialog />}
       />
+      </div>
     </div>
   );
 }

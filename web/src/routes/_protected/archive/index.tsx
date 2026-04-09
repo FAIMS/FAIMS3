@@ -7,7 +7,11 @@ import {DataTable} from '@/components/data-table/data-table';
 import {archivedDisabledUserColumns} from '@/components/tables/archived-disabled-users';
 import {archivedTemplateColumns} from '@/components/tables/archived-templates';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  NOTEBOOK_NAME_CAPITALIZED,
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {archivedProjectColumns} from '@/components/tables/archived-projects';
 import {useGetProjects, useGetTemplates, useGetUsers} from '@/hooks/queries';
@@ -73,7 +77,7 @@ function RouteComponent() {
     [allUsersForArchive]
   );
 
-  const archivedSurveys = useMemo(
+  const archivedProjects = useMemo(
     () =>
       (projectsData ?? []).filter(
         p => p.status === ProjectStatus.ARCHIVED
@@ -91,14 +95,7 @@ function RouteComponent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Archive</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Resources which have been archived are visible below. Archived items
-          can be restored or deleted. Please proceed with caution as deletion
-          operations may be irreversible.
-        </p>
-      </div>
+      <h1 className="text-2xl font-semibold tracking-tight">Archive</h1>
 
       <Tabs
         value={tab}
@@ -108,18 +105,18 @@ function RouteComponent() {
         }}
       >
         <TabsList className="inline-flex h-auto w-fit max-w-full flex-wrap justify-start gap-1">
-          <TabsTrigger value="surveys">
-            {NOTEBOOK_NAME_CAPITALIZED}s
+          <TabsTrigger value={NOTEBOOK_NAME_PLURAL}>
+            {NOTEBOOK_NAME_PLURAL_CAPITALIZED}
           </TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="teams">Teams</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="surveys" className="mt-4">
+        <TabsContent value={NOTEBOOK_NAME_PLURAL} className="mt-4">
           <DataTable
             columns={archivedProjectColumns}
-            data={archivedSurveys}
+            data={archivedProjects}
             loading={projectsLoading}
           />
         </TabsContent>

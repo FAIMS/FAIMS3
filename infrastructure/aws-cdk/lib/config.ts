@@ -487,6 +487,11 @@ export const UiConfiguration = z
      * `never` = keep closed). Baked into web and app builds; must match for accurate Control Centre copy.
      */
     forceRemoteDeletion: z.enum(['allow', 'never']).optional(),
+    /**
+     * When true, manual notebook deactivation destroys the local Pouch/IndexedDB database.
+     * When false or omitted, deactivation only closes sync and DB handles (data may remain on disk).
+     */
+    deleteOnDeactivation: z.boolean().optional(),
   })
   .refine(
     data => {

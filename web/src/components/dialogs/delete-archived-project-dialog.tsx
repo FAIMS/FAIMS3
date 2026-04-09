@@ -17,19 +17,19 @@ import {useNavigate, useRouterState} from '@tanstack/react-router';
 import {useState} from 'react';
 import {toast} from 'sonner';
 import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
-import {getDeleteArchivedProjectDialogIntro} from '@/project-archive/project-lifecycle-copy';
-import {Skull} from 'lucide-react';
+import {AlertTriangle, Skull} from 'lucide-react';
 
 type DeleteArchivedProjectDialogProps = {
   projectId: string;
-  surveyName: string;
+  /** Exact display name the user must type to confirm (usually the project/notebook name). */
+  projectDisplayName: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
 
 export function DeleteArchivedProjectDialog({
   projectId,
-  surveyName,
+  projectDisplayName,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
 }: DeleteArchivedProjectDialogProps) {
@@ -46,12 +46,12 @@ export function DeleteArchivedProjectDialog({
   const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
   const [confirmText, setConfirmText] = useState('');
 
-  const matches = confirmText.trim() === surveyName.trim();
+  const matches = confirmText.trim() === projectDisplayName.trim();
 
   const onDelete = () => {
     if (!user || !matches) return;
     mutate(
-      {projectId, confirmName: surveyName.trim()},
+      {projectId, confirmName: projectDisplayName.trim()},
       {
         onSuccess: () => {
           toast.success(`${NOTEBOOK_NAME_CAPITALIZED} permanently deleted`);
@@ -84,40 +84,45 @@ export function DeleteArchivedProjectDialog({
           </Button>
         </DialogTrigger>
       ) : null}
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg text-black dark:text-foreground">
+        <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <Skull className="h-5 w-5" />
             Irreversible deletion
           </DialogTitle>
           <DialogDescription asChild>
-            <div className="space-y-3 text-left text-sm text-muted-foreground">
-              {getDeleteArchivedProjectDialogIntro().map((line, i) => (
-                <p key={i}>{line}</p>
-              ))}
-              <p className="font-medium text-foreground">
-                Cold backups and infrastructure outside this control plane are
-                your organisation’s responsibility.
+            <div className="space-y-4 text-left text-sm text-black dark:text-foreground">
+              <p className="text-black dark:text-foreground">
+                <span className="font-semibold">WARNING:</span> You are about to
+                permanently delete all records in this {NOTEBOOK_NAME}. This
+                action cannot be undone.
               </p>
+              <Alert
+                variant="destructive"
+                className="w-full border-destructive text-black dark:text-foreground [&>svg]:text-black dark:[&>svg]:text-foreground"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle className="sr-only">Export data</AlertTitle>
+                <AlertDescription className="text-black dark:text-foreground">
+                  Ensure you have exported the data from the system, and stored
+                  it appropriately.
+                </AlertDescription>
+              </Alert>
             </div>
           </DialogDescription>
         </DialogHeader>
-        <Alert variant="destructive">
-          <AlertTitle>Operations-only action</AlertTitle>
-          <AlertDescription>
-            This action requires elevated permissions. Project administrators
-            cannot perform it.
-          </AlertDescription>
-        </Alert>
         <div className="space-y-2">
-          <Label htmlFor="confirm-survey-name">
-            Type the {NOTEBOOK_NAME} name exactly to confirm:{' '}
-            <span className="font-mono font-medium text-foreground">
-              {surveyName}
+          <Label
+            htmlFor="confirm-project-display-name"
+            className="text-black dark:text-foreground"
+          >
+            Type the {NOTEBOOK_NAME} name exactly to confirm deletion:{' '}
+            <span className="font-mono font-medium text-black dark:text-foreground">
+              {projectDisplayName}
             </span>
           </Label>
           <Input
-            id="confirm-survey-name"
+            id="confirm-project-display-name"
             autoComplete="off"
             value={confirmText}
             onChange={e => setConfirmText(e.target.value)}

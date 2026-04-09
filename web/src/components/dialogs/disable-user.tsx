@@ -13,8 +13,9 @@ import {Button} from '../ui/button';
 import {useState} from 'react';
 import {UserX} from 'lucide-react';
 import {Action, type GetListAllUsersItem, Role} from '@faims3/data-model';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
 import {toast} from 'sonner';
+import {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from '@/constants';
+import {cn} from '@/lib/utils';
 
 /**
  * Opens a confirmation to disable a user account (soft-off; data retained).
@@ -43,13 +44,29 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
           <UserX className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="text-black">
         <DialogHeader>
-          <DialogTitle>Disable user account</DialogTitle>
-          <DialogDescription>
-            {rowUser.name} ({rowUser._id}) will no longer be able to sign in or
-            use the API. {NOTEBOOK_NAME_CAPITALIZED}s and records they
-            contributed stay unchanged.
+          <DialogTitle className="text-black">Disable User Account</DialogTitle>
+          <DialogDescription asChild className="text-black">
+            <div
+              className={cn(
+                'rounded-md border-2 border-red-500 bg-red-100 p-4 text-sm',
+                'text-black'
+              )}
+            >
+              <p className="font-medium text-black">Warning:</p>
+              <ul className="mt-2 list-disc space-y-2 pl-5 text-black">
+                <li>
+                  The user&apos;s email will not be able to access any of the
+                  system.
+                </li>
+                <li>
+                  {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and records they contributed
+                  will not be affected.
+                </li>
+                <li>The user will not be notified.</li>
+              </ul>
+            </div>
           </DialogDescription>
         </DialogHeader>
         <Button

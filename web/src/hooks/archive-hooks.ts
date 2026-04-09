@@ -189,13 +189,3 @@ export function useRestoreUserFromArchive() {
     },
   });
 }
-
-/** Placeholder for survey/notebook restore — implement when surveys support archive listing. */
-export function useRestoreSurveyFromArchive() {
-  return useMutation({
-    mutationFn: async (_args: {surveyId: string}) => {
-      await Promise.resolve();
-      throw new Error('Restore survey from archive is not implemented yet.');
-    },
-  });
-}

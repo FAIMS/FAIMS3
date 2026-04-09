@@ -17,10 +17,7 @@ import {
   getUserResourcesForAction,
   ProjectStatus,
 } from '@faims3/data-model';
-import {Alert, AlertDescription, AlertTitle} from '@/components/ui/alert';
 import {ArchiveProjectDialog} from '@/components/dialogs/archive-project-dialog';
-import {RestoreArchivedProjectDialog} from '@/components/dialogs/restore-archived-project-dialog';
-import {DeleteArchivedProjectDialog} from '@/components/dialogs/delete-archived-project-dialog';
 import {useQueryClient} from '@tanstack/react-query';
 import {DesignerDialog} from '@/components/dialogs/designer-dialog';
 import type {NotebookWithHistory} from '@/designer/state/initial';
@@ -29,7 +26,6 @@ import {generateTestRecordsForProject} from '@/hooks/project-hooks';
 import {Input} from '@mui/material';
 import {AddProjectToTeamDialog} from '@/components/dialogs/add-project-to-team-dialog';
 import {CreateTemplateFromProjectDialog} from '@/components/dialogs/create-tempalate-from-project-dialog';
-import {getArchiveProjectActionsDescription} from '@/project-archive/project-lifecycle-copy';
 import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
@@ -99,17 +95,10 @@ const ProjectActions = (): JSX.Element => {
       action: Action.CREATE_TEMPLATE_IN_TEAM,
     }).length > 0;
 
-  const isArchived =
-    data?.status === ProjectStatus.ARCHIVED;
-  const surveyIsClosed = data?.status === ProjectStatus.CLOSED;
+  const projectIsClosed = data?.status === ProjectStatus.CLOSED;
 
   const canChangeArchive = useIsAuthorisedTo({
     action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
-    resourceId: projectId,
-  });
-
-  const canDestroyProject = useIsAuthorisedTo({
-    action: Action.DELETE_PROJECT,
     resourceId: projectId,
   });
 
@@ -125,27 +114,13 @@ const ProjectActions = (): JSX.Element => {
   return (
     <>
       <div className="flex flex-col gap-2 justify-between">
-        {isArchived && (
-          <Alert>
-            <AlertTitle>This {NOTEBOOK_NAME} is archived</AlertTitle>
-            <AlertDescription>
-              It is hidden from normal lists. Editing and open/close controls
-              are unavailable until you restore it from the Archive section or
-              from the actions below.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {DEVELOPER_MODE && !isArchived && (
+        {DEVELOPER_MODE && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Generate Test Records</ListLabel>
-                <ListDescription>
-                  Generate test records for this {NOTEBOOK_NAME}
-                </ListDescription>
               </ListItem>
-              <ListItem>
+              <ListItem className="flex flex-wrap items-center gap-2">
                 <Input
                   type="number"
                   value={generateCount}
@@ -163,15 +138,11 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canEditProject && !isArchived && (
+        {canEditProject && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Edit {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-                <ListDescription>
-                  Edit this {NOTEBOOK_NAME} in the {NOTEBOOK_NAME_CAPITALIZED}{' '}
-                  Editor.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <Button
@@ -186,14 +157,11 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canAddProjectToTeam && !isArchived && (
+        {canAddProjectToTeam && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>Assign {NOTEBOOK_NAME} to a Team</ListLabel>
-                <ListDescription>
-                  Assign this {NOTEBOOK_NAME} to a team.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <AddProjectToTeamDialog projectId={projectId} />
@@ -203,12 +171,9 @@ const ProjectActions = (): JSX.Element => {
         )}
 
         <Card className="flex-1">
-          <List className="flex flex-col gap-4">
+          <List className="flex flex-col gap-2 space-y-0">
             <ListItem>
               <ListLabel>Download JSON</ListLabel>
-              <ListDescription>
-                Download the JSON file for this {NOTEBOOK_NAME_CAPITALIZED}.
-              </ListDescription>
             </ListItem>
             <ListItem>
               <Button variant="outline">
@@ -228,16 +193,13 @@ const ProjectActions = (): JSX.Element => {
           </List>
         </Card>
 
-        {canEditProject && !isArchived && (
+        {canEditProject && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
                   Replace {NOTEBOOK_NAME_CAPITALIZED} JSON File
                 </ListLabel>
-                <ListDescription>
-                  Replace the {NOTEBOOK_NAME} JSON file.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <EditProjectDialog onSuccess={uploadProjectCallback} />
@@ -246,18 +208,13 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canCreateTemplateInTeam && !isArchived && (
+        {canCreateTemplateInTeam && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
+            <List className="flex flex-col gap-2 space-y-0">
               <ListItem>
                 <ListLabel>
                   Create Template from this {NOTEBOOK_NAME_CAPITALIZED}
                 </ListLabel>
-                <ListDescription>
-                  Create a new template from the current {NOTEBOOK_NAME}. You
-                  will then be able to create copies of this {NOTEBOOK_NAME}{' '}
-                  from the template.
-                </ListDescription>
               </ListItem>
               <ListItem>
                 <CreateTemplateFromProjectDialog projectId={projectId} />
@@ -266,65 +223,33 @@ const ProjectActions = (): JSX.Element => {
           </Card>
         )}
 
-        {canChangeProjectStatus && !isArchived && (
+        {canChangeProjectStatus && (
           <Card className="flex-1">
             <ProjectStatusDialog projectId={projectId} />
           </Card>
         )}
 
-        {!isArchived && canChangeArchive && (
+        {canChangeArchive && (
           <Card className="flex-1">
-            <List className="flex flex-col gap-4">
-              <ListItem>
-                <ListLabel>Archive {NOTEBOOK_NAME_CAPITALIZED}</ListLabel>
-                {surveyIsClosed ? (
-                  <>
-                    <ListDescription>
-                      {getArchiveProjectActionsDescription()}
-                    </ListDescription>
-                    <ArchiveProjectDialog projectId={projectId} />
-                  </>
-                ) : (
+            <List className="flex flex-col gap-2 space-y-0">
+              <ListItem className="flex flex-col items-start gap-2">
+                <ListLabel className="block">
+                  Archive {NOTEBOOK_NAME_CAPITALIZED}
+                </ListLabel>
+                {!projectIsClosed && (
                   <ListDescription>
-                    Only closed {NOTEBOOK_NAME_CAPITALIZED}s can be archived. Set
-                    status to closed first using the open/closed control above if
-                    you have access, or ask a project administrator.
+                    To archive, you must close the {NOTEBOOK_NAME} first
                   </ListDescription>
                 )}
+                <ArchiveProjectDialog
+                  projectId={projectId}
+                  disabled={!projectIsClosed}
+                />
               </ListItem>
             </List>
           </Card>
         )}
 
-        {isArchived && (canChangeArchive || canDestroyProject) && (
-          <Card className="flex-1">
-            <List className="flex flex-col gap-4">
-              {canChangeArchive ? (
-                <ListItem>
-                  <ListLabel>Restore from archive</ListLabel>
-                  <ListDescription>
-                    Returns the {NOTEBOOK_NAME} to the closed state (not open for
-                    new activations).
-                  </ListDescription>
-                  <RestoreArchivedProjectDialog projectId={projectId} />
-                </ListItem>
-              ) : null}
-              {canDestroyProject && data?.name ? (
-                <ListItem>
-                  <ListLabel>Permanent deletion</ListLabel>
-                  <ListDescription>
-                    Destroy all server-side records and references. This cannot
-                    be undone.
-                  </ListDescription>
-                  <DeleteArchivedProjectDialog
-                    projectId={projectId}
-                    surveyName={data.name}
-                  />
-                </ListItem>
-              ) : null}
-            </List>
-          </Card>
-        )}
       </div>
       <DesignerDialog
         open={editorOpen}

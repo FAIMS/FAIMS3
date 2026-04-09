@@ -14,7 +14,7 @@
  * - Supports revision viewing via ?revisionId parameter
  *
  * ROUTE:
- * /surveys/:serverId/:projectId/view-record/:recordId?tab=view|info&revisionId=:revisionId
+ * /<notebook-plural>/:serverId/:projectId/view-record/:recordId?tab=view|info&revisionId=:revisionId
  */
 import {
   DatabaseInterface,

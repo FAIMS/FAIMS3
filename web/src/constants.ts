@@ -1,4 +1,5 @@
 import {MapConfig, MapStylesheetNameType} from '@faims3/forms';
+import pluralize from 'pluralize';
 import {capitalize} from './lib/utils';
 
 const getConfigValue = (key: string) => {
@@ -24,10 +25,16 @@ export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
   ? capitalize(import.meta.env.VITE_NOTEBOOK_NAME)
   : 'Project';
 
+/** Lowercase plural, from `VITE_NOTEBOOK_NAME` (same rules as the Field Mark app). */
+export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
+
+/** Plural with first letter capitalised — use for headings and labels. */
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED = capitalize(NOTEBOOK_NAME_PLURAL);
+
 export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
 
 /**
- * When the directory lists a survey as archived (or id absent), the mobile app
+ * When the directory lists a notebook as archived (or id absent), the mobile app
  * may drop local DBs after sync (`allow`) or keep them closed but recoverable (`never`).
  * Set via VITE_FORCE_REMOTE_DELETION; must match the Field Mark app build for accurate web copy.
  */
@@ -47,6 +54,29 @@ function parseForceRemoteDeletion(): ForceRemoteDeletionMode {
 }
 
 export const FORCE_REMOTE_DELETION = parseForceRemoteDeletion();
+
+/**
+ * When true, the mobile app destroys local Pouch data on manual notebook deactivation.
+ * Baked at build time; must match the Field Mark app build for accurate copy.
+ */
+function parseDeleteOnDeactivation(): boolean {
+  const v = import.meta.env.VITE_DELETE_ON_DEACTIVATION as string | undefined;
+  if (v === '' || v === undefined) {
+    return false;
+  }
+  if (['true', '1', 'on', 'yes'].includes(v.toLowerCase())) {
+    return true;
+  }
+  if (['false', '0', 'off', 'no'].includes(v.toLowerCase())) {
+    return false;
+  }
+  console.warn(
+    `VITE_DELETE_ON_DEACTIVATION invalid (${v}); assuming false. Use true or false.`
+  );
+  return false;
+}
+
+export const DELETE_ON_DEACTIVATION = parseDeleteOnDeactivation();
 
 export const SIGNIN_PATH = `${API_URL}/login?redirect=${WEB_URL}`;
 

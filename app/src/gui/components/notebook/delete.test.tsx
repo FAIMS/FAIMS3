@@ -57,7 +57,16 @@ test('Check delete component', async () => {
 
   expect(screen.getByText('Cancel')).toBeTruthy();
 
-  expect(screen.getByTestId('confirm-delete')).toBeTruthy();
+  const confirmBtn = screen.getByTestId(
+    'confirm-delete'
+  ) as HTMLButtonElement;
+  expect(confirmBtn.disabled).toBe(true);
 
-  fireEvent.click(screen.getByTestId('confirm-delete'));
+  fireEvent.click(
+    screen.getByRole('checkbox', {name: /i understand this cannot be undone/i})
+  );
+
+  expect(confirmBtn.disabled).toBe(false);
+
+  fireEvent.click(confirmBtn);
 });

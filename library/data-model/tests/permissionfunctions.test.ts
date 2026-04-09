@@ -628,14 +628,14 @@ describe('isAuthorized', () => {
         })
       ).toBe(false);
 
-      // DELETE_PROJECT (permanent destroy) is not granted to project admins
+      // DELETE_PROJECT is granted to PROJECT_ADMIN for that resource only
       expect(
         isTokenAuthorized({
           token: token,
           action: Action.DELETE_PROJECT,
           resourceId: 'project456',
         })
-      ).toBe(false);
+      ).toBe(true);
 
       // No access to unrelated resources
       expect(
@@ -685,7 +685,7 @@ describe('isAuthorized', () => {
         })
       ).toBe(true);
 
-      // Not granted at any level
+      // Not granted (PROJECT_MANAGER does not include DELETE_PROJECT)
       expect(
         isTokenAuthorized({
           token: token,

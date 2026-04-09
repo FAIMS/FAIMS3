@@ -68,7 +68,7 @@ export enum Action {
 
   /**
    * Permanently destroy survey data on the server (requires archive first).
-   * Intentionally not granted to project admins — operations staff only.
+   * Granted to survey administrators (PROJECT_ADMIN) for that survey and to operations staff.
    */
   DELETE_PROJECT = 'DELETE_PROJECT',
 
@@ -374,7 +374,7 @@ export const actionDetails: Record<Action, ActionDetails> = {
   [Action.DELETE_PROJECT]: {
     name: 'Permanently Destroy Project Data',
     description:
-      'Irreversibly delete all server-side survey data (requires archive first). Not for routine project admins.',
+      'Irreversibly delete all server-side survey data (requires archive first). Survey administrators may delete their own surveys.',
     resourceSpecific: true,
     resource: Resource.PROJECT,
   },
@@ -1119,6 +1119,7 @@ export const roleActions: Record<
       Action.ADD_ADMIN_TO_PROJECT,
       Action.REMOVE_ADMIN_FROM_PROJECT,
       Action.GENERATE_RANDOM_PROJECT_RECORDS,
+      Action.DELETE_PROJECT,
     ],
     inheritedRoles: [Role.PROJECT_MANAGER],
   },
@@ -1166,7 +1167,7 @@ export const roleActions: Record<
       Action.DISABLE_USER_ACCOUNT,
       Action.ENABLE_USER_ACCOUNT,
 
-      // Irreversible survey destruction (not granted to project admins)
+      // Irreversible survey destruction (also on PROJECT_ADMIN for owned surveys)
       Action.DELETE_PROJECT,
 
       // System operations

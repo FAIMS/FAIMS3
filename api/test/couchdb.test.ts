@@ -160,14 +160,14 @@ describe('notebook api', () => {
         })
       ).to.equal(false);
 
-      // Permanent survey destroy is operations-level; PROJECT_ADMIN does not grant it.
+      // Permanent survey destroy: survey administrators (PROJECT_ADMIN) may delete.
       expect(
         userCanDo({
           user: bobalooba,
           resourceId: nb2,
           action: Action.DELETE_PROJECT,
         })
-      ).to.equal(false);
+      ).to.equal(true);
 
       // check role inheritance too
       expect(
@@ -195,14 +195,14 @@ describe('notebook api', () => {
         })
       ).to.equal(false);
 
-      // but still...
+      // but still has admin on nb2
       expect(
         userCanDo({
           user: bobalooba,
           resourceId: nb2,
           action: Action.DELETE_PROJECT,
         })
-      ).to.equal(false);
+      ).to.equal(true);
     }
   });
 

@@ -1,7 +1,7 @@
 import type {GetListAllUsersItem} from '@faims3/data-model';
 import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
-import {ReEnableUserButton} from '../dialogs/re-enable-user';
+import {ReEnableUserDialog} from '../dialogs/re-enable-user';
 
 export const archivedDisabledUserColumns: ColumnDef<GetListAllUsersItem>[] = [
   {
@@ -32,11 +32,11 @@ export const archivedDisabledUserColumns: ColumnDef<GetListAllUsersItem>[] = [
     header: () => <div className="text-right">Actions</div>,
     cell: ({
       row: {
-        original: {_id},
+        original,
       },
     }) => (
       <div className="flex justify-end">
-        <ReEnableUserButton userId={_id} />
+        <ReEnableUserDialog rowUser={original} />
       </div>
     ),
   },

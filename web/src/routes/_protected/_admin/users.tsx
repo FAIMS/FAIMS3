@@ -57,12 +57,14 @@ function RouteComponent() {
   const [, setActiveTab] = useState<TabLabel>(tabs[0].id);
 
   return (
-    <Tabs
-      defaultValue={tabs[0].id}
-      onValueChange={tab => {
-        setActiveTab(tab as TabLabel);
-      }}
-    >
+    <div className="flex flex-col gap-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
+      <Tabs
+        defaultValue={tabs[0].id}
+        onValueChange={tab => {
+          setActiveTab(tab as TabLabel);
+        }}
+      >
       <div className="flex justify-start items-center gap-4">
         <TabsList>
           {tabs.map(({id, label}) => (
@@ -79,5 +81,6 @@ function RouteComponent() {
         </TabsContent>
       ))}
     </Tabs>
+    </div>
   );
 }

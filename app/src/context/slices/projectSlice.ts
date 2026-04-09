@@ -13,7 +13,11 @@ import {
   createSlice,
   PayloadAction,
 } from '@reduxjs/toolkit';
-import {CONDUCTOR_URLS, FORCE_REMOTE_DELETION} from '../../buildconfig';
+import {
+  CONDUCTOR_URLS,
+  DELETE_ON_DEACTIVATION,
+  FORCE_REMOTE_DELETION,
+} from '../../buildconfig';
 import {AppDispatch, RootState} from '../store';
 import {AuthState, isTokenValid, selectActiveServerId} from './authSlice';
 import {compiledSpecService} from './helpers/compiledSpecService';
@@ -34,7 +38,7 @@ import {syncStateService} from './helpers/syncStateService';
 
 /**
  * Per server+project: consecutive successful directory responses where the server
- * indicates the survey should not be kept as an active local copy: either the id
+ * indicates the notebook should not be kept as an active local copy: either the id
  * is absent (deleted / no access) or the project is archived.
  */
 const directoryAbsentStreak = new Map<string, number>();
@@ -193,7 +197,7 @@ export interface DatabaseConnection {
 
 // This is metadata which is defined as part of the design file
 export interface KnownProjectMetadata {
-  // The survey name
+  // The project / notebook display name
   name: string;
   // The description
   description?: string;
@@ -221,7 +225,7 @@ export interface ProjectInformation {
   status: ProjectStatus;
 }
 
-// A project is a 'notebook'/'survey' - it is relevant to a server, can be
+// A project is a notebook (configurable label via NOTEBOOK_NAME) — it is relevant to a server, can be
 // inactive or active, and was activated by someone. This extends with
 // non-trivial or side-effecting elements like database connections and
 // activated status
@@ -480,7 +484,7 @@ const projectsSlice = createSlice({
      * with {@link FORCE_REMOTE_DELETION} === `allow` only.
      *
      * Stops sync and remote Pouch handles, then **destroys** the local Pouch DB
-     * (IndexedDB) so no survey data remains on device.
+     * (IndexedDB) so no local notebook data remains on device.
      *
      */
     removeProject: (state, action: PayloadAction<ProjectIdentity>) => {
@@ -543,10 +547,11 @@ const projectsSlice = createSlice({
     },
 
     /**
-     * Same resource teardown as manual {@link deactivateProject} (sync off, remote
-     * closed, local Pouch **closed** but not destroyed), then remove the project
-     * from the store. Used when the server archived/deleted the survey but
-     * {@link FORCE_REMOTE_DELETION} is not `allow` — leaves IndexedDB recoverable.
+     * Same sync/remote teardown as manual deactivate; local Pouch is always
+     * **closed** but not destroyed so IndexedDB stays recoverable. Then remove the
+     * project from the store. Used when the server archived/deleted the notebook but
+     * {@link FORCE_REMOTE_DELETION} is not `allow` (independent of
+     * {@link DELETE_ON_DEACTIVATION}).
      */
     detachProjectRetainLocalData: (
       state,
@@ -694,16 +699,10 @@ const projectsSlice = createSlice({
     /**
      * De-activates an existing (active) project.
      *
-     * This involves
-     *
-     * - destroying the sync object which performs the
-     *   synchronisation between the two databases
-     * - destroying the remote pouch DB which is a connection point to the
-     *   remote data-database
-     * - destroying (and cleaning) local pouch DB which stores the data synced
-     *   from the remote (and new records)
-     * - de-registering the above entries
-     * - marking the project as de-activated and updating store state
+     * - Stops and removes sync, closes remote and local Pouch handles, clears sync state.
+     * - Local data: when {@link DELETE_ON_DEACTIVATION} is true, destroys the local
+     *   Pouch DB (IndexedDB). When false (default), only closes the local DB so data
+     *   may remain on disk for recovery.
      *
      */
     deactivateProject: (state, action: PayloadAction<ProjectIdentity>) => {
@@ -760,17 +759,15 @@ const projectsSlice = createSlice({
 
       // establish ID of local DB
       const localDatabaseId = project.database.localDbId;
-      // wipe and remove local database (cleaning records)
-      // NOTE this is an async operation, deletion may not happen immediately
-      databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
+      // NOTE destroy/close are async; completion may not be immediate
+      if (DELETE_ON_DEACTIVATION) {
+        void databaseService.destroyLocalDatabase(localDatabaseId);
+      } else {
+        void databaseService.closeAndRemoveLocalDatabase(localDatabaseId);
+      }
 
       // Cleanup sync state
       syncStateService.removeSyncState(payload.serverId, payload.projectId);
-
-      // For the time being - don't clean up deactivated databases as a last
-      // resort data recovery mechanism
-      // databaseService.destroyLocalDatabase(localDatabaseId);
-      // TODO determine a more suitable approach for validating data is synced to allow true cleanup
 
       // updates the state with all of this new information
       state.servers[payload.serverId].projects[payload.projectId] = {
@@ -2319,7 +2316,7 @@ export const rebuildDbs = async (
           }
           // otherwise we are all good - just local db needed
         } else {
-          // This is weird - we have an activated survey but the database
+          // This is weird - we have an activated notebook but the database
           // object is missing TODO determine behaviour
         }
       }

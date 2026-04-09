@@ -1,4 +1,4 @@
-import {createFileRoute, useRouter} from '@tanstack/react-router';
+import {createFileRoute, Navigate, useRouter} from '@tanstack/react-router';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import ProjectDetails from '@/components/tabs/project/details';
 import ProjectInvites from '@/components/tabs/project/invites';
@@ -9,7 +9,11 @@ import {useGetProject} from '@/hooks/queries';
 import {useAuth} from '@/context/auth-provider';
 import {useBreadcrumbUpdate} from '@/hooks/use-breadcrumbs';
 import {useMemo} from 'react';
-import {NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '@/constants';
+import {ProjectStatus} from '@faims3/data-model';
 
 const tabs = [
   {name: 'Details', Component: ProjectDetails},
@@ -41,7 +45,7 @@ function RouteComponent() {
       // projects ->
       {
         path: '/projects',
-        label: NOTEBOOK_NAME_CAPITALIZED + 's',
+        label: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
       },
       // project name
       {
@@ -58,6 +62,16 @@ function RouteComponent() {
     isLoading,
     paths,
   });
+
+  if (!isLoading && project?.status === ProjectStatus.ARCHIVED) {
+    return (
+      <Navigate
+        to="/archive"
+        search={{tab: NOTEBOOK_NAME_PLURAL}}
+        replace
+      />
+    );
+  }
 
   return (
     <Tabs defaultValue={tabs[0].name}>
