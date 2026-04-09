@@ -723,27 +723,49 @@ api.get(
     });
     if (records) {
       const filenames: string[] = [];
+      const viewIdsNeedingFieldTypes = new Set<string>();
+      for (const r of records) {
+        if (r.data && r.type) {
+          viewIdsNeedingFieldTypes.add(r.type);
+        }
+      }
+      const fieldTypesByViewId: Partial<
+        Record<string, ReturnType<typeof getNotebookFieldTypes>>
+      > = {};
+      for (const viewID of viewIdsNeedingFieldTypes) {
+        try {
+          fieldTypesByViewId[viewID] = getNotebookFieldTypes({
+            uiSpecification,
+            viewID,
+          });
+        } catch (e) {
+          console.error(
+            'Failed to get notebook field types for export',
+            viewID,
+            e
+          );
+        }
+      }
       // Process any file fields to give the file name in the zip download
       for (const record of records) {
         if (record.data) {
-          try {
-            const fields = getNotebookFieldTypes({
-              uiSpecification,
-              viewID: record.type,
-            });
-            const dataCopy = {...record.data};
-            await stripDeletedRelatedRefsFromRecordData({
-              fields,
-              data: dataCopy,
-              dataDb,
-              uiSpecification,
-            });
-            record.data = dataCopy;
-          } catch (e) {
-            console.error(
-              'Failed to strip deleted related record refs for export',
-              e
-            );
+          const fields = fieldTypesByViewId[record.type];
+          if (fields) {
+            try {
+              const dataCopy = {...record.data};
+              await stripDeletedRelatedRefsFromRecordData({
+                fields,
+                data: dataCopy,
+                dataDb,
+                uiSpecification,
+              });
+              record.data = dataCopy;
+            } catch (e) {
+              console.error(
+                'Failed to strip deleted related record refs for export',
+                e
+              );
+            }
           }
         }
         const exportData = record.data;

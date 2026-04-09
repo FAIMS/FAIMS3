@@ -151,11 +151,6 @@ export const getProjectIdsReferencingTemplate = async (
 };
 
 /**
- * Clears `templateId` on all project documents that reference the template.
- * Used when permanently deleting a template so surveys do not keep stale
- * references.
- */
-/**
  * Drops the per-field metadata doc for `template_id` if it exists (see
  * `writeProjectMetadata`), so notebook details no longer cite the template.
  */
@@ -176,6 +171,11 @@ export const removeTemplateIdFromNotebookMetadata = async (
   }
 };
 
+/**
+ * Clears `templateId` on all project documents that reference the template.
+ * Used when permanently deleting a template so surveys do not keep stale
+ * references.
+ */
 export const clearTemplateIdFromProjectsReferencingTemplate = async (
   templateId: string
 ): Promise<void> => {

@@ -10,6 +10,8 @@ import {
   UISpecification,
 } from '@faims3/data-model';
 
+import {getComponentKey} from './utils';
+
 /** Couch data DB as returned by {@link getDataDb} or test fakes typed as {@link DataDocument}. */
 export type StripRelatedRefsDataDb =
   | DataDbType
@@ -17,13 +19,65 @@ export type StripRelatedRefsDataDb =
 
 const RELATIONSHIP_COMPONENT = 'faims-custom::RelatedRecordSelector';
 
-function componentKey(namespace: string, name: string): string {
-  return namespace ? `${namespace}::${name}` : name;
+const DEFAULT_STRIP_CONFLICT_BEHAVIOUR = 'pickLast' as const;
+
+/**
+ * For each related record ID, whether the link should be kept in export.
+ * `false` means missing record, unloadable head, or soft-deleted head revision.
+ */
+async function shouldKeepRelatedRecordLinks(
+  engine: DataEngine,
+  recordIds: string[]
+): Promise<Map<string, boolean>> {
+  const keep = new Map<string, boolean>();
+  const headByRecord = new Map<string, string>();
+
+  for (const rid of recordIds) {
+    try {
+      const record = await engine.core.getRecord(rid);
+      const {selectedHead} = engine.core.resolveHead({
+        recordId: rid,
+        heads: record.heads,
+        behavior: DEFAULT_STRIP_CONFLICT_BEHAVIOUR,
+      });
+      headByRecord.set(rid, selectedHead);
+    } catch {
+      keep.set(rid, false);
+    }
+  }
+
+  const headIds = [...new Set(headByRecord.values())];
+  if (headIds.length === 0) {
+    return keep;
+  }
+
+  // Batch metadata via `index/revisionMetadata` (no full revision bodies, no AVPs).
+  const {revisions} = await engine.query.listRevisionMetadata({
+    keys: headIds,
+  });
+  const deletedByHeadId = new Map(
+    revisions.map(r => [r._id, r.deleted === true])
+  );
+
+  for (const [rid, headId] of headByRecord) {
+    const deleted = deletedByHeadId.get(headId);
+    if (deleted === undefined) {
+      keep.set(rid, false);
+    } else {
+      keep.set(rid, !deleted);
+    }
+  }
+
+  return keep;
 }
 
 /**
  * Removes relationship field entries that point at soft-deleted records so
  * tabular/JSON exports do not list those links.
+ *
+ * Uses {@link DataEngine.core} for record stubs and head resolution, then
+ * {@link DataEngine.query.listRevisionMetadata} for `deleted` flags. Full hydration
+ * (AVP fetch) is avoided — it was only needed here for `revision.deleted`.
  */
 export async function stripDeletedRelatedRefsFromRecordData({
   fields,
@@ -41,8 +95,11 @@ export async function stripDeletedRelatedRefsFromRecordData({
     uiSpec: uiSpecification as UISpecification,
   });
 
+  const relatedIds = new Set<string>();
+  const relationshipFieldNames: string[] = [];
+
   for (const field of fields) {
-    const key = componentKey(field.componentNamespace, field.componentName);
+    const key = getComponentKey(field.componentNamespace, field.componentName);
     if (key !== RELATIONSHIP_COMPONENT) {
       continue;
     }
@@ -55,6 +112,24 @@ export async function stripDeletedRelatedRefsFromRecordData({
       continue;
     }
 
+    const valueParsed = relatedRecordFieldAvpValueSchema.safeParse(raw);
+    if (!valueParsed.success) {
+      continue;
+    }
+    relationshipFieldNames.push(fieldName);
+    const normalized = valueParsed.data;
+    const entries = Array.isArray(normalized) ? normalized : [normalized];
+    for (const item of entries) {
+      relatedIds.add(item.record_id);
+    }
+  }
+
+  const keepByRecordId = await shouldKeepRelatedRecordLinks(engine, [
+    ...relatedIds,
+  ]);
+
+  for (const fieldName of relationshipFieldNames) {
+    const raw = data[fieldName];
     const fieldDef = uiSpecification.fields[fieldName];
     const paramsParsed = relatedRecordSelectorComponentParamsSchema.safeParse(
       fieldDef?.['component-parameters']
@@ -73,16 +148,8 @@ export async function stripDeletedRelatedRefsFromRecordData({
     const kept: typeof entries = [];
     for (const item of entries) {
       const rid = item.record_id;
-      try {
-        const h = await engine.hydrated.getHydratedRecord({
-          recordId: rid,
-          config: {conflictBehaviour: 'pickLast'},
-        });
-        if (!h.revision.deleted) {
-          kept.push(item);
-        }
-      } catch {
-        // missing / unloadable — treat like absent for export
+      if (keepByRecordId.get(rid) === true) {
+        kept.push(item);
       }
     }
 

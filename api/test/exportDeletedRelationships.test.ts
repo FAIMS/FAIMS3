@@ -8,6 +8,7 @@ PouchDB.plugin(PouchDBFind);
 PouchDB.plugin(require('pouchdb-adapter-memory'));
 
 import {
+  couchInitialiser,
   DatabaseInterface,
   DataDocument,
   DataEngine,
@@ -15,6 +16,7 @@ import {
   getNotebookFieldTypes,
   HydratedDataRecord,
   HydratedRecord,
+  initDataDB,
   ProjectDataObject,
   ProjectID,
   ProjectUIModel,
@@ -145,11 +147,16 @@ describe('export deleted relationship stripping', () => {
   const projectId = 'proj-export-test';
   let uiSpec: ProjectUIModel;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     uiSpec = testUiSpec();
     db = new PouchDB(`export-del-${Date.now()}-${Math.random()}`, {
       adapter: 'memory',
     }) as DatabaseInterface<DataDocument>;
+    await couchInitialiser({
+      db,
+      content: initDataDB({projectId}),
+      config: {forceWrite: true, applyPermissions: false},
+    });
     engine = new DataEngine({dataDb: db, uiSpec});
   });
 

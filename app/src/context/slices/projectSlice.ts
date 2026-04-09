@@ -38,6 +38,7 @@ import {syncStateService} from './helpers/syncStateService';
  * is absent (deleted / no access) or the project is archived.
  */
 const directoryAbsentStreak = new Map<string, number>();
+
 /**
  * Successful directory responses where an id is absent (deleted / revoked).
  * Require this many before local cleanup — transient empty listings are unlikely
@@ -45,11 +46,18 @@ const directoryAbsentStreak = new Map<string, number>();
  * {@link scheduleAbsentDirectoryRetry}).
  */
 const DIRECTORY_ABSENT_STREAK_THRESHOLD = 3;
+
 /** Archived rows are explicit in the directory — one successful read is enough. */
 const DIRECTORY_ARCHIVED_STREAK_THRESHOLD = 1;
+
 /** Delay before the next directory poll while confirming an absent id. */
 const DIRECTORY_ABSENT_RETRY_DELAY_MS = 900;
 
+/**
+ * Promise-queue mutex: each `runExclusive` waits for the previous job to finish
+ * before running `fn`, so overlapping async work is serialized. A rejected
+ * predecessor must not block the queue, hence `await prev.catch(() => {})`.
+ */
 function createAsyncMutex() {
   let mutex = Promise.resolve();
   return async function runExclusive<T>(fn: () => Promise<T>): Promise<T> {
@@ -67,6 +75,10 @@ function createAsyncMutex() {
   };
 }
 
+// `initialiseProjects` does many awaits (directory, metadata, dispatches). Without
+// a per-server lock, a user refresh, token refresh, and the timed retry below
+// could interleave: duplicate streak increments, double removal, or stale
+// `getState()` vs directory results. One flight per server keeps that linear.
 const initialiseProjectsMutexByServer = new Map<
   string,
   ReturnType<typeof createAsyncMutex>
@@ -84,6 +96,9 @@ function withInitialiseProjectsLock<T>(
   return m(fn);
 }
 
+// At most one pending "poll again soon" timer per server. Retries call
+// `initialiseProjects` again (which re-enters the mutex), so we replace any
+// existing timer when scheduling to avoid stacking duplicate polls.
 const pendingAbsentDirectoryRetryTimer = new Map<
   string,
   ReturnType<typeof setTimeout>
@@ -1734,219 +1749,235 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
     }
 
     await withInitialiseProjectsLock(serverId, async () => {
-    // Include archived so a missing id means deleted/revoked, not merely archived.
-    const response = await fetch(
-      `${server.serverUrl}/api/directory?includeArchived=true`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Directory request failed. Server ID ${serverId}. URL: ${server.serverUrl}. Status: ${response.status}`
+      // Include archived so a missing id means deleted/revoked, not merely archived.
+      const response = await fetch(
+        `${server.serverUrl}/api/directory?includeArchived=true`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-    }
 
-    const directoryResults = (await response.json()) as ProjectDocument[];
-
-    // Fetch all project metadata in parallel
-    const metadataResults = await Promise.allSettled(
-      directoryResults.map(async details => {
-        const projectId = details._id;
-
-        if (!details.dataDb?.base_url) {
-          return {
-            status: 'error' as const,
-            projectId,
-            error: 'Missing dataDb.base_url',
-          };
-        }
-
-        try {
-          const meta = await fetchProjectMetadataAndSpec({
-            compile: false,
-            projectId,
-            serverUrl: server.serverUrl,
-            token,
-          });
-
-          return {
-            status: 'success' as const,
-            projectId,
-            details,
-            meta,
-          };
-        } catch (e) {
-          console.warn(
-            `Failed to get metadata from API for project ${projectId}.`
-          );
-          console.error(e);
-          return {
-            status: 'error' as const,
-            projectId,
-            details,
-            error: e,
-          };
-        }
-      })
-    );
-
-    // Get fresh state before dispatching updates to avoid stale reads
-    // This is important because other thunks may have modified state during our async operations
-    const freshState = getState() as RootState;
-    const freshProjectState = freshState.projects;
-
-    // Collect all actions to dispatch
-    const actions: Array<
-      ReturnType<typeof addProject | typeof updateProjectDetails>
-    > = [];
-
-    for (const result of metadataResults) {
-      if (result.status === 'rejected') {
-        // Promise itself rejected (shouldn't happen with our structure, but safety first)
-        continue;
+      if (!response.ok) {
+        throw new Error(
+          `Directory request failed. Server ID ${serverId}. URL: ${server.serverUrl}. Status: ${response.status}`
+        );
       }
 
-      const value = result.value;
+      const directoryResults = (await response.json()) as ProjectDocument[];
 
-      if (value.status === 'error') {
-        // Check if this is a missing base_url error (no details available)
-        if (!value.details) {
-          console.warn(`Skipping project ${value.projectId}: ${value.error}`);
+      // Fetch all project metadata in parallel
+      const metadataResults = await Promise.allSettled(
+        directoryResults.map(async details => {
+          const projectId = details._id;
+
+          if (!details.dataDb?.base_url) {
+            return {
+              status: 'error' as const,
+              projectId,
+              error: 'Missing dataDb.base_url',
+            };
+          }
+
+          try {
+            const meta = await fetchProjectMetadataAndSpec({
+              compile: false,
+              projectId,
+              serverUrl: server.serverUrl,
+              token,
+            });
+
+            return {
+              status: 'success' as const,
+              projectId,
+              details,
+              meta,
+            };
+          } catch (e) {
+            console.warn(
+              `Failed to get metadata from API for project ${projectId}.`
+            );
+            console.error(e);
+            return {
+              status: 'error' as const,
+              projectId,
+              details,
+              error: e,
+            };
+          }
+        })
+      );
+
+      // Get fresh state before dispatching updates to avoid stale reads
+      // This is important because other thunks may have modified state during our async operations
+      const freshState = getState() as RootState;
+      const freshProjectState = freshState.projects;
+
+      // Collect all actions to dispatch
+      const actions: Array<
+        ReturnType<typeof addProject | typeof updateProjectDetails>
+      > = [];
+
+      for (const result of metadataResults) {
+        if (result.status === 'rejected') {
+          // Promise itself rejected (shouldn't happen with our structure, but safety first)
           continue;
         }
 
-        // We have details but no metadata - check if project exists
+        const value = result.value;
+
+        if (value.status === 'error') {
+          // Check if this is a missing base_url error (no details available)
+          if (!value.details) {
+            console.warn(`Skipping project ${value.projectId}: ${value.error}`);
+            continue;
+          }
+
+          // We have details but no metadata - check if project exists
+          const existingProject = projectByIdentity(freshProjectState, {
+            projectId: value.projectId,
+            serverId,
+          });
+
+          if (!existingProject) {
+            // Can't create without metadata
+            console.warn(
+              `Failed to get metadata from API for project ${value.projectId} which doesn't exist yet - minimum sufficient information not known so we won't show this record.`
+            );
+            continue;
+          }
+
+          // Update existing with just the couchDbUrl if we have details
+          if (value.details?.dataDb?.base_url) {
+            actions.push(
+              updateProjectDetails({
+                name: existingProject.name,
+                metadata: existingProject.metadata,
+                projectId: value.projectId,
+                serverId,
+                rawUiSpecification: existingProject.rawUiSpecification,
+                couchDbUrl: value.details.dataDb.base_url,
+                status: existingProject.status,
+              })
+            );
+          }
+          continue;
+        }
+
+        // Success case
+        const {projectId, details, meta} = value;
         const existingProject = projectByIdentity(freshProjectState, {
-          projectId: value.projectId,
+          projectId,
           serverId,
         });
 
         if (!existingProject) {
-          // Can't create without metadata
-          console.warn(
-            `Failed to get metadata from API for project ${value.projectId} which doesn't exist yet - minimum sufficient information not known so we won't show this record.`
+          actions.push(
+            addProject({
+              name: meta.name,
+              metadata: meta.metadata as ProjectMetadata,
+              projectId,
+              serverId,
+              rawUiSpecification: meta.decodedSpec,
+              couchDbUrl: details.dataDb.base_url!,
+              status: meta.status,
+            })
           );
-          continue;
-        }
-
-        // Update existing with just the couchDbUrl if we have details
-        if (value.details?.dataDb?.base_url) {
+        } else {
           actions.push(
             updateProjectDetails({
-              name: existingProject.name,
-              metadata: existingProject.metadata,
-              projectId: value.projectId,
+              name: meta.name ?? existingProject.name,
+              metadata:
+                (meta.metadata as ProjectMetadata | undefined) ??
+                existingProject.metadata,
+              projectId,
               serverId,
-              rawUiSpecification: existingProject.rawUiSpecification,
-              couchDbUrl: value.details.dataDb.base_url,
-              status: existingProject.status,
+              rawUiSpecification:
+                meta.decodedSpec ?? existingProject.rawUiSpecification,
+              couchDbUrl: details.dataDb.base_url!,
+              status: meta.status ?? existingProject.status,
             })
           );
         }
-        continue;
       }
 
-      // Success case
-      const {projectId, details, meta} = value;
-      const existingProject = projectByIdentity(freshProjectState, {
-        projectId,
-        serverId,
-      });
-
-      if (!existingProject) {
-        actions.push(
-          addProject({
-            name: meta.name,
-            metadata: meta.metadata as ProjectMetadata,
-            projectId,
-            serverId,
-            rawUiSpecification: meta.decodedSpec,
-            couchDbUrl: details.dataDb.base_url!,
-            status: meta.status,
-          })
-        );
-      } else {
-        actions.push(
-          updateProjectDetails({
-            name: meta.name ?? existingProject.name,
-            metadata:
-              (meta.metadata as ProjectMetadata | undefined) ??
-              existingProject.metadata,
-            projectId,
-            serverId,
-            rawUiSpecification:
-              meta.decodedSpec ?? existingProject.rawUiSpecification,
-            couchDbUrl: details.dataDb.base_url!,
-            status: meta.status ?? existingProject.status,
-          })
-        );
+      // Dispatch all actions
+      // Note: If you have redux-batched-actions middleware, you could batch these:
+      // appDispatch(batchActions(actions));
+      // Otherwise, dispatch sequentially (React 18+ auto-batches in event handlers)
+      for (const action of actions) {
+        appDispatch(action);
       }
-    }
 
-    // Dispatch all actions
-    // Note: If you have redux-batched-actions middleware, you could batch these:
-    // appDispatch(batchActions(actions));
-    // Otherwise, dispatch sequentially (React 18+ auto-batches in event handlers)
-    for (const action of actions) {
-      appDispatch(action);
-    }
+      // Streak / cleanup decisions must see the same project list the user would
+      // after the dispatches above (add/update), not pre-dispatch state.
+      const stateAfterDirectory = getState() as RootState;
+      const streakKey = (projectId: string) => `${serverId}:${projectId}`;
+      const directoryByProjectId = new Map(
+        directoryResults.map(d => [d._id, d])
+      );
+      const localProjectIds = Object.keys(
+        stateAfterDirectory.projects.servers[serverId]?.projects ?? {}
+      );
 
-    const stateAfterDirectory = getState() as RootState;
-    const streakKey = (projectId: string) => `${serverId}:${projectId}`;
-    const directoryByProjectId = new Map(
-      directoryResults.map(d => [d._id, d])
-    );
-    const localProjectIds = Object.keys(
-      stateAfterDirectory.projects.servers[serverId]?.projects ?? {}
-    );
+      // Remote deletion is inferred from repeated "id missing from directory"
+      // responses; one flaky empty listing must not wipe local data. Until the
+      // streak hits the threshold we may schedule a delayed re-fetch (see
+      // `scheduleAbsentDirectoryRetry`) — the mutex ensures that retry does not
+      // run concurrently with another `initialiseProjects` for this server.
+      let needsAbsentConfirmationRetry = false;
 
-    let needsAbsentConfirmationRetry = false;
-
-    for (const projectId of localProjectIds) {
-      const entry = directoryByProjectId.get(projectId);
-      if (!shouldAccumulateRemoteCleanupStreak(entry)) {
-        directoryAbsentStreak.delete(streakKey(projectId));
-        continue;
-      }
-      const k = streakKey(projectId);
-      const n = (directoryAbsentStreak.get(k) ?? 0) + 1;
-      directoryAbsentStreak.set(k, n);
-      const streakThreshold =
-        entry === undefined
-          ? DIRECTORY_ABSENT_STREAK_THRESHOLD
-          : DIRECTORY_ARCHIVED_STREAK_THRESHOLD;
-      if (n < streakThreshold) {
-        if (entry === undefined) {
-          needsAbsentConfirmationRetry = true;
+      for (const projectId of localProjectIds) {
+        const entry = directoryByProjectId.get(projectId);
+        // Still listed as active (or we cannot classify it as absent/archived) — drop any streak.
+        if (!shouldAccumulateRemoteCleanupStreak(entry)) {
+          directoryAbsentStreak.delete(streakKey(projectId));
+          continue;
         }
-        continue;
-      }
-      directoryAbsentStreak.delete(k);
+        const streakMapKey = streakKey(projectId);
+        const streakCount =
+          (directoryAbsentStreak.get(streakMapKey) ?? 0) + 1;
+        directoryAbsentStreak.set(streakMapKey, streakCount);
+        // Missing from directory: need several consistent "absent" reads (threshold).
+        // Present but archived: directory row is authoritative — one read is enough.
+        const streakThreshold =
+          entry === undefined
+            ? DIRECTORY_ABSENT_STREAK_THRESHOLD
+            : DIRECTORY_ARCHIVED_STREAK_THRESHOLD;
+        if (streakCount < streakThreshold) {
+          // Only absent ids benefit from an automatic re-poll; archived entries
+          // already appeared in this directory response, so no retry scheduling.
+          if (entry === undefined) {
+            needsAbsentConfirmationRetry = true;
+          }
+          continue;
+        }
+        // Confirmed: clear streak so a future edge case starts counting from zero.
+        directoryAbsentStreak.delete(streakMapKey);
 
-      const proj = projectByIdentity(stateAfterDirectory.projects, {
-        serverId,
-        projectId,
-      });
-      if (!proj) {
-        continue;
+        const proj = projectByIdentity(stateAfterDirectory.projects, {
+          serverId,
+          projectId,
+        });
+        if (!proj) {
+          continue;
+        }
+
+        if (FORCE_REMOTE_DELETION === 'allow') {
+          appDispatch(removeProject({serverId, projectId}));
+        } else {
+          appDispatch(detachProjectRetainLocalData({serverId, projectId}));
+        }
       }
 
-      if (FORCE_REMOTE_DELETION === 'allow') {
-        appDispatch(removeProject({serverId, projectId}));
+      // Fire at most one delayed `initialiseProjects` to bump absent streaks, or
+      // clear the timer when every absent id has either been confirmed or gone away.
+      if (needsAbsentConfirmationRetry) {
+        scheduleAbsentDirectoryRetry(serverId, appDispatch);
       } else {
-        appDispatch(detachProjectRetainLocalData({serverId, projectId}));
+        clearAbsentDirectoryRetry(serverId);
       }
-    }
-
-    if (needsAbsentConfirmationRetry) {
-      scheduleAbsentDirectoryRetry(serverId, appDispatch);
-    } else {
-      clearAbsentDirectoryRetry(serverId);
-    }
     });
   }
 );
@@ -1955,6 +1986,10 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
  * After a successful directory where a local id is still absent, schedule another
  * poll so the absent streak can reach {@link DIRECTORY_ABSENT_STREAK_THRESHOLD}
  * without requiring the user to refresh manually.
+ *
+ * Clears any prior timer first so back-to-back runs collapse to a single
+ * pending retry; when the streak is satisfied or absent ids disappear,
+ * `clearAbsentDirectoryRetry` stops the loop.
  */
 function scheduleAbsentDirectoryRetry(
   serverId: string,

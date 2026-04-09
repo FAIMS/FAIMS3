@@ -57,6 +57,13 @@ import {
 } from './types';
 import {relationTypeToPair} from './utils';
 
+/**
+ * Related record field: create new records of a related type, link existing ones,
+ * and list links with navigation. Relationships are either Child (stored under
+ * `parent` on the child) or Linked (stored under `linked` on both sides). This
+ * file owns the editor UI; the view renderer lives under rendering/fields/view.
+ */
+
 // ============================================================================
 // UI Components
 // ============================================================================
@@ -118,6 +125,7 @@ const RelatedRecordListItem = ({
     );
   }
 
+  // Deleted records: omit from the list; the parent block may still show a hint.
   if (data.record.deleted || data.revision.deleted) {
     return null;
   }
@@ -190,7 +198,8 @@ const LinkExistingDialog = ({
 }: LinkExistingDialogProps) => {
   const [searchFilter, setSearchFilter] = useState('');
 
-  // Query for available records with infinite scroll pagination
+  // Paginated catalog of the related form type; infinite scroll via
+  // `fetchNextPage`. `enabled: open` skips fetching until the dialog opens.
   const {
     data,
     isLoading,
@@ -273,6 +282,7 @@ const LinkExistingDialog = ({
     });
   }, [data, excludedRecordIds, searchFilter, relationType, currentRecordId]);
 
+  // Caller persists the link on both records; we only reset local dialog state.
   const handleSelect = async (record: HydratedRecord) => {
     await onSelect(record);
     onClose();
@@ -472,6 +482,8 @@ const RelatedRecordFieldPreview = (
 // Main Field Component
 // ============================================================================
 
+// Editor mode: wires create / link / list / detach / delete to the data engine
+// and form state.
 const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [actionMenu, setActionMenu] = useState<{
@@ -485,6 +497,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
 
   const queryClient = useQueryClient();
 
+  // Field value may be a single link object or an array when `multiple` is
+  // true; normalize for mapping.
   const rawValue = props.state.value?.data || undefined;
 
   const value = useMemo(
@@ -513,7 +527,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     error: createError,
   } = useMutation({
     mutationFn: async () => {
-      // Create the correct type of relationship
+      // New record carries the edge: Child → `parent` on the new row; Linked →
+      // `linked` on the new row.
       let relationship: FormRelationship;
       const relation = {
         fieldId: props.fieldId,
@@ -544,6 +559,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
         },
       ] satisfies RelatedFieldValue);
 
+      // Persist the parent form so the new link is saved before we navigate
+      // away.
       await props.config.trigger.commit();
       return res;
     },
@@ -572,7 +589,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   });
 
   const handleLinkExisting = async (record: HydratedRecord) => {
-    // Update our field to include the new link
+    // Local field value lists the chosen record; we also patch the target’s
+    // revision so the graph is consistent.
     props.setFieldData([
       ...normalizedLinks,
       {
@@ -604,7 +622,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     });
   };
 
-  // Fetch and hydrate all related records
+  // One query per linked id (order matches `normalizedLinks`) for list display
+  // and permission checks.
   const relatedRecordQueries = useQueries({
     queries: normalizedLinks.map(({record_id}) => ({
       queryKey: ['related-hydration', record_id],
@@ -640,6 +659,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     });
   };
 
+  // Remove this field’s link from the peer’s `linked` array (detach is only
+  // offered for Linked; see menu below).
   const handleDetachLink = async (link: FieldValueEntry) => {
     const engine = props.config.dataEngine();
     const peer = await engine.hydrated.getHydratedRecord({
@@ -686,6 +707,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     await queryClient.invalidateQueries({queryKey: ['related-hydration']});
   };
 
+  // Delete the linked record entirely (same as deleting from that record’s page).
   const handleConfirmDeleteRelated = async () => {
     if (!deleteTarget) return;
     setDeleteError(null);
@@ -726,8 +748,12 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     [normalizedLinks]
   );
 
+  // After loads settle: if every link points at a deleted record, show the
+  // caption instead of an empty list.
   const allRelatedHydrationDone = relatedRecordQueries.every(q => !q.isPending);
-  const allRelatedHydrationSucceeded = relatedRecordQueries.every(q => q.isSuccess);
+  const allRelatedHydrationSucceeded = relatedRecordQueries.every(
+    q => q.isSuccess
+  );
   const visibleRelatedLinkCount = relatedRecordQueries.reduce((n, q) => {
     const d = q.data;
     if (!d || d.record.deleted || d.revision.deleted) {
@@ -741,6 +767,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     allRelatedHydrationSucceeded &&
     visibleRelatedLinkCount === 0;
 
+  // Kebab menu: only when the user may delete the peer and/or detach (Linked +
+  // edit peer).
   const linkHasDestructiveActions = (index: number): boolean => {
     const d = relatedRecordQueries[index]?.data;
     if (!d || d.record.deleted || d.revision.deleted) {
@@ -765,10 +793,14 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
     return canDel || canDetach;
   };
 
+  // Resolve the open menu’s row to hydrated data for permission-gated menu
+  // items.
   const menuPeerIndex =
     actionMenu === null
       ? -1
-      : normalizedLinks.findIndex(l => l.record_id === actionMenu.link.record_id);
+      : normalizedLinks.findIndex(
+          l => l.record_id === actionMenu.link.record_id
+        );
   const menuPeerRecord =
     menuPeerIndex >= 0 ? relatedRecordQueries[menuPeerIndex]?.data : undefined;
 
@@ -840,8 +872,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
                   onNavigate={handleLinkClick}
                   onOpenActionsMenu={
                     linkHasDestructiveActions(index)
-                      ? (anchorEl, l) =>
-                          setActionMenu({anchorEl, link: l})
+                      ? (anchorEl, l) => setActionMenu({anchorEl, link: l})
                       : undefined
                   }
                 />
@@ -855,8 +886,9 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
               color="text.secondary"
               sx={{mt: 1}}
             >
-              Linked records are not shown because they have been deleted. Links
-              are kept if a record is restored.
+              These links point to records that have been deleted, so they are
+              hidden. If a record is restored, it will appear in this list
+              again.
             </Typography>
           )}
         </>
@@ -916,7 +948,7 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
           setDeleteError(null);
         }}
       >
-        <DialogTitle>Delete related record?</DialogTitle>
+        <DialogTitle>Delete linked record?</DialogTitle>
         <DialogContent>
           {deleteError && (
             <Alert severity="error" sx={{mb: 1}}>
@@ -924,9 +956,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
             </Alert>
           )}
           <Typography variant="body2">
-            This deletes the linked record (soft delete), the same as deleting it
-            from its own record page. Links from this record are kept so the
-            record can be restored if needed.
+            This removes the linked record. This is the same as if you opened
+            that record and deleted it there.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -950,6 +981,8 @@ const FullRelatedRecordField = (props: FullRelatedRecordFieldProps) => {
   );
 };
 
+// Entry: preview uses static placeholders; runtime wraps the editor in
+// FieldWrapper + validation errors.
 const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
   if (props.config.mode === 'preview') {
     return <RelatedRecordFieldPreview {...props} />;
@@ -968,9 +1001,9 @@ const RelatedRecordField = (props: BaseFieldProps & FormFieldContextProps) => {
   }
 };
 
-// generate a zod schema for the value.
+// Validation: required fields need at least one link; optional fields allow
+// empty/absent values.
 const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
-  // 1. If required is true
   if (props.required) {
     return relatedFieldValueSchema.refine(
       val => {
@@ -985,8 +1018,8 @@ const valueSchemaFunction = (props: RelatedRecordFieldProps) => {
     );
   }
 
-  // 2. If required is false
-  // Allow null, undefined, or valid schema (including empty array)
+  // If required is false, allow null, undefined, or valid schema (including
+  // empty array)
   return relatedFieldValueSchema.optional().nullable();
 };
 

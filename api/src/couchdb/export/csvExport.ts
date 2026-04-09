@@ -16,6 +16,7 @@ import {getProjectUIModel} from '../notebooks';
 import {stripDeletedRelatedRefsFromRecordData} from './stripDeletedRelatedRefs';
 import {
   convertDataForOutput,
+  getComponentKey,
   MAX_CSV_FILENAME_LENGTH,
   truncateWithHash,
 } from './utils';
@@ -69,11 +70,6 @@ function generateRecordPrefixInformation(record: HydratedDataRecord) {
 
 // Type for a field header generator function
 type FieldHeaderGenerator = (fieldName: string) => string[];
-
-/** Build the full component key (namespace::name) for lookup. */
-function getComponentKey(namespace: string, name: string): string {
-  return namespace ? `${namespace}::${name}` : name;
-}
 
 // Registry of component header generators (keyed by namespace::name)
 const FIELD_COMPONENT_HEADER_GENERATORS: Record<string, FieldHeaderGenerator> =
