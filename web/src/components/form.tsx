@@ -35,7 +35,7 @@ export interface Field {
   description?: string;
   schema: z.ZodSchema;
   type?: string;
-  options?: {label: string; value: string}[];
+  options?: {label: string; value: string; description?: string}[];
   excludedBy?: string;
   excludedByFunction?: {
     field: string;
@@ -192,8 +192,12 @@ export function Form<
                                 <SelectValue placeholder={`Select ${name}`} />
                               </SelectTrigger>
                               <SelectContent>
-                                {options.map(({label, value}) => (
-                                  <SelectItem key={value} value={value}>
+                                {options.map(({label, value, description}) => (
+                                  <SelectItem
+                                    key={value}
+                                    value={value}
+                                    description={description}
+                                  >
                                     {label}
                                   </SelectItem>
                                 ))}

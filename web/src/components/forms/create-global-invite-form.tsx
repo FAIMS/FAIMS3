@@ -42,9 +42,10 @@ export function CreateGlobalInviteForm({
         ([role, detail]) =>
           detail.scope === RoleScope.GLOBAL && role !== Role.GENERAL_ADMIN
       )
-      .map(([value, {name: label}]) => ({
+      .map(([value, {name: label, description}]) => ({
         label,
         value,
+        description,
       }));
   }, [user]);
 
