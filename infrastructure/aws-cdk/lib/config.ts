@@ -418,7 +418,9 @@ const ConductorConfigSchema = z.object({
   localhostWhitelist: z.boolean().default(false),
 });
 
-const WebConfigSchema = z.object({});
+const WebConfigSchema = z.object({
+  title: z.string().default('Control Centre'),
+});
 
 /** Documentation site (Sphinx user docs) configuration */
 const DocsConfigSchema = z.object({});
