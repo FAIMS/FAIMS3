@@ -30,16 +30,14 @@ export function RestoreTemplateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        onClick={e => e.stopPropagation()}
-        className="text-black"
-      >
+      <DialogContent onClick={e => e.stopPropagation()} className="text-black">
         <DialogHeader>
           <DialogTitle className="text-black">Restore template</DialogTitle>
           <DialogDescription asChild>
             <p className="text-sm leading-relaxed text-black">
-              Restoring this template will unarchive it. You will be able to edit
-              the template and create new {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from it.
+              Restoring this template will unarchive it. You will be able to
+              edit the template and create new{' '}
+              {NOTEBOOK_NAME_PLURAL_CAPITALIZED} from it.
             </p>
           </DialogDescription>
         </DialogHeader>

@@ -40,7 +40,9 @@ export const getTemplateSurveyReferences = async ({
   );
   const json: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
-    throw new Error(errorMessageFromTemplateJsonBody(json, response.statusText));
+    throw new Error(
+      errorMessageFromTemplateJsonBody(json, response.statusText)
+    );
   }
   return GetTemplateSurveyReferencesResponseSchema.parse(json);
 };

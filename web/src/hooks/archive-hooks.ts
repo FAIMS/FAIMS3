@@ -65,10 +65,7 @@ export function useDeleteArchivedProject() {
   const {user} = useAuth();
 
   return useMutation({
-    mutationFn: async ({
-      projectId,
-      confirmName,
-    }: DeleteArchivedProjectArgs) => {
+    mutationFn: async ({projectId, confirmName}: DeleteArchivedProjectArgs) => {
       if (!user) {
         throw new Error('Not authenticated');
       }

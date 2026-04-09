@@ -541,7 +541,10 @@ export const changeNotebookStatus = async ({
   // get existing project record
   const project = await getProjectById(projectId);
 
-  if (status === ProjectStatus.OPEN && project.status === ProjectStatus.ARCHIVED) {
+  if (
+    status === ProjectStatus.OPEN &&
+    project.status === ProjectStatus.ARCHIVED
+  ) {
     throw new Exceptions.InvalidRequestException(
       'Cannot open an archived survey. Restore it from the archive first.'
     );

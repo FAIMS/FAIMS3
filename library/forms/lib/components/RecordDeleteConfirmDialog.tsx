@@ -67,9 +67,7 @@ export function RecordDeleteConfirmDialog({
       <DialogTitle id="record-delete-dialog-title">Delete record</DialogTitle>
       <DialogContent>
         <Stack spacing={2} id="record-delete-dialog-description">
-          {errorMessage ? (
-            <Alert severity="error">{errorMessage}</Alert>
-          ) : null}
+          {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
           <Typography variant="body2">
             Are you sure you want to delete this record? This action cannot be
             undone.

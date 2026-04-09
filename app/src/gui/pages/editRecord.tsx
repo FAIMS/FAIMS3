@@ -401,9 +401,7 @@ export const EditRecordPage = () => {
             </Button>
             <Button
               variant="text"
-              onClick={() =>
-                navigate(getNotebookRoute({serverId, projectId}))
-              }
+              onClick={() => navigate(getNotebookRoute({serverId, projectId}))}
             >
               {`Back to ${NOTEBOOK_NAME}`}
             </Button>

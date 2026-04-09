@@ -40,8 +40,7 @@ export function getTemplateDeleteDialogBody({
   }
 
   const n = referencingNotebookCount;
-  const countPhrase =
-    n === 1 ? `one ${nbCap}` : `${n} ${nbPlural}`;
+  const countPhrase = n === 1 ? `one ${nbCap}` : `${n} ${nbPlural}`;
   const isAre = n === 1 ? 'is' : 'are';
 
   const consequence =

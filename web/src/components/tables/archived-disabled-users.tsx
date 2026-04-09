@@ -30,11 +30,7 @@ export const archivedDisabledUserColumns: ColumnDef<GetListAllUsersItem>[] = [
   {
     id: 'actions',
     header: () => <div className="text-right">Actions</div>,
-    cell: ({
-      row: {
-        original,
-      },
-    }) => (
+    cell: ({row: {original}}) => (
       <div className="flex justify-end">
         <ReEnableUserDialog rowUser={original} />
       </div>

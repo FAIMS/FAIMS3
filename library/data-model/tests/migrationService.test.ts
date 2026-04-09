@@ -152,7 +152,8 @@ describe('Migration System Tests', () => {
 
       // Should identify each step from v1 to PEOPLE target version
       const migrations = identifyMigrations({migrationDoc: mockMigrationDoc});
-      const peopleTarget = DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
+      const peopleTarget =
+        DB_TARGET_VERSIONS[DatabaseType.PEOPLE].targetVersion;
       expect(migrations.length).toBe(peopleTarget - mockMigrationDoc.version);
       expect(migrations[0].dbType).toBe(DatabaseType.PEOPLE);
       expect(migrations[0].from).toBe(1);

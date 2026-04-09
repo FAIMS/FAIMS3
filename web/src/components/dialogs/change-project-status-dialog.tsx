@@ -81,7 +81,9 @@ export const ProjectStatusDialog = ({projectId}: {projectId: string}) => {
                       data collection on user devices.
                     </p>
                     <p>
-                      <span className="font-medium text-destructive">Closed:</span>{' '}
+                      <span className="font-medium text-destructive">
+                        Closed:
+                      </span>{' '}
                       {NOTEBOOK_NAME_CAPITALIZED} is read-only. Users will not
                       be able to activate this {NOTEBOOK_NAME} for data
                       collection.

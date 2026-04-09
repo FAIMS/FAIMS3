@@ -206,16 +206,21 @@ describe('export deleted relationship stripping', () => {
       baseRevisionId: doomed.revision._id,
       userId: 'tester',
     });
-    const {parentId} = await seedParentWithLinks(live.record._id, doomed.record._id);
+    const {parentId} = await seedParentWithLinks(
+      live.record._id,
+      doomed.record._id
+    );
 
     const parentHydrated = await engine.hydrated.getHydratedRecord({
       recordId: parentId,
     });
-    const fields = getNotebookFieldTypes({uiSpecification: uiSpec, viewID: 'VA'});
-    const dataCopy = {...toHydratedDataRecord(parentHydrated, projectId).data} as Record<
-      string,
-      unknown
-    >;
+    const fields = getNotebookFieldTypes({
+      uiSpecification: uiSpec,
+      viewID: 'VA',
+    });
+    const dataCopy = {
+      ...toHydratedDataRecord(parentHydrated, projectId).data,
+    } as Record<string, unknown>;
 
     await stripDeletedRelatedRefsFromRecordData({
       fields,
@@ -245,12 +250,18 @@ describe('export deleted relationship stripping', () => {
       baseRevisionId: doomed.revision._id,
       userId: 'tester',
     });
-    const {parentId} = await seedParentWithLinks(live.record._id, doomed.record._id);
+    const {parentId} = await seedParentWithLinks(
+      live.record._id,
+      doomed.record._id
+    );
     const parentHydrated = await engine.hydrated.getHydratedRecord({
       recordId: parentId,
     });
     const hydratedExport = toHydratedDataRecord(parentHydrated, projectId);
-    const fields = getNotebookFieldTypes({uiSpecification: uiSpec, viewID: 'VA'});
+    const fields = getNotebookFieldTypes({
+      uiSpecification: uiSpec,
+      viewID: 'VA',
+    });
     const ready = await buildExportReadyDataCopy({
       viewsetId: 'VA',
       data: hydratedExport.data as Record<string, unknown>,
@@ -274,9 +285,17 @@ describe('export deleted relationship stripping', () => {
   });
 
   it('buildExportReadyDataCopy leaves non-related fields untouched', async () => {
-    const live = await engine.form.createRecord({formId: 'VB', createdBy: 'tester'});
-    const {parentId} = await seedParentWithLinks(live.record._id, live.record._id);
-    const parentHydrated = await engine.hydrated.getHydratedRecord({recordId: parentId});
+    const live = await engine.form.createRecord({
+      formId: 'VB',
+      createdBy: 'tester',
+    });
+    const {parentId} = await seedParentWithLinks(
+      live.record._id,
+      live.record._id
+    );
+    const parentHydrated = await engine.hydrated.getHydratedRecord({
+      recordId: parentId,
+    });
     const hydratedExport = toHydratedDataRecord(parentHydrated, projectId);
     const mapBefore = JSON.stringify(hydratedExport.data.mapF);
     const ready = await buildExportReadyDataCopy({
@@ -303,7 +322,10 @@ describe('export deleted relationship stripping', () => {
       baseRevisionId: doomed.revision._id,
       userId: 'tester',
     });
-    const {parentId} = await seedParentWithLinks(live.record._id, doomed.record._id);
+    const {parentId} = await seedParentWithLinks(
+      live.record._id,
+      doomed.record._id
+    );
     const parentHydrated = await engine.hydrated.getHydratedRecord({
       recordId: parentId,
     });

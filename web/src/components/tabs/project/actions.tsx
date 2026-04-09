@@ -249,7 +249,6 @@ const ProjectActions = (): JSX.Element => {
             </List>
           </Card>
         )}
-
       </div>
       <DesignerDialog
         open={editorOpen}

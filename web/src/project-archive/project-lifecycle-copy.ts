@@ -7,4 +7,3 @@ export function getArchiveProjectActionsDescription(): string {
   }
   return `Hide this ${NOTEBOOK_NAME} from normal lists. After users open the app, it will deactivate this ${NOTEBOOK_NAME} from their device. While data may be recoverable on some devices, we do not recommend relying on this.`;
 }
-

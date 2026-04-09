@@ -61,8 +61,8 @@ export function DisableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
                   system.
                 </li>
                 <li>
-                  {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and records they contributed
-                  will not be affected.
+                  {NOTEBOOK_NAME_PLURAL_CAPITALIZED} and records they
+                  contributed will not be affected.
                 </li>
                 <li>The user will not be notified.</li>
               </ul>

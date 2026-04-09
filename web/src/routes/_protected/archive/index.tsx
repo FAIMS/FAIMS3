@@ -53,35 +53,26 @@ function RouteComponent() {
     enabled: !!user,
   });
 
-  const {
-    isPending: projectsLoading,
-    data: projectsData,
-  } = useGetProjects({
+  const {isPending: projectsLoading, data: projectsData} = useGetProjects({
     user,
     includeArchived: true,
     enabled: !!user,
   });
 
-  const {
-    isPending: disabledUsersLoading,
-    data: allUsersForArchive,
-  } = useGetUsers({
-    user,
-    includeArchived: true,
-    enabled: !!user,
-  });
+  const {isPending: disabledUsersLoading, data: allUsersForArchive} =
+    useGetUsers({
+      user,
+      includeArchived: true,
+      enabled: !!user,
+    });
 
   const disabledUsers = useMemo(
-    () =>
-      (allUsersForArchive ?? []).filter(u => u.disabled === true),
+    () => (allUsersForArchive ?? []).filter(u => u.disabled === true),
     [allUsersForArchive]
   );
 
   const archivedProjects = useMemo(
-    () =>
-      (projectsData ?? []).filter(
-        p => p.status === ProjectStatus.ARCHIVED
-      ),
+    () => (projectsData ?? []).filter(p => p.status === ProjectStatus.ARCHIVED),
     [projectsData]
   );
 
@@ -168,4 +159,3 @@ function PlaceholderArchivePanel({
     </div>
   );
 }
-

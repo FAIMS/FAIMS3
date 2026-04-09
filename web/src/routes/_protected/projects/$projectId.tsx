@@ -65,11 +65,7 @@ function RouteComponent() {
 
   if (!isLoading && project?.status === ProjectStatus.ARCHIVED) {
     return (
-      <Navigate
-        to="/archive"
-        search={{tab: NOTEBOOK_NAME_PLURAL}}
-        replace
-      />
+      <Navigate to="/archive" search={{tab: NOTEBOOK_NAME_PLURAL}} replace />
     );
   }
 

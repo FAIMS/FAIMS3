@@ -698,8 +698,7 @@ export const actionDetails: Record<Action, ActionDetails> = {
   },
   [Action.CHANGE_TEMPLATE_STATUS]: {
     name: 'Change Template Status',
-    description:
-      'Archive or restore a template',
+    description: 'Archive or restore a template',
     resourceSpecific: true,
     resource: Resource.TEMPLATE,
   },

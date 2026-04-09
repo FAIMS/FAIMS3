@@ -57,9 +57,7 @@ test('Check delete component', async () => {
 
   expect(screen.getByText('Cancel')).toBeTruthy();
 
-  const confirmBtn = screen.getByTestId(
-    'confirm-delete'
-  ) as HTMLButtonElement;
+  const confirmBtn = screen.getByTestId('confirm-delete') as HTMLButtonElement;
   expect(confirmBtn.disabled).toBe(true);
 
   fireEvent.click(

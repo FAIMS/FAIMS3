@@ -135,11 +135,7 @@ export const archivedTemplateColumns: ColumnDef<ArchivedTemplateRow>[] = [
     ),
     accessorFn: (row: ArchivedTemplateRow) =>
       row.archived === true ? 'archived' : 'active',
-    cell: ({
-      row: {original},
-    }: {
-      row: {original: ArchivedTemplateRow};
-    }) => (
+    cell: ({row: {original}}: {row: {original: ArchivedTemplateRow}}) => (
       <span className="capitalize">
         {original.archived === true ? 'archived' : 'active'}
       </span>

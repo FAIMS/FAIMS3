@@ -1933,8 +1933,7 @@ export const initialiseProjects = createAsyncThunk<void, {serverId: string}>(
           continue;
         }
         const streakMapKey = streakKey(projectId);
-        const streakCount =
-          (directoryAbsentStreak.get(streakMapKey) ?? 0) + 1;
+        const streakCount = (directoryAbsentStreak.get(streakMapKey) ?? 0) + 1;
         directoryAbsentStreak.set(streakMapKey, streakCount);
         // Missing from directory: need several consistent "absent" reads (threshold).
         // Present but archived: directory row is authoritative — one read is enough.

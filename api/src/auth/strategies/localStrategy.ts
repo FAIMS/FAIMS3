@@ -21,7 +21,10 @@
 import {pbkdf2Sync} from 'crypto';
 import {Strategy, VerifyFunction} from 'passport-local';
 import {upgradeCouchUserToExpressUser} from '../keySigning/create';
-import {isPeopleUserAccountDisabled, PeopleDBDocument} from '@faims3/data-model';
+import {
+  isPeopleUserAccountDisabled,
+  PeopleDBDocument,
+} from '@faims3/data-model';
 import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
 
 /**

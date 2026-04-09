@@ -26,8 +26,7 @@ export function ReEnableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
     resourceId: rowUser._id,
   });
 
-  const displayId =
-    rowUser.emails[0]?.email ?? rowUser.user_id ?? rowUser._id;
+  const displayId = rowUser.emails[0]?.email ?? rowUser.user_id ?? rowUser._id;
 
   if (!canEnable) {
     return null;
@@ -49,10 +48,7 @@ export function ReEnableUserDialog({rowUser}: {rowUser: GetListAllUsersItem}) {
       <DialogContent className="text-black">
         <DialogHeader>
           <DialogTitle className="text-black">Re-enable user</DialogTitle>
-          <DialogDescription
-            asChild
-            className="text-black [&]:text-black"
-          >
+          <DialogDescription asChild className="text-black [&]:text-black">
             <div
               className={cn(
                 'rounded-md border-2 border-red-500 bg-red-100 p-4 text-sm',

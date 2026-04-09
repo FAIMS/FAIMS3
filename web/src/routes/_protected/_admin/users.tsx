@@ -65,22 +65,22 @@ function RouteComponent() {
           setActiveTab(tab as TabLabel);
         }}
       >
-      <div className="flex justify-start items-center gap-4">
-        <TabsList>
-          {tabs.map(({id, label}) => (
-            <TabsTrigger key={id} value={id}>
-              {label ?? id}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
+        <div className="flex justify-start items-center gap-4">
+          <TabsList>
+            {tabs.map(({id, label}) => (
+              <TabsTrigger key={id} value={id}>
+                {label ?? id}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
-      {tabs.map(({id, Component}) => (
-        <TabsContent key={id} value={id}>
-          <Component />
-        </TabsContent>
-      ))}
-    </Tabs>
+        {tabs.map(({id, Component}) => (
+          <TabsContent key={id} value={id}>
+            <Component />
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }

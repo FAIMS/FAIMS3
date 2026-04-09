@@ -74,8 +74,8 @@ function RouteComponent() {
           <AlertDescription className="mt-2 space-y-2 text-amber-900/90 dark:text-amber-50/90">
             <p>
               It is hidden from active template lists and cannot be used to
-              create new {NOTEBOOK_NAME_PLURAL_CAPITALIZED} until you restore it from
-              the Archive.
+              create new {NOTEBOOK_NAME_PLURAL_CAPITALIZED} until you restore it
+              from the Archive.
             </p>
             <p>
               <Link

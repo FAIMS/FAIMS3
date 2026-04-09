@@ -10,7 +10,11 @@ import {
 } from '../ui/tooltip';
 import {RestoreArchivedProjectDialog} from '../dialogs/restore-archived-project-dialog';
 import {DeleteArchivedProjectDialog} from '../dialogs/delete-archived-project-dialog';
-import {Action, GetNotebookListResponse, ProjectStatus} from '@faims3/data-model';
+import {
+  Action,
+  GetNotebookListResponse,
+  ProjectStatus,
+} from '@faims3/data-model';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {
@@ -111,7 +115,9 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
       <DataTableColumnHeader column={column} title="Name" />
     ),
     cell: ({row}) => (
-      <span className="font-medium text-card-foreground">{row.original.name}</span>
+      <span className="font-medium text-card-foreground">
+        {row.original.name}
+      </span>
     ),
   },
   {
@@ -136,11 +142,7 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
       <DataTableColumnHeader column={column} title="Status" />
     ),
     accessorFn: (row: ArchivedProjectRow) => row.status,
-    cell: ({
-      row: {original},
-    }: {
-      row: {original: ArchivedProjectRow};
-    }) => (
+    cell: ({row: {original}}: {row: {original: ArchivedProjectRow}}) => (
       <span className="capitalize">
         {original.status === ProjectStatus.ARCHIVED
           ? 'archived'

@@ -29,7 +29,8 @@ export const NOTEBOOK_NAME_CAPITALIZED = import.meta.env.VITE_NOTEBOOK_NAME
 export const NOTEBOOK_NAME_PLURAL = pluralize(NOTEBOOK_NAME);
 
 /** Plural with first letter capitalised — use for headings and labels. */
-export const NOTEBOOK_NAME_PLURAL_CAPITALIZED = capitalize(NOTEBOOK_NAME_PLURAL);
+export const NOTEBOOK_NAME_PLURAL_CAPITALIZED =
+  capitalize(NOTEBOOK_NAME_PLURAL);
 
 export const DEVELOPER_MODE = import.meta.env.VITE_DEVELOPER_MODE === 'true';
 

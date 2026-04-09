@@ -43,8 +43,7 @@ export const columns: ColumnDef<Column>[] = [
     accessorFn: (row: Column & {archived?: boolean}) =>
       row.archived === true ? 'Archived' : 'Active',
     cell: ({row}: {row: {original: Column & {archived?: boolean}}}) => {
-      const label =
-        row.original.archived === true ? 'Archived' : 'Active';
+      const label = row.original.archived === true ? 'Archived' : 'Active';
       return <RoleCard>{label}</RoleCard>;
     },
   },

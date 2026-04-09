@@ -18,7 +18,10 @@
  *   Provides a function to validate a user token and return user details
  */
 
-import {decodeAndValidateToken, isPeopleUserAccountDisabled} from '@faims3/data-model';
+import {
+  decodeAndValidateToken,
+  isPeopleUserAccountDisabled,
+} from '@faims3/data-model';
 import {jwtVerify, errors as joseErrors} from 'jose';
 import {CONDUCTOR_PUBLIC_URL, KEY_SERVICE} from '../../buildconfig';
 import {getCouchUserFromEmailOrUserId} from '../../couchdb/users';
