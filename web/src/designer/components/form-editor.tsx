@@ -44,9 +44,6 @@ import {
   IconButton,
   InputAdornment,
   Stack,
-  Step,
-  StepButton,
-  Stepper,
   useMediaQuery,
   useTheme,
   ThemeProvider,
@@ -57,7 +54,7 @@ import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
 import {useQueryClient} from '@tanstack/react-query';
 import {cloneDeep} from 'lodash';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {shallowEqual} from 'react-redux';
 import {useLocation} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
@@ -75,6 +72,7 @@ import {
   designerIconControlButtonSx,
   designerPipeSx,
   designerPrimaryActionButtonSx,
+  designerResponsiveSectionSx,
   designerScrollableControlRowSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
@@ -185,22 +183,8 @@ export const FormEditor = ({
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
 
-  // Refs for the scroll container and section steps.
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [showRightGradient, setShowRightGradient] = useState(false);
-
   // needed for the form preview
   const queryClient = useQueryClient();
-
-  // Update overflow gradient overlay on scroll, hidng it when scrolled to the end.
-  const handleScroll = () => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const {scrollLeft, scrollWidth, clientWidth} = container;
-      setShowRightGradient(scrollLeft + clientWidth < scrollWidth - 1);
-    }
-  };
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
@@ -394,35 +378,6 @@ export const FormEditor = ({
     handleFieldMoveCallback(targetViewId);
   };
 
-  // Scroll the active step into view.
-  const scrollActiveStepIntoView = useCallback(() => {
-    const container = scrollContainerRef.current;
-    const selected = stepRefs.current[activeStep];
-    if (container && selected) {
-      const containerRect = container.getBoundingClientRect();
-      const selectedRect = selected.getBoundingClientRect();
-      if (
-        selectedRect.left < containerRect.left ||
-        selectedRect.right > containerRect.right
-      ) {
-        selected.scrollIntoView({behavior: 'smooth', inline: 'center'});
-      }
-    }
-  }, [activeStep]);
-
-  useEffect(() => {
-    scrollActiveStepIntoView();
-  }, [activeStep, scrollActiveStepIntoView]);
-
-  useEffect(() => {
-    handleScroll();
-  }, [sections.length]);
-
-  useEffect(() => {
-    window.addEventListener('resize', scrollActiveStepIntoView);
-    return () => window.removeEventListener('resize', scrollActiveStepIntoView);
-  }, [scrollActiveStepIntoView]);
-
   useEffect(() => {
     // Set active step from URL parameter if available
     if (sectionParam !== null) {
@@ -442,7 +397,7 @@ export const FormEditor = ({
       direction={{xs: 'column', xl: 'row'}}
       spacing={2}
       alignItems="stretch"
-      sx={{width: '100%'}}
+      sx={[designerResponsiveSectionSx, {width: '100%'}]}
     >
       <Grid
         container
@@ -742,99 +697,76 @@ export const FormEditor = ({
           <Box sx={{px: 0, pt: 1.5, pb: 2}}>
             <Grid container spacing={2} p={0}>
               <Grid item xs={12}>
-                <Box sx={{position: 'relative'}}>
-                  {/* outer scroll container */}
-                  <Box
-                    ref={scrollContainerRef}
-                    sx={{
-                      overflowX: sections.length > 2 ? 'auto' : 'hidden',
-                      display: 'flex',
-                      justifyContent: 'flex-start',
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: 'rgba(107, 114, 128, 0.9) transparent',
-                      '&::-webkit-scrollbar': {
-                        height: 6,
-                      },
-                      '&::-webkit-scrollbar-track': {
-                        backgroundColor: 'transparent',
-                      },
-                      '&::-webkit-scrollbar-thumb': {
-                        backgroundColor: 'rgba(107, 114, 128, 0.8)',
-                        borderRadius: 999,
-                      },
-                    }}
-                    onScroll={handleScroll}
-                  >
-                    {/*
-                      inner scroll container:
-                      - min width of 70% of  available space.
-                      - uses flex layout.
-                      - if only a few steps, they expand to fill the space.
-                      - once  there are many steps each step shrinks only to its minimum width (120px)
-                        and the container’s total width exceeds the viewport so scrolling is enabled.
-                    */}
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        flexWrap: 'nowrap',
-                        minWidth: 'max-content',
-                        width: 'max-content',
-                        justifyContent: 'flex-start',
-                      }}
-                    >
-                      <Stepper
-                        nonLinear
-                        activeStep={activeStep}
-                        alternativeLabel
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gap: 1,
+                    gridTemplateColumns: {
+                      xs: 'repeat(1, minmax(0, 1fr))',
+                      sm: 'repeat(2, minmax(0, 1fr))',
+                      lg: 'repeat(3, minmax(0, 1fr))',
+                      xl: 'repeat(4, minmax(0, 1fr))',
+                    },
+                    mb: 0.5,
+                  }}
+                >
+                  {sections.map((section: string, index: number) => {
+                    const isActive = index === activeStep;
+                    return (
+                      <Button
+                        key={section}
+                        variant={isActive ? 'contained' : 'outlined'}
+                        color={isActive ? 'primary' : 'inherit'}
+                        onClick={handleStep(index)}
                         sx={{
-                          my: 3.5,
-                          width: 'max-content',
-                          '& .MuiStep-root': {
-                            flex: '0 0 auto',
-                            minWidth: 220,
-                            px: 0.75,
-                          },
-                          '& .MuiStepConnector-root': {
-                            left: 'calc(-50% + 18px)',
-                            right: 'calc(50% + 18px)',
+                          justifyContent: 'flex-start',
+                          textTransform: 'none',
+                          px: 1.25,
+                          py: 0.85,
+                          minHeight: 52,
+                          borderRadius: 1.25,
+                          gap: 1,
+                          borderColor: isActive ? 'primary.main' : 'divider',
+                          boxShadow: 'none',
+                          '&:hover': {
+                            boxShadow: 'none',
                           },
                         }}
                       >
-                        {sections.map((section: string, index: number) => (
-                          <Step key={section}>
-                            <StepButton
-                              color="inherit"
-                              onClick={handleStep(index)}
-                            >
-                              <Typography
-                                sx={{
-                                  fontWeight: 700,
-                                  fontSize: {xs: '1.15rem', sm: '1.3rem'},
-                                  lineHeight: 1.2,
-                                }}
-                              >
-                                {views[section].label}
-                              </Typography>
-                            </StepButton>
-                          </Step>
-                        ))}
-                      </Stepper>
-                    </Box>
-                  </Box>
-                  {showRightGradient && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: 0,
-                        right: 0,
-                        width: 40,
-                        height: '100%',
-                        pointerEvents: 'none',
-                        background: theme =>
-                          `linear-gradient(to left, ${theme.palette.background.paper}, transparent)`,
-                      }}
-                    />
-                  )}
+                        <Box
+                          component="span"
+                          sx={{
+                            width: 26,
+                            height: 26,
+                            borderRadius: '50%',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                            bgcolor: isActive ? 'primary.dark' : 'action.hover',
+                            color: isActive ? 'primary.contrastText' : 'text.secondary',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {index + 1}
+                        </Box>
+                        <Typography
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: {xs: '1rem', sm: '1.08rem'},
+                            lineHeight: 1.2,
+                            textAlign: 'left',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {views[section].label}
+                        </Typography>
+                      </Button>
+                    );
+                  })}
                 </Box>
               </Grid>
 
