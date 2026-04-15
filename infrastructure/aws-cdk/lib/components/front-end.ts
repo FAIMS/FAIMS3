@@ -36,7 +36,7 @@ export interface FaimsFrontEndProps {
   faimsDomainNames: Array<string>;
 
   // customisation
-  uiTheme: 'bubble' | 'default' | 'bssTheme';
+  uiTheme: 'bubble' | 'default' | 'bssTheme' | 'fieldmark';
   notebookListType: 'tabs' | 'headings';
   notebookName: string;
   // App display name
@@ -66,7 +66,7 @@ export interface FaimsFrontEndProps {
   // docs config (Sphinx user docs site)
   docsDomainName: string;
   /** Management website title for docs variable substitution (default: Control Centre) */
-  docsManagementWebsiteTitle?: string;
+  managementWebsiteTitle?: string;
   /** Mobile app store URLs for docs variable substitution */
   androidAppPublicUrl: string;
   iosAppPublicUrl: string;
@@ -418,7 +418,7 @@ export class FaimsFrontEnd extends Construct {
       VITE_APP_URL: this.faimsAppUrl,
       VITE_NOTEBOOK_NAME: props.notebookName,
       VITE_THEME: props.uiTheme,
-      VITE_WEBSITE_TITLE: 'Control Centre',
+      VITE_WEBSITE_TITLE: props.managementWebsiteTitle ?? 'Control Centre',
       VITE_DOCS_URL: props.docsUrl || '',
       // Maps setup for web
       VITE_MAP_SOURCE: props.offlineMaps.mapSource,
@@ -557,7 +557,7 @@ export class FaimsFrontEnd extends Construct {
     const docsEnv: {[key: string]: string} = {
       VITE_APP_NAME: props.appName,
       VITE_NOTEBOOK_NAME: props.notebookName,
-      VITE_WEBSITE_TITLE: props.docsManagementWebsiteTitle ?? 'Control Centre',
+      VITE_WEBSITE_TITLE: props.managementWebsiteTitle ?? 'Control Centre',
       // Uses default for now, as other themes are not implemented properly
       VITE_THEME: 'default',
       VITE_API_URL: props.conductorUrl,

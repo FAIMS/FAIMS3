@@ -141,6 +141,7 @@ export enum Action {
   UPDATE_TEAM_DETAILS = 'UPDATE_TEAM_DETAILS',
   VIEW_TEAM_DETAILS = 'VIEW_TEAM_DETAILS',
   VIEW_TEAM_MEMBERS = 'VIEW_TEAM_MEMBERS',
+  CHANGE_OWN_ROLE_IN_TEAM = 'CHANGE_OWN_ROLE_IN_TEAM',
 
   // Direct management
   ADD_ADMIN_TO_TEAM = 'ADD_ADMIN_TO_TEAM',
@@ -538,7 +539,12 @@ export const actionDetails: Record<Action, ActionDetails> = {
     resourceSpecific: true,
     resource: Resource.TEAM,
   },
-
+  [Action.CHANGE_OWN_ROLE_IN_TEAM]: {
+    name: 'Change own role in team',
+    description: 'Change your own role within a team',
+    resourceSpecific: true,
+    resource: Resource.TEAM,
+  },
   [Action.ADD_ADMIN_TO_TEAM]: {
     name: 'Add Admin to Team',
     description: 'Grant a user administrator privileges for a specific team',
@@ -1148,6 +1154,10 @@ export const roleActions: Record<
       Action.REMOVE_MANAGER_FROM_TEAM,
       Action.ADD_MEMBER_TO_TEAM,
       Action.REMOVE_MEMBER_FROM_TEAM,
+      // Only operations admin can change their own role
+      // to allow for bootstrapping of teams when there are no team admins
+      // eg. create a team, add yourself as admin
+      Action.CHANGE_OWN_ROLE_IN_TEAM,
 
       // These are special permissions!
       Action.ADD_ADMIN_TO_TEAM,

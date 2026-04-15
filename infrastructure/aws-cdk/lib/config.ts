@@ -418,7 +418,9 @@ const ConductorConfigSchema = z.object({
   localhostWhitelist: z.boolean().default(false),
 });
 
-const WebConfigSchema = z.object({});
+const WebConfigSchema = z.object({
+  title: z.string().default('Control Centre'),
+});
 
 /** Documentation site (Sphinx user docs) configuration */
 const DocsConfigSchema = z.object({});
@@ -465,7 +467,7 @@ const AppSupportLinksSchema = z.object({
 export const UiConfiguration = z
   .object({
     /** The UI Theme for the app */
-    uiTheme: z.enum(['bubble', 'default', 'bssTheme']),
+    uiTheme: z.enum(['bubble', 'default', 'bssTheme', 'fieldmark']),
     /** The notebook list type for the app */
     notebookListType: z.enum(['tabs', 'headings']),
     /** The display name for notebooks e.g. survey, notebook */

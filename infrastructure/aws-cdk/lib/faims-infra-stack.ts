@@ -169,7 +169,7 @@ export class FaimsInfraStack extends cdk.Stack {
       headingAppName: config.uiConfiguration.headingAppName,
       webDomainName: domains.web,
       docsDomainName: domains.docs,
-      docsManagementWebsiteTitle: 'Control Centre',
+      managementWebsiteTitle: config.web.title,
       androidAppPublicUrl: config.mobileApps.androidAppPublicUrl,
       iosAppPublicUrl: config.mobileApps.iosAppPublicUrl,
       offlineMaps: config.uiConfiguration.offlineMaps,
