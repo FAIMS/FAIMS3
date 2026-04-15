@@ -57,6 +57,7 @@ import {
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
+import {designerResponsiveFieldEditorSx} from './designer-style';
 import {
   fieldDeleted,
   fieldDuplicated,
@@ -715,26 +716,33 @@ const FieldEditorComponent = ({
               opacity: disableEditing ? 0.5 : 1,
             }}
           >
-            {invalidRefs.length > 0 && (
-              <Grid item xs={12} sx={{marginBottom: 3.5}}>
-                <Alert severity="warning">
-                  The following fields/sections have visibility conditions that
-                  depend on this field having a specific option available:
-                  <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
-                    {invalidRefs.map((msg, idx) => (
-                      <li key={idx}>{msg}</li>
-                    ))}
-                  </ul>
-                  Please update this field, or remove/modify affected
-                  conditions.
-                </Alert>
-              </Grid>
-            )}
+            <Grid
+              container
+              sx={designerResponsiveFieldEditorSx}
+            >
+              {invalidRefs.length > 0 && (
+                <Grid item xs={12} sx={{marginBottom: 3.5}}>
+                  <Alert severity="warning">
+                    The following fields/sections have visibility conditions that
+                    depend on this field having a specific option available:
+                    <ul style={{marginTop: '8px', paddingLeft: '20px'}}>
+                      {invalidRefs.map((msg, idx) => (
+                        <li key={idx}>{msg}</li>
+                      ))}
+                    </ul>
+                    Please update this field, or remove/modify affected
+                    conditions.
+                  </Alert>
+                </Grid>
+              )}
 
-            {renderFieldEditor({
-              fieldComponent,
-              context: {fieldName, viewId, viewSetId},
-            })}
+              <Grid item xs={12}>
+                {renderFieldEditor({
+                  fieldComponent,
+                  context: {fieldName, viewId, viewSetId},
+                })}
+              </Grid>
+            </Grid>
           </div>
         </AccordionDetails>
       )}
