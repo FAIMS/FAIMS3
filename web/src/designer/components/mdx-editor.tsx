@@ -24,34 +24,31 @@ import {Alert, Card} from '@mui/material';
 import '@mdxeditor/editor/style.css';
 import '../mdx-editor.css';
 
-// importing the editor and the plugin from their full paths
-import {MDXEditor} from '@mdxeditor/editor/MDXEditor';
+// Import all editor APIs from the package root to avoid brittle deep-import chunks.
 import {
+  MDXEditor,
   MDXEditorMethods,
   MdastImportVisitor,
   Separator,
+  toolbarPlugin,
+  headingsPlugin,
+  listsPlugin,
+  thematicBreakPlugin,
+  markdownShortcutPlugin,
+  tablePlugin,
+  diffSourcePlugin,
+  linkPlugin,
+  imagePlugin,
+  UndoRedo,
+  BoldItalicUnderlineToggles,
+  BlockTypeSelect,
+  ListsToggle,
+  InsertTable,
+  DiffSourceToggleWrapper,
+  InsertImage,
   realmPlugin,
   system,
 } from '@mdxeditor/editor';
-import {toolbarPlugin} from '@mdxeditor/editor/plugins/toolbar';
-import {headingsPlugin} from '@mdxeditor/editor/plugins/headings';
-import {listsPlugin} from '@mdxeditor/editor/plugins/lists';
-
-import {thematicBreakPlugin} from '@mdxeditor/editor/plugins/thematic-break';
-import {markdownShortcutPlugin} from '@mdxeditor/editor/plugins/markdown-shortcut';
-import {tablePlugin} from '@mdxeditor/editor/plugins/table';
-import {diffSourcePlugin} from '@mdxeditor/editor/plugins/diff-source';
-import {linkPlugin} from '@mdxeditor/editor/plugins/link';
-import {imagePlugin} from '@mdxeditor/editor/plugins/image';
-
-// importing the desired toolbar toggle components
-import {UndoRedo} from '@mdxeditor/editor/plugins/toolbar/components/UndoRedo';
-import {BoldItalicUnderlineToggles} from '@mdxeditor/editor/plugins/toolbar/components/BoldItalicUnderlineToggles';
-import {BlockTypeSelect} from '@mdxeditor/editor/plugins/toolbar/components/BlockTypeSelect';
-import {ListsToggle} from '@mdxeditor/editor/plugins/toolbar/components/ListsToggle';
-import {InsertTable} from '@mdxeditor/editor/plugins/toolbar/components/InsertTable';
-import {DiffSourceToggleWrapper} from '@mdxeditor/editor/plugins/toolbar/components/DiffSourceToggleWrapper';
-import {InsertImage} from '@mdxeditor/editor/plugins/toolbar/components/InsertImage';
 
 /*
  * Supported mdast node types — kept outside the component so the Set
