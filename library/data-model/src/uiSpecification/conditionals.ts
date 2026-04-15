@@ -130,22 +130,37 @@ registerCompiler('less-equal', (expression: ConditionalExpression) => {
 
 registerCompiler('string-contains', (expression: ConditionalExpression) => {
   return (values: RecordValues) => {
+    // false for any non string value
+    if (typeof values[expression.field!] !== 'string') {
+      return false;
+    }
     if (expression.field && expression.field in values) {
       return values[expression.field].includes(expression.value);
     } else return false;
   };
 });
 
-registerCompiler('string-does-not-contain', (expression: ConditionalExpression) => {
-  return (values: RecordValues) => {
-    if (expression.field && expression.field in values) {
-      return !values[expression.field].includes(expression.value);
-    } else return false;
-  };
-});
+registerCompiler(
+  'string-does-not-contain',
+  (expression: ConditionalExpression) => {
+    return (values: RecordValues) => {
+      // false for any non string value
+      if (typeof values[expression.field!] !== 'string') {
+        return false;
+      }
+      if (expression.field && expression.field in values) {
+        return !values[expression.field].includes(expression.value);
+      } else return false;
+    };
+  }
+);
 
 registerCompiler('regex', (expression: ConditionalExpression) => {
   return (values: RecordValues) => {
+    // false for any non string value
+    if (typeof values[expression.field!] !== 'string') {
+      return false;
+    }
     if (expression.field && expression.field in values) {
       const re = new RegExp(expression.value);
       return re.test(values[expression.field]);
