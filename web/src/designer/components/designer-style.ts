@@ -83,3 +83,20 @@ export const designerPipeSx: SxProps<Theme> = {
   color: 'text.disabled',
   px: 0.1,
 };
+
+export const designerResponsiveFrameSx = {
+  width: '100%',
+  maxWidth: '100%',
+  mx: 'auto',
+} as const;
+
+export const designerResponsiveSectionSx = {
+  width: '100%',
+  maxWidth: '100%',
+  mx: 'auto',
+} as const;
+
+export const designerResponsiveFieldEditorSx = {
+  width: '100%',
+  maxWidth: '100%',
+} as const;
