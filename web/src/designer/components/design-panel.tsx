@@ -35,7 +35,6 @@ import {
 import {alpha} from '@mui/material/styles';
 import DebouncedTextField from './debounced-text-field';
 import AddIcon from '@mui/icons-material/Add';
-import KeyboardDoubleArrowRightRoundedIcon from '@mui/icons-material/KeyboardDoubleArrowRightRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 
 import {TabContext} from '@mui/lab';
@@ -98,7 +97,6 @@ export const DesignPanel = () => {
   }, [viewSets]);
 
   const maxKeys = Object.keys(viewSets).length;
-  const hasOverflowingTabs = maxKeys > 6;
 
   const baseTabRootSx = {
     '&.MuiTab-root': {
@@ -111,9 +109,9 @@ export const DesignPanel = () => {
       borderTopRightRadius: '10px',
       marginRight: '0.5em',
       minHeight: 48,
-      minWidth: 160,
-      maxWidth: 260,
-      paddingX: 2,
+      minWidth: {xs: 120, sm: 140, md: 160},
+      maxWidth: {xs: 220, sm: 240, md: 260},
+      paddingX: {xs: 1.25, sm: 2},
       paddingY: 1,
       textTransform: 'uppercase',
       fontWeight: 700,
@@ -327,38 +325,18 @@ export const DesignPanel = () => {
             value={tabIndex}
             onChange={handleTabChange}
             aria-label="form tabs"
-            variant="scrollable"
-            visibleScrollbar
-            scrollButtons="auto"
-            allowScrollButtonsMobile
+            variant="standard"
             TabIndicatorProps={{sx: {display: 'none'}}}
             sx={{
               minHeight: 48,
               ml: 0,
               '& .MuiTabs-scroller': {
-                overflowX: 'auto !important',
-                overflowY: 'hidden',
-                scrollbarWidth: 'thin',
-                scrollbarColor: `${alpha(theme.palette.text.primary, 0.45)} transparent`,
+                overflow: 'visible !important',
               },
               '& .MuiTabs-flexContainer': {
                 ml: 0,
-              },
-              '& .MuiTabs-scrollButtons.Mui-disabled': {
-                display: 'none',
-              },
-              '& .MuiTabs-scroller::-webkit-scrollbar': {
-                height: 8,
-              },
-              '& .MuiTabs-scroller::-webkit-scrollbar-track': {
-                backgroundColor: 'transparent',
-              },
-              '& .MuiTabs-scroller::-webkit-scrollbar-thumb': {
-                backgroundColor: alpha(theme.palette.text.primary, 0.35),
-                borderRadius: 999,
-              },
-              '& .MuiTabs-scroller::-webkit-scrollbar-thumb:hover': {
-                backgroundColor: alpha(theme.palette.text.primary, 0.5),
+                flexWrap: 'wrap',
+                gap: 1,
               },
             }}
           >
@@ -403,7 +381,7 @@ export const DesignPanel = () => {
                   ...baseTabRootSx['&.MuiTab-root'],
                   minWidth: compactAddTab ? 56 : 142,
                   maxWidth: compactAddTab ? 56 : 142,
-                  marginLeft: '0.5em',
+                  marginLeft: 0,
                   backgroundColor: 'primary.main',
                   color: 'primary.contrastText',
                   borderColor: 'primary.main',
@@ -420,26 +398,6 @@ export const DesignPanel = () => {
             />
           </Tabs>
         </Box>
-        {hasOverflowingTabs && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 0.4,
-              mt: 0.25,
-              mb: 0.75,
-              color: 'text.secondary',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-            }}
-          >
-            <KeyboardDoubleArrowRightRoundedIcon fontSize="small" />
-            <Typography variant="caption" sx={{fontWeight: 600}}>
-              Scroll right for more forms
-            </Typography>
-          </Box>
-        )}
 
         <Routes>
           {visibleTypes.map((form: string, index: number) => (
