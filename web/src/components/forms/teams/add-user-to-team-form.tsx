@@ -58,6 +58,7 @@ export function AddUserToTeamForm({
       options: rolesAvailable.map(r => ({
         label: roleDetails[r].name,
         value: r,
+        description: roleDetails[r].description,
       })),
       schema: z.enum([
         Role.TEAM_MEMBER,

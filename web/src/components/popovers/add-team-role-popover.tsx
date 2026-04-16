@@ -61,40 +61,46 @@ export const AddTeamRolePopover = ({
           <Plus />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex gap-1 p-2 w-fit text-sm" align="start">
-        {roles.map(role => (
-          <RoleCard
-            key={role}
-            onClick={async () => {
-              try {
-                const response = await modifyMemberForTeam({
-                  action: 'ADD_ROLE',
-                  email: userId,
-                  role: role,
-                  teamId,
-                  user,
-                });
-
-                if (!response.ok) throw new Error(response.statusText);
-
-                queryClient.invalidateQueries({
-                  queryKey: ['teamusers', teamId],
-                });
-
-                setOpen(false);
-              } catch (error) {
-                toast.error('Failed to add role', {
-                  description:
-                    error instanceof Error
-                      ? error.message
-                      : 'Unknown error occurred',
-                });
-              }
-            }}
-          >
-            {roleDetails[role]?.name || role}
-          </RoleCard>
-        ))}
+      <PopoverContent className="flex flex-col gap-1 p-2 w-80 text-sm" align="start">
+        {roles.map(role => {
+          const detail = roleDetails[role];
+          return (
+            <RoleCard
+              key={role}
+              className="w-full"
+              onClick={async () => {
+                try {
+                  const response = await modifyMemberForTeam({
+                    action: 'ADD_ROLE',
+                    email: userId,
+                    role: role,
+                    teamId,
+                    user,
+                  });
+                  if (!response.ok) throw new Error(response.statusText);
+                  queryClient.invalidateQueries({
+                    queryKey: ['teamusers', teamId],
+                  });
+                  setOpen(false);
+                } catch (error) {
+                  toast.error('Failed to add role', {
+                    description:
+                      error instanceof Error
+                        ? error.message
+                        : 'Unknown error occurred',
+                  });
+                }
+              }}
+            >
+              <div className="font-medium">{detail?.name || role}</div>
+              {detail?.description && (
+                <div className="text-xs text-muted-foreground/70 mt-0.5">
+                  {detail.description}
+                </div>
+              )}
+            </RoleCard>
+          );
+        })}
       </PopoverContent>
     </Popover>
   );
