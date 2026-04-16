@@ -37,8 +37,10 @@ export const designerControlLabelSx: SxProps<Theme> = {
 };
 
 export const designerScrollableControlRowSx: SxProps<Theme> = {
-  overflowX: 'auto',
+  width: '100%',
+  flexWrap: 'wrap',
   pb: 0.25,
+  rowGap: 0.6,
 };
 
 export const designerControlActionRowSx: SxProps<Theme> = {

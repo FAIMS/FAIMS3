@@ -1,13 +1,15 @@
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import {Box, IconButton, Tooltip} from '@mui/material';
+import type {MouseEventHandler, PointerEventHandler} from 'react';
+import type {DraggableAttributes} from '@dnd-kit/core';
 
 type DragHandleProps = {
   label?: string;
   compact?: boolean;
-  onPointerDown?: React.PointerEventHandler<HTMLElement>;
-  onClick?: React.MouseEventHandler<HTMLElement>;
-  dragAttributes?: Record<string, unknown>;
-  dragListeners?: Record<string, unknown>;
+  onPointerDown?: PointerEventHandler<HTMLElement>;
+  onClick?: MouseEventHandler<HTMLElement>;
+  dragAttributes?: DraggableAttributes;
+  dragListeners?: unknown;
 };
 
 /**
@@ -44,7 +46,7 @@ export const DragHandle = ({
           onPointerDown={onPointerDown}
           onClick={onClick}
           {...dragAttributes}
-          {...dragListeners}
+          {...(dragListeners as object)}
         >
           <DragIndicatorIcon fontSize={compact ? 'small' : 'medium'} />
         </IconButton>
@@ -52,4 +54,3 @@ export const DragHandle = ({
     </Tooltip>
   );
 };
-
