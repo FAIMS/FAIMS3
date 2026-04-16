@@ -36,6 +36,7 @@ import {
   AccordionSummary,
   Alert,
   Autocomplete,
+  Box,
   Button,
   Chip,
   Dialog,
@@ -49,6 +50,8 @@ import {
   Typography,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
+import {useSortable} from '@dnd-kit/sortable';
+import {CSS} from '@dnd-kit/utilities';
 import React, {memo, useCallback, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
@@ -58,6 +61,7 @@ import {
 import DebouncedTextField from './debounced-text-field';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
 import {designerResponsiveFieldEditorSx} from './designer-style';
+import {DragHandle} from './drag-handle';
 import {
   fieldDeleted,
   fieldDuplicated,
@@ -321,10 +325,13 @@ const FieldEditorComponent = ({
     },
     [designerIdentifier, onExpandedChange]
   );
+  const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
+    useSortable({id: fieldName});
 
   return (
     <Accordion
       key={fieldName}
+      ref={setNodeRef}
       expanded={expanded}
       onChange={handleAccordionChange}
       TransitionProps={{unmountOnExit: true}}
@@ -332,6 +339,9 @@ const FieldEditorComponent = ({
       square
       elevation={0}
       sx={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.82 : 1,
         border: '1px solid',
         borderColor: 'divider',
         '&:not(:nth-of-type(2))': {
@@ -343,12 +353,37 @@ const FieldEditorComponent = ({
       }}
     >
       <AccordionSummary
-        expandIcon={<ArrowForwardIosRoundedIcon sx={{fontSize: '1rem'}} />}
+        expandIcon={
+          <Box sx={{display: 'inline-flex', alignItems: 'center', gap: 0.25}}>
+            <DragHandle
+              compact
+              label="Drag field to reorder"
+              dragAttributes={attributes}
+              dragListeners={listeners}
+              onPointerDown={event => event.stopPropagation()}
+              onClick={event => event.stopPropagation()}
+            />
+            <ArrowForwardIosRoundedIcon
+              className="field-expand-arrow"
+              sx={{fontSize: '1rem'}}
+            />
+          </Box>
+        }
         sx={{
           backgroundColor: theme => alpha(theme.palette.text.primary, 0.05),
           flexDirection: 'row-reverse',
-          '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
-            transform: 'rotate(90deg)',
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            transform: 'none !important',
+          },
+          '& .field-expand-arrow': {
+            transition: 'transform 0.2s ease',
+          },
+          '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded .field-expand-arrow':
+            {
+              transform: 'rotate(90deg)',
+            },
+          '& .MuiAccordionSummary-expandIconWrapper button': {
+            pointerEvents: 'auto',
           },
           '& .MuiAccordionSummary-content': {
             marginLeft: '10px',

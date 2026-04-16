@@ -412,7 +412,7 @@ export const FormEditor = ({
               direction="row"
               spacing={1.5}
               alignItems="center"
-              flexWrap="nowrap"
+              flexWrap="wrap"
               sx={designerScrollableControlRowSx}
             >
               <Typography
@@ -442,7 +442,7 @@ export const FormEditor = ({
               direction="row"
               spacing={1}
               alignItems="center"
-              flexWrap="nowrap"
+              flexWrap="wrap"
               columnGap={1}
               sx={{...designerControlActionRowSx, color: 'text.secondary'}}
             >
@@ -701,12 +701,7 @@ export const FormEditor = ({
                   sx={{
                     display: 'grid',
                     gap: 1,
-                    gridTemplateColumns: {
-                      xs: 'repeat(1, minmax(0, 1fr))',
-                      sm: 'repeat(2, minmax(0, 1fr))',
-                      lg: 'repeat(3, minmax(0, 1fr))',
-                      xl: 'repeat(4, minmax(0, 1fr))',
-                    },
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                     mb: 0.5,
                   }}
                 >
@@ -726,9 +721,16 @@ export const FormEditor = ({
                           minHeight: 52,
                           borderRadius: 1.25,
                           gap: 1,
-                          borderColor: isActive ? 'primary.main' : 'divider',
+                          borderColor: isActive ? 'secondary.main' : 'divider',
+                          color: isActive ? 'primary.contrastText' : 'text.primary',
+                          backgroundColor: isActive
+                            ? 'secondary.main'
+                            : 'background.paper',
                           boxShadow: 'none',
                           '&:hover': {
+                            backgroundColor: isActive
+                              ? 'secondary.main'
+                              : 'action.hover',
                             boxShadow: 'none',
                           },
                         }}
@@ -744,8 +746,10 @@ export const FormEditor = ({
                             justifyContent: 'center',
                             fontWeight: 700,
                             fontSize: '0.85rem',
-                            bgcolor: isActive ? 'primary.dark' : 'action.hover',
-                            color: isActive ? 'primary.contrastText' : 'text.secondary',
+                            bgcolor: isActive
+                              ? 'rgba(255,255,255,0.2)'
+                              : 'action.hover',
+                            color: isActive ? 'common.white' : 'text.secondary',
                             flexShrink: 0,
                           }}
                         >
