@@ -36,6 +36,7 @@ import {ActionCreators} from 'redux-undo';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {designerResponsiveFrameSx} from './designer-style';
 
 /** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
 export type NotebookEditorProps = {
@@ -183,122 +184,124 @@ export const NotebookEditor = ({
   return (
     <>
       <TabContext value={pathname}>
-        <Box>
-          <TabList
-            aria-label="lab API tabs example"
-            sx={{
-              width: 'fit-content',
-              '& .MuiTabs-indicator': {height: 2},
-            }}
-          >
-            <Tab
-              label="Design"
-              component={Link}
-              to={`/design/${tabIndex}`}
-              value={`/design/${tabIndex}`}
-            />
-            <Tab label="Info" component={Link} to="/info" value="/info" />
-          </TabList>
-        </Box>
-        <Box sx={toolbarSx}>
-          <Stack direction="row" spacing={1.5} alignItems="center">
-            {isDesignRoute && (
-              <>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={onSave}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    boxShadow: 'none',
-                    minWidth: 92,
-                  }}
-                >
+        <Box sx={designerResponsiveFrameSx}>
+          <Box>
+            <TabList
+              aria-label="lab API tabs example"
+              sx={{
+                width: 'fit-content',
+                '& .MuiTabs-indicator': {height: 2},
+              }}
+            >
+              <Tab
+                label="Design"
+                component={Link}
+                to={`/design/${tabIndex}`}
+                value={`/design/${tabIndex}`}
+              />
+              <Tab label="Info" component={Link} to="/info" value="/info" />
+            </TabList>
+          </Box>
+          <Box sx={toolbarSx}>
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              {isDesignRoute && (
+                <>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={onSave}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      boxShadow: 'none',
+                      minWidth: 92,
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    onClick={onCancelRequest}
+                    color="primary"
+                    sx={{textTransform: 'uppercase', fontWeight: 700}}
+                  >
+                    Cancel
+                  </Button>
+                  <Tooltip
+                    title={
+                      canUndo ? 'Undo last change (Ctrl/Cmd+Z)' : 'No changes to undo'
+                    }
+                  >
+                    <span>
+                      <Button
+                        variant={canUndo ? 'contained' : 'outlined'}
+                        startIcon={<UndoIcon />}
+                        onClick={handleUndo}
+                        disabled={!canUndo}
+                        sx={historyButtonSx(canUndo)}
+                      >
+                        Undo
+                      </Button>
+                    </span>
+                  </Tooltip>
+                  <Tooltip
+                    title={
+                      canRedo
+                        ? 'Redo last undone change (Ctrl/Cmd+Y)'
+                        : 'No changes to redo'
+                    }
+                  >
+                    <span>
+                      <Button
+                        variant={canRedo ? 'contained' : 'outlined'}
+                        startIcon={<RedoIcon />}
+                        onClick={handleRedo}
+                        disabled={!canRedo}
+                        sx={historyButtonSx(canRedo)}
+                      >
+                        Redo
+                      </Button>
+                    </span>
+                  </Tooltip>
+                  <FormControlLabel
+                    sx={{
+                      '& .MuiFormControlLabel-label': {
+                        color: 'text.secondary',
+                        fontWeight: 600,
+                      },
+                    }}
+                    label={
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={0.75}
+                        sx={{userSelect: 'none'}}
+                      >
+                        <Typography>Preview</Typography>
+                        <Typography variant="caption" sx={{color: 'text.disabled'}}>
+                          {previewForm ? 'On' : 'Off'}
+                        </Typography>
+                      </Stack>
+                    }
+                    control={
+                      <Switch
+                        checked={previewForm}
+                        onChange={e => setPreviewForm(e.target.checked)}
+                      />
+                    }
+                  />
+                </>
+              )}
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="center">
+              {!isDesignRoute && (
+                <Button variant="contained" onClick={onSave}>
                   Save
                 </Button>
-                <Button
-                  onClick={onCancelRequest}
-                  color="primary"
-                  sx={{textTransform: 'uppercase', fontWeight: 700}}
-                >
-                  Cancel
-                </Button>
-                <Tooltip
-                  title={
-                    canUndo ? 'Undo last change (Ctrl/Cmd+Z)' : 'No changes to undo'
-                  }
-                >
-                  <span>
-                    <Button
-                      variant={canUndo ? 'contained' : 'outlined'}
-                      startIcon={<UndoIcon />}
-                      onClick={handleUndo}
-                      disabled={!canUndo}
-                      sx={historyButtonSx(canUndo)}
-                    >
-                      Undo
-                    </Button>
-                  </span>
-                </Tooltip>
-                <Tooltip
-                  title={
-                    canRedo
-                      ? 'Redo last undone change (Ctrl/Cmd+Y)'
-                      : 'No changes to redo'
-                  }
-                >
-                  <span>
-                    <Button
-                      variant={canRedo ? 'contained' : 'outlined'}
-                      startIcon={<RedoIcon />}
-                      onClick={handleRedo}
-                      disabled={!canRedo}
-                      sx={historyButtonSx(canRedo)}
-                    >
-                      Redo
-                    </Button>
-                  </span>
-                </Tooltip>
-                <FormControlLabel
-                  sx={{
-                    '& .MuiFormControlLabel-label': {
-                      color: 'text.secondary',
-                      fontWeight: 600,
-                    },
-                  }}
-                  label={
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={0.75}
-                      sx={{userSelect: 'none'}}
-                    >
-                      <Typography>Preview</Typography>
-                      <Typography variant="caption" sx={{color: 'text.disabled'}}>
-                        {previewForm ? 'On' : 'Off'}
-                      </Typography>
-                    </Stack>
-                  }
-                  control={
-                    <Switch
-                      checked={previewForm}
-                      onChange={e => setPreviewForm(e.target.checked)}
-                    />
-                  }
-                />
-              </>
-            )}
-          </Stack>
-          <Stack direction="row" spacing={1} alignItems="center">
-            {!isDesignRoute && (
-              <Button variant="contained" onClick={onSave}>
-                Save
-              </Button>
-            )}
-          </Stack>
+              )}
+            </Stack>
+          </Box>
         </Box>
-        <Box sx={contentSx}>
+        <Box sx={[contentSx, designerResponsiveFrameSx]}>
           <Outlet context={{previewForm, setPreviewForm}} />
         </Box>
       </TabContext>
