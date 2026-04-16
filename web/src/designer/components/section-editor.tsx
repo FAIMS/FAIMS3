@@ -573,7 +573,11 @@ export const SectionEditor = ({
         }}
         fullWidth
         maxWidth="md"
-        PaperProps={{style: {minWidth: '600px'}}}
+        PaperProps={{
+          sx: {
+            minWidth: {xs: 'auto', md: 600},
+          },
+        }}
         aria-labelledby="duplicate-section-dialog-title"
         aria-describedby="duplicate-section-dialog-description"
       >
