@@ -17,6 +17,15 @@
  */
 
 import {Box, Button, Stack, Typography} from '@mui/material';
+import {
+  DndContext,
+  DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {SortableContext, verticalListSortingStrategy} from '@dnd-kit/sortable';
 
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import ExpandCircleDownRoundedIcon from '@mui/icons-material/ExpandCircleDownRounded';
@@ -24,7 +33,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldEditor} from './field-editor';
 import FieldChooserDialog from './field-chooser-dialog';
-import {fieldAdded} from '../store/slices/uiSpec';
+import {fieldAdded, fieldReordered} from '../store/slices/uiSpec';
 import {
   designerControlActionRowSx,
   designerControlHeadingSx,
@@ -106,6 +115,11 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
 
   const [isExpanded, setIsExpanded] = useState<{[key: string]: boolean}>({});
   const [showCollapseButton, setShowCollapseButton] = useState(false);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {distance: 6},
+    })
+  );
 
   const allClosed = useMemo(() => {
     const next: {[key: string]: boolean} = {};
@@ -148,6 +162,21 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       });
     },
     []
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const {active, over} = event;
+      if (!over || active.id === over.id) return;
+
+      const sourceIndex = fView.fields.findIndex(fieldName => fieldName === active.id);
+      const targetIndex = fView.fields.findIndex(fieldName => fieldName === over.id);
+
+      if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) return;
+
+      dispatch(fieldReordered({viewId, sourceIndex, targetIndex}));
+    },
+    [dispatch, fView.fields, viewId]
   );
 
   return (
@@ -224,26 +253,37 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
           Visible fields will appear in the survey.
         </Typography>
       </Box>
-      {visibleFields.map((fieldName: string) => {
-        const field = fields[fieldName];
-        const designerIdentifier = field?.designerIdentifier;
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={visibleFields}
+          strategy={verticalListSortingStrategy}
+        >
+          {visibleFields.map((fieldName: string) => {
+            const field = fields[fieldName];
+            const designerIdentifier = field?.designerIdentifier;
 
-        if (!field || !designerIdentifier) return null;
+            if (!field || !designerIdentifier) return null;
 
-        return (
-          <FieldEditor
-            key={designerIdentifier}
-            fieldName={fieldName}
-            viewSetId={viewSetId}
-            viewId={viewId}
-            expanded={isExpanded[designerIdentifier] ?? false}
-            addFieldCallback={addFieldAfterCallback}
-            onExpandedChange={handleExpandedChange}
-            designerIdentifier={designerIdentifier}
-            moveFieldCallback={moveFieldCallback}
-          />
-        );
-      })}
+            return (
+              <FieldEditor
+                key={designerIdentifier}
+                fieldName={fieldName}
+                viewSetId={viewSetId}
+                viewId={viewId}
+                expanded={isExpanded[designerIdentifier] ?? false}
+                addFieldCallback={addFieldAfterCallback}
+                onExpandedChange={handleExpandedChange}
+                designerIdentifier={designerIdentifier}
+                moveFieldCallback={moveFieldCallback}
+              />
+            );
+          })}
+        </SortableContext>
+      </DndContext>
 
       <Box mt={2}>
         <HeadingWithInfo
@@ -268,26 +308,37 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
       </Typography>
       {hiddenFields.length > 0 ? (
         <>
-          {hiddenFields.map((fieldName: string) => {
-            const field = fields[fieldName];
-            const designerIdentifier = field?.designerIdentifier;
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={hiddenFields}
+              strategy={verticalListSortingStrategy}
+            >
+              {hiddenFields.map((fieldName: string) => {
+                const field = fields[fieldName];
+                const designerIdentifier = field?.designerIdentifier;
 
-            if (!field || !designerIdentifier) return null;
+                if (!field || !designerIdentifier) return null;
 
-            return (
-              <FieldEditor
-                key={designerIdentifier}
-                fieldName={fieldName}
-                viewSetId={viewSetId}
-                viewId={viewId}
-                expanded={isExpanded[designerIdentifier] ?? false}
-                addFieldCallback={addFieldAfterCallback}
-                moveFieldCallback={moveFieldCallback}
-                onExpandedChange={handleExpandedChange}
-                designerIdentifier={designerIdentifier}
-              />
-            );
-          })}
+                return (
+                  <FieldEditor
+                    key={designerIdentifier}
+                    fieldName={fieldName}
+                    viewSetId={viewSetId}
+                    viewId={viewId}
+                    expanded={isExpanded[designerIdentifier] ?? false}
+                    addFieldCallback={addFieldAfterCallback}
+                    moveFieldCallback={moveFieldCallback}
+                    onExpandedChange={handleExpandedChange}
+                    designerIdentifier={designerIdentifier}
+                  />
+                );
+              })}
+            </SortableContext>
+          </DndContext>
         </>
       ) : (
         <Typography variant="body2" color="textSecondary">
