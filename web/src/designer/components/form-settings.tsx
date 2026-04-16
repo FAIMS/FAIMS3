@@ -9,15 +9,18 @@
  * @param {string} viewSetId - ID of the viewset being configured
  */
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Autocomplete,
+  Box,
   Card,
   CardContent,
   Collapse,
   IconButton,
   MenuItem,
   Select,
+  Tooltip,
   Typography,
   SelectChangeEvent,
 } from '@mui/material';
@@ -59,16 +62,23 @@ const isValidHridField = (field: FieldType): boolean => {
 const SettingSection = ({
   title,
   description,
+  tooltipText = 'Help content coming soon.',
   children,
 }: {
   title: string;
   description: string;
+  tooltipText?: string;
   children: React.ReactNode;
 }) => (
   <div className="setting-section" style={{marginBottom: '2rem'}}>
-    <Typography variant="subtitle1" sx={{fontWeight: 'bold', mb: 1}}>
-      {title}
-    </Typography>
+    <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+      <Typography variant="subtitle1" sx={{fontWeight: 'bold'}}>
+        {title}
+      </Typography>
+      <Tooltip title={tooltipText}>
+        <InfoOutlinedIcon sx={{color: 'secondary.main', fontSize: '1.3rem'}} />
+      </Tooltip>
+    </Box>
     <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
       {description}
     </Typography>
@@ -208,6 +218,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       <SettingSection
         title="Finish Button Behavior"
         description="Configure when the Finish and Close buttons should be shown."
+        tooltipText="Help content for finish button behavior will be added soon."
       >
         <Select
           fullWidth
@@ -224,6 +235,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       <SettingSection
         title="Layout Style"
         description="Choose how form sections are displayed. The 'tabs' layout will display questions split up into their sections. The 'inline' layout will display all questions in a single scrollable form."
+        tooltipText="Help content for layout style options will be added soon."
       >
         <Select
           fullWidth
@@ -246,6 +258,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       <SettingSection
         title="Summary Fields"
         description="Select the field(s) you would like to display in the record list table."
+        tooltipText="Help content for summary fields will be added soon."
       >
         <Autocomplete
           multiple
@@ -272,6 +285,7 @@ export const FormSettingsContent = ({viewSetId}: {viewSetId: string}) => {
       <SettingSection
         title="Human-Readable ID Field"
         description="A HRID is a human readable label for the record, which will be displayed in the record table. Select a required string field to use as the human-readable ID. You can use a TemplatedStringField to construct complex HRIDs."
+        tooltipText="Help content for HRID selection will be added soon."
       >
         <Autocomplete
           fullWidth

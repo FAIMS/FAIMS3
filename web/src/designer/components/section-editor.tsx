@@ -304,7 +304,7 @@ export const SectionEditor = ({
         <Stack
           direction="row"
           alignItems="center"
-          flexWrap="nowrap"
+          flexWrap="wrap"
           columnGap={1}
           sx={designerControlActionRowSx}
         >
