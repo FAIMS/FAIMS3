@@ -115,3 +115,15 @@ export const designerDialogTitleSx: SxProps<Theme> = {
   backgroundColor: (t: Theme) =>
     alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.2 : 0.08),
 };
+
+export const designerCancelButtonSx: SxProps<Theme> = {
+  textTransform: 'none',
+  fontWeight: 600,
+  color: 'text.secondary',
+  border: '1px solid',
+  borderColor: 'divider',
+  '&:hover': {
+    backgroundColor: (t: Theme) => alpha(t.palette.text.secondary, 0.08),
+    borderColor: 'text.disabled',
+  },
+};
