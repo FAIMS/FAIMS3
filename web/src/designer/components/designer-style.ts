@@ -1,4 +1,5 @@
 import {SxProps, Theme} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 
 export const designerHeadingRowSx: SxProps<Theme> = {
   display: 'flex',
@@ -102,3 +103,15 @@ export const designerResponsiveFieldEditorSx = {
   width: '100%',
   maxWidth: '100%',
 } as const;
+
+// ── Dialog / modal shared styles ──────────────────────────────────────────
+
+/** Styled DialogTitle header with a subtle primary-tinted background. */
+export const designerDialogTitleSx: SxProps<Theme> = {
+  py: 2,
+  px: {xs: 2, sm: 3},
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  backgroundColor: (t: Theme) =>
+    alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.2 : 0.08),
+};
