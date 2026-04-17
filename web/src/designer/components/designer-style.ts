@@ -127,3 +127,10 @@ export const designerCancelButtonSx: SxProps<Theme> = {
     borderColor: 'text.disabled',
   },
 };
+
+export const designerDialogActionsSx: SxProps<Theme> = {
+  px: {xs: 2, sm: 3},
+  pb: {xs: 2, sm: 2.5},
+  pt: 1.5,
+  gap: 1,
+};
