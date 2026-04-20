@@ -57,10 +57,10 @@ const faimsTokens: ThemeTokens = {
 
 const dassTokens: ThemeTokens = {
   backgroundDefault: '#FAFAFB',
-  primaryMain: '#000000',
-  primaryLight: '#FFFFFF',
-  primaryDark: '#000000',
-  secondaryMain: '#12B0FB',
+  primaryMain: '#669911',
+  primaryLight: '#A7E938',
+  primaryDark: '#3E5F0B',
+  secondaryMain: '#E18200',
   textPrimary: '#18232C',
   textSecondary: '#2C404C',
   textDisabled: '#4E6775',
@@ -167,13 +167,17 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
               boxShadow: 'none',
               fontWeight: 'bold',
             },
+            '& .MuiTabs-indicator': {
+              backgroundColor: tokens.secondaryMain,
+              height: 3,
+            },
             '&.MuiTab-root': {
               fontWeight: '700 !important',
             },
             '&.Mui-selected': {
               fontWeight: '700 !important',
-              color: tokens.tabSelectedText,
-              backgroundColor: tokens.tabSelectedBackground,
+              color: tokens.primaryMain,
+              backgroundColor: 'transparent',
             },
           },
         },
