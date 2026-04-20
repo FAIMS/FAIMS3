@@ -699,10 +699,10 @@ export const FormEditor = ({
               <Grid item xs={12}>
                 <Box
                   sx={{
-                    display: 'grid',
-                    columnGap: 1.5,
-                    rowGap: 2,
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                    alignItems: 'flex-start',
                     mb: 1,
                   }}
                 >
@@ -721,6 +721,8 @@ export const FormEditor = ({
                           px: 0,
                           py: 0,
                           minHeight: 64,
+                          minWidth: {xs: 170, sm: 220},
+                          maxWidth: {xs: 280, sm: 340},
                           borderRadius: 0,
                           color: 'text.primary',
                           boxShadow: 'none',
@@ -751,11 +753,15 @@ export const FormEditor = ({
                           </Box>
                           <Box
                             sx={{
-                              height: 1,
-                              flex: 1,
+                              height: 4,
+                              width: {xs: 86, sm: 120},
                               ml: 1.1,
                               bgcolor: 'divider',
-                              opacity: index === sections.length - 1 ? 0 : 1,
+                              borderRadius: 999,
+                              opacity:
+                                index === sections.length - 1 || sections.length <= 1
+                                  ? 0
+                                  : 1,
                             }}
                           />
                         </Box>

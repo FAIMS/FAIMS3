@@ -29,10 +29,7 @@ type ThemeTokens = {
   primaryLight: string;
   primaryDark: string;
   secondaryMain: string;
-  textPrimary: string;
-  textSecondary: string;
-  textDisabled: string;
-  divider: string;
+  helperTextColor: string;
   appBarBackground: string;
   appBarColor: string;
   tabSelectedBackground: string;
@@ -45,10 +42,7 @@ const faimsTokens: ThemeTokens = {
   primaryLight: '#a7e938',
   primaryDark: '#141E03',
   secondaryMain: '#E18200',
-  textPrimary: colors.blueGrey[900],
-  textSecondary: colors.blueGrey[700],
-  textDisabled: colors.blueGrey[500],
-  divider: '#D3D1D1',
+  helperTextColor: colors.blueGrey[500],
   appBarBackground: '#edeeeb',
   appBarColor: '#324C08',
   tabSelectedBackground: '#DA9449',
@@ -57,17 +51,14 @@ const faimsTokens: ThemeTokens = {
 
 const dassTokens: ThemeTokens = {
   backgroundDefault: '#FAFAFB',
-  primaryMain: '#669911',
-  primaryLight: '#A7E938',
-  primaryDark: '#3E5F0B',
-  secondaryMain: '#E18200',
-  textPrimary: '#18232C',
-  textSecondary: '#2C404C',
-  textDisabled: '#4E6775',
-  divider: '#B9C4CB',
+  primaryMain: '#000000',
+  primaryLight: '#4A4A4A',
+  primaryDark: '#000000',
+  secondaryMain: '#C40000',
+  helperTextColor: colors.grey[600],
   appBarBackground: '#FFFFFF',
   appBarColor: '#000000',
-  tabSelectedBackground: '#000000',
+  tabSelectedBackground: '#4C1F24',
   tabSelectedText: '#FFFFFF',
 };
 
@@ -85,6 +76,8 @@ const resolveTokens = (themeName: DesignerThemeName): ThemeTokens => {
 
 export const createDesignerTheme = (themeName: DesignerThemeName = 'default') => {
   const tokens = resolveTokens(themeName);
+  const isDass =
+    themeName === 'bssTheme' || themeName === 'dassTheme' || themeName === 'dass';
 
   return createTheme({
     palette: {
@@ -101,11 +94,11 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         contrastText: '#fff',
       },
       text: {
-        primary: tokens.textPrimary,
-        secondary: tokens.textSecondary,
-        disabled: tokens.textDisabled,
+        primary: colors.blueGrey[900],
+        secondary: colors.blueGrey[600],
+        disabled: tokens.helperTextColor,
       },
-      divider: tokens.divider,
+      divider: '#D3D1D1FF',
     },
     typography: {
       fontFamily: "'Noto Sans', 'Open Sans', sans-serif",
@@ -167,19 +160,21 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
               boxShadow: 'none',
               fontWeight: 'bold',
             },
-            '& .MuiTabs-indicator': {
-              backgroundColor: tokens.secondaryMain,
-              height: 3,
-            },
             '&.MuiTab-root': {
               fontWeight: '700 !important',
             },
             '&.Mui-selected': {
               fontWeight: '700 !important',
-              color: tokens.primaryMain,
-              backgroundColor: 'transparent',
+              color: tokens.tabSelectedText,
+              backgroundColor: tokens.tabSelectedBackground,
             },
           },
+          indicator: isDass
+            ? {
+                height: 3,
+                backgroundColor: tokens.secondaryMain,
+              }
+            : {},
         },
       },
       MuiTab: {

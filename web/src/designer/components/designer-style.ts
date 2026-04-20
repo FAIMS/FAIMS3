@@ -13,7 +13,7 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 };
 
 export const designerInfoIconSx: SxProps<Theme> = {
-  color: 'secondary.main',
+  color: 'info.main',
   fontSize: '1.35rem',
   ml: 0.1,
 };
