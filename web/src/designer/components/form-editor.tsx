@@ -700,9 +700,10 @@ export const FormEditor = ({
                 <Box
                   sx={{
                     display: 'grid',
-                    gap: 1,
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    mb: 0.5,
+                    columnGap: 1.5,
+                    rowGap: 2,
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+                    mb: 1,
                   }}
                 >
                   {sections.map((section: string, index: number) => {
@@ -710,60 +711,66 @@ export const FormEditor = ({
                     return (
                       <Button
                         key={section}
-                        variant={isActive ? 'contained' : 'outlined'}
-                        color={isActive ? 'primary' : 'inherit'}
+                        variant="text"
                         onClick={handleStep(index)}
                         sx={{
                           justifyContent: 'flex-start',
                           textTransform: 'none',
-                          px: 1.25,
-                          py: 0.85,
-                          minHeight: 52,
-                          borderRadius: 1.25,
-                          gap: 1,
-                          borderColor: isActive ? 'secondary.main' : 'divider',
-                          color: isActive ? 'primary.contrastText' : 'text.primary',
-                          backgroundColor: isActive
-                            ? 'secondary.main'
-                            : 'background.paper',
+                          flexDirection: 'column',
+                          alignItems: 'stretch',
+                          px: 0,
+                          py: 0,
+                          minHeight: 64,
+                          borderRadius: 0,
+                          color: 'text.primary',
                           boxShadow: 'none',
                           '&:hover': {
-                            backgroundColor: isActive
-                              ? 'secondary.main'
-                              : 'action.hover',
+                            backgroundColor: 'transparent',
                             boxShadow: 'none',
                           },
                         }}
                       >
-                        <Box
-                          component="span"
-                          sx={{
-                            width: 26,
-                            height: 26,
-                            borderRadius: '50%',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            bgcolor: isActive
-                              ? 'rgba(255,255,255,0.2)'
-                              : 'action.hover',
-                            color: isActive ? 'common.white' : 'text.secondary',
-                            flexShrink: 0,
-                          }}
-                        >
-                          {index + 1}
+                        <Box sx={{display: 'flex', alignItems: 'center', width: '100%'}}>
+                          <Box
+                            component="span"
+                            sx={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: '50%',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 700,
+                              fontSize: '0.9rem',
+                              bgcolor: isActive ? 'primary.main' : 'grey.500',
+                              color: 'common.white',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {index + 1}
+                          </Box>
+                          <Box
+                            sx={{
+                              height: 1,
+                              flex: 1,
+                              ml: 1.1,
+                              bgcolor: 'divider',
+                              opacity: index === sections.length - 1 ? 0 : 1,
+                            }}
+                          />
                         </Box>
                         <Typography
                           sx={{
-                            fontWeight: 700,
-                            fontSize: {xs: '1rem', sm: '1.08rem'},
+                            mt: 1.1,
+                            pl: 0.05,
+                            fontWeight: isActive ? 700 : 600,
+                            color: isActive ? 'text.primary' : 'text.secondary',
+                            fontSize: {xs: '1.02rem', sm: '1.08rem'},
                             lineHeight: 1.2,
                             textAlign: 'left',
                             overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
+                            textOverflow: 'clip',
+                            whiteSpace: 'normal',
                           }}
                         >
                           {views[section].label}
