@@ -16,7 +16,8 @@ type HeadingWithInfoProps = {
   iconSx?: Record<string, unknown>;
 };
 
-export const HeadingWithInfo = ({
+export const HeadingWithInfo = ({ 
+
   title,
   tooltip,
   variant = 'h2',
