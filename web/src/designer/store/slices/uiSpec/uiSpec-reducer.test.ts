@@ -9,6 +9,7 @@ import {
   fieldAdded,
   fieldDeleted,
   fieldMoved,
+  fieldReordered,
   formVisibilityUpdated,
   fieldRenamed,
   sectionDeleted,
@@ -127,6 +128,33 @@ describe('uiSpecificationReducer', () => {
     expect(deleted.fields['field-b']).toBeUndefined();
     expect(deleted.fviews.sectionA.fields).toEqual(['field-a']);
     expect(deleted.viewsets.formA.summary_fields).toEqual([]);
+  });
+
+  it('reorders fields by absolute index within a section', () => {
+    const initial = createBaseUiSpec();
+    const fieldA = getFieldSpec('FAIMSTextField');
+    const fieldB = getFieldSpec('FAIMSTextField');
+    const fieldC = getFieldSpec('FAIMSTextField');
+
+    fieldA['component-parameters'].name = 'field-a';
+    fieldB['component-parameters'].name = 'field-b';
+    fieldC['component-parameters'].name = 'field-c';
+
+    initial.fields['field-a'] = fieldA;
+    initial.fields['field-b'] = fieldB;
+    initial.fields['field-c'] = fieldC;
+    initial.fviews.sectionA.fields = ['field-a', 'field-b', 'field-c'];
+
+    const next = uiSpecificationReducer.reducer(
+      initial,
+      fieldReordered({viewId: 'sectionA', sourceIndex: 2, targetIndex: 0})
+    );
+
+    expect(next.fviews.sectionA.fields).toEqual([
+      'field-c',
+      'field-a',
+      'field-b',
+    ]);
   });
 
   it('duplicates, moves, and deletes sections with field lifecycle updates', () => {

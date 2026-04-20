@@ -29,7 +29,10 @@ type ThemeTokens = {
   primaryLight: string;
   primaryDark: string;
   secondaryMain: string;
-  helperTextColor: string;
+  textPrimary: string;
+  textSecondary: string;
+  textDisabled: string;
+  divider: string;
   appBarBackground: string;
   appBarColor: string;
   tabSelectedBackground: string;
@@ -42,7 +45,10 @@ const faimsTokens: ThemeTokens = {
   primaryLight: '#a7e938',
   primaryDark: '#141E03',
   secondaryMain: '#E18200',
-  helperTextColor: colors.blueGrey[500],
+  textPrimary: colors.blueGrey[900],
+  textSecondary: colors.blueGrey[700],
+  textDisabled: colors.blueGrey[500],
+  divider: '#D3D1D1',
   appBarBackground: '#edeeeb',
   appBarColor: '#324C08',
   tabSelectedBackground: '#DA9449',
@@ -55,7 +61,10 @@ const dassTokens: ThemeTokens = {
   primaryLight: '#FFFFFF',
   primaryDark: '#000000',
   secondaryMain: '#12B0FB',
-  helperTextColor: colors.blueGrey[500],
+  textPrimary: '#18232C',
+  textSecondary: '#2C404C',
+  textDisabled: '#4E6775',
+  divider: '#B9C4CB',
   appBarBackground: '#FFFFFF',
   appBarColor: '#000000',
   tabSelectedBackground: '#000000',
@@ -92,11 +101,11 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         contrastText: '#fff',
       },
       text: {
-        primary: colors.blueGrey[900],
-        secondary: colors.blueGrey[600],
-        disabled: tokens.helperTextColor,
+        primary: tokens.textPrimary,
+        secondary: tokens.textSecondary,
+        disabled: tokens.textDisabled,
       },
-      divider: '#D3D1D1FF',
+      divider: tokens.divider,
     },
     typography: {
       fontFamily: "'Noto Sans', 'Open Sans', sans-serif",
