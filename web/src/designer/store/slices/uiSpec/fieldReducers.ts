@@ -109,6 +109,32 @@ export const fieldReducers = {
     }
     state.fviews[viewId].fields = fieldList;
   },
+  /** Move a field directly to an index position in a section (`viewId`). */
+  fieldReordered: (
+    state: NotebookUISpec,
+    action: PayloadAction<{
+      viewId: string;
+      sourceIndex: number;
+      targetIndex: number;
+    }>
+  ) => {
+    const {viewId, sourceIndex, targetIndex} = action.payload;
+    const fieldList = state.fviews[viewId].fields;
+
+    if (
+      sourceIndex < 0 ||
+      targetIndex < 0 ||
+      sourceIndex >= fieldList.length ||
+      targetIndex >= fieldList.length ||
+      sourceIndex === targetIndex
+    ) {
+      return;
+    }
+
+    const [movedField] = fieldList.splice(sourceIndex, 1);
+    fieldList.splice(targetIndex, 0, movedField);
+    state.fviews[viewId].fields = fieldList;
+  },
   /** Remove field from `sourceViewId` and append to `targetViewId`; cleans cross-form summary fields. */
   fieldMovedToSection: (
     state: NotebookUISpec,
