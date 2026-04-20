@@ -44,6 +44,7 @@ export const {
   loaded,
   fieldUpdated,
   fieldMoved,
+  fieldReordered,
   fieldMovedToSection,
   fieldRenamed,
   fieldAdded,
