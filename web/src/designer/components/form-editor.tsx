@@ -695,10 +695,19 @@ export const FormEditor = ({
                   sx={{
                     display: 'flex',
                     flexWrap: 'nowrap',
-                    gap: 2,
+                    gap: 0,
                     alignItems: 'flex-start',
                     mb: 1,
                     overflowX: 'auto',
+                    pb: 1,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(0,0,0,0.18) transparent',
+                    '&::-webkit-scrollbar': {height: 5},
+                    '&::-webkit-scrollbar-track': {background: 'transparent'},
+                    '&::-webkit-scrollbar-thumb': {
+                      borderRadius: 3,
+                      backgroundColor: 'rgba(0,0,0,0.18)',
+                    },
                   }}
                 >
                   {sections.map((section: string, index: number) => {
