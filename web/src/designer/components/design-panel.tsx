@@ -326,7 +326,9 @@ export const DesignPanel = () => {
             value={tabIndex}
             onChange={handleTabChange}
             aria-label="form tabs"
-            variant="standard"
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             TabIndicatorProps={{
               sx: {
                 display: isDass ? 'block' : 'none',
@@ -337,13 +339,8 @@ export const DesignPanel = () => {
             sx={{
               minHeight: 48,
               ml: 0,
-              '& .MuiTabs-scroller': {
-                overflow: 'visible !important',
-              },
               '& .MuiTabs-flexContainer': {
-                ml: 0,
-                flexWrap: 'wrap',
-                gap: 1,
+                gap: 0,
               },
             }}
           >
