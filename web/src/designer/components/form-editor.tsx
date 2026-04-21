@@ -415,10 +415,7 @@ export const FormEditor = ({
               flexWrap="wrap"
               sx={designerScrollableControlRowSx}
             >
-              <Typography
-                variant="subtitle1"
-                sx={designerControlHeadingSx}
-              >
+              <Typography variant="subtitle1" sx={designerControlHeadingSx}>
                 Form controls
               </Typography>
 
@@ -446,7 +443,6 @@ export const FormEditor = ({
               columnGap={1}
               sx={{...designerControlActionRowSx, color: 'text.secondary'}}
             >
-
               <Button
                 variant="text"
                 size="small"
@@ -515,10 +511,7 @@ export const FormEditor = ({
                     </Tooltip>
                   </>
                 )}
-                <Typography
-                  variant="caption"
-                  sx={designerControlLabelSx}
-                >
+                <Typography variant="caption" sx={designerControlLabelSx}>
                   Reorder
                 </Typography>
               </Stack>
@@ -578,7 +571,6 @@ export const FormEditor = ({
               >
                 Delete
               </Button>
-
             </Stack>
 
             {editMode && (
@@ -662,7 +654,9 @@ export const FormEditor = ({
             aria-labelledby="alert-dialog-title"
             aria-describedby="alert-dialog-description"
           >
-            <DialogTitle id="alert-dialog-title">{deleteAlertTitle}</DialogTitle>
+            <DialogTitle id="alert-dialog-title">
+              {deleteAlertTitle}
+            </DialogTitle>
             <DialogContent>
               <DialogContentText id="alert-dialog-description">
                 {deleteAlertMessage}
@@ -700,10 +694,11 @@ export const FormEditor = ({
                 <Box
                   sx={{
                     display: 'flex',
-                    flexWrap: 'wrap',
+                    flexWrap: 'nowrap',
                     gap: 2,
                     alignItems: 'flex-start',
                     mb: 1,
+                    overflowX: 'auto',
                   }}
                 >
                   {sections.map((section: string, index: number) => {
@@ -732,7 +727,13 @@ export const FormEditor = ({
                           },
                         }}
                       >
-                        <Box sx={{display: 'flex', alignItems: 'center', width: '100%'}}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            width: '100%',
+                          }}
+                        >
                           <Box
                             component="span"
                             sx={{
@@ -759,7 +760,8 @@ export const FormEditor = ({
                               bgcolor: 'divider',
                               borderRadius: 999,
                               opacity:
-                                index === sections.length - 1 || sections.length <= 1
+                                index === sections.length - 1 ||
+                                sections.length <= 1
                                   ? 0
                                   : 1,
                             }}
