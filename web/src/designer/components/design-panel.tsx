@@ -97,6 +97,7 @@ export const DesignPanel = () => {
   }, [viewSets]);
 
   const maxKeys = Object.keys(viewSets).length;
+  const isDass = theme.designerMeta?.isDass ?? false;
 
   const baseTabRootSx = {
     '&.MuiTab-root': {
@@ -128,32 +129,32 @@ export const DesignPanel = () => {
     '&.Mui-selected': {
       borderColor: 'primary.main',
       color: 'primary.main',
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
+      backgroundColor: (t: Theme) =>
+        alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.2 : 0.1),
     },
     '&:hover': {
       color: 'primary.main',
       opacity: 1,
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+      backgroundColor: (t: Theme) =>
+        alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.16 : 0.08),
     },
-  } as const;
+  };
 
   const untickedTabSx = {
     ...baseTabRootSx,
     '&.Mui-selected': {
       color: 'secondary.main',
       borderColor: 'secondary.main',
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.secondary.main, theme.palette.mode === 'dark' ? 0.25 : 0.14),
+      backgroundColor: (t: Theme) =>
+        alpha(t.palette.secondary.main, t.palette.mode === 'dark' ? 0.25 : 0.14),
     },
     '&:hover': {
       color: 'secondary.main',
       opacity: 1,
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.secondary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
+      backgroundColor: (t: Theme) =>
+        alpha(t.palette.secondary.main, t.palette.mode === 'dark' ? 0.2 : 0.1),
     },
-  } as const;
+  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setIndexAndNavigate(newValue.toString());
@@ -326,7 +327,13 @@ export const DesignPanel = () => {
             onChange={handleTabChange}
             aria-label="form tabs"
             variant="standard"
-            TabIndicatorProps={{sx: {display: 'none'}}}
+            TabIndicatorProps={{
+              sx: {
+                display: isDass ? 'block' : 'none',
+                height: 3,
+                backgroundColor: 'secondary.main',
+              },
+            }}
             sx={{
               minHeight: 48,
               ml: 0,
