@@ -712,6 +712,7 @@ export const FormEditor = ({
                 >
                   {sections.map((section: string, index: number) => {
                     const isActive = index === activeStep;
+                    const isLast = index === sections.length - 1;
                     return (
                       <Button
                         key={section}
@@ -721,12 +722,14 @@ export const FormEditor = ({
                           justifyContent: 'flex-start',
                           textTransform: 'none',
                           flexDirection: 'column',
-                          alignItems: 'stretch',
+                          alignItems: 'flex-start',
                           px: 0,
                           py: 0,
                           minHeight: 64,
-                          minWidth: {xs: 170, sm: 220},
-                          maxWidth: {xs: 280, sm: 340},
+                          width: 160,
+                          minWidth: 140,
+                          maxWidth: 200,
+                          flexShrink: 0,
                           borderRadius: 0,
                           color: 'text.primary',
                           boxShadow: 'none',
@@ -763,16 +766,12 @@ export const FormEditor = ({
                           </Box>
                           <Box
                             sx={{
-                              height: 4,
-                              width: {xs: 86, sm: 120},
-                              ml: 1.1,
+                              height: 3,
+                              flex: 1,
+                              ml: 1,
                               bgcolor: 'divider',
                               borderRadius: 999,
-                              opacity:
-                                index === sections.length - 1 ||
-                                sections.length <= 1
-                                  ? 0
-                                  : 1,
+                              opacity: isLast || sections.length <= 1 ? 0 : 1,
                             }}
                           />
                         </Box>
