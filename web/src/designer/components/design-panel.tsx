@@ -110,17 +110,18 @@ export const DesignPanel = () => {
       borderTopRightRadius: '10px',
       marginRight: '0.5em',
       minHeight: 48,
-      minWidth: {xs: 120, sm: 140, md: 160},
-      maxWidth: {xs: 220, sm: 240, md: 260},
-      paddingX: {xs: 1.25, sm: 2},
+      minWidth: {xs: 110, sm: 130, md: 150},
+      maxWidth: {xs: 200, sm: 220, md: 260},
+      paddingX: {xs: 1, sm: 1.5},
       paddingY: 1,
       textTransform: 'uppercase',
       fontWeight: 700,
-      fontSize: '0.75rem',
+      fontSize: '0.72rem',
       lineHeight: 1.2,
       whiteSpace: 'normal',
       textAlign: 'center',
       color: 'text.secondary',
+      flexShrink: 0,
     },
   } as const;
 
@@ -353,8 +354,13 @@ export const DesignPanel = () => {
             sx={{
               minHeight: 48,
               ml: 0,
+              '& .MuiTabs-scrollButtons': {
+                color: 'text.secondary',
+                '&.Mui-disabled': {opacity: 0.3},
+              },
               '& .MuiTabs-flexContainer': {
                 gap: 0,
+                alignItems: 'flex-end',
               },
             }}
           >
