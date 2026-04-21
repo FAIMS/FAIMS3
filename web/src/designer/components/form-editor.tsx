@@ -776,17 +776,19 @@ export const FormEditor = ({
                           />
                         </Box>
                         <Typography
+                          title={views[section].label}
                           sx={{
-                            mt: 1.1,
+                            mt: 1,
                             pl: 0.05,
                             fontWeight: isActive ? 700 : 600,
                             color: isActive ? 'text.primary' : 'text.secondary',
-                            fontSize: {xs: '1.02rem', sm: '1.08rem'},
-                            lineHeight: 1.2,
+                            fontSize: '0.9rem',
+                            lineHeight: 1.25,
                             textAlign: 'left',
+                            width: '100%',
                             overflow: 'hidden',
-                            textOverflow: 'clip',
-                            whiteSpace: 'normal',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           {views[section].label}
