@@ -57,9 +57,12 @@ import {ConditionType} from '../types/condition';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {
+  designerCancelButtonSx,
   designerControlActionRowSx,
   designerControlLabelSx,
   designerControlHeadingSx,
+  designerDialogActionsSx,
+  designerDialogTitleSx,
   designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
