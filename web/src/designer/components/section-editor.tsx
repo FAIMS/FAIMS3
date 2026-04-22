@@ -450,18 +450,16 @@ export const SectionEditor = ({
       <Dialog
         open={openMoveDialog}
         onClose={handleCloseMoveDialog}
+        fullWidth
+        maxWidth="sm"
         aria-labelledby="alert-move-dialog-title"
-        aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-move-dialog-title" textAlign="center">
-          Move Section
+        <DialogTitle id="alert-move-dialog-title" sx={designerDialogTitleSx}>
+          Move Section to Another Form
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{mt: 0.5, mb: 1, fontWeight: 450}}>
-            Destination Form
-          </Typography>
-          <Typography variant="body2" sx={{mb: 1}}>
-            Choose the form you want to move the section to.
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <Typography variant="body2" sx={{mb: 1.5, color: 'text.secondary'}}>
+            Choose the destination form for this section.
           </Typography>
           <Autocomplete
             fullWidth
@@ -480,9 +478,15 @@ export const SectionEditor = ({
             )}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
-          <Button onClick={moveSectionToForm} disabled={!targetViewSetId}>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={handleCloseMoveDialog}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={moveSectionToForm}
+            disabled={!targetViewSetId}
+          >
             Move
           </Button>
         </DialogActions>
