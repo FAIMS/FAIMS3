@@ -27,4 +27,10 @@ export type DesignerThemeTokens = {
   formTabIndicatorVisible: boolean;
   /** Colour of the MUI underline indicator when visible */
   formTabIndicatorColor: string;
+
+  errorMain: string;
+  /** Colour used for destructive delete actions */
+  deleteButtonColor: string;
+  /** Colour for info-tooltip icons */
+  tooltipIconColor: string;
 };
