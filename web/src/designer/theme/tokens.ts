@@ -10,4 +10,10 @@ export type DesignerThemeTokens = {
   primaryDark: string;
   primaryContrastText: string;
   secondaryMain: string;
+
+  /** Muted helper / placeholder text colour */
+  helperTextColor: string;
+
+  appBarBackground: string;
+  appBarColor: string;
 };
