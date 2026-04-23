@@ -16,4 +16,15 @@ export type DesignerThemeTokens = {
 
   appBarBackground: string;
   appBarColor: string;
+
+  /** Border colour for unselected form tabs */
+  formTabBorderColor: string;
+  /** Background of the selected / active form tab */
+  formTabSelectedBg: string;
+  /** Text colour of the selected form tab */
+  formTabSelectedText: string;
+  /** Whether the MUI underline indicator should be visible */
+  formTabIndicatorVisible: boolean;
+  /** Colour of the MUI underline indicator when visible */
+  formTabIndicatorColor: string;
 };
