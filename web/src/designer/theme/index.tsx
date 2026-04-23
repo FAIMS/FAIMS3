@@ -15,69 +15,33 @@
  *
  * Filename: index.tsx
  * Description:
- *   Taken from the main FAIMS3 proj source code: /src/gui/theme/index.tsx
- *   Amended to fit this project.
+ *   Designer MUI theme factory.
+ *   Token values live in faims-tokens.ts / dass-tokens.ts.
  */
 
 import {createTheme, colors} from '@mui/material';
+import type {DesignerThemeTokens} from './tokens';
+import {faimsTokens} from './faims-tokens';
+import {dassTokens} from './dass-tokens';
 
-export type DesignerThemeName = 'default' | 'bssTheme' | 'dassTheme' | string;
+// ── Re-export token types so consumers don't need a deep import ────────────
+export type {DesignerThemeTokens} from './tokens';
+export {faimsTokens} from './faims-tokens';
+export {dassTokens} from './dass-tokens';
 
-type ThemeTokens = {
-  backgroundDefault: string;
-  primaryMain: string;
-  primaryLight: string;
-  primaryDark: string;
-  secondaryMain: string;
-  helperTextColor: string;
-  appBarBackground: string;
-  appBarColor: string;
-  tabSelectedBackground: string;
-  tabSelectedText: string;
-};
+// ── Theme name union ──────────────────────────────────────────────────────
+export type DesignerThemeName = 'default' | 'bssTheme' | 'dassTheme' | 'dass' | string;
 
-const faimsTokens: ThemeTokens = {
-  backgroundDefault: '#FAFAFB',
-  primaryMain: '#669911',
-  primaryLight: '#a7e938',
-  primaryDark: '#141E03',
-  secondaryMain: '#E18200',
-  helperTextColor: colors.blueGrey[500],
-  appBarBackground: '#edeeeb',
-  appBarColor: '#324C08',
-  tabSelectedBackground: '#DA9449',
-  tabSelectedText: '#FFFFFF',
-};
-
-const dassTokens: ThemeTokens = {
-  backgroundDefault: '#FAFAFB',
-  primaryMain: '#000000',
-  primaryLight: '#4A4A4A',
-  primaryDark: '#000000',
-  secondaryMain: '#C40000',
-  helperTextColor: colors.grey[600],
-  appBarBackground: '#FFFFFF',
-  appBarColor: '#000000',
-  tabSelectedBackground: '#4C1F24',
-  tabSelectedText: '#FFFFFF',
-};
-
-const resolveTokens = (themeName: DesignerThemeName): ThemeTokens => {
-  switch (themeName) {
-    case 'bssTheme':
-    case 'dassTheme':
-    case 'dass':
-      return dassTokens;
-    case 'default':
-    default:
-      return faimsTokens;
-  }
+const resolveTokens = (
+  themeName: DesignerThemeName
+): {tokens: DesignerThemeTokens; isDass: boolean} => {
+  const isDass =
+    themeName === 'bssTheme' || themeName === 'dassTheme' || themeName === 'dass';
+  return {tokens: isDass ? dassTokens : faimsTokens, isDass};
 };
 
 export const createDesignerTheme = (themeName: DesignerThemeName = 'default') => {
-  const tokens = resolveTokens(themeName);
-  const isDass =
-    themeName === 'bssTheme' || themeName === 'dassTheme' || themeName === 'dass';
+  const {tokens, isDass} = resolveTokens(themeName);
 
   return createTheme({
     palette: {
