@@ -29,6 +29,25 @@ export type {DesignerThemeTokens} from './tokens';
 export {faimsTokens} from './faims-tokens';
 export {dassTokens} from './dass-tokens';
 
+// ── MUI theme augmentation ────────────────────────────────────────────────
+declare module '@mui/material/styles' {
+  interface Theme {
+    /** Designer-specific metadata injected alongside the MUI palette. */
+    designerMeta: {
+      /** True when the active theme is DASS / BSS. */
+      isDass: boolean;
+      /** Full resolved token set for the active theme. */
+      tokens: DesignerThemeTokens;
+    };
+  }
+  interface ThemeOptions {
+    designerMeta?: {
+      isDass?: boolean;
+      tokens?: DesignerThemeTokens;
+    };
+  }
+}
+
 // ── Theme name union ──────────────────────────────────────────────────────
 export type DesignerThemeName = 'default' | 'bssTheme' | 'dassTheme' | 'dass' | string;
 
@@ -44,6 +63,9 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
   const {tokens, isDass} = resolveTokens(themeName);
 
   return createTheme({
+    // Custom metadata readable via `useTheme().designerMeta`
+    designerMeta: {isDass, tokens},
+
     palette: {
       background: {
         default: tokens.backgroundDefault,
