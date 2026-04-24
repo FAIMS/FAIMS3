@@ -1,14 +1,25 @@
 import {colors} from '@mui/material';
 import type {DesignerThemeTokens} from './tokens';
 
+/**
+ * DASS / BSS theme tokens.
+ * Primary: black  |  Secondary / accent: maroon-red
+ */
 export const dassTokens: DesignerThemeTokens = {
+  // ── Backgrounds ─────────────────────────────────────────────────────────
   backgroundDefault: '#FAFAFB',
+
+  // ── Brand palette ────────────────────────────────────────────────────────
   primaryMain: '#000000',
   primaryLight: '#4A4A4A',
   primaryDark: '#000000',
   primaryContrastText: '#FFFFFF',
   secondaryMain: '#C40000',
+
+  // ── Text ────────────────────────────────────────────────────────────────
   helperTextColor: colors.grey[600],
+
+  // ── App bar ──────────────────────────────────────────────────────────────
   appBarBackground: '#FFFFFF',
   appBarColor: '#000000',
   formTabBorderColor: '#C40000',
