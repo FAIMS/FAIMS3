@@ -22,10 +22,11 @@ export const faimsTokens: DesignerThemeTokens = {
   // ── App bar ──────────────────────────────────────────────────────────────
   appBarBackground: '#edeeeb',
   appBarColor: '#324C08',
+  // ── Form tabs ────────────────────────────────────────────────────────────
   formTabBorderColor: '#E18200',
   formTabSelectedBg: '#DA9449',
   formTabSelectedText: '#FFFFFF',
-  formTabIndicatorVisible: false,
+  formTabIndicatorVisible: false, // FAIMS uses filled-tab style; no underline
   formTabIndicatorColor: '#E18200',
   errorMain: '#D32F2F',
   deleteButtonColor: '#D32F2F',
