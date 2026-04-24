@@ -28,9 +28,12 @@ export const dassTokens: DesignerThemeTokens = {
   formTabSelectedText: '#FFFFFF',
   formTabIndicatorVisible: true,
   formTabIndicatorColor: '#C40000',
+  // ── Semantic actions ────────────────────────────────────────────────────
   errorMain: '#C40000',
   deleteButtonColor: '#C40000',
   tooltipIconColor: '#1565C0',
+
+  // ── Neutral greyscale ───────────────────────────────────────────────────
   darkGrey: colors.grey[700],
   midGrey: colors.grey[500],
   lightGrey: colors.grey[200],
