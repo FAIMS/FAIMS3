@@ -28,9 +28,12 @@ export const faimsTokens: DesignerThemeTokens = {
   formTabSelectedText: '#FFFFFF',
   formTabIndicatorVisible: false, // FAIMS uses filled-tab style; no underline
   formTabIndicatorColor: '#E18200',
+  // ── Semantic actions ────────────────────────────────────────────────────
   errorMain: '#D32F2F',
   deleteButtonColor: '#D32F2F',
-  tooltipIconColor: '#1976D2',
+  tooltipIconColor: '#1976D2', // MUI info blue
+
+  // ── Neutral greyscale ───────────────────────────────────────────────────
   darkGrey: colors.blueGrey[700],
   midGrey: colors.blueGrey[500],
   lightGrey: colors.blueGrey[100],
