@@ -22,8 +22,9 @@ export const dassTokens: DesignerThemeTokens = {
   // ── App bar ──────────────────────────────────────────────────────────────
   appBarBackground: '#FFFFFF',
   appBarColor: '#000000',
+  // ── Form tabs ────────────────────────────────────────────────────────────
   formTabBorderColor: '#C40000',
-  formTabSelectedBg: '#000000',
+  formTabSelectedBg: '#4C1F24',
   formTabSelectedText: '#FFFFFF',
   formTabIndicatorVisible: true,
   formTabIndicatorColor: '#C40000',
