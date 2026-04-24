@@ -15,7 +15,9 @@
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import MicIcon from '@mui/icons-material/Mic';
 import SyncIcon from '@mui/icons-material/Sync';
 import {
   Alert,
@@ -23,14 +25,17 @@ import {
   Card,
   Checkbox,
   Collapse,
+  Divider,
   FormControlLabel,
   Grid,
   IconButton,
   InputAdornment,
+  Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
@@ -47,7 +52,10 @@ import {ConditionModal} from '../condition/ConditionModal';
 import {ConditionTranslation} from '../condition/ConditionTranslation';
 import DebouncedTextField from '../debounced-text-field';
 import {MdxEditor} from '../mdx-editor';
-import SpeechSettingsEditor from './SpeechSettingsEditor';
+import {
+  getSpeechSettings,
+  updateSpeechSettings,
+} from './SpeechSettingsEditor';
 import {slugify} from '../../domain/notebook/ids';
 
 /** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
@@ -56,7 +64,7 @@ export const SPEECH_ENABLED_FIELDS = [
   'formik-material-ui::MultipleTextField',
 ];
 
-/** True if {@link SPEECH_ENABLED_FIELDS} includes this field’s composite type key. */
+/** True if {@link SPEECH_ENABLED_FIELDS} includes this field's composite type key. */
 const checkSpeechEnabled = (field: FieldType) => {
   return SPEECH_ENABLED_FIELDS.includes(
     `${field['component-namespace']}::${field['component-name']}`
@@ -84,6 +92,11 @@ type StateType = {
   condition?: ConditionType | null;
   protection: boolean;
   allowHiding: boolean;
+};
+
+/** sx applied to every Checkbox — green tick when checked, grey when unchecked. */
+const checkboxSx = {
+  '&.Mui-checked': {color: 'success.main'},
 };
 
 /**
@@ -130,7 +143,6 @@ export const BaseFieldEditor = ({
     debouncedRename(e.target.value);
   };
 
-  // Handler for the sync field id with name button
   const syncFieldID = () => {
     const desired = slugify(state.label || '');
     const viewId = getViewIDForField(uiSpec, fieldName);
@@ -140,14 +152,12 @@ export const BaseFieldEditor = ({
     }
   };
 
-  // Restore focus on the ID input when the field id changes
   useEffect(() => {
     if (isMounted.current) {
       idInputRef.current?.focus();
     } else {
       isMounted.current = true;
     }
-
     setLocalFieldName(fieldName);
   }, [fieldName]);
 
@@ -187,11 +197,8 @@ export const BaseFieldEditor = ({
     allowHiding: allowHidingEnabled,
   };
 
-  // We show the advanced helper text as long as the field generally supports
-  // helper text
   const hasAdvancedSupport = showHelperText;
 
-  // by default, we'll show the advanced help text form if the value is not empty
   const [showAdvanced, setShowAdvanced] = useState(
     hasAdvancedSupport &&
       !!cParams.advancedHelperText &&
@@ -200,7 +207,7 @@ export const BaseFieldEditor = ({
   const [expanded, setExpanded] = useState(true);
 
   const updateFieldFromState = (newState: StateType) => {
-    const newField = JSON.parse(JSON.stringify(field)) as FieldType; // deep copy
+    const newField = JSON.parse(JSON.stringify(field)) as FieldType;
 
     if (newState.label !== undefined) {
       setFieldLabel(newField, newState.label);
@@ -245,8 +252,21 @@ export const BaseFieldEditor = ({
     dispatch(fieldConditionChanged({fieldName, condition}));
   };
 
+  const isSpeechEnabled = checkSpeechEnabled(field);
+  const hasCondition = !!state.condition;
+  const sectionSubLabel = hasCondition && isSpeechEnabled
+    ? 'Conditions + voice to text'
+    : hasCondition
+    ? 'Conditions'
+    : isSpeechEnabled
+    ? 'Voice to text'
+    : 'No conditions';
+
+  const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
+
   return (
     <Grid container spacing={2}>
+      {/* ── Top card: Label / Field ID / Helper Text / type-specific children ── */}
       <Grid item xs={12}>
         <Card variant="outlined" sx={{p: 2}}>
           <Grid container spacing={2}>
@@ -300,9 +320,8 @@ export const BaseFieldEditor = ({
                         control={
                           <Checkbox
                             checked={showAdvanced}
-                            onChange={e => {
-                              setShowAdvanced(e.target.checked);
-                            }}
+                            onChange={e => setShowAdvanced(e.target.checked)}
+                            sx={checkboxSx}
                           />
                         }
                         label="Include advanced helper text"
@@ -334,10 +353,7 @@ export const BaseFieldEditor = ({
                               initialMarkdown={state.advancedHelperText}
                               handleChange={debounce(
                                 markdown =>
-                                  updateProperty(
-                                    'advancedHelperText',
-                                    markdown
-                                  ),
+                                  updateProperty('advancedHelperText', markdown),
                                 500,
                                 {leading: false, trailing: true}
                               )}
@@ -366,132 +382,351 @@ export const BaseFieldEditor = ({
         </Card>
       </Grid>
 
-      {/* --- REMAINDER OF THE FORM CONFIG --- */}
+      {/* ── General field settings card ── */}
       {showExtraConfig && (
         <Grid item xs={12}>
-          <Card variant="outlined" sx={{p: 2}}>
-            <Grid container spacing={2}>
-              {/* Row 1: Required, Annotation, Uncertainty, Condition */}
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.required}
-                      onChange={e =>
-                        updateProperty('required', e.target.checked)
-                      }
-                    />
-                  }
-                  label="Required"
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.annotation}
-                      onChange={e =>
-                        updateProperty('annotation', e.target.checked)
-                      }
-                    />
-                  }
-                  label="Annotation"
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.uncertainty}
-                      onChange={e =>
-                        updateProperty('uncertainty', e.target.checked)
-                      }
-                    />
-                  }
-                  label="Uncertainty"
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <ConditionModal
-                  label={state.condition ? 'Update Condition' : 'Add Condition'}
-                  initial={state.condition}
-                  onChange={conditionChanged}
-                  field={fieldName}
-                />
-              </Grid>
+          <Card variant="outlined" sx={{overflow: 'hidden'}}>
+            {/* Section subheading strip */}
+            <Box
+              sx={{
+                px: 2,
+                py: 0.9,
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+                bgcolor: theme => alpha(theme.palette.primary.main, 0.04),
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 700,
+                  color: 'text.secondary',
+                  fontSize: '0.78rem',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                General Field settings —{' '}
+                <Box component="span" sx={{color: 'text.primary'}}>
+                  {sectionSubLabel}
+                </Box>
+              </Typography>
+            </Box>
 
-              {/* Row 2: Annotation and Uncertainty Labels */}
-              <Grid item container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  {state.annotation ? (
-                    <DebouncedTextField
-                      fullWidth
-                      label="Annotation Label"
-                      value={state.annotationLabel}
-                      onChange={e =>
-                        updateProperty('annotationLabel', e.target.value)
-                      }
-                    />
-                  ) : (
-                    <></>
-                  )}
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  {state.uncertainty ? (
-                    <DebouncedTextField
-                      fullWidth
-                      label="Uncertainty Label"
-                      value={state.uncertaintyLabel}
-                      onChange={e =>
-                        updateProperty('uncertaintyLabel', e.target.value)
-                      }
-                    />
-                  ) : (
-                    <></>
-                  )}
-                </Grid>
-              </Grid>
+            <Grid container>
+              {/* LEFT: Required + Condition button + condition display */}
+              <Grid
+                item
+                xs={12}
+                md={6}
+                sx={{
+                  p: 2,
+                  borderRight: {md: '1px solid'},
+                  borderColor: {md: 'divider'},
+                  borderBottom: {xs: '1px solid', md: 'none'},
+                }}
+              >
+                <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap">
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={state.required}
+                        onChange={e =>
+                          updateProperty('required', e.target.checked)
+                        }
+                        sx={checkboxSx}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" fontWeight={600}>
+                        Required
+                      </Typography>
+                    }
+                  />
+                  <ConditionModal
+                    label={
+                      state.condition ? 'Update condition' : 'Add condition'
+                    }
+                    initial={state.condition}
+                    onChange={conditionChanged}
+                    field={fieldName}
+                    buttonSx={{
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                    }}
+                  />
+                </Stack>
 
-              {/* Row 3: Condition Alert */}
-              <Grid item xs={12}>
                 {state.condition && (
-                  <Alert severity="info">
-                    <strong>Field Condition:</strong> Show this field if&nbsp;
-                    <ConditionTranslation condition={state.condition} />
-                  </Alert>
+                  <Box
+                    sx={{
+                      mt: 1.5,
+                      p: 1.5,
+                      bgcolor: theme => alpha(theme.palette.info.main, 0.06),
+                      borderRadius: 1,
+                      border: '1px solid',
+                      borderColor: theme => alpha(theme.palette.info.main, 0.22),
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{fontWeight: 600, color: 'text.secondary'}}
+                    >
+                      Show this field if{' '}
+                    </Typography>
+                    <Typography variant="caption" color="text.primary">
+                      <ConditionTranslation condition={state.condition} />
+                    </Typography>
+                  </Box>
                 )}
               </Grid>
 
-              {/* Row 4: Persistent, Display Parent, Protection, Allow Hiding */}
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.persistent}
-                      onChange={e =>
-                        updateProperty('persistent', e.target.checked)
+              {/* RIGHT: Advanced controls + voice-to-text */}
+              <Grid item xs={12} md={6} sx={{p: 2}}>
+                <Typography
+                  variant="body2"
+                  fontWeight={700}
+                  sx={{mb: 1.5, color: 'text.primary'}}
+                >
+                  Advanced controls
+                </Typography>
+
+                <Grid container rowGap={0.25}>
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel
+                      sx={{alignItems: 'center'}}
+                      control={
+                        <Checkbox
+                          checked={state.displayParent}
+                          onChange={e =>
+                            updateProperty('displayParent', e.target.checked)
+                          }
+                          sx={checkboxSx}
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                          <Typography variant="body2">
+                            Display in child records
+                          </Typography>
+                          <Tooltip title="When enabled, this field's value will be visible in child records linked to this record.">
+                            <InfoOutlinedIcon
+                              sx={{fontSize: '0.95rem', color: 'info.main'}}
+                            />
+                          </Tooltip>
+                        </Box>
                       }
                     />
-                  }
-                  label="Copy value to new records"
-                />
-              </Grid>
-              <Grid item xs={12} sm={3}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={state.displayParent}
-                      onChange={e =>
-                        updateProperty('displayParent', e.target.checked)
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel
+                      sx={{alignItems: 'center'}}
+                      control={
+                        <Checkbox
+                          checked={state.persistent}
+                          onChange={e =>
+                            updateProperty('persistent', e.target.checked)
+                          }
+                          sx={checkboxSx}
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                          <Typography variant="body2">
+                            Copy value to new records
+                          </Typography>
+                          <Tooltip title="When enabled, the value entered in this field will be automatically copied when creating new records.">
+                            <InfoOutlinedIcon
+                              sx={{fontSize: '0.95rem', color: 'info.main'}}
+                            />
+                          </Tooltip>
+                        </Box>
                       }
                     />
-                  }
-                  label="Display in child records"
-                />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel
+                      sx={{alignItems: 'center'}}
+                      control={
+                        <Checkbox
+                          checked={state.annotation}
+                          onChange={e =>
+                            updateProperty('annotation', e.target.checked)
+                          }
+                          sx={checkboxSx}
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                          <Typography variant="body2">Annotation</Typography>
+                          <Tooltip title="Allows users to add a note alongside the field value when filling out the form.">
+                            <InfoOutlinedIcon
+                              sx={{fontSize: '0.95rem', color: 'info.main'}}
+                            />
+                          </Tooltip>
+                        </Box>
+                      }
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <FormControlLabel
+                      sx={{alignItems: 'center'}}
+                      control={
+                        <Checkbox
+                          checked={state.uncertainty}
+                          onChange={e =>
+                            updateProperty('uncertainty', e.target.checked)
+                          }
+                          sx={checkboxSx}
+                          size="small"
+                        />
+                      }
+                      label={<Typography variant="body2">Uncertainty</Typography>}
+                    />
+                  </Grid>
+                </Grid>
+
+                {/* Annotation / Uncertainty label inputs */}
+                {(state.annotation || state.uncertainty) && (
+                  <Grid container spacing={1.5} sx={{mt: 0.5}}>
+                    {state.annotation && (
+                      <Grid item xs={12} sm={6}>
+                        <DebouncedTextField
+                          fullWidth
+                          size="small"
+                          label="Annotation Label"
+                          value={state.annotationLabel}
+                          onChange={e =>
+                            updateProperty('annotationLabel', e.target.value)
+                          }
+                        />
+                      </Grid>
+                    )}
+                    {state.uncertainty && (
+                      <Grid item xs={12} sm={6}>
+                        <DebouncedTextField
+                          fullWidth
+                          size="small"
+                          label="Uncertainty Label"
+                          value={state.uncertaintyLabel}
+                          onChange={e =>
+                            updateProperty('uncertaintyLabel', e.target.value)
+                          }
+                        />
+                      </Grid>
+                    )}
+                  </Grid>
+                )}
+
+                {/* Voice-to-text inline (only for speech-enabled fields) */}
+                {isSpeechEnabled && speechSettings && (
+                  <Box
+                    sx={{
+                      mt: 2,
+                      pt: 2,
+                      borderTop: '1px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        mb: 0.75,
+                      }}
+                    >
+                      <MicIcon sx={{fontSize: '1rem', color: 'text.secondary'}} />
+                      <Typography
+                        variant="body2"
+                        fontWeight={700}
+                        color="text.primary"
+                      >
+                        Voice-to-text
+                      </Typography>
+                    </Box>
+
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={speechSettings.enableSpeech}
+                          onChange={e => {
+                            const newField = updateSpeechSettings(field, {
+                              enableSpeech: e.target.checked,
+                            });
+                            dispatch(fieldUpdated({fieldName, newField}));
+                          }}
+                          sx={checkboxSx}
+                          size="small"
+                        />
+                      }
+                      label={
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                          <Typography variant="body2">
+                            Enable voice-to-text input for this field
+                          </Typography>
+                          <Tooltip title="When enabled, users can tap a microphone button to dictate text using their device's speech recognition. This is useful for hands-free data entry in the field.">
+                            <HelpOutlineIcon
+                              sx={{fontSize: '0.95rem', color: 'action.active'}}
+                            />
+                          </Tooltip>
+                        </Box>
+                      }
+                    />
+
+                    {speechSettings.enableSpeech && (
+                      <Box sx={{pl: 4}}>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={speechSettings.speechAppendMode}
+                              onChange={e => {
+                                const newField = updateSpeechSettings(field, {
+                                  speechAppendMode: e.target.checked,
+                                });
+                                dispatch(fieldUpdated({fieldName, newField}));
+                              }}
+                              sx={checkboxSx}
+                              size="small"
+                            />
+                          }
+                          label={
+                            <Box
+                              sx={{display: 'flex', alignItems: 'center', gap: 0.4}}
+                            >
+                              <Typography variant="body2">
+                                Append text to the end of input instead of replacing
+                              </Typography>
+                              <Tooltip title="When enabled, each speech recognition result will be added to the end of any existing text in the field. When disabled, new speech input replaces the current value.">
+                                <HelpOutlineIcon
+                                  sx={{
+                                    fontSize: '0.95rem',
+                                    color: 'action.active',
+                                  }}
+                                />
+                              </Tooltip>
+                            </Box>
+                          }
+                        />
+                      </Box>
+                    )}
+                  </Box>
+                )}
               </Grid>
-              {VITE_TEMPLATE_PROTECTIONS && (
-                <>
-                  <Grid item xs={12} sm={3}>
+            </Grid>
+
+            {/* Template protection — bottom strip (only when VITE_TEMPLATE_PROTECTIONS is on) */}
+            {VITE_TEMPLATE_PROTECTIONS && (
+              <Box sx={{px: 2, pb: 2, pt: 0}}>
+                <Divider sx={{mb: 1.5}} />
+                <Grid container spacing={1}>
+                  <Grid item xs={12} sm={6}>
                     <Box display="flex" alignItems="center">
                       <FormControlLabel
                         control={
@@ -500,6 +735,8 @@ export const BaseFieldEditor = ({
                             onChange={e =>
                               updateProperty('protection', e.target.checked)
                             }
+                            sx={checkboxSx}
+                            size="small"
                           />
                         }
                         label="Protected Field"
@@ -507,13 +744,13 @@ export const BaseFieldEditor = ({
                       <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
                         <InfoOutlinedIcon
                           fontSize="small"
-                          sx={{marginLeft: 0, color: '#757575'}}
+                          sx={{ml: 0, color: 'info.main'}}
                         />
                       </Tooltip>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} sm={3}>
-                    {state.protection ? (
+                  {state.protection && (
+                    <Grid item xs={12} sm={6}>
                       <FormControlLabel
                         control={
                           <Checkbox
@@ -521,22 +758,19 @@ export const BaseFieldEditor = ({
                             onChange={e =>
                               updateProperty('allowHiding', e.target.checked)
                             }
+                            sx={checkboxSx}
+                            size="small"
                           />
                         }
                         label="Allow Hiding"
                       />
-                    ) : (
-                      <></>
-                    )}
-                  </Grid>
-                </>
-              )}
-            </Grid>
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            )}
           </Card>
         </Grid>
-      )}
-      {checkSpeechEnabled(field) && (
-        <SpeechSettingsEditor fieldName={fieldName} />
       )}
     </Grid>
   );
