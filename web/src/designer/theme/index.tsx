@@ -74,10 +74,17 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         main: tokens.primaryMain,
         light: tokens.primaryLight,
         dark: tokens.primaryDark,
+        contrastText: tokens.primaryContrastText,
       },
       secondary: {
         main: tokens.secondaryMain,
         contrastText: '#fff',
+      },
+      error: {
+        main: tokens.errorMain,
+      },
+      info: {
+        main: tokens.tooltipIconColor,
       },
       text: {
         primary: colors.blueGrey[900],
@@ -130,12 +137,6 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
           colorPrimary: {
             backgroundColor: tokens.appBarBackground,
             color: tokens.appBarColor,
-            contrastText: '#fff',
-            textColor: '#fff',
-            indicatorColor: '#fff',
-            text: {
-              primary: '#fff',
-            },
           },
         },
       },
