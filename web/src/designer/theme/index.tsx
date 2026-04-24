@@ -17,6 +17,8 @@
  * Description:
  *   Designer MUI theme factory.
  *   Token values live in faims-tokens.ts / dass-tokens.ts.
+ *   Component code that needs to branch on theme variant should read
+ *   `theme.designerMeta.isDass` or `theme.designerMeta.tokens.*`.
  */
 
 import {createTheme, colors} from '@mui/material';
@@ -152,16 +154,16 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
             },
             '&.Mui-selected': {
               fontWeight: '700 !important',
-              color: tokens.tabSelectedText,
-              backgroundColor: tokens.tabSelectedBackground,
+              color: tokens.formTabSelectedText,
+              backgroundColor: tokens.formTabSelectedBg,
             },
           },
-          indicator: isDass
-            ? {
-                height: 3,
-                backgroundColor: tokens.secondaryMain,
-              }
-            : {},
+          // Underline indicator — visible for DASS, hidden for FAIMS
+          indicator: {
+            height: 3,
+            backgroundColor: tokens.formTabIndicatorColor,
+            display: tokens.formTabIndicatorVisible ? 'block' : 'none',
+          },
         },
       },
       MuiTab: {
