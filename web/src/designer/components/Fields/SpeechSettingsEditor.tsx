@@ -126,7 +126,7 @@ export const SpeechSettingsEditor = ({
                   <Tooltip title="When enabled, users can tap a microphone button to dictate text using their device's speech recognition. This is useful for hands-free data entry in the field.">
                     <HelpOutlineIcon
                       fontSize="small"
-                      sx={{color: 'action.active', cursor: 'help'}}
+                      sx={{color: 'info.main', cursor: 'help'}}
                     />
                   </Tooltip>
                 </span>
@@ -151,7 +151,7 @@ export const SpeechSettingsEditor = ({
                     <Tooltip title="When enabled, each speech recognition result will be added to the end of any existing text in the field. When disabled, new speech input will replace the current field value entirely.">
                       <HelpOutlineIcon
                         fontSize="small"
-                        sx={{color: 'action.active', cursor: 'help'}}
+                        sx={{color: 'info.main', cursor: 'help'}}
                       />
                     </Tooltip>
                   </span>
