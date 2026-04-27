@@ -31,6 +31,7 @@ export const faimsTokens: DesignerThemeTokens = {
   // ── Semantic actions ────────────────────────────────────────────────────
   errorMain: '#D32F2F',
   deleteButtonColor: '#D32F2F',
+  successMain: '#388E3C',
   tooltipIconColor: '#1976D2', // MUI info blue
 
   // ── Neutral greyscale ───────────────────────────────────────────────────

@@ -59,8 +59,16 @@ import {
   findInvalidConditionReferences,
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
+import {keyframes} from '@mui/system';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
-import {designerResponsiveFieldEditorSx} from './designer-style';
+import {
+  designerCancelButtonSx,
+  designerDialogActionsSx,
+  designerDialogBodyTextSx,
+  designerDialogFieldLabelSx,
+  designerDialogTitleSx,
+  designerResponsiveFieldEditorSx,
+} from './designer-style';
 import {DragHandle} from './drag-handle';
 import {
   fieldDeleted,
@@ -90,6 +98,14 @@ type ConflictError = {
   message: string;
   conflicts: string[];
 };
+
+const shakeAnim = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+`;
 
 /** Accordion UI for one field: move, duplicate, delete guards, type-specific inspector. */
 const FieldEditorComponent = ({
@@ -133,6 +149,13 @@ const FieldEditorComponent = ({
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
   const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
   const [duplicateTitle, setDuplicateTitle] = useState('');
+  const [shakingUp, setShakingUp] = useState(false);
+  const [shakingDown, setShakingDown] = useState(false);
+
+  const sectionFields: string[] = allFviews[viewId]?.fields ?? [];
+  const fieldIndex = sectionFields.indexOf(fieldName);
+  const isFirstField = fieldIndex === 0;
+  const isLastField = fieldIndex === sectionFields.length - 1;
 
   const fieldComponent = field['component-name'];
 
@@ -424,7 +447,13 @@ const FieldEditorComponent = ({
                   }}
                 />
                 {field['component-parameters'].required && (
-                  <Chip label="Required" size="small" color="primary" />
+                  <Chip
+                    label="Required"
+                    size="small"
+                    color="success"
+                    variant="outlined"
+                    sx={{fontWeight: 600}}
+                  />
                 )}
               </Stack>
               {field['component-parameters'].helperText && (
@@ -561,14 +590,16 @@ const FieldEditorComponent = ({
         <Dialog
           open={deleteWarningOpen}
           onClose={() => setDeleteWarningOpen(false)}
+          fullWidth
+          maxWidth="sm"
           TransitionProps={{
             onExited: () => {
               setConditionsAffected([]);
             },
           }}
         >
-          <DialogTitle>Cannot Delete Field</DialogTitle>
-          <DialogContent>
+          <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Field</DialogTitle>
+          <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
             <Alert severity="warning">
               This field is referenced in the following conditions:
               <ul>
@@ -579,8 +610,9 @@ const FieldEditorComponent = ({
               Please remove all dependencies on this field before deleting it.
             </Alert>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={designerDialogActionsSx}>
             <Button
+              sx={designerCancelButtonSx}
               onClick={event => {
                 event.stopPropagation();
                 setDeleteWarningOpen(false);
@@ -596,12 +628,13 @@ const FieldEditorComponent = ({
         open={openMoveDialog}
         onClose={handleCloseMoveDialog}
         aria-labelledby="move-dialog-title"
+        fullWidth
         maxWidth="sm"
       >
-        <DialogTitle id="move-dialog-title" textAlign="center">
-          Move Question
+        <DialogTitle id="move-dialog-title" sx={designerDialogTitleSx}>
+          Move Field
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
           {conflictError && (
             <Alert severity="error" sx={{mb: 2}}>
               <Typography variant="body2" sx={{mb: 1}}>
@@ -614,64 +647,55 @@ const FieldEditorComponent = ({
               </ul>
             </Alert>
           )}
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
-                Destination Form
-              </Typography>
-              <Typography variant="body2" sx={{mb: 0.5}}>
-                Choose the form you want to move the question to.
-              </Typography>
-              <Autocomplete
-                fullWidth
-                value={formValue}
-                onChange={(_event, newValue) => {
-                  setSelectedFormId(newValue ? newValue.id : null);
-                  setTargetViewId(''); // reset section when form changes
-                  setConflictError(null);
-                }}
-                options={formOptions}
-                getOptionLabel={option => option.label}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => (
-                  <DebouncedTextField
-                    onChange={function (): void {}}
-                    {...params}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
-                Destination Section
-              </Typography>
-              <Typography variant="body2" sx={{mb: 0.5}}>
-                Choose the section you want to move the question to.
-              </Typography>
-              <Autocomplete
-                fullWidth
-                value={selectedFormId ? sectionValue : null}
-                onChange={(_event, newValue) => {
-                  setTargetViewId(newValue ? newValue.id : '');
-                  setConflictError(null);
-                }}
-                options={sectionOptions}
-                getOptionLabel={option => option.label}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                disabled={!selectedFormId}
-                renderInput={params => (
-                  <DebouncedTextField
-                    onChange={function (): void {}}
-                    {...params}
-                  />
-                )}
-              />
-            </Grid>
-          </Grid>
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
+            Destination Form
+          </Typography>
+          <Typography variant="body2" sx={designerDialogBodyTextSx}>
+            Choose the form you want to move the field to.
+          </Typography>
+          <Autocomplete
+            fullWidth
+            value={formValue}
+            onChange={(_event, newValue) => {
+              setSelectedFormId(newValue ? newValue.id : null);
+              setTargetViewId('');
+              setConflictError(null);
+            }}
+            options={formOptions}
+            getOptionLabel={option => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={params => (
+              <DebouncedTextField onChange={function (): void {}} {...params} />
+            )}
+          />
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
+            Destination Section
+          </Typography>
+          <Typography variant="body2" sx={designerDialogBodyTextSx}>
+            Choose the section you want to move the field to.
+          </Typography>
+          <Autocomplete
+            fullWidth
+            value={selectedFormId ? sectionValue : null}
+            onChange={(_event, newValue) => {
+              setTargetViewId(newValue ? newValue.id : '');
+              setConflictError(null);
+            }}
+            options={sectionOptions}
+            getOptionLabel={option => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            disabled={!selectedFormId}
+            renderInput={params => (
+              <DebouncedTextField onChange={function (): void {}} {...params} />
+            )}
+          />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={handleCloseMoveDialog}>
+            Cancel
+          </Button>
           <Button
+            variant="contained"
             onClick={moveFieldToSection}
             disabled={!selectedFormId || !targetViewId}
           >
@@ -684,28 +708,34 @@ const FieldEditorComponent = ({
         open={openDuplicateDialog}
         onClose={handleCloseDuplicateDialog}
         aria-labelledby="duplicate-dialog-title"
+        fullWidth
         maxWidth="sm"
         onClick={e => e.stopPropagation()}
       >
-        <DialogTitle id="duplicate-dialog-title" textAlign="center">
+        <DialogTitle id="duplicate-dialog-title" sx={designerDialogTitleSx}>
           Duplicate Field
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{mb: 2}}>
-            Enter a title for the duplicated field.
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
+            Field Title
           </Typography>
           <DebouncedTextField
             autoFocus
             fullWidth
+            size="small"
             value={duplicateTitle}
             onChange={e => setDuplicateTitle(e.target.value)}
-            label="Field Title"
-            variant="outlined"
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
-          <Button onClick={duplicateField} disabled={!duplicateTitle.trim()}>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={handleCloseDuplicateDialog}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={duplicateField}
+            disabled={!duplicateTitle.trim()}
+          >
             Duplicate
           </Button>
         </DialogActions>

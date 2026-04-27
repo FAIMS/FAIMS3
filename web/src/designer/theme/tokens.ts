@@ -37,6 +37,8 @@ export type DesignerThemeTokens = {
   errorMain: string;
   /** Colour used for destructive delete actions */
   deleteButtonColor: string;
+  /** Success / positive-action green (checkboxes, Add buttons, completed steps) */
+  successMain: string;
   /** Colour for info-tooltip icons */
   tooltipIconColor: string;
 

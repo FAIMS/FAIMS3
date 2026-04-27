@@ -134,3 +134,19 @@ export const designerDialogActionsSx: SxProps<Theme> = {
   pt: 1.5,
   gap: 1,
 };
+
+export const designerDialogFieldLabelSx: SxProps<Theme> = {
+  fontWeight: 600,
+  color: 'text.secondary',
+  fontSize: '0.875rem',
+  mb: 0.75,
+  mt: 1.5,
+};
+
+/** Secondary body text inside dialogs. */
+export const designerDialogBodyTextSx: SxProps<Theme> = {
+  color: 'text.secondary',
+  fontSize: '0.875rem',
+  lineHeight: 1.5,
+  mb: 1.5,
+};

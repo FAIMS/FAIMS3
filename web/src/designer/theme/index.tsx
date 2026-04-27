@@ -85,6 +85,9 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
       error: {
         main: tokens.errorMain,
       },
+      success: {
+        main: tokens.successMain,
+      },
       info: {
         main: tokens.tooltipIconColor,
       },
@@ -142,6 +145,28 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
           },
         },
       },
+
+      MuiTooltip: {
+        defaultProps: {arrow: true},
+        styleOverrides: {
+          tooltip: {
+            backgroundColor: '#EEF4FF',
+            color: '#1e3a5f',
+            fontSize: '0.78rem',
+            fontWeight: 400,
+            lineHeight: 1.5,
+            border: '1px solid #C5D8F5',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+            maxWidth: 280,
+            borderRadius: 6,
+          },
+          arrow: {
+            color: '#EEF4FF',
+            '&::before': {border: '1px solid #C5D8F5'},
+          },
+        },
+      },
+
       MuiTabs: {
         styleOverrides: {
           root: {

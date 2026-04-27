@@ -31,6 +31,7 @@ export const dassTokens: DesignerThemeTokens = {
   // ── Semantic actions ────────────────────────────────────────────────────
   errorMain: '#C40000',
   deleteButtonColor: '#C40000',
+  successMain: '#2E7D32',
   tooltipIconColor: '#1565C0',
 
   // ── Neutral greyscale ───────────────────────────────────────────────────

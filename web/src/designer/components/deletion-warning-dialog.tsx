@@ -10,6 +10,11 @@ import {
   Alert,
   Button,
 } from '@mui/material';
+import {
+  designerCancelButtonSx,
+  designerDialogActionsSx,
+  designerDialogTitleSx,
+} from './designer-style';
 
 type DeletionWarningDialogProps = {
   open: boolean;
@@ -26,9 +31,9 @@ export const DeletionWarningDialog = ({
   onClose,
 }: DeletionWarningDialogProps) => {
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogTitle>{title}</DialogTitle>
-      <DialogContent>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle sx={designerDialogTitleSx}>{title}</DialogTitle>
+      <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
         <Alert severity="warning">
           This item is referenced in the following conditions:
           <ul style={{marginTop: 8}}>
@@ -39,8 +44,10 @@ export const DeletionWarningDialog = ({
           Please remove or update these references before deleting.
         </Alert>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>OK</Button>
+      <DialogActions sx={designerDialogActionsSx}>
+        <Button sx={designerCancelButtonSx} onClick={onClose}>
+          OK
+        </Button>
       </DialogActions>
     </Dialog>
   );

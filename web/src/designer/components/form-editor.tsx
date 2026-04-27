@@ -64,9 +64,13 @@ import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
 import {
+  designerCancelButtonSx,
   designerControlActionRowSx,
   designerControlLabelSx,
   designerControlHeadingSx,
+  designerDialogActionsSx,
+  designerDialogBodyTextSx,
+  designerDialogTitleSx,
   designerDividerSx,
   designerInfoIconSx,
   designerIconControlButtonSx,
@@ -632,44 +636,59 @@ export const FormEditor = ({
               },
             }}
           >
-            <DialogTitle>Form Settings</DialogTitle>
+            <DialogTitle sx={designerDialogTitleSx}>Form Settings</DialogTitle>
             <DialogContent
               dividers
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-              }}
+              sx={{display: 'flex', flexDirection: 'column', gap: 2}}
             >
               <FormSettingsContent viewSetId={viewSetId} />
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setSettingsOpen(false)}>Close</Button>
+            <DialogActions sx={designerDialogActionsSx}>
+              <Button
+                sx={designerCancelButtonSx}
+                onClick={() => setSettingsOpen(false)}
+              >
+                Close
+              </Button>
             </DialogActions>
           </Dialog>
 
           <Dialog
             open={open}
             onClose={handleClose}
+            fullWidth
+            maxWidth="xs"
             aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
           >
-            <DialogTitle id="alert-dialog-title">
+            <DialogTitle id="alert-dialog-title" sx={designerDialogTitleSx}>
               {deleteAlertTitle}
             </DialogTitle>
-            <DialogContent>
-              <DialogContentText id="alert-dialog-description">
+            <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+              <DialogContentText
+                id="alert-dialog-description"
+                sx={designerDialogBodyTextSx}
+              >
                 {deleteAlertMessage}
               </DialogContentText>
             </DialogContent>
             {preventDeleteDialog ? (
-              <DialogActions>
-                <Button onClick={handleClose}>OK</Button>
+              <DialogActions sx={designerDialogActionsSx}>
+                <Button sx={designerCancelButtonSx} onClick={handleClose}>
+                  OK
+                </Button>
               </DialogActions>
             ) : (
-              <DialogActions>
-                <Button onClick={deleteForm}>Yes</Button>
-                <Button onClick={handleClose}>No</Button>
+              <DialogActions sx={designerDialogActionsSx}>
+                <Button sx={designerCancelButtonSx} onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={deleteForm}
+                >
+                  Delete
+                </Button>
               </DialogActions>
             )}
           </Dialog>
@@ -723,19 +742,31 @@ export const FormEditor = ({
                           textTransform: 'none',
                           flexDirection: 'column',
                           alignItems: 'flex-start',
-                          px: 0,
-                          py: 0,
+                          px: 1,
+                          py: 0.75,
                           minHeight: 64,
                           width: 160,
                           minWidth: 140,
                           maxWidth: 200,
                           flexShrink: 0,
-                          borderRadius: 0,
+                          borderRadius: 1.5,
                           color: 'text.primary',
-                          boxShadow: 'none',
+                          transition: 'background-color 0.18s ease, box-shadow 0.18s ease',
+                          backgroundColor: isActive
+                            ? 'rgba(0,0,0,0.055)'
+                            : 'transparent',
+                          boxShadow: isActive
+                            ? '0 1px 4px rgba(0,0,0,0.10), inset 0 0 0 1px rgba(0,0,0,0.06)'
+                            : 'none',
                           '&:hover': {
-                            backgroundColor: 'transparent',
-                            boxShadow: 'none',
+                            backgroundColor: isActive
+                              ? 'rgba(0,0,0,0.07)'
+                              : 'rgba(0,0,0,0.035)',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.09)',
+                          },
+                          '&:active': {
+                            backgroundColor: 'rgba(0,0,0,0.10)',
+                            boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.14)',
                           },
                         }}
                       >
@@ -757,38 +788,45 @@ export const FormEditor = ({
                               justifyContent: 'center',
                               fontWeight: 700,
                               fontSize: '0.9rem',
-                              bgcolor: isActive ? 'primary.main' : 'grey.500',
+                              bgcolor: isActive ? 'primary.main' : 'grey.400',
                               color: 'common.white',
                               flexShrink: 0,
+                              transition: 'background-color 0.18s ease',
+                              boxShadow: isActive
+                                ? '0 2px 6px rgba(0,0,0,0.22)'
+                                : '0 1px 3px rgba(0,0,0,0.10)',
                             }}
                           >
                             {index + 1}
                           </Box>
                           <Box
                             sx={{
-                              height: 3,
+                              height: 2,
                               flex: 1,
                               ml: 1,
-                              bgcolor: 'divider',
+                              background: isActive
+                                ? 'linear-gradient(90deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.07) 100%)'
+                                : 'rgba(0,0,0,0.12)',
                               borderRadius: 999,
                               opacity: isLast || sections.length <= 1 ? 0 : 1,
+                              transition: 'background 0.18s ease',
                             }}
                           />
                         </Box>
                         <Typography
                           title={views[section].label}
                           sx={{
-                            mt: 1,
-                            pl: 0.05,
-                            fontWeight: isActive ? 700 : 600,
+                            mt: 0.75,
+                            fontWeight: isActive ? 700 : 500,
                             color: isActive ? 'text.primary' : 'text.secondary',
-                            fontSize: '0.9rem',
+                            fontSize: '0.88rem',
                             lineHeight: 1.25,
                             textAlign: 'left',
                             width: '100%',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            transition: 'color 0.18s ease, font-weight 0.18s ease',
                           }}
                         >
                           {views[section].label}
