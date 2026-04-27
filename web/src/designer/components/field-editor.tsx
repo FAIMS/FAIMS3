@@ -59,7 +59,7 @@ import {
   findInvalidConditionReferences,
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
-import {keyframes} from '@mui/system';
+import {keyframes} from '@emotion/react';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
 import {
   designerCancelButtonSx,
@@ -208,11 +208,13 @@ const FieldEditorComponent = ({
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
+    if (isLastField) { setShakingDown(true); return; }
     dispatch(fieldMoved({fieldName, viewId, direction: 'down'}));
   };
 
   const moveFieldUp = (event: React.SyntheticEvent) => {
     event.stopPropagation();
+    if (isFirstField) { setShakingUp(true); return; }
     dispatch(fieldMoved({fieldName, viewId, direction: 'up'}));
   };
 
@@ -419,8 +421,8 @@ const FieldEditorComponent = ({
               <Typography
                 variant="subtitle2"
                 sx={{
-                  color: 'text.primary',
-                  fontWeight: 500,
+                  color: theme => theme.palette.grey[800],
+                  fontWeight: 600,
                   width: '100%',
                   minWidth: 0,
                   overflowWrap: 'anywhere',
@@ -450,9 +452,13 @@ const FieldEditorComponent = ({
                   <Chip
                     label="Required"
                     size="small"
-                    color="success"
                     variant="outlined"
-                    sx={{fontWeight: 600}}
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '0.72rem',
+                      borderColor: 'error.main',
+                      color: 'error.main',
+                    }}
                   />
                 )}
               </Stack>
@@ -490,15 +496,17 @@ const FieldEditorComponent = ({
                   onClick={deleteField}
                   aria-label="delete"
                   size="small"
+                  sx={{color: 'error.main'}}
                 >
                   <DeleteRoundedIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Move Field">
+              <Tooltip title="Move Field to another section">
                 <IconButton
                   onClick={() => setOpenMoveDialog(true)}
                   aria-label="move"
                   size="small"
+                  sx={{color: 'secondary.main'}}
                 >
                   <MoveRoundedIcon />
                 </IconButton>
@@ -570,16 +578,34 @@ const FieldEditorComponent = ({
                   </Tooltip>
                 </>
               )}
-              <Tooltip title="Move up">
-                <IconButton onClick={moveFieldUp} aria-label="up" size="small">
+              <Tooltip title={isFirstField ? 'Already at the top' : 'Move up'}>
+                <IconButton
+                  onClick={moveFieldUp}
+                  aria-label="up"
+                  size="small"
+                  onAnimationEnd={() => setShakingUp(false)}
+                  sx={{
+                    color: isFirstField ? 'text.disabled' : undefined,
+                    animation: shakingUp
+                      ? `${shakeAnim} 0.35s ease`
+                      : undefined,
+                  }}
+                >
                   <ArrowDropUpRoundedIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Move down">
+              <Tooltip title={isLastField ? 'Already at the bottom' : 'Move down'}>
                 <IconButton
                   onClick={moveFieldDown}
                   aria-label="down"
                   size="small"
+                  onAnimationEnd={() => setShakingDown(false)}
+                  sx={{
+                    color: isLastField ? 'text.disabled' : undefined,
+                    animation: shakingDown
+                      ? `${shakeAnim} 0.35s ease`
+                      : undefined,
+                  }}
                 >
                   <ArrowDropDownRoundedIcon />
                 </IconButton>
