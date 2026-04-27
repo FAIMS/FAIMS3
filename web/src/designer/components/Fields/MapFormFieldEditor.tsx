@@ -155,7 +155,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                       <Tooltip title="Enabling this option allows users to directly set their current location as the selected point.">
                         <HelpOutlineIcon
                           fontSize="small"
-                          sx={{color: 'action.active', cursor: 'help'}}
+                          sx={{color: 'info.main', cursor: 'help'}}
                         />
                       </Tooltip>
                     </span>
