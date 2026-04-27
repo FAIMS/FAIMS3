@@ -80,7 +80,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
                     <Tooltip title="When enabled and the app injects an autosuggest provider (e.g. Mapbox), the field will show a search UI. When disabled, the field always uses manual entry.">
                       <HelpOutlineIcon
                         fontSize="small"
-                        sx={{color: 'action.active', cursor: 'help'}}
+                        sx={{color: 'info.main', cursor: 'help'}}
                       />
                     </Tooltip>
                   </span>
@@ -110,7 +110,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
                     <Tooltip title="When offline or autosuggest is disabled/unavailable, allow users to enter the address by parts (street, suburb, state, etc.) instead of a single free-text address string.">
                       <HelpOutlineIcon
                         fontSize="small"
-                        sx={{color: 'action.active', cursor: 'help'}}
+                        sx={{color: 'info.main', cursor: 'help'}}
                       />
                     </Tooltip>
                   </span>
