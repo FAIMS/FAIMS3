@@ -673,7 +673,7 @@ export const BaseFieldEditor = ({
                           </Typography>
                           <Tooltip title="When enabled, users can tap a microphone button to dictate text using their device's speech recognition. This is useful for hands-free data entry in the field.">
                             <HelpOutlineIcon
-                              sx={{fontSize: '0.95rem', color: 'action.active'}}
+                              sx={{fontSize: '0.95rem', color: 'info.main'}}
                             />
                           </Tooltip>
                         </Box>
@@ -707,7 +707,7 @@ export const BaseFieldEditor = ({
                                 <HelpOutlineIcon
                                   sx={{
                                     fontSize: '0.95rem',
-                                    color: 'action.active',
+                                    color: 'info.main',
                                   }}
                                 />
                               </Tooltip>
