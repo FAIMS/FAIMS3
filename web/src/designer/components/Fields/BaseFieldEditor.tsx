@@ -277,6 +277,7 @@ export const BaseFieldEditor = ({
                   label="Label"
                   value={state.label}
                   onChange={e => updateProperty('label', e.target.value)}
+                  inputProps={{'data-field-label-input': 'true'}}
                 />
                 <TextField
                   fullWidth
