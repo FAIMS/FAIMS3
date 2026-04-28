@@ -28,6 +28,7 @@ import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import DebouncedTextField from './debounced-text-field';
+import {designerInfoIconSx} from './designer-style';
 import {
   viewSetHridUpdated,
   viewSetLayoutUpdated,
@@ -76,7 +77,12 @@ const SettingSection = ({
         {title}
       </Typography>
       <Tooltip title={tooltipText}>
-        <InfoOutlinedIcon sx={{color: 'secondary.main', fontSize: '1.3rem'}} />
+        <InfoOutlinedIcon
+          sx={{
+            ...(designerInfoIconSx as Record<string, unknown>),
+            fontSize: '1.5rem',
+          }}
+        />
       </Tooltip>
     </Box>
     <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
