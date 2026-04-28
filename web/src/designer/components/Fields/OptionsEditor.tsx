@@ -62,6 +62,7 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
+import {designerInfoIconSx} from '../designer-style';
 import {
   findOptionReferences,
   updateConditionReferences,
@@ -864,7 +865,12 @@ export const OptionsEditor = ({
                   <Stack direction="row" spacing={1} alignItems="center">
                     <p>Display multi-select as a dropdown?</p>
                     <Tooltip title="By default, multi-select displays as an expanded checklist. Enable this option to switch to a compact dropdown menu.">
-                      <InfoIcon color="action" fontSize="small" />
+                      <InfoIcon
+                        sx={{
+                          ...(designerInfoIconSx as Record<string, unknown>),
+                          fontSize: '1.2rem',
+                        }}
+                      />
                     </Tooltip>
                   </Stack>
                 }
@@ -875,19 +881,30 @@ export const OptionsEditor = ({
             {/* Add Other Option button with info icon - always visible but disabled when Other is enabled */}
             <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 2}}>
               <Button
-                variant="contained"
+                variant="outlined"
                 color="primary"
                 size="small"
                 onClick={toggleEnableOtherOption}
                 disabled={enableOther}
                 sx={{
                   textTransform: 'none',
+                  fontWeight: 700,
+                  borderWidth: 1.5,
+                  '&:hover': {
+                    borderWidth: 1.5,
+                    backgroundColor: 'action.hover',
+                  },
                 }}
               >
                 Add "Other" Option
               </Button>
               <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
-                <InfoIcon color="action" fontSize="small" />
+                <InfoIcon
+                  sx={{
+                    ...(designerInfoIconSx as Record<string, unknown>),
+                    fontSize: '1.2rem',
+                  }}
+                />
               </Tooltip>
             </Stack>
           </Grid>
@@ -945,7 +962,12 @@ export const OptionsEditor = ({
                         >
                           Exclusive
                           <Tooltip title="Checking this setting marks the option as 'exclusive'. Exclusive options cannot be combined with other selections. For example, choosing 'None' will exclude other selections.">
-                            <InfoIcon color="action" fontSize="small" />
+                            <InfoIcon
+                              sx={{
+                                ...(designerInfoIconSx as Record<string, unknown>),
+                                fontSize: '1.2rem',
+                              }}
+                            />
                           </Tooltip>
                         </Box>
                       </TableCell>
