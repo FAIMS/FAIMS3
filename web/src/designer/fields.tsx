@@ -160,8 +160,12 @@ const fields: {[key: string]: FieldType} = {
     },
     initialValue: false,
     humanReadableName: 'Checkbox',
-    humanReadableDescription: 'Boolean yes/no toggle box',
+    humanReadableDescription:
+      'Deprecated boolean yes/no toggle (use Select one option instead)',
     category: CategoryKey.CHOICE,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated: use “Select one option” for new forms. Existing Checkbox fields continue to work.',
     showInChooser: true,
     order: 11,
   },
