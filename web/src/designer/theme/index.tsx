@@ -22,6 +22,7 @@
  */
 
 import {createTheme, colors} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import type {DesignerThemeTokens} from './tokens';
 import {faimsTokens} from './faims-tokens';
 import {dassTokens} from './dass-tokens';
@@ -147,22 +148,58 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
       },
 
       MuiTooltip: {
-        defaultProps: {arrow: true},
+        defaultProps: {
+          arrow: true,
+          enterTouchDelay: 80,
+          leaveTouchDelay: 2500,
+        },
         styleOverrides: {
           tooltip: {
-            backgroundColor: '#EEF4FF',
-            color: '#1e3a5f',
-            fontSize: '0.78rem',
-            fontWeight: 400,
-            lineHeight: 1.5,
-            border: '1px solid #C5D8F5',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-            maxWidth: 280,
-            borderRadius: 6,
+            backgroundColor: '#EAF6FF',
+            color: '#10395B',
+            fontSize: '0.9rem',
+            fontWeight: 500,
+            lineHeight: 1.45,
+            border: '1px solid #B7DFFE',
+            boxShadow: '0 6px 16px rgba(16,57,91,0.16)',
+            maxWidth: 340,
+            padding: '10px 12px',
+            borderRadius: 10,
           },
           arrow: {
-            color: '#EEF4FF',
-            '&::before': {border: '1px solid #C5D8F5'},
+            color: '#EAF6FF',
+            '&::before': {border: '1px solid #B7DFFE'},
+          },
+        },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          root: {
+            '& .MuiBackdrop-root': {
+              backgroundColor: alpha('#0f1720', 0.45),
+              backdropFilter: 'blur(1px)',
+            },
+          },
+          paper: {
+            borderRadius: 12,
+            border: '1px solid rgba(17,24,39,0.12)',
+            boxShadow: '0 20px 46px rgba(15, 23, 32, 0.24)',
+            overflow: 'hidden',
+          },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            textTransform: 'none',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+          },
+          contained: {
+            boxShadow: '0 2px 8px rgba(15, 23, 32, 0.18)',
+            '&:hover': {
+              boxShadow: '0 4px 12px rgba(15, 23, 32, 0.24)',
+            },
           },
         },
       },
