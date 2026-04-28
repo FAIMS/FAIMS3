@@ -52,7 +52,7 @@ import {
 import {alpha} from '@mui/material/styles';
 import {useSortable} from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
-import React, {memo, useCallback, useMemo, useState} from 'react';
+import React, {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
   findFieldConditionUsage,
@@ -91,6 +91,8 @@ type FieldEditorProps = {
   addFieldCallback: (fieldName: string) => void;
   onExpandedChange: (designerIdentifier: string, expanded: boolean) => void;
   moveFieldCallback: (targetViewId: string) => void;
+  autoFocusLabel?: boolean;
+  onLabelFocused?: () => void;
 };
 
 type ConflictError = {
@@ -117,6 +119,8 @@ const FieldEditorComponent = ({
   addFieldCallback,
   onExpandedChange,
   moveFieldCallback,
+  autoFocusLabel = false,
+  onLabelFocused,
 }: FieldEditorProps) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -165,6 +169,7 @@ const FieldEditorComponent = ({
   const [conflictError, setConflictError] = useState<ConflictError | null>(
     null
   );
+  const editorRootRef = useRef<HTMLDivElement>(null);
 
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
@@ -352,6 +357,22 @@ const FieldEditorComponent = ({
   );
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
     useSortable({id: fieldName});
+
+  useEffect(() => {
+    if (!expanded || !autoFocusLabel) return;
+
+    const focusId = window.requestAnimationFrame(() => {
+      const labelInput = editorRootRef.current?.querySelector<HTMLInputElement>(
+        'input[data-field-label-input="true"]'
+      );
+      if (!labelInput) return;
+      labelInput.focus();
+      labelInput.select();
+      onLabelFocused?.();
+    });
+
+    return () => window.cancelAnimationFrame(focusId);
+  }, [expanded, autoFocusLabel, onLabelFocused]);
 
   return (
     <Accordion
@@ -802,6 +823,7 @@ const FieldEditorComponent = ({
             </Stack>
           )}
           <div
+            ref={editorRootRef}
             style={{
               pointerEvents: disableEditing ? 'none' : 'auto',
               opacity: disableEditing ? 0.5 : 1,
