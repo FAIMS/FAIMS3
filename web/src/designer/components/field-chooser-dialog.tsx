@@ -35,8 +35,10 @@ import {
   useTheme,
   Box,
   Tooltip,
+  Chip,
 } from '@mui/material';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
 import {getFieldNames, getFieldSpec} from '../fields';
 import {
@@ -48,7 +50,7 @@ import {
 type FieldChooserDialogProps = {
   open: boolean;
   onClose: () => void;
-  onConfirm: (fieldName: string, fieldType: string) => void;
+  onConfirm: (fieldType: string) => void;
 };
 
 type FieldOption = {
@@ -58,11 +60,13 @@ type FieldOption = {
   category: CategoryKey;
   order: number;
   showInChooser: boolean;
+  deprecated: boolean;
+  deprecationMessage: string;
 };
 
 const CARD_HEIGHT = 80;
 
-/** Modal to pick a field template type and display name before adding a field to a section. */
+/** Modal to pick a field template type and add it to a section in one click. */
 export default function FieldChooserDialog({
   open,
   onClose,
@@ -71,17 +75,13 @@ export default function FieldChooserDialog({
   const theme = useTheme();
 
   const [tooltipOpenKey, setTooltipOpenKey] = useState<string | false>(false);
-  const [fieldName, setFieldName] = useState('New Field');
   const [category, setCategory] = useState<CategoryKey>(CategoryKey.ALL);
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      setFieldName('New Field');
       setCategory(CategoryKey.ALL);
       setSearch('');
-      setSelected(null);
       setTooltipOpenKey(false);
     }
   }, [open]);
@@ -98,6 +98,8 @@ export default function FieldChooserDialog({
             category: (spec.category as CategoryKey) || CategoryKey.ALL,
             order: spec.order ?? Number.MAX_SAFE_INTEGER,
             showInChooser: spec.showInChooser !== false,
+            deprecated: spec.deprecated === true,
+            deprecationMessage: spec.deprecationMessage || '',
           };
         })
         .filter(o => o.showInChooser)
@@ -120,12 +122,6 @@ export default function FieldChooserDialog({
       });
   }, [allOptions, category, search]);
 
-  const handleConfirm = () => {
-    if (selected) {
-      onConfirm(fieldName.trim() || 'New Field', selected);
-    }
-  };
-
   return (
     <Dialog
       open={open}
@@ -135,6 +131,9 @@ export default function FieldChooserDialog({
       sx={{
         '& .MuiDialog-paper': {
           maxHeight: '75vh',
+          borderRadius: 2,
+          borderTop: `6px solid ${theme.palette.secondary.main}`,
+          backgroundImage: `linear-gradient(180deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
         },
       }}
     >
@@ -150,16 +149,6 @@ export default function FieldChooserDialog({
           pb: 0,
         }}
       >
-        <TextField
-          label="Field name"
-          fullWidth
-          variant="outlined"
-          value={fieldName}
-          onChange={e => setFieldName(e.target.value)}
-          sx={{mb: 2, flexShrink: 0}}
-          autoFocus
-        />
-
         <Tabs
           value={category}
           onChange={(_, v: CategoryKey) => setCategory(v)}
@@ -172,6 +161,16 @@ export default function FieldChooserDialog({
             top: 0,
             bgcolor: theme.palette.background.paper,
             zIndex: 1,
+            '& .MuiTab-root': {
+              borderRadius: 999,
+              minHeight: 36,
+              textTransform: 'none',
+              fontWeight: 600,
+            },
+            '& .Mui-selected': {
+              bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+            },
           }}
         >
           {categoryTabs.map(key => (
@@ -190,10 +189,26 @@ export default function FieldChooserDialog({
           fullWidth
           variant="outlined"
           size="small"
-          sx={{mb: 2, flexShrink: 0}}
+          sx={{
+            mb: 2,
+            flexShrink: 0,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              bgcolor: theme.palette.common.white,
+            },
+          }}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
+
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{mb: 1.5, display: 'block'}}
+        >
+          Click any field card to add it instantly, then name it in the field
+          editor.
+        </Typography>
 
         <Box
           sx={{
@@ -212,7 +227,11 @@ export default function FieldChooserDialog({
             {filtered.map(opt => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={opt.key}>
                 <Tooltip
-                  title={opt.description}
+                  title={
+                    opt.deprecated && opt.deprecationMessage
+                      ? `${opt.description} ${opt.deprecationMessage}`.trim()
+                      : opt.description
+                  }
                   arrow
                   placement="top-start"
                   disableHoverListener={!opt.description}
@@ -231,26 +250,31 @@ export default function FieldChooserDialog({
                     sx={{
                       minHeight: CARD_HEIGHT,
                       borderWidth: 2,
-                      borderColor:
-                        selected === opt.key
-                          ? theme.palette.primary.main
-                          : theme.palette.divider,
+                      borderColor: opt.deprecated
+                        ? theme.palette.warning.main
+                        : theme.palette.divider,
+                      bgcolor: opt.deprecated
+                        ? theme.palette.warning.light
+                        : theme.palette.background.paper,
                       boxShadow: theme.shadows[1],
                       transition: theme.transitions.create(
-                        ['border-color', 'box-shadow'],
+                        ['border-color', 'box-shadow', 'transform'],
                         {duration: theme.transitions.duration.short}
                       ),
                       display: 'flex',
                       flexDirection: 'column',
+                      '&:hover': {
+                        borderColor: opt.deprecated
+                          ? theme.palette.warning.dark
+                          : theme.palette.primary.main,
+                        boxShadow: theme.shadows[4],
+                        transform: 'translateY(-1px)',
+                      },
                     }}
                   >
                     <CardActionArea
                       sx={{flexGrow: 1}}
-                      onClick={() => setSelected(opt.key)}
-                      onDoubleClick={() => {
-                        setSelected(opt.key);
-                        handleConfirm();
-                      }}
+                      onClick={() => onConfirm(opt.key)}
                     >
                       <CardContent
                         sx={{
@@ -281,6 +305,15 @@ export default function FieldChooserDialog({
                           >
                             {opt.label}
                           </Typography>
+                          {opt.deprecated && (
+                            <Chip
+                              size="small"
+                              color="warning"
+                              icon={<WarningAmberRoundedIcon />}
+                              label="Deprecated"
+                              sx={{ml: 'auto', height: 22}}
+                            />
+                          )}
                         </Stack>
                       </CardContent>
                     </CardActionArea>
@@ -305,13 +338,15 @@ export default function FieldChooserDialog({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
         <Button
-          onClick={handleConfirm}
-          disabled={!selected}
+          onClick={onClose}
           variant="contained"
+          sx={{
+            bgcolor: theme.palette.secondary.main,
+            '&:hover': {bgcolor: theme.palette.secondary.dark},
+          }}
         >
-          Add Field
+          Close
         </Button>
       </DialogActions>
     </Dialog>
