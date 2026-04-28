@@ -43,6 +43,7 @@ import {
   designerSubheadingSx,
 } from './designer-style';
 import {HeadingWithInfo} from './heading-with-info';
+import {slugify} from '../domain/notebook/ids';
 
 type Props = {
   viewSetId: string;
@@ -83,6 +84,9 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [addAfterField, setAddAfterField] = useState('');
+  const [autoFocusFieldKey, setAutoFocusFieldKey] = useState<string | null>(
+    null
+  );
 
   const openDialog = () => {
     setDialogOpen(true);
@@ -98,19 +102,28 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
   }, []);
 
   const handleDialogConfirm = useCallback(
-    (fieldName: string, fieldType: string) => {
+    (fieldType: string) => {
+      const defaultFieldName = 'New Field';
+      let newFieldKey = slugify(defaultFieldName);
+      let suffix = 1;
+      while (fields[newFieldKey]) {
+        newFieldKey = slugify(`${defaultFieldName} ${suffix}`);
+        suffix += 1;
+      }
+
       dispatch(
         fieldAdded({
-          fieldName,
+          fieldName: defaultFieldName,
           fieldType,
           viewId,
           viewSetId,
           addAfter: addAfterField,
         })
       );
+      setAutoFocusFieldKey(newFieldKey);
       setDialogOpen(false);
     },
-    [addAfterField, dispatch, viewId, viewSetId]
+    [addAfterField, dispatch, fields, viewId, viewSetId]
   );
 
   const [isExpanded, setIsExpanded] = useState<{[key: string]: boolean}>({});
@@ -142,6 +155,14 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
     });
     return next;
   }, [fView.fields, fields]);
+
+  useEffect(() => {
+    if (!autoFocusFieldKey) return;
+    const designerIdentifier = fields[autoFocusFieldKey]?.designerIdentifier;
+    if (!designerIdentifier) return;
+
+    setIsExpanded(prev => ({...prev, [designerIdentifier]: true}));
+  }, [autoFocusFieldKey, fields]);
 
   useEffect(() => {
     // When viewId changes we are viewing a different section — reset accordion state.
@@ -279,6 +300,12 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
                 onExpandedChange={handleExpandedChange}
                 designerIdentifier={designerIdentifier}
                 moveFieldCallback={moveFieldCallback}
+                autoFocusLabel={autoFocusFieldKey === fieldName}
+                onLabelFocused={() => {
+                  setAutoFocusFieldKey(prev =>
+                    prev === fieldName ? null : prev
+                  );
+                }}
               />
             );
           })}
@@ -334,6 +361,12 @@ export const FieldList = ({viewSetId, viewId, moveFieldCallback}: Props) => {
                     moveFieldCallback={moveFieldCallback}
                     onExpandedChange={handleExpandedChange}
                     designerIdentifier={designerIdentifier}
+                    autoFocusLabel={autoFocusFieldKey === fieldName}
+                    onLabelFocused={() => {
+                      setAutoFocusFieldKey(prev =>
+                        prev === fieldName ? null : prev
+                      );
+                    }}
                   />
                 );
               })}
