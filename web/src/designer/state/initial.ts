@@ -120,6 +120,8 @@ export type FieldType = {
   humanReadableDescription?: string;
   showInChooser?: boolean;
   order?: number;
+  deprecated?: boolean;
+  deprecationMessage?: string;
 
   meta?: {
     annotation: {
