@@ -187,9 +187,34 @@ export const FormEditor = ({
 
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
+  const sectionStripRef = useRef<HTMLDivElement | null>(null);
+  const [hasSectionOverflow, setHasSectionOverflow] = useState(false);
+  const [isSectionAtStart, setIsSectionAtStart] = useState(true);
+  const [isSectionAtEnd, setIsSectionAtEnd] = useState(false);
 
   // needed for the form preview
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const el = sectionStripRef.current;
+    if (!el) return;
+
+    const updateScrollState = () => {
+      const hasOverflow = el.scrollWidth > el.clientWidth + 2;
+      setHasSectionOverflow(hasOverflow);
+      setIsSectionAtStart(el.scrollLeft <= 2);
+      setIsSectionAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2);
+    };
+
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, {passive: true});
+    window.addEventListener('resize', updateScrollState);
+
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [sections.length]);
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
