@@ -737,22 +737,53 @@ export const FormEditor = ({
             <Grid container spacing={2} p={0}>
               <Grid item xs={12}>
                 <Box
+                  ref={sectionStripRef}
                   sx={{
+                    position: 'relative',
                     display: 'flex',
                     flexWrap: 'nowrap',
-                    gap: 0,
+                    gap: 0.75,
                     alignItems: 'flex-start',
                     mb: 1,
                     overflowX: 'auto',
                     pb: 1,
                     scrollbarWidth: 'thin',
-                    scrollbarColor: 'rgba(0,0,0,0.18) transparent',
-                    '&::-webkit-scrollbar': {height: 5},
-                    '&::-webkit-scrollbar-track': {background: 'transparent'},
-                    '&::-webkit-scrollbar-thumb': {
-                      borderRadius: 3,
-                      backgroundColor: 'rgba(0,0,0,0.18)',
+                    scrollbarColor: 'rgba(78, 116, 138, 0.38) transparent',
+                    '&::-webkit-scrollbar': {height: hasSectionOverflow ? 8 : 0},
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent',
+                      borderRadius: 999,
                     },
+                    '&::-webkit-scrollbar-thumb': {
+                      borderRadius: 999,
+                      backgroundColor: 'rgba(78, 116, 138, 0.38)',
+                    },
+                    '&::before, &::after': hasSectionOverflow
+                      ? {
+                          content: '""',
+                          position: 'sticky',
+                          top: 0,
+                          width: 24,
+                          height: '100%',
+                          pointerEvents: 'none',
+                          zIndex: 2,
+                        }
+                      : {},
+                    '&::before': hasSectionOverflow
+                      ? {
+                          left: 0,
+                          display: isSectionAtStart ? 'none' : 'block',
+                          background: `linear-gradient(90deg, ${theme.palette.background.default} 40%, rgba(255,255,255,0))`,
+                        }
+                      : {},
+                    '&::after': hasSectionOverflow
+                      ? {
+                          right: 0,
+                          ml: 'auto',
+                          display: isSectionAtEnd ? 'none' : 'block',
+                          background: `linear-gradient(270deg, ${theme.palette.background.default} 40%, rgba(255,255,255,0))`,
+                        }
+                      : {},
                   }}
                 >
                   {sections.map((section: string, index: number) => {
