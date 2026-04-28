@@ -800,30 +800,52 @@ export const FormEditor = ({
                           flexDirection: 'column',
                           alignItems: 'flex-start',
                           px: 1,
-                          py: 0.75,
-                          minHeight: 64,
-                          width: 160,
-                          minWidth: 140,
-                          maxWidth: 200,
+                          py: 0.8,
+                          minHeight: 70,
+                          width: {xs: 152, sm: 170, md: 184},
+                          minWidth: 148,
+                          maxWidth: 220,
                           flexShrink: 0,
-                          borderRadius: 1.5,
+                          borderRadius: 2,
                           color: 'text.primary',
-                          transition: 'background-color 0.18s ease, box-shadow 0.18s ease',
-                          backgroundColor: isActive
-                            ? 'rgba(0,0,0,0.055)'
+                          border: '1px solid',
+                          borderColor: isActive
+                            ? 'divider'
                             : 'transparent',
-                          boxShadow: isActive
-                            ? '0 1px 4px rgba(0,0,0,0.10), inset 0 0 0 1px rgba(0,0,0,0.06)'
-                            : 'none',
+                          backgroundColor: isActive
+                            ? (t =>
+                                t.designerMeta.isDass
+                                  ? 'rgba(17,24,39,0.08)'
+                                  : 'rgba(17,24,39,0.045)')
+                            : 'transparent',
+                          transition:
+                            'background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                          '& .section-step-dot': {
+                            transition:
+                              'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
+                            boxShadow: isActive
+                              ? '0 3px 10px rgba(0,0,0,0.24)'
+                              : '0 1px 3px rgba(0,0,0,0.12)',
+                          },
                           '&:hover': {
                             backgroundColor: isActive
-                              ? 'rgba(0,0,0,0.07)'
-                              : 'rgba(0,0,0,0.035)',
-                            boxShadow: '0 2px 6px rgba(0,0,0,0.09)',
+                              ? (t =>
+                                  t.designerMeta.isDass
+                                    ? 'rgba(17,24,39,0.11)'
+                                    : 'rgba(17,24,39,0.06)')
+                              : 'rgba(17,24,39,0.02)',
+                            borderColor: isActive ? 'divider' : 'rgba(17,24,39,0.08)',
+                            boxShadow: '0 4px 10px rgba(15,23,32,0.10)',
+                            '& .section-step-dot': {
+                              transform: 'translateY(-1px) scale(1.03)',
+                              boxShadow: '0 5px 14px rgba(15,23,32,0.24)',
+                            },
                           },
                           '&:active': {
-                            backgroundColor: 'rgba(0,0,0,0.10)',
-                            boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.14)',
+                            boxShadow: '0 2px 7px rgba(15,23,32,0.12)',
+                            '& .section-step-dot': {
+                              transform: 'scale(0.98)',
+                            },
                           },
                         }}
                       >
@@ -836,22 +858,19 @@ export const FormEditor = ({
                         >
                           <Box
                             component="span"
+                            className="section-step-dot"
                             sx={{
-                              width: 30,
-                              height: 30,
+                              width: 32,
+                              height: 32,
                               borderRadius: '50%',
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontWeight: 700,
-                              fontSize: '0.9rem',
+                              fontSize: '0.92rem',
                               bgcolor: isActive ? 'primary.main' : 'grey.400',
                               color: 'common.white',
                               flexShrink: 0,
-                              transition: 'background-color 0.18s ease',
-                              boxShadow: isActive
-                                ? '0 2px 6px rgba(0,0,0,0.22)'
-                                : '0 1px 3px rgba(0,0,0,0.10)',
                             }}
                           >
                             {index + 1}
@@ -862,28 +881,27 @@ export const FormEditor = ({
                               flex: 1,
                               ml: 1,
                               background: isActive
-                                ? 'linear-gradient(90deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.07) 100%)'
-                                : 'rgba(0,0,0,0.12)',
+                                ? `linear-gradient(90deg, ${theme.palette.primary.main}55 0%, ${theme.palette.primary.main}1A 100%)`
+                                : 'rgba(0,0,0,0.14)',
                               borderRadius: 999,
                               opacity: isLast || sections.length <= 1 ? 0 : 1,
-                              transition: 'background 0.18s ease',
+                              transition: 'background 0.2s ease, opacity 0.2s ease',
                             }}
                           />
                         </Box>
                         <Typography
                           title={views[section].label}
                           sx={{
-                            mt: 0.75,
-                            fontWeight: isActive ? 700 : 500,
+                            mt: 0.85,
+                            fontWeight: isActive ? 700 : 600,
                             color: isActive ? 'text.primary' : 'text.secondary',
-                            fontSize: '0.88rem',
+                            fontSize: '0.95rem',
                             lineHeight: 1.25,
                             textAlign: 'left',
                             width: '100%',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
-                            transition: 'color 0.18s ease, font-weight 0.18s ease',
                           }}
                         >
                           {views[section].label}
