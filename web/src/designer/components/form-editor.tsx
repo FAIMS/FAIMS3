@@ -910,6 +910,19 @@ export const FormEditor = ({
                     );
                   })}
                 </Box>
+                {hasSectionOverflow && (
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    alignItems="center"
+                    sx={{color: 'text.secondary', ml: 0.4, mt: -0.35, mb: 0.5}}
+                  >
+                    <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
+                    <Typography variant="caption" sx={{fontWeight: 600}}>
+                      Scroll left or right to see all sections
+                    </Typography>
+                  </Stack>
+                )}
               </Grid>
 
               {sections.length === 0 ? (
