@@ -15,8 +15,7 @@
 import {MDXEditorMethods} from '@mdxeditor/editor';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoIcon from '@mui/icons-material/Info';
 import MicIcon from '@mui/icons-material/Mic';
 import SyncIcon from '@mui/icons-material/Sync';
 import {
@@ -35,7 +34,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {alpha, Theme} from '@mui/material/styles';
+import {alpha} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
@@ -57,7 +56,7 @@ import {
   updateSpeechSettings,
 } from './SpeechSettingsEditor';
 import {slugify} from '../../domain/notebook/ids';
-import {designerInfoIconSx} from '../designer-style';
+import {designerCheckboxSx, designerInfoIconSx} from '../designer-style';
 
 /** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
 export const SPEECH_ENABLED_FIELDS = [
@@ -96,25 +95,7 @@ type StateType = {
 };
 
 /** sx applied to every Checkbox — green tick when checked, grey when unchecked. */
-const checkboxSx = {
-  '& .MuiSvgIcon-root': {
-    borderRadius: 0.75,
-    backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.12),
-    boxShadow: (theme: Theme) =>
-      `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.32)}`,
-  },
-  '&.Mui-checked': {
-    color: 'success.main',
-    '& .MuiSvgIcon-root': {
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.primary.main, 0.2),
-      boxShadow: (theme: Theme) =>
-        `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.28)}`,
-    },
-  },
-};
-
-/**
+ /**
  * Default property sheet: label, persistence, meta flags, visibility condition, template protection.
  * Type-specific panels pass extra controls as `children`.
  */
@@ -337,7 +318,7 @@ export const BaseFieldEditor = ({
                           <Checkbox
                             checked={showAdvanced}
                             onChange={e => setShowAdvanced(e.target.checked)}
-                            sx={checkboxSx}
+                            sx={designerCheckboxSx}
                           />
                         }
                         label="Include advanced helper text"
@@ -449,7 +430,7 @@ export const BaseFieldEditor = ({
                         onChange={e =>
                           updateProperty('required', e.target.checked)
                         }
-                        sx={checkboxSx}
+                        sx={designerCheckboxSx}
                       />
                     }
                     label={
@@ -517,7 +498,7 @@ export const BaseFieldEditor = ({
                           onChange={e =>
                             updateProperty('displayParent', e.target.checked)
                           }
-                          sx={checkboxSx}
+                          sx={designerCheckboxSx}
                           size="small"
                         />
                       }
@@ -527,7 +508,7 @@ export const BaseFieldEditor = ({
                             Display in child records
                           </Typography>
                           <Tooltip title="When enabled, this field's value will be visible in child records linked to this record.">
-                            <InfoOutlinedIcon sx={designerInfoIconSx} />
+                            <InfoIcon sx={designerInfoIconSx} />
                           </Tooltip>
                         </Box>
                       }
@@ -543,7 +524,7 @@ export const BaseFieldEditor = ({
                           onChange={e =>
                             updateProperty('persistent', e.target.checked)
                           }
-                          sx={checkboxSx}
+                          sx={designerCheckboxSx}
                           size="small"
                         />
                       }
@@ -553,7 +534,7 @@ export const BaseFieldEditor = ({
                             Copy value to new records
                           </Typography>
                           <Tooltip title="When enabled, the value entered in this field will be automatically copied when creating new records.">
-                            <InfoOutlinedIcon
+                            <InfoIcon
                               sx={designerInfoIconSx}
                             />
                           </Tooltip>
@@ -571,7 +552,7 @@ export const BaseFieldEditor = ({
                           onChange={e =>
                             updateProperty('annotation', e.target.checked)
                           }
-                          sx={checkboxSx}
+                          sx={designerCheckboxSx}
                           size="small"
                         />
                       }
@@ -579,7 +560,7 @@ export const BaseFieldEditor = ({
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
                           <Typography variant="body2">Annotation</Typography>
                           <Tooltip title="Allows users to add a note alongside the field value when filling out the form.">
-                            <InfoOutlinedIcon
+                            <InfoIcon
                               sx={designerInfoIconSx}
                             />
                           </Tooltip>
@@ -597,7 +578,7 @@ export const BaseFieldEditor = ({
                           onChange={e =>
                             updateProperty('uncertainty', e.target.checked)
                           }
-                          sx={checkboxSx}
+                          sx={designerCheckboxSx}
                           size="small"
                         />
                       }
@@ -605,7 +586,7 @@ export const BaseFieldEditor = ({
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
                           <Typography variant="body2">Uncertainty</Typography>
                           <Tooltip title="Allows users to indicate confidence in the entered value.">
-                            <InfoOutlinedIcon sx={designerInfoIconSx} />
+                            <InfoIcon sx={designerInfoIconSx} />
                           </Tooltip>
                         </Box>
                       }
@@ -683,7 +664,7 @@ export const BaseFieldEditor = ({
                             });
                             dispatch(fieldUpdated({fieldName, newField}));
                           }}
-                          sx={checkboxSx}
+                          sx={designerCheckboxSx}
                           size="small"
                         />
                       }
@@ -693,9 +674,7 @@ export const BaseFieldEditor = ({
                             Enable voice-to-text input for this field
                           </Typography>
                           <Tooltip title="When enabled, users can tap a microphone button to dictate text using their device's speech recognition. This is useful for hands-free data entry in the field.">
-                            <HelpOutlineIcon
-                              sx={{fontSize: '1.05rem', color: 'text.disabled'}}
-                            />
+                            <InfoIcon sx={designerInfoIconSx} />
                           </Tooltip>
                         </Box>
                       }
@@ -713,7 +692,7 @@ export const BaseFieldEditor = ({
                                 });
                                 dispatch(fieldUpdated({fieldName, newField}));
                               }}
-                              sx={checkboxSx}
+                              sx={designerCheckboxSx}
                               size="small"
                             />
                           }
@@ -725,12 +704,7 @@ export const BaseFieldEditor = ({
                                 Append text to the end of input instead of replacing
                               </Typography>
                               <Tooltip title="When enabled, each speech recognition result will be added to the end of any existing text in the field. When disabled, new speech input replaces the current value.">
-                                <HelpOutlineIcon
-                                  sx={{
-                                    fontSize: '1.05rem',
-                                    color: 'text.disabled',
-                                  }}
-                                />
+                                <InfoIcon sx={designerInfoIconSx} />
                               </Tooltip>
                             </Box>
                           }
@@ -756,14 +730,14 @@ export const BaseFieldEditor = ({
                             onChange={e =>
                               updateProperty('protection', e.target.checked)
                             }
-                            sx={checkboxSx}
+                            sx={designerCheckboxSx}
                             size="small"
                           />
                         }
                         label="Protected Field"
                       />
                       <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
-                        <InfoOutlinedIcon
+                        <InfoIcon
                           sx={designerInfoIconSx}
                         />
                       </Tooltip>
@@ -778,7 +752,7 @@ export const BaseFieldEditor = ({
                             onChange={e =>
                               updateProperty('allowHiding', e.target.checked)
                             }
-                            sx={checkboxSx}
+                            sx={designerCheckboxSx}
                             size="small"
                           />
                         }
