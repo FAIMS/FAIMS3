@@ -819,13 +819,13 @@ export const FormEditor = ({
                                   : 'rgba(17,24,39,0.045)')
                             : 'transparent',
                           transition:
-                            'background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+                            'background-color 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease',
                           '& .section-step-dot': {
                             transition:
-                              'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
+                              'transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease',
                             boxShadow: isActive
-                              ? '0 3px 10px rgba(0,0,0,0.24)'
-                              : '0 1px 3px rgba(0,0,0,0.12)',
+                              ? '0 2px 8px rgba(0,0,0,0.21)'
+                              : '0 1px 2px rgba(0,0,0,0.11)',
                           },
                           '&:hover': {
                             backgroundColor: isActive
@@ -837,8 +837,8 @@ export const FormEditor = ({
                             borderColor: isActive ? 'divider' : 'rgba(17,24,39,0.08)',
                             boxShadow: '0 4px 10px rgba(15,23,32,0.10)',
                             '& .section-step-dot': {
-                              transform: 'translateY(-1px) scale(1.03)',
-                              boxShadow: '0 5px 14px rgba(15,23,32,0.24)',
+                              transform: 'translateY(-1px) scale(1.02)',
+                              boxShadow: '0 4px 10px rgba(15,23,32,0.2)',
                             },
                           },
                           '&:active': {
@@ -860,14 +860,14 @@ export const FormEditor = ({
                             component="span"
                             className="section-step-dot"
                             sx={{
-                              width: 32,
-                              height: 32,
+                              width: 30,
+                              height: 30,
                               borderRadius: '50%',
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               fontWeight: 700,
-                              fontSize: '0.92rem',
+                              fontSize: '0.88rem',
                               bgcolor: isActive ? 'primary.main' : 'grey.400',
                               color: 'common.white',
                               flexShrink: 0,
