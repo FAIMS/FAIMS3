@@ -1,5 +1,5 @@
-// FAIMS default theme.
-export const THEME: string = 'default';
+// DASS default theme.
+export const THEME: string = 'dass';
 
 export const getThemeClass = () => {
   switch (THEME) {
