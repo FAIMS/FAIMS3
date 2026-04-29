@@ -155,20 +155,20 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         },
         styleOverrides: {
           tooltip: {
-            backgroundColor: '#009BFF',
-            color: '#FFFFFF',
+            backgroundColor: '#EAF6FF',
+            color: '#17415C',
             fontSize: '0.82rem',
-            fontWeight: 500,
+            fontWeight: 600,
             lineHeight: 1.35,
-            border: '1px solid #7FCCFF',
-            boxShadow: '0 4px 12px rgba(0, 123, 204, 0.22)',
+            border: '1px solid #9DD5FF',
+            boxShadow: '0 4px 12px rgba(58, 133, 192, 0.18)',
             maxWidth: 340,
             padding: '7px 10px',
             borderRadius: 8,
           },
           arrow: {
-            color: '#009BFF',
-            '&::before': {border: '1px solid #7FCCFF'},
+            color: '#EAF6FF',
+            '&::before': {border: '1px solid #9DD5FF'},
           },
         },
       },
@@ -176,13 +176,11 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         styleOverrides: {
           root: {
             color: colors.grey[500],
-            '& .MuiSvgIcon-root': {
-              borderRadius: 6,
-              backgroundColor: alpha(tokens.primaryMain, 0.1),
-              boxShadow: `inset 0 0 0 1px ${alpha(colors.blueGrey[700], 0.25)}`,
-            },
             '&.Mui-checked': {
               color: tokens.successMain,
+            },
+            '&.Mui-disabled': {
+              color: colors.grey[400],
             },
           },
         },

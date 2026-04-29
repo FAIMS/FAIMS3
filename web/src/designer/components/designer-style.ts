@@ -17,7 +17,7 @@ export const designerInfoIconSx: SxProps<Theme> = {
   // Shared info-marker style used across Designer.
   // Use the icon's native circular glyph (no extra wrapper), to avoid double-ring visuals.
   color: '#1FB1FF',
-  fontSize: '2rem',
+  fontSize: '1.7rem',
   ml: 0.28,
   verticalAlign: 'middle',
   filter: 'drop-shadow(0 4px 8px rgba(31, 177, 255, 0.25))',
@@ -28,17 +28,12 @@ export const designerInfoIconSx: SxProps<Theme> = {
  * Intentionally simple: light primary tint, grey by default, green when checked.
  */
 export const designerCheckboxSx: SxProps<Theme> = {
-  '& .MuiSvgIcon-root': {
-    borderRadius: 0.75,
-    backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.1),
-    boxShadow: (theme: Theme) =>
-      `inset 0 0 0 1px ${alpha(theme.palette.text.secondary, 0.28)}`,
-  },
-  '&:not(.Mui-checked)': {
-    color: 'grey.500',
-  },
+  color: 'grey.500',
   '&.Mui-checked': {
     color: 'success.main',
+  },
+  '&.Mui-disabled': {
+    color: 'grey.400',
   },
 };
 
