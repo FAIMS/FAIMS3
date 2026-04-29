@@ -15,16 +15,12 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 
 export const designerInfoIconSx: SxProps<Theme> = {
   // Shared info-marker style used across Designer.
-  // Keep this as a simple filled circle so every tooltip trigger looks consistent.
-  color: '#FFFFFF',
-  backgroundColor: '#1FB1FF',
-  borderRadius: '50%',
-  p: 0.3,
-  fontSize: '1.1rem',
+  // Use the icon's native circular glyph (no extra wrapper), to avoid double-ring visuals.
+  color: '#1FB1FF',
+  fontSize: '2rem',
   ml: 0.28,
-  display: 'inline-flex',
   verticalAlign: 'middle',
-  boxShadow: '0 4px 10px rgba(31, 177, 255, 0.26)',
+  filter: 'drop-shadow(0 4px 8px rgba(31, 177, 255, 0.25))',
 };
 
 /**

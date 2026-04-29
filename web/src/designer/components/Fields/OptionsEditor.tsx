@@ -881,7 +881,6 @@ export const OptionsEditor = ({
                       <InfoIcon
                         sx={{
                           ...(designerInfoIconSx as Record<string, unknown>),
-                          fontSize: '1.2rem',
                         }}
                       />
                     </Tooltip>
@@ -931,7 +930,6 @@ export const OptionsEditor = ({
                 <InfoIcon
                   sx={{
                     ...(designerInfoIconSx as Record<string, unknown>),
-                    fontSize: '1.2rem',
                   }}
                 />
               </Tooltip>
@@ -994,7 +992,6 @@ export const OptionsEditor = ({
                             <InfoIcon
                               sx={{
                                 ...(designerInfoIconSx as Record<string, unknown>),
-                                fontSize: '1.2rem',
                               }}
                             />
                           </Tooltip>

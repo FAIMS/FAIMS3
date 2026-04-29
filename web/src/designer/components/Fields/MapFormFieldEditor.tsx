@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import InfoIcon from '@mui/icons-material/Info';
 import {
   Card,
   Checkbox,
@@ -28,6 +28,7 @@ import {FieldType} from '../../state/initial';
 import DebouncedTextField from '../debounced-text-field';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {designerInfoIconSx} from '../designer-style';
 
 type FieldState = {
   featureType: string;
@@ -153,10 +154,7 @@ export const MapFormFieldEditor = ({fieldName}: {fieldName: string}) => {
                     >
                       Display set to current point button
                       <Tooltip title="Enabling this option allows users to directly set their current location as the selected point.">
-                        <HelpOutlineIcon
-                          fontSize="small"
-                          sx={{color: 'info.main', cursor: 'help'}}
-                        />
+                        <InfoIcon sx={designerInfoIconSx} />
                       </Tooltip>
                     </span>
                   }

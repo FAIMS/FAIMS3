@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import InfoIcon from '@mui/icons-material/Info';
 import {
   Card,
   Checkbox,
@@ -25,6 +25,7 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {designerInfoIconSx} from '../designer-style';
 
 type AddressFieldConfig = {
   enableAutoSuggestion: boolean;
@@ -78,10 +79,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
                       Enable online address autosuggestion
                     </Typography>
                     <Tooltip title="When enabled and the app injects an autosuggest provider (e.g. Mapbox), the field will show a search UI. When disabled, the field always uses manual entry.">
-                      <HelpOutlineIcon
-                        fontSize="small"
-                        sx={{color: 'info.main', cursor: 'help'}}
-                      />
+                      <InfoIcon sx={designerInfoIconSx} />
                     </Tooltip>
                   </span>
                 }
@@ -108,10 +106,7 @@ export const AddressFieldEditor = ({fieldName}: {fieldName: string}) => {
                       unavailable
                     </Typography>
                     <Tooltip title="When offline or autosuggest is disabled/unavailable, allow users to enter the address by parts (street, suburb, state, etc.) instead of a single free-text address string.">
-                      <HelpOutlineIcon
-                        fontSize="small"
-                        sx={{color: 'info.main', cursor: 'help'}}
-                      />
+                      <InfoIcon sx={designerInfoIconSx} />
                     </Tooltip>
                   </span>
                 }

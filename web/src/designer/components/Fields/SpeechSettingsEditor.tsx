@@ -1,4 +1,4 @@
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import InfoIcon from '@mui/icons-material/Info';
 import MicIcon from '@mui/icons-material/Mic';
 import {
   Card,
@@ -12,6 +12,7 @@ import {
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {designerInfoIconSx} from '../designer-style';
 
 /**
  * Speech settings stored in component-parameters
@@ -124,10 +125,7 @@ export const SpeechSettingsEditor = ({
                 <span style={{display: 'flex', alignItems: 'center', gap: 4}}>
                   Enable voice-to-text input for this field
                   <Tooltip title="When enabled, users can tap a microphone button to dictate text using their device's speech recognition. This is useful for hands-free data entry in the field.">
-                    <HelpOutlineIcon
-                      fontSize="small"
-                      sx={{color: 'info.main', cursor: 'help'}}
-                    />
+                    <InfoIcon sx={designerInfoIconSx} />
                   </Tooltip>
                 </span>
               }
@@ -149,10 +147,7 @@ export const SpeechSettingsEditor = ({
                   <span style={{display: 'flex', alignItems: 'center', gap: 4}}>
                     Append text to the end of input instead of replacing
                     <Tooltip title="When enabled, each speech recognition result will be added to the end of any existing text in the field. When disabled, new speech input will replace the current field value entirely.">
-                      <HelpOutlineIcon
-                        fontSize="small"
-                        sx={{color: 'info.main', cursor: 'help'}}
-                      />
+                      <InfoIcon sx={designerInfoIconSx} />
                     </Tooltip>
                   </span>
                 }
