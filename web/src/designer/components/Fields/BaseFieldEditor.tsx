@@ -35,7 +35,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {alpha} from '@mui/material/styles';
+import {alpha, Theme} from '@mui/material/styles';
 import {debounce} from 'lodash';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {VITE_TEMPLATE_PROTECTIONS} from '../../buildconfig';
@@ -97,7 +97,21 @@ type StateType = {
 
 /** sx applied to every Checkbox — green tick when checked, grey when unchecked. */
 const checkboxSx = {
-  '&.Mui-checked': {color: 'success.main'},
+  '& .MuiSvgIcon-root': {
+    borderRadius: 0.75,
+    backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.12),
+    boxShadow: (theme: Theme) =>
+      `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.32)}`,
+  },
+  '&.Mui-checked': {
+    color: 'success.main',
+    '& .MuiSvgIcon-root': {
+      backgroundColor: (theme: Theme) =>
+        alpha(theme.palette.primary.main, 0.2),
+      boxShadow: (theme: Theme) =>
+        `inset 0 0 0 1px ${alpha(theme.palette.primary.main, 0.28)}`,
+    },
+  },
 };
 
 /**
@@ -513,9 +527,7 @@ export const BaseFieldEditor = ({
                             Display in child records
                           </Typography>
                           <Tooltip title="When enabled, this field's value will be visible in child records linked to this record.">
-                            <InfoOutlinedIcon
-                              sx={{fontSize: '0.95rem', color: 'info.main'}}
-                            />
+                            <InfoOutlinedIcon sx={designerInfoIconSx} />
                           </Tooltip>
                         </Box>
                       }
