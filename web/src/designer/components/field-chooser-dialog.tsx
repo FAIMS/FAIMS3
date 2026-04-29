@@ -343,33 +343,34 @@ export default function FieldChooserDialog({
                           >
                             {opt.label}
                           </Typography>
-                          {opt.deprecated && (
+                        </Stack>
+                        {opt.deprecated && (
+                          <Box sx={{display: 'flex', justifyContent: 'flex-end', mt: 0.85}}>
                             <Chip
                               size="small"
                               icon={<WarningAmberRoundedIcon />}
                               label="Deprecated"
                               sx={{
-                                ml: 'auto',
                                 height: 22,
                                 fontWeight: 700,
                                 borderRadius: '4px 10px 10px 4px',
                                 bgcolor: theme.designerMeta.isDass
-                                  ? 'rgba(0,0,0,0.72)'
+                                  ? 'rgba(30,30,30,0.9)'
                                   : 'rgba(255,147,39,0.16)',
                                 color: theme.designerMeta.isDass
-                                  ? '#FFCC87'
+                                  ? '#FFD299'
                                   : '#B95700',
                                 border: '1px solid',
                                 borderColor: theme.designerMeta.isDass
-                                  ? 'rgba(255,204,135,0.35)'
+                                  ? 'rgba(255,210,153,0.36)'
                                   : 'rgba(255,147,39,0.42)',
                                 '& .MuiChip-icon': {
                                   color: 'inherit',
                                 },
                               }}
                             />
-                          )}
-                        </Stack>
+                          </Box>
+                        )}
                       </CardContent>
                     </CardActionArea>
                   </Card>
