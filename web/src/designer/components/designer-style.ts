@@ -14,15 +14,36 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 };
 
 export const designerInfoIconSx: SxProps<Theme> = {
+  // Shared info-marker style used across Designer.
+  // Keep this as a simple filled circle so every tooltip trigger looks consistent.
   color: '#FFFFFF',
-  backgroundColor: '#5E95E8',
+  backgroundColor: '#1FB1FF',
   borderRadius: '50%',
-  p: 0.44,
-  fontSize: '1.45rem',
-  ml: 0.35,
+  p: 0.3,
+  fontSize: '1.1rem',
+  ml: 0.28,
   display: 'inline-flex',
   verticalAlign: 'middle',
-  boxShadow: '0 4px 10px rgba(36, 89, 170, 0.28)',
+  boxShadow: '0 4px 10px rgba(31, 177, 255, 0.26)',
+};
+
+/**
+ * Shared checkbox style for all Designer checkboxes.
+ * Intentionally simple: light primary tint, grey by default, green when checked.
+ */
+export const designerCheckboxSx: SxProps<Theme> = {
+  '& .MuiSvgIcon-root': {
+    borderRadius: 0.75,
+    backgroundColor: (theme: Theme) => alpha(theme.palette.primary.main, 0.1),
+    boxShadow: (theme: Theme) =>
+      `inset 0 0 0 1px ${alpha(theme.palette.text.secondary, 0.28)}`,
+  },
+  '&:not(.Mui-checked)': {
+    color: 'grey.500',
+  },
+  '&.Mui-checked': {
+    color: 'success.main',
+  },
 };
 
 export const designerDividerSx: SxProps<Theme> = {

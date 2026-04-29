@@ -9,7 +9,7 @@
  * @param {string} viewSetId - ID of the viewset being configured
  */
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Autocomplete,
@@ -77,10 +77,9 @@ const SettingSection = ({
         {title}
       </Typography>
       <Tooltip title={tooltipText}>
-        <InfoOutlinedIcon
+        <InfoIcon
           sx={{
             ...(designerInfoIconSx as Record<string, unknown>),
-            fontSize: '1.5rem',
           }}
         />
       </Tooltip>
