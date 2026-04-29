@@ -38,7 +38,7 @@ import AddIcon from '@mui/icons-material/Add';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 
 import {TabContext} from '@mui/lab';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {
@@ -57,6 +57,7 @@ import {
 } from 'react-router-dom';
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 import type {PreviewOutletContext} from './notebook-editor';
+import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 
 /** Main designer surface: form tabs, undo/redo, snackbars, and `FormEditor` routes. */
 export const DesignPanel = () => {
@@ -91,10 +92,31 @@ export const DesignPanel = () => {
   const theme = useTheme();
   const addFormDialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const compactAddTab = useMediaQuery(theme.breakpoints.down('md'));
+  const formTabsRef = useRef<HTMLDivElement | null>(null);
+  const [hasFormTabOverflow, setHasFormTabOverflow] = useState(false);
 
   useEffect(() => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
   }, [viewSets]);
+
+  useEffect(() => {
+    const el = formTabsRef.current;
+    if (!el) return;
+    const scroller = el.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (!scroller) return;
+
+    const updateOverflow = () => {
+      setHasFormTabOverflow(scroller.scrollWidth > scroller.clientWidth + 4);
+    };
+
+    updateOverflow();
+    scroller.addEventListener('scroll', updateOverflow, {passive: true});
+    window.addEventListener('resize', updateOverflow);
+    return () => {
+      scroller.removeEventListener('scroll', updateOverflow);
+      window.removeEventListener('resize', updateOverflow);
+    };
+  }, [visibleTypes.length, untickedForms.length, compactAddTab]);
 
   const maxKeys = Object.keys(viewSets).length;
   const isDass = theme.designerMeta?.isDass ?? false;
@@ -338,6 +360,7 @@ export const DesignPanel = () => {
 
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
           <Tabs
+            ref={formTabsRef}
             value={tabIndex}
             onChange={handleTabChange}
             aria-label="form tabs"
@@ -421,6 +444,23 @@ export const DesignPanel = () => {
               }}
             />
           </Tabs>
+          {hasFormTabOverflow && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                color: 'text.secondary',
+                px: 0.5,
+                pb: 0.5,
+              }}
+            >
+              <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
+              <Typography variant="caption" sx={{fontWeight: 600}}>
+                Scroll left or right to see more forms
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         <Routes>
