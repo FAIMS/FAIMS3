@@ -1,4 +1,5 @@
-export const THEME = import.meta.env.VITE_THEME || 'default';
+// FAIMS default theme.
+export const THEME: string = 'default';
 
 export const getThemeClass = () => {
   switch (THEME) {

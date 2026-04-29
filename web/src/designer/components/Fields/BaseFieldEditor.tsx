@@ -57,6 +57,7 @@ import {
   updateSpeechSettings,
 } from './SpeechSettingsEditor';
 import {slugify} from '../../domain/notebook/ids';
+import {designerInfoIconSx} from '../designer-style';
 
 /** `component-namespace::component-name` keys eligible for speech settings in the inspector. */
 export const SPEECH_ENABLED_FIELDS = [
@@ -541,7 +542,7 @@ export const BaseFieldEditor = ({
                           </Typography>
                           <Tooltip title="When enabled, the value entered in this field will be automatically copied when creating new records.">
                             <InfoOutlinedIcon
-                              sx={{fontSize: '0.95rem', color: 'info.main'}}
+                              sx={designerInfoIconSx}
                             />
                           </Tooltip>
                         </Box>
@@ -567,7 +568,7 @@ export const BaseFieldEditor = ({
                           <Typography variant="body2">Annotation</Typography>
                           <Tooltip title="Allows users to add a note alongside the field value when filling out the form.">
                             <InfoOutlinedIcon
-                              sx={{fontSize: '0.95rem', color: 'info.main'}}
+                              sx={designerInfoIconSx}
                             />
                           </Tooltip>
                         </Box>
@@ -588,7 +589,14 @@ export const BaseFieldEditor = ({
                           size="small"
                         />
                       }
-                      label={<Typography variant="body2">Uncertainty</Typography>}
+                      label={
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.4}}>
+                          <Typography variant="body2">Uncertainty</Typography>
+                          <Tooltip title="Allows users to indicate confidence in the entered value.">
+                            <InfoOutlinedIcon sx={designerInfoIconSx} />
+                          </Tooltip>
+                        </Box>
+                      }
                     />
                   </Grid>
                 </Grid>
@@ -674,7 +682,7 @@ export const BaseFieldEditor = ({
                           </Typography>
                           <Tooltip title="When enabled, users can tap a microphone button to dictate text using their device's speech recognition. This is useful for hands-free data entry in the field.">
                             <HelpOutlineIcon
-                              sx={{fontSize: '0.95rem', color: 'info.main'}}
+                              sx={{fontSize: '1.05rem', color: 'text.disabled'}}
                             />
                           </Tooltip>
                         </Box>
@@ -707,8 +715,8 @@ export const BaseFieldEditor = ({
                               <Tooltip title="When enabled, each speech recognition result will be added to the end of any existing text in the field. When disabled, new speech input replaces the current value.">
                                 <HelpOutlineIcon
                                   sx={{
-                                    fontSize: '0.95rem',
-                                    color: 'info.main',
+                                    fontSize: '1.05rem',
+                                    color: 'text.disabled',
                                   }}
                                 />
                               </Tooltip>
@@ -744,8 +752,7 @@ export const BaseFieldEditor = ({
                       />
                       <Tooltip title="Enable protection to prevent users of this template (or derived templates) from editing or deleting this field.">
                         <InfoOutlinedIcon
-                          fontSize="small"
-                          sx={{ml: 0, color: 'info.main'}}
+                          sx={designerInfoIconSx}
                         />
                       </Tooltip>
                     </Box>

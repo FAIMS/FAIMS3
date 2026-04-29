@@ -14,9 +14,14 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 };
 
 export const designerInfoIconSx: SxProps<Theme> = {
-  color: 'info.main',
-  fontSize: '1.35rem',
-  ml: 0.1,
+  color: '#FFFFFF',
+  backgroundColor: '#6499E8',
+  borderRadius: '50%',
+  p: 0.32,
+  fontSize: '1.1rem',
+  ml: 0.2,
+  boxShadow: '0 1px 2px rgba(10, 53, 111, 0.25)',
+  verticalAlign: 'middle',
 };
 
 export const designerDividerSx: SxProps<Theme> = {
