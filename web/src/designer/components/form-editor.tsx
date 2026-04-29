@@ -1000,6 +1000,9 @@ export const FormEditor = ({
             minWidth: {xl: 340},
             maxWidth: {xl: 560},
             flexShrink: 0,
+            alignSelf: 'flex-start',
+            position: {xl: 'sticky'},
+            top: {xl: 12},
           }}
         >
           <Box
@@ -1011,7 +1014,7 @@ export const FormEditor = ({
               p: {xs: 1, sm: 1.25},
               backgroundColor: 'background.paper',
               overflow: 'auto',
-              maxHeight: {xl: 'calc(100vh - 210px)'},
+              maxHeight: {xl: 'calc(100vh - 150px)'},
             }}
           >
             <ThemeProvider theme={defaultTheme}>
