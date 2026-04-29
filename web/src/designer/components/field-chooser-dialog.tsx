@@ -27,6 +27,7 @@ import {
   Tabs,
   Tab,
   TextField,
+  InputAdornment,
   Grid,
   Card,
   CardActionArea,
@@ -225,9 +226,11 @@ export default function FieldChooserDialog({
           size="small"
           InputProps={{
             startAdornment: (
-              <SearchRoundedIcon
-                sx={{mr: 1, color: 'text.disabled', fontSize: '1.1rem'}}
-              />
+              <InputAdornment position="start">
+                <SearchRoundedIcon
+                  sx={{color: 'text.disabled', fontSize: '1.1rem'}}
+                />
+              </InputAdornment>
             ),
           }}
           sx={{
