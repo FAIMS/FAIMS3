@@ -16,7 +16,7 @@
  * @file Categorized grid of field templates for the add-field flow.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -39,6 +39,7 @@ import {
 } from '@mui/material';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 
 import {getFieldNames, getFieldSpec} from '../fields';
 import {
@@ -77,6 +78,8 @@ export default function FieldChooserDialog({
   const [tooltipOpenKey, setTooltipOpenKey] = useState<string | false>(false);
   const [category, setCategory] = useState<CategoryKey>(CategoryKey.ALL);
   const [search, setSearch] = useState('');
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const [showTabsScrollHint, setShowTabsScrollHint] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -122,6 +125,21 @@ export default function FieldChooserDialog({
       });
   }, [allOptions, category, search]);
 
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const scroller = el.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (!scroller) return;
+
+    const evaluate = () => {
+      setShowTabsScrollHint(scroller.scrollWidth > scroller.clientWidth + 4);
+    };
+
+    evaluate();
+    window.addEventListener('resize', evaluate);
+    return () => window.removeEventListener('resize', evaluate);
+  }, [open, categoryTabs.length]);
+
   return (
     <Dialog
       open={open}
@@ -150,6 +168,7 @@ export default function FieldChooserDialog({
         }}
       >
         <Tabs
+          ref={tabsRef}
           value={category}
           onChange={(_, v: CategoryKey) => setCategory(v)}
           variant="scrollable"
@@ -164,12 +183,18 @@ export default function FieldChooserDialog({
             '& .MuiTab-root': {
               borderRadius: 999,
               minHeight: 36,
+              minWidth: 'fit-content',
+              px: 1.5,
               textTransform: 'none',
               fontWeight: 600,
+              color: 'text.secondary',
+              '& .MuiSvgIcon-root': {color: 'inherit'},
             },
-            '& .Mui-selected': {
-              bgcolor: theme.palette.primary.main,
-              color: theme.palette.primary.contrastText,
+            '& .MuiTab-root.Mui-selected': {
+              bgcolor: theme.designerMeta.isDass
+                ? theme.palette.common.black
+                : theme.palette.primary.main,
+              color: theme.palette.common.white,
             },
           }}
         >
@@ -183,12 +208,28 @@ export default function FieldChooserDialog({
             />
           ))}
         </Tabs>
+        {showTabsScrollHint && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{display: 'block', mb: 1}}
+          >
+            Scroll left/right to view all field categories.
+          </Typography>
+        )}
 
         <TextField
           placeholder="Search field types"
           fullWidth
           variant="outlined"
           size="small"
+          InputProps={{
+            startAdornment: (
+              <SearchRoundedIcon
+                sx={{mr: 1, color: 'text.disabled', fontSize: '1.1rem'}}
+              />
+            ),
+          }}
           sx={{
             mb: 2,
             flexShrink: 0,
@@ -249,13 +290,9 @@ export default function FieldChooserDialog({
                     variant="outlined"
                     sx={{
                       minHeight: CARD_HEIGHT,
-                      borderWidth: 2,
-                      borderColor: opt.deprecated
-                        ? theme.palette.warning.main
-                        : theme.palette.divider,
-                      bgcolor: opt.deprecated
-                        ? theme.palette.warning.light
-                        : theme.palette.background.paper,
+                      borderWidth: 1.5,
+                      borderColor: theme.palette.divider,
+                      bgcolor: theme.palette.background.paper,
                       boxShadow: theme.shadows[1],
                       transition: theme.transitions.create(
                         ['border-color', 'box-shadow', 'transform'],
@@ -264,9 +301,7 @@ export default function FieldChooserDialog({
                       display: 'flex',
                       flexDirection: 'column',
                       '&:hover': {
-                        borderColor: opt.deprecated
-                          ? theme.palette.warning.dark
-                          : theme.palette.primary.main,
+                        borderColor: theme.palette.primary.main,
                         boxShadow: theme.shadows[4],
                         transform: 'translateY(-1px)',
                       },
@@ -308,10 +343,27 @@ export default function FieldChooserDialog({
                           {opt.deprecated && (
                             <Chip
                               size="small"
-                              color="warning"
                               icon={<WarningAmberRoundedIcon />}
                               label="Deprecated"
-                              sx={{ml: 'auto', height: 22}}
+                              sx={{
+                                ml: 'auto',
+                                height: 22,
+                                fontWeight: 700,
+                                borderRadius: '4px 10px 10px 4px',
+                                bgcolor: theme.designerMeta.isDass
+                                  ? 'rgba(0,0,0,0.72)'
+                                  : 'rgba(255,147,39,0.16)',
+                                color: theme.designerMeta.isDass
+                                  ? '#FFCC87'
+                                  : '#B95700',
+                                border: '1px solid',
+                                borderColor: theme.designerMeta.isDass
+                                  ? 'rgba(255,204,135,0.35)'
+                                  : 'rgba(255,147,39,0.42)',
+                                '& .MuiChip-icon': {
+                                  color: 'inherit',
+                                },
+                              }}
                             />
                           )}
                         </Stack>
