@@ -56,13 +56,14 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 import {useMemo, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
-import {designerInfoIconSx} from '../designer-style';
+import {designerCheckboxSx, designerInfoIconSx} from '../designer-style';
 import {
   findOptionReferences,
   updateConditionReferences,
@@ -143,6 +144,7 @@ const SortableOtherOptionRow = ({
   onMoveDown,
   onRemove,
 }: OtherOptionRowProps) => {
+  const theme = useTheme();
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
     useSortable({id});
 
@@ -198,9 +200,9 @@ const SortableOtherOptionRow = ({
               size="small"
               disabled={otherOptionPosition === 0}
               onClick={onMoveUp}
-              sx={{p: 0.5}}
+              sx={{p: 0.5, color: 'text.secondary'}}
             >
-              <ArrowDropUpRoundedIcon fontSize="large" />
+              <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
           </span>
         </Tooltip>
@@ -210,21 +212,25 @@ const SortableOtherOptionRow = ({
               size="small"
               disabled={otherOptionPosition === totalOptions}
               onClick={onMoveDown}
-              sx={{p: 0.5}}
+              sx={{p: 0.5, color: 'text.secondary'}}
             >
-              <ArrowDropDownRoundedIcon fontSize="large" />
+              <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
           </span>
         </Tooltip>
         <Tooltip title="Other option cannot be edited">
           <span>
-            <IconButton size="small" disabled sx={{p: 0.5}}>
+            <IconButton
+              size="small"
+              disabled
+              sx={{p: 0.5, color: theme.palette.text.disabled}}
+            >
               <EditIcon fontSize="small" />
             </IconButton>
           </span>
         </Tooltip>
         <Tooltip title="Remove 'Other' option">
-          <IconButton size="small" onClick={onRemove} sx={{p: 0.5}}>
+          <IconButton size="small" onClick={onRemove} sx={{p: 0.5, color: 'error.main'}}>
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -297,6 +303,7 @@ const SortableItem = ({
             checked={exclusiveOptions.includes(option.value)}
             onChange={() => onExclusiveToggle(option.value)}
             size="small"
+            sx={designerCheckboxSx}
           />
         </TableCell>
       )}
@@ -309,9 +316,9 @@ const SortableItem = ({
               size="small"
               disabled={index === 0}
               onClick={() => onMove(index, 'up')}
-              sx={{p: 0.5}}
+              sx={{p: 0.5, color: 'text.secondary'}}
             >
-              <ArrowDropUpRoundedIcon fontSize="large" />
+              <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
           </span>
         </Tooltip>
@@ -321,20 +328,24 @@ const SortableItem = ({
               size="small"
               disabled={index === totalItems - 1}
               onClick={() => onMove(index, 'down')}
-              sx={{p: 0.5}}
+              sx={{p: 0.5, color: 'text.secondary'}}
             >
-              <ArrowDropDownRoundedIcon fontSize="large" />
+              <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
           </span>
         </Tooltip>
         <IconButton
           size="small"
           onClick={() => onEdit(option.label, index)}
-          sx={{p: 0.5}}
+          sx={{p: 0.5, color: 'success.main'}}
         >
           <EditIcon fontSize="small" />
         </IconButton>
-        <IconButton size="small" onClick={() => onRemove(option)} sx={{p: 0.5}}>
+        <IconButton
+          size="small"
+          onClick={() => onRemove(option)}
+          sx={{p: 0.5, color: 'error.main'}}
+        >
           <DeleteIcon fontSize="small" />
         </IconButton>
       </TableCell>
@@ -361,6 +372,7 @@ export const OptionsEditor = ({
   // should we show the exclusive options controls?
   showExclusiveOptions?: boolean;
 }) => {
+  const theme = useTheme();
   // Get field state from Redux store
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -859,6 +871,7 @@ export const OptionsEditor = ({
                     checked={isDropdownMode}
                     onChange={toggleDropdownMode}
                     size="small"
+                    sx={designerCheckboxSx}
                   />
                 }
                 label={
@@ -890,9 +903,25 @@ export const OptionsEditor = ({
                   textTransform: 'none',
                   fontWeight: 700,
                   borderWidth: 1.5,
+                  color: theme.designerMeta.isDass
+                    ? 'common.white'
+                    : 'primary.main',
+                  borderColor: theme.designerMeta.isDass
+                    ? 'common.black'
+                    : 'primary.main',
+                  backgroundColor: theme.designerMeta.isDass
+                    ? 'common.black'
+                    : 'transparent',
                   '&:hover': {
                     borderWidth: 1.5,
-                    backgroundColor: 'action.hover',
+                    backgroundColor: theme.designerMeta.isDass
+                      ? 'rgba(0,0,0,0.88)'
+                      : 'action.hover',
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: 'action.disabledBackground',
+                    color: 'text.disabled',
+                    borderColor: 'action.disabledBackground',
                   },
                 }}
               >
@@ -936,7 +965,7 @@ export const OptionsEditor = ({
                     <TableCell
                       sx={{
                         backgroundColor: '#fafafa',
-                        fontWeight: 500,
+                        fontWeight: 700,
                         py: 1.5,
                       }}
                     >
@@ -948,7 +977,7 @@ export const OptionsEditor = ({
                         sx={{
                           width: 140,
                           backgroundColor: '#fafafa',
-                          fontWeight: 500,
+                          fontWeight: 700,
                           py: 1.5,
                         }}
                       >
@@ -977,7 +1006,7 @@ export const OptionsEditor = ({
                       sx={{
                         width: 180,
                         backgroundColor: '#fafafa',
-                        fontWeight: 500,
+                        fontWeight: 700,
                         py: 1.5,
                       }}
                     >
