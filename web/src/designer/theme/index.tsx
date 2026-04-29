@@ -155,20 +155,35 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         },
         styleOverrides: {
           tooltip: {
-            backgroundColor: '#57A8FF',
+            backgroundColor: '#009BFF',
             color: '#FFFFFF',
-            fontSize: '0.88rem',
-            fontWeight: 600,
-            lineHeight: 1.4,
-            border: '1px solid #8BC4FF',
-            boxShadow: '0 4px 12px rgba(22, 86, 153, 0.28)',
+            fontSize: '0.82rem',
+            fontWeight: 500,
+            lineHeight: 1.35,
+            border: '1px solid #7FCCFF',
+            boxShadow: '0 4px 12px rgba(0, 123, 204, 0.22)',
             maxWidth: 340,
-            padding: '8px 11px',
+            padding: '7px 10px',
             borderRadius: 8,
           },
           arrow: {
-            color: '#57A8FF',
-            '&::before': {border: '1px solid #8BC4FF'},
+            color: '#009BFF',
+            '&::before': {border: '1px solid #7FCCFF'},
+          },
+        },
+      },
+      MuiCheckbox: {
+        styleOverrides: {
+          root: {
+            color: colors.grey[500],
+            '& .MuiSvgIcon-root': {
+              borderRadius: 6,
+              backgroundColor: alpha(tokens.primaryMain, 0.1),
+              boxShadow: `inset 0 0 0 1px ${alpha(colors.blueGrey[700], 0.25)}`,
+            },
+            '&.Mui-checked': {
+              color: tokens.successMain,
+            },
           },
         },
       },
@@ -194,6 +209,11 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
             textTransform: 'none',
             fontWeight: 700,
             letterSpacing: '0.01em',
+            '&.Mui-disabled': {
+              backgroundColor: alpha(colors.blueGrey[200], 0.42),
+              color: colors.blueGrey[600],
+              borderColor: alpha(colors.blueGrey[600], 0.2),
+            },
           },
           contained: {
             boxShadow: '0 2px 8px rgba(15, 23, 32, 0.18)',
