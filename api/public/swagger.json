@@ -95,8 +95,8 @@
     },
     "/directory/": {
       "get": {
-        "summary": "List surveys visible to the caller (directory)",
-        "description": "Returns project (survey) documents from the directory that the authenticated user may read metadata for (`LIST_PROJECTS`). By default, surveys with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them.",
+        "summary": "List notebooks visible to the caller (directory)",
+        "description": "Returns project (notebook) documents from the directory that the authenticated user may read metadata for (`LIST_PROJECTS`). By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include them.",
         "tags": ["Utilities"],
         "produces": ["application/json"],
         "security": [
@@ -113,7 +113,7 @@
               "type": "string",
               "enum": ["true", "false"]
             },
-            "description": "When `true`, includes archived surveys. Default excludes `ARCHIVED`."
+            "description": "When `true`, includes archived notebooks. Default excludes `ARCHIVED`."
           }
         ],
         "responses": {
@@ -139,7 +139,7 @@
     "/notebooks/": {
       "get": {
         "summary": "Get a list of notebooks",
-        "description": "Returns surveys (projects) the caller can access. Optional `teamId` filters by team. By default, surveys with status `ARCHIVED` are omitted; pass `includeArchived=true` to include archived surveys alongside others.",
+        "description": "Returns notebooks (projects) the caller can access. Optional `teamId` filters by team. By default, notebooks with status `ARCHIVED` are omitted; pass `includeArchived=true` to include archived notebooks alongside others.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -156,7 +156,7 @@
               "type": "string",
               "minLength": 1
             },
-            "description": "When set, restrict to surveys owned by this team"
+            "description": "When set, restrict to notebooks owned by this team"
           },
           {
             "name": "includeArchived",
@@ -166,7 +166,7 @@
               "type": "string",
               "enum": ["true", "false"]
             },
-            "description": "When `true`, includes surveys with status `ARCHIVED`. Default excludes them."
+            "description": "When `true`, includes notebooks with status `ARCHIVED`. Default excludes them."
           }
         ],
         "responses": {
@@ -303,8 +303,8 @@
     },
     "/notebooks/{id}/archive": {
       "put": {
-        "summary": "Archive or un-archive a survey",
-        "description": "Sets survey status to `ARCHIVED` when `archive` is true, or clears archive when false. Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
+        "summary": "Archive or un-archive a notebook",
+        "description": "Sets notebook status to `ARCHIVED` when `archive` is true, or clears archive when false. Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -332,7 +332,7 @@
                 "properties": {
                   "archive": {
                     "type": "boolean",
-                    "description": "True to archive the survey; false to un-archive"
+                    "description": "True to archive the notebook; false to un-archive"
                   }
                 },
                 "required": ["archive"]
@@ -355,8 +355,8 @@
     },
     "/notebooks/{id}/restore": {
       "post": {
-        "summary": "Restore an archived survey",
-        "description": "Moves an archived survey back to closed (not open). Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
+        "summary": "Restore an archived notebook",
+        "description": "Moves an archived notebook back to closed (not open). Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -377,7 +377,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Survey restored from archive"
+            "description": "Notebook restored from archive"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -390,8 +390,8 @@
     },
     "/notebooks/{id}/delete": {
       "post": {
-        "summary": "Permanently destroy survey server data",
-        "description": "Irreversibly removes CouchDB project databases, invites, and people-db project roles for this survey. The survey must already be archived; requires operations-level permission. Request body must include `confirmName` exactly matching the survey name (trimmed).",
+        "summary": "Permanently destroy notebook server data",
+        "description": "Irreversibly removes CouchDB project databases, invites, and people-db project roles for this notebook. The notebook must already be archived; requires operations-level permission. Request body must include `confirmName` exactly matching the notebook name (trimmed).",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -422,10 +422,10 @@
         },
         "responses": {
           "200": {
-            "description": "Survey destroyed"
+            "description": "Notebook destroyed"
           },
           "400": {
-            "description": "Confirmation name does not match, or survey not in a state that allows deletion"
+            "description": "Confirmation name does not match, or notebook not in a state that allows deletion"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
@@ -1337,8 +1337,8 @@
     },
     "/templates/{id}/survey-references": {
       "get": {
-        "summary": "Count surveys referencing this template",
-        "description": "Returns how many surveys (projects) still reference this template id. Requires `READ_TEMPLATE_DETAILS` on the template.",
+        "summary": "Count notebooks referencing this template",
+        "description": "Returns how many notebooks (projects) still reference this template id. Requires `READ_TEMPLATE_DETAILS` on the template.",
         "tags": ["Templates"],
         "produces": ["application/json"],
         "security": [
@@ -1898,7 +1898,7 @@
         },
         "is_admin": {
           "type": "boolean",
-          "description": "True when the caller has project admin on this survey"
+          "description": "True when the caller has project admin on this notebook"
         },
         "status": {
           "type": "string",
@@ -1928,14 +1928,14 @@
         "confirmName": {
           "type": "string",
           "minLength": 1,
-          "description": "Must match the survey display name exactly (trimmed)"
+          "description": "Must match the notebook display name exactly (trimmed)"
         }
       },
       "required": ["confirmName"]
     },
     "ProjectDirectoryEntry": {
       "type": "object",
-      "description": "Project (survey) document as stored in the projects database; fields vary by version.",
+      "description": "Project (notebook) document as stored in the projects database; fields vary by version.",
       "additionalProperties": true
     },
     "PeopleUserListItem": {
@@ -2008,7 +2008,7 @@
         "surveyCount": {
           "type": "integer",
           "minimum": 0,
-          "description": "Number of surveys whose directory still references this template id"
+          "description": "Number of notebooks whose directory still references this template id"
         }
       },
       "required": ["surveyCount"]
@@ -2459,7 +2459,7 @@
         },
         "archived": {
           "type": "boolean",
-          "description": "When true, the template is archived and cannot be used to create new surveys until restored"
+          "description": "When true, the template is archived and cannot be used to create new notebooks until restored"
         }
       }
     },
