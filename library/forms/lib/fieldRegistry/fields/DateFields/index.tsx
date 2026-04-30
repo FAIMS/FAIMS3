@@ -246,8 +246,90 @@ const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => {
 };
 
 const DatePickerField: React.FC<DateTimeFieldFullProps> = props => {
+  const {
+    label,
+    helperText,
+    required,
+    advancedHelperText,
+    fullWidth,
+    disabled,
+    state,
+    setFieldData,
+    handleBlur,
+    config,
+    show_now_button,
+  } = props;
+
+  if (config.mode === 'preview') {
+    return (
+      <FieldWrapper heading={label} subheading={helperText}>
+        <Typography color="text.secondary">Date Picker</Typography>
+      </FieldWrapper>
+    );
+  }
+
+  const value = (state.value?.data as string) ?? '';
+  const errors = state.meta.errors as unknown as string[] | undefined;
+
+  const handleNowClick = () => {
+    const today = new Date();
+    const localToday = new Date(
+      today.getTime() - today.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .slice(0, 10);
+    setFieldData(localToday);
+  };
+
   return (
-    <DateTimeBase {...props} inputType="date" previewLabel="Date Picker" />
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}   
+      required={required}
+      advancedHelperText={advancedHelperText}
+      errors={errors}
+    >
+      <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
+        <MuiTextField
+          type="date"
+          value={value}
+          onChange={e => {
+            const next = e.target.value.trim();
+            setFieldData(next === '' ? '' : next);
+          }}
+          onBlur={handleBlur}
+          variant="outlined"
+          fullWidth={fullWidth ?? true}
+          disabled={disabled}
+          required={required}
+          error={Boolean(errors && errors.length > 0)}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius:
+                show_now_button === true ? {xs: '4px', sm: '4px 0 0 4px'} : 1,
+            },
+          }}
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
+        {show_now_button && (
+          <Button
+            variant="contained"
+            disableElevation
+            aria-label="Select today's date"
+            onClick={handleNowClick}
+            sx={{
+              borderRadius: {xs: '4px', sm: '0 4px 4px 0'},
+              minWidth: {xs: 'auto', sm: '80px'},
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Today
+          </Button>
+        )}
+      </Stack>
+    </FieldWrapper>
   );
 };
 

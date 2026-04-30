@@ -16,14 +16,17 @@ import {
   Card,
   Checkbox,
   FormControlLabel,
-  FormHelperText,
   Grid,
   Stack,
+  Tooltip,
+  Typography,
 } from '@mui/material';
+import InfoIcon from '@mui/icons-material/Info';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
+import {designerInfoIconSx} from '../designer-style';
 
 /** Shared date-time editor: auto-pick current time and optional "Now" button display. */
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
@@ -31,7 +34,12 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
     state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
-  const isDateTimePicker = field['component-name'] === 'DateTimePicker';
+  const fieldComponent = field['component-name'];
+  const isDateTimePicker = fieldComponent === 'DateTimePicker';
+  const isDatePicker = fieldComponent === 'DatePicker';
+  const isMonthPicker = fieldComponent === 'MonthPicker';
+  const supportsAutoPick = fieldComponent !== 'DatePicker';
+  const supportsNowButton = isDateTimePicker || isDatePicker || isMonthPicker;
 
   const updateFieldProp = (key: 'is_auto_pick' | 'show_now_button', value: boolean) => {
     const newField = withUpdatedField(field, nextField => {
@@ -49,23 +57,32 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
             <Stack spacing={1}>
-              <FormControlLabel
-                required
-                control={
-                  <Checkbox
-                    checked={isAutoPick}
-                    onChange={e => {
-                      updateFieldProp('is_auto_pick', e.target.checked);
-                    }}
-                  />
-                }
-                label="Time pre-populated"
-              />
-              <FormHelperText sx={{mt: -1}}>
-                When the record is first created, populate this field with the
-                current datetime.
-              </FormHelperText>
-              {isDateTimePicker && (
+              {supportsAutoPick && (
+                <FormControlLabel
+                  required
+                  control={
+                    <Checkbox
+                      checked={isAutoPick}
+                      onChange={e => {
+                        updateFieldProp('is_auto_pick', e.target.checked);
+                      }}
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography component="span">Time pre-populated</Typography>
+                      <Tooltip title="When the record is first created, populate this field with the current datetime.">
+                        <InfoIcon
+                          sx={{
+                            ...(designerInfoIconSx as Record<string, unknown>),
+                          }}
+                        />
+                      </Tooltip>
+                    </Stack>
+                  }
+                />
+              )}
+              {supportsNowButton && (
                 <FormControlLabel
                   control={
                     <Checkbox
@@ -75,7 +92,36 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                       }}
                     />
                   }
-                  label='Display a "Select date and time right now" button'
+                  label={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography component="span">
+                        Display a "
+                        <strong>
+                          {isDatePicker
+                            ? "Select today's date"
+                            : isMonthPicker
+                            ? 'Select current month'
+                            : 'Select date and time right now'}
+                        </strong>
+                        " button
+                      </Typography>
+                      <Tooltip
+                        title={
+                          isDatePicker
+                            ? 'Adds a quick button to set this field to today’s date.'
+                            : isMonthPicker
+                            ? 'Adds a quick button to set this field to the current month.'
+                            : 'Adds a quick button to set this field to the current date and time.'
+                        }
+                      >
+                        <InfoIcon
+                          sx={{
+                            ...(designerInfoIconSx as Record<string, unknown>),
+                          }}
+                        />
+                      </Tooltip>
+                    </Stack>
+                  }
                 />
               )}
             </Stack>
