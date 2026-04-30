@@ -165,7 +165,7 @@ const SortableOtherOptionRow = ({
       }}
     >
       {/* EDITED: Drag handle is ENABLED for Other */}
-      <TableCell sx={{width: '40px', py: 1}}>
+      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
         <IconButton
           size="small"
           sx={{cursor: 'grab', p: 0.5}}
@@ -176,9 +176,16 @@ const SortableOtherOptionRow = ({
         </IconButton>
       </TableCell>
 
-      <TableCell sx={{py: 1}}>
+      <TableCell sx={{py: 1, minWidth: 0}}>
         <Tooltip title="Allows custom text input">
-          <Typography noWrap sx={{maxWidth: 400, fontSize: '0.875rem'}}>
+          <Typography
+            sx={{
+              maxWidth: '100%',
+              fontSize: '0.875rem',
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
+            }}
+          >
             <strong>Other</strong>{' '}
             <Typography
               component="span"
@@ -194,17 +201,19 @@ const SortableOtherOptionRow = ({
       </TableCell>
 
       {/* Empty exclusive checkbox column */}
-      {showExclusiveOptions && <TableCell align="center" sx={{py: 1}} />}
+      {showExclusiveOptions && (
+        <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}} />
+      )}
 
       {/* Action buttons */}
-      <TableCell align="right" sx={{py: 1}}>
+      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
         <Tooltip title="Move up">
           <span>
             <IconButton
               size="small"
               disabled={otherOptionPosition === 0}
               onClick={onMoveUp}
-              sx={{p: 0.5, color: 'text.secondary'}}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
               <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
@@ -216,7 +225,7 @@ const SortableOtherOptionRow = ({
               size="small"
               disabled={otherOptionPosition === totalOptions}
               onClick={onMoveDown}
-              sx={{p: 0.5, color: 'text.secondary'}}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
               <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
@@ -227,14 +236,18 @@ const SortableOtherOptionRow = ({
             <IconButton
               size="small"
               disabled
-              sx={{p: 0.5, color: theme.palette.text.disabled}}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: theme.palette.text.disabled}}
             >
               <EditIcon fontSize="small" />
             </IconButton>
           </span>
         </Tooltip>
         <Tooltip title="Remove 'Other' option">
-          <IconButton size="small" onClick={onRemove} sx={{p: 0.5, color: 'error.main'}}>
+          <IconButton
+            size="small"
+            onClick={onRemove}
+            sx={{p: {xs: 0.25, sm: 0.5}, color: 'error.main'}}
+          >
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -279,7 +292,7 @@ const SortableItem = ({
       }}
     >
       {/* Drag handle column */}
-      <TableCell sx={{width: '40px', py: 1}}>
+      <TableCell sx={{width: {xs: 32, sm: 40}, py: 1}}>
         <IconButton
           size="small"
           sx={{cursor: 'grab', p: 0.5}}
@@ -292,9 +305,16 @@ const SortableItem = ({
       </TableCell>
 
       {/* Option text column with tooltip */}
-      <TableCell sx={{py: 1}}>
+      <TableCell sx={{py: 1, minWidth: 0}}>
         <Tooltip title={option.label}>
-          <Typography noWrap sx={{maxWidth: 400, fontSize: '0.875rem'}}>
+          <Typography
+            sx={{
+              maxWidth: '100%',
+              fontSize: '0.875rem',
+              whiteSpace: 'normal',
+              overflowWrap: 'anywhere',
+            }}
+          >
             {option.label}
           </Typography>
         </Tooltip>
@@ -302,7 +322,7 @@ const SortableItem = ({
 
       {/* Optional exclusive checkbox column */}
       {showExclusiveOptions && (
-        <TableCell align="center" sx={{py: 1}}>
+        <TableCell align="center" sx={{py: 1, width: {xs: 96, sm: 140}}}>
           <Checkbox
             checked={exclusiveOptions.includes(option.value)}
             onChange={() => onExclusiveToggle(option.value)}
@@ -313,14 +333,14 @@ const SortableItem = ({
       )}
 
       {/* Action buttons column */}
-      <TableCell align="right" sx={{py: 1}}>
+      <TableCell align="right" sx={{py: 1, width: {xs: 120, sm: 180}}}>
         <Tooltip title="Move up">
           <span>
             <IconButton
               size="small"
               disabled={index === 0}
               onClick={() => onMove(index, 'up')}
-              sx={{p: 0.5, color: 'text.secondary'}}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
               <ArrowDropUpRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
@@ -332,7 +352,7 @@ const SortableItem = ({
               size="small"
               disabled={index === totalItems - 1}
               onClick={() => onMove(index, 'down')}
-              sx={{p: 0.5, color: 'text.secondary'}}
+              sx={{p: {xs: 0.25, sm: 0.5}, color: 'text.secondary'}}
             >
               <ArrowDropDownRoundedIcon sx={{fontSize: '1.9rem', fontWeight: 700}} />
             </IconButton>
@@ -341,14 +361,14 @@ const SortableItem = ({
         <IconButton
           size="small"
           onClick={() => onEdit(option.label, index)}
-          sx={{p: 0.5, color: 'success.main'}}
+          sx={{p: {xs: 0.25, sm: 0.5}, color: 'success.main'}}
         >
           <EditIcon fontSize="small" />
         </IconButton>
         <IconButton
           size="small"
           onClick={() => onRemove(option)}
-          sx={{p: 0.5, color: 'error.main'}}
+          sx={{p: {xs: 0.25, sm: 0.5}, color: 'error.main'}}
         >
           <DeleteIcon fontSize="small" />
         </IconButton>
@@ -842,12 +862,12 @@ export const OptionsEditor = ({
                 overflow: 'auto',
               }}
             >
-              <Table size="small" stickyHeader>
+              <Table size="small" stickyHeader sx={{tableLayout: 'fixed', width: '100%'}}>
                 <TableHead>
                   <TableRow>
                     <TableCell
                       sx={{
-                        width: '40px',
+                        width: {xs: 32, sm: 40},
                         backgroundColor: '#fafafa',
                         fontWeight: 500,
                         py: 1.5,
@@ -866,7 +886,7 @@ export const OptionsEditor = ({
                       <TableCell
                         align="center"
                         sx={{
-                          width: 140,
+                          width: {xs: 96, sm: 140},
                           backgroundColor: '#fafafa',
                           fontWeight: 700,
                           py: 1.5,
@@ -894,7 +914,7 @@ export const OptionsEditor = ({
                     <TableCell
                       align="right"
                       sx={{
-                        width: 180,
+                        width: {xs: 120, sm: 180},
                         backgroundColor: '#fafafa',
                         fontWeight: 700,
                         py: 1.5,
@@ -964,7 +984,12 @@ export const OptionsEditor = ({
           <Grid item xs={12}>
             <Box sx={{mt: 1}}>
               <form onSubmit={addOption}>
-                <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 1.5}}>
+                <Stack
+                  direction={{xs: 'column', sm: 'row'}}
+                  spacing={1}
+                  alignItems={{xs: 'stretch', sm: 'center'}}
+                  sx={{mb: 1.5}}
+                >
                   <TextField
                     size="small"
                     placeholder="Add Option"
@@ -994,6 +1019,7 @@ export const OptionsEditor = ({
                     size="small"
                     type="submit"
                     sx={{
+                      width: {xs: '100%', sm: 'auto'},
                       height: '40px',
                       backgroundColor: '#fff',
                       textTransform: 'none',
@@ -1011,6 +1037,7 @@ export const OptionsEditor = ({
                     onClick={toggleEnableOtherOption}
                     disabled={enableOther}
                     sx={{
+                      width: {xs: '100%', sm: 'auto'},
                       textTransform: 'none',
                       fontWeight: 700,
                       borderWidth: 1.5,
