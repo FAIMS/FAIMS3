@@ -48,7 +48,7 @@ export type FieldEditorRenderer = (
 ) => React.ReactElement;
 
 const selectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
-  <OptionsEditor fieldName={fieldName} />
+  <OptionsEditor fieldName={fieldName} showExpandedChecklist={true} />
 );
 
 const multiSelectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
