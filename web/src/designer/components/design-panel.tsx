@@ -378,8 +378,30 @@ export const DesignPanel = () => {
               minHeight: 48,
               ml: 0,
               '& .MuiTabs-scrollButtons': {
-                color: 'text.secondary',
+                color: 'text.primary',
                 '&.Mui-disabled': {opacity: 0.3},
+                '& .MuiSvgIcon-root': {
+                  fontSize: '1.9rem',
+                  fontWeight: 700,
+                },
+              },
+              '& .MuiTabs-scroller': {
+                overflowX: 'auto !important',
+                scrollbarWidth: hasFormTabOverflow ? 'thin' : 'none',
+                scrollbarColor: hasFormTabOverflow
+                  ? 'rgba(78, 116, 138, 0.42) transparent'
+                  : 'transparent transparent',
+                '&::-webkit-scrollbar': {
+                  height: hasFormTabOverflow ? 8 : 0,
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                  borderRadius: 999,
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(78, 116, 138, 0.42)',
+                },
               },
               '& .MuiTabs-flexContainer': {
                 gap: 0,

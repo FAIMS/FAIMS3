@@ -996,9 +996,9 @@ export const FormEditor = ({
       {previewForm && uiSpecInternal && (
         <Box
           sx={{
-            width: {xs: '100%', xl: '42%'},
-            minWidth: {xl: 340},
-            maxWidth: {xl: 560},
+            width: {xs: '100%', xl: '40%'},
+            minWidth: {xl: 320},
+            maxWidth: {xl: 540},
             flexShrink: 0,
             alignSelf: 'flex-start',
             position: {xl: 'sticky'},
@@ -1011,24 +1011,32 @@ export const FormEditor = ({
               border: '1px solid',
               borderColor: 'divider',
               borderRadius: 1.25,
-              p: {xs: 1, sm: 1.25},
+              p: {xs: 0.75, sm: 1},
               backgroundColor: 'background.paper',
-              overflow: 'auto',
-              maxHeight: {xl: 'calc(100vh - 150px)'},
+              overflow: 'hidden',
+              maxHeight: {xl: 'calc(100vh - 140px)'},
             }}
           >
-            <ThemeProvider theme={defaultTheme}>
-              {/* resets CSS baseline within this scope */}
-              <CssBaseline />
-              <PreviewFormManager
-                initialFormData={{}}
-                layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
-                formName={viewSetId}
-                uiSpec={uiSpecInternal}
-                queryClient={queryClient}
-                mapConfig={getMapConfig}
-              />
-            </ThemeProvider>
+            {sections.length === 0 ? (
+              <Alert severity="info" sx={{m: 0.25}}>
+                Add a section to see the live preview.
+              </Alert>
+            ) : (
+              <Box sx={{maxHeight: {xl: 'calc(100vh - 172px)'}, overflow: 'auto'}}>
+                <ThemeProvider theme={defaultTheme}>
+                  {/* resets CSS baseline within this scope */}
+                  <CssBaseline />
+                  <PreviewFormManager
+                    initialFormData={{}}
+                    layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
+                    formName={viewSetId}
+                    uiSpec={uiSpecInternal}
+                    queryClient={queryClient}
+                    mapConfig={getMapConfig}
+                  />
+                </ThemeProvider>
+              </Box>
+            )}
           </Box>
         </Box>
       )}

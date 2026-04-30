@@ -411,7 +411,7 @@ const FieldEditorComponent = ({
             />
             <ArrowForwardIosRoundedIcon
               className="field-expand-arrow"
-              sx={{fontSize: '1rem'}}
+              sx={{fontSize: '1.25rem', color: 'text.primary', fontWeight: 700}}
             />
           </Box>
         }
@@ -443,7 +443,9 @@ const FieldEditorComponent = ({
                 variant="subtitle2"
                 sx={{
                   color: theme => theme.palette.grey[800],
-                  fontWeight: 600,
+                  fontWeight: 750,
+                  fontSize: '1.06rem',
+                  letterSpacing: '0.005em',
                   width: '100%',
                   minWidth: 0,
                   overflowWrap: 'anywhere',
@@ -476,9 +478,12 @@ const FieldEditorComponent = ({
                     variant="outlined"
                     sx={{
                       fontWeight: 700,
-                      fontSize: '0.72rem',
-                      borderColor: 'error.main',
+                      fontSize: '0.68rem',
+                      height: 24,
+                      borderColor: theme => alpha(theme.palette.error.main, 0.82),
                       color: 'error.main',
+                      backgroundColor: theme =>
+                        alpha(theme.palette.error.main, 0.06),
                     }}
                   />
                 )}
@@ -517,7 +522,12 @@ const FieldEditorComponent = ({
                   onClick={deleteField}
                   aria-label="delete"
                   size="small"
-                  sx={{color: 'error.main'}}
+                  sx={{
+                    color: 'error.main',
+                    '&:hover': {
+                      backgroundColor: theme => alpha(theme.palette.error.main, 0.1),
+                    },
+                  }}
                 >
                   <DeleteRoundedIcon />
                 </IconButton>
@@ -527,7 +537,13 @@ const FieldEditorComponent = ({
                   onClick={() => setOpenMoveDialog(true)}
                   aria-label="move"
                   size="small"
-                  sx={{color: 'secondary.main'}}
+                  sx={{
+                    color: 'warning.dark',
+                    '&:hover': {
+                      backgroundColor: theme =>
+                        alpha(theme.palette.warning.main, 0.13),
+                    },
+                  }}
                 >
                   <MoveRoundedIcon />
                 </IconButton>
@@ -537,6 +553,13 @@ const FieldEditorComponent = ({
                   onClick={addFieldBelow}
                   aria-label="add field"
                   size="small"
+                  sx={{
+                    color: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: theme =>
+                        alpha(theme.palette.primary.main, 0.1),
+                    },
+                  }}
                 >
                   <PlaylistAddIcon />
                 </IconButton>
@@ -546,6 +569,12 @@ const FieldEditorComponent = ({
                   onClick={handleOpenDuplicateDialog}
                   aria-label="duplicate"
                   size="small"
+                  sx={{
+                    color: 'info.dark',
+                    '&:hover': {
+                      backgroundColor: theme => alpha(theme.palette.info.main, 0.12),
+                    },
+                  }}
                 >
                   <DuplicateIcon />
                 </IconButton>
@@ -561,16 +590,23 @@ const FieldEditorComponent = ({
                   }
                 >
                   <span>
-                    <IconButton
-                      onClick={toggleHiddenState}
-                      aria-label="unhide field"
-                      size="small"
-                      disabled={
-                        protection === 'protected' || requiredBlocksHiding
-                      }
-                    >
-                      <VisibilityIcon />
-                    </IconButton>
+                      <IconButton
+                        onClick={toggleHiddenState}
+                        aria-label="unhide field"
+                        size="small"
+                        disabled={
+                          protection === 'protected' || requiredBlocksHiding
+                        }
+                        sx={{
+                          color: 'success.dark',
+                          '&:hover': {
+                            backgroundColor: theme =>
+                              alpha(theme.palette.success.main, 0.12),
+                          },
+                        }}
+                      >
+                        <VisibilityIcon />
+                      </IconButton>
                   </span>
                 </Tooltip>
               ) : (
@@ -592,6 +628,13 @@ const FieldEditorComponent = ({
                         disabled={
                           protection === 'protected' || requiredBlocksHiding
                         }
+                        sx={{
+                          color: 'text.secondary',
+                          '&:hover': {
+                            backgroundColor: theme =>
+                              alpha(theme.palette.text.secondary, 0.12),
+                          },
+                        }}
                       >
                         <VisibilityOffIcon />
                       </IconButton>
@@ -606,10 +649,11 @@ const FieldEditorComponent = ({
                   size="small"
                   onAnimationEnd={() => setShakingUp(false)}
                   sx={{
-                    color: isFirstField ? 'text.disabled' : undefined,
+                    color: isFirstField ? 'text.disabled' : 'text.primary',
                     animation: shakingUp
                       ? `${shakeAnim} 0.35s ease`
                       : undefined,
+                    '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
                   }}
                 >
                   <ArrowDropUpRoundedIcon />
@@ -622,10 +666,11 @@ const FieldEditorComponent = ({
                   size="small"
                   onAnimationEnd={() => setShakingDown(false)}
                   sx={{
-                    color: isLastField ? 'text.disabled' : undefined,
+                    color: isLastField ? 'text.disabled' : 'text.primary',
                     animation: shakingDown
                       ? `${shakeAnim} 0.35s ease`
                       : undefined,
+                    '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
                   }}
                 >
                   <ArrowDropDownRoundedIcon />
