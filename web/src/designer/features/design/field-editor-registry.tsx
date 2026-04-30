@@ -25,7 +25,6 @@ import {BasicAutoIncrementerEditor} from '../../components/Fields/BasicAutoIncre
 import {ControlledNumberFieldEditor} from '../../components/Fields/ControlledNumberFieldEditor';
 import {DateTimeNowEditor} from '../../components/Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from '../../components/Fields/MapFormFieldEditor';
-import {MultipleTextFieldEditor} from '../../components/Fields/MultipleTextField';
 import {NumberFieldEditor} from '../../components/Fields/NumberFieldEditor';
 import {OptionsEditor} from '../../components/Fields/OptionsEditor';
 import {RelatedRecordEditor} from '../../components/Fields/RelatedRecordEditor';
@@ -60,9 +59,8 @@ const multiSelectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
 );
 
 export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
-  MultipleTextField: ({fieldName}) => (
-    <MultipleTextFieldEditor fieldName={fieldName} />
-  ),
+  FAIMSTextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
+  MultipleTextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
   TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
   TextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
   DateTimeNow: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,

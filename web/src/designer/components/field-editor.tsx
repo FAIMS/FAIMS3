@@ -162,6 +162,15 @@ const FieldEditorComponent = ({
   const isLastField = fieldIndex === sectionFields.length - 1;
 
   const fieldComponent = field['component-name'];
+  const fieldComponentLabelMap: Record<string, string> = {
+    FAIMSTextField: 'Text field',
+    MultipleTextField: 'Multi-line text field',
+    DateTimePicker: 'Date and time picker',
+    DatePicker: 'Date only picker',
+    MonthPicker: 'Month only picker',
+  };
+  const fieldComponentDisplayName =
+    fieldComponentLabelMap[fieldComponent] || fieldComponent;
 
   const [deleteWarningOpen, setDeleteWarningOpen] = useState(false);
   const [conditionsAffected, setConditionsAffected] = useState<string[]>([]);
@@ -459,7 +468,7 @@ const FieldEditorComponent = ({
               {/* Chips Below Title (Tighter Spacing) */}
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
-                  label={fieldComponent}
+                  label={fieldComponentDisplayName}
                   size="small"
                   variant="outlined"
                   sx={{

@@ -21,12 +21,36 @@ import {CategoryKey} from './field-categories';
 import {FieldType} from './state/initial';
 
 const fields: {[key: string]: FieldType} = {
+  TextField: {
+    // New chooser entry that reuses the existing FAIMSTextField runtime type.
+    'component-namespace': 'faims-custom',
+    'component-name': 'FAIMSTextField',
+    'type-returned': 'faims-core::String',
+    'component-parameters': {
+      label: 'Text field',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      variant: 'outlined',
+      required: false,
+      speechAppendMode: false,
+      enableSpeech: true,
+    },
+    initialValue: '',
+    humanReadableName: 'Text field',
+    humanReadableDescription:
+      'Single or multi-line text input (short or long answer) with optional speech-to-text',
+    category: CategoryKey.TEXT,
+    showInChooser: true,
+    order: 1,
+  },
+
   FAIMSTextField: {
     'component-namespace': 'faims-custom',
     'component-name': 'FAIMSTextField',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Text Field',
+      label: 'FAIMS Text Field',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
@@ -38,11 +62,13 @@ const fields: {[key: string]: FieldType} = {
     },
     initialValue: '',
     humanReadableName: 'FAIMS Text Field',
-    humanReadableDescription:
-      'Single-line text input for free-form entries with optional speech-to-text',
+    humanReadableDescription: 'Legacy text field template',
     category: CategoryKey.TEXT,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated: use “Text field” for new additions. Existing notebooks continue to work.',
     showInChooser: true,
-    order: 1,
+    order: 2,
   },
 
   DateTimePicker: {
@@ -546,10 +572,13 @@ const fields: {[key: string]: FieldType} = {
       enableSpeech: true,
     },
     initialValue: '',
-    humanReadableName: 'Multi-line Text Field',
-    humanReadableDescription: 'Multi-line text area for longer notes',
+    humanReadableName: 'Multi-line Text Field (Deprecated)',
+    humanReadableDescription: 'Deprecated multiline text area (use Text field instead)',
     category: CategoryKey.TEXT,
     showInChooser: true,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated: use “Text field” and switch to “Long answer” in the editor. Existing notebooks continue to work.',
     order: 10,
   },
 };
