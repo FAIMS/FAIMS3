@@ -68,6 +68,7 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   DateTimeNow: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   DateTimePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   DatePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  MonthPicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   Select: selectEditorRenderer,
   MultiSelect: multiSelectEditorRenderer,
   RadioGroup: selectEditorRenderer,
