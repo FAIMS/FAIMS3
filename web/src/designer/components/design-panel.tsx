@@ -42,6 +42,7 @@ import {useState, useEffect, useRef} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {
+  designerCancelButtonSx,
   designerDividerSx,
   designerSubheadingSx,
 } from './designer-style';
@@ -137,7 +138,7 @@ export const DesignPanel = () => {
       paddingX: {xs: 1, sm: 1.5},
       paddingY: 1,
       textTransform: 'uppercase',
-      fontWeight: 700,
+      fontWeight: 750,
       fontSize: '0.72rem',
       lineHeight: 1.2,
       whiteSpace: 'normal',
@@ -147,34 +148,20 @@ export const DesignPanel = () => {
     },
   } as const;
 
-  // DASS selected: black fill + white text (underline indicator comes from theme).
-  // FAIMS selected: primary-tinted background + primary text.
+  // Selected tabs are consistently dark/high-contrast for clear active state.
   const visibleTabSx = {
     ...baseTabRootSx,
-    '&.Mui-selected': isDass
-      ? {
-          borderColor: 'primary.main',
-          color: 'primary.contrastText',
-          backgroundColor: 'primary.main',
-        }
-      : {
-          borderColor: 'primary.main',
-          color: 'primary.main',
-          backgroundColor: (t: Theme) =>
-            alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.2 : 0.1),
-        },
-    '&:hover': isDass
-      ? {
-          color: 'primary.contrastText',
-          opacity: 1,
-          backgroundColor: (t: Theme) => alpha(t.palette.primary.main, 0.82),
-        }
-      : {
-          color: 'primary.main',
-          opacity: 1,
-          backgroundColor: (t: Theme) =>
-            alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.16 : 0.08),
-        },
+    '&.Mui-selected': {
+      borderColor: 'common.black',
+      color: 'common.white',
+      backgroundColor: 'common.black',
+      fontWeight: 800,
+    },
+    '&:hover': {
+      color: 'common.white',
+      opacity: 1,
+      backgroundColor: '#111111',
+    },
   };
 
   const untickedTabSx = {
@@ -605,6 +592,7 @@ export const DesignPanel = () => {
               setAddFormDialogOpen(false);
               setAlertMessage('');
             }}
+            sx={designerCancelButtonSx}
             fullWidth={addFormDialogFullScreen}
           >
             Cancel

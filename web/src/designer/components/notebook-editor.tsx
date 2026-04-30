@@ -28,13 +28,17 @@ import {
   Tab,
   Tooltip,
   Typography,
+  Theme,
 } from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 import {useCallback, useEffect, useState} from 'react';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
 import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
-import {designerResponsiveFrameSx} from './designer-style';
+import {
+  designerCancelButtonSx,
+  designerResponsiveFrameSx,
+} from './designer-style';
 
 /** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
 export type NotebookEditorProps = {
@@ -130,7 +134,10 @@ export const NotebookEditor = ({
     gap: 1,
   } as const;
 
-  const historyButtonSx = (enabled: boolean) =>
+  const historyButtonSx = (
+    enabled: boolean,
+    variant: 'undo' | 'redo'
+  ) =>
     ({
       textTransform: 'none',
       fontWeight: 700,
@@ -138,23 +145,43 @@ export const NotebookEditor = ({
       borderRadius: 1.2,
       boxShadow: 'none',
       border: '1px solid',
-      borderColor: enabled ? 'primary.main' : 'divider',
-      color: enabled ? 'primary.contrastText' : 'text.disabled',
-      backgroundColor: enabled ? 'primary.main' : 'background.paper',
+      borderColor: enabled
+        ? variant === 'redo'
+          ? (t: Theme) =>
+              t.designerMeta?.isDass ? '#7A1F2B' : t.palette.secondary.main
+          : 'common.black'
+        : 'grey.400',
+      color: enabled
+        ? 'common.white'
+        : 'text.disabled',
+      backgroundColor: enabled
+        ? variant === 'redo'
+          ? (t: Theme) =>
+              t.designerMeta?.isDass ? '#7A1F2B' : t.palette.secondary.main
+          : 'common.black'
+        : 'grey.100',
       '& .MuiButton-startIcon': {color: 'inherit'},
       '&:hover': enabled
         ? {
-            backgroundColor: 'primary.dark',
-            borderColor: 'primary.dark',
+            backgroundColor:
+              variant === 'redo'
+                ? (t: Theme) =>
+                    t.designerMeta?.isDass ? '#611824' : t.palette.secondary.dark
+                : '#111111',
+            borderColor:
+              variant === 'redo'
+                ? (t: Theme) =>
+                    t.designerMeta?.isDass ? '#611824' : t.palette.secondary.dark
+                : '#111111',
             boxShadow: 'none',
           }
         : {
-            backgroundColor: 'action.hover',
+            backgroundColor: 'grey.200',
           },
       '&.Mui-disabled': {
         color: 'text.disabled',
-        borderColor: 'divider',
-        backgroundColor: 'background.paper',
+        borderColor: 'grey.400',
+        backgroundColor: 'grey.100',
       },
     }) as const;
 
@@ -199,7 +226,7 @@ export const NotebookEditor = ({
                   <Button
                     onClick={onCancelRequest}
                     color="primary"
-                    sx={{textTransform: 'uppercase', fontWeight: 700}}
+                    sx={designerCancelButtonSx}
                   >
                     Cancel
                   </Button>
@@ -214,7 +241,7 @@ export const NotebookEditor = ({
                         startIcon={<UndoIcon />}
                         onClick={undo}
                         disabled={!canUndo}
-                        sx={historyButtonSx(canUndo)}
+                        sx={historyButtonSx(canUndo, 'undo')}
                       >
                         Undo
                       </Button>
@@ -233,7 +260,7 @@ export const NotebookEditor = ({
                         startIcon={<RedoIcon />}
                         onClick={redo}
                         disabled={!canRedo}
-                        sx={historyButtonSx(canRedo)}
+                        sx={historyButtonSx(canRedo, 'redo')}
                       >
                         Redo
                       </Button>

@@ -3,10 +3,10 @@
  *
  * Provides date and time input fields using native HTML input types.
  * Exports separate field specs for:
- * - DateTimePicker (datetime-local)
- * - DatePicker (date)
- * - MonthPicker (month)
- * - DateTimeNow (datetime-local with "Now" button and optional auto-pick)
+ * - DateTimePicker (datetime-local; optional auto-pick and optional "Now" button)
+ * - DatePicker (date; optional "Today" button)
+ * - MonthPicker (month; optional "This month" button)
+ * - DateTimeNow (legacy datetime-local field retained for backward compatibility)
  */
 
 import {
@@ -53,11 +53,11 @@ type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
 type DateTimeFieldFullProps = FullFieldProps & DateTimeFieldProps;
 
 // =============================================================================
-// DateTimeNow Props Schema
+// DateTimeNow Props Schema (legacy field support)
 // =============================================================================
 
 /**
- * Extended props schema for DateTimeNow field.
+ * Extended props schema for legacy DateTimeNow field.
  *
  * Adds is_auto_pick option which automatically populates the field with the
  * current datetime when the form is first opened (only if the field is empty).
@@ -422,16 +422,16 @@ const MonthPickerField: React.FC<DateTimeFieldFullProps> = props => {
 };
 
 // =============================================================================
-// DateTimeNow Component
+// DateTimeNow Component (legacy)
 // =============================================================================
 
 /**
- * DateTimeNow Field
+ * DateTimeNow Field (legacy)
  *
- * A datetime picker with a "Now" button that captures the current timestamp.
+ * Legacy datetime picker with a "Now" button that captures the current timestamp.
  * Stores values as ISO strings internally but displays using local datetime format.
  *
- * Features:
+ * Legacy features:
  * - "Now" button to quickly capture current datetime with 1-second precision
  * - Optional auto-pick on mount (is_auto_pick prop)
  * - ISO string storage for consistent timezone handling
@@ -651,7 +651,7 @@ const MonthPickerRenderer: DataViewFieldRender = props => {
 };
 
 /**
- * View renderer for DateTimeNow field.
+ * View renderer for legacy DateTimeNow field.
  * Since the stored value is ISO format, we use the same formatter as DateTimePicker.
  */
 const DateTimeNowRenderer: DataViewFieldRender = props => {

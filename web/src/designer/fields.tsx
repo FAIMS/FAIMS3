@@ -38,7 +38,8 @@ const fields: {[key: string]: FieldType} = {
     },
     initialValue: '',
     humanReadableName: 'FAIMS Text Field',
-    humanReadableDescription: 'Single-line text input for free-form entries',
+    humanReadableDescription:
+      'Single-line text input for free-form entries with optional speech-to-text',
     category: CategoryKey.TEXT,
     showInChooser: true,
     order: 1,
@@ -127,7 +128,7 @@ const fields: {[key: string]: FieldType} = {
     deprecated: true,
     deprecationMessage:
       'Deprecated in chooser: use “Date and time picker” with the “Now” display option.',
-    showInChooser: false,
+    showInChooser: true,
     order: 5,
   },
 
@@ -245,7 +246,8 @@ const fields: {[key: string]: FieldType} = {
     },
     initialValue: [],
     humanReadableName: 'Select Multiple',
-    humanReadableDescription: 'Pick several options from a list',
+    humanReadableDescription:
+      'Pick several options from a list (dropdown by default, optional expanded checklist)',
     category: CategoryKey.CHOICE,
     showInChooser: true,
     order: 14,
@@ -273,7 +275,7 @@ const fields: {[key: string]: FieldType} = {
     initialValue: '',
     humanReadableName: 'Select one',
     humanReadableDescription:
-      'Single-choice list (expanded checklist by default, optional dropdown)',
+      'Single-choice list (expanded checklist by default, optional dropdown display)',
     category: CategoryKey.CHOICE,
     showInChooser: true,
     order: 15,

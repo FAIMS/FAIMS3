@@ -136,13 +136,19 @@ export const designerDialogTitleSx: SxProps<Theme> = {
 
 export const designerCancelButtonSx: SxProps<Theme> = {
   textTransform: 'none',
-  fontWeight: 600,
+  fontWeight: 700,
   color: 'text.secondary',
+  backgroundColor: 'grey.100',
   border: '1px solid',
-  borderColor: 'divider',
+  borderColor: 'grey.400',
   '&:hover': {
-    backgroundColor: (t: Theme) => alpha(t.palette.text.secondary, 0.08),
-    borderColor: 'text.disabled',
+    backgroundColor: 'grey.200',
+    borderColor: 'grey.500',
+  },
+  '&.Mui-disabled': {
+    color: 'text.disabled',
+    backgroundColor: 'grey.100',
+    borderColor: 'grey.300',
   },
 };
 
