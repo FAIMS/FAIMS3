@@ -1,4 +1,5 @@
-export const THEME = import.meta.env.VITE_THEME || 'default';
+// DASS default theme.
+export const THEME: string = 'dass';
 
 export const getThemeClass = () => {
   switch (THEME) {

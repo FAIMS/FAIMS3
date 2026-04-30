@@ -9,7 +9,7 @@
  * @param {string} viewSetId - ID of the viewset being configured
  */
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoIcon from '@mui/icons-material/Info';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Autocomplete,
@@ -28,6 +28,7 @@ import React from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FieldType} from '../state/initial';
 import DebouncedTextField from './debounced-text-field';
+import {designerInfoIconSx} from './designer-style';
 import {
   viewSetHridUpdated,
   viewSetLayoutUpdated,
@@ -76,7 +77,11 @@ const SettingSection = ({
         {title}
       </Typography>
       <Tooltip title={tooltipText}>
-        <InfoOutlinedIcon sx={{color: 'secondary.main', fontSize: '1.3rem'}} />
+        <InfoIcon
+          sx={{
+            ...(designerInfoIconSx as Record<string, unknown>),
+          }}
+        />
       </Tooltip>
     </Box>
     <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>

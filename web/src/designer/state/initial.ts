@@ -75,6 +75,7 @@ export type ComponentParameters = {
   num_digits?: number;
   form_id?: string;
   is_auto_pick?: boolean;
+  show_now_button?: boolean;
   zoom?: number;
   featureType?: string;
   buttonLabelText?: string;
@@ -120,6 +121,8 @@ export type FieldType = {
   humanReadableDescription?: string;
   showInChooser?: boolean;
   order?: number;
+  deprecated?: boolean;
+  deprecationMessage?: string;
 
   meta?: {
     annotation: {

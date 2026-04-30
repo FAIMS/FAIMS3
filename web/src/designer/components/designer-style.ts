@@ -1,4 +1,5 @@
 import {SxProps, Theme} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 
 export const designerHeadingRowSx: SxProps<Theme> = {
   display: 'flex',
@@ -13,9 +14,27 @@ export const designerHeadingTextSx: SxProps<Theme> = {
 };
 
 export const designerInfoIconSx: SxProps<Theme> = {
-  color: 'secondary.main',
-  fontSize: '1.35rem',
-  ml: 0.1,
+  // Shared info-marker style used across Designer.
+  // Use the icon's native circular glyph (no extra wrapper), to avoid double-ring visuals.
+  color: '#1FB1FF',
+  fontSize: '1.7rem',
+  ml: 0.28,
+  verticalAlign: 'middle',
+  filter: 'drop-shadow(0 4px 8px rgba(31, 177, 255, 0.25))',
+};
+
+/**
+ * Shared checkbox style for all Designer checkboxes.
+ * Intentionally simple: light primary tint, grey by default, green when checked.
+ */
+export const designerCheckboxSx: SxProps<Theme> = {
+  color: 'grey.500',
+  '&.Mui-checked': {
+    color: 'success.main',
+  },
+  '&.Mui-disabled': {
+    color: 'grey.400',
+  },
 };
 
 export const designerDividerSx: SxProps<Theme> = {
@@ -102,3 +121,56 @@ export const designerResponsiveFieldEditorSx = {
   width: '100%',
   maxWidth: '100%',
 } as const;
+
+// ── Dialog / modal shared styles ──────────────────────────────────────────
+
+/** Styled DialogTitle header with a subtle primary-tinted background. */
+export const designerDialogTitleSx: SxProps<Theme> = {
+  py: 2,
+  px: {xs: 2, sm: 3},
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  backgroundColor: (t: Theme) =>
+    alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.2 : 0.08),
+};
+
+export const designerCancelButtonSx: SxProps<Theme> = {
+  textTransform: 'none',
+  fontWeight: 700,
+  color: 'text.secondary',
+  backgroundColor: 'grey.100',
+  border: '1px solid',
+  borderColor: 'grey.400',
+  '&:hover': {
+    backgroundColor: 'grey.200',
+    borderColor: 'grey.500',
+  },
+  '&.Mui-disabled': {
+    color: 'text.disabled',
+    backgroundColor: 'grey.100',
+    borderColor: 'grey.300',
+  },
+};
+
+export const designerDialogActionsSx: SxProps<Theme> = {
+  px: {xs: 2, sm: 3},
+  pb: {xs: 2, sm: 2.5},
+  pt: 1.5,
+  gap: 1,
+};
+
+export const designerDialogFieldLabelSx: SxProps<Theme> = {
+  fontWeight: 600,
+  color: 'text.secondary',
+  fontSize: '0.875rem',
+  mb: 0.75,
+  mt: 1.5,
+};
+
+/** Secondary body text inside dialogs. */
+export const designerDialogBodyTextSx: SxProps<Theme> = {
+  color: 'text.secondary',
+  fontSize: '0.875rem',
+  lineHeight: 1.5,
+  mb: 1.5,
+};

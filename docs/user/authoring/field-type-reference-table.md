@@ -34,7 +34,7 @@ This comprehensive reference provides detailed specifications for all {{FAIMS}} 
 
 | Field Type | Purpose & Description | Typical Examples | Technical Specifications | Validation Capabilities | Platform Considerations |
 |------------|----------------------|------------------|------------------------|------------------------|------------------------|
-| **Checkbox** | Binary true/false decisions | "Sample collected?", "Photography complete?" | Returns: Boolean<br/>Default: false | Required completion<br/>Can control logic | Large touch target on mobile |
+| **Checkbox (deprecated)** | Legacy binary true/false decisions (kept for backwards compatibility) | "Sample collected?", "Photography complete?" | Returns: Boolean<br/>Default: false | Required completion<br/>Can control logic | Large touch target on mobile<br/>Prefer "Radio Buttons" for new forms |
 | **Radio Buttons** | Single selection from 2–7 visible options | Preservation state, weather conditions | All options visible<br/>Returns: String value | Required selection<br/>Option validation | Excellent mobile usability<br/>Space consuming |
 | **Dropdown (Select)** | Single selection from many options | Species list (50+ items), material types | Conserves screen space<br/>Returns: String value | Required selection<br/>Dependent on vocabulary | Scrolling challenges on mobile |
 | **Multi-select** | Multiple simultaneous selections | Construction materials, observed behaviours | Checkbox list<br/>Returns: Array of strings | Min/max selections<br/>Required field option | Touch selection challenging<br/>Consider chip display |

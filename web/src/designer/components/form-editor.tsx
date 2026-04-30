@@ -27,6 +27,7 @@ import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import DoneRoundedIcon from '@mui/icons-material/DoneRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 import InfoIcon from '@mui/icons-material/Info';
 import {
   Alert,
@@ -54,7 +55,7 @@ import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
 import {useQueryClient} from '@tanstack/react-query';
 import {cloneDeep} from 'lodash';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {shallowEqual} from 'react-redux';
 import {useLocation} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
@@ -64,9 +65,13 @@ import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {FormSettingsContent} from './form-settings';
 import {SectionEditor} from './section-editor';
 import {
+  designerCancelButtonSx,
   designerControlActionRowSx,
   designerControlLabelSx,
   designerControlHeadingSx,
+  designerDialogActionsSx,
+  designerDialogBodyTextSx,
+  designerDialogTitleSx,
   designerDividerSx,
   designerInfoIconSx,
   designerIconControlButtonSx,
@@ -182,9 +187,34 @@ export const FormEditor = ({
 
   const [showConditionAlert, setShowConditionAlert] = useState(false);
   const [conditionReferences, setConditionReferences] = useState<string[]>([]);
+  const sectionStripRef = useRef<HTMLDivElement | null>(null);
+  const [hasSectionOverflow, setHasSectionOverflow] = useState(false);
+  const [isSectionAtStart, setIsSectionAtStart] = useState(true);
+  const [isSectionAtEnd, setIsSectionAtEnd] = useState(false);
 
   // needed for the form preview
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const el = sectionStripRef.current;
+    if (!el) return;
+
+    const updateScrollState = () => {
+      const hasOverflow = el.scrollWidth > el.clientWidth + 2;
+      setHasSectionOverflow(hasOverflow);
+      setIsSectionAtStart(el.scrollLeft <= 2);
+      setIsSectionAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 2);
+    };
+
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, {passive: true});
+    window.addEventListener('resize', updateScrollState);
+
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [sections.length]);
 
   const handleStep = (step: number) => () => {
     setActiveStep(step);
@@ -415,10 +445,7 @@ export const FormEditor = ({
               flexWrap="wrap"
               sx={designerScrollableControlRowSx}
             >
-              <Typography
-                variant="subtitle1"
-                sx={designerControlHeadingSx}
-              >
+              <Typography variant="subtitle1" sx={designerControlHeadingSx}>
                 Form controls
               </Typography>
 
@@ -446,7 +473,6 @@ export const FormEditor = ({
               columnGap={1}
               sx={{...designerControlActionRowSx, color: 'text.secondary'}}
             >
-
               <Button
                 variant="text"
                 size="small"
@@ -515,10 +541,7 @@ export const FormEditor = ({
                     </Tooltip>
                   </>
                 )}
-                <Typography
-                  variant="caption"
-                  sx={designerControlLabelSx}
-                >
+                <Typography variant="caption" sx={designerControlLabelSx}>
                   Reorder
                 </Typography>
               </Stack>
@@ -578,7 +601,6 @@ export const FormEditor = ({
               >
                 Delete
               </Button>
-
             </Stack>
 
             {editMode && (
@@ -640,42 +662,59 @@ export const FormEditor = ({
               },
             }}
           >
-            <DialogTitle>Form Settings</DialogTitle>
+            <DialogTitle sx={designerDialogTitleSx}>Form Settings</DialogTitle>
             <DialogContent
               dividers
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-              }}
+              sx={{display: 'flex', flexDirection: 'column', gap: 2}}
             >
               <FormSettingsContent viewSetId={viewSetId} />
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setSettingsOpen(false)}>Close</Button>
+            <DialogActions sx={designerDialogActionsSx}>
+              <Button
+                sx={designerCancelButtonSx}
+                onClick={() => setSettingsOpen(false)}
+              >
+                Close
+              </Button>
             </DialogActions>
           </Dialog>
 
           <Dialog
             open={open}
             onClose={handleClose}
+            fullWidth
+            maxWidth="xs"
             aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
           >
-            <DialogTitle id="alert-dialog-title">{deleteAlertTitle}</DialogTitle>
-            <DialogContent>
-              <DialogContentText id="alert-dialog-description">
+            <DialogTitle id="alert-dialog-title" sx={designerDialogTitleSx}>
+              {deleteAlertTitle}
+            </DialogTitle>
+            <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+              <DialogContentText
+                id="alert-dialog-description"
+                sx={designerDialogBodyTextSx}
+              >
                 {deleteAlertMessage}
               </DialogContentText>
             </DialogContent>
             {preventDeleteDialog ? (
-              <DialogActions>
-                <Button onClick={handleClose}>OK</Button>
+              <DialogActions sx={designerDialogActionsSx}>
+                <Button sx={designerCancelButtonSx} onClick={handleClose}>
+                  OK
+                </Button>
               </DialogActions>
             ) : (
-              <DialogActions>
-                <Button onClick={deleteForm}>Yes</Button>
-                <Button onClick={handleClose}>No</Button>
+              <DialogActions sx={designerDialogActionsSx}>
+                <Button sx={designerCancelButtonSx} onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={deleteForm}
+                >
+                  Delete
+                </Button>
               </DialogActions>
             )}
           </Dialog>
@@ -698,69 +737,168 @@ export const FormEditor = ({
             <Grid container spacing={2} p={0}>
               <Grid item xs={12}>
                 <Box
+                  ref={sectionStripRef}
                   sx={{
-                    display: 'grid',
-                    gap: 1,
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    mb: 0.5,
+                    position: 'relative',
+                    display: 'flex',
+                    flexWrap: 'nowrap',
+                    gap: 0.75,
+                    alignItems: 'flex-start',
+                    mb: 1,
+                    overflowX: 'auto',
+                    pb: 1,
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: 'rgba(78, 116, 138, 0.38) transparent',
+                    '&::-webkit-scrollbar': {height: hasSectionOverflow ? 8 : 0},
+                    '&::-webkit-scrollbar-track': {
+                      background: 'transparent',
+                      borderRadius: 999,
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      borderRadius: 999,
+                      backgroundColor: 'rgba(78, 116, 138, 0.38)',
+                    },
+                    '&::before, &::after': hasSectionOverflow
+                      ? {
+                          content: '""',
+                          position: 'sticky',
+                          top: 0,
+                          width: 24,
+                          height: '100%',
+                          pointerEvents: 'none',
+                          zIndex: 2,
+                        }
+                      : {},
+                    '&::before': hasSectionOverflow
+                      ? {
+                          left: 0,
+                          display: isSectionAtStart ? 'none' : 'block',
+                          background: `linear-gradient(90deg, ${theme.palette.background.default} 40%, rgba(255,255,255,0))`,
+                        }
+                      : {},
+                    '&::after': hasSectionOverflow
+                      ? {
+                          right: 0,
+                          ml: 'auto',
+                          display: isSectionAtEnd ? 'none' : 'block',
+                          background: `linear-gradient(270deg, ${theme.palette.background.default} 40%, rgba(255,255,255,0))`,
+                        }
+                      : {},
                   }}
                 >
                   {sections.map((section: string, index: number) => {
                     const isActive = index === activeStep;
+                    const isLast = index === sections.length - 1;
                     return (
                       <Button
                         key={section}
-                        variant={isActive ? 'contained' : 'outlined'}
-                        color={isActive ? 'primary' : 'inherit'}
+                        variant="text"
                         onClick={handleStep(index)}
                         sx={{
                           justifyContent: 'flex-start',
                           textTransform: 'none',
-                          px: 1.25,
-                          py: 0.85,
-                          minHeight: 52,
-                          borderRadius: 1.25,
-                          gap: 1,
-                          borderColor: isActive ? 'secondary.main' : 'divider',
-                          color: isActive ? 'primary.contrastText' : 'text.primary',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          px: 1,
+                          py: 0.8,
+                          minHeight: 70,
+                          width: {xs: 152, sm: 170, md: 184},
+                          minWidth: 148,
+                          maxWidth: 220,
+                          flexShrink: 0,
+                          borderRadius: 2,
+                          color: 'text.primary',
+                          border: '1px solid',
+                          borderColor: isActive
+                            ? 'divider'
+                            : 'transparent',
                           backgroundColor: isActive
-                            ? 'secondary.main'
-                            : 'background.paper',
-                          boxShadow: 'none',
+                            ? (t =>
+                                t.designerMeta.isDass
+                                  ? 'rgba(17,24,39,0.08)'
+                                  : 'rgba(17,24,39,0.045)')
+                            : 'transparent',
+                          transition:
+                            'background-color 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease',
+                          '& .section-step-dot': {
+                            transition:
+                              'transform 0.14s ease, box-shadow 0.14s ease, background-color 0.14s ease',
+                            boxShadow: isActive
+                              ? '0 2px 8px rgba(0,0,0,0.21)'
+                              : '0 1px 2px rgba(0,0,0,0.11)',
+                          },
                           '&:hover': {
                             backgroundColor: isActive
-                              ? 'secondary.main'
-                              : 'action.hover',
-                            boxShadow: 'none',
+                              ? (t =>
+                                  t.designerMeta.isDass
+                                    ? 'rgba(17,24,39,0.11)'
+                                    : 'rgba(17,24,39,0.06)')
+                              : 'rgba(17,24,39,0.02)',
+                            borderColor: isActive ? 'divider' : 'rgba(17,24,39,0.08)',
+                            boxShadow: '0 4px 10px rgba(15,23,32,0.10)',
+                            '& .section-step-dot': {
+                              transform: 'translateY(-1px) scale(1.02)',
+                              boxShadow: '0 4px 10px rgba(15,23,32,0.2)',
+                            },
+                          },
+                          '&:active': {
+                            boxShadow: '0 2px 7px rgba(15,23,32,0.12)',
+                            '& .section-step-dot': {
+                              transform: 'scale(0.98)',
+                            },
                           },
                         }}
                       >
                         <Box
-                          component="span"
                           sx={{
-                            width: 26,
-                            height: 26,
-                            borderRadius: '50%',
-                            display: 'inline-flex',
+                            display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                            bgcolor: isActive
-                              ? 'rgba(255,255,255,0.2)'
-                              : 'action.hover',
-                            color: isActive ? 'common.white' : 'text.secondary',
-                            flexShrink: 0,
+                            width: '100%',
                           }}
                         >
-                          {index + 1}
+                          <Box
+                            component="span"
+                            className="section-step-dot"
+                            sx={{
+                              width: 30,
+                              height: 30,
+                              borderRadius: '50%',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 700,
+                              fontSize: '0.88rem',
+                              bgcolor: isActive ? 'primary.main' : 'grey.400',
+                              color: 'common.white',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {index + 1}
+                          </Box>
+                          <Box
+                            sx={{
+                              height: 2,
+                              flex: 1,
+                              ml: 1,
+                              background: isActive
+                                ? `linear-gradient(90deg, ${theme.palette.primary.main}55 0%, ${theme.palette.primary.main}1A 100%)`
+                                : 'rgba(0,0,0,0.14)',
+                              borderRadius: 999,
+                              opacity: isLast || sections.length <= 1 ? 0 : 1,
+                              transition: 'background 0.2s ease, opacity 0.2s ease',
+                            }}
+                          />
                         </Box>
                         <Typography
+                          title={views[section].label}
                           sx={{
-                            fontWeight: 700,
-                            fontSize: {xs: '1rem', sm: '1.08rem'},
-                            lineHeight: 1.2,
+                            mt: 0.85,
+                            fontWeight: isActive ? 700 : 600,
+                            color: isActive ? 'text.primary' : 'text.secondary',
+                            fontSize: '0.95rem',
+                            lineHeight: 1.25,
                             textAlign: 'left',
+                            width: '100%',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
@@ -772,6 +910,19 @@ export const FormEditor = ({
                     );
                   })}
                 </Box>
+                {hasSectionOverflow && (
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    alignItems="center"
+                    sx={{color: 'text.secondary', ml: 0.4, mt: -0.35, mb: 0.5}}
+                  >
+                    <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
+                    <Typography variant="caption" sx={{fontWeight: 600}}>
+                      Scroll left or right to see all sections
+                    </Typography>
+                  </Stack>
+                )}
               </Grid>
 
               {sections.length === 0 ? (
@@ -845,10 +996,13 @@ export const FormEditor = ({
       {previewForm && uiSpecInternal && (
         <Box
           sx={{
-            width: {xs: '100%', xl: '42%'},
-            minWidth: {xl: 340},
-            maxWidth: {xl: 560},
+            width: {xs: '100%', xl: '40%'},
+            minWidth: {xl: 320},
+            maxWidth: {xl: 540},
             flexShrink: 0,
+            alignSelf: 'flex-start',
+            position: {xl: 'sticky'},
+            top: {xl: 12},
           }}
         >
           <Box
@@ -857,24 +1011,32 @@ export const FormEditor = ({
               border: '1px solid',
               borderColor: 'divider',
               borderRadius: 1.25,
-              p: {xs: 1, sm: 1.25},
+              p: {xs: 0.75, sm: 1},
               backgroundColor: 'background.paper',
-              overflow: 'auto',
-              maxHeight: {xl: 'calc(100vh - 210px)'},
+              overflow: 'hidden',
+              maxHeight: {xl: 'calc(100vh - 140px)'},
             }}
           >
-            <ThemeProvider theme={defaultTheme}>
-              {/* resets CSS baseline within this scope */}
-              <CssBaseline />
-              <PreviewFormManager
-                initialFormData={{}}
-                layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
-                formName={viewSetId}
-                uiSpec={uiSpecInternal}
-                queryClient={queryClient}
-                mapConfig={getMapConfig}
-              />
-            </ThemeProvider>
+            {sections.length === 0 ? (
+              <Alert severity="info" sx={{m: 0.25}}>
+                Add a section to see the live preview.
+              </Alert>
+            ) : (
+              <Box sx={{maxHeight: {xl: 'calc(100vh - 172px)'}, overflow: 'auto'}}>
+                <ThemeProvider theme={defaultTheme}>
+                  {/* resets CSS baseline within this scope */}
+                  <CssBaseline />
+                  <PreviewFormManager
+                    initialFormData={{}}
+                    layout={uiSpec.viewsets[viewSetId].layout ?? 'tabs'}
+                    formName={viewSetId}
+                    uiSpec={uiSpecInternal}
+                    queryClient={queryClient}
+                    mapConfig={getMapConfig}
+                  />
+                </ThemeProvider>
+              </Box>
+            )}
           </Box>
         </Box>
       )}

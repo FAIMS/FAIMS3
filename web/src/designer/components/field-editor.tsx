@@ -52,15 +52,23 @@ import {
 import {alpha} from '@mui/material/styles';
 import {useSortable} from '@dnd-kit/sortable';
 import {CSS} from '@dnd-kit/utilities';
-import React, {memo, useCallback, useMemo, useState} from 'react';
+import React, {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {
   findFieldConditionUsage,
   findInvalidConditionReferences,
 } from './condition/utils';
 import DebouncedTextField from './debounced-text-field';
+import {keyframes} from '@emotion/react';
 import {renderFieldEditor} from '../features/design/field-editor-registry';
-import {designerResponsiveFieldEditorSx} from './designer-style';
+import {
+  designerCancelButtonSx,
+  designerDialogActionsSx,
+  designerDialogBodyTextSx,
+  designerDialogFieldLabelSx,
+  designerDialogTitleSx,
+  designerResponsiveFieldEditorSx,
+} from './designer-style';
 import {DragHandle} from './drag-handle';
 import {
   fieldDeleted,
@@ -83,6 +91,8 @@ type FieldEditorProps = {
   addFieldCallback: (fieldName: string) => void;
   onExpandedChange: (designerIdentifier: string, expanded: boolean) => void;
   moveFieldCallback: (targetViewId: string) => void;
+  autoFocusLabel?: boolean;
+  onLabelFocused?: () => void;
 };
 
 type ConflictError = {
@@ -90,6 +100,14 @@ type ConflictError = {
   message: string;
   conflicts: string[];
 };
+
+const shakeAnim = keyframes`
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+`;
 
 /** Accordion UI for one field: move, duplicate, delete guards, type-specific inspector. */
 const FieldEditorComponent = ({
@@ -101,6 +119,8 @@ const FieldEditorComponent = ({
   addFieldCallback,
   onExpandedChange,
   moveFieldCallback,
+  autoFocusLabel = false,
+  onLabelFocused,
 }: FieldEditorProps) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
@@ -133,6 +153,13 @@ const FieldEditorComponent = ({
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null);
   const [openDuplicateDialog, setOpenDuplicateDialog] = useState(false);
   const [duplicateTitle, setDuplicateTitle] = useState('');
+  const [shakingUp, setShakingUp] = useState(false);
+  const [shakingDown, setShakingDown] = useState(false);
+
+  const sectionFields: string[] = allFviews[viewId]?.fields ?? [];
+  const fieldIndex = sectionFields.indexOf(fieldName);
+  const isFirstField = fieldIndex === 0;
+  const isLastField = fieldIndex === sectionFields.length - 1;
 
   const fieldComponent = field['component-name'];
 
@@ -142,6 +169,7 @@ const FieldEditorComponent = ({
   const [conflictError, setConflictError] = useState<ConflictError | null>(
     null
   );
+  const editorRootRef = useRef<HTMLDivElement>(null);
 
   const deleteField = (evt: React.SyntheticEvent) => {
     evt.stopPropagation();
@@ -185,11 +213,13 @@ const FieldEditorComponent = ({
 
   const moveFieldDown = (event: React.SyntheticEvent) => {
     event.stopPropagation();
+    if (isLastField) { setShakingDown(true); return; }
     dispatch(fieldMoved({fieldName, viewId, direction: 'down'}));
   };
 
   const moveFieldUp = (event: React.SyntheticEvent) => {
     event.stopPropagation();
+    if (isFirstField) { setShakingUp(true); return; }
     dispatch(fieldMoved({fieldName, viewId, direction: 'up'}));
   };
 
@@ -328,6 +358,22 @@ const FieldEditorComponent = ({
   const {attributes, listeners, setNodeRef, transform, transition, isDragging} =
     useSortable({id: fieldName});
 
+  useEffect(() => {
+    if (!expanded || !autoFocusLabel) return;
+
+    const focusId = window.requestAnimationFrame(() => {
+      const labelInput = editorRootRef.current?.querySelector<HTMLInputElement>(
+        'input[data-field-label-input="true"]'
+      );
+      if (!labelInput) return;
+      labelInput.focus();
+      labelInput.select();
+      onLabelFocused?.();
+    });
+
+    return () => window.cancelAnimationFrame(focusId);
+  }, [expanded, autoFocusLabel, onLabelFocused]);
+
   return (
     <Accordion
       key={fieldName}
@@ -365,7 +411,7 @@ const FieldEditorComponent = ({
             />
             <ArrowForwardIosRoundedIcon
               className="field-expand-arrow"
-              sx={{fontSize: '1rem'}}
+              sx={{fontSize: '1.25rem', color: 'text.primary', fontWeight: 700}}
             />
           </Box>
         }
@@ -396,8 +442,10 @@ const FieldEditorComponent = ({
               <Typography
                 variant="subtitle2"
                 sx={{
-                  color: 'text.primary',
-                  fontWeight: 500,
+                  color: theme => theme.palette.grey[800],
+                  fontWeight: 750,
+                  fontSize: '1.06rem',
+                  letterSpacing: '0.005em',
                   width: '100%',
                   minWidth: 0,
                   overflowWrap: 'anywhere',
@@ -424,7 +472,20 @@ const FieldEditorComponent = ({
                   }}
                 />
                 {field['component-parameters'].required && (
-                  <Chip label="Required" size="small" color="primary" />
+                  <Chip
+                    label="Required"
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontWeight: 700,
+                      fontSize: '0.68rem',
+                      height: 24,
+                      borderColor: theme => alpha(theme.palette.error.main, 0.82),
+                      color: 'error.main',
+                      backgroundColor: theme =>
+                        alpha(theme.palette.error.main, 0.06),
+                    }}
+                  />
                 )}
               </Stack>
               {field['component-parameters'].helperText && (
@@ -461,15 +522,28 @@ const FieldEditorComponent = ({
                   onClick={deleteField}
                   aria-label="delete"
                   size="small"
+                  sx={{
+                    color: 'error.main',
+                    '&:hover': {
+                      backgroundColor: theme => alpha(theme.palette.error.main, 0.1),
+                    },
+                  }}
                 >
                   <DeleteRoundedIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Move Field">
+              <Tooltip title="Move Field to another section">
                 <IconButton
                   onClick={() => setOpenMoveDialog(true)}
                   aria-label="move"
                   size="small"
+                  sx={{
+                    color: 'warning.dark',
+                    '&:hover': {
+                      backgroundColor: theme =>
+                        alpha(theme.palette.warning.main, 0.13),
+                    },
+                  }}
                 >
                   <MoveRoundedIcon />
                 </IconButton>
@@ -479,6 +553,13 @@ const FieldEditorComponent = ({
                   onClick={addFieldBelow}
                   aria-label="add field"
                   size="small"
+                  sx={{
+                    color: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: theme =>
+                        alpha(theme.palette.primary.main, 0.1),
+                    },
+                  }}
                 >
                   <PlaylistAddIcon />
                 </IconButton>
@@ -488,6 +569,12 @@ const FieldEditorComponent = ({
                   onClick={handleOpenDuplicateDialog}
                   aria-label="duplicate"
                   size="small"
+                  sx={{
+                    color: 'info.dark',
+                    '&:hover': {
+                      backgroundColor: theme => alpha(theme.palette.info.main, 0.12),
+                    },
+                  }}
                 >
                   <DuplicateIcon />
                 </IconButton>
@@ -503,16 +590,23 @@ const FieldEditorComponent = ({
                   }
                 >
                   <span>
-                    <IconButton
-                      onClick={toggleHiddenState}
-                      aria-label="unhide field"
-                      size="small"
-                      disabled={
-                        protection === 'protected' || requiredBlocksHiding
-                      }
-                    >
-                      <VisibilityIcon />
-                    </IconButton>
+                      <IconButton
+                        onClick={toggleHiddenState}
+                        aria-label="unhide field"
+                        size="small"
+                        disabled={
+                          protection === 'protected' || requiredBlocksHiding
+                        }
+                        sx={{
+                          color: 'success.dark',
+                          '&:hover': {
+                            backgroundColor: theme =>
+                              alpha(theme.palette.success.main, 0.12),
+                          },
+                        }}
+                      >
+                        <VisibilityIcon />
+                      </IconButton>
                   </span>
                 </Tooltip>
               ) : (
@@ -534,6 +628,13 @@ const FieldEditorComponent = ({
                         disabled={
                           protection === 'protected' || requiredBlocksHiding
                         }
+                        sx={{
+                          color: 'text.secondary',
+                          '&:hover': {
+                            backgroundColor: theme =>
+                              alpha(theme.palette.text.secondary, 0.12),
+                          },
+                        }}
                       >
                         <VisibilityOffIcon />
                       </IconButton>
@@ -541,16 +642,36 @@ const FieldEditorComponent = ({
                   </Tooltip>
                 </>
               )}
-              <Tooltip title="Move up">
-                <IconButton onClick={moveFieldUp} aria-label="up" size="small">
+              <Tooltip title={isFirstField ? 'Already at the top' : 'Move up'}>
+                <IconButton
+                  onClick={moveFieldUp}
+                  aria-label="up"
+                  size="small"
+                  onAnimationEnd={() => setShakingUp(false)}
+                  sx={{
+                    color: isFirstField ? 'text.disabled' : 'text.primary',
+                    animation: shakingUp
+                      ? `${shakeAnim} 0.35s ease`
+                      : undefined,
+                    '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
+                  }}
+                >
                   <ArrowDropUpRoundedIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Move down">
+              <Tooltip title={isLastField ? 'Already at the bottom' : 'Move down'}>
                 <IconButton
                   onClick={moveFieldDown}
                   aria-label="down"
                   size="small"
+                  onAnimationEnd={() => setShakingDown(false)}
+                  sx={{
+                    color: isLastField ? 'text.disabled' : 'text.primary',
+                    animation: shakingDown
+                      ? `${shakeAnim} 0.35s ease`
+                      : undefined,
+                    '& .MuiSvgIcon-root': {fontSize: '1.45rem'},
+                  }}
                 >
                   <ArrowDropDownRoundedIcon />
                 </IconButton>
@@ -561,14 +682,16 @@ const FieldEditorComponent = ({
         <Dialog
           open={deleteWarningOpen}
           onClose={() => setDeleteWarningOpen(false)}
+          fullWidth
+          maxWidth="sm"
           TransitionProps={{
             onExited: () => {
               setConditionsAffected([]);
             },
           }}
         >
-          <DialogTitle>Cannot Delete Field</DialogTitle>
-          <DialogContent>
+          <DialogTitle sx={designerDialogTitleSx}>Cannot Delete Field</DialogTitle>
+          <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
             <Alert severity="warning">
               This field is referenced in the following conditions:
               <ul>
@@ -579,8 +702,9 @@ const FieldEditorComponent = ({
               Please remove all dependencies on this field before deleting it.
             </Alert>
           </DialogContent>
-          <DialogActions>
+          <DialogActions sx={designerDialogActionsSx}>
             <Button
+              sx={designerCancelButtonSx}
               onClick={event => {
                 event.stopPropagation();
                 setDeleteWarningOpen(false);
@@ -596,12 +720,13 @@ const FieldEditorComponent = ({
         open={openMoveDialog}
         onClose={handleCloseMoveDialog}
         aria-labelledby="move-dialog-title"
+        fullWidth
         maxWidth="sm"
       >
-        <DialogTitle id="move-dialog-title" textAlign="center">
-          Move Question
+        <DialogTitle id="move-dialog-title" sx={designerDialogTitleSx}>
+          Move Field
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
           {conflictError && (
             <Alert severity="error" sx={{mb: 2}}>
               <Typography variant="body2" sx={{mb: 1}}>
@@ -614,64 +739,55 @@ const FieldEditorComponent = ({
               </ul>
             </Alert>
           )}
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
-                Destination Form
-              </Typography>
-              <Typography variant="body2" sx={{mb: 0.5}}>
-                Choose the form you want to move the question to.
-              </Typography>
-              <Autocomplete
-                fullWidth
-                value={formValue}
-                onChange={(_event, newValue) => {
-                  setSelectedFormId(newValue ? newValue.id : null);
-                  setTargetViewId(''); // reset section when form changes
-                  setConflictError(null);
-                }}
-                options={formOptions}
-                getOptionLabel={option => option.label}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={params => (
-                  <DebouncedTextField
-                    onChange={function (): void {}}
-                    {...params}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body1" sx={{mt: 1, mb: 1, fontWeight: 450}}>
-                Destination Section
-              </Typography>
-              <Typography variant="body2" sx={{mb: 0.5}}>
-                Choose the section you want to move the question to.
-              </Typography>
-              <Autocomplete
-                fullWidth
-                value={selectedFormId ? sectionValue : null}
-                onChange={(_event, newValue) => {
-                  setTargetViewId(newValue ? newValue.id : '');
-                  setConflictError(null);
-                }}
-                options={sectionOptions}
-                getOptionLabel={option => option.label}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                disabled={!selectedFormId}
-                renderInput={params => (
-                  <DebouncedTextField
-                    onChange={function (): void {}}
-                    {...params}
-                  />
-                )}
-              />
-            </Grid>
-          </Grid>
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
+            Destination Form
+          </Typography>
+          <Typography variant="body2" sx={designerDialogBodyTextSx}>
+            Choose the form you want to move the field to.
+          </Typography>
+          <Autocomplete
+            fullWidth
+            value={formValue}
+            onChange={(_event, newValue) => {
+              setSelectedFormId(newValue ? newValue.id : null);
+              setTargetViewId('');
+              setConflictError(null);
+            }}
+            options={formOptions}
+            getOptionLabel={option => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={params => (
+              <DebouncedTextField onChange={function (): void {}} {...params} />
+            )}
+          />
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
+            Destination Section
+          </Typography>
+          <Typography variant="body2" sx={designerDialogBodyTextSx}>
+            Choose the section you want to move the field to.
+          </Typography>
+          <Autocomplete
+            fullWidth
+            value={selectedFormId ? sectionValue : null}
+            onChange={(_event, newValue) => {
+              setTargetViewId(newValue ? newValue.id : '');
+              setConflictError(null);
+            }}
+            options={sectionOptions}
+            getOptionLabel={option => option.label}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            disabled={!selectedFormId}
+            renderInput={params => (
+              <DebouncedTextField onChange={function (): void {}} {...params} />
+            )}
+          />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={handleCloseMoveDialog}>
+            Cancel
+          </Button>
           <Button
+            variant="contained"
             onClick={moveFieldToSection}
             disabled={!selectedFormId || !targetViewId}
           >
@@ -684,28 +800,34 @@ const FieldEditorComponent = ({
         open={openDuplicateDialog}
         onClose={handleCloseDuplicateDialog}
         aria-labelledby="duplicate-dialog-title"
+        fullWidth
         maxWidth="sm"
         onClick={e => e.stopPropagation()}
       >
-        <DialogTitle id="duplicate-dialog-title" textAlign="center">
+        <DialogTitle id="duplicate-dialog-title" sx={designerDialogTitleSx}>
           Duplicate Field
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{mb: 2}}>
-            Enter a title for the duplicated field.
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
+            Field Title
           </Typography>
           <DebouncedTextField
             autoFocus
             fullWidth
+            size="small"
             value={duplicateTitle}
             onChange={e => setDuplicateTitle(e.target.value)}
-            label="Field Title"
-            variant="outlined"
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDuplicateDialog}>Cancel</Button>
-          <Button onClick={duplicateField} disabled={!duplicateTitle.trim()}>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={handleCloseDuplicateDialog}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={duplicateField}
+            disabled={!duplicateTitle.trim()}
+          >
             Duplicate
           </Button>
         </DialogActions>
@@ -746,6 +868,7 @@ const FieldEditorComponent = ({
             </Stack>
           )}
           <div
+            ref={editorRootRef}
             style={{
               pointerEvents: disableEditing ? 'none' : 'auto',
               opacity: disableEditing ? 0.5 : 1,

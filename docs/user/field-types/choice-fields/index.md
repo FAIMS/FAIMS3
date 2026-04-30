@@ -20,9 +20,8 @@ radio-group.md
 - **[Select Field](select.md)** — Lets users pick one option from a dropdown
   list, suitable for site types, artefact categories, condition assessments,
   and similar single-selection questions.
-- **[Checkbox](checkbox.md)** — A toggle that stores a boolean value (checked
-  or unchecked) for presence/absence indicators, consent acknowledgements, and
-  data quality flags.
+- **[Checkbox](checkbox.md)** — Deprecated for new forms; existing Checkbox
+  fields remain supported. Prefer "Select one option" for new templates.
 - **[Select Multiple](multi-select.md)** — Lets users pick multiple options
   from a predefined list, with expanded checklist (default) or dropdown
   display.

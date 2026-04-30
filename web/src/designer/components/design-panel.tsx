@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * @file Form tabs, add form, undo/redo, and routed `FormEditor` instances.
+ * @file Form tabs, add/move form controls, and routed `FormEditor` instances.
  */
 
 import {
@@ -38,10 +38,11 @@ import AddIcon from '@mui/icons-material/Add';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 
 import {TabContext} from '@mui/lab';
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useRef} from 'react';
 import {useAppDispatch, useAppSelector} from '../state/hooks';
 import {FormEditor} from './form-editor';
 import {
+  designerCancelButtonSx,
   designerDividerSx,
   designerSubheadingSx,
 } from './designer-style';
@@ -57,8 +58,9 @@ import {
 } from 'react-router-dom';
 import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 import type {PreviewOutletContext} from './notebook-editor';
+import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 
-/** Main designer surface: form tabs, undo/redo, snackbars, and `FormEditor` routes. */
+/** Main designer surface for form tabs and routed `FormEditor` instances. */
 export const DesignPanel = () => {
   const navigate = useNavigate();
   const {pathname} = useLocation();
@@ -91,12 +93,34 @@ export const DesignPanel = () => {
   const theme = useTheme();
   const addFormDialogFullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const compactAddTab = useMediaQuery(theme.breakpoints.down('md'));
+  const formTabsRef = useRef<HTMLDivElement | null>(null);
+  const [hasFormTabOverflow, setHasFormTabOverflow] = useState(false);
 
   useEffect(() => {
     setNewFormName(`Form ${Object.keys(viewSets).length + 1}`);
   }, [viewSets]);
 
+  useEffect(() => {
+    const el = formTabsRef.current;
+    if (!el) return;
+    const scroller = el.querySelector('.MuiTabs-scroller') as HTMLElement | null;
+    if (!scroller) return;
+
+    const updateOverflow = () => {
+      setHasFormTabOverflow(scroller.scrollWidth > scroller.clientWidth + 4);
+    };
+
+    updateOverflow();
+    scroller.addEventListener('scroll', updateOverflow, {passive: true});
+    window.addEventListener('resize', updateOverflow);
+    return () => {
+      scroller.removeEventListener('scroll', updateOverflow);
+      window.removeEventListener('resize', updateOverflow);
+    };
+  }, [visibleTypes.length, untickedForms.length, compactAddTab]);
+
   const maxKeys = Object.keys(viewSets).length;
+  const isDass = theme.designerMeta?.isDass ?? false;
 
   const baseTabRootSx = {
     '&.MuiTab-root': {
@@ -109,51 +133,52 @@ export const DesignPanel = () => {
       borderTopRightRadius: '10px',
       marginRight: '0.5em',
       minHeight: 48,
-      minWidth: {xs: 120, sm: 140, md: 160},
-      maxWidth: {xs: 220, sm: 240, md: 260},
-      paddingX: {xs: 1.25, sm: 2},
+      minWidth: {xs: 110, sm: 130, md: 150},
+      maxWidth: {xs: 200, sm: 220, md: 260},
+      paddingX: {xs: 1, sm: 1.5},
       paddingY: 1,
       textTransform: 'uppercase',
-      fontWeight: 700,
-      fontSize: '0.75rem',
+      fontWeight: 750,
+      fontSize: '0.72rem',
       lineHeight: 1.2,
       whiteSpace: 'normal',
       textAlign: 'center',
       color: 'text.secondary',
+      flexShrink: 0,
     },
   } as const;
 
+  // Selected tabs are consistently dark/high-contrast for clear active state.
   const visibleTabSx = {
     ...baseTabRootSx,
     '&.Mui-selected': {
-      borderColor: 'primary.main',
-      color: 'primary.main',
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
+      borderColor: 'common.black',
+      color: 'common.white',
+      backgroundColor: 'common.black',
+      fontWeight: 800,
     },
     '&:hover': {
-      color: 'primary.main',
+      color: 'common.white',
       opacity: 1,
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+      backgroundColor: '#111111',
     },
-  } as const;
+  };
 
   const untickedTabSx = {
     ...baseTabRootSx,
     '&.Mui-selected': {
       color: 'secondary.main',
       borderColor: 'secondary.main',
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.secondary.main, theme.palette.mode === 'dark' ? 0.25 : 0.14),
+      backgroundColor: (t: Theme) =>
+        alpha(t.palette.secondary.main, t.palette.mode === 'dark' ? 0.25 : 0.14),
     },
     '&:hover': {
       color: 'secondary.main',
       opacity: 1,
-      backgroundColor: (theme: Theme) =>
-        alpha(theme.palette.secondary.main, theme.palette.mode === 'dark' ? 0.2 : 0.1),
+      backgroundColor: (t: Theme) =>
+        alpha(t.palette.secondary.main, t.palette.mode === 'dark' ? 0.2 : 0.1),
     },
-  } as const;
+  };
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setIndexAndNavigate(newValue.toString());
@@ -322,21 +347,52 @@ export const DesignPanel = () => {
 
         <Box sx={{borderBottom: 1, borderColor: 'divider'}}>
           <Tabs
+            ref={formTabsRef}
             value={tabIndex}
             onChange={handleTabChange}
             aria-label="form tabs"
-            variant="standard"
-            TabIndicatorProps={{sx: {display: 'none'}}}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
+            TabIndicatorProps={{
+              sx: {
+                display: isDass ? 'block' : 'none',
+                height: 3,
+                backgroundColor: 'secondary.main',
+              },
+            }}
             sx={{
               minHeight: 48,
               ml: 0,
+              '& .MuiTabs-scrollButtons': {
+                color: 'text.primary',
+                '&.Mui-disabled': {opacity: 0.3},
+                '& .MuiSvgIcon-root': {
+                  fontSize: '1.9rem',
+                  fontWeight: 700,
+                },
+              },
               '& .MuiTabs-scroller': {
-                overflow: 'visible !important',
+                overflowX: 'auto !important',
+                scrollbarWidth: hasFormTabOverflow ? 'thin' : 'none',
+                scrollbarColor: hasFormTabOverflow
+                  ? 'rgba(78, 116, 138, 0.42) transparent'
+                  : 'transparent transparent',
+                '&::-webkit-scrollbar': {
+                  height: hasFormTabOverflow ? 8 : 0,
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                  borderRadius: 999,
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(78, 116, 138, 0.42)',
+                },
               },
               '& .MuiTabs-flexContainer': {
-                ml: 0,
-                flexWrap: 'wrap',
-                gap: 1,
+                gap: 0,
+                alignItems: 'flex-end',
               },
             }}
           >
@@ -397,6 +453,23 @@ export const DesignPanel = () => {
               }}
             />
           </Tabs>
+          {hasFormTabOverflow && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.5,
+                color: 'text.secondary',
+                px: 0.5,
+                pb: 0.5,
+              }}
+            >
+              <SwapHorizRoundedIcon sx={{fontSize: '1rem'}} />
+              <Typography variant="caption" sx={{fontWeight: 600}}>
+                Scroll left or right to see more forms
+              </Typography>
+            </Box>
+          )}
         </Box>
 
         <Routes>
@@ -519,6 +592,7 @@ export const DesignPanel = () => {
               setAddFormDialogOpen(false);
               setAlertMessage('');
             }}
+            sx={designerCancelButtonSx}
             fullWidth={addFormDialogFullScreen}
           >
             Cancel

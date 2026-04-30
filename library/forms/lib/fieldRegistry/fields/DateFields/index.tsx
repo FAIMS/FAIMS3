@@ -3,10 +3,10 @@
  *
  * Provides date and time input fields using native HTML input types.
  * Exports separate field specs for:
- * - DateTimePicker (datetime-local)
- * - DatePicker (date)
- * - MonthPicker (month)
- * - DateTimeNow (datetime-local with "Now" button and optional auto-pick)
+ * - DateTimePicker (datetime-local; optional auto-pick and optional "Now" button)
+ * - DatePicker (date; optional "Today" button)
+ * - MonthPicker (month; optional "This month" button)
+ * - DateTimeNow (legacy datetime-local field retained for backward compatibility)
  */
 
 import {
@@ -36,6 +36,15 @@ const dateTimePropsSchema = BaseFieldPropsSchema.extend({
     .enum(['outlined', 'filled', 'standard'])
     .optional()
     .default('outlined'),
+  /**
+   * When true, auto-populate the field with current datetime on first mount
+   * if no value is currently set.
+   */
+  is_auto_pick: z.boolean().optional().default(false),
+  /**
+   * When true, renders a "Now" button that sets the field to the current datetime.
+   */
+  show_now_button: z.boolean().optional().default(false),
 });
 
 type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
@@ -44,11 +53,11 @@ type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
 type DateTimeFieldFullProps = FullFieldProps & DateTimeFieldProps;
 
 // =============================================================================
-// DateTimeNow Props Schema
+// DateTimeNow Props Schema (legacy field support)
 // =============================================================================
 
 /**
- * Extended props schema for DateTimeNow field.
+ * Extended props schema for legacy DateTimeNow field.
  *
  * Adds is_auto_pick option which automatically populates the field with the
  * current datetime when the form is first opened (only if the field is empty).
@@ -137,38 +146,292 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = props => {
 // =============================================================================
 
 const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => {
+  const {
+    label,
+    helperText,
+    required,
+    advancedHelperText,
+    fullWidth,
+    disabled,
+    state,
+    setFieldData,
+    handleBlur,
+    config,
+    is_auto_pick,
+    show_now_button,
+  } = props;
+
+  if (config.mode === 'preview') {
+    return (
+      <FieldWrapper heading={label} subheading={helperText}>
+        <Typography color="text.secondary">Date & Time Picker</Typography>
+      </FieldWrapper>
+    );
+  }
+
+  const value = (state.value?.data as string) ?? '';
+  const errors = state.meta.errors as unknown as string[] | undefined;
+
+  useEffect(() => {
+    if (is_auto_pick && (value === null || value === undefined || value === '')) {
+      const now = new Date();
+      const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 19);
+      setFieldData(localNow);
+    }
+    // Only run on mount to avoid overriding user edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleNowClick = () => {
+    const now = new Date();
+    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 19);
+    setFieldData(localNow);
+  };
+
   return (
-    <DateTimeBase
-      {...props}
-      inputType="datetime-local"
-      previewLabel="Date & Time Picker"
-    />
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}
+      required={required}
+      advancedHelperText={advancedHelperText}
+      errors={errors}
+    >
+      <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
+        <MuiTextField
+          type="datetime-local"
+          value={value}
+          onChange={e => {
+            const next = e.target.value.trim();
+            setFieldData(next === '' ? '' : next);
+          }}
+          onBlur={handleBlur}
+          variant="outlined"
+          fullWidth={fullWidth ?? true}
+          disabled={disabled}
+          required={required}
+          error={Boolean(errors && errors.length > 0)}
+          inputProps={{step: 1}}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius:
+                show_now_button === true ? {xs: '4px', sm: '4px 0 0 4px'} : 1,
+            },
+          }}
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
+        {show_now_button && (
+          <Button
+            variant="contained"
+            disableElevation
+            aria-label="Select current date and time"
+            onClick={handleNowClick}
+            sx={{
+              borderRadius: {xs: '4px', sm: '0 4px 4px 0'},
+              minWidth: {xs: 'auto', sm: '80px'},
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Now
+          </Button>
+        )}
+      </Stack>
+    </FieldWrapper>
   );
 };
 
 const DatePickerField: React.FC<DateTimeFieldFullProps> = props => {
+  const {
+    label,
+    helperText,
+    required,
+    advancedHelperText,
+    fullWidth,
+    disabled,
+    state,
+    setFieldData,
+    handleBlur,
+    config,
+    show_now_button,
+  } = props;
+
+  if (config.mode === 'preview') {
+    return (
+      <FieldWrapper heading={label} subheading={helperText}>
+        <Typography color="text.secondary">Date Picker</Typography>
+      </FieldWrapper>
+    );
+  }
+
+  const value = (state.value?.data as string) ?? '';
+  const errors = state.meta.errors as unknown as string[] | undefined;
+
+  const handleNowClick = () => {
+    const today = new Date();
+    const localToday = new Date(
+      today.getTime() - today.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .slice(0, 10);
+    setFieldData(localToday);
+  };
+
   return (
-    <DateTimeBase {...props} inputType="date" previewLabel="Date Picker" />
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}   
+      required={required}
+      advancedHelperText={advancedHelperText}
+      errors={errors}
+    >
+      <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
+        <MuiTextField
+          type="date"
+          value={value}
+          onChange={e => {
+            const next = e.target.value.trim();
+            setFieldData(next === '' ? '' : next);
+          }}
+          onBlur={handleBlur}
+          variant="outlined"
+          fullWidth={fullWidth ?? true}
+          disabled={disabled}
+          required={required}
+          error={Boolean(errors && errors.length > 0)}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius:
+                show_now_button === true ? {xs: '4px', sm: '4px 0 0 4px'} : 1,
+            },
+          }}
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
+        {show_now_button && (
+          <Button
+            variant="contained"
+            disableElevation
+            aria-label="Select today's date"
+            onClick={handleNowClick}
+            sx={{
+              borderRadius: {xs: '4px', sm: '0 4px 4px 0'},
+              minWidth: {xs: 'auto', sm: '80px'},
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Today
+          </Button>
+        )}
+      </Stack>
+    </FieldWrapper>
   );
 };
 
 const MonthPickerField: React.FC<DateTimeFieldFullProps> = props => {
+  const {
+    label,
+    helperText,
+    required,
+    advancedHelperText,
+    fullWidth,
+    disabled,
+    state,
+    setFieldData,
+    handleBlur,
+    config,
+    show_now_button,
+  } = props;
+
+  if (config.mode === 'preview') {
+    return (
+      <FieldWrapper heading={label} subheading={helperText}>
+        <Typography color="text.secondary">Month Picker</Typography>
+      </FieldWrapper>
+    );
+  }
+
+  const value = (state.value?.data as string) ?? '';
+  const errors = state.meta.errors as unknown as string[] | undefined;
+
+  const handleNowClick = () => {
+    const now = new Date();
+    const localCurrentMonth = new Date(
+      now.getTime() - now.getTimezoneOffset() * 60000
+    )
+      .toISOString()
+      .slice(0, 7);
+    setFieldData(localCurrentMonth);
+  };
+
   return (
-    <DateTimeBase {...props} inputType="month" previewLabel="Month Picker" />
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}
+      required={required}
+      advancedHelperText={advancedHelperText}
+      errors={errors}
+    >
+      <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
+        <MuiTextField
+          type="month"
+          value={value}
+          onChange={e => {
+            const next = e.target.value.trim();
+            setFieldData(next === '' ? '' : next);
+          }}
+          onBlur={handleBlur}
+          variant="outlined"
+          fullWidth={fullWidth ?? true}
+          disabled={disabled}
+          required={required}
+          error={Boolean(errors && errors.length > 0)}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius:
+                show_now_button === true ? {xs: '4px', sm: '4px 0 0 4px'} : 1,
+            },
+          }}
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
+        {show_now_button && (
+          <Button
+            variant="contained"
+            disableElevation
+            aria-label="Select current month"
+            onClick={handleNowClick}
+            sx={{
+              borderRadius: {xs: '4px', sm: '0 4px 4px 0'},
+              minWidth: {xs: 'auto', sm: '80px'},
+              whiteSpace: 'nowrap',
+            }}
+          >
+            This month
+          </Button>
+        )}
+      </Stack>
+    </FieldWrapper>
   );
 };
 
 // =============================================================================
-// DateTimeNow Component
+// DateTimeNow Component (legacy)
 // =============================================================================
 
 /**
- * DateTimeNow Field
+ * DateTimeNow Field (legacy)
  *
- * A datetime picker with a "Now" button that captures the current timestamp.
+ * Legacy datetime picker with a "Now" button that captures the current timestamp.
  * Stores values as ISO strings internally but displays using local datetime format.
  *
- * Features:
+ * Legacy features:
  * - "Now" button to quickly capture current datetime with 1-second precision
  * - Optional auto-pick on mount (is_auto_pick prop)
  * - ISO string storage for consistent timezone handling
@@ -388,7 +651,7 @@ const MonthPickerRenderer: DataViewFieldRender = props => {
 };
 
 /**
- * View renderer for DateTimeNow field.
+ * View renderer for legacy DateTimeNow field.
  * Since the stored value is ISO format, we use the same formatter as DateTimePicker.
  */
 const DateTimeNowRenderer: DataViewFieldRender = props => {

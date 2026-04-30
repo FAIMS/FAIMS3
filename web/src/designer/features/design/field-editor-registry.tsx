@@ -48,7 +48,7 @@ export type FieldEditorRenderer = (
 ) => React.ReactElement;
 
 const selectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
-  <OptionsEditor fieldName={fieldName} />
+  <OptionsEditor fieldName={fieldName} showExpandedChecklist={true} />
 );
 
 const multiSelectEditorRenderer: FieldEditorRenderer = ({fieldName}) => (
@@ -66,6 +66,9 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
   TextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
   DateTimeNow: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  DateTimePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  DatePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  MonthPicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   Select: selectEditorRenderer,
   MultiSelect: multiSelectEditorRenderer,
   RadioGroup: selectEditorRenderer,

@@ -20,21 +20,17 @@ the section editing controls and above its **Visible Fields** list.
 
 The dialog has four main areas:
 
-1. **Field name** — a text input at the top, pre-populated with "New
-   Field". Type a name here before adding the field; this value
-   pre-populates the field's Label.
-2. **Tab bar** — a row of category tabs that filter the field type cards
+1. **Tab bar** — a row of category tabs that filter the field type cards
    shown below.
-3. **Search field types** — a text input below the tab bar that filters
+2. **Search field types** — a text input below the tab bar that filters
    cards by name, regardless of which tab is selected.
-4. **Field type cards** — a grid of cards, each showing an icon and
-   the field type name. **Click** a card to select it, then **click**
-   the **ADD FIELD** button in the lower right to add the field to
-   your form. **Click** **CANCEL** to close the dialog without adding
-   a field.
+3. **Field type cards** — a grid of cards, each showing an icon and
+   the field type name. **Click** a card to add it immediately to
+   your form.
+4. **Close button** — closes the dialog without adding a field.
 
 ```{screenshot} field-types-design/shared-01-add-field-modal.png
-:alt: The Add a field dialog showing the ALL tab with field type cards, the Field name input, tab bar, search input, and ADD FIELD button
+:alt: The Add a field dialog showing the ALL tab with field type cards, tab bar, search input, and Close button
 :align: right
 :width: 100%
 ```
@@ -51,7 +47,7 @@ The tab bar organises field types into nine categories:
 | **DATE & TIME** | Date time picker, Date picker, Month picker, Date and Time with Now button |
 | **MEDIA** | Take Photo, Upload a File |
 | **LOCATION** | Take GPS Point, Map Field |
-| **CHOICE** | Select Field, Select Multiple, Checkbox, Select Field (Hierarchical), Select one option |
+| **CHOICE** | Select Field, Select Multiple, Checkbox (deprecated), Select Field (Hierarchical), Select one option |
 | **RELATIONSHIP** | Related Records |
 | **DISPLAY** | Rich Text |
 
@@ -61,9 +57,9 @@ The tab bar organises field types into nine categories:
 
 ## Tips
 
-- **Name your field before clicking ADD FIELD.** The "Field name" input
-  pre-populates the Label and Field ID, saving you a step. You can
-  always edit both after adding the field.
+- **Name your field right after adding it.** After you click a field card,
+  the new field opens in the editor and focus moves to the Label input,
+  so you can type the field name immediately.
 - **Use the ALL tab** to browse every field type at a glance, or
   **switch to a category tab** when you know what kind of field you
   need.

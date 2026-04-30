@@ -15,78 +15,60 @@
  *
  * Filename: index.tsx
  * Description:
- *   Taken from the main FAIMS3 proj source code: /src/gui/theme/index.tsx
- *   Amended to fit this project.
+ *   Designer MUI theme factory.
+ *   Token values live in faims-tokens.ts / dass-tokens.ts.
+ *   Component code that needs to branch on theme variant should read
+ *   `theme.designerMeta.isDass` or `theme.designerMeta.tokens.*`.
  */
 
 import {createTheme, colors} from '@mui/material';
+import {alpha} from '@mui/material/styles';
+import type {DesignerThemeTokens} from './tokens';
+import {faimsTokens} from './faims-tokens';
+import {dassTokens} from './dass-tokens';
 
-export type DesignerThemeName = 'default' | 'bssTheme' | 'dassTheme' | string;
+// ── Re-export token types so consumers don't need a deep import ────────────
+export type {DesignerThemeTokens} from './tokens';
+export {faimsTokens} from './faims-tokens';
+export {dassTokens} from './dass-tokens';
 
-type ThemeTokens = {
-  backgroundDefault: string;
-  primaryMain: string;
-  primaryLight: string;
-  primaryDark: string;
-  secondaryMain: string;
-  textPrimary: string;
-  textSecondary: string;
-  textDisabled: string;
-  divider: string;
-  appBarBackground: string;
-  appBarColor: string;
-  tabSelectedBackground: string;
-  tabSelectedText: string;
-};
-
-const faimsTokens: ThemeTokens = {
-  backgroundDefault: '#FAFAFB',
-  primaryMain: '#669911',
-  primaryLight: '#a7e938',
-  primaryDark: '#141E03',
-  secondaryMain: '#E18200',
-  textPrimary: colors.blueGrey[900],
-  textSecondary: colors.blueGrey[700],
-  textDisabled: colors.blueGrey[500],
-  divider: '#D3D1D1',
-  appBarBackground: '#edeeeb',
-  appBarColor: '#324C08',
-  tabSelectedBackground: '#DA9449',
-  tabSelectedText: '#FFFFFF',
-};
-
-const dassTokens: ThemeTokens = {
-  backgroundDefault: '#FAFAFB',
-  primaryMain: '#000000',
-  primaryLight: '#FFFFFF',
-  primaryDark: '#000000',
-  secondaryMain: '#12B0FB',
-  textPrimary: '#18232C',
-  textSecondary: '#2C404C',
-  textDisabled: '#4E6775',
-  divider: '#B9C4CB',
-  appBarBackground: '#FFFFFF',
-  appBarColor: '#000000',
-  tabSelectedBackground: '#000000',
-  tabSelectedText: '#FFFFFF',
-};
-
-const resolveTokens = (themeName: DesignerThemeName): ThemeTokens => {
-  switch (themeName) {
-    case 'bssTheme':
-    case 'dassTheme':
-    case 'dass':
-      return dassTokens;
-    case 'default':
-    default:
-      return faimsTokens;
+// ── MUI theme augmentation ────────────────────────────────────────────────
+declare module '@mui/material/styles' {
+  interface Theme {
+    /** Designer-specific metadata injected alongside the MUI palette. */
+    designerMeta: {
+      /** True when the active theme is DASS / BSS. */
+      isDass: boolean;
+      /** Full resolved token set for the active theme. */
+      tokens: DesignerThemeTokens;
+    };
   }
+  interface ThemeOptions {
+    designerMeta?: {
+      isDass?: boolean;
+      tokens?: DesignerThemeTokens;
+    };
+  }
+}
+
+// ── Theme name union ──────────────────────────────────────────────────────
+export type DesignerThemeName = 'default' | 'bssTheme' | 'dassTheme' | 'dass' | string;
+
+const resolveTokens = (
+  themeName: DesignerThemeName
+): {tokens: DesignerThemeTokens; isDass: boolean} => {
+  const isDass =
+    themeName === 'bssTheme' || themeName === 'dassTheme' || themeName === 'dass';
+  return {tokens: isDass ? dassTokens : faimsTokens, isDass};
 };
 
 export const createDesignerTheme = (themeName: DesignerThemeName = 'default') => {
-  const tokens = resolveTokens(themeName);
+  const {tokens, isDass} = resolveTokens(themeName);
 
   return createTheme({
+    // Custom metadata readable via `useTheme().designerMeta`
+    designerMeta: {isDass, tokens},
+
     palette: {
       background: {
         default: tokens.backgroundDefault,
@@ -95,17 +77,27 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
         main: tokens.primaryMain,
         light: tokens.primaryLight,
         dark: tokens.primaryDark,
+        contrastText: tokens.primaryContrastText,
       },
       secondary: {
         main: tokens.secondaryMain,
         contrastText: '#fff',
       },
-      text: {
-        primary: tokens.textPrimary,
-        secondary: tokens.textSecondary,
-        disabled: tokens.textDisabled,
+      error: {
+        main: tokens.errorMain,
       },
-      divider: tokens.divider,
+      success: {
+        main: tokens.successMain,
+      },
+      info: {
+        main: tokens.tooltipIconColor,
+      },
+      text: {
+        primary: colors.blueGrey[900],
+        secondary: colors.blueGrey[600],
+        disabled: tokens.helperTextColor,
+      },
+      divider: '#D3D1D1FF',
     },
     typography: {
       fontFamily: "'Noto Sans', 'Open Sans', sans-serif",
@@ -151,15 +143,85 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
           colorPrimary: {
             backgroundColor: tokens.appBarBackground,
             color: tokens.appBarColor,
-            contrastText: '#fff',
-            textColor: '#fff',
-            indicatorColor: '#fff',
-            text: {
-              primary: '#fff',
+          },
+        },
+      },
+
+      MuiTooltip: {
+        defaultProps: {
+          arrow: true,
+          enterTouchDelay: 80,
+          leaveTouchDelay: 2500,
+        },
+        styleOverrides: {
+          tooltip: {
+            backgroundColor: '#EAF6FF',
+            color: '#17415C',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            lineHeight: 1.35,
+            border: '1px solid #9DD5FF',
+            boxShadow: '0 4px 12px rgba(58, 133, 192, 0.18)',
+            maxWidth: 340,
+            padding: '7px 10px',
+            borderRadius: 8,
+          },
+          arrow: {
+            color: '#EAF6FF',
+            '&::before': {border: '1px solid #9DD5FF'},
+          },
+        },
+      },
+      MuiCheckbox: {
+        styleOverrides: {
+          root: {
+            color: colors.grey[500],
+            '&.Mui-checked': {
+              color: tokens.successMain,
+            },
+            '&.Mui-disabled': {
+              color: colors.grey[400],
             },
           },
         },
       },
+      MuiDialog: {
+        styleOverrides: {
+          root: {
+            '& .MuiBackdrop-root': {
+              backgroundColor: alpha('#0f1720', 0.45),
+              backdropFilter: 'blur(1px)',
+            },
+          },
+          paper: {
+            borderRadius: 12,
+            border: '1px solid rgba(17,24,39,0.12)',
+            boxShadow: '0 20px 46px rgba(15, 23, 32, 0.24)',
+            overflow: 'hidden',
+          },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          root: {
+            textTransform: 'none',
+            fontWeight: 700,
+            letterSpacing: '0.01em',
+            '&.Mui-disabled': {
+              backgroundColor: alpha(colors.blueGrey[200], 0.42),
+              color: colors.blueGrey[600],
+              borderColor: alpha(colors.blueGrey[600], 0.2),
+            },
+          },
+          contained: {
+            boxShadow: '0 2px 8px rgba(15, 23, 32, 0.18)',
+            '&:hover': {
+              boxShadow: '0 4px 12px rgba(15, 23, 32, 0.24)',
+            },
+          },
+        },
+      },
+
       MuiTabs: {
         styleOverrides: {
           root: {
@@ -172,9 +234,15 @@ export const createDesignerTheme = (themeName: DesignerThemeName = 'default') =>
             },
             '&.Mui-selected': {
               fontWeight: '700 !important',
-              color: tokens.tabSelectedText,
-              backgroundColor: tokens.tabSelectedBackground,
+              color: tokens.formTabSelectedText,
+              backgroundColor: tokens.formTabSelectedBg,
             },
+          },
+          // Underline indicator — visible for DASS, hidden for FAIMS
+          indicator: {
+            height: 3,
+            backgroundColor: tokens.formTabIndicatorColor,
+            display: tokens.formTabIndicatorVisible ? 'block' : 'none',
           },
         },
       },

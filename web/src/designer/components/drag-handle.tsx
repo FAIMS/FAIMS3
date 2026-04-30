@@ -40,7 +40,7 @@ export const DragHandle = ({
           size={compact ? 'small' : 'medium'}
           sx={{
             cursor: 'grab',
-            color: 'text.secondary',
+            color: 'text.primary',
             '&:active': {cursor: 'grabbing'},
           }}
           onPointerDown={onPointerDown}
@@ -48,7 +48,9 @@ export const DragHandle = ({
           {...dragAttributes}
           {...(dragListeners as object)}
         >
-          <DragIndicatorIcon fontSize={compact ? 'small' : 'medium'} />
+          <DragIndicatorIcon
+            sx={{fontSize: compact ? '1.45rem' : '1.65rem', fontWeight: 700}}
+          />
         </IconButton>
       </Box>
     </Tooltip>

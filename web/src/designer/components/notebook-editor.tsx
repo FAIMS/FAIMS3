@@ -28,15 +28,17 @@ import {
   Tab,
   Tooltip,
   Typography,
+  Theme,
 } from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 import {useCallback, useEffect, useState} from 'react';
-// eslint-disable-next-line n/no-extraneous-import
-import {ActionCreators} from 'redux-undo';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
-import {useAppDispatch, useAppSelector} from '../state/hooks';
-import {designerResponsiveFrameSx} from './designer-style';
+import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
+import {
+  designerCancelButtonSx,
+  designerResponsiveFrameSx,
+} from './designer-style';
 
 /** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
 export type NotebookEditorProps = {
@@ -55,7 +57,6 @@ export const NotebookEditor = ({
 }: NotebookEditorProps) => {
   const {pathname} = useLocation();
   const isDesignRoute = pathname.startsWith('/design/');
-  const dispatch = useAppDispatch();
   const [previewForm, setPreviewForm] = useState(false);
 
   const tabIndex = pathname.startsWith('/design/')
@@ -66,12 +67,14 @@ export const NotebookEditor = ({
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  //  redux-undo state to determine if there is something to undo/redo
-  const undoableState = useAppSelector(
-    state => state.notebook['ui-specification']
+  const onUndoRedoMessage = useCallback((message: string) => {
+    setToastMessage(message);
+    setToastOpen(true);
+  }, []);
+
+  const {canUndo, canRedo, undo, redo} = useDesignerUndoRedo(
+    onUndoRedoMessage
   );
-  const canUndo = undoableState.past.length > 0;
-  const canRedo = undoableState.future.length > 0;
 
   const handleToastClose = (
     _event?: React.SyntheticEvent | Event,
@@ -83,28 +86,6 @@ export const NotebookEditor = ({
     setToastOpen(false);
   };
 
-  const handleUndo = useCallback(() => {
-    if (!canUndo) {
-      setToastMessage('Nothing to undo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.undo());
-    setToastMessage('Undo complete');
-    setToastOpen(true);
-  }, [canUndo, dispatch]);
-
-  const handleRedo = useCallback(() => {
-    if (!canRedo) {
-      setToastMessage('Nothing to redo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.redo());
-    setToastMessage('Redo complete');
-    setToastOpen(true);
-  }, [canRedo, dispatch]);
-
   // Keyboard shortcuts for undo/redo
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -114,17 +95,17 @@ export const NotebookEditor = ({
         event.key.toLowerCase() === 'z'
       ) {
         event.preventDefault();
-        handleUndo();
+        undo();
       } else if (
         (event.ctrlKey || event.metaKey) &&
         (event.key.toLowerCase() === 'y' ||
           (event.shiftKey && event.key.toLowerCase() === 'z'))
       ) {
         event.preventDefault();
-        handleRedo();
+        redo();
       }
     },
-    [handleRedo, handleUndo]
+    [redo, undo]
   );
 
   useEffect(() => {
@@ -153,7 +134,10 @@ export const NotebookEditor = ({
     gap: 1,
   } as const;
 
-  const historyButtonSx = (enabled: boolean) =>
+  const historyButtonSx = (
+    enabled: boolean,
+    variant: 'undo' | 'redo'
+  ) =>
     ({
       textTransform: 'none',
       fontWeight: 700,
@@ -161,23 +145,43 @@ export const NotebookEditor = ({
       borderRadius: 1.2,
       boxShadow: 'none',
       border: '1px solid',
-      borderColor: enabled ? 'primary.main' : 'divider',
-      color: enabled ? 'primary.contrastText' : 'text.disabled',
-      backgroundColor: enabled ? 'primary.main' : 'background.paper',
+      borderColor: enabled
+        ? variant === 'redo'
+          ? (t: Theme) =>
+              t.designerMeta?.isDass ? '#7A1F2B' : t.palette.secondary.main
+          : 'common.black'
+        : 'grey.400',
+      color: enabled
+        ? 'common.white'
+        : 'text.disabled',
+      backgroundColor: enabled
+        ? variant === 'redo'
+          ? (t: Theme) =>
+              t.designerMeta?.isDass ? '#7A1F2B' : t.palette.secondary.main
+          : 'common.black'
+        : 'grey.100',
       '& .MuiButton-startIcon': {color: 'inherit'},
       '&:hover': enabled
         ? {
-            backgroundColor: 'primary.dark',
-            borderColor: 'primary.dark',
+            backgroundColor:
+              variant === 'redo'
+                ? (t: Theme) =>
+                    t.designerMeta?.isDass ? '#611824' : t.palette.secondary.dark
+                : '#111111',
+            borderColor:
+              variant === 'redo'
+                ? (t: Theme) =>
+                    t.designerMeta?.isDass ? '#611824' : t.palette.secondary.dark
+                : '#111111',
             boxShadow: 'none',
           }
         : {
-            backgroundColor: 'action.hover',
+            backgroundColor: 'grey.200',
           },
       '&.Mui-disabled': {
         color: 'text.disabled',
-        borderColor: 'divider',
-        backgroundColor: 'background.paper',
+        borderColor: 'grey.400',
+        backgroundColor: 'grey.100',
       },
     }) as const;
 
@@ -222,7 +226,7 @@ export const NotebookEditor = ({
                   <Button
                     onClick={onCancelRequest}
                     color="primary"
-                    sx={{textTransform: 'uppercase', fontWeight: 700}}
+                    sx={designerCancelButtonSx}
                   >
                     Cancel
                   </Button>
@@ -235,9 +239,9 @@ export const NotebookEditor = ({
                       <Button
                         variant={canUndo ? 'contained' : 'outlined'}
                         startIcon={<UndoIcon />}
-                        onClick={handleUndo}
+                        onClick={undo}
                         disabled={!canUndo}
-                        sx={historyButtonSx(canUndo)}
+                        sx={historyButtonSx(canUndo, 'undo')}
                       >
                         Undo
                       </Button>
@@ -254,9 +258,9 @@ export const NotebookEditor = ({
                       <Button
                         variant={canRedo ? 'contained' : 'outlined'}
                         startIcon={<RedoIcon />}
-                        onClick={handleRedo}
+                        onClick={redo}
                         disabled={!canRedo}
-                        sx={historyButtonSx(canRedo)}
+                        sx={historyButtonSx(canRedo, 'redo')}
                       >
                         Redo
                       </Button>

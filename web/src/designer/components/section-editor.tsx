@@ -57,9 +57,14 @@ import {ConditionType} from '../types/condition';
 import DebouncedTextField from './debounced-text-field';
 import {DeletionWarningDialog} from './deletion-warning-dialog';
 import {
+  designerCancelButtonSx,
   designerControlActionRowSx,
   designerControlLabelSx,
   designerControlHeadingSx,
+  designerDialogActionsSx,
+  designerDialogBodyTextSx,
+  designerDialogFieldLabelSx,
+  designerDialogTitleSx,
   designerDividerSx,
   designerHeadingRowSx,
   designerHeadingTextSx,
@@ -447,18 +452,16 @@ export const SectionEditor = ({
       <Dialog
         open={openMoveDialog}
         onClose={handleCloseMoveDialog}
+        fullWidth
+        maxWidth="sm"
         aria-labelledby="alert-move-dialog-title"
-        aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-move-dialog-title" textAlign="center">
-          Move Section
+        <DialogTitle id="alert-move-dialog-title" sx={designerDialogTitleSx}>
+          Move Section to Another Form
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{mt: 0.5, mb: 1, fontWeight: 450}}>
-            Destination Form
-          </Typography>
-          <Typography variant="body2" sx={{mb: 1}}>
-            Choose the form you want to move the section to.
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <Typography variant="body2" sx={{mb: 1.5, color: 'text.secondary'}}>
+            Choose the destination form for this section.
           </Typography>
           <Autocomplete
             fullWidth
@@ -477,9 +480,15 @@ export const SectionEditor = ({
             )}
           />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseMoveDialog}>Cancel</Button>
-          <Button onClick={moveSectionToForm} disabled={!targetViewSetId}>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={handleCloseMoveDialog}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={moveSectionToForm}
+            disabled={!targetViewSetId}
+          >
             Move
           </Button>
         </DialogActions>
@@ -488,15 +497,30 @@ export const SectionEditor = ({
       <Dialog
         open={openDeleteDialog}
         onClose={handleCloseDeleteDialog}
+        fullWidth
+        maxWidth="xs"
         aria-labelledby="alert-delete-dialog-title"
-        aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-delete-dialog-title">
-          Are you sure you want to delete this section?
+        <DialogTitle id="alert-delete-dialog-title" sx={designerDialogTitleSx}>
+          Delete Section
         </DialogTitle>
-        <DialogActions>
-          <Button onClick={deleteSection}>Yes</Button>
-          <Button onClick={handleCloseDeleteDialog}>No</Button>
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <Typography variant="body2" sx={designerDialogBodyTextSx}>
+            Are you sure you want to delete this section? All fields inside it
+            will also be removed.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={designerDialogActionsSx}>
+          <Button sx={designerCancelButtonSx} onClick={handleCloseDeleteDialog}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={deleteSection}
+          >
+            Delete
+          </Button>
         </DialogActions>
       </Dialog>
       <DeletionWarningDialog
@@ -514,30 +538,30 @@ export const SectionEditor = ({
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Add New Section</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={designerDialogTitleSx}>Add New Section</DialogTitle>
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
+            Section Name *
+          </Typography>
           <DebouncedTextField
-            required
             fullWidth
             size="small"
-            margin="dense"
-            label="Section Name"
             name="sectionName"
             data-testid="sectionName"
             value={newSectionName}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               setNewSectionName(event.target.value);
             }}
-            sx={{mt: 1}}
           />
           {addAlertMessage && (
-            <Alert severity="error" sx={{mt: 1}}>
+            <Alert severity="error" sx={{mt: 1.5}}>
               {addAlertMessage}
             </Alert>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={designerDialogActionsSx}>
           <Button
+            sx={designerCancelButtonSx}
             onClick={() => {
               setAddDialogOpen(false);
               setAddAlertMessage('');
@@ -545,7 +569,11 @@ export const SectionEditor = ({
           >
             Cancel
           </Button>
-          <Button variant="contained" onClick={addNewSection}>
+          <Button
+            variant="contained"
+            onClick={addNewSection}
+            disabled={!newSectionName.trim()}
+          >
             Add Section
           </Button>
         </DialogActions>
@@ -572,28 +600,26 @@ export const SectionEditor = ({
           setDuplicateAlertMessage('');
         }}
         fullWidth
-        maxWidth="md"
-        PaperProps={{
-          sx: {
-            minWidth: {xs: 'auto', md: 600},
-          },
-        }}
+        maxWidth="sm"
         aria-labelledby="duplicate-section-dialog-title"
-        aria-describedby="duplicate-section-dialog-description"
       >
-        <DialogTitle id="duplicate-section-dialog-title">
+        <DialogTitle
+          id="duplicate-section-dialog-title"
+          sx={designerDialogTitleSx}
+        >
           Duplicate Section
         </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{mt: 0.5, mb: 1, fontWeight: 450}}>
+        <DialogContent sx={{pt: 2.5, px: {xs: 2, sm: 3}}}>
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
             New Section Name
           </Typography>
           <DebouncedTextField
             fullWidth
+            size="small"
             value={duplicateSectionName}
             onChange={e => setDuplicateSectionName(e.target.value)}
           />
-          <Typography variant="body1" sx={{mt: 2, mb: 1, fontWeight: 450}}>
+          <Typography variant="body2" sx={designerDialogFieldLabelSx}>
             Destination Form
           </Typography>
           <Autocomplete
@@ -611,11 +637,14 @@ export const SectionEditor = ({
             )}
           />
           {duplicateAlertMessage && (
-            <Alert severity="error">{duplicateAlertMessage}</Alert>
+            <Alert severity="error" sx={{mt: 1.5}}>
+              {duplicateAlertMessage}
+            </Alert>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={designerDialogActionsSx}>
           <Button
+            sx={designerCancelButtonSx}
             onClick={() => {
               setOpenDuplicateDialog(false);
               setDuplicateAlertMessage('');
@@ -624,6 +653,7 @@ export const SectionEditor = ({
             Cancel
           </Button>
           <Button
+            variant="contained"
             onClick={duplicateSection}
             disabled={!duplicateSectionName.trim()}
           >
