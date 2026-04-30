@@ -59,7 +59,6 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
             <Stack spacing={1}>
               {supportsAutoPick && (
                 <FormControlLabel
-                  required
                   control={
                     <Checkbox
                       checked={isAutoPick}
@@ -70,7 +69,9 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                   }
                   label={
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography component="span">Time pre-populated</Typography>
+                      <Typography component="span">
+                        Time pre-populated <strong>*</strong>
+                      </Typography>
                       <Tooltip title="When the record is first created, populate this field with the current datetime.">
                         <InfoIcon
                           sx={{
@@ -80,6 +81,13 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                       </Tooltip>
                     </Stack>
                   }
+                  sx={{
+                    m: 0,
+                    '& .MuiFormControlLabel-label': {
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    },
+                  }}
                 />
               )}
               {supportsNowButton && (
@@ -122,6 +130,13 @@ export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
                       </Tooltip>
                     </Stack>
                   }
+                  sx={{
+                    m: 0,
+                    '& .MuiFormControlLabel-label': {
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                    },
+                  }}
                 />
               )}
             </Stack>

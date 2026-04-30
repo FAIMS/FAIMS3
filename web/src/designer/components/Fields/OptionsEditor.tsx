@@ -410,6 +410,7 @@ export const OptionsEditor = ({
   } | null>(null);
   const [editValue, setEditValue] = useState('');
   const [lastEditedOption, setLastEditedOption] = useState<string | null>(null);
+  const addOptionHasError = Boolean(errorMessage) && !editingOption;
 
   // State for showing the alert inside the Edit Option dialog if the option is used in a condition
   const [renameDialogState, setRenameDialogState] = useState<{
@@ -969,7 +970,23 @@ export const OptionsEditor = ({
                     placeholder="Add Option"
                     value={newOption}
                     onChange={e => setNewOption(e.target.value)}
-                    sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}
+                    error={addOptionHasError}
+                    focused={addOptionHasError}
+                    sx={{
+                      width: {xs: '100%', sm: '52%', md: '48%'},
+                      '& .MuiOutlinedInput-root': {
+                        ...(addOptionHasError && {
+                          '& .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'error.main',
+                            borderWidth: 2,
+                          },
+                          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                            borderColor: 'error.main',
+                            borderWidth: 2,
+                          },
+                        }),
+                      },
+                    }}
                   />
                   <Button
                     color="primary"
@@ -1064,7 +1081,13 @@ export const OptionsEditor = ({
               )}
 
               {errorMessage && (
-                <Alert severity="error" sx={{mt: 2}}>
+                <Alert
+                  severity="error"
+                  sx={{
+                    mt: 2,
+                    width: {xs: '100%', sm: '52%', md: '48%'},
+                  }}
+                >
                   {errorMessage}
                 </Alert>
               )}
