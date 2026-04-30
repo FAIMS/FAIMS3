@@ -63,7 +63,11 @@ import {useAppDispatch, useAppSelector} from '../../state/hooks';
 import {FieldType} from '../../state/initial';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {fieldUpdated, sectionConditionChanged} from '../../store/slices/uiSpec';
-import {designerCheckboxSx, designerInfoIconSx} from '../designer-style';
+import {
+  designerCancelButtonSx,
+  designerCheckboxSx,
+  designerInfoIconSx,
+} from '../designer-style';
 import {
   findOptionReferences,
   updateConditionReferences,
@@ -1125,7 +1129,12 @@ export const OptionsEditor = ({
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setEditingOption(null)}>Cancel</Button>
+            <Button
+              sx={designerCancelButtonSx}
+              onClick={() => setEditingOption(null)}
+            >
+              Cancel
+            </Button>
             <Button onClick={handleEditSubmit} color="primary">
               Save
             </Button>
@@ -1154,7 +1163,12 @@ export const OptionsEditor = ({
             </Alert>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setIsDeleteDialogOpen(false)}>Close</Button>
+            <Button
+              sx={designerCancelButtonSx}
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Close
+            </Button>
           </DialogActions>
         </Dialog>
       </Paper>

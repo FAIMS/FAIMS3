@@ -30,6 +30,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {ConditionControl} from './ConditionControl';
 import {ConditionProps, ConditionType} from '../../types/condition';
 import QuizIcon from '@mui/icons-material/Quiz';
+import {designerCancelButtonSx} from '../designer-style';
 
 /** Dialog wrapper around {@link ConditionControl} with local draft until user saves. */
 export const ConditionModal = (
@@ -106,6 +107,7 @@ export const ConditionModal = (
             <Stack direction="row" spacing={2}>
               <Button
                 variant="outlined"
+                sx={designerCancelButtonSx}
                 onClick={() => setConfirmCancel(false)}
               >
                 Continue Editing
@@ -121,7 +123,7 @@ export const ConditionModal = (
           )}
           {!confirmCancel && (
             <Stack direction="row" spacing={2}>
-              <Button variant="outlined" onClick={handleCancel}>
+              <Button variant="outlined" sx={designerCancelButtonSx} onClick={handleCancel}>
                 Cancel Edit
               </Button>
               <Button variant="contained" onClick={handleSave}>

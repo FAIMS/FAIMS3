@@ -37,6 +37,7 @@ import {
 import Mustache from 'mustache';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import DebouncedTextField from './debounced-text-field';
+import {designerCancelButtonSx} from './designer-style';
 
 /*
 Patch mustache to not escape values.
@@ -806,7 +807,9 @@ export const MustacheTemplateBuilder: React.FC<MustacheBuilderProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} sx={designerCancelButtonSx}>
+          Cancel
+        </Button>
         <Button
           onClick={handleSave}
           variant="contained"
