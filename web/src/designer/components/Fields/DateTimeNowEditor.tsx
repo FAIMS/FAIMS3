@@ -13,52 +13,72 @@
 // limitations under the License.
 
 import {
-  Grid,
   Card,
-  FormHelperText,
-  FormControlLabel,
   Checkbox,
+  FormControlLabel,
+  FormHelperText,
+  Grid,
+  Stack,
 } from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {BaseFieldEditor} from './BaseFieldEditor';
 import {withUpdatedField} from '../../features/fields/shared/updateField';
 import {fieldUpdated} from '../../store/slices/uiSpec';
 
-/** `DateTimeNow` field: optional auto-pick-current-time behaviour. */
+/** Shared date-time editor: auto-pick current time and optional "Now" button display. */
 export const DateTimeNowEditor = ({fieldName}: {fieldName: string}) => {
   const field = useAppSelector(
     state => state.notebook['ui-specification'].present.fields[fieldName]
   );
   const dispatch = useAppDispatch();
+  const isDateTimePicker = field['component-name'] === 'DateTimePicker';
 
-  const updateIsAutoPick = (value: boolean) => {
+  const updateFieldProp = (key: 'is_auto_pick' | 'show_now_button', value: boolean) => {
     const newField = withUpdatedField(field, nextField => {
-      nextField['component-parameters'].is_auto_pick = value;
+      nextField['component-parameters'][key] = value;
     });
     dispatch(fieldUpdated({fieldName, newField}));
   };
 
+  const isAutoPick = field['component-parameters'].is_auto_pick ?? false;
+  const showNowButton = field['component-parameters'].show_now_button ?? false;
+
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Grid item sm={6} xs={12}>
+      <Grid item sm={8} xs={12}>
         <Card variant="outlined" sx={{display: 'flex'}}>
           <Grid item xs={12} sx={{mx: 1.5, my: 2}}>
-            <FormControlLabel
-              required
-              control={
-                <Checkbox
-                  checked={field['component-parameters'].is_auto_pick}
-                  onChange={e => {
-                    updateIsAutoPick(e.target.checked);
-                  }}
+            <Stack spacing={1}>
+              <FormControlLabel
+                required
+                control={
+                  <Checkbox
+                    checked={isAutoPick}
+                    onChange={e => {
+                      updateFieldProp('is_auto_pick', e.target.checked);
+                    }}
+                  />
+                }
+                label="Time pre-populated"
+              />
+              <FormHelperText sx={{mt: -1}}>
+                When the record is first created, populate this field with the
+                current datetime.
+              </FormHelperText>
+              {isDateTimePicker && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={showNowButton}
+                      onChange={e => {
+                        updateFieldProp('show_now_button', e.target.checked);
+                      }}
+                    />
+                  }
+                  label='Display a "Select date and time right now" button'
                 />
-              }
-              label="Time pre-populated"
-            />
-            <FormHelperText>
-              When the record is first created, populate this field with the
-              current datetime.
-            </FormHelperText>
+              )}
+            </Stack>
           </Grid>
         </Card>
       </Grid>

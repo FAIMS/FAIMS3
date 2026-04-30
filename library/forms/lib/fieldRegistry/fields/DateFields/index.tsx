@@ -36,6 +36,15 @@ const dateTimePropsSchema = BaseFieldPropsSchema.extend({
     .enum(['outlined', 'filled', 'standard'])
     .optional()
     .default('outlined'),
+  /**
+   * When true, auto-populate the field with current datetime on first mount
+   * if no value is currently set.
+   */
+  is_auto_pick: z.boolean().optional().default(false),
+  /**
+   * When true, renders a "Now" button that sets the field to the current datetime.
+   */
+  show_now_button: z.boolean().optional().default(false),
 });
 
 type DateTimeFieldProps = z.infer<typeof dateTimePropsSchema>;
@@ -137,12 +146,102 @@ const DateTimeBase: React.FC<DateTimeBaseProps> = props => {
 // =============================================================================
 
 const DateTimePickerField: React.FC<DateTimeFieldFullProps> = props => {
+  const {
+    label,
+    helperText,
+    required,
+    advancedHelperText,
+    fullWidth,
+    disabled,
+    state,
+    setFieldData,
+    handleBlur,
+    config,
+    is_auto_pick,
+    show_now_button,
+  } = props;
+
+  if (config.mode === 'preview') {
+    return (
+      <FieldWrapper heading={label} subheading={helperText}>
+        <Typography color="text.secondary">Date & Time Picker</Typography>
+      </FieldWrapper>
+    );
+  }
+
+  const value = (state.value?.data as string) ?? '';
+  const errors = state.meta.errors as unknown as string[] | undefined;
+
+  useEffect(() => {
+    if (is_auto_pick && (value === null || value === undefined || value === '')) {
+      const now = new Date();
+      const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 19);
+      setFieldData(localNow);
+    }
+    // Only run on mount to avoid overriding user edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleNowClick = () => {
+    const now = new Date();
+    const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 19);
+    setFieldData(localNow);
+  };
+
   return (
-    <DateTimeBase
-      {...props}
-      inputType="datetime-local"
-      previewLabel="Date & Time Picker"
-    />
+    <FieldWrapper
+      heading={label}
+      subheading={helperText}
+      required={required}
+      advancedHelperText={advancedHelperText}
+      errors={errors}
+    >
+      <Stack direction={{xs: 'column', sm: 'row'}} spacing={{xs: 1, sm: 0}}>
+        <MuiTextField
+          type="datetime-local"
+          value={value}
+          onChange={e => {
+            const next = e.target.value.trim();
+            setFieldData(next === '' ? '' : next);
+          }}
+          onBlur={handleBlur}
+          variant="outlined"
+          fullWidth={fullWidth ?? true}
+          disabled={disabled}
+          required={required}
+          error={Boolean(errors && errors.length > 0)}
+          inputProps={{step: 1}}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius:
+                show_now_button === true ? {xs: '4px', sm: '4px 0 0 4px'} : 1,
+            },
+          }}
+          InputLabelProps={{
+            shrink: true,
+          }}
+        />
+        {show_now_button && (
+          <Button
+            variant="contained"
+            disableElevation
+            aria-label="Select current date and time"
+            onClick={handleNowClick}
+            sx={{
+              borderRadius: {xs: '4px', sm: '0 4px 4px 0'},
+              minWidth: {xs: 'auto', sm: '80px'},
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Now
+          </Button>
+        )}
+      </Stack>
+    </FieldWrapper>
   );
 };
 

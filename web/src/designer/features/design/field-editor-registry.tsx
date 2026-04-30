@@ -66,6 +66,7 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   TakePhoto: ({fieldName}) => <TakePhotoFieldEditor fieldName={fieldName} />,
   TextField: ({fieldName}) => <TextFieldEditor fieldName={fieldName} />,
   DateTimeNow: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
+  DateTimePicker: ({fieldName}) => <DateTimeNowEditor fieldName={fieldName} />,
   Select: selectEditorRenderer,
   MultiSelect: multiSelectEditorRenderer,
   RadioGroup: selectEditorRenderer,
