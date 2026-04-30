@@ -352,18 +352,18 @@ export default function FieldChooserDialog({
                               label="Deprecated"
                               sx={{
                                 height: 22,
-                                fontWeight: 700,
+                                fontWeight: 800,
                                 borderRadius: '4px 10px 10px 4px',
                                 bgcolor: theme.designerMeta.isDass
-                                  ? 'rgba(30,30,30,0.9)'
-                                  : 'rgba(255,147,39,0.16)',
+                                  ? '#F2C75C'
+                                  : '#F4C542',
                                 color: theme.designerMeta.isDass
-                                  ? '#FFD299'
-                                  : '#B95700',
+                                  ? '#1A1A1A'
+                                  : '#111111',
                                 border: '1px solid',
                                 borderColor: theme.designerMeta.isDass
-                                  ? 'rgba(255,210,153,0.36)'
-                                  : 'rgba(255,147,39,0.42)',
+                                  ? '#D2A63B'
+                                  : '#C79A1D',
                                 '& .MuiChip-icon': {
                                   color: 'inherit',
                                 },

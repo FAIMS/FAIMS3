@@ -22,7 +22,6 @@ import {AddressFieldEditor} from '../../components/Fields/AddressFieldEditor';
 import {AdvancedSelectEditor} from '../../components/Fields/AdvancedSelectEditor';
 import {BaseFieldEditor} from '../../components/Fields/BaseFieldEditor';
 import {BasicAutoIncrementerEditor} from '../../components/Fields/BasicAutoIncrementer';
-import {ControlledNumberFieldEditor} from '../../components/Fields/ControlledNumberFieldEditor';
 import {DateTimeNowEditor} from '../../components/Fields/DateTimeNowEditor';
 import {MapFormFieldEditor} from '../../components/Fields/MapFormFieldEditor';
 import {NumberFieldEditor} from '../../components/Fields/NumberFieldEditor';
@@ -77,9 +76,7 @@ export const fieldEditorRegistry: Record<string, FieldEditorRenderer> = {
   AddressField: ({fieldName}) => <AddressFieldEditor fieldName={fieldName} />,
   TakePoint: ({fieldName}) => <TakePointFieldEditor fieldName={fieldName} />,
   NumberField: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
-  ControlledNumber: ({fieldName}) => (
-    <ControlledNumberFieldEditor fieldName={fieldName} />
-  ),
+  ControlledNumber: ({fieldName}) => <NumberFieldEditor fieldName={fieldName} />,
   RichText: ({fieldName}) => <RichTextEditor fieldName={fieldName} />,
   RelatedRecordSelector: ({fieldName}) => (
     <RelatedRecordEditor fieldName={fieldName} />

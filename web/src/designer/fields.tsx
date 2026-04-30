@@ -487,6 +487,33 @@ const fields: {[key: string]: FieldType} = {
     order: 25,
   },
 
+  Number: {
+    // New chooser entry that reuses the existing NumberField runtime type.
+    'component-namespace': 'faims-custom',
+    'component-name': 'NumberField',
+    'type-returned': 'faims-core::Number',
+    'component-parameters': {
+      label: 'Number field',
+      fullWidth: true,
+      helperText: '',
+      advancedHelperText: '',
+      required: false,
+      numberType: 'integer',
+      min: 0,
+      max: 100,
+      InputProps: {
+        type: 'number',
+      },
+    },
+    initialValue: null,
+    humanReadableName: 'Number field',
+    humanReadableDescription:
+      'Numeric input with integer/decimal mode and optional minimum/maximum limits',
+    category: CategoryKey.NUMBERS,
+    showInChooser: true,
+    order: 26,
+  },
+
   NumberField: {
     'component-namespace': 'faims-custom',
     'component-name': 'NumberField',
@@ -505,10 +532,13 @@ const fields: {[key: string]: FieldType} = {
     },
     initialValue: null,
     humanReadableName: 'Number Input',
-    humanReadableDescription: 'Floating-point or integer number entry field',
+    humanReadableDescription: 'Legacy number input template',
     category: CategoryKey.NUMBERS,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated: use “Number field” for new additions. Existing notebooks continue to work.',
     showInChooser: true,
-    order: 26,
+    order: 27,
   },
 
   EmailField: {
@@ -547,10 +577,13 @@ const fields: {[key: string]: FieldType} = {
     },
     initialValue: null,
     humanReadableName: 'Controlled Number',
-    humanReadableDescription: 'Numeric input with min/max validation',
+    humanReadableDescription: 'Legacy bounded number input template',
     category: CategoryKey.NUMBERS,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated: use “Number field” for new additions. Existing notebooks continue to work.',
     showInChooser: true,
-    order: 8,
+    order: 28,
   },
 
   MultipleTextField: {

@@ -165,6 +165,8 @@ const FieldEditorComponent = ({
   const fieldComponentLabelMap: Record<string, string> = {
     FAIMSTextField: 'Text field',
     MultipleTextField: 'Multi-line text field',
+    NumberField: 'Number field',
+    ControlledNumber: 'Controlled number',
     DateTimePicker: 'Date and time picker',
     DatePicker: 'Date only picker',
     MonthPicker: 'Month only picker',
