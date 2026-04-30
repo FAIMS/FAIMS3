@@ -394,6 +394,8 @@ export const OptionsEditor = ({
     field['component-parameters'].ElementProps?.expandedChecklist ?? true;
   const isDropdownMode = !isShowExpandedList;
   const showExpandedCheckListControl = showExpandedChecklist ?? false;
+  const fieldComponent = field['component-name'];
+  const isMultiSelectField = fieldComponent === 'MultiSelect';
   const [newOption, setNewOption] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [deleteDialogRefs, setDeleteDialogRefs] = useState<string[]>([]);
@@ -802,7 +804,7 @@ export const OptionsEditor = ({
     <BaseFieldEditor fieldName={fieldName}>
       <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
         <Grid container spacing={2}>
-          {/* Info alert and add option form */}
+          {/* Info alert */}
           <Grid item xs={12}>
             <Alert
               severity="info"
@@ -815,125 +817,11 @@ export const OptionsEditor = ({
               }}
             >
               You can use <strong>Markdown syntax</strong> in option text (e.g.{' '}
-              <code>**bold**</code> or <code>*italic*</code>).
+              <code>**Bold**</code> or <code>*italic*</code>).
               <br />
-              Add and remove options as needed. Drag items or use arrows to
-              reorder them.
+              Add and remove options as needed. Drag items or use arrows to reorder
+              them.
             </Alert>
-
-            <Box sx={{mb: 2}}>
-              <form onSubmit={addOption}>
-                <Grid container spacing={1} alignItems="center">
-                  <Grid item xs>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Add Option"
-                      value={newOption}
-                      onChange={e => setNewOption(e.target.value)}
-                    />
-                  </Grid>
-
-                  <Grid item>
-                    <Button
-                      color="primary"
-                      variant="outlined"
-                      size="small"
-                      type="submit"
-                      sx={{
-                        height: '40px',
-                        backgroundColor: '#fff',
-                        textTransform: 'none',
-                        '&:hover': {
-                          backgroundColor: '#f5f5f5',
-                        },
-                      }}
-                    >
-                      Add
-                    </Button>
-                  </Grid>
-                </Grid>
-              </form>
-            </Box>
-
-            {/* Error message display */}
-            {errorMessage && (
-              <Alert severity="error" sx={{mt: 2, mb: 2}}>
-                {errorMessage}
-              </Alert>
-            )}
-
-            {/* Multi-select display mode toggle */}
-            {showExpandedCheckListControl && (
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={isDropdownMode}
-                    onChange={toggleDropdownMode}
-                    size="small"
-                    sx={designerCheckboxSx}
-                  />
-                }
-                label={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <p>Display multi-select as a dropdown?</p>
-                    <Tooltip title="By default, multi-select displays as an expanded checklist. Enable this option to switch to a compact dropdown menu.">
-                      <InfoIcon
-                        sx={{
-                          ...(designerInfoIconSx as Record<string, unknown>),
-                        }}
-                      />
-                    </Tooltip>
-                  </Stack>
-                }
-                sx={{mb: 2}}
-              />
-            )}
-
-            {/* Add Other Option button with info icon - always visible but disabled when Other is enabled */}
-            <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 2}}>
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                onClick={toggleEnableOtherOption}
-                disabled={enableOther}
-                sx={{
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  borderWidth: 1.5,
-                  color: theme.designerMeta.isDass
-                    ? 'common.white'
-                    : 'primary.main',
-                  borderColor: theme.designerMeta.isDass
-                    ? 'common.black'
-                    : 'primary.main',
-                  backgroundColor: theme.designerMeta.isDass
-                    ? 'common.black'
-                    : 'transparent',
-                  '&:hover': {
-                    borderWidth: 1.5,
-                    backgroundColor: theme.designerMeta.isDass
-                      ? 'rgba(0,0,0,0.88)'
-                      : 'action.hover',
-                  },
-                  '&.Mui-disabled': {
-                    backgroundColor: 'action.disabledBackground',
-                    color: 'text.disabled',
-                    borderColor: 'action.disabledBackground',
-                  },
-                }}
-              >
-                Add "Other" Option
-              </Button>
-              <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
-                <InfoIcon
-                  sx={{
-                    ...(designerInfoIconSx as Record<string, unknown>),
-                  }}
-                />
-              </Tooltip>
-            </Stack>
           </Grid>
 
           {/* Options table */}
@@ -1065,6 +953,118 @@ export const OptionsEditor = ({
                 </TableBody>
               </Table>
             </TableContainer>
+          </Grid>
+
+          {/* Controls under table */}
+          <Grid item xs={12}>
+            <Box sx={{mt: 1}}>
+              <form onSubmit={addOption}>
+                <Stack direction="row" spacing={1} alignItems="center" sx={{mb: 1.5}}>
+                  <TextField
+                    size="small"
+                    placeholder="Add Option"
+                    value={newOption}
+                    onChange={e => setNewOption(e.target.value)}
+                    sx={{width: {xs: '100%', sm: '52%', md: '48%'}}}
+                  />
+                  <Button
+                    color="primary"
+                    variant="outlined"
+                    size="small"
+                    type="submit"
+                    sx={{
+                      height: '40px',
+                      backgroundColor: '#fff',
+                      textTransform: 'none',
+                      '&:hover': {
+                        backgroundColor: '#f5f5f5',
+                      },
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    onClick={toggleEnableOtherOption}
+                    disabled={enableOther}
+                    sx={{
+                      textTransform: 'none',
+                      fontWeight: 700,
+                      borderWidth: 1.5,
+                      color: theme.designerMeta.isDass ? 'common.white' : 'primary.main',
+                      borderColor: theme.designerMeta.isDass ? 'common.black' : 'primary.main',
+                      backgroundColor: theme.designerMeta.isDass
+                        ? 'common.black'
+                        : 'transparent',
+                      '&:hover': {
+                        borderWidth: 1.5,
+                        backgroundColor: theme.designerMeta.isDass
+                          ? 'rgba(0,0,0,0.88)'
+                          : 'action.hover',
+                      },
+                      '&.Mui-disabled': {
+                        backgroundColor: 'action.disabledBackground',
+                        color: 'text.disabled',
+                        borderColor: 'action.disabledBackground',
+                      },
+                    }}
+                  >
+                    Add "Other" Option
+                  </Button>
+                  <Tooltip title='Adds a special "Other" option allowing users to enter custom text beyond the predefined choices.'>
+                    <InfoIcon
+                      sx={{
+                        ...(designerInfoIconSx as Record<string, unknown>),
+                      }}
+                    />
+                  </Tooltip>
+                </Stack>
+              </form>
+
+              {showExpandedCheckListControl && (
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={isDropdownMode}
+                      onChange={toggleDropdownMode}
+                      size="small"
+                      sx={designerCheckboxSx}
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography component="span">
+                        {isMultiSelectField
+                          ? 'Display multi-select as a dropdown?'
+                          : 'Display options as a dropdown list?'}
+                      </Typography>
+                      <Tooltip
+                        title={
+                          isMultiSelectField
+                            ? 'By default, multi-select displays as an expanded checklist. Enable this option to switch to a compact dropdown menu.'
+                            : 'By default, select one displays as an expanded checklist. Enable this option to switch to a compact dropdown menu.'
+                        }
+                      >
+                        <InfoIcon
+                          sx={{
+                            ...(designerInfoIconSx as Record<string, unknown>),
+                          }}
+                        />
+                      </Tooltip>
+                    </Stack>
+                  }
+                  sx={{mb: 0}}
+                />
+              )}
+
+              {errorMessage && (
+                <Alert severity="error" sx={{mt: 2}}>
+                  {errorMessage}
+                </Alert>
+              )}
+            </Box>
           </Grid>
         </Grid>
 

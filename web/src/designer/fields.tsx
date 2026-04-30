@@ -161,11 +161,11 @@ const fields: {[key: string]: FieldType} = {
     initialValue: false,
     humanReadableName: 'Checkbox',
     humanReadableDescription:
-      'Deprecated boolean yes/no toggle (use Select one option instead)',
+      'Deprecated boolean yes/no toggle (use Select one instead)',
     category: CategoryKey.CHOICE,
     deprecated: true,
     deprecationMessage:
-      'Deprecated: use “Select one option” for new forms. Existing Checkbox fields continue to work.',
+      'Deprecated: use “Select one” for new forms. Existing Checkbox fields continue to work.',
     showInChooser: true,
     order: 11,
   },
@@ -227,7 +227,8 @@ const fields: {[key: string]: FieldType} = {
         multiple: true,
       },
       ElementProps: {
-        expandedChecklist: true,
+        // Default to compact dropdown mode; users can opt into expanded checklist.
+        expandedChecklist: false,
         enableOtherOption: false,
         options: [
           {value: 'Default', label: 'Default'},
@@ -248,7 +249,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'RadioGroup',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Select one option',
+      label: 'Select one',
       name: 'radio-group-field',
       id: 'radio-group-field',
       advancedHelperText: '',
@@ -263,8 +264,9 @@ const fields: {[key: string]: FieldType} = {
       helperText: '',
     },
     initialValue: '',
-    humanReadableName: 'Select one option',
-    humanReadableDescription: 'Single-choice radio button set',
+    humanReadableName: 'Select one',
+    humanReadableDescription:
+      'Single-choice list (expanded checklist by default, optional dropdown)',
     category: CategoryKey.CHOICE,
     showInChooser: true,
     order: 15,
@@ -313,7 +315,7 @@ const fields: {[key: string]: FieldType} = {
     'component-name': 'Select',
     'type-returned': 'faims-core::String',
     'component-parameters': {
-      label: 'Select Field',
+      label: 'Select one',
       fullWidth: true,
       helperText: '',
       advancedHelperText: '',
@@ -324,10 +326,13 @@ const fields: {[key: string]: FieldType} = {
       },
     },
     initialValue: '',
-    humanReadableName: 'Select Field',
-    humanReadableDescription: 'Dropdown list allowing one selection',
+    humanReadableName: 'Select one (Legacy dropdown)',
+    humanReadableDescription: 'Legacy single-choice dropdown (existing forms only)',
     category: CategoryKey.CHOICE,
-    showInChooser: true,
+    showInChooser: false,
+    deprecated: true,
+    deprecationMessage:
+      'Deprecated in chooser: use “Select one” and enable dropdown display if needed.',
     order: 19,
   },
 
