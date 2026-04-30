@@ -31,11 +31,9 @@ import {
 } from '@mui/material';
 import {Link, Outlet, useLocation} from 'react-router-dom';
 import {useCallback, useEffect, useState} from 'react';
-// eslint-disable-next-line n/no-extraneous-import
-import {ActionCreators} from 'redux-undo';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
-import {useAppDispatch, useAppSelector} from '../state/hooks';
+import {useDesignerUndoRedo} from '../state/use-designer-undo-redo';
 import {designerResponsiveFrameSx} from './designer-style';
 
 /** Layout shell: Design / Info tabs and `Outlet` for nested designer routes. */
@@ -55,7 +53,6 @@ export const NotebookEditor = ({
 }: NotebookEditorProps) => {
   const {pathname} = useLocation();
   const isDesignRoute = pathname.startsWith('/design/');
-  const dispatch = useAppDispatch();
   const [previewForm, setPreviewForm] = useState(false);
 
   const tabIndex = pathname.startsWith('/design/')
@@ -66,12 +63,14 @@ export const NotebookEditor = ({
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  //  redux-undo state to determine if there is something to undo/redo
-  const undoableState = useAppSelector(
-    state => state.notebook['ui-specification']
+  const onUndoRedoMessage = useCallback((message: string) => {
+    setToastMessage(message);
+    setToastOpen(true);
+  }, []);
+
+  const {canUndo, canRedo, undo, redo} = useDesignerUndoRedo(
+    onUndoRedoMessage
   );
-  const canUndo = undoableState.past.length > 0;
-  const canRedo = undoableState.future.length > 0;
 
   const handleToastClose = (
     _event?: React.SyntheticEvent | Event,
@@ -83,28 +82,6 @@ export const NotebookEditor = ({
     setToastOpen(false);
   };
 
-  const handleUndo = useCallback(() => {
-    if (!canUndo) {
-      setToastMessage('Nothing to undo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.undo());
-    setToastMessage('Undo complete');
-    setToastOpen(true);
-  }, [canUndo, dispatch]);
-
-  const handleRedo = useCallback(() => {
-    if (!canRedo) {
-      setToastMessage('Nothing to redo');
-      setToastOpen(true);
-      return;
-    }
-    dispatch(ActionCreators.redo());
-    setToastMessage('Redo complete');
-    setToastOpen(true);
-  }, [canRedo, dispatch]);
-
   // Keyboard shortcuts for undo/redo
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -114,17 +91,17 @@ export const NotebookEditor = ({
         event.key.toLowerCase() === 'z'
       ) {
         event.preventDefault();
-        handleUndo();
+        undo();
       } else if (
         (event.ctrlKey || event.metaKey) &&
         (event.key.toLowerCase() === 'y' ||
           (event.shiftKey && event.key.toLowerCase() === 'z'))
       ) {
         event.preventDefault();
-        handleRedo();
+        redo();
       }
     },
-    [handleRedo, handleUndo]
+    [redo, undo]
   );
 
   useEffect(() => {
@@ -235,7 +212,7 @@ export const NotebookEditor = ({
                       <Button
                         variant={canUndo ? 'contained' : 'outlined'}
                         startIcon={<UndoIcon />}
-                        onClick={handleUndo}
+                        onClick={undo}
                         disabled={!canUndo}
                         sx={historyButtonSx(canUndo)}
                       >
@@ -254,7 +231,7 @@ export const NotebookEditor = ({
                       <Button
                         variant={canRedo ? 'contained' : 'outlined'}
                         startIcon={<RedoIcon />}
-                        onClick={handleRedo}
+                        onClick={redo}
                         disabled={!canRedo}
                         sx={historyButtonSx(canRedo)}
                       >

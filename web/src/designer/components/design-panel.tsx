@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * @file Form tabs, add form, undo/redo, and routed `FormEditor` instances.
+ * @file Form tabs, add/move form controls, and routed `FormEditor` instances.
  */
 
 import {
@@ -59,7 +59,7 @@ import {viewSetAdded, viewSetMoved} from '../store/slices/uiSpec';
 import type {PreviewOutletContext} from './notebook-editor';
 import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 
-/** Main designer surface: form tabs, undo/redo, snackbars, and `FormEditor` routes. */
+/** Main designer surface for form tabs and routed `FormEditor` instances. */
 export const DesignPanel = () => {
   const navigate = useNavigate();
   const {pathname} = useLocation();

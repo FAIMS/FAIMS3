@@ -29,3 +29,13 @@ This module contains the embedded notebook designer used by the web app.
   - Shared feature utilities such as field update helpers and the field editor registry.
 - `types/`
   - Shared designer type definitions (including condition types).
+
+## Undo/Redo Architecture
+
+- Undo/redo behavior is implemented once at the store layer with `redux-undo`:
+  - `designer/createDesignerStore.ts` wraps `ui-specification` with `undoable(...)`.
+  - `designer/store/undoConfig.ts` defines which actions are tracked.
+- UI components reuse that existing history state:
+  - `state/use-designer-undo-redo.ts` reads `past/future` and dispatches `ActionCreators.undo()` / `ActionCreators.redo()`.
+  - `components/notebook-editor.tsx` calls that shared hook (no duplicate undo engine logic).
+- `components/design-panel.tsx` does not implement undo logic; it only edits present UI spec state that is already covered by the shared undo configuration.
