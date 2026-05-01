@@ -9,7 +9,7 @@ export const dassTokens: DesignerThemeTokens = {
   // ── Backgrounds ─────────────────────────────────────────────────────────
   backgroundDefault: '#FAFAFB',
 
-  // ── Brand palette ────────────────────────────────────────────────────────
+  // ── dass  palette ────────────────────────────────────────────────────────
   primaryMain: '#000000',
   primaryLight: '#4A4A4A',
   primaryDark: '#000000',
@@ -24,7 +24,7 @@ export const dassTokens: DesignerThemeTokens = {
   appBarColor: '#000000',
   // ── Form tabs ────────────────────────────────────────────────────────────
   formTabBorderColor: '#C40000',
-  formTabSelectedBg: '#4C1F24',
+  formTabSelectedBg: '#4C1F24', // ranisa todo 
   formTabSelectedText: '#FFFFFF',
   formTabIndicatorVisible: true,
   formTabIndicatorColor: '#C40000',
