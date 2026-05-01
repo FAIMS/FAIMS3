@@ -33,6 +33,8 @@ import {
   Alert,
   Button,
   Checkbox,
+  Chip,
+  CircularProgress,
   createTheme,
   Dialog,
   DialogActions,
@@ -51,6 +53,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import CssBaseline from '@mui/material/CssBaseline';
 import {useQueryClient} from '@tanstack/react-query';
@@ -191,6 +194,8 @@ export const FormEditor = ({
   const [hasSectionOverflow, setHasSectionOverflow] = useState(false);
   const [isSectionAtStart, setIsSectionAtStart] = useState(true);
   const [isSectionAtEnd, setIsSectionAtEnd] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const prevViewSetIdRef = useRef<string>(viewSetId);
 
   // needed for the form preview
   const queryClient = useQueryClient();
@@ -421,6 +426,16 @@ export const FormEditor = ({
       }
     }
   }, [sectionParam, sections.length]);
+
+  // Show a brief loading spinner in the preview when the user switches form tabs
+  useEffect(() => {
+    if (prevViewSetIdRef.current === viewSetId) return;
+    prevViewSetIdRef.current = viewSetId;
+    if (!previewForm) return;
+    setPreviewLoading(true);
+    const tid = window.setTimeout(() => setPreviewLoading(false), 650);
+    return () => window.clearTimeout(tid);
+  }, [viewSetId, previewForm]);
 
   return (
     <Stack
@@ -1003,26 +1018,85 @@ export const FormEditor = ({
             alignSelf: 'flex-start',
             position: {xl: 'sticky'},
             top: {xl: 12},
+            borderLeft: {xl: '2px solid'},
+            borderColor: {xl: 'divider'},
+            pl: {xl: 2.5},
           }}
         >
+          {/* Preview panel header */}
+          <Stack direction="row" alignItems="center" spacing={1} sx={{mb: 1.25}}>
+            <Typography
+              variant="caption"
+              fontWeight={700}
+              color="text.secondary"
+              sx={{textTransform: 'uppercase', letterSpacing: '0.09em', fontSize: '0.68rem', whiteSpace: 'nowrap'}}
+            >
+              Live Preview
+            </Typography>
+            <Box sx={{flex: 1, height: '1px', bgcolor: 'divider'}} />
+            <Chip
+              label="Preview On"
+              size="small"
+              color="primary"
+              variant="outlined"
+              sx={{height: 20, fontSize: '0.65rem', fontWeight: 700, borderRadius: 1}}
+            />
+          </Stack>
+
+          {/* Preview frame */}
           <Box
             sx={{
+              position: 'relative',
               width: '100%',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1.25,
-              p: {xs: 0.75, sm: 1},
-              backgroundColor: 'background.paper',
+              border: '1.5px solid',
+              borderColor: theme => alpha(theme.palette.primary.main, 0.25),
+              borderRadius: 2,
               overflow: 'hidden',
-              maxHeight: {xl: 'calc(100vh - 140px)'},
+              backgroundColor: 'background.paper',
+              boxShadow: theme => `0 2px 16px ${alpha(theme.palette.common.black, 0.07)}`,
+              maxHeight: {xl: 'calc(100vh - 148px)'},
             }}
           >
+            {/* Accent bar */}
+            <Box
+              sx={{
+                height: 4,
+                background: theme =>
+                  `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${alpha(theme.palette.primary.light, 0.6)} 100%)`,
+              }}
+            />
+
+            {/* Loading overlay shown while switching form tabs */}
+            {previewLoading && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  zIndex: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1.5,
+                  bgcolor: theme => alpha(theme.palette.background.paper, 0.82),
+                  backdropFilter: 'blur(2px)',
+                }}
+              >
+                <CircularProgress size={32} thickness={4} />
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                  Loading preview…
+                </Typography>
+              </Box>
+            )}
+
             {sections.length === 0 ? (
-              <Alert severity="info" sx={{m: 0.25}}>
-                Add a section to see the live preview.
-              </Alert>
+              <Box sx={{p: 2}}>
+                <Alert severity="info" sx={{borderRadius: 1.5}}>
+                  Add a section to see the live preview.
+                </Alert>
+              </Box>
             ) : (
-              <Box sx={{maxHeight: {xl: 'calc(100vh - 172px)'}, overflow: 'auto'}}>
+              <Box key={viewSetId} sx={{maxHeight: {xl: 'calc(100vh - 196px)'}, overflow: 'auto'}}>
                 <ThemeProvider theme={defaultTheme}>
                   {/* resets CSS baseline within this scope */}
                   <CssBaseline />
