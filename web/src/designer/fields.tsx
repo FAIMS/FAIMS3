@@ -184,6 +184,25 @@ const fields: {[key: string]: FieldType} = {
     order: 12,
   },
 
+  AudioRecorder: {
+    'component-namespace': 'faims-custom',
+    'component-name': 'AudioRecorder',
+    'type-returned': 'faims-attachment::Files',
+    'component-parameters': {
+      label: 'Audio Recorder',
+      name: 'audio-recorder-field',
+      helperText: '',
+      advancedHelperText: '',
+      required: false,
+    },
+    initialValue: null,
+    humanReadableName: 'Audio Recorder',
+    humanReadableDescription: 'Record and attach audio clips via microphone',
+    category: CategoryKey.MEDIA,
+    showInChooser: true,
+    order: 13,
+  },
+
   MapFormField: {
     'component-namespace': 'mapping-plugin',
     'component-name': 'MapFormField',

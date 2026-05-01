@@ -27,6 +27,7 @@ import {
   textFieldSpec,
 } from './fields/TextFields';
 import {FieldInfo} from './types';
+import {audioRecorderFieldSpec} from './fields/AudioRecorder';
 
 // NOTE: This is the list of all field specifications. To add a new
 // field type, add it here.
@@ -54,6 +55,7 @@ const FieldSpecList: FieldInfo<FullFieldProps & any>[] = [
   numberFieldSpec,
   addressFieldSpec,
   dateTimeNowFieldSpec,
+  audioRecorderFieldSpec,
 ];
 
 // Build the map from namespace::name to the field info
