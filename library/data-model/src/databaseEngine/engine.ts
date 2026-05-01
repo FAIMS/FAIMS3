@@ -206,6 +206,22 @@ export class DataEngine {
       this.uiSpec
     );
   }
+
+  /**
+   * Deletes a record by appending a new head revision with {@link deleted} set.
+   * Existing field data and relationship are carried forward from {@link baseRevisionId}.
+   */
+  async deleteRecord({
+    recordId,
+    baseRevisionId,
+    userId,
+  }: {
+    recordId: string;
+    baseRevisionId: string;
+    userId: string;
+  }): Promise<string> {
+    return this.form.deleteRecord({recordId, baseRevisionId, userId});
+  }
 }
 
 // ============================================================================
@@ -906,6 +922,11 @@ class HydratedOperations {
   async updateRevision(
     revision: HydratedRevisionDocument
   ): Promise<HydratedRevisionDocument> {
+    const existing = await this.core.getRevision(revision._id);
+    if (existing.deleted === true) {
+      throw new Exceptions.RecordDeletedError(revision.recordId);
+    }
+
     // Map from hydrated -> DB format
     const dbRelationship = revision.relationship
       ? {
@@ -1132,6 +1153,10 @@ class FormOperations {
     // Fetch the revision
     const parentRevision = await this.core.getRevision(revisionId);
 
+    if (parentRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
+
     // Check that the revision record ID matches
     if (parentRevision.record_id !== recordId) {
       throw new Exceptions.RevisionMismatchError(recordId, revisionId);
@@ -1164,6 +1189,53 @@ class FormOperations {
 
     // All done
     return newRevision;
+  }
+
+  /**
+   * Deletes a record by appending a new head revision marked deleted. Copies
+   * AVPs, type, and relationship from {@link baseRevisionId}.
+   *
+   * @returns The new revision document id (head)
+   */
+  async deleteRecord({
+    recordId,
+    baseRevisionId,
+    userId,
+  }: {
+    recordId: string;
+    baseRevisionId: string;
+    userId: string;
+  }): Promise<string> {
+    const baseRevision = await this.core.getRevision(baseRevisionId);
+    if (baseRevision.record_id !== recordId) {
+      throw new Exceptions.RevisionMismatchError(recordId, baseRevisionId);
+    }
+    if (baseRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
+
+    const newRevisionId = generateRevisionID();
+    await this.core.createRevision({
+      _id: newRevisionId,
+      avps: baseRevision.avps,
+      created: getCurrentTimestamp(),
+      created_by: userId,
+      parents: [baseRevisionId],
+      record_id: recordId,
+      revision_format_version: 1,
+      type: baseRevision.type,
+      relationship: baseRevision.relationship,
+      ugc_comment: baseRevision.ugc_comment,
+      deleted: true,
+    });
+
+    await this.updateRecordHeads({
+      recordId,
+      oldHeadId: baseRevisionId,
+      newHeadId: newRevisionId,
+    });
+
+    return newRevisionId;
   }
 
   /**
@@ -1208,6 +1280,10 @@ class FormOperations {
   }): Promise<ExistingRevisionDBDocument> {
     // Step 1: Fetch the current revision
     const currentRevision = await this.core.getRevision(revisionId);
+
+    if (currentRevision.deleted === true) {
+      throw new Exceptions.RecordDeletedError(recordId);
+    }
 
     // What parents does the revision have?
     const parents = currentRevision.parents;

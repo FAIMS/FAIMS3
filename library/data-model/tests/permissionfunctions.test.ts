@@ -628,7 +628,7 @@ describe('isAuthorized', () => {
         })
       ).toBe(false);
 
-      // From resource role PROJECT_ADMIN
+      // DELETE_PROJECT is granted to PROJECT_ADMIN for that resource only
       expect(
         isTokenAuthorized({
           token: token,
@@ -685,7 +685,7 @@ describe('isAuthorized', () => {
         })
       ).toBe(true);
 
-      // Not granted at any level
+      // Not granted (PROJECT_MANAGER does not include DELETE_PROJECT)
       expect(
         isTokenAuthorized({
           token: token,

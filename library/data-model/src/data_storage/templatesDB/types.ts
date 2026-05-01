@@ -26,9 +26,16 @@ export const TemplateV2Schema = TemplateV1Schema.extend({
 export type TemplateV2Fields = z.infer<typeof TemplateV2Schema>;
 export type TemplateV2Document = PouchDB.Core.Document<TemplateV2Fields>;
 
-// Current (V2)
+// V3 — archive state is a top-level flag (not metadata.project_status)
+export const TemplateV3Schema = TemplateV2Schema.extend({
+  archived: z.boolean().default(false),
+});
+export type TemplateV3Fields = z.infer<typeof TemplateV3Schema>;
+export type TemplateV3Document = PouchDB.Core.Document<TemplateV3Fields>;
+
+// Current (V3)
 // Fields
-export const TemplateDBFieldsSchema = TemplateV2Schema; // v2
+export const TemplateDBFieldsSchema = TemplateV3Schema;
 export type TemplateDBFields = z.infer<typeof TemplateDBFieldsSchema>;
 
 // Document

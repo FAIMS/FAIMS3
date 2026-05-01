@@ -4,6 +4,7 @@ import {
   addTeamRole,
   AuthContext,
   ExistingPeopleDBDocument,
+  isPeopleUserAccountDisabled,
   PeopleDBDocument,
   Role,
   TeamsDBFields,
@@ -643,6 +644,18 @@ export async function ssoVerify({
 
   if (action === 'login') {
     // LOGIN — find or provision the user; invite is applied by completePostAuth
+    if (
+      matchedSingleUser !== undefined &&
+      isPeopleUserAccountDisabled(matchedSingleUser)
+    ) {
+      return done(
+        new Error(
+          'This account has been disabled. Contact your administrator.'
+        ),
+        undefined
+      );
+    }
+
     if (matchedSingleUser === undefined) {
       // No existing account — apply the server's provision policy for unknown
       // SSO users (reject / general-user / own-team)
@@ -670,6 +683,18 @@ export async function ssoVerify({
     return done(null, matchedSingleUser);
   } else {
     // REGISTER — find or create the user; invite is applied by completePostAuth
+
+    if (
+      matchedSingleUser !== undefined &&
+      isPeopleUserAccountDisabled(matchedSingleUser)
+    ) {
+      return done(
+        new Error(
+          'This account has been disabled. Contact your administrator.'
+        ),
+        undefined
+      );
+    }
 
     let targetUser: PeopleDBDocument;
 

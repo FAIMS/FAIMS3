@@ -16,6 +16,12 @@ import {Action, getUserResourcesForAction} from '@faims3/data-model';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {AddTemplateToTeamDialog} from '@/components/dialogs/add-template-to-team-dialog';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   toDesignerNotebookWithHistory,
   useDesignerSaveMutation,
 } from '@/designer/integration';
@@ -61,6 +67,11 @@ const TemplateActions = () => {
     resourceId: templateId,
   });
 
+  const canChangeTemplateArchiveStatus = useIsAuthorisedTo({
+    action: Action.CHANGE_TEMPLATE_STATUS,
+    resourceId: templateId,
+  });
+
   const canCreateProject = useIsAuthorisedTo({
     action: Action.CREATE_PROJECT,
   });
@@ -82,6 +93,8 @@ const TemplateActions = () => {
     action: Action.CREATE_TEMPLATE,
   });
 
+  const archived = data?.archived === true;
+
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -91,17 +104,35 @@ const TemplateActions = () => {
               <ListItem>
                 <ListLabel>Edit Template</ListLabel>
                 <ListDescription>
-                  Edit this template in the Notebook Editor.
+                  Edit this template in the {NOTEBOOK_NAME_CAPITALIZED} Editor.
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <Button
-                  variant="outline"
-                  disabled={isLoading}
-                  onClick={() => setEditorOpen(true)}
-                >
-                  Open in Editor
-                </Button>
+                {archived ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-block w-fit">
+                          <Button variant="outline" disabled>
+                            Open in Editor
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs text-balance">
+                        Archived templates cannot be opened in the editor.
+                        Un-archive the template first.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <Button
+                    variant="outline"
+                    disabled={isLoading}
+                    onClick={() => setEditorOpen(true)}
+                  >
+                    Open in Editor
+                  </Button>
+                )}
               </ListItem>
             </List>
           </Card>
@@ -117,7 +148,10 @@ const TemplateActions = () => {
                 </ListDescription>
               </ListItem>
               <ListItem>
-                <AddTemplateToTeamDialog templateId={templateId} />
+                <AddTemplateToTeamDialog
+                  templateId={templateId}
+                  disabled={archived}
+                />
               </ListItem>
             </List>
           </Card>
@@ -178,29 +212,31 @@ const TemplateActions = () => {
             </List>
           </Card>
         )}
-        <Card>
-          <List>
-            {data?.metadata.project_status === 'archived' ? (
-              <ListItem>
-                <ListLabel>Un-archive Template</ListLabel>
-                <ListDescription>
-                  Un-archive the current template.
-                </ListDescription>
-              </ListItem>
-            ) : (
-              <ListItem>
-                <ListLabel>Archive Template</ListLabel>
-                <ListDescription>Archive the current template.</ListDescription>
-              </ListItem>
-            )}
-            <ArchiveTemplateDialog
-              archived={data?.metadata.project_status === 'archived'}
-            />
-          </List>
-        </Card>
+        {canChangeTemplateArchiveStatus ? (
+          <Card>
+            <List>
+              {data?.archived === true ? (
+                <ListItem>
+                  <ListLabel>Un-archive Template</ListLabel>
+                  <ListDescription>
+                    Un-archive the current template.
+                  </ListDescription>
+                </ListItem>
+              ) : (
+                <ListItem>
+                  <ListLabel>Archive Template</ListLabel>
+                  <ListDescription>
+                    Archive the current template.
+                  </ListDescription>
+                </ListItem>
+              )}
+              <ArchiveTemplateDialog archived={data?.archived === true} />
+            </List>
+          </Card>
+        ) : null}
       </div>
       <DesignerDialog
-        open={editorOpen}
+        open={editorOpen && !archived}
         notebook={initialNotebook}
         onClose={handleEditorClose}
       />

@@ -1,3 +1,7 @@
+import {
+  ARCHIVE_TAB_LABELS,
+  getVisibleArchiveTabs,
+} from '@/archive/archive-tabs';
 import {NavItem, NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
 import {
@@ -7,13 +11,22 @@ import {
   SidebarHeader,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {NOTEBOOK_NAME, NOTEBOOK_NAME_CAPITALIZED} from '@/constants';
+import {
+  NOTEBOOK_NAME_PLURAL,
+  NOTEBOOK_NAME_PLURAL_CAPITALIZED,
+} from '@/constants';
 import {useAuth} from '@/context/auth-provider';
 import {useIsAuthorisedTo} from '@/hooks/auth-hooks';
 import {useGetProjects, useGetTeams, useGetTemplates} from '@/hooks/queries';
 import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {Link, useLocation} from '@tanstack/react-router';
-import {House, LayoutTemplate, LetterText, Users} from 'lucide-react';
+import {
+  ArchiveRestore,
+  House,
+  LayoutTemplate,
+  LetterText,
+  Users,
+} from 'lucide-react';
 import * as React from 'react';
 import Logo from '../logo';
 
@@ -48,7 +61,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   if (canSeeProjects) {
     topSectionNavItems.push({
-      title: `${NOTEBOOK_NAME_CAPITALIZED}s`,
+      title: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
       url: '/projects',
       icon: LetterText,
       isActive: pathname.startsWith('/projects') || pathname === '/',
@@ -59,7 +72,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               title: name,
               url: `/projects/${project_id}`,
             }))
-          : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME}s...`}],
+          : [{id: 'no-projects', title: `No ${NOTEBOOK_NAME_PLURAL}...`}],
     });
   }
 
@@ -104,6 +117,32 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
               url: `/teams/${_id}`,
             }))
           : [{id: 'no-teams', title: 'No teams...'}],
+    });
+  }
+
+  const visibleArchiveTabs = getVisibleArchiveTabs({
+    canSeeProjects,
+    canSeeTemplates,
+    canSeeUsers,
+  });
+
+  if (visibleArchiveTabs.length > 0) {
+    const defaultArchiveTab = visibleArchiveTabs[0];
+    const archiveSubItems: NonNullable<NavItem['items']> =
+      visibleArchiveTabs.map(tabKey => ({
+        id: `archive-${tabKey}`,
+        title: ARCHIVE_TAB_LABELS[tabKey],
+        url: '/archive',
+        search: {tab: tabKey},
+      }));
+
+    bottomSectionNavItems.push({
+      title: 'Archive',
+      url: '/archive',
+      icon: ArchiveRestore,
+      isActive: pathname.startsWith('/archive'),
+      linkSearch: {tab: defaultArchiveTab},
+      items: archiveSubItems,
     });
   }
 

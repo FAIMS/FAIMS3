@@ -20,6 +20,7 @@
 
 import {
   Action,
+  ProjectStatus,
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
@@ -29,12 +30,14 @@ import {
   GetNotebookListResponse,
   GetNotebookResponse,
   GetNotebookUsersResponse,
+  getNotebookFieldTypes,
   getRecordListAudit,
   getRecordsWithRegex,
   PostAddNotebookUserInputSchema,
   PostCreateNotebookInput,
   PostCreateNotebookInputSchema,
   PostCreateNotebookResponse,
+  PostDestroyNotebookInputSchema,
   PostRandomRecordsInputSchema,
   PostRandomRecordsResponse,
   PostRecordStatusInputSchema,
@@ -48,8 +51,10 @@ import {
   removeProjectRole,
   Role,
   slugify,
+  isPeopleUserAccountDisabled,
   userHasProjectRole,
 } from '@faims3/data-model';
+import {stripDeletedRelatedRefsFromRecordData} from '../couchdb/export/stripDeletedRelatedRefs';
 import express, {Response} from 'express';
 import {jwtVerify, SignJWT} from 'jose';
 import {z} from 'zod';
@@ -75,8 +80,9 @@ import {
   streamNotebookRecordsAsKML,
 } from '../couchdb/export/geospatialExport';
 import {FullExportConfigSchema} from '../couchdb/export/types';
+import {deleteAllInvitesForProject} from '../couchdb/invites';
 import {
-  changeNotebookStatus,
+  applyNotebookLifecycleStatus,
   changeNotebookTeam,
   countRecordsInNotebook,
   createNotebook,
@@ -89,8 +95,10 @@ import {
   getUserProjectsDetailed,
   updateNotebook,
 } from '../couchdb/notebooks';
+import {stripProjectRolesForProjectId} from '../couchdb/users';
 import {getTemplate} from '../couchdb/templates';
 import {
+  filterPeopleUsersForList,
   getCouchUserFromEmailOrUserId,
   getUserInfoForProject,
   getUsers,
@@ -111,6 +119,33 @@ import patch from '../utils/patchExpressAsync';
 patch();
 
 export const api: express.Router = express.Router();
+
+function permissionRequiredForNotebookStatusChange(
+  current: ProjectStatus,
+  target: ProjectStatus
+): Action {
+  if (target === ProjectStatus.OPEN && current === ProjectStatus.ARCHIVED) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot open an archived survey. Restore it from the archive first.'
+    );
+  }
+
+  if (current === target) {
+    return current === ProjectStatus.ARCHIVED
+      ? Action.CHANGE_PROJECT_ARCHIVE_STATUS
+      : Action.CHANGE_PROJECT_STATUS;
+  }
+
+  if (target === ProjectStatus.ARCHIVED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
+  }
+
+  if (current === ProjectStatus.ARCHIVED && target === ProjectStatus.CLOSED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
+  }
+
+  return Action.CHANGE_PROJECT_STATUS;
+}
 
 // =============================================================================
 // Types for download format and token payloads (must be before records router)
@@ -342,13 +377,23 @@ api.use('/:id/records', recordsRouter);
 api.get(
   '/',
   requireAuthenticationAPI,
-  processRequest({query: z.object({teamId: z.string().min(1).optional()})}),
+  processRequest({
+    query: z.object({
+      teamId: z.string().min(1).optional(),
+      /** When `"true"`, lists archived surveys (`ARCHIVED`). Default excludes them. */
+      includeArchived: z.enum(['true', 'false']).optional(),
+    }),
+  }),
   async (req, res: Response<GetNotebookListResponse>) => {
-    // get a list of notebooks from the db
     if (!req.user) {
       throw new Exceptions.UnauthorizedException();
     }
-    const notebooks = await getUserProjectsDetailed(req.user, req.query.teamId);
+    const includeArchived = req.query.includeArchived === 'true';
+    const notebooks = await getUserProjectsDetailed(
+      req.user,
+      req.query.teamId,
+      includeArchived
+    );
     res.json(notebooks);
   }
 );
@@ -430,6 +475,12 @@ api.post(
     if (isFromTemplate(req.body)) {
       // Now we use the template to get details needed to instantiate a new notebook
       const template = await getTemplate(req.body.template_id);
+
+      if (template.archived === true) {
+        throw new Exceptions.InvalidRequestException(
+          'Cannot create a notebook from an archived template.'
+        );
+      }
 
       // Pull out values needed to create a new notebook
       metadata = template.metadata;
@@ -546,24 +597,40 @@ api.put(
   }
 );
 
-// PUT change project status
+// PUT set notebook lifecycle status (open / closed / archived)
 api.put(
-  '/:projectId/status',
+  '/:id/status',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_PROJECT_STATUS,
-    getResourceId(req) {
-      return req.params.projectId;
-    },
-  }),
   processRequest({
-    params: z.object({projectId: z.string()}),
+    params: z.object({id: z.string()}),
     body: PutChangeNotebookStatusInputSchema,
   }),
-  async ({body: {status}, params: {projectId}}, res) => {
-    await changeNotebookStatus({projectId, status});
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const {id} = req.params;
+    const {status: targetStatus} = req.body;
+    const project = await getProjectById(id);
+    const requiredAction = permissionRequiredForNotebookStatusChange(
+      project.status,
+      targetStatus
+    );
+
+    if (
+      !userCanDo({
+        user: req.user,
+        action: requiredAction,
+        resourceId: id,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+
+    await applyNotebookLifecycleStatus(project, targetStatus);
     res.sendStatus(200);
-    return;
   }
 );
 
@@ -661,11 +728,56 @@ api.get(
     });
     if (records) {
       const filenames: string[] = [];
+      const viewIdsNeedingFieldTypes = new Set(
+        records.filter(r => r.data && r.type).map(r => r.type)
+      );
+
+      const fieldTypesByViewId: Partial<
+        Record<string, ReturnType<typeof getNotebookFieldTypes>>
+      > = {};
+      for (const viewID of viewIdsNeedingFieldTypes) {
+        try {
+          fieldTypesByViewId[viewID] = getNotebookFieldTypes({
+            uiSpecification,
+            viewID,
+          });
+        } catch (e) {
+          console.error(
+            'Failed to get notebook field types for export',
+            viewID,
+            e
+          );
+        }
+      }
       // Process any file fields to give the file name in the zip download
-      records.forEach(record => {
+      for (const record of records) {
+        if (record.data) {
+          const fields = fieldTypesByViewId[record.type];
+          if (fields) {
+            try {
+              const dataCopy = {...record.data};
+              await stripDeletedRelatedRefsFromRecordData({
+                fields,
+                data: dataCopy,
+                dataDb,
+                uiSpecification,
+              });
+              record.data = dataCopy;
+            } catch (e) {
+              console.error(
+                'Failed to strip deleted related record refs for export',
+                e
+              );
+            }
+          }
+        }
+        const exportData = record.data;
+        if (!exportData) {
+          continue;
+        }
         const hrid = record.hrid || record.record_id;
-        for (const fieldName in record.data) {
-          const values = record.data[fieldName];
+        for (const fieldName in exportData) {
+          const values = exportData[fieldName];
           if (values instanceof Array) {
             const names = values.map((v: any) => {
               if (v instanceof File) {
@@ -698,11 +810,11 @@ api.get(
               }
             });
             if (names.length > 0) {
-              record.data[fieldName] = names;
+              exportData[fieldName] = names;
             }
           }
         }
-      });
+      }
       res.json({records});
     } else {
       throw new Exceptions.ItemNotFoundException('Notebook not found');
@@ -816,7 +928,7 @@ api.get(
   }),
   processRequest({params: z.object({id: z.string()})}),
   async (req, res: Response<GetNotebookUsersResponse>) => {
-    const users = await getUsers();
+    const users = filterPeopleUsersForList(await getUsers(), false);
     const allRoles = getRolesForNotebook().map(r => r.role);
     res.json({
       roles: allRoles,
@@ -884,6 +996,12 @@ api.post(
       );
     }
 
+    if (addRole && isPeopleUserAccountDisabled(user)) {
+      throw new Exceptions.ForbiddenException(
+        'Cannot assign project roles to a disabled user account.'
+      );
+    }
+
     // Get the notebook metadata to modify
     const notebookMetadata = await getNotebookMetadata(req.params.id);
 
@@ -911,7 +1029,10 @@ api.post(
   }
 );
 
-/** Deletes a given notebook by ID */
+/**
+ * Permanently destroys survey server data (invites, people roles, Couch DBs).
+ * Requires archive first. Allowed for survey administrators (or operations staff).
+ */
 api.post(
   '/:notebookId/delete',
   requireAuthenticationAPI,
@@ -921,12 +1042,22 @@ api.post(
       return req.params.notebookId;
     },
   }),
-  processRequest({params: z.object({notebookId: z.string()})}),
+  processRequest({
+    params: z.object({notebookId: z.string()}),
+    body: PostDestroyNotebookInputSchema,
+  }),
   async (req, res) => {
-    // Delete the notebook
-    await deleteNotebook(req.params.notebookId);
-
-    // 200 OK indicating successful deletion
+    const {notebookId} = req.params;
+    const {confirmName} = req.body;
+    const project = await getProjectById(notebookId);
+    if (project.name.trim() !== confirmName.trim()) {
+      throw new Exceptions.InvalidRequestException(
+        'Confirmation name must match the survey name exactly.'
+      );
+    }
+    await deleteAllInvitesForProject(notebookId);
+    await stripProjectRolesForProjectId(notebookId);
+    await deleteNotebook(notebookId);
     res.status(200).end();
   }
 );

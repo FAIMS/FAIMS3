@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import {NOTEBOOK_NAME} from '@/constants';
 import {Grid, FormHelperText} from '@mui/material';
 import {useAppSelector, useAppDispatch} from '../../state/hooks';
 import {useRef} from 'react';
@@ -64,7 +65,7 @@ export const RichTextEditor = ({fieldName}: {fieldName: string}) => {
           }
         />
         <FormHelperText>
-          Use this editor to add rich text to your notebook.
+          {`Use this editor to add rich text to your ${NOTEBOOK_NAME}.`}
         </FormHelperText>
       </Grid>
     </Grid>
