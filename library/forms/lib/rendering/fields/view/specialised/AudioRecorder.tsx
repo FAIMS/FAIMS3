@@ -58,6 +58,8 @@ const UnsyncedPlaceholder: React.FC = () => (
   </Paper>
 );
 
+/** View renderer for the AudioRecorder field — displays saved recordings with audio playback. */
+
 export const AudioRecorderRender: DataViewFieldRender = props => {
   const attachmentService = useMemo(() => {
     return props.renderContext.tools.getAttachmentService();

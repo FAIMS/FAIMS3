@@ -53,6 +53,8 @@ const AUDIO_EXT = 'm4a';
 // Helpers
 // ============================================================================
 
+/** Formats milliseconds as m:ss for the elapsed time display. */
+
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const m = Math.floor(totalSeconds / 60);
@@ -60,7 +62,8 @@ function formatDuration(ms: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// Native stopRecording returns a URI; web returns a Blob.
+/** Converts the plugin's stop result to a Blob, handling the web/native difference. */
+
 async function blobFromResult(result: {
   blob?: Blob;
   uri?: string;
@@ -417,6 +420,8 @@ const AudioRecorderFull: React.FC<FullAudioRecorderFieldProps> = props => {
 // Main export — routes to preview or full mode
 // ============================================================================
 
+/** AudioRecorder field component — routes to preview or full mode. */
+
 export const AudioRecorder: React.FC<AudioRecorderFieldProps> = props => {
   if (props.config.mode === 'preview') {
     return <AudioRecorderPreview {...props} />;
@@ -433,6 +438,8 @@ export const AudioRecorder: React.FC<AudioRecorderFieldProps> = props => {
 // ============================================================================
 // Field registration
 // ============================================================================
+
+/** Field specification for registering the AudioRecorder component. */
 
 export const audioRecorderFieldSpec: FieldInfo<AudioRecorderFieldProps> = {
   namespace: 'faims-custom',
