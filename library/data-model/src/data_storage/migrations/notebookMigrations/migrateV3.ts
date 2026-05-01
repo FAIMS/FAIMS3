@@ -17,7 +17,23 @@
  * Archive state for templates now lives on the template document, not notebook JSON.
  */
 
-import type {NotebookV1} from './migrateV2';
+// Notebook shape after migrateToV2 — structurally the same as NotebookV1 in migrateV2.ts,
+// defined here so this step does not depend on migrateV2 exports (those exist mainly for tests).
+type NotebookMetadata = {
+  [key: string]: unknown;
+};
+
+type NotebookUISpec = {
+  fields: {[key: string]: any};
+  fviews: {[key: string]: any};
+  viewsets: {[key: string]: any};
+  visible_types: string[];
+};
+
+type NotebookAfterV2 = {
+  metadata: NotebookMetadata;
+  'ui-specification': NotebookUISpec;
+};
 
 /**
  * Migrate a notebook from schema 2.0 to 3.0.
@@ -25,8 +41,8 @@ import type {NotebookV1} from './migrateV2';
  * @param notebook - notebook with metadata.schema_version '2.0' (or v2-shaped body)
  * @returns deep-cloned notebook with `project_status` removed and schema_version '3.0'
  */
-export const migrateToV3 = (notebook: any): NotebookV1 => {
-  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as NotebookV1;
+export const migrateToV3 = (notebook: any): NotebookAfterV2 => {
+  const notebookCopy = JSON.parse(JSON.stringify(notebook)) as NotebookAfterV2;
 
   if ('project_status' in notebookCopy.metadata) {
     delete notebookCopy.metadata.project_status;

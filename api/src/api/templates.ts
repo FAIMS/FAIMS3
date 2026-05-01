@@ -130,7 +130,7 @@ api.get(
  * GET count of surveys (projects) that still reference this template id.
  */
 api.get(
-  '/:id/survey-references',
+  '/:id/references',
   requireAuthenticationAPI,
   isAllowedToMiddleware({
     action: Action.READ_TEMPLATE_DETAILS,
@@ -143,7 +143,7 @@ api.get(
   }),
   async (req, res: Response<GetTemplateSurveyReferencesResponse>) => {
     const ids = await getProjectIdsReferencingTemplate(req.params.id);
-    res.json({surveyCount: ids.length});
+    res.json({count: ids.length});
   }
 );
 

@@ -175,7 +175,7 @@ export const useTemplateSurveyReferences = ({
   enabled?: boolean;
 }) =>
   useQuery({
-    queryKey: ['templates', templateId, 'survey-references'],
+    queryKey: ['templates', templateId, 'references'],
     queryFn: async () => {
       if (!user) {
         throw new Error('Not authenticated');

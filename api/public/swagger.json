@@ -1299,7 +1299,7 @@
         }
       }
     },
-    "/templates/{id}/survey-references": {
+    "/templates/{id}/references": {
       "get": {
         "summary": "Count notebooks referencing this template",
         "description": "Returns how many notebooks (projects) still reference this template id. Requires `READ_TEMPLATE_DETAILS` on the template.",
@@ -1983,13 +1983,13 @@
     "GetTemplateSurveyReferencesResponse": {
       "type": "object",
       "properties": {
-        "surveyCount": {
+        "count": {
           "type": "integer",
           "minimum": 0,
           "description": "Number of notebooks whose directory still references this template id"
         }
       },
-      "required": ["surveyCount"]
+      "required": ["count"]
     },
     "PostRestoreTemplateResponse": {
       "$ref": "#/definitions/TemplateDocument"

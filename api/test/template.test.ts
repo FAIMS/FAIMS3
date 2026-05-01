@@ -185,7 +185,7 @@ const getTemplateSurveyReferences = async (
   token: string = adminToken
 ): Promise<GetTemplateSurveyReferencesResponse> => {
   return await requestAuthAndType(
-    request(app).get(`${TEMPLATE_API_BASE}/${templateId}/survey-references`),
+    request(app).get(`${TEMPLATE_API_BASE}/${templateId}/references`),
     token
   )
     .expect(200)
@@ -606,7 +606,7 @@ describe('template API tests', () => {
   it('reports survey reference count and clears templateId on projects when deleted', async () => {
     const {template} = await createSampleTemplate(app, {});
     await getTemplateSurveyReferences(app, template._id).then(r =>
-      expect(r.surveyCount).to.equal(0)
+      expect(r.count).to.equal(0)
     );
 
     const notebookId = await requestAuthAndType(
@@ -624,7 +624,7 @@ describe('template API tests', () => {
     expect(withRef.templateId).to.equal(template._id);
 
     await getTemplateSurveyReferences(app, template._id).then(r =>
-      expect(r.surveyCount).to.equal(1)
+      expect(r.count).to.equal(1)
     );
 
     await setTemplateArchived(app, template._id, true);

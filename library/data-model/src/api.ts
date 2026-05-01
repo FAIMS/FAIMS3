@@ -482,9 +482,9 @@ export type PostRestoreTemplateResponse = z.infer<
   typeof PostRestoreTemplateResponseSchema
 >;
 
-/** GET /api/templates/:id/survey-references — how many surveys reference this template. */
+/** GET /api/templates/:id/references — how many surveys reference this template. */
 export const GetTemplateSurveyReferencesResponseSchema = z.object({
-  surveyCount: z.number().int().nonnegative(),
+  count: z.number().int().nonnegative(),
 });
 export type GetTemplateSurveyReferencesResponse = z.infer<
   typeof GetTemplateSurveyReferencesResponseSchema

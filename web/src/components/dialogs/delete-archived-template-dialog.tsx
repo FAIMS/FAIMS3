@@ -40,7 +40,7 @@ export function DeleteArchivedTemplateDialog({
 
   const deleteMutation = useDeleteArchivedTemplate();
 
-  const notebookRefCount = referencesQuery.data?.surveyCount ?? null;
+  const notebookRefCount = referencesQuery.data?.count ?? null;
   const body =
     notebookRefCount !== null
       ? getTemplateDeleteDialogBody({

@@ -21,7 +21,7 @@ function errorMessageFromTemplateJsonBody(
 }
 
 /**
- * GET /api/templates/:templateId/survey-references
+ * GET /api/templates/:templateId/references
  */
 export const getTemplateSurveyReferences = async ({
   user,
@@ -31,7 +31,7 @@ export const getTemplateSurveyReferences = async ({
   templateId: string;
 }): Promise<GetTemplateSurveyReferencesResponse> => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/survey-references`,
+    `${import.meta.env.VITE_API_URL}/api/templates/${encodeURIComponent(templateId)}/references`,
     {
       headers: {
         Authorization: `Bearer ${user.token}`,
