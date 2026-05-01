@@ -47,7 +47,6 @@ export const UNDOABLE_UI_SPEC_ACTIONS = [
   'ui-specification/viewSetRenamed',
   'ui-specification/viewSetMoved',
   'ui-specification/formVisibilityUpdated',
-  'ui-specification/viewSetPublishButtonBehaviourUpdated',
   'ui-specification/viewSetLayoutUpdated',
   'ui-specification/viewSetSummaryFieldsUpdated',
   'ui-specification/viewSetHridUpdated',

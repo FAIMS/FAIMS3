@@ -583,13 +583,11 @@
       "Person": {
         "label": "Person",
         "views": ["Person-Main", "Person-Detail", "Person-New-Section"],
-        "publishButtonBehaviour": "always",
         "hridField": "hridPerson-Main"
       },
       "School": {
         "label": "School",
-        "views": ["School-New-Section", "School-Location"],
-        "publishButtonBehaviour": "always"
+        "views": ["School-New-Section", "School-Location"]
       }
     },
     "visible_types": ["Person", "School"]

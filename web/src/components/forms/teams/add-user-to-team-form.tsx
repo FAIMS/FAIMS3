@@ -58,6 +58,7 @@ export function AddUserToTeamForm({
       options: rolesAvailable.map(r => ({
         label: roleDetails[r].name,
         value: r,
+        description: roleDetails[r].description,
       })),
       schema: z.enum([
         Role.TEAM_MEMBER,
@@ -87,12 +88,14 @@ export function AddUserToTeamForm({
       user,
     });
 
-    if (!response.ok)
+    if (!response.ok) {
+      const responseBody = await response.json();
+      const message = responseBody.error.message || 'Error adding user to team';
       return {
         type: 'submit',
-        message:
-          'Error adding user to team! Are you sure the email is correct?',
+        message,
       };
+    }
 
     QueryClient.invalidateQueries({queryKey: ['teamusers', teamId]});
 

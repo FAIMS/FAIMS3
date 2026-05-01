@@ -316,7 +316,7 @@ Note that this validation is at a schema level, it might not catch improperly fo
   - `retentionDays`: The number of days to retain backups (default: 30)
   - `scheduleExpression`: The cron schedule for running backups (default: daily at 3 AM)
 - `uiConfiguration`: UI and app build-time settings for the main FAIMS frontend.
-  - `uiTheme`: The UI theme: `bubble`, `default`, or `bssTheme`
+  - `uiTheme`: The UI theme: `bubble`, `default`, `fieldmark` or `bssTheme`
   - `notebookListType`: Notebook list display mode: `tabs` or `headings`
   - `notebookName`: Display name for notebooks, e.g. `survey` or `notebook`
   - `appName`: App name used in app store and headings (e.g. "FAIMS Mobile")

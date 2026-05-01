@@ -57,10 +57,11 @@ export const AddRolePopover = ({
           add
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex gap-1 p-2 w-fit text-sm" align="start">
+      <PopoverContent className="flex flex-col gap-1 p-2 w-80 text-sm" align="start">
         {roles.map(role => (
           <RoleCard
             key={role.id}
+            className="w-full"
             onClick={async () => {
               try {
                 const response = await fetch(
@@ -77,11 +78,8 @@ export const AddRolePopover = ({
                     }),
                   }
                 );
-
                 if (!response.ok) throw new Error(response.statusText);
-
                 queryClient.invalidateQueries({queryKey: ['users']});
-
                 setOpen(false);
               } catch (error) {
                 toast.error('Failed to add role', {
@@ -93,7 +91,12 @@ export const AddRolePopover = ({
               }
             }}
           >
-            {role.name}
+            <div className="font-medium">{role.name}</div>
+            {role.description && (
+              <div className="text-xs text-muted-foreground/70 mt-0.5">
+                {role.description}
+              </div>
+            )}
           </RoleCard>
         ))}
       </PopoverContent>

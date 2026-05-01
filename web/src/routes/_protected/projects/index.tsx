@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_protected/projects/')({
  *
  * @returns {JSX.Element} The rendered RouteComponent component.
  */
-export function ProjectsRouteComponent() {
+function ProjectsRouteComponent() {
   const {user} = useAuth();
 
   const {isLoading, data} = useGetProjects({user});

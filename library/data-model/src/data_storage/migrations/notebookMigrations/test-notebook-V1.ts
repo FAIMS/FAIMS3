@@ -327,7 +327,6 @@ export const sampleNotebook: NotebookV1 = {
       Primary: {
         label: 'Observation',
         views: ['Primary-Next-Section', 'Primary-New-Section'],
-        publishButtonBehaviour: 'always',
       },
     },
     visible_types: ['Primary'],

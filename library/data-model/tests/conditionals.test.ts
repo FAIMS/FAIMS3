@@ -77,6 +77,38 @@ describe('compiling expressions', () => {
     expect(fn({surveyArea: 'Zone Beta; '})).toBe(true);
   });
 
+  it('compiles a string-contains expression', () => {
+    const expr = {
+      operator: 'string-contains',
+      field: 'surveyArea',
+      value: 'fox',
+    };
+    const fn = compileExpression(expr);
+    expect(fn({surveyArea: 'The quick brown fox'})).toBe(true);
+    expect(fn({surveyArea: 'Axminster; '})).toBe(false);
+    expect(fn({surveyArea: 'fox'})).toBe(true);
+    // should not crash for non-strings
+    expect(fn({surveyArea: 123})).toBe(false);
+    // object with an includes property should not crash
+    expect(fn({includes: 'fox'})).toBe(false);
+  });
+
+  it('compiles a string-does-not-contain expression', () => {
+    const expr = {
+      operator: 'string-does-not-contain',
+      field: 'surveyArea',
+      value: 'fox',
+    };
+    const fn = compileExpression(expr);
+    expect(fn({surveyArea: 'The quick brown fox'})).toBe(false);
+    expect(fn({surveyArea: 'Axminster; '})).toBe(true);
+    expect(fn({surveyArea: 'fox'})).toBe(false);
+    // should not crash for non-strings
+    expect(fn({surveyArea: 123})).toBe(false);
+    // object with an includes property should not crash
+    expect(fn({includes: 'fox'})).toBe(false);
+  });
+
   it('compiles a regex expression', () => {
     const expr = {
       operator: 'regex',
@@ -87,6 +119,10 @@ describe('compiling expressions', () => {
     expect(fn({surveyArea: 'Zone Alpha; '})).toBe(true);
     expect(fn({surveyArea: 'Axminster; '})).toBe(true);
     expect(fn({surveyArea: 'Zone Beta; '})).toBe(false);
+    // should not crash for non-strings
+    expect(fn({surveyArea: 123})).toBe(false);
+    // object with an includes property should not crash
+    expect(fn({includes: 'fox'})).toBe(false);
   });
 
   it('compiles an greater expression', () => {
