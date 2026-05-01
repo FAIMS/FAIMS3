@@ -3,6 +3,11 @@ import {ColumnDef} from '@tanstack/react-table';
 import {DataTableColumnHeader} from '../data-table/column-header';
 import {ReEnableUserDialog} from '../dialogs/re-enable-user';
 
+const RE_ENABLE_COL_META = {
+  headerClassName: 'w-10 max-w-10 px-0.5 text-center align-middle',
+  cellClassName: 'w-10 max-w-10 px-0.5 text-center align-middle',
+};
+
 export const archivedDisabledUserColumns: ColumnDef<GetListAllUsersItem>[] = [
   {
     accessorKey: 'name',
@@ -28,12 +33,11 @@ export const archivedDisabledUserColumns: ColumnDef<GetListAllUsersItem>[] = [
     ),
   },
   {
-    id: 'actions',
-    header: () => <div className="text-right">Actions</div>,
-    cell: ({row: {original}}) => (
-      <div className="flex justify-end">
-        <ReEnableUserDialog rowUser={original} />
-      </div>
-    ),
+    id: 'reEnable',
+    enableSorting: false,
+    enableGlobalFilter: false,
+    header: () => <span className="sr-only">Re-enable user</span>,
+    meta: RE_ENABLE_COL_META,
+    cell: ({row: {original}}) => <ReEnableUserDialog rowUser={original} />,
   },
 ];

@@ -14,22 +14,20 @@ import {Action, GetListTemplatesResponse} from '@faims3/data-model';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
 import {templateDeleteDialogLabels} from '@/archive/template-delete-warnings';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {Button} from '@/components/ui/button';
-import {MoreVertical} from 'lucide-react';
+import {ArchiveRestore, Trash2} from 'lucide-react';
 import {useState} from 'react';
 
 export type ArchivedTemplateRow = GetListTemplatesResponse['templates'][number];
 
-function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
+const ARCHIVE_ACTION_COL_META = {
+  headerClassName: 'w-10 max-w-10 px-0.5 text-center align-middle',
+  cellClassName: 'w-10 max-w-10 px-0.5 text-center align-middle',
+};
+
+function ArchivedTemplateRestoreCell({row}: {row: ArchivedTemplateRow}) {
   const {user} = useAuth();
-  const [restoreOpen, setRestoreOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const canRestore =
     !!user &&
@@ -39,6 +37,66 @@ function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
       resourceId: row._id,
     });
 
+  const tooltip = canRestore
+    ? 'Restore this template from archive'
+    : "You don't have permission to restore this template";
+
+  return (
+    <>
+      <TooltipProvider>
+        <div
+          className="flex justify-center"
+          onClick={e => e.stopPropagation()}
+          onKeyDown={e => e.stopPropagation()}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {canRestore ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-foreground [&_svg]:size-[1.125rem]"
+                  aria-label="Restore from archive"
+                  onClick={() => setOpen(true)}
+                >
+                  <ArchiveRestore aria-hidden />
+                </Button>
+              ) : (
+                <span className="inline-flex">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-foreground [&_svg]:size-[1.125rem]"
+                    aria-label="Restore from archive"
+                    disabled
+                  >
+                    <ArchiveRestore aria-hidden />
+                  </Button>
+                </span>
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="top">{tooltip}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+      {canRestore ? (
+        <RestoreTemplateDialog
+          templateId={row._id}
+          templateName={row.name}
+          open={open}
+          onOpenChange={setOpen}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ArchivedTemplateDeleteCell({row}: {row: ArchivedTemplateRow}) {
+  const {user} = useAuth();
+  const [open, setOpen] = useState(false);
+
   const canDelete =
     !!user &&
     userCanDo({
@@ -47,60 +105,58 @@ function ArchivedTemplateRowActions({row}: {row: ArchivedTemplateRow}) {
       resourceId: row._id,
     });
 
-  const hasRowActions = canRestore || canDelete;
+  const tooltip = canDelete
+    ? templateDeleteDialogLabels.title
+    : "You don't have permission to delete this template";
 
   return (
     <>
-      {hasRowActions ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 w-9 shrink-0 rounded-md p-0 text-foreground hover:bg-muted/90 hover:text-foreground [&_svg]:!size-6 [&_svg]:shrink-0"
-              aria-label="Row actions"
-              onClick={e => e.stopPropagation()}
-            >
-              <MoreVertical aria-hidden strokeWidth={2.25} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[9rem]">
-            {canRestore ? (
-              <DropdownMenuItem
-                onSelect={() => {
-                  setRestoreOpen(true);
-                }}
-              >
-                Restore
-              </DropdownMenuItem>
-            ) : null}
-            {canDelete ? (
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onSelect={() => {
-                  setDeleteOpen(true);
-                }}
-              >
-                {templateDeleteDialogLabels.menuItem}
-              </DropdownMenuItem>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
-      {canRestore ? (
-        <RestoreTemplateDialog
+      <TooltipProvider>
+        <div
+          className="flex justify-center"
+          onClick={e => e.stopPropagation()}
+          onKeyDown={e => e.stopPropagation()}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {canDelete ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive [&_svg]:size-[1.125rem]"
+                  aria-label={templateDeleteDialogLabels.menuItem}
+                  onClick={() => setOpen(true)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              ) : (
+                <span className="inline-flex">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive [&_svg]:size-[1.125rem]"
+                    aria-label={templateDeleteDialogLabels.menuItem}
+                    disabled
+                  >
+                    <Trash2 aria-hidden />
+                  </Button>
+                </span>
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="top">{tooltip}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+      {canDelete ? (
+        <DeleteArchivedTemplateDialog
           templateId={row._id}
           templateName={row.name}
-          open={restoreOpen}
-          onOpenChange={setRestoreOpen}
+          open={open}
+          onOpenChange={setOpen}
         />
       ) : null}
-      <DeleteArchivedTemplateDialog
-        templateId={row._id}
-        templateName={row.name}
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-      />
     </>
   );
 }
@@ -181,22 +237,23 @@ export const archivedTemplateColumns: ColumnDef<ArchivedTemplateRow>[] = [
     },
   },
   {
-    id: 'actions',
+    id: 'restore',
     enableSorting: false,
     enableGlobalFilter: false,
-    header: () => <span className="sr-only">Actions</span>,
-    meta: {
-      headerClassName: 'w-12 max-w-12 px-1 text-right align-middle',
-      cellClassName: 'w-12 max-w-12 px-1 text-right align-middle',
-    },
-    cell: ({row}) => (
-      <div
-        className="flex justify-end"
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => e.stopPropagation()}
-      >
-        <ArchivedTemplateRowActions row={row.original} />
-      </div>
+    header: () => (
+      <span className="sr-only">Restore from archive</span>
     ),
+    meta: ARCHIVE_ACTION_COL_META,
+    cell: ({row}) => <ArchivedTemplateRestoreCell row={row.original} />,
+  },
+  {
+    id: 'delete',
+    enableSorting: false,
+    enableGlobalFilter: false,
+    header: () => (
+      <span className="sr-only">{templateDeleteDialogLabels.menuItem}</span>
+    ),
+    meta: ARCHIVE_ACTION_COL_META,
+    cell: ({row}) => <ArchivedTemplateDeleteCell row={row.original} />,
   },
 ];

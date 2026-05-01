@@ -17,21 +17,19 @@ import {
 } from '@faims3/data-model';
 import {useAuth} from '@/context/auth-provider';
 import {userCanDo} from '@/hooks/auth-hooks';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {Button} from '@/components/ui/button';
-import {MoreVertical} from 'lucide-react';
+import {ArchiveRestore, Trash2} from 'lucide-react';
 import {useState} from 'react';
 export type ArchivedProjectRow = GetNotebookListResponse[number];
 
-function ArchivedProjectRowActions({row}: {row: ArchivedProjectRow}) {
+const ARCHIVE_ACTION_COL_META = {
+  headerClassName: 'w-10 max-w-10 px-0.5 text-center align-middle',
+  cellClassName: 'w-10 max-w-10 px-0.5 text-center align-middle',
+};
+
+function ArchivedProjectRestoreCell({row}: {row: ArchivedProjectRow}) {
   const {user} = useAuth();
-  const [restoreOpen, setRestoreOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const canRestore =
     !!user &&
@@ -41,6 +39,65 @@ function ArchivedProjectRowActions({row}: {row: ArchivedProjectRow}) {
       resourceId: row.project_id,
     });
 
+  const tooltip = canRestore
+    ? `Restore this ${NOTEBOOK_NAME_CAPITALIZED} from archive`
+    : `You don't have permission to restore this ${NOTEBOOK_NAME_CAPITALIZED}`;
+
+  return (
+    <>
+      <TooltipProvider>
+        <div
+          className="flex justify-center"
+          onClick={e => e.stopPropagation()}
+          onKeyDown={e => e.stopPropagation()}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {canRestore ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-foreground [&_svg]:size-[1.125rem]"
+                  aria-label="Restore from archive"
+                  onClick={() => setOpen(true)}
+                >
+                  <ArchiveRestore aria-hidden />
+                </Button>
+              ) : (
+                <span className="inline-flex">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-foreground [&_svg]:size-[1.125rem]"
+                    aria-label="Restore from archive"
+                    disabled
+                  >
+                    <ArchiveRestore aria-hidden />
+                  </Button>
+                </span>
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="top">{tooltip}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+      {canRestore ? (
+        <RestoreArchivedProjectDialog
+          projectId={row.project_id}
+          open={open}
+          onOpenChange={setOpen}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function ArchivedProjectDeleteCell({row}: {row: ArchivedProjectRow}) {
+  const {user} = useAuth();
+  const [open, setOpen] = useState(false);
+
   const canDelete =
     !!user &&
     userCanDo({
@@ -49,59 +106,56 @@ function ArchivedProjectRowActions({row}: {row: ArchivedProjectRow}) {
       resourceId: row.project_id,
     });
 
-  const hasRowActions = canRestore || canDelete;
+  const tooltip = canDelete
+    ? `Permanently delete this archived ${NOTEBOOK_NAME_CAPITALIZED}`
+    : `You don't have permission to delete this ${NOTEBOOK_NAME_CAPITALIZED}`;
 
   return (
     <>
-      {hasRowActions ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-9 w-9 shrink-0 rounded-md p-0 text-foreground hover:bg-muted/90 hover:text-foreground [&_svg]:!size-6 [&_svg]:shrink-0"
-              aria-label="Row actions"
-              onClick={e => e.stopPropagation()}
-            >
-              <MoreVertical aria-hidden strokeWidth={2.25} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[9rem]">
-            {canRestore ? (
-              <DropdownMenuItem
-                onSelect={() => {
-                  setRestoreOpen(true);
-                }}
-              >
-                Restore
-              </DropdownMenuItem>
-            ) : null}
-            {canDelete ? (
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onSelect={() => {
-                  setDeleteOpen(true);
-                }}
-              >
-                Permanently delete
-              </DropdownMenuItem>
-            ) : null}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : null}
-      {canRestore ? (
-        <RestoreArchivedProjectDialog
-          projectId={row.project_id}
-          open={restoreOpen}
-          onOpenChange={setRestoreOpen}
-        />
-      ) : null}
+      <TooltipProvider>
+        <div
+          className="flex justify-center"
+          onClick={e => e.stopPropagation()}
+          onKeyDown={e => e.stopPropagation()}
+        >
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {canDelete ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive [&_svg]:size-[1.125rem]"
+                  aria-label="Permanently delete"
+                  onClick={() => setOpen(true)}
+                >
+                  <Trash2 aria-hidden />
+                </Button>
+              ) : (
+                <span className="inline-flex">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive [&_svg]:size-[1.125rem]"
+                    aria-label="Permanently delete"
+                    disabled
+                  >
+                    <Trash2 aria-hidden />
+                  </Button>
+                </span>
+              )}
+            </TooltipTrigger>
+            <TooltipContent side="top">{tooltip}</TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
       {canDelete ? (
         <DeleteArchivedProjectDialog
           projectId={row.project_id}
           projectDisplayName={row.name}
-          open={deleteOpen}
-          onOpenChange={setDeleteOpen}
+          open={open}
+          onOpenChange={setOpen}
         />
       ) : null}
     </>
@@ -190,22 +244,21 @@ export const archivedProjectColumns: ColumnDef<ArchivedProjectRow>[] = [
     },
   },
   {
-    id: 'actions',
+    id: 'restore',
     enableSorting: false,
     enableGlobalFilter: false,
-    header: () => <span className="sr-only">Actions</span>,
-    meta: {
-      headerClassName: 'w-12 max-w-12 px-1 text-right align-middle',
-      cellClassName: 'w-12 max-w-12 px-1 text-right align-middle',
-    },
-    cell: ({row}) => (
-      <div
-        className="flex justify-end"
-        onClick={e => e.stopPropagation()}
-        onKeyDown={e => e.stopPropagation()}
-      >
-        <ArchivedProjectRowActions row={row.original} />
-      </div>
+    header: () => (
+      <span className="sr-only">Restore from archive</span>
     ),
+    meta: ARCHIVE_ACTION_COL_META,
+    cell: ({row}) => <ArchivedProjectRestoreCell row={row.original} />,
+  },
+  {
+    id: 'delete',
+    enableSorting: false,
+    enableGlobalFilter: false,
+    header: () => <span className="sr-only">Permanently delete</span>,
+    meta: ARCHIVE_ACTION_COL_META,
+    cell: ({row}) => <ArchivedProjectDeleteCell row={row.original} />,
   },
 ];
