@@ -43,6 +43,16 @@ export function DesignerDialog({
     }
   }, [open, animationDuration, mounted, notebook]);
 
+  // Lock body scroll while the designer dialog is open so the background page doesn't scroll through
+  useEffect(() => {
+    if (!mounted) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mounted]);
+
   // Warn on tab close/refresh while editing
   useEffect(() => {
     if (!mounted) return;
