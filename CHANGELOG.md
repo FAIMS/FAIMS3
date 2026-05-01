@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-05-01
+
+### Changes
+
+[release] Previous tag: v1.4.4
+[release] Found 16 merged PR(s) since v1.4.4.
+[release] Fetching PR details from GitHub...
+- Pull request #2046 (title unavailable — fetch manually)
+- Pull request #2045 (title unavailable — fetch manually)
+- Pull request #2044 (title unavailable — fetch manually)
+- Pull request #2042 (title unavailable — fetch manually)
+- Pull request #2041 (title unavailable — fetch manually)
+- Pull request #2040 (title unavailable — fetch manually)
+- Pull request #2039 (title unavailable — fetch manually)
+- Pull request #2038 (title unavailable — fetch manually)
+- Pull request #2035 (title unavailable — fetch manually)
+- Pull request #2032 (title unavailable — fetch manually)
+- Pull request #2030 (title unavailable — fetch manually)
+- Pull request #2029 (title unavailable — fetch manually)
+- Pull request #2025 (title unavailable — fetch manually)
+- Pull request #2022 (title unavailable — fetch manually)
+- Pull request #2021 (title unavailable — fetch manually)
+- Pull request #2012 (title unavailable — fetch manually)
+
 ## [1.4.4] - 2026-04-05
 
 ### Changes
