@@ -19,6 +19,7 @@ import {
   ScopedCssBaseline,
   Box,
   Button,
+  IconButton,
   Typography,
   AppBar,
   Toolbar,
@@ -30,6 +31,7 @@ import {
   DialogActions,
   CircularProgress,
 } from '@mui/material';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import {
   createMemoryRouter,
   RouterProvider,
@@ -250,6 +252,14 @@ export function DesignerWidget({
               <Typography variant="h6" fontWeight="bold">
                 Notebook Editor
               </Typography>
+              <IconButton
+                aria-label="close designer"
+                onClick={() => setCancelDialogOpen(true)}
+                size="small"
+                sx={{color: 'text.secondary', '&:hover': {color: 'text.primary'}}}
+              >
+                <CloseRoundedIcon />
+              </IconButton>
             </Toolbar>
           </AppBar>
 

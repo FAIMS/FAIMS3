@@ -188,7 +188,18 @@ export const NotebookEditor = ({
   return (
     <>
       <TabContext value={pathname}>
-        <Box sx={designerResponsiveFrameSx}>
+        <Box
+          sx={{
+            ...designerResponsiveFrameSx,
+            position: 'sticky',
+            top: 0,
+            zIndex: 100,
+            bgcolor: 'background.paper',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+          }}
+        >
           <Box>
             <TabList
               aria-label="lab API tabs example"
