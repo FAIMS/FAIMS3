@@ -529,20 +529,15 @@ export const changeNotebookName = async ({
 };
 
 /**
- * Updates the notebook status to the targeted value
+ * Apply a lifecycle status change to an already-loaded project document.
+ * Used by PUT /api/notebooks/:id/status after authorization.
  */
-export const changeNotebookStatus = async ({
-  projectId,
-  status,
-}: {
-  projectId: string;
-  status: ProjectStatus;
-}) => {
-  // get existing project record
-  const project = await getProjectById(projectId);
-
+export const applyNotebookLifecycleStatus = async (
+  project: ProjectDocument,
+  targetStatus: ProjectStatus
+): Promise<void> => {
   if (
-    status === ProjectStatus.OPEN &&
+    targetStatus === ProjectStatus.OPEN &&
     project.status === ProjectStatus.ARCHIVED
   ) {
     throw new Exceptions.InvalidRequestException(
@@ -550,44 +545,11 @@ export const changeNotebookStatus = async ({
     );
   }
 
-  // update status
-  const updated = {...project, status};
+  if (project.status === targetStatus) {
+    return;
+  }
 
-  // write it back
-  await putProjectDoc(updated);
-};
-
-/**
- * Archive (hide from default listings) or unarchive.
- * Archiving sets {@link ProjectStatus.ARCHIVED}; unarchiving sets closed.
- */
-export const setNotebookArchived = async ({
-  projectId,
-  archive,
-}: {
-  projectId: string;
-  archive: boolean;
-}) => {
-  const project = await getProjectById(projectId);
-  const updated: ProjectDocument = {
-    ...project,
-    status: archive ? ProjectStatus.ARCHIVED : ProjectStatus.CLOSED,
-  };
-  await putProjectDoc(updated);
-};
-
-/**
- * Restore an archived survey to closed (non-archived) state.
- */
-export const restoreNotebookFromArchive = async (
-  projectId: string
-): Promise<void> => {
-  const project = await getProjectById(projectId);
-  const updated: ProjectDocument = {
-    ...project,
-    status: ProjectStatus.CLOSED,
-  };
-  await putProjectDoc(updated);
+  await putProjectDoc({...project, status: targetStatus});
 };
 
 /**

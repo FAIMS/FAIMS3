@@ -1,9 +1,6 @@
 import {useAuth} from '@/context/auth-provider';
-import {
-  postDeleteArchivedNotebook,
-  postRestoreArchivedNotebook,
-  putNotebookArchive,
-} from '@/hooks/project-hooks';
+import {postDeleteArchivedNotebook, putNotebookStatus} from '@/hooks/project-hooks';
+import {ProjectStatus} from '@faims3/data-model';
 import {postDeleteArchivedTemplate} from '@/hooks/template-hooks';
 import {
   PostRestoreTemplateResponseSchema,
@@ -79,7 +76,7 @@ export function useDeleteArchivedProject() {
 }
 
 /**
- * Restores an archived notebook via POST /api/notebooks/:id/restore.
+ * Restores an archived notebook via PUT /api/notebooks/:id/status (CLOSED).
  */
 export function useRestoreArchivedProject() {
   const queryClient = useQueryClient();
@@ -90,7 +87,11 @@ export function useRestoreArchivedProject() {
       if (!user) {
         throw new Error('Not authenticated');
       }
-      await postRestoreArchivedNotebook({user, projectId});
+      await putNotebookStatus({
+        user,
+        projectId,
+        status: ProjectStatus.CLOSED,
+      });
     },
     onSuccess: (_data, {projectId}) => {
       queryClient.invalidateQueries({queryKey: ['projects']});
@@ -100,7 +101,7 @@ export function useRestoreArchivedProject() {
 }
 
 /**
- * Archives a notebook via PUT /api/notebooks/:id/archive.
+ * Archives a notebook via PUT /api/notebooks/:id/status (ARCHIVED).
  */
 export function useArchiveProject() {
   const queryClient = useQueryClient();
@@ -111,7 +112,11 @@ export function useArchiveProject() {
       if (!user) {
         throw new Error('Not authenticated');
       }
-      await putNotebookArchive({user, projectId, archive: true});
+      await putNotebookStatus({
+        user,
+        projectId,
+        status: ProjectStatus.ARCHIVED,
+      });
     },
     onSuccess: (_data, {projectId}) => {
       queryClient.invalidateQueries({queryKey: ['projects']});

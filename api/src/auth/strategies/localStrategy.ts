@@ -80,7 +80,8 @@ export const verifyUserCredentials = async ({
   if (isPeopleUserAccountDisabled(dbUser)) {
     return {
       success: false,
-      error: ambiguousErrorMessage,
+      error:
+        'Your account has been disabled. Please contact a system administrator.',
     };
   }
 

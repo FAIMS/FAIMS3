@@ -190,8 +190,9 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
             <Box>
               <Typography variant={'body2'} sx={{mb: 2}}>
                 {DE_ACTIVATE_ACTIVE_VERB} this {NOTEBOOK_NAME} will remove it
-                from your device. Ensure all your records have a green sync
-                status before {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()}.
+                from your device and delete all records on your device. Ensure
+                all your records have a green sync status before{' '}
+                {DE_ACTIVATE_ACTIVE_VERB.toLowerCase()}.
               </Typography>
               <Button
                 variant={'outlined'}
@@ -220,7 +221,7 @@ export default function NotebookSettings(props: {uiSpec: ProjectUIModel}) {
           <Stack spacing={2}>
             <Typography variant="body1">
               Are you sure you want to {DE_ACTIVATE_VERB.toLowerCase()} the{' '}
-              {NOTEBOOK_NAME}?
+              {NOTEBOOK_NAME} and remove it from your device?
             </Typography>
             <FormControlLabel
               control={

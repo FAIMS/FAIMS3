@@ -20,6 +20,7 @@
 
 import {
   Action,
+  ProjectStatus,
   addProjectRole,
   CreateNotebookFromScratch,
   CreateNotebookFromTemplate,
@@ -81,7 +82,7 @@ import {
 import {FullExportConfigSchema} from '../couchdb/export/types';
 import {deleteAllInvitesForProject} from '../couchdb/invites';
 import {
-  changeNotebookStatus,
+  applyNotebookLifecycleStatus,
   changeNotebookTeam,
   countRecordsInNotebook,
   createNotebook,
@@ -92,8 +93,6 @@ import {
   getProjectUIModel,
   getRolesForNotebook,
   getUserProjectsDetailed,
-  restoreNotebookFromArchive,
-  setNotebookArchived,
   updateNotebook,
 } from '../couchdb/notebooks';
 import {stripProjectRolesForProjectId} from '../couchdb/users';
@@ -120,6 +119,33 @@ import patch from '../utils/patchExpressAsync';
 patch();
 
 export const api: express.Router = express.Router();
+
+function permissionRequiredForNotebookStatusChange(
+  current: ProjectStatus,
+  target: ProjectStatus
+): Action {
+  if (target === ProjectStatus.OPEN && current === ProjectStatus.ARCHIVED) {
+    throw new Exceptions.InvalidRequestException(
+      'Cannot open an archived survey. Restore it from the archive first.'
+    );
+  }
+
+  if (current === target) {
+    return current === ProjectStatus.ARCHIVED
+      ? Action.CHANGE_PROJECT_ARCHIVE_STATUS
+      : Action.CHANGE_PROJECT_STATUS;
+  }
+
+  if (target === ProjectStatus.ARCHIVED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
+  }
+
+  if (current === ProjectStatus.ARCHIVED && target === ProjectStatus.CLOSED) {
+    return Action.CHANGE_PROJECT_ARCHIVE_STATUS;
+  }
+
+  return Action.CHANGE_PROJECT_STATUS;
+}
 
 // =============================================================================
 // Types for download format and token payloads (must be before records router)
@@ -571,24 +597,40 @@ api.put(
   }
 );
 
-// PUT change project status
+// PUT set notebook lifecycle status (open / closed / archived)
 api.put(
-  '/:projectId/status',
+  '/:id/status',
   requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_PROJECT_STATUS,
-    getResourceId(req) {
-      return req.params.projectId;
-    },
-  }),
   processRequest({
-    params: z.object({projectId: z.string()}),
+    params: z.object({id: z.string()}),
     body: PutChangeNotebookStatusInputSchema,
   }),
-  async ({body: {status}, params: {projectId}}, res) => {
-    await changeNotebookStatus({projectId, status});
+  async (req, res) => {
+    if (!req.user) {
+      throw new Exceptions.UnauthorizedException();
+    }
+    const {id} = req.params;
+    const {status: targetStatus} = req.body;
+    const project = await getProjectById(id);
+    const requiredAction = permissionRequiredForNotebookStatusChange(
+      project.status,
+      targetStatus
+    );
+
+    if (
+      !userCanDo({
+        user: req.user,
+        action: requiredAction,
+        resourceId: id,
+      })
+    ) {
+      throw new Exceptions.UnauthorizedException(
+        'You are not authorized to perform this action.'
+      );
+    }
+
+    await applyNotebookLifecycleStatus(project, targetStatus);
     res.sendStatus(200);
-    return;
   }
 );
 
@@ -610,43 +652,6 @@ api.put(
     await changeNotebookTeam({projectId, teamId});
     res.sendStatus(200);
     return;
-  }
-);
-
-/** Archive or un-archive a survey (`archive: true` sets {@link ProjectStatus.ARCHIVED}). */
-api.put(
-  '/:id/archive',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({
-    params: z.object({id: z.string()}),
-    body: z.object({archive: z.boolean()}),
-  }),
-  async ({params: {id}, body: {archive}}, res) => {
-    await setNotebookArchived({projectId: id, archive});
-    res.sendStatus(200);
-  }
-);
-
-/** Restore an archived survey to closed (not open). */
-api.post(
-  '/:id/restore',
-  requireAuthenticationAPI,
-  isAllowedToMiddleware({
-    action: Action.CHANGE_PROJECT_ARCHIVE_STATUS,
-    getResourceId(req) {
-      return req.params.id;
-    },
-  }),
-  processRequest({params: z.object({id: z.string()})}),
-  async ({params: {id}}, res) => {
-    await restoreNotebookFromArchive(id);
-    res.sendStatus(200);
   }
 );
 
@@ -723,12 +728,10 @@ api.get(
     });
     if (records) {
       const filenames: string[] = [];
-      const viewIdsNeedingFieldTypes = new Set<string>();
-      for (const r of records) {
-        if (r.data && r.type) {
-          viewIdsNeedingFieldTypes.add(r.type);
-        }
-      }
+      const viewIdsNeedingFieldTypes = new Set(
+        records.filter(r => r.data && r.type).map(r => r.type)
+      );
+
       const fieldTypesByViewId: Partial<
         Record<string, ReturnType<typeof getNotebookFieldTypes>>
       > = {};

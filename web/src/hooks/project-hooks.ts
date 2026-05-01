@@ -1,5 +1,6 @@
 import {User} from '@/context/auth-provider';
 import {readFileAsText} from '@/lib/utils';
+import type {ProjectStatus} from '@faims3/data-model';
 
 /**
  * Creates a new project from a template
@@ -143,50 +144,26 @@ async function messageFromFailedNotebookResponse(
 }
 
 /**
- * PUT /api/notebooks/:projectId/archive — set notebook archive status.
+ * PUT /api/notebooks/:projectId/status — set notebook lifecycle (OPEN, CLOSED, ARCHIVED).
  */
-export const putNotebookArchive = async ({
+export const putNotebookStatus = async ({
   user,
   projectId,
-  archive,
+  status,
 }: {
   user: User;
   projectId: string;
-  archive: boolean;
+  status: ProjectStatus;
 }) => {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/archive`,
+    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/status`,
     {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`,
       },
-      body: JSON.stringify({archive}),
-    }
-  );
-  if (!response.ok) {
-    throw new Error(await messageFromFailedNotebookResponse(response));
-  }
-};
-
-/**
- * POST /api/notebooks/:projectId/restore — restore an archived notebook (e.g. to closed state).
- */
-export const postRestoreArchivedNotebook = async ({
-  user,
-  projectId,
-}: {
-  user: User;
-  projectId: string;
-}) => {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_URL}/api/notebooks/${encodeURIComponent(projectId)}/restore`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-      },
+      body: JSON.stringify({status}),
     }
   );
   if (!response.ok) {

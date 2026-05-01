@@ -99,7 +99,7 @@ export function ArchiveProjectDialog({
                       next to each record.
                     </li>
                     <li>
-                      You have reported the data from the system and stored it
+                      You have exported the data from the system and stored it
                       appropriately.
                     </li>
                   </ol>

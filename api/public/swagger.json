@@ -301,10 +301,10 @@
         }
       }
     },
-    "/notebooks/{id}/archive": {
+    "/notebooks/{id}/status": {
       "put": {
-        "summary": "Archive or un-archive a notebook",
-        "description": "Sets notebook status to `ARCHIVED` when `archive` is true, or clears archive when false. Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
+        "summary": "Set notebook lifecycle status",
+        "description": "Sets survey status to `OPEN`, `CLOSED`, or `ARCHIVED`. This endpoint replaces the removed `PUT /notebooks/{id}/archive` and `POST /notebooks/{id}/restore` routes: use `ARCHIVED` to archive and `CLOSED` to restore from archive. **Permissions:** transitions between open and closed (while not archived) require `CHANGE_PROJECT_STATUS`. Setting `ARCHIVED`, or changing `ARCHIVED` → `CLOSED`, requires `CHANGE_PROJECT_ARCHIVE_STATUS`. Idempotent: requesting the current status returns 200 with no document change. **Validation:** `OPEN` is rejected while the notebook is `ARCHIVED`; set `CLOSED` first.",
         "tags": ["Notebooks"],
         "produces": ["application/json"],
         "security": [
@@ -328,62 +328,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "archive": {
-                    "type": "boolean",
-                    "description": "True to archive the notebook; false to un-archive"
-                  }
-                },
-                "required": ["archive"]
+                "$ref": "#/definitions/PutChangeNotebookStatusInput"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Status updated"
+            "description": "Status updated (including no-op when already at the requested status)"
+          },
+          "400": {
+            "description": "Invalid transition (e.g. requesting OPEN while archived)"
           },
           "401": {
             "$ref": "#/components/responses/UnauthorizedError"
           },
           "403": {
-            "description": "Not allowed to change archive status"
-          }
-        }
-      }
-    },
-    "/notebooks/{id}/restore": {
-      "post": {
-        "summary": "Restore an archived notebook",
-        "description": "Moves an archived notebook back to closed (not open). Requires `CHANGE_PROJECT_ARCHIVE_STATUS` on the project.",
-        "tags": ["Notebooks"],
-        "produces": ["application/json"],
-        "security": [
-          {
-            "Auth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "Notebook (project) identifier",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Notebook restored from archive"
+            "description": "Caller lacks the permission required for this transition"
           },
-          "401": {
-            "$ref": "#/components/responses/UnauthorizedError"
-          },
-          "403": {
-            "description": "Not allowed"
+          "404": {
+            "description": "Notebook id not found"
           }
         }
       }
@@ -1901,8 +1865,7 @@
           "description": "True when the caller has project admin on this notebook"
         },
         "status": {
-          "type": "string",
-          "description": "Project lifecycle status (e.g. OPEN, CLOSED, ARCHIVED)"
+          "$ref": "#/definitions/ProjectNotebookStatus"
         },
         "template_id": {
           "type": "string"
@@ -1932,6 +1895,21 @@
         }
       },
       "required": ["confirmName"]
+    },
+    "ProjectNotebookStatus": {
+      "type": "string",
+      "enum": ["OPEN", "CLOSED", "ARCHIVED"],
+      "description": "Survey lifecycle status stored on the project (notebook) document"
+    },
+    "PutChangeNotebookStatusInput": {
+      "type": "object",
+      "description": "Request body for PUT /notebooks/{id}/status",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/ProjectNotebookStatus"
+        }
+      },
+      "required": ["status"]
     },
     "ProjectDirectoryEntry": {
       "type": "object",
@@ -2024,6 +2002,9 @@
         },
         "name": {
           "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/ProjectNotebookStatus"
         },
         "ui-specification": {
           "type": "object"

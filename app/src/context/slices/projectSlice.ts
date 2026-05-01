@@ -118,7 +118,7 @@ function clearAbsentDirectoryRetry(serverId: string) {
 
 function projectDocIsArchivedOnServer(doc: ProjectDocument): boolean {
   const s = doc.status as ProjectStatus | string;
-  return s === ProjectStatus.ARCHIVED || s === 'ARCHIVED';
+  return s === ProjectStatus.ARCHIVED;
 }
 
 /**

@@ -1,7 +1,6 @@
 import {
-  ARCHIVE_TAB_VALUES,
-  DEFAULT_ARCHIVE_TAB,
-  type ArchiveTab,
+  ARCHIVE_TAB_LABELS,
+  getVisibleArchiveTabs,
 } from '@/archive/archive-tabs';
 import {NavItem, NavMain} from '@/components/side-bar/nav-main';
 import {NavUser} from '@/components/side-bar/nav-user';
@@ -121,17 +120,18 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     });
   }
 
-  if (canSeeTemplates) {
-    const archiveTabTitles: Record<ArchiveTab, string> = {
-      [NOTEBOOK_NAME_PLURAL]: NOTEBOOK_NAME_PLURAL_CAPITALIZED,
-      templates: 'Templates',
-      users: 'Users',
-      teams: 'Teams',
-    };
+  const visibleArchiveTabs = getVisibleArchiveTabs({
+    canSeeProjects,
+    canSeeTemplates,
+    canSeeUsers,
+  });
+
+  if (visibleArchiveTabs.length > 0) {
+    const defaultArchiveTab = visibleArchiveTabs[0];
     const archiveSubItems: NonNullable<NavItem['items']> =
-      ARCHIVE_TAB_VALUES.map(tabKey => ({
+      visibleArchiveTabs.map(tabKey => ({
         id: `archive-${tabKey}`,
-        title: archiveTabTitles[tabKey],
+        title: ARCHIVE_TAB_LABELS[tabKey],
         url: '/archive',
         search: {tab: tabKey},
       }));
@@ -141,7 +141,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       url: '/archive',
       icon: ArchiveRestore,
       isActive: pathname.startsWith('/archive'),
-      linkSearch: {tab: DEFAULT_ARCHIVE_TAB},
+      linkSearch: {tab: defaultArchiveTab},
       items: archiveSubItems,
     });
   }
