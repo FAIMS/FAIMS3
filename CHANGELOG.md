@@ -9,9 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changes
 
-[release] Previous tag: v1.4.4
-[release] Found 16 merged PR(s) since v1.4.4.
-[release] Fetching PR details from GitHub...
 - feat: add role descriptions to role selector dropdowns (#2012) ([#2046](https://github.com/FAIMS/FAIMS3/pull/2046))
 - Bump nodemailer from 8.0.4 to 8.0.5 ([#2045](https://github.com/FAIMS/FAIMS3/pull/2045))
 - feat: overhaul of resource deletion and archiving lifecycle including projects, records, templates and users ([#2044](https://github.com/FAIMS/FAIMS3/pull/2044))
