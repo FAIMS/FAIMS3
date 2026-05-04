@@ -72,7 +72,8 @@ jobs:
           export VITE_SUPPORT_EMAIL=${{vars.SUPPORT_EMAIL}}
           export VITE_APP_CONTACT_URL=${{vars.APP_CONTACT_URL}}
           export VITE_MIGRATE_OLD_DATABASES=${{vars.MIGRATE_OLD_DATABASES}}
-
+          export VITE_FORCE_REMOTE_DELETION=${{vars.FORCE_REMOTE_DELETION}}
+          export VITE_DELETE_ON_DEACTIVATION=${{vars.DELETE_ON_DEACTIVATION}}
 
           export VITE_ENABLE_RECORD_FILTERS=${{vars.ENABLE_RECORD_FILTERS}}
           export VITE_HEADING_APP_NAME="${{vars.HEADING_APP_NAME}}"
