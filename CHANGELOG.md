@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-05-01
+
+### Changes
+
+- feat: add role descriptions to role selector dropdowns (#2012) ([#2046](https://github.com/FAIMS/FAIMS3/pull/2046))
+- Bump nodemailer from 8.0.4 to 8.0.5 ([#2045](https://github.com/FAIMS/FAIMS3/pull/2045))
+- feat: overhaul of resource deletion and archiving lifecycle including projects, records, templates and users ([#2044](https://github.com/FAIMS/FAIMS3/pull/2044))
+- Fix: don't offer the contains conditions for string values ([#2042](https://github.com/FAIMS/FAIMS3/pull/2042))
+- feat: optional templateFunction on field registry for templating ([#2041](https://github.com/FAIMS/FAIMS3/pull/2041))
+- Bump vite from 5.4.21 to 7.3.2 ([#2040](https://github.com/FAIMS/FAIMS3/pull/2040))
+- Fix: configuration for 'web' title in AWS deployment ([#2039](https://github.com/FAIMS/FAIMS3/pull/2039))
+- Bump vite from 7.1.12 to 7.3.2 ([#2038](https://github.com/FAIMS/FAIMS3/pull/2038))
+- Fix: Add fieldmark theme option to aws-cdk ([#2035](https://github.com/FAIMS/FAIMS3/pull/2035))
+- Bump lodash from 4.17.23 to 4.18.1 ([#2032](https://github.com/FAIMS/FAIMS3/pull/2032))
+- Fix: remove publishButtonBehaviour setting ([#2030](https://github.com/FAIMS/FAIMS3/pull/2030))
+- Feat: allow Operations Admin to change own team role ([#2029](https://github.com/FAIMS/FAIMS3/pull/2029))
+- Fix warnings in web build ([#2025](https://github.com/FAIMS/FAIMS3/pull/2025))
+- Bump handlebars from 4.7.7 to 4.7.9 ([#2022](https://github.com/FAIMS/FAIMS3/pull/2022))
+- Bump nodemailer from 7.0.11 to 8.0.4 ([#2021](https://github.com/FAIMS/FAIMS3/pull/2021))
+- Pull request #2012 (title unavailable — fetch manually)
+
 ## [1.4.4] - 2026-04-05
 
 ### Changes
