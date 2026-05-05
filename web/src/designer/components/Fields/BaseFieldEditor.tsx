@@ -71,6 +71,12 @@ const checkSpeechEnabled = (field: FieldType) => {
     `${field['component-namespace']}::${field['component-name']}`
   );
 };
+const DEPRECATED_COMPONENTS = new Set([
+  'FAIMSTextField',
+  'DateTimeNow',
+  'Checkbox',
+  'Select',
+]);
 
 type Props = {
   fieldName: string;
@@ -281,6 +287,10 @@ export const BaseFieldEditor = ({
   const speechSettings = isSpeechEnabled ? getSpeechSettings(field) : null;
   const isChoiceField =
     field['component-name'] === 'Select' || field['component-name'] === 'MultiSelect';
+  const isDeprecatedComponent = DEPRECATED_COMPONENTS.has(
+    field['component-name']
+  );
+  const useUnifiedFieldWrapper = !isDeprecatedComponent;
 
   return (
     <Grid container spacing={2}>
@@ -289,7 +299,7 @@ export const BaseFieldEditor = ({
         <Card
           variant="outlined"
           sx={
-            isChoiceField
+            useUnifiedFieldWrapper
               ? {
                   p: 2,
                   borderColor: 'divider',
@@ -346,36 +356,79 @@ export const BaseFieldEditor = ({
                   </>
                 ) : (
                   <>
-                    <DebouncedTextField
-                      fullWidth
-                      label="Label"
-                      value={state.label}
-                      onChange={e => handleLabelChange(e.target.value)}
-                      inputProps={{'data-field-label-input': 'true'}}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Field ID"
-                      value={localFieldName}
-                      onChange={handleIdChange}
-                      inputRef={idInputRef}
-                      InputProps={{
-                        endAdornment:
-                          state.label && slugify(state.label) !== localFieldName ? (
-                            <InputAdornment position="end">
-                              <Tooltip title="Sync with field name">
-                                <IconButton
-                                  size="small"
-                                  onClick={syncFieldID}
-                                  edge="end"
-                                >
-                                  <SyncIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </InputAdornment>
-                          ) : undefined,
-                      }}
-                    />
+                    {useUnifiedFieldWrapper ? (
+                      <>
+                        <SimpleFieldWrapper heading="Label">
+                          <DebouncedTextField
+                            fullWidth
+                            label=""
+                            placeholder="Enter field label"
+                            value={state.label}
+                            onChange={e => handleLabelChange(e.target.value)}
+                            inputProps={{'data-field-label-input': 'true'}}
+                          />
+                        </SimpleFieldWrapper>
+                        <SimpleFieldWrapper heading="Field ID">
+                          <TextField
+                            fullWidth
+                            label=""
+                            placeholder="Enter field ID"
+                            value={localFieldName}
+                            onChange={handleIdChange}
+                            inputRef={idInputRef}
+                            InputProps={{
+                              endAdornment:
+                                state.label && slugify(state.label) !== localFieldName ? (
+                                  <InputAdornment position="end">
+                                    <Tooltip title="Sync with field name">
+                                      <IconButton
+                                        size="small"
+                                        onClick={syncFieldID}
+                                        edge="end"
+                                      >
+                                        <SyncIcon fontSize="small" />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </InputAdornment>
+                                ) : undefined,
+                            }}
+                          />
+                        </SimpleFieldWrapper>
+                      </>
+                    ) : (
+                      <>
+                        <DebouncedTextField
+                          fullWidth
+                          label="Label"
+                          value={state.label}
+                          onChange={e => handleLabelChange(e.target.value)}
+                          inputProps={{'data-field-label-input': 'true'}}
+                        />
+                        <TextField
+                          fullWidth
+                          label="Field ID"
+                          value={localFieldName}
+                          onChange={handleIdChange}
+                          inputRef={idInputRef}
+                          InputProps={{
+                            endAdornment:
+                              state.label && slugify(state.label) !== localFieldName ? (
+                                <InputAdornment position="end">
+                                  <Tooltip title="Sync with field name">
+                                    <IconButton
+                                      size="small"
+                                      onClick={syncFieldID}
+                                      edge="end"
+                                    >
+                                      <SyncIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                </InputAdornment>
+                              ) : undefined,
+                          }}
+                        />
+                      </>
+                    )}
                   </>
                 )}
               </Box>
@@ -383,7 +436,7 @@ export const BaseFieldEditor = ({
             {showHelperText && (
               <Grid item xs={12} md={8}>
                 <Box display="flex" flexDirection="column" gap={2}>
-                  {isChoiceField ? (
+                  {useUnifiedFieldWrapper ? (
                     <SimpleFieldWrapper heading="Helper Text">
                       <DebouncedTextField
                         fullWidth
@@ -424,7 +477,7 @@ export const BaseFieldEditor = ({
                       <Card
                         variant="outlined"
                         sx={
-                          isChoiceField
+                          useUnifiedFieldWrapper
                             ? {
                                 p: 2,
                                 borderColor: 'divider',
