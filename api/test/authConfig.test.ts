@@ -208,7 +208,8 @@ describe('readAuthProviderConfigFromEnv', () => {
       'https://conductor.example/auth/vg/sso-error'
     );
     expect(vg.ssoErrorPageReturnURL).to.equal('https://web.example/');
-    expect(vg.authnRequestBinding).to.equal('HTTP-Redirect');
+    // Default to HTTP-POST
+    expect(vg.authnRequestBinding).to.equal('HTTP-POST');
   });
 
   it('parses SAML authnRequestBinding HTTP-POST from env', () => {
