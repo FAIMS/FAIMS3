@@ -2,7 +2,7 @@ import {Box, Typography} from '@mui/material';
 
 type SimpleFieldWrapperProps = {
   heading: string;
-  helperText?: string;
+  helperText?: React.ReactNode;
   children: React.ReactNode;
 };
 
