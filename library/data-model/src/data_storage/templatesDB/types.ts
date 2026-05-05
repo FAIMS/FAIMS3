@@ -51,5 +51,11 @@ export type ExistingTemplateDocument = z.infer<
   typeof ExistingTemplateDocumentSchema
 >;
 
+/** Stored template shape without the form payload (matches listing view value). */
+export const TemplateListItemSchema = ExistingTemplateDocumentSchema.omit({
+  'ui-specification': true,
+});
+export type TemplateListItem = z.infer<typeof TemplateListItemSchema>;
+
 // Database
 export type TemplateDB = DatabaseInterface<TemplateDBFields>;

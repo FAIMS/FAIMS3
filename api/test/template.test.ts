@@ -248,6 +248,25 @@ describe('template API tests', () => {
   //======= TEMPLATES ===========
   //=============================
 
+  it('GET list returns summaries without ui-specification; GET by id includes full payload', async () => {
+    const {template, notebook: nb} = await createSampleTemplate(app, {
+      name: 'list-vs-detail',
+    });
+    const listed = await listTemplates(app);
+    const summary = listed.templates.find(t => t._id === template._id);
+    expect(summary).to.be.ok;
+    expect(summary!).to.not.have.property('ui-specification');
+
+    const detail = await getATemplate(app, template._id);
+    expect(detail['ui-specification']).to.be.ok;
+    expect(JSON.stringify(detail['ui-specification'])).to.equal(
+      JSON.stringify(nb['ui-specification'])
+    );
+
+    await setTemplateArchived(app, template._id, true);
+    await deleteATemplate(app, template._id);
+  });
+
   it('excludes archived templates by default; includeArchived lists archived only', async () => {
     const {template: activeTpl} = await createSampleTemplate(app, {
       name: 'active-template',
@@ -332,39 +351,21 @@ describe('template API tests', () => {
     const {template, notebook: nb} = await createSampleTemplate(app, {name});
     const templateId1 = template._id;
 
-    // list and see the new template
+    // list and see the new template (summaries only — no ui-specification)
     await listTemplates(app).then(templateList => {
-      // Check that the list exists and has one entry
       expect(templateList.templates.length).to.equal(1);
 
-      // Get the first entry and check ID matches as well as spec etc
       const entry = templateList.templates[0];
 
-      // Check all properties match
       expect(entry._id).to.equal(templateId1);
       expect(entry.name).to.equal(name);
-
-      // TODO This is no longer true because the metadata is injected with the template ID, see BSS-343
-      // expect(JSON.stringify(entry['ui-specification'])).to.equal(
-      //   JSON.stringify(nb['ui-specification'])
-      // );
-      // expect(JSON.stringify(entry.metadata)).to.equal(
-      //   JSON.stringify(nb.metadata)
-      // );
-
-      // Instead - let's remove the template_id from the result and then check equality
-      // TODO BSS-343
-      delete entry.metadata.template_id;
-
-      expect(JSON.stringify(entry['ui-specification'])).to.equal(
-        JSON.stringify(nb['ui-specification'])
-      );
+      expect(entry).to.not.have.property('ui-specification');
 
       // should be version 1
       expect(entry.version).to.equal(1);
     });
 
-    // get the specific new template
+    // get the specific new template (full document including ui-specification)
     await getATemplate(app, templateId1).then(template => {
       // Check all properties match
       expect(template._id).to.equal(templateId1);
@@ -380,24 +381,15 @@ describe('template API tests', () => {
     const {template: template2} = await createSampleTemplate(app, {});
     const templateId2 = template2._id;
 
-    // list and see the new template
     await listTemplates(app).then(templateList => {
-      // Check that the list exists and has correct length
       expect(templateList.templates.length).to.equal(2);
 
-      // Get the new entry
       const entry = templateList.templates.find(t => t._id === templateId2);
       expect(entry).to.not.be.undefined;
-
-      // Check all properties match
       expect(entry?._id).to.equal(templateId2);
       if (entry) {
-        expect(JSON.stringify(entry['ui-specification'])).to.equal(
-          JSON.stringify(nb['ui-specification'])
-        );
+        expect(entry).to.not.have.property('ui-specification');
       }
-
-      // should be version 1
       expect(entry?.version).to.equal(1);
     });
 
