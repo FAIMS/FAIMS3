@@ -835,7 +835,17 @@ export const OptionsEditor = ({
 
   return (
     <BaseFieldEditor fieldName={fieldName}>
-      <Paper sx={{width: '100%', ml: 2, mt: 2, p: 3}}>
+      <Paper
+        sx={{
+          width: '100%',
+          ml: 2,
+          mt: 2,
+          p: 3,
+          border: '1px solid',
+          borderColor: 'divider',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.7)',
+        }}
+      >
         <Grid container spacing={2}>
           {/* Options table */}
           <Grid item xs={12}>
@@ -850,7 +860,8 @@ export const OptionsEditor = ({
                 variant="outlined"
                 sx={{
                   border: '1px solid rgba(0, 0, 0, 0.12)',
-                  boxShadow: 'none',
+                  boxShadow: theme =>
+                    `0 1px 6px rgba(0,0,0,0.08), inset 0 1px 2px rgba(0,0,0,0.04)`,
                   borderRadius: 1,
                   maxHeight: '1000px',
                   overflow: 'auto',
@@ -1025,8 +1036,11 @@ export const OptionsEditor = ({
                     type="submit"
                     sx={{
                       width: {xs: '100%', sm: 'auto'},
-                      height: '40px',
+                      minWidth: 56,
+                      height: 40,
                       backgroundColor: '#fff',
+                      borderColor: 'divider',
+                      px: 2,
                       textTransform: 'none',
                       '&:hover': {
                         backgroundColor: '#f5f5f5',
@@ -1043,8 +1057,11 @@ export const OptionsEditor = ({
                     disabled={enableOther}
                     sx={{
                       width: {xs: '100%', sm: 'auto'},
+                      minWidth: 56,
+                      height: 40,
+                      px: 2,
                       textTransform: 'none',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       borderWidth: 1.5,
                       color: theme.designerMeta.isDass ? 'common.white' : 'primary.main',
                       borderColor: theme.designerMeta.isDass ? 'common.black' : 'primary.main',
